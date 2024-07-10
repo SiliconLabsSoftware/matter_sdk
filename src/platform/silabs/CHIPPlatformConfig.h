@@ -26,6 +26,10 @@
 
 #include <stdint.h>
 
+#if (SL_MATTER_GN_BUILD == 0) && SL_ICD_ENABLED
+#include "sl_matter_icd_config.h"
+#endif
+
 // ==================== General Platform Adaptations ====================
 
 #define CHIP_CONFIG_ABORT() abort()
