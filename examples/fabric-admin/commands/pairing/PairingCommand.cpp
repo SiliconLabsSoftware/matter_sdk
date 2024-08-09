@@ -18,7 +18,10 @@
 
 #include "PairingCommand.h"
 
+#include <app-common/zap-generated/ids/Clusters.h>
 #include <commands/common/DeviceScanner.h>
+#include <commands/interactive/InteractiveCommands.h>
+#include <commands/pairing/DeviceSynchronization.h>
 #include <controller/ExampleOperationalCredentialsIssuer.h>
 #include <crypto/CHIPCryptoPAL.h>
 #include <lib/core/CHIPSafeCasts.h>
@@ -400,10 +403,7 @@ void PairingCommand::OnCommissioningComplete(NodeId nodeId, CHIP_ERROR err)
     {
         // print to console
         fprintf(stderr, "New device with Node ID: 0x%lx has been successfully added.\n", nodeId);
-
-#if defined(PW_RPC_ENABLED)
-        AddSynchronizedDevice(nodeId);
-#endif
+        DeviceSynchronizer::Instance().StartDeviceSynchronization(CurrentCommissioner(), mNodeId, mDeviceIsICD);
     }
     else
     {
@@ -543,7 +543,9 @@ void PairingCommand::OnCurrentFabricRemove(void * context, NodeId nodeId, CHIP_E
         // print to console
         fprintf(stderr, "Device with Node ID: 0x%lx has been successfully removed.\n", nodeId);
 
-        // TODO: (#33973) Add RPC method RemoveSynchronizedDevice
+#if defined(PW_RPC_ENABLED)
+        RemoveSynchronizedDevice(nodeId);
+#endif
     }
     else
     {
