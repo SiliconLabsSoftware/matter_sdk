@@ -3096,7 +3096,7 @@ class AccessControl(Cluster):
             cluster_id: typing.ClassVar[int] = 0x0000001F
             command_id: typing.ClassVar[int] = 0x00000000
             is_client: typing.ClassVar[bool] = True
-            response_type: typing.ClassVar[str] = None
+            response_type: typing.ClassVar[str] = 'ReviewFabricRestrictionsResponse'
 
             @ChipUtility.classproperty
             def descriptor(cls) -> ClusterObjectDescriptor:
@@ -3388,7 +3388,7 @@ class AccessControl(Cluster):
             fabricIndex: 'uint' = 0
 
         @dataclass
-        class AccessRestrictionEntryChanged(ClusterEvent):
+        class FabricRestrictionReviewUpdate(ClusterEvent):
             @ChipUtility.classproperty
             def cluster_id(cls) -> int:
                 return 0x0000001F
@@ -3401,34 +3401,15 @@ class AccessControl(Cluster):
             def descriptor(cls) -> ClusterObjectDescriptor:
                 return ClusterObjectDescriptor(
                     Fields=[
-                        ClusterObjectFieldDescriptor(Label="fabricIndex", Tag=254, Type=uint),
-                    ])
-
-            fabricIndex: 'uint' = 0
-
-        @dataclass
-        class FabricRestrictionReviewUpdate(ClusterEvent):
-            @ChipUtility.classproperty
-            def cluster_id(cls) -> int:
-                return 0x0000001F
-
-            @ChipUtility.classproperty
-            def event_id(cls) -> int:
-                return 0x00000003
-
-            @ChipUtility.classproperty
-            def descriptor(cls) -> ClusterObjectDescriptor:
-                return ClusterObjectDescriptor(
-                    Fields=[
                         ClusterObjectFieldDescriptor(Label="token", Tag=0, Type=uint),
-                        ClusterObjectFieldDescriptor(Label="instruction", Tag=1, Type=typing.Union[Nullable, str]),
-                        ClusterObjectFieldDescriptor(Label="redirectURL", Tag=2, Type=typing.Union[Nullable, str]),
+                        ClusterObjectFieldDescriptor(Label="instruction", Tag=1, Type=typing.Optional[str]),
+                        ClusterObjectFieldDescriptor(Label="ARLRequestFlowUrl", Tag=2, Type=typing.Optional[str]),
                         ClusterObjectFieldDescriptor(Label="fabricIndex", Tag=254, Type=uint),
                     ])
 
             token: 'uint' = 0
-            instruction: 'typing.Union[Nullable, str]' = NullValue
-            redirectURL: 'typing.Union[Nullable, str]' = NullValue
+            instruction: 'typing.Optional[str]' = None
+            ARLRequestFlowUrl: 'typing.Optional[str]' = None
             fabricIndex: 'uint' = 0
 
 
@@ -12168,9 +12149,11 @@ class BridgedDeviceBasicInformation(Cluster):
                 return ClusterObjectDescriptor(
                     Fields=[
                         ClusterObjectFieldDescriptor(Label="stayActiveDuration", Tag=0, Type=uint),
+                        ClusterObjectFieldDescriptor(Label="timeoutMs", Tag=1, Type=uint),
                     ])
 
             stayActiveDuration: 'uint' = 0
+            timeoutMs: 'uint' = 0
 
     class Attributes:
         @dataclass
@@ -16047,6 +16030,16 @@ class OvenMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kBake = 0x4000
             kConvection = 0x4001
             kGrill = 0x4002
@@ -16060,7 +16053,7 @@ class OvenMode(Cluster):
             # to kUnknownEnumValue. This is a helper enum value that should only
             # be used by code to process how it handles receiving an unknown
             # enum value. This specific value should never be transmitted.
-            kUnknownEnumValue = 0,
+            kUnknownEnumValue = 10,
 
     class Bitmaps:
         class Feature(IntFlag):
@@ -16773,6 +16766,16 @@ class LaundryWasherMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kNormal = 0x4000
             kDelicate = 0x4001
             kHeavy = 0x4002
@@ -17046,6 +17049,16 @@ class RefrigeratorAndTemperatureControlledCabinetMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kRapidCool = 0x4000
             kRapidFreeze = 0x4001
             # kUnknownEnumValue intentionally not defined. This enum never goes
@@ -17523,6 +17536,16 @@ class RvcRunMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kIdle = 0x4000
             kCleaning = 0x4001
             kMapping = 0x4002
@@ -17549,7 +17572,7 @@ class RvcRunMode(Cluster):
 
     class Bitmaps:
         class Feature(IntFlag):
-            kNoFeatures = 0x0
+            kDirectModeChange = 0x10000
 
     class Structs:
         @dataclass
@@ -17774,6 +17797,16 @@ class RvcCleanMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kDeepClean = 0x4000
             kVacuum = 0x4001
             kMop = 0x4002
@@ -17793,7 +17826,7 @@ class RvcCleanMode(Cluster):
 
     class Bitmaps:
         class Feature(IntFlag):
-            kNoFeatures = 0x0
+            kDirectModeChange = 0x10000
 
     class Structs:
         @dataclass
@@ -18481,6 +18514,16 @@ class DishwasherMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kNormal = 0x4000
             kHeavy = 0x4001
             kLight = 0x4002
@@ -19806,13 +19849,23 @@ class MicrowaveOvenMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kNormal = 0x4000
             kDefrost = 0x4001
             # All received enum values that are not listed above will be mapped
             # to kUnknownEnumValue. This is a helper enum value that should only
             # be used by code to process how it handles receiving an unknown
             # enum value. This specific value should never be transmitted.
-            kUnknownEnumValue = 0,
+            kUnknownEnumValue = 10,
 
     class Bitmaps:
         class Feature(IntFlag):
@@ -20737,6 +20790,10 @@ class RvcOperationalState(Cluster):
 
     class Enums:
         class ErrorStateEnum(MatterIntEnum):
+            kNoError = 0x00
+            kUnableToStartOrResume = 0x01
+            kUnableToCompleteOperation = 0x02
+            kCommandInvalidInState = 0x03
             kFailedToFindChargingDock = 0x40
             kStuck = 0x41
             kDustBinMissing = 0x42
@@ -20752,6 +20809,10 @@ class RvcOperationalState(Cluster):
             # src/app/common/templates/config-data.yaml.
 
         class OperationalStateEnum(MatterIntEnum):
+            kStopped = 0x00
+            kRunning = 0x01
+            kPaused = 0x02
+            kError = 0x03
             kSeekingCharger = 0x40
             kCharging = 0x41
             kDocked = 0x42
@@ -27391,6 +27452,16 @@ class EnergyEvseMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kManual = 0x4000
             kTimeOfUse = 0x4001
             kSolarCharging = 0x4002
@@ -27663,6 +27734,16 @@ class WaterHeaterMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kOff = 0x4000
             kManual = 0x4001
             kTimed = 0x4002
@@ -27935,6 +28016,16 @@ class DeviceEnergyManagementMode(Cluster):
 
     class Enums:
         class ModeTag(MatterIntEnum):
+            kAuto = 0x00
+            kQuick = 0x01
+            kQuiet = 0x02
+            kLowNoise = 0x03
+            kLowEnergy = 0x04
+            kVacation = 0x05
+            kMin = 0x06
+            kMax = 0x07
+            kNight = 0x08
+            kDay = 0x09
             kNoOptimization = 0x4000
             kDeviceOptimization = 0x4001
             kLocalOptimization = 0x4002
@@ -38399,6 +38490,26 @@ class OccupancySensing(Cluster):
 
             value: 'uint' = 0
 
+    class Events:
+        @dataclass
+        class OccupancyChanged(ClusterEvent):
+            @ChipUtility.classproperty
+            def cluster_id(cls) -> int:
+                return 0x00000406
+
+            @ChipUtility.classproperty
+            def event_id(cls) -> int:
+                return 0x00000000
+
+            @ChipUtility.classproperty
+            def descriptor(cls) -> ClusterObjectDescriptor:
+                return ClusterObjectDescriptor(
+                    Fields=[
+                        ClusterObjectFieldDescriptor(Label="occupancy", Tag=0, Type=uint),
+                    ])
+
+            occupancy: 'uint' = 0
+
 
 @dataclass
 class CarbonMonoxideConcentrationMeasurement(Cluster):
@@ -47185,9 +47296,8 @@ class EcosystemInformation(Cluster):
     def descriptor(cls) -> ClusterObjectDescriptor:
         return ClusterObjectDescriptor(
             Fields=[
-                ClusterObjectFieldDescriptor(Label="removedOn", Tag=0x00000000, Type=typing.Union[None, Nullable, uint]),
-                ClusterObjectFieldDescriptor(Label="deviceDirectory", Tag=0x00000001, Type=typing.List[EcosystemInformation.Structs.EcosystemDeviceStruct]),
-                ClusterObjectFieldDescriptor(Label="locationDirectory", Tag=0x00000002, Type=typing.List[EcosystemInformation.Structs.EcosystemLocationStruct]),
+                ClusterObjectFieldDescriptor(Label="deviceDirectory", Tag=0x00000000, Type=typing.List[EcosystemInformation.Structs.EcosystemDeviceStruct]),
+                ClusterObjectFieldDescriptor(Label="locationDirectory", Tag=0x00000001, Type=typing.List[EcosystemInformation.Structs.EcosystemLocationStruct]),
                 ClusterObjectFieldDescriptor(Label="generatedCommandList", Tag=0x0000FFF8, Type=typing.List[uint]),
                 ClusterObjectFieldDescriptor(Label="acceptedCommandList", Tag=0x0000FFF9, Type=typing.List[uint]),
                 ClusterObjectFieldDescriptor(Label="eventList", Tag=0x0000FFFA, Type=typing.List[uint]),
@@ -47196,7 +47306,6 @@ class EcosystemInformation(Cluster):
                 ClusterObjectFieldDescriptor(Label="clusterRevision", Tag=0x0000FFFD, Type=uint),
             ])
 
-    removedOn: 'typing.Union[None, Nullable, uint]' = None
     deviceDirectory: 'typing.List[EcosystemInformation.Structs.EcosystemDeviceStruct]' = None
     locationDirectory: 'typing.List[EcosystemInformation.Structs.EcosystemLocationStruct]' = None
     generatedCommandList: 'typing.List[uint]' = None
@@ -47264,22 +47373,6 @@ class EcosystemInformation(Cluster):
 
     class Attributes:
         @dataclass
-        class RemovedOn(ClusterAttributeDescriptor):
-            @ChipUtility.classproperty
-            def cluster_id(cls) -> int:
-                return 0x00000750
-
-            @ChipUtility.classproperty
-            def attribute_id(cls) -> int:
-                return 0x00000000
-
-            @ChipUtility.classproperty
-            def attribute_type(cls) -> ClusterObjectFieldDescriptor:
-                return ClusterObjectFieldDescriptor(Type=typing.Union[None, Nullable, uint])
-
-            value: 'typing.Union[None, Nullable, uint]' = None
-
-        @dataclass
         class DeviceDirectory(ClusterAttributeDescriptor):
             @ChipUtility.classproperty
             def cluster_id(cls) -> int:
@@ -47287,7 +47380,7 @@ class EcosystemInformation(Cluster):
 
             @ChipUtility.classproperty
             def attribute_id(cls) -> int:
-                return 0x00000001
+                return 0x00000000
 
             @ChipUtility.classproperty
             def attribute_type(cls) -> ClusterObjectFieldDescriptor:
@@ -47303,7 +47396,7 @@ class EcosystemInformation(Cluster):
 
             @ChipUtility.classproperty
             def attribute_id(cls) -> int:
-                return 0x00000002
+                return 0x00000001
 
             @ChipUtility.classproperty
             def attribute_type(cls) -> ClusterObjectFieldDescriptor:
@@ -47449,15 +47542,15 @@ class CommissionerControl(Cluster):
             def descriptor(cls) -> ClusterObjectDescriptor:
                 return ClusterObjectDescriptor(
                     Fields=[
-                        ClusterObjectFieldDescriptor(Label="requestId", Tag=0, Type=uint),
-                        ClusterObjectFieldDescriptor(Label="vendorId", Tag=1, Type=uint),
-                        ClusterObjectFieldDescriptor(Label="productId", Tag=2, Type=uint),
+                        ClusterObjectFieldDescriptor(Label="requestID", Tag=0, Type=uint),
+                        ClusterObjectFieldDescriptor(Label="vendorID", Tag=1, Type=uint),
+                        ClusterObjectFieldDescriptor(Label="productID", Tag=2, Type=uint),
                         ClusterObjectFieldDescriptor(Label="label", Tag=3, Type=typing.Optional[str]),
                     ])
 
-            requestId: 'uint' = 0
-            vendorId: 'uint' = 0
-            productId: 'uint' = 0
+            requestID: 'uint' = 0
+            vendorID: 'uint' = 0
+            productID: 'uint' = 0
             label: 'typing.Optional[str]' = None
 
         @dataclass
@@ -47471,16 +47564,12 @@ class CommissionerControl(Cluster):
             def descriptor(cls) -> ClusterObjectDescriptor:
                 return ClusterObjectDescriptor(
                     Fields=[
-                        ClusterObjectFieldDescriptor(Label="requestId", Tag=0, Type=uint),
+                        ClusterObjectFieldDescriptor(Label="requestID", Tag=0, Type=uint),
                         ClusterObjectFieldDescriptor(Label="responseTimeoutSeconds", Tag=1, Type=uint),
-                        ClusterObjectFieldDescriptor(Label="ipAddress", Tag=2, Type=typing.Optional[bytes]),
-                        ClusterObjectFieldDescriptor(Label="port", Tag=3, Type=typing.Optional[uint]),
                     ])
 
-            requestId: 'uint' = 0
+            requestID: 'uint' = 0
             responseTimeoutSeconds: 'uint' = 0
-            ipAddress: 'typing.Optional[bytes]' = None
-            port: 'typing.Optional[uint]' = None
 
         @dataclass
         class ReverseOpenCommissioningWindow(ClusterCommand):
@@ -47634,14 +47723,14 @@ class CommissionerControl(Cluster):
             def descriptor(cls) -> ClusterObjectDescriptor:
                 return ClusterObjectDescriptor(
                     Fields=[
-                        ClusterObjectFieldDescriptor(Label="requestId", Tag=0, Type=uint),
-                        ClusterObjectFieldDescriptor(Label="clientNodeId", Tag=1, Type=uint),
+                        ClusterObjectFieldDescriptor(Label="requestID", Tag=0, Type=uint),
+                        ClusterObjectFieldDescriptor(Label="clientNodeID", Tag=1, Type=uint),
                         ClusterObjectFieldDescriptor(Label="statusCode", Tag=2, Type=uint),
                         ClusterObjectFieldDescriptor(Label="fabricIndex", Tag=254, Type=uint),
                     ])
 
-            requestId: 'uint' = 0
-            clientNodeId: 'uint' = 0
+            requestID: 'uint' = 0
+            clientNodeID: 'uint' = 0
             statusCode: 'uint' = 0
             fabricIndex: 'uint' = 0
 
@@ -50211,6 +50300,8 @@ class UnitTesting(Cluster):
                 ClusterObjectFieldDescriptor(Label="globalEnum", Tag=0x00000033, Type=Globals.Enums.TestGlobalEnum),
                 ClusterObjectFieldDescriptor(Label="globalStruct", Tag=0x00000034, Type=Globals.Structs.TestGlobalStruct),
                 ClusterObjectFieldDescriptor(Label="unsupported", Tag=0x000000FF, Type=typing.Optional[bool]),
+                ClusterObjectFieldDescriptor(Label="readFailureCode", Tag=0x00003000, Type=typing.Optional[uint]),
+                ClusterObjectFieldDescriptor(Label="failureInt32U", Tag=0x00003001, Type=typing.Optional[uint]),
                 ClusterObjectFieldDescriptor(Label="nullableBoolean", Tag=0x00004000, Type=typing.Union[Nullable, bool]),
                 ClusterObjectFieldDescriptor(Label="nullableBitmap8", Tag=0x00004001, Type=typing.Union[Nullable, uint]),
                 ClusterObjectFieldDescriptor(Label="nullableBitmap16", Tag=0x00004002, Type=typing.Union[Nullable, uint]),
@@ -50306,6 +50397,8 @@ class UnitTesting(Cluster):
     globalEnum: 'Globals.Enums.TestGlobalEnum' = None
     globalStruct: 'Globals.Structs.TestGlobalStruct' = None
     unsupported: 'typing.Optional[bool]' = None
+    readFailureCode: 'typing.Optional[uint]' = None
+    failureInt32U: 'typing.Optional[uint]' = None
     nullableBoolean: 'typing.Union[Nullable, bool]' = None
     nullableBitmap8: 'typing.Union[Nullable, uint]' = None
     nullableBitmap16: 'typing.Union[Nullable, uint]' = None
@@ -52150,6 +52243,38 @@ class UnitTesting(Cluster):
                 return ClusterObjectFieldDescriptor(Type=typing.Optional[bool])
 
             value: 'typing.Optional[bool]' = None
+
+        @dataclass
+        class ReadFailureCode(ClusterAttributeDescriptor):
+            @ChipUtility.classproperty
+            def cluster_id(cls) -> int:
+                return 0xFFF1FC05
+
+            @ChipUtility.classproperty
+            def attribute_id(cls) -> int:
+                return 0x00003000
+
+            @ChipUtility.classproperty
+            def attribute_type(cls) -> ClusterObjectFieldDescriptor:
+                return ClusterObjectFieldDescriptor(Type=typing.Optional[uint])
+
+            value: 'typing.Optional[uint]' = None
+
+        @dataclass
+        class FailureInt32U(ClusterAttributeDescriptor):
+            @ChipUtility.classproperty
+            def cluster_id(cls) -> int:
+                return 0xFFF1FC05
+
+            @ChipUtility.classproperty
+            def attribute_id(cls) -> int:
+                return 0x00003001
+
+            @ChipUtility.classproperty
+            def attribute_type(cls) -> ClusterObjectFieldDescriptor:
+                return ClusterObjectFieldDescriptor(Type=typing.Optional[uint])
+
+            value: 'typing.Optional[uint]' = None
 
         @dataclass
         class NullableBoolean(ClusterAttributeDescriptor):
