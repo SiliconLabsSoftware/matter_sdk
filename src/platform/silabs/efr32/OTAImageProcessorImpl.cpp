@@ -30,6 +30,18 @@ extern "C" {
 
 #include <platform/silabs/SilabsConfig.h>
 
+#ifdef _SILICON_LABS_32B_SERIES_2
+#define WRAP_CRITICAL_SECTION(code)                                                                                                \
+    {                                                                                                                              \
+        CORE_CRITICAL_SECTION(code;)                                                                                               \
+    }
+#else
+#define WRAP_CRITICAL_SECTION(code)                                                                                                \
+    {                                                                                                                              \
+        code;                                                                                                                      \
+    }
+#endif
+
 /// No error, operation OK
 #define SL_BOOTLOADER_OK 0L
 
@@ -144,7 +156,14 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
 
     ChipLogProgress(SoftwareUpdate, "HandlePrepareDownload: started");
 
-    CORE_CRITICAL_SECTION(bootloader_init();)
+#ifdef _SILICON_LABS_32B_SERIES_2
+    WRAP_CRITICAL_SECTION(err = bootloader_init())
+    if (err != SL_BOOTLOADER_OK)
+    {
+        ChipLogProgress(SoftwareUpdate, "bootloader_init Failed error: %ld", err);
+    }
+#endif
+
     mSlotId                                 = 0; // Single slot until we support multiple images
     writeBufOffset                          = 0;
     mWriteOffset                            = 0;
@@ -186,7 +205,8 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
             return;
         }
 #endif // SL_BTLCTRL_MUX
-        CORE_CRITICAL_SECTION(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes);)
+        WRAP_CRITICAL_SECTION(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
+
 #if SL_BTLCTRL_MUX
         err = sl_wfx_host_post_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
@@ -208,11 +228,26 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     ChipLogProgress(SoftwareUpdate, "OTA image downloaded successfully");
 }
 
+// TODO Investigate assert when thread process between bootloader_verifyImage or bootloader_setImageToBootload steps
+void OTAImageProcessorImpl::LockRadioProcessing()
+{
+#if !SL_WIFI
+    DeviceLayer::ThreadStackMgr().LockThreadStack();
+#endif // SL_WIFI
+}
+
+void OTAImageProcessorImpl::UnlockRadioProcessing()
+{
+#if !SL_WIFI
+    DeviceLayer::ThreadStackMgr().UnlockThreadStack();
+#endif // SL_WIFI
+}
+
 void OTAImageProcessorImpl::HandleApply(intptr_t context)
 {
     uint32_t err = SL_BOOTLOADER_OK;
 
-    ChipLogProgress(SoftwareUpdate, "HandleApply: started");
+    ChipLogProgress(SoftwareUpdate, "HandleApply: verifying image");
 
     // Force KVS to store pending keys such as data from StoreCurrentUpdateInfo()
     chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().ForceKeyMapSave();
@@ -224,7 +259,10 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         return;
     }
 #endif // SL_BTLCTRL_MUX
-    CORE_CRITICAL_SECTION(err = bootloader_verifyImage(mSlotId, NULL);)
+
+    LockRadioProcessing();
+    WRAP_CRITICAL_SECTION(err = bootloader_verifyImage(mSlotId, NULL))
+    UnlockRadioProcessing();
     if (err != SL_BOOTLOADER_OK)
     {
         ChipLogError(SoftwareUpdate, "bootloader_verifyImage() error: %ld", err);
@@ -235,13 +273,14 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         if (err != SL_STATUS_OK)
         {
             ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
-            return;
         }
 #endif // SL_BTLCTRL_MUX
         return;
     }
-
-    CORE_CRITICAL_SECTION(err = bootloader_setImageToBootload(mSlotId);)
+    ChipLogError(SoftwareUpdate, "Image verified, Set image to bootloader");
+    LockRadioProcessing();
+    WRAP_CRITICAL_SECTION(err = bootloader_setImageToBootload(mSlotId))
+    UnlockRadioProcessing();
     if (err != SL_BOOTLOADER_OK)
     {
         ChipLogError(SoftwareUpdate, "bootloader_setImageToBootload() error: %ld", err);
@@ -252,7 +291,6 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         if (err != SL_STATUS_OK)
         {
             ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
-            return;
         }
 #endif // SL_BTLCTRL_MUX
         return;
@@ -266,8 +304,12 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         return;
     }
 #endif // SL_BTLCTRL_MUX
+
+    ChipLogError(SoftwareUpdate, "Reboot and install new image");
+    LockRadioProcessing();
     // This reboots the device
-    CORE_CRITICAL_SECTION(bootloader_rebootAndInstall();)
+    WRAP_CRITICAL_SECTION(bootloader_rebootAndInstall())
+    UnlockRadioProcessing(); // Unneccessay but for good measure
 }
 
 void OTAImageProcessorImpl::HandleAbort(intptr_t context)
@@ -326,7 +368,8 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
                 return;
             }
 #endif // SL_BTLCTRL_MUX
-            CORE_CRITICAL_SECTION(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes);)
+            WRAP_CRITICAL_SECTION(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
+
 #if SL_BTLCTRL_MUX
             err = sl_wfx_host_post_bootloader_spi_transfer();
             if (err != SL_STATUS_OK)
