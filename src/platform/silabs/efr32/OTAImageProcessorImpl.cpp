@@ -260,6 +260,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     }
 #endif // SL_BTLCTRL_MUX
 
+    osDelay(100); // delay for uart print before verifyImage
     LockRadioProcessing();
     WRAP_CRITICAL_SECTION(err = bootloader_verifyImage(mSlotId, NULL))
     UnlockRadioProcessing();
@@ -305,7 +306,8 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     }
 #endif // SL_BTLCTRL_MUX
 
-    ChipLogError(SoftwareUpdate, "Reboot and install new image");
+    ChipLogError(SoftwareUpdate, "Reboot and install new image...");
+    osDelay(100); // delay for uart print before reboot
     LockRadioProcessing();
     // This reboots the device
     WRAP_CRITICAL_SECTION(bootloader_rebootAndInstall())
