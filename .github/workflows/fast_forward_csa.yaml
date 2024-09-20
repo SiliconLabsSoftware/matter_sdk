@@ -1,0 +1,49 @@
+name: Fast Forward CSA
+
+on: 
+  workflow_dispatch:
+       
+jobs:
+  rebase_csa:
+    name: Fast Forward CSA  
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+
+    steps: 
+      - name: Checkout repository (Create GitHub App Token)
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.SILABSSW_SVC_DEVOPS_WORKFLOWS_APP_ID }}
+          private-key: ${{ secrets.SILABSSW_SVC_DEVOPS_WORKFLOWS_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+ 
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Add CSA Upstream 
+        run: git remote add upstream https://github.com/project-chip/connectedhomeip.git
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name ${{ github.actor }}
+          git config --global user.email ${{ github.actor }}@users.noreply.github.com
+
+      - name: Checkout main branch and fast forward
+        run: |
+          git config pull.rebase false
+          git pull upstream master
+        continue-on-error: true
+
+      - run: git -c core.editor=true rebase --continue
+        continue-on-error: true
+
+      - run: git push -f
+
+      
