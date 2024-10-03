@@ -21,6 +21,7 @@
 #include <cstdio>
 
 #include <app/EventLogging.h>
+#include <app/reporting/reporting.h>
 #include <platform/CHIPDeviceLayer.h>
 
 namespace {
@@ -29,6 +30,14 @@ struct ActiveChangeEventWorkData
 {
     chip::EndpointId mEndpointId;
     uint32_t mPromisedActiveDuration;
+};
+
+struct ReportAttributeChangedWorkData
+{
+    chip::EndpointId mEndpointId;
+    bool mWindowChanged      = false;
+    bool mFabricIndexChanged = false;
+    bool mVendorChanged      = false;
 };
 
 void ActiveChangeEventWork(intptr_t arg)
@@ -47,15 +56,37 @@ void ActiveChangeEventWork(intptr_t arg)
     chip::Platform::Delete(data);
 }
 
+void ReportAttributeChangedWork(intptr_t arg)
+{
+    ReportAttributeChangedWorkData * data = reinterpret_cast<ReportAttributeChangedWorkData *>(arg);
+
+    if (data->mWindowChanged)
+    {
+        MatterReportingAttributeChangeCallback(data->mEndpointId, chip::app::Clusters::AdministratorCommissioning::Id,
+                                               chip::app::Clusters::AdministratorCommissioning::Attributes::WindowStatus::Id);
+    }
+    if (data->mFabricIndexChanged)
+    {
+        MatterReportingAttributeChangeCallback(data->mEndpointId, chip::app::Clusters::AdministratorCommissioning::Id,
+                                               chip::app::Clusters::AdministratorCommissioning::Attributes::AdminFabricIndex::Id);
+    }
+    if (data->mVendorChanged)
+    {
+        MatterReportingAttributeChangeCallback(data->mEndpointId, chip::app::Clusters::AdministratorCommissioning::Id,
+                                               chip::app::Clusters::AdministratorCommissioning::Attributes::AdminVendorId::Id);
+    }
+    chip::Platform::Delete(data);
+}
+
 } // namespace
 
 using namespace chip::app::Clusters::Actions;
 
-BridgedDevice::BridgedDevice(chip::NodeId nodeId)
+BridgedDevice::BridgedDevice(chip::ScopedNodeId scopedNodeId)
 {
-    mReachable  = false;
-    mNodeId     = nodeId;
-    mEndpointId = chip::kInvalidEndpointId;
+    mReachable    = false;
+    mScopedNodeId = scopedNodeId;
+    mEndpointId   = chip::kInvalidEndpointId;
 }
 
 void BridgedDevice::LogActiveChangeEvent(uint32_t promisedActiveDurationMs)
@@ -79,4 +110,19 @@ void BridgedDevice::SetReachable(bool reachable)
     {
         ChipLogProgress(NotSpecified, "BridgedDevice[%s]: OFFLINE", mAttributes.uniqueId.c_str());
     }
+}
+
+void BridgedDevice::SetAdminCommissioningAttributes(const AdminCommissioningAttributes & aAdminCommissioningAttributes)
+{
+    ReportAttributeChangedWorkData * workdata = chip::Platform::New<ReportAttributeChangedWorkData>();
+
+    workdata->mEndpointId = mEndpointId;
+    workdata->mWindowChanged =
+        (aAdminCommissioningAttributes.commissioningWindowStatus != mAdminCommissioningAttributes.commissioningWindowStatus);
+    workdata->mFabricIndexChanged =
+        (aAdminCommissioningAttributes.openerFabricIndex != mAdminCommissioningAttributes.openerFabricIndex);
+    workdata->mVendorChanged = (aAdminCommissioningAttributes.openerVendorId != mAdminCommissioningAttributes.openerVendorId);
+
+    mAdminCommissioningAttributes = aAdminCommissioningAttributes;
+    chip::DeviceLayer::PlatformMgr().ScheduleWork(ReportAttributeChangedWork, reinterpret_cast<intptr_t>(workdata));
 }

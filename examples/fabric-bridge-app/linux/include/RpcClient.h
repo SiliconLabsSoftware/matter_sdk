@@ -19,31 +19,24 @@
 #pragma once
 
 #include <controller/CommissioningWindowParams.h>
+#include <lib/core/ScopedNodeId.h>
 #include <platform/CHIPDeviceLayer.h>
 
-constexpr uint16_t kFabricAdminServerPort = 33001;
+/**
+ * Sets the RPC server port to which the RPC client will connect.
+ *
+ * @param port The port number.
+ */
+void SetRpcRemoteServerPort(uint16_t port);
 
 /**
- * Initializes the RPC client by setting the server port and starting packet processing.
+ * Starts packet processing for the RPC client.
  *
- * @param rpcServerPort The port number of the RPC server.
  * @return CHIP_ERROR An error code indicating the success or failure of the initialization process.
  * - CHIP_NO_ERROR: Initialization was successful.
  * - Other error codes indicating specific failure reasons.
  */
-CHIP_ERROR InitRpcClient(uint16_t rpcServerPort);
-
-/**
- * Opens a commissioning window for a specified node using setup PIN (passcode).
- *
- * @param params    Params for opening the commissioning window using passcode.
- * @return CHIP_ERROR An error code indicating the success or failure of the operation.
- * - CHIP_NO_ERROR: The RPC command was successfully processed.
- * - CHIP_ERROR_BUSY: Another commissioning window is currently in progress.
- * - CHIP_ERROR_INTERNAL: An internal error occurred.
- */
-CHIP_ERROR
-OpenCommissioningWindow(chip::Controller::CommissioningWindowPasscodeParams params);
+CHIP_ERROR StartRpcClient();
 
 /**
  * Opens a commissioning window for a specified node using pre-computed PAKE passcode verifier.
@@ -55,7 +48,7 @@ OpenCommissioningWindow(chip::Controller::CommissioningWindowPasscodeParams para
  * - CHIP_ERROR_INTERNAL: An internal error occurred.
  */
 CHIP_ERROR
-OpenCommissioningWindow(chip::Controller::CommissioningWindowVerifierParams params);
+OpenCommissioningWindow(chip::Controller::CommissioningWindowVerifierParams params, chip::FabricIndex fabricIndex);
 
 /**
  * Commission a node using the specified parameters.
@@ -76,4 +69,4 @@ OpenCommissioningWindow(chip::Controller::CommissioningWindowVerifierParams para
 CHIP_ERROR
 CommissionNode(chip::Controller::CommissioningWindowPasscodeParams params, chip::VendorId vendorId, uint16_t productId);
 
-CHIP_ERROR KeepActive(chip::NodeId nodeId, uint32_t stayActiveDurationMs);
+CHIP_ERROR KeepActive(chip::ScopedNodeId scopedNodeId, uint32_t stayActiveDurationMs, uint32_t timeoutMs);

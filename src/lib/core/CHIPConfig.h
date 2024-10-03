@@ -1207,6 +1207,27 @@ extern const char CHIP_NON_PRODUCTION_MARKER[];
 #endif
 
 /**
+ * @def CHIP_CONFIG_ACCESS_RESTRICTION_MAX_ENTRIES_PER_FABRIC
+ *
+ * Defines the maximum number of access restriction list entries per
+ * fabric in the access control code's ARL attribute.
+ */
+#ifndef CHIP_CONFIG_ACCESS_RESTRICTION_MAX_ENTRIES_PER_FABRIC
+#define CHIP_CONFIG_ACCESS_RESTRICTION_MAX_ENTRIES_PER_FABRIC 10
+#endif
+
+/**
+ * @def CHIP_CONFIG_ACCESS_RESTRICTION_MAX_RESTRICTIONS_PER_ENTRY
+ *
+ * Defines the maximum number of access restrictions for each entry
+ * in the ARL attribute (each entry is for a specific cluster on an
+ * endpoint on a fabric).
+ */
+#ifndef CHIP_CONFIG_ACCESS_RESTRICTION_MAX_RESTRICTIONS_PER_ENTRY
+#define CHIP_CONFIG_ACCESS_RESTRICTION_MAX_RESTRICTIONS_PER_ENTRY 10
+#endif
+
+/**
  * @def CHIP_CONFIG_CASE_SESSION_RESUME_CACHE_SIZE
  *
  * @brief
@@ -1644,6 +1665,22 @@ extern const char CHIP_NON_PRODUCTION_MARKER[];
  */
 #ifndef CHIP_CONFIG_ICD_CLIENTS_SUPPORTED_PER_FABRIC
 #define CHIP_CONFIG_ICD_CLIENTS_SUPPORTED_PER_FABRIC 2
+#endif
+
+/**
+ * @def CHIP_CONFIG_CRYPTO_PSA_ICD_MAX_CLIENTS
+ *
+ * @brief
+ *   Maximum number of ICD clients. Based on this number, platforms that utilize the
+ *   PSA Crypto API should reserve key slot range.
+ *
+ * @note
+ *   For platforms that utilize the PSA Crypto API, this configuration is used to
+ *   compute the number of PSA key slots. It should remain unchanged during the device's lifetime,
+ *   as alterations may lead to issues with backwards compatibility.
+ */
+#ifndef CHIP_CONFIG_CRYPTO_PSA_ICD_MAX_CLIENTS
+#define CHIP_CONFIG_CRYPTO_PSA_ICD_MAX_CLIENTS 256
 #endif
 
 /**
