@@ -160,7 +160,7 @@ struct EmberAfAttributeMetadata
     /**
      * Check wether this attribute is a boolean based on its type according to the spec.
      */
-    bool IsBoolean() const; 
+    bool IsBoolean() const;
 
     /**
      * Check wether this attribute is signed based on its type according to the spec.

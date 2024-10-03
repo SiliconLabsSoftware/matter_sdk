@@ -406,6 +406,20 @@ enum class TestGlobalEnum : uint8_t
     kUnknownEnumValue = 3,
 };
 
+// Enum for ThreeLevelAutoEnum
+enum class ThreeLevelAutoEnum : uint8_t
+{
+    kLow       = 0x00,
+    kMedium    = 0x01,
+    kHigh      = 0x02,
+    kAutomatic = 0x03,
+    // All received enum values that are not listed above will be mapped
+    // to kUnknownEnumValue. This is a helper enum value that should only
+    // be used by code to process how it handles receiving and unknown
+    // enum value. This specific should never be transmitted.
+    kUnknownEnumValue = 4,
+};
+
 // Global bitmaps.
 
 // Bitmap for TestGlobalBitmap
@@ -544,8 +558,6 @@ enum class OnOffControlBitmap : uint8_t
 };
 } // namespace OnOff
 
-namespace OnOffSwitchConfiguration {} // namespace OnOffSwitchConfiguration
-
 namespace LevelControl {
 
 // Enum for MoveModeEnum
@@ -587,8 +599,6 @@ enum class OptionsBitmap : uint8_t
     kCoupleColorTempToLevel = 0x2,
 };
 } // namespace LevelControl
-
-namespace BinaryInputBasic {} // namespace BinaryInputBasic
 
 namespace PulseWidthModulation {} // namespace PulseWidthModulation
 
@@ -3914,24 +3924,6 @@ enum class SafetyStatus : uint16_t
 };
 } // namespace WindowCovering
 
-namespace BarrierControl {
-
-// Bitmap for BarrierControlCapabilities
-enum class BarrierControlCapabilities : uint8_t
-{
-    kPartialBarrier = 0x1,
-};
-
-// Bitmap for BarrierControlSafetyStatus
-enum class BarrierControlSafetyStatus : uint16_t
-{
-    kRemoteLockout       = 0x1,
-    kTemperDetected      = 0x2,
-    kFailedCommunication = 0x4,
-    kPositionFailure     = 0x8,
-};
-} // namespace BarrierControl
-
 namespace ServiceArea {
 
 // Enum for OperationalStatusEnum
@@ -5304,9 +5296,9 @@ enum class Feature : uint32_t
 {
     kContentSearch = 0x1,
     kURLPlayback   = 0x2,
-    kAdvancedSeek  = 0x3,
-    kTextTracks    = 0x4,
-    kAudioTracks   = 0x5,
+    kAdvancedSeek  = 0x4,
+    kTextTracks    = 0x8,
+    kAudioTracks   = 0x10,
 };
 
 // Bitmap for SupportedProtocolsBitmap
@@ -5414,6 +5406,8 @@ enum class StatusEnum : uint8_t
 };
 } // namespace ContentAppObserver
 
+namespace Chime {} // namespace Chime
+
 namespace EcosystemInformation {} // namespace EcosystemInformation
 
 namespace CommissionerControl {
@@ -5424,8 +5418,6 @@ enum class SupportedDeviceCategoryBitmap : uint32_t
     kFabricSynchronization = 0x1,
 };
 } // namespace CommissionerControl
-
-namespace ElectricalMeasurement {} // namespace ElectricalMeasurement
 
 namespace UnitTesting {
 
