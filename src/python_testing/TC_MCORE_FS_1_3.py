@@ -50,9 +50,9 @@ import tempfile
 import chip.clusters as Clusters
 from chip import ChipDeviceCtrl
 from chip.interaction_model import Status
+from chip.testing.apps import AppServerSubprocess
 from matter_testing_support import MatterBaseTest, TestStep, async_test_body, default_matter_test_main, type_matches
 from mobly import asserts
-from TC_MCORE_FS_1_1 import AppServer
 
 
 class TC_MCORE_FS_1_3(MatterBaseTest):
@@ -84,13 +84,15 @@ class TC_MCORE_FS_1_3(MatterBaseTest):
         self.th_server_passcode = 20202021
 
         # Start the TH_SERVER_NO_UID app.
-        self.th_server = AppServer(
+        self.th_server = AppServerSubprocess(
             th_server_app,
             storage_dir=self.storage.name,
             port=self.th_server_port,
             discriminator=self.th_server_discriminator,
             passcode=self.th_server_passcode)
-        self.th_server.start()
+        self.th_server.start(
+            expected_output="Server initialization complete",
+            timeout=30)
 
     def teardown_class(self):
         if self.th_server is not None:
@@ -197,7 +199,7 @@ class TC_MCORE_FS_1_3(MatterBaseTest):
             device_node_id=th_server_th_node_id)
 
         # Wait for the device to appear on the DUT_FSA_BRIDGE.
-        await asyncio.sleep(2)
+        await asyncio.sleep(2 if self.is_pics_sdk_ci_only else 30)
 
         # Get the list of endpoints on the DUT_FSA_BRIDGE after adding the TH_SERVER_NO_UID.
         dut_fsa_bridge_endpoints_new = set(await self.read_single_attribute_check_success(
