@@ -70,6 +70,9 @@ extern "C" {
 #include "sl_si91x_button_pin_config.h"
 #include "sl_si91x_power_manager.h"
 
+// [SLC-TEMP] Adding power manager include until we update wiseconnect version and upstream the changes
+#include "sl_si91x_power_manager.h"
+
 namespace {
 // TODO: should be removed once we are getting the press interrupt for button 0 with sleep
 #define BUTTON_PRESSED 1
@@ -639,7 +642,7 @@ static sl_status_t wfx_rsi_do_join(void)
     case WFX_SEC_WPA3:
         ap.security = SL_WIFI_WPA3_TRANSITION;
 #else
-        ap.security          = SL_WIFI_WPA_WPA2_MIXED;
+        ap.security = SL_WIFI_WPA_WPA2_MIXED;
 #endif // WIFI_ENABLE_SECURITY_WPA3_TRANSITION
         break;
     case WFX_SEC_NONE:

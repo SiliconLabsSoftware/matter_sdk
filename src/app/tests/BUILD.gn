@@ -251,7 +251,10 @@ chip_test_suite("tests") {
     "${chip_root}/src/app",
     "${chip_root}/src/app/codegen-data-model-provider:instance-header",
     "${chip_root}/src/app/common:cluster-objects",
+<<<<<<< HEAD
     "${chip_root}/src/app/data-model-provider/tests:encode-decode",
+=======
+>>>>>>> test_release_2.4-1.4
     "${chip_root}/src/app/icd/client:handler",
     "${chip_root}/src/app/icd/client:manager",
     "${chip_root}/src/app/tests:helpers",
