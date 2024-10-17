@@ -554,6 +554,7 @@ static void wfx_rsi_do_join(void)
         break;
     case WFX_SEC_WPA:
     case WFX_SEC_WPA2:
+    case WFX_SEC_WPA_WPA2_MIXED:
         connect_security_mode = RSI_WPA_WPA2_MIXED;
         break;
 #if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
