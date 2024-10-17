@@ -2,4 +2,4 @@
 @SiliconLabsSoftware/matter-maintainer
 
 #codeowners for the CODEOWNERS file
-@SiliconLabsSoftware/matter-admin
+/.github/CODEOWNERS @SiliconLabsSoftware/matter-admin
