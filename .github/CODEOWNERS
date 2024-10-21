@@ -1,5 +1,5 @@
 # Default codeowners for the repository
-* @SiliconLabsSoftware/matter-reviewers
+* @SiliconLabsSoftware/matter-watt-reviewers
 
 #codeowners for the CODEOWNERS file
 /.github/CODEOWNERS @SiliconLabsSoftware/matter-admin
