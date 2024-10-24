@@ -30,15 +30,6 @@
 
 using namespace ::chip;
 
-namespace {
-
-void CheckFabricBridgeSynchronizationSupport(intptr_t ignored)
-{
-    DeviceMgr().ReadSupportedDeviceCategories();
-}
-
-} // namespace
-
 void FabricSyncAddBridgeCommand::OnCommissioningComplete(NodeId deviceId, CHIP_ERROR err)
 {
     if (mBridgeNodeId != deviceId)
@@ -73,7 +64,7 @@ void FabricSyncAddBridgeCommand::OnCommissioningComplete(NodeId deviceId, CHIP_E
             //
             // Note: The Fabric-Admin MUST NOT send the RequestCommissioningApproval command
             // if the remote Fabric-Bridge lacks Fabric Synchronization support.
-            DeviceLayer::PlatformMgr().ScheduleWork(CheckFabricBridgeSynchronizationSupport, 0);
+            DeviceLayer::SystemLayer().ScheduleLambda([]() { DeviceMgr().ReadSupportedDeviceCategories(); });
         }
     }
     else
@@ -311,18 +302,6 @@ CHIP_ERROR FabricSyncDeviceCommand::RunCommand(EndpointId remoteId)
     PairingManager::Instance().SetOpenCommissioningWindowDelegate(this);
 
     DeviceMgr().OpenRemoteDeviceCommissioningWindow(remoteId);
-
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR FabricAutoSyncCommand::RunCommand(bool enableAutoSync)
-{
-    DeviceMgr().EnableAutoSync(enableAutoSync);
-
-    // print to console
-    fprintf(stderr, "Auto Fabric Sync is %s.\n", enableAutoSync ? "enabled" : "disabled");
-    fprintf(stderr,
-            "WARNING: The auto-sync command is currently under development and may contain bugs. Use it at your own risk.\n");
 
     return CHIP_NO_ERROR;
 }
