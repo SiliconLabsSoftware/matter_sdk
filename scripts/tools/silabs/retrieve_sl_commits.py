@@ -46,7 +46,7 @@ def main():
        commits grouped under [SL-UP] shall be upstream the CSA master.
        commits grouped under [SL-ONLY] shall be cherry-picked to matter_sdk main branch.
        commits grouped under [SL-TEMP] must be revised. Are they still required, are they needed on main or for the next release. If they are, they need to be cherry-picked.
-       commits grouped under [CSA-PR] are purely informative. They already exist in CSA master and will automatically be brought to main or the new release branch through csa master merges.
+       commits grouped under [CSA-CP] are purely informative. They already exist in CSA master and will automatically be brought to main or the new release branch through CSA master merges.
     """)
     parser.add_argument('start_sha', type=str, help='The starting commit SHA')
     parser.add_argument('end_sha', type=str, help='The ending commit SHA')
