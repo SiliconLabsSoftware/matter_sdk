@@ -58,7 +58,6 @@ extern "C" {
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include <platform/CHIPDeviceLayer.h>
 
 #define WFX_QUEUE_SIZE 10
 
@@ -756,7 +755,7 @@ void ProcessEvent(WfxEvent_t inEvent)
             scan = &scan_rsp.scan_info[x];
             // clear structure and calculate size of SSID
             memset(&ap, 0, sizeof(ap));
-            ap.ssid_length = chip::min<size_t>(strnlen(ap.ssid, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength) + 1, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength); // +1 for null termination
+            ap.ssid_length = chip::min<size_t>(strnlen(ap.ssid, WFX_MAX_SSID_LENGTH) + 1, WFX_MAX_SSID_LENGTH); // +1 for null termination
             chip::Platform::CopyString(ap.ssid, ap.ssid_length, reinterpret_cast<char *>(scan->ssid));
 
             // check if the scanned ssid is the one we are looking for
