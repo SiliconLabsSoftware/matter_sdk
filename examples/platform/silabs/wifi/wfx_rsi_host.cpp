@@ -28,7 +28,6 @@
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
-
 #include "wfx_host_events.h"
 #include "wfx_rsi.h"
 
@@ -362,18 +361,21 @@ int32_t wfx_reset_counts(void)
  * @return returns ture if successful,
  *          false otherwise
  *******************************************************************************/
+#include "silabs_utils.h"
 bool wfx_start_scan(char * ssid, void (*callback)(wfx_wifi_scan_result_t *))
 {
     // check if already in progress
-    VerifyOrReturnError(wfx_rsi.scan_cb != nullptr, false);
+    VerifyOrReturnError(wfx_rsi.scan_cb == nullptr, false);
     wfx_rsi.scan_cb = callback;
-
-    VerifyOrReturnError(ssid != nullptr, false);
-    wfx_rsi.scan_ssid_length = strnlen(ssid, chip::min<size_t>(sizeof(ssid), WFX_MAX_SSID_LENGTH));
-    wfx_rsi.scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(wfx_rsi.scan_ssid_length));
-    VerifyOrReturnError(wfx_rsi.scan_ssid != nullptr, false);
-    chip::Platform::CopyString(wfx_rsi.scan_ssid, wfx_rsi.scan_ssid_length, ssid);
-
+    // if SSID is provided to scan only that SSID
+    if(ssid) {
+        // wfx_rsi.scan_ssid_length = strnlen(ssid, chip::min<size_t>((strlen(ssid) + 1), WFX_MA    X_SSID_LENGTH));
+        wfx_rsi.scan_ssid_length = chip::min<size_t>(strnlen(ssid, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength) + 1, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength);
+        wfx_rsi.scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(wfx_rsi.scan_ssid_length));
+        VerifyOrReturnError(wfx_rsi.scan_ssid != nullptr, false);
+        chip::Platform::CopyString(wfx_rsi.scan_ssid, wfx_rsi.scan_ssid_length, ssid);
+        SILABS_LOG("%s    hhhh    %s   %d     %d", wfx_rsi.scan_ssid, ssid, wfx_rsi.scan_ssid_length, strlen(ssid));
+    }
     WfxEvent_t event;
     event.eventType = WFX_EVT_SCAN;
     WfxPostEvent(&event);

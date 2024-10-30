@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "silabs_utils.h"
 #if (SL_MATTER_GN_BUILD == 0)
 #include "sl_matter_wifi_config.h"
 #endif // SL_MATTER_GN_BUILD
@@ -43,6 +43,7 @@
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceLayer.h>
 
 extern "C" {
 #include "sl_net.h"
@@ -543,27 +544,36 @@ sl_status_t show_scan_results(sl_wifi_scan_result_t * scan_result)
     {
         memset(&cur_scan_result, 0, sizeof(cur_scan_result));
 
-        cur_scan_result.ssid_length = strnlen((char *) scan_result->scan_info[idx].ssid,
-                                              chip::min<size_t>(sizeof(scan_result->scan_info[idx].ssid), WFX_MAX_SSID_LENGTH));
+        // cur_scan_result.ssid_length = strnlen((char *) scan_result->scan_info[idx].ssid,
+                                            //   chip::min<size_t>(sizeof(scan_result->scan_info[idx].ssid) + 1, WFX_MAX_SSID_LENGTH));
+        cur_scan_result.ssid_length = chip::min<size_t>(strnlen((char *) scan_result->scan_info[idx].ssid, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength) + 1, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength); // +1 for null termination
         chip::Platform::CopyString(cur_scan_result.ssid, cur_scan_result.ssid_length, (char *) scan_result->scan_info[idx].ssid);
 
+        SILABS_LOG("ssid : %s", cur_scan_result.ssid);
+        SILABS_LOG("scan ssid : %s", wfx_rsi.scan_ssid);
         // if user has provided ssid, then check if the current scan result ssid matches the user provided ssid
         if (wfx_rsi.scan_ssid != NULL &&
-            (strncmp(wfx_rsi.scan_ssid, cur_scan_result.ssid, MIN(strlen(wfx_rsi.scan_ssid), strlen(cur_scan_result.ssid))) ==
+            (strncmp(wfx_rsi.scan_ssid, cur_scan_result.ssid, MIN(strlen(wfx_rsi.scan_ssid), strlen(cur_scan_result.ssid))) !=
              CMP_SUCCESS))
         {
+            SILABS_LOG("%d",__LINE__);
             continue;
         }
         cur_scan_result.security = static_cast<wfx_sec_t>(scan_result->scan_info[idx].security_mode);
         cur_scan_result.rssi     = (-1) * scan_result->scan_info[idx].rssi_val;
         memcpy(cur_scan_result.bssid, scan_result->scan_info[idx].bssid, BSSID_LEN);
         wfx_rsi.scan_cb(&cur_scan_result);
+            SILABS_LOG("%d",__LINE__);
 
         // if user has not provided the ssid, then call the callback for each scan result
         if (wfx_rsi.scan_ssid == NULL)
         {
+            SILABS_LOG("%d",__LINE__);
+
             continue;
         }
+            SILABS_LOG("%d",__LINE__);
+
         break;
     }
 
@@ -604,7 +614,7 @@ static void wfx_rsi_save_ap_info(void) // translation
     sl_wifi_ssid_t ssid_arg;
     memset(&ssid_arg, 0, sizeof(ssid_arg));
     ssid_arg.length = wfx_rsi.sec.ssid_length;
-    chip::Platform::CopyString((char *) &ssid_arg.value[0], ssid_arg.length, wfx_rsi.sec.ssid);
+    memcpy((char *) &ssid_arg.value[0], wfx_rsi.sec.ssid, ssid_arg.length);
     sl_wifi_set_scan_callback(scan_callback_handler, NULL);
     scan_results_complete = false;
 #ifndef EXP_BOARD
