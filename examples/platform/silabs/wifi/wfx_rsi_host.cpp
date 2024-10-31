@@ -28,6 +28,7 @@
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
+
 #include "wfx_host_events.h"
 #include "wfx_rsi.h"
 
@@ -368,10 +369,11 @@ bool wfx_start_scan(char * ssid, void (*callback)(wfx_wifi_scan_result_t *))
     wfx_rsi.scan_cb = callback;
     // if SSID is provided to scan only that SSID
     if(ssid) {
-        wfx_rsi.scan_ssid_length = chip::min<size_t>(strnlen(ssid, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength) + 1, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength); // +1 for null termination
-        wfx_rsi.scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(wfx_rsi.scan_ssid_length));
+        // wfx_rsi.scan_ssid_length = chip::min<size_t>(strnlen(ssid, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength) + 1, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength); // +1 for null termination
+        wfx_rsi.scan_ssid_length = strnlen(ssid, chip::min<size_t>(sizeof(ssid), WFX_MAX_SSID_LENGTH));
+        wfx_rsi.scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(wfx_rsi.scan_ssid_length + 1));
         VerifyOrReturnError(wfx_rsi.scan_ssid != nullptr, false);
-        chip::Platform::CopyString(wfx_rsi.scan_ssid, wfx_rsi.scan_ssid_length, ssid);
+        chip::Platform::CopyString(wfx_rsi.scan_ssid, wfx_rsi.scan_ssid_length + 1, ssid);
     }
     WfxEvent_t event;
     event.eventType = WFX_EVT_SCAN;

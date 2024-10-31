@@ -736,8 +736,8 @@ int32_t wfx_get_ap_info(wfx_wifi_scan_result_t * ap)
 {
     int32_t signal_strength;
 
-    ap->ssid_length = chip::min<size_t>(strlen(ap_info.ssid) + 1, WFX_MAX_SSID_LENGTH); // +1 for null termination
-    chip::Platform::CopyString(ap->ssid, ap->ssid_length, ap_info.ssid);
+    ap->ssid_length = strnlen(ap_info.ssid, chip::min<size_t>(sizeof(ap_info.ssid), WFX_MAX_SSID_LENGTH));
+    chip::Platform::CopyString(ap->ssid, ap->ssid_length + 1, ap_info.ssid); // +1 for null termination
     memcpy(ap->bssid, ap_info.bssid, sizeof(ap_info.bssid));
     ap->security = ap_info.security;
     ap->chan     = ap_info.chan;
@@ -1184,10 +1184,10 @@ bool wfx_start_scan(char * ssid, void (*callback)(wfx_wifi_scan_result_t *))
     VerifyOrReturnError(scan_cb != nullptr, false);
     if (ssid)
     {
-        scan_ssid_length = chip::min<size_t>(strnlen(ssid, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength) + 1, chip::DeviceLayer::Internal::kMaxWiFiSSIDLength); // +1 for null termination
-        scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(scan_ssid_length));
+        scan_ssid_length = strnlen(ssid, chip::min<size_t>(sizeof(ssid), WFX_MAX_SSID_LENGTH));
+        scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(scan_ssid_length + 1));
         VerifyOrReturnError(scan_ssid != nullptr, false);
-        Platform::CopyString(scan_ssid, scan_ssid_length, ssid);
+        Platform::CopyString(scan_ssid, scan_ssid_length + 1, ssid);
     }
     scan_cb = callback;
     xEventGroupSetBits(sl_wfx_event_group, SL_WFX_SCAN_START);
