@@ -604,7 +604,7 @@ static void wfx_rsi_save_ap_info(void) // translation
 #endif
     sl_wifi_ssid_t ssid_arg;
     memset(&ssid_arg, 0, sizeof(ssid_arg));
-    ssid_arg.length = wfx_rsi.sec.ssid_length;
+    ssid_arg.length = chip::min<size_t>(wfx_rsi.sec.ssid_length, sizeof(ssid_arg.value) - 1);
     chip::Platform::CopyString((char *) &ssid_arg.value[0], ssid_arg.length + 1, wfx_rsi.sec.ssid); // +1 for null termination
     sl_wifi_set_scan_callback(scan_callback_handler, NULL);
     scan_results_complete = false;
