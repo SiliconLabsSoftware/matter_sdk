@@ -51,8 +51,6 @@ static_assert(kFanControlDelegateTableSize <= kEmberInvalidEndpointIndex, "FanCo
 
 Delegate * gDelegateTable[kFanControlDelegateTableSize] = { nullptr };
 
-FanControlAttributeAccessInterface gFanControlAttributeAccess;
-
 } // anonymous namespace
 
 namespace chip {
@@ -521,9 +519,4 @@ bool emberAfFanControlClusterStepCallback(app::CommandHandler * commandObj, cons
 
     commandObj->AddStatus(commandPath, status);
     return true;
-}
-
-void MatterFanControlPluginServerInitCallback()
-{
-    AttributeAccessInterfaceRegistry::Instance().Register(&gFanControlAttributeAccess);
 }

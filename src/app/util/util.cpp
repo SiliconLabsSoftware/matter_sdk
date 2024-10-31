@@ -110,6 +110,7 @@ void MatterProxyConfigurationPluginServerInitCallback() {}
 void MatterActivatedCarbonFilterMonitoringPluginServerInitCallback() {}
 void MatterHepaFilterMonitoringPluginServerInitCallback() {}
 void MatterAirQualityPluginServerInitCallback() {}
+void MatterFanControlPluginServerInitCallback() {}
 void MatterCarbonMonoxideConcentrationMeasurementPluginServerInitCallback() {}
 void MatterCarbonDioxideConcentrationMeasurementPluginServerInitCallback() {}
 void MatterFormaldehydeConcentrationMeasurementPluginServerInitCallback() {}
