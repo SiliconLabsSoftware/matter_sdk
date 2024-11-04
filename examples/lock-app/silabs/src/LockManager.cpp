@@ -264,8 +264,9 @@ void LockManager::UnlockAfterUnlatch()
     bool succes = false;
     if (mUnlatchContext.mEndpointId != kInvalidEndpointId)
     {
+        Optional<chip::ByteSpan> pin = (mUnlatchContext.mPinLength) ? MakeOptional(chip::ByteSpan(mUnlatchContext.mPinBuffer, mUnlatchContext.mPinLength)): Optional<chip::ByteSpan>::Missing();
         succes = setLockState(mUnlatchContext.mEndpointId, mUnlatchContext.mFabricIdx, mUnlatchContext.mNodeId,
-                              DlLockState::kUnlocked, MakeOptional(chip::ByteSpan(mUnlatchContext.mPinBuffer, mUnlatchContext.mPinLength)), mUnlatchContext.mErr);
+                              DlLockState::kUnlocked, pin, mUnlatchContext.mErr);
     }
 
     if (!succes)
