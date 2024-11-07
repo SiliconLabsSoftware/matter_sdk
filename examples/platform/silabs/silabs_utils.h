@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+bool isLogInitialized(void);
+
 void silabsInitLog(void);
 
 void silabsLog(const char * aFormat, ...);

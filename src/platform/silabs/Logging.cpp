@@ -200,6 +200,13 @@ extern "C" void silabsLog(const char * aFormat, ...)
     va_end(v);
 }
 
+#ifdef SILABS_LOG_ENABLED
+extern bool isLogInitialized()
+{
+    return sLogInitialized;
+}
+#endif // SILABS_LOG_ENABLED
+
 namespace chip {
 namespace DeviceLayer {
 
