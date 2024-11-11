@@ -31,12 +31,14 @@ extern "C" {
 #include <platform/silabs/SilabsConfig.h>
 
 #ifdef _SILICON_LABS_32B_SERIES_2
-#define WRAP_CRITICAL_SECTION(code)                                                                                                \
+// Series 2 bootloader_ api calls must be called from a critical section context for thread safeness
+#define WRAP_BL_DFU_CALL(code)                                                                                                     \
     {                                                                                                                              \
         CORE_CRITICAL_SECTION(code;)                                                                                               \
     }
 #else
-#define WRAP_CRITICAL_SECTION(code)                                                                                                \
+// series 3 bootloader_ calls use rtos mutex for thread safeness. Cannot be callsed withing a critical sectionß
+#define WRAP_BL_DFU_CALL(code)                                                                                                     \
     {                                                                                                                              \
         code;                                                                                                                      \
     }
@@ -157,7 +159,8 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
     ChipLogProgress(SoftwareUpdate, "HandlePrepareDownload: started");
 
 #ifdef _SILICON_LABS_32B_SERIES_2
-    WRAP_CRITICAL_SECTION(err = bootloader_init())
+    // TODO sl-temp: bootloader_init is called previously sl_platform_init(). Recalling it for series3 causes a crash.
+    WRAP_BL_DFU_CALL(err = bootloader_init())
     if (err != SL_BOOTLOADER_OK)
     {
         ChipLogProgress(SoftwareUpdate, "bootloader_init Failed error: %ld", err);
@@ -205,7 +208,7 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
             return;
         }
 #endif // SL_BTLCTRL_MUX
-        WRAP_CRITICAL_SECTION(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
+        WRAP_BL_DFU_CALL(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
 
 #if SL_BTLCTRL_MUX
         err = sl_wfx_host_post_bootloader_spi_transfer();
@@ -228,7 +231,8 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     ChipLogProgress(SoftwareUpdate, "OTA image downloaded successfully");
 }
 
-// TODO Investigate assert when thread process between bootloader_verifyImage or bootloader_setImageToBootload steps
+// TODO SE access is not thread safe. Assert if Other task acess it during bootloader_verifyImage or bootloader_setImageToBootload
+// steps - MATTER-4155 - PLATFORM_HYD-3235
 void OTAImageProcessorImpl::LockRadioProcessing()
 {
 #if !SL_WIFI
@@ -260,9 +264,9 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     }
 #endif // SL_BTLCTRL_MUX
 
-    osDelay(100); // delay for uart print before verifyImage
+    osDelay(100); // sl-temp: delay for uart print before verifyImage
     LockRadioProcessing();
-    WRAP_CRITICAL_SECTION(err = bootloader_verifyImage(mSlotId, NULL))
+    WRAP_BL_DFU_CALL(err = bootloader_verifyImage(mSlotId, NULL))
     UnlockRadioProcessing();
     if (err != SL_BOOTLOADER_OK)
     {
@@ -280,7 +284,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     }
     ChipLogError(SoftwareUpdate, "Image verified, Set image to bootloader");
     LockRadioProcessing();
-    WRAP_CRITICAL_SECTION(err = bootloader_setImageToBootload(mSlotId))
+    WRAP_BL_DFU_CALL(err = bootloader_setImageToBootload(mSlotId))
     UnlockRadioProcessing();
     if (err != SL_BOOTLOADER_OK)
     {
@@ -307,10 +311,10 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
 #endif // SL_BTLCTRL_MUX
 
     ChipLogError(SoftwareUpdate, "Reboot and install new image...");
-    osDelay(100); // delay for uart print before reboot
+    osDelay(100); // sl-temp: delay for uart print before reboot
     LockRadioProcessing();
     // This reboots the device
-    WRAP_CRITICAL_SECTION(bootloader_rebootAndInstall())
+    WRAP_BL_DFU_CALL(bootloader_rebootAndInstall())
     UnlockRadioProcessing(); // Unneccessay but for good measure
 }
 
@@ -370,7 +374,7 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
                 return;
             }
 #endif // SL_BTLCTRL_MUX
-            WRAP_CRITICAL_SECTION(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
+            WRAP_BL_DFU_CALL(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
 
 #if SL_BTLCTRL_MUX
             err = sl_wfx_host_post_bootloader_spi_transfer();
