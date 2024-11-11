@@ -37,7 +37,7 @@ extern "C" {
         CORE_CRITICAL_SECTION(code;)                                                                                               \
     }
 #else
-// series 3 bootloader_ calls use rtos mutex for thread safeness. Cannot be callsed withing a critical sectionß
+// series 3 bootloader_ calls uses rtos mutex for thread safety. Cannot be called within a critical section
 #define WRAP_BL_DFU_CALL(code)                                                                                                     \
     {                                                                                                                              \
         code;                                                                                                                      \
@@ -231,8 +231,8 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     ChipLogProgress(SoftwareUpdate, "OTA image downloaded successfully");
 }
 
-// TODO SE access is not thread safe. Assert if Other task acess it during bootloader_verifyImage or bootloader_setImageToBootload
-// steps - MATTER-4155 - PLATFORM_HYD-3235
+// TODO: SE access is not thread safe. It assert if other tasks accesses it during bootloader_verifyImage or
+// bootloader_setImageToBootload steps - MATTER-4155 - PLATFORM_HYD-3235
 void OTAImageProcessorImpl::LockRadioProcessing()
 {
 #if !SL_WIFI
@@ -264,7 +264,9 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     }
 #endif // SL_BTLCTRL_MUX
 
+#if defined(_SILICON_LABS_32B_SERIES_3) && CHIP_PROGRESS_LOGGING
     osDelay(100); // sl-temp: delay for uart print before verifyImage
+#endif            // _SILICON_LABS_32B_SERIES_3 && CHIP_PROGRESS_LOGGING
     LockRadioProcessing();
     WRAP_BL_DFU_CALL(err = bootloader_verifyImage(mSlotId, NULL))
     UnlockRadioProcessing();
@@ -282,7 +284,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
 #endif // SL_BTLCTRL_MUX
         return;
     }
-    ChipLogError(SoftwareUpdate, "Image verified, Set image to bootloader");
+    ChipLogProgress(SoftwareUpdate, "Image verified, Set image to bootload");
     LockRadioProcessing();
     WRAP_BL_DFU_CALL(err = bootloader_setImageToBootload(mSlotId))
     UnlockRadioProcessing();
@@ -310,8 +312,10 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     }
 #endif // SL_BTLCTRL_MUX
 
-    ChipLogError(SoftwareUpdate, "Reboot and install new image...");
+    ChipLogProgress(SoftwareUpdate, "Reboot and install new image...");
+#if defined(_SILICON_LABS_32B_SERIES_3) && CHIP_PROGRESS_LOGGING
     osDelay(100); // sl-temp: delay for uart print before reboot
+#endif            // _SILICON_LABS_32B_SERIES_3 && CHIP_PROGRESS_LOGGING
     LockRadioProcessing();
     // This reboots the device
     WRAP_BL_DFU_CALL(bootloader_rebootAndInstall())
