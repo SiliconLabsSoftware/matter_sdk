@@ -936,7 +936,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI */
 // SL-Only
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
-#if defined(SL_MATTER_ZIGBEE_CMP)
+#if defined(SL_MATTER_ZIGBEE_CMP) && defined(_SILICON_LABS_32B_SERIES_3)
         uint8_t channel = otLinkGetChannel(DeviceLayer::ThreadStackMgrImpl().OTInstance());
         Zigbee::RequestStart(channel);     // leave handle internally
 #elif defined(SL_MATTER_ZIGBEE_SEQUENTIAL) // Matter Zigbee sequential
