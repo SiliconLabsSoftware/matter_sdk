@@ -17,6 +17,7 @@
 
 #include "MatterShell.h"
 #include "sl_component_catalog.h"
+#include "sl_status.h"
 #include <ChipShellCollection.h>
 #include <cmsis_os2.h>
 #include <lib/core/CHIPCore.h>
