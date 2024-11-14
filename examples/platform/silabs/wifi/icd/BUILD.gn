@@ -21,8 +21,8 @@ config("sleep-manager-config") {
 
 source_set("sleep-manager") {
   sources = [
-    "SiWxSleepManager.cpp",
-    "SiWxSleepManager.h",
+    "SleepManager.cpp",
+    "SleepManager.h",
   ]
 
   public_deps = [
