@@ -153,7 +153,7 @@ SECTIONS
     *sl_core_cortexm.c.o(.text*)
 
 		/* ipmu calibration data */
-		*(.common_ipmu_ram*)
+    *(.common_ipmu_ram*)
 
     . = ALIGN(4);
     /* preinit data */
