@@ -16,7 +16,6 @@
  */
 #pragma once
 
-// #include "silabs_utils.h"
 #include <cstddef>
 #include <lib/core/CHIPError.h>
 #include <lib/core/CHIPPersistentStorageDelegate.h>
@@ -59,6 +58,13 @@ enum class TimeTraceOperation : uint8_t
     kNumTraces,
 };
 
+enum class OperationType : uint8_t
+{
+    kBegin,
+    kEnd,
+    kInstant,
+};
+
 struct TimeTracker
 {
     // Temporary values
@@ -86,7 +92,9 @@ class SilabsTracer
 public:
     static SilabsTracer & Instance() { return sInstance; }
 
-    void Init();
+    CHIP_ERROR Init();
+
+    CHIP_ERROR StartLogging();
 
     CHIP_ERROR StartTraceStorage(PersistentStorageDelegate * storage);
 
@@ -95,14 +103,16 @@ public:
     void TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR error = CHIP_NO_ERROR);
 
     // This Either Logs the traces or stores them in a buffer
-    void OutputTraces();
+    CHIP_ERROR OutputWaterMark(TimeTraceOperation aOperation, CHIP_ERROR error);
+    CHIP_ERROR OutputAllWaterMarks();
+    CHIP_ERROR TraceBufferFlush();
 
     // prevent copy constructor and assignment operator
     SilabsTracer(SilabsTracer const &)             = delete;
     SilabsTracer & operator=(SilabsTracer const &) = delete;
 
     // Methods to get the time trackers metrics values
-    TimeTracker GetTimeTracker(TimeTraceOperation aOperation) { return mWatermark[static_cast<size_t>(aOperation)]; }
+    TimeTracker GetTimeTracker(TimeTraceOperation aOperation) { return mWatermark[to_underlying(aOperation)]; }
 
     // Method to save the time trackers in the NVM, this will likely be time consuming and should not be called frequently
     CHIP_ERROR SaveWatermarks();
@@ -111,6 +121,11 @@ public:
     // be added to the loaded values
     CHIP_ERROR LoadWatermarks();
 
+#if CONFIG_BUILD_FOR_HOST_UNIT_TEST
+    CHIP_ERROR GetTraceCount(size_t & count) const;
+    CHIP_ERROR GetTraceByIndex(size_t index, const char *& trace) const;
+#endif
+
 private:
     // Singleton class with a static instance
     static SilabsTracer sInstance;
@@ -118,12 +133,18 @@ private:
     SilabsTracer();
 
     // Buffer to store the traces
-    uint8_t mTraceBuffer[kBufferedTracesNumber][kBufferedTraceSize];
+    uint8_t ** mTraceBuffer = nullptr;
 
     // Time trackers for each operation
     TimeTracker mWatermark[kNumTraces];
 
     PersistentStorageDelegate * mStorage = nullptr;
+
+    size_t mBufferIndex = 0;
+
+    CHIP_ERROR TraceBufferClear();
+    void BufferTrace(size_t index, const TimeTracker & tracker, CHIP_ERROR error);
+    CHIP_ERROR OutputTrace(TimeTraceOperation aOperation, OperationType type, CHIP_ERROR error);
 };
 
 } // namespace Silabs

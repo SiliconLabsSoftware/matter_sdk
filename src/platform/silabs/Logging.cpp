@@ -1,5 +1,6 @@
 /* See Project CHIP LICENSE file for licensing information. */
 #include <platform/logging/LogV.h>
+#include <platform/silabs/Logging.h>
 
 #include <lib/core/CHIPConfig.h>
 #include <platform/CHIPDeviceConfig.h>
@@ -201,7 +202,7 @@ extern "C" void silabsLog(const char * aFormat, ...)
 }
 
 #ifdef SILABS_LOG_ENABLED
-extern bool isLogInitialized()
+bool isLogInitialized()
 {
     return sLogInitialized;
 }

@@ -76,7 +76,12 @@ public:
 TEST_F(TestSilabsTracing, TestTimeTrackerMethods)
 {
     gMockClock.SetMonotonic(0_ms64);
+    size_t traceCount = 0;
+
     SilabsTracer::Instance().Init();
+
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    EXPECT_EQ(traceCount, 0u);
 
     // Start tracking time for a specific event
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kSpake2p);
@@ -163,12 +168,20 @@ TEST_F(TestSilabsTracing, TestTimeTrackerMethods)
     EXPECT_EQ(timeTracker.mMinTimeMs.count(), uint32_t(100));
     EXPECT_EQ(timeTracker.mSuccessfullCount, uint32_t(4));
     EXPECT_EQ(timeTracker.mCountAboveAvg, uint32_t(2));
+
+    // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    EXPECT_EQ(traceCount, 11u); // 11 calls: 6 TimeTraceBegin and 5 TimeTraceEnd
 }
 
 TEST_F(TestSilabsTracing, TestBootupSequence)
 {
     gMockClock.SetMonotonic(0_ms64);
     SilabsTracer::Instance().Init();
+
+    size_t traceCount = 0;
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    EXPECT_EQ(traceCount, 0u);
 
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
     // Simulate Silabs Init
@@ -216,6 +229,14 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
 
     // Simulate a second simulation where we have a reboot during Silabs Init
     gMockClock.SetMonotonic(0_ms64);
+    // TODO : Here we simulate that we have restore the number of traces from NVM so we do not do the Init, we should call it and
+    // call the LoadWatermarks method here
+
+    // SilabsTracer::Instance().Init();
+
+    // EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    // EXPECT_EQ(traceCount, 0u);
+
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
 
     // Simulate Silabs Init
@@ -265,12 +286,20 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
     EXPECT_EQ(timeTracker.mMinTimeMs.count(), uint32_t(250));
     EXPECT_EQ(timeTracker.mSuccessfullCount, uint32_t(2));
     EXPECT_EQ(timeTracker.mCountAboveAvg, uint32_t(0));
+
+    // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    EXPECT_EQ(traceCount, 14u); // 14 calls: 8 TimeTraceBegin and 6 TimeTraceEnd
 }
 
 TEST_F(TestSilabsTracing, TestCommissioning)
 {
     gMockClock.SetMonotonic(0_ms64);
     SilabsTracer::Instance().Init();
+
+    size_t traceCount = 0;
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    EXPECT_EQ(traceCount, 0u);
 
     // Simulate Spake2p steps
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kSpake2p);
@@ -454,12 +483,19 @@ TEST_F(TestSilabsTracing, TestCommissioning)
     EXPECT_EQ(timeTracker.mMinTimeMs.count(), uint32_t(200));
     EXPECT_EQ(timeTracker.mSuccessfullCount, uint32_t(1));
     EXPECT_EQ(timeTracker.mCountAboveAvg, uint32_t(0));
+
+    // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    EXPECT_EQ(traceCount, 27u);
 }
 
 TEST_F(TestSilabsTracing, TestOTA)
 {
     gMockClock.SetMonotonic(0_ms64);
     SilabsTracer::Instance().Init();
+    size_t traceCount = 0;
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    EXPECT_EQ(traceCount, 0u);
 
     // Simulate OTA steps
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kOTA);
@@ -524,4 +560,10 @@ TEST_F(TestSilabsTracing, TestOTA)
     EXPECT_EQ(timeTracker.mMinTimeMs.count(), uint32_t(100));
     EXPECT_EQ(timeTracker.mSuccessfullCount, uint32_t(2));
     EXPECT_EQ(timeTracker.mCountAboveAvg, uint32_t(1));
+
+    // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    EXPECT_EQ(traceCount, 8u); // 8 calls: 4 TimeTraceBegin and 4 TimeTraceEnd
 }
+
+// TODO Implement a function that test the Logs formating depending on the operation, event type, error, etc.
