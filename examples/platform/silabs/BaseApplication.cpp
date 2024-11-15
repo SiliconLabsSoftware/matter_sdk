@@ -182,25 +182,21 @@ BaseApplicationDelegate BaseApplication::sAppDelegate = BaseApplicationDelegate(
 void BaseApplicationDelegate::OnCommissioningSessionStarted()
 {
     isComissioningStarted = true;
+
+    ChipDeviceEvent event = { .Type = DeviceEventType::kCommissioningSessionStarted };
+    (void) PlatformMgr().PostEvent(&event);
 }
 
 void BaseApplicationDelegate::OnCommissioningSessionStopped()
 {
     isComissioningStarted = false;
+
+    ChipDeviceEvent event = { .Type = DeviceEventType::kCommissioningSessionStopped };
+    (void) PlatformMgr().PostEvent(&event);
 }
 
 void BaseApplicationDelegate::OnCommissioningWindowClosed()
 {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI917
-    if (!BaseApplication::GetProvisionStatus() && !isComissioningStarted)
-    {
-        int32_t status = wfx_power_save(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION);
-        if (status != SL_STATUS_OK)
-        {
-            ChipLogError(AppServer, "Failed to enable the TA Deep Sleep");
-        }
-    }
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI917
     if (BaseApplication::GetProvisionStatus())
     {
         // After the device is provisioned and the commissioning passed
@@ -215,6 +211,15 @@ void BaseApplicationDelegate::OnCommissioningWindowClosed()
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
     }
+
+    ChipDeviceEvent event = { .Type = DeviceEventType::kCommissioningWindowClose };
+    (void) PlatformMgr().PostEvent(&event);
+}
+
+void BaseApplicationDelegate::OnCommissioningWindowOpened()
+{
+    ChipDeviceEvent event = { .Type = DeviceEventType::kCommissioningWindowOpen };
+    (void) PlatformMgr().PostEvent(&event);
 }
 
 void BaseApplicationDelegate::OnFabricCommitted(const FabricTable & fabricTable, FabricIndex fabricIndex)
@@ -904,19 +909,18 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
                                                         InitOTARequestorHandler, nullptr);
 #endif // SILABS_OTA_ENABLED
 #if (CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI)
+#if !SLI_SI917
+            // Todo: sl-only - Only 9116 - 917 is managed by the SleepManager
             // on power cycle, let the device go to sleep after connection is established
             if (BaseApplication::sAppDelegate.isCommissioningInProgress() == false)
             {
-#if SLI_SI917
-                sl_status_t err = wfx_power_save(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE);
-#else
                 sl_status_t err = wfx_power_save();
-#endif /* SLI_SI917 */
                 if (err != SL_STATUS_OK)
                 {
                     ChipLogError(AppServer, "wfx_power_save failed: 0x%lx", err);
                 }
             }
+#endif // !SLI_SI917
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI */
         }
     }
@@ -924,15 +928,14 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
     case DeviceEventType::kCommissioningComplete: {
 #if (CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI)
-#if SLI_SI917
-        sl_status_t err = wfx_power_save(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE);
-#else
-        sl_status_t err = wfx_power_save();
-#endif /* SLI_SI917 */
-        if (err != SL_STATUS_OK)
+#if !SLI_SI917
+        // TODO: sl-ony - Only 9116 - 917 is managed by the SleepManager
+        sl_status_t status = wfx_power_save();
+        if (status != SL_STATUS_OK)
         {
-            ChipLogError(AppServer, "wfx_power_save failed: 0x%lx", err);
+            ChipLogError(AppServer, "wfx_power_save failed: 0x%lx", status);
         }
+#endif /* !SLI_SI917 */
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI */
 // SL-Only
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT

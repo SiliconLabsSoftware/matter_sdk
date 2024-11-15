@@ -16,7 +16,7 @@ import("//build_overrides/chip.gni")
 
 config("sleep-manager-config") {
   include_dirs = [ "." ]
-  defines = []
+  defines = [ "SL_MATTER_SLEEP_MANAGER_ENABLED=1" ]
 }
 
 source_set("sleep-manager") {
@@ -29,8 +29,10 @@ source_set("sleep-manager") {
     "${chip_root}/src/app:app",
     "${chip_root}/src/app/icd/server:manager",
     "${chip_root}/src/app/icd/server:observer",
+    "${chip_root}/src/credentials:credentials",
     "${chip_root}/src/lib/core",
     "${chip_root}/src/lib/support",
+    "${chip_root}/src/platform/silabs/wifi:wifi-platform",
   ]
 
   public_configs = [ ":sleep-manager-config" ]
