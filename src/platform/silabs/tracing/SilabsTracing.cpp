@@ -34,50 +34,28 @@ SilabsTracer::SilabsTracer()
     VerifyOrDie(Init() == CHIP_NO_ERROR);
 }
 
-CHIP_ERROR SilabsTracer::TraceBufferClear()
+void SilabsTracer::TraceBufferClear()
 {
-    // Free the allocated memory for the trace buffer
-    if (nullptr != mTraceBuffer)
+    // Clear the time tracker list
+    while (mTimeTrackerList.head != nullptr)
     {
-        for (size_t i = 0; i < kBufferedTracesNumber; ++i)
-        {
-            free(mTraceBuffer[i]);
-        }
-        free(mTraceBuffer);
-        mTraceBuffer = nullptr;
-        mBufferIndex = 0;
+        mTimeTrackerList.Remove(0);
     }
-    return CHIP_NO_ERROR;
+    mBufferedTrackerCount = 0;
 }
 
 CHIP_ERROR SilabsTracer::Init()
 {
-    // Allows to use Init as a Reset function
-    ReturnErrorOnFailure(TraceBufferClear());
-
-    // Allocate memory for the trace buffer
-    mTraceBuffer = static_cast<uint8_t **>(malloc(kBufferedTracesNumber * sizeof(uint8_t *)));
-    VerifyOrReturnError(nullptr != mTraceBuffer, CHIP_ERROR_NO_MEMORY);
-
-    for (size_t i = 0; i < kBufferedTracesNumber; ++i)
-    {
-        mTraceBuffer[i] = static_cast<uint8_t *>(malloc(kBufferedTraceSize * sizeof(uint8_t)));
-        VerifyOrReturnError(nullptr != mTraceBuffer[i], CHIP_ERROR_NO_MEMORY);
-        memset(mTraceBuffer[i], 0, kBufferedTraceSize);
-    }
+    TraceBufferClear();
 
     // Initialize the time trackers
-    memset(mWatermark, 0, sizeof(mWatermark));
+    memset(mTimeTrackers, 0, sizeof(mTimeTrackers));
+    memset(mWatermarks, 0, sizeof(mWatermarks));
 
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR SilabsTracer::StartLogging()
-{
-    return TraceBufferFlush();
-}
-
-CHIP_ERROR SilabsTracer::StartTraceStorage(PersistentStorageDelegate * storage)
+CHIP_ERROR SilabsTracer::StartWatermarksStorage(PersistentStorageDelegate * storage)
 {
     VerifyOrReturnError(nullptr != storage, CHIP_ERROR_INCORRECT_STATE);
     mStorage = storage;
@@ -87,148 +65,114 @@ CHIP_ERROR SilabsTracer::StartTraceStorage(PersistentStorageDelegate * storage)
 void SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
 {
     // Log the start time of the operation
-    auto & tracker = mWatermark[static_cast<size_t>(aOperation)];
-    tracker.mTotalCount++;
+    auto & tracker     = mTimeTrackers[static_cast<size_t>(aOperation)];
     tracker.mStartTime = System::SystemClock().GetMonotonicTimestamp();
-    OutputTrace(aOperation, OperationType::kBegin, CHIP_NO_ERROR);
+    tracker.mOperation = aOperation;
+    tracker.mType      = OperationType::kBegin;
+    tracker.mError     = CHIP_NO_ERROR;
+
+    auto & watermark = mWatermarks[static_cast<size_t>(aOperation)];
+    watermark.mTotalCount++;
+
+    OutputTrace(tracker);
 }
 
 void SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error)
 {
-    if (error != CHIP_NO_ERROR)
-    {
-        OutputTrace(aOperation, OperationType::kEnd, error);
-        return;
-    }
-
-    // Calculate the duration and update the time tracker
-    auto & tracker   = mWatermark[static_cast<size_t>(aOperation)];
+    auto & tracker   = mTimeTrackers[static_cast<size_t>(aOperation)];
     tracker.mEndTime = System::SystemClock().GetMonotonicTimestamp();
-    auto duration    = tracker.mEndTime - tracker.mStartTime;
+    tracker.mType    = OperationType::kEnd;
+    tracker.mError   = error;
 
-    tracker.mTotalDuration += System::Clock::Milliseconds64(duration);
-
-    if (duration > tracker.mMaxTimeMs)
+    if (error == CHIP_NO_ERROR)
     {
-        tracker.mMaxTimeMs = System::Clock::Milliseconds32(duration);
+        // Calculate the duration and update the time tracker
+        auto duration = tracker.mEndTime - tracker.mStartTime;
+
+        auto & watermark = mWatermarks[static_cast<size_t>(aOperation)];
+        watermark.mSuccessfullCount++;
+        watermark.mMovingAverage = System::Clock::Milliseconds32(
+            (watermark.mMovingAverage.count() * (watermark.mSuccessfullCount - 1) + duration.count()) /
+            watermark.mSuccessfullCount);
+
+        if (duration > watermark.mMaxTimeMs)
+        {
+            watermark.mMaxTimeMs = System::Clock::Milliseconds32(duration);
+        }
+
+        if (watermark.mMinTimeMs.count() == 0 || duration < watermark.mMinTimeMs)
+        {
+            watermark.mMinTimeMs = System::Clock::Milliseconds32(duration);
+        }
+
+        if (duration > watermark.mMovingAverage)
+        {
+            watermark.mCountAboveAvg++;
+        }
     }
 
-    if (tracker.mMinTimeMs.count() == 0 || duration < tracker.mMinTimeMs)
-    {
-        tracker.mMinTimeMs = System::Clock::Milliseconds32(duration);
-    }
-
-    tracker.mSuccessfullCount++;
-    tracker.mMovingAverage = System::Clock::Milliseconds32(tracker.mTotalDuration / tracker.mSuccessfullCount);
-    if (duration > tracker.mMovingAverage)
-    {
-        tracker.mCountAboveAvg++;
-    }
-
-    OutputTrace(aOperation, OperationType::kEnd, CHIP_NO_ERROR);
+    OutputTrace(tracker);
 }
 
 void SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR error)
 {
-    OutputTrace(aOperation, OperationType::kInstant, error);
+    auto & tracker     = mTimeTrackers[static_cast<size_t>(aOperation)];
+    tracker.mStartTime = System::SystemClock().GetMonotonicTimestamp();
+    tracker.mEndTime   = tracker.mStartTime;
+    tracker.mOperation = aOperation;
+    tracker.mType      = OperationType::kInstant;
+    tracker.mError     = error;
+    OutputTrace(tracker);
 }
 
-CHIP_ERROR SilabsTracer::OutputTrace(TimeTraceOperation aOperation, OperationType type, CHIP_ERROR error)
+CHIP_ERROR SilabsTracer::OutputTimeTracker(const TimeTracker & tracker)
 {
-    uint64_t timestamp = System::SystemClock().GetMonotonicTimestamp().count();
-    uint8_t operation  = static_cast<uint8_t>(aOperation);
-    uint8_t opType     = static_cast<uint8_t>(type);
+    VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
+    ChipLogProgress(DeviceLayer,
+                    "TimeTracker - StartTime: %" PRIu32 ", EndTime: %" PRIu32 ", Operation: %" PRIu8 ", Type: %" PRIu8
+                    ", Error: %" CHIP_ERROR_FORMAT,
+                    tracker.mStartTime.count(), tracker.mEndTime.count(), static_cast<uint8_t>(tracker.mOperation),
+                    static_cast<uint8_t>(tracker.mType), tracker.mError.Format());
+    return CHIP_NO_ERROR;
+}
 
-    if (isLogInitialized())
+CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
+{
+    // We allow error here as we want to buffer even if the logs are currently uninitialized
+    OutputTimeTracker(tracker);
+
+    if (mBufferedTrackerCount < kMaxBufferedTraces - 1)
     {
-        if (error == CHIP_NO_ERROR)
-        {
-            ChipLogProgress(DeviceLayer, "Time: %" PRIu64 ", Operation: %" PRIu32 ", Type: %" PRIu32 "", timestamp, operation,
-                            opType);
-        }
-        else
-        {
-            ChipLogError(DeviceLayer, "Time: %" PRIu64 ", Operation: %" PRIu32 ", Type: %" PRIu32 ", Error: %" CHIP_ERROR_FORMAT,
-                         timestamp, operation, opType, error.Format());
-            return CHIP_ERROR_INTERNAL;
-        }
+        mTimeTrackerList.Insert(tracker);
+        mBufferedTrackerCount++;
     }
     else
     {
-        if (mBufferIndex < kBufferedTracesNumber - 1)
-        {
-            if (error == CHIP_NO_ERROR)
-            {
-                snprintf(reinterpret_cast<char *>(mTraceBuffer[mBufferIndex]), kBufferedTraceSize,
-                         "Time: %" PRIu64 ", Operation: %" PRIu32 ", Type: %" PRIu32 "", timestamp, operation, opType);
-            }
-            else
-            {
-                snprintf(reinterpret_cast<char *>(mTraceBuffer[mBufferIndex]), kBufferedTraceSize,
-                         "Time: %" PRIu64 ", Operation: %" PRIu32 ", Type: %" PRIu32 ", Error: %" CHIP_ERROR_FORMAT, timestamp,
-                         operation, opType, error.Format());
-            }
-            mBufferIndex++;
-        }
-        else
-        {
-            snprintf(reinterpret_cast<char *>(mTraceBuffer[mBufferIndex]), kBufferedTraceSize, "Buffer overflow: logs were lost");
-        }
+        // Save a tracker with 0xFFFF to indicate that the buffer is full
+        TimeTracker resourceExhaustedTracker = tracker;
+        resourceExhaustedTracker.mStartTime  = System::SystemClock().GetMonotonicTimestamp();
+        resourceExhaustedTracker.mEndTime    = resourceExhaustedTracker.mStartTime;
+        resourceExhaustedTracker.mOperation  = TimeTraceOperation::kNumTraces;
+        resourceExhaustedTracker.mType       = OperationType::kInstant;
+        resourceExhaustedTracker.mError      = CHIP_ERROR_BUFFER_TOO_SMALL;
+        mTimeTrackerList.Insert(resourceExhaustedTracker);
+        return CHIP_ERROR_BUFFER_TOO_SMALL;
     }
 
     return CHIP_NO_ERROR;
 }
 
-void SilabsTracer::BufferTrace(size_t index, const TimeTracker & tracker, CHIP_ERROR error)
+CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
 {
-    if (mBufferIndex < kBufferedTracesNumber - 1)
-    {
-        if (error == CHIP_NO_ERROR)
-        {
-            snprintf(reinterpret_cast<char *>(mTraceBuffer[mBufferIndex]), kBufferedTraceSize,
-                     "Trace %zu: TotalCount=%" PRIu32 ", SuccessFullCount=%" PRIu32 ", MaxTime=%" PRIu32 ", MinTime=%" PRIu32
-                     ", AvgTime=%" PRIu32 ", CountAboveAvg=%" PRIu32 "",
-                     index, tracker.mTotalCount, tracker.mSuccessfullCount, tracker.mMaxTimeMs.count(), tracker.mMinTimeMs.count(),
-                     tracker.mMovingAverage.count(), tracker.mCountAboveAvg);
-        }
-        else
-        {
-            snprintf(reinterpret_cast<char *>(mTraceBuffer[mBufferIndex]), kBufferedTraceSize,
-                     "Trace %zu: Error: %" CHIP_ERROR_FORMAT, index, error.Format());
-        }
-        mBufferIndex++;
-    }
-    else
-    {
-        snprintf(reinterpret_cast<char *>(mTraceBuffer[mBufferIndex]), kBufferedTraceSize, "Buffer overflow: logs were lost");
-    }
-}
+    size_t index     = static_cast<size_t>(aOperation);
+    auto & watermark = mWatermarks[index];
 
-CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation, CHIP_ERROR error)
-{
-    size_t index   = static_cast<size_t>(aOperation);
-    auto & tracker = mWatermark[index];
-
-    if (isLogInitialized())
-    {
-        if (error == CHIP_NO_ERROR)
-        {
-            ChipLogProgress(DeviceLayer,
-                            "Trace %zu: TotalCount=%" PRIu32 ", SuccessFullCount=%" PRIu32 ", MaxTime=%" PRIu32 ", MinTime=%" PRIu32
-                            ", AvgTime=%" PRIu32 ", CountAboveAvg=%" PRIu32 "",
-                            index, tracker.mTotalCount, tracker.mSuccessfullCount, tracker.mMaxTimeMs.count(),
-                            tracker.mMinTimeMs.count(), tracker.mMovingAverage.count(), tracker.mCountAboveAvg);
-        }
-        else
-        {
-            ChipLogError(DeviceLayer, "Trace %zu: Error: %" CHIP_ERROR_FORMAT, index, error.Format());
-            return CHIP_ERROR_INTERNAL;
-        }
-    }
-    else
-    {
-        BufferTrace(index, tracker, error);
-    }
+    VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
+    ChipLogProgress(DeviceLayer,
+                    "Trace %zu: TotalCount=%" PRIu32 ", SuccessFullCount=%" PRIu32 ", MaxTime=%" PRIu32 ", MinTime=%" PRIu32
+                    ", AvgTime=%" PRIu32 ", CountAboveAvg=%" PRIu32 "",
+                    index, watermark.mTotalCount, watermark.mSuccessfullCount, watermark.mMaxTimeMs.count(),
+                    watermark.mMinTimeMs.count(), watermark.mMovingAverage.count(), watermark.mCountAboveAvg);
 
     return CHIP_NO_ERROR;
 }
@@ -237,7 +181,7 @@ CHIP_ERROR SilabsTracer::OutputAllWaterMarks()
 {
     for (size_t i = 0; i < kNumTraces; ++i)
     {
-        CHIP_ERROR err = OutputWaterMark(static_cast<TimeTraceOperation>(i), CHIP_NO_ERROR);
+        CHIP_ERROR err = OutputWaterMark(static_cast<TimeTraceOperation>(i));
         if (err != CHIP_NO_ERROR)
         {
             return err;
@@ -246,20 +190,51 @@ CHIP_ERROR SilabsTracer::OutputAllWaterMarks()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR SilabsTracer::TraceBufferFlush()
+CHIP_ERROR SilabsTracer::TraceBufferFlushAll()
 {
-    if (isLogInitialized() && (nullptr != mTraceBuffer))
+    auto * current = mTimeTrackerList.head;
+    while (current != nullptr)
     {
-        for (size_t i = 0; i < kBufferedTracesNumber; ++i)
+        // We do not want to loose the traces if the logs are not initialized
+        ReturnErrorOnFailure(OutputTimeTracker(current->mValue));
+        current = current->mpNext;
+    }
+
+    TraceBufferClear();
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(TimeTraceOperation aOperation)
+{
+
+    auto * current = mTimeTrackerList.head;
+    auto * prev    = static_cast<chip::SingleLinkedListNode<TimeTracker> *>(nullptr);
+    while (current != nullptr)
+    {
+        if (current->mValue.mOperation == aOperation)
         {
-            if (mTraceBuffer[i][0] != '\0') // Check if the buffer is not empty
+            ReturnErrorOnFailure(OutputTimeTracker(current->mValue));
+            if (prev == nullptr)
             {
-                ChipLogProgress(DeviceLayer, "%s", mTraceBuffer[i]);
+                mTimeTrackerList.head = current->mpNext;
             }
+            else
+            {
+                prev->mpNext = current->mpNext;
+            }
+            auto * temp = current;
+            current     = current->mpNext;
+            free(temp);
+            mBufferedTrackerCount--;
+        }
+        else
+        {
+            prev    = current;
+            current = current->mpNext;
         }
     }
 
-    return TraceBufferClear();
+    return CHIP_NO_ERROR;
 }
 
 // Save the traces in the NVM
@@ -280,16 +255,19 @@ CHIP_ERROR SilabsTracer::LoadWatermarks()
 #if CONFIG_BUILD_FOR_HOST_UNIT_TEST
 CHIP_ERROR SilabsTracer::GetTraceCount(size_t & count) const
 {
-    VerifyOrReturnError(nullptr != mTraceBuffer, CHIP_ERROR_INCORRECT_STATE);
-    count = mBufferIndex;
+    count = mBufferedTrackerCount;
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR SilabsTracer::GetTraceByIndex(size_t index, const char *& trace) const
 {
-    VerifyOrReturnError(nullptr != mTraceBuffer, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(index < mBufferIndex, CHIP_ERROR_INVALID_ARGUMENT);
-    trace = reinterpret_cast<const char *>(mTraceBuffer[index]);
+    auto * current = mTimeTrackerList.head;
+    for (size_t i = 0; i < index && current != nullptr; ++i)
+    {
+        current = current->mpNext;
+    }
+    VerifyOrReturnError(current != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    trace = reinterpret_cast<const char *>(&current->mValue);
     return CHIP_NO_ERROR;
 }
 #endif
