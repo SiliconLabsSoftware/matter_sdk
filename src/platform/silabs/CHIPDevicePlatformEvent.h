@@ -39,7 +39,10 @@ namespace DeviceEventType {
  */
 enum PublicPlatformSpecificEventTypes
 {
-    /* None currently defined */
+    kCommissioningWindowOpen = kRange_PublicPlatformSpecific,
+    kCommissioningWindowClose,
+    kCommissioningSessionStarted,
+    kCommissioningSessionStopped,
 };
 
 /**

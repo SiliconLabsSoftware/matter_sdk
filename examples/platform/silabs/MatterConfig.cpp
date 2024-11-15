@@ -45,6 +45,11 @@
 #include <platform/silabs/wifi/wiseconnect-abstraction/WiseconnectInterfaceAbstraction.h>
 #endif // SLI_SI91X_MCU_INTERFACE
 
+// sl-only: Wi-Fi Sleep Manager support
+#if SL_MATTER_SLEEP_MANAGER_ENABLED
+#include "SleepManager.h"
+#endif // SL_MATTER_SLEEP_MANAGER_ENABLED
+
 #include <crypto/CHIPCryptoPAL.h>
 // If building with the EFR32-provided crypto backend, we can use the
 // opaque keystore
@@ -299,6 +304,15 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #endif
 
     initParams.appDelegate = &BaseApplication::sAppDelegate;
+
+#if SL_MATTER_SLEEP_MANAGER_ENABLED
+    err = DeviceLayer::Silabs::SleepManager::GetInstance()
+              .SetInteractionModelEngine(app::InteractionModelEngine::GetInstance())
+              .SetFabricTable(&Server::GetInstance().GetFabricTable())
+              .Init();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
+#endif // SL_MATTER_SLEEP_MANAGER_ENABLED
+
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
 
