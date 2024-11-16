@@ -345,7 +345,7 @@ sl_status_t SetWifiConfigurations()
     sl_status_t status = SL_STATUS_OK;
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-    // Setting the listen interval to 0 which will set it to DTIM interval
+    // [sl-only] Set the listen interval to the slow polling interval during association
     sl_wifi_listen_interval_t sleep_interval = { .listen_interval =
                                                      chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count() };
     status                                   = sl_wifi_set_listen_interval(SL_WIFI_CLIENT_INTERFACE, sleep_interval);
@@ -355,7 +355,7 @@ sl_status_t SetWifiConfigurations()
     status = sl_wifi_set_advanced_client_configuration(SL_WIFI_CLIENT_INTERFACE, &client_config);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
-    // sl-only: Required configuration for listen interval changes at runtime
+    // [sl-only] Required configuration for listen interval changes at runtime
     status = sl_si91x_set_join_configuration(
         SL_WIFI_CLIENT_INTERFACE, (SL_SI91X_JOIN_FEAT_LISTEN_INTERVAL_VALID | SL_SI91X_JOIN_FEAT_PS_CMD_LISTEN_INTERVAL_VALID));
     VerifyOrReturnError(status == SL_STATUS_OK, status);
@@ -850,7 +850,7 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
     /*
      * Acquire the new IP address
      */
-    wfx_rsi.ip4_addr[0] = (ip) &0xFF;
+    wfx_rsi.ip4_addr[0] = (ip) & 0xFF;
     wfx_rsi.ip4_addr[1] = (ip >> 8) & 0xFF;
     wfx_rsi.ip4_addr[2] = (ip >> 16) & 0xFF;
     wfx_rsi.ip4_addr[3] = (ip >> 24) & 0xFF;
