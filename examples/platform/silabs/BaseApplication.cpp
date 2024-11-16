@@ -910,7 +910,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #endif // SILABS_OTA_ENABLED
 #if (CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI)
 #if !SLI_SI917
-            // Todo: sl-only - Only 9116 - 917 is managed by the SleepManager
+            // [sl-only] Only 9116 - 917 is managed by the SleepManager
             // on power cycle, let the device go to sleep after connection is established
             if (BaseApplication::sAppDelegate.isCommissioningInProgress() == false)
             {
@@ -929,7 +929,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
     case DeviceEventType::kCommissioningComplete: {
 #if (CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI)
 #if !SLI_SI917
-        // TODO: sl-ony - Only 9116 - 917 is managed by the SleepManager
+        // [sl-only] Only 9116 - 917 is managed by the SleepManager
         sl_status_t status = wfx_power_save();
         if (status != SL_STATUS_OK)
         {

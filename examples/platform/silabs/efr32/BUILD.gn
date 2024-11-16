@@ -230,6 +230,10 @@ source_set("efr32-common") {
     ]
   }
 
+  if (chip_enable_icd_server && use_SiWx917) {
+    public_deps += [ "${silabs_common_plat_dir}/wifi/icd:sleep-manager" ]
+  }
+
   if (app_data_model != "") {
     public_deps += [ app_data_model ]
   }
