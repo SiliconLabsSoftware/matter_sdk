@@ -318,7 +318,6 @@ static void wfx_events_task_start(void)
  * @returns Returns SL_STATUS_OK if successful,
  *SL_STATUS_FAIL otherwise
  *****************************************************************************/
-// TODO: This shoud me moved to the Wf20
 extern "C" sl_status_t sl_wfx_host_process_event(sl_wfx_generic_message_t * event_payload)
 {
     switch (event_payload->header.id)
