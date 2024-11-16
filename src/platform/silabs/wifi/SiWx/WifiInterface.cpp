@@ -33,6 +33,7 @@
 #include "sl_status.h"
 #include "sl_wifi_device.h"
 #include "task.h"
+#include <app/icd/server/ICDConfigurationData.h>
 #include <app/icd/server/ICDServerConfig.h>
 #include <inet/IPAddress.h>
 #include <lib/support/CHIPMem.h>
@@ -415,6 +416,8 @@ sl_status_t JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK || status == SL_STATUS_IN_PROGRESS)
     {
+        // TODO: Set listen interval to 0 with DTIM sync
+
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
         return status;
