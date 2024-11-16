@@ -49,7 +49,7 @@ CHIP_ERROR SilabsTracer::Init()
     TraceBufferClear();
 
     // Initialize the time trackers
-    memset(mTimeTrackers, 0, sizeof(mTimeTrackers));
+    memset(mLatestTimeTrackers, 0, sizeof(mLatestTimeTrackers));
     memset(mWatermarks, 0, sizeof(mWatermarks));
 
     return CHIP_NO_ERROR;
@@ -65,7 +65,7 @@ CHIP_ERROR SilabsTracer::StartWatermarksStorage(PersistentStorageDelegate * stor
 void SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
 {
     // Log the start time of the operation
-    auto & tracker     = mTimeTrackers[static_cast<size_t>(aOperation)];
+    auto & tracker     = mLatestTimeTrackers[static_cast<size_t>(aOperation)];
     tracker.mStartTime = System::SystemClock().GetMonotonicTimestamp();
     tracker.mOperation = aOperation;
     tracker.mType      = OperationType::kBegin;
@@ -79,7 +79,7 @@ void SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
 
 void SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error)
 {
-    auto & tracker   = mTimeTrackers[static_cast<size_t>(aOperation)];
+    auto & tracker   = mLatestTimeTrackers[static_cast<size_t>(aOperation)];
     tracker.mEndTime = System::SystemClock().GetMonotonicTimestamp();
     tracker.mType    = OperationType::kEnd;
     tracker.mError   = error;
@@ -116,7 +116,7 @@ void SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error)
 
 void SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR error)
 {
-    auto & tracker     = mTimeTrackers[static_cast<size_t>(aOperation)];
+    TimeTracker tracker;
     tracker.mStartTime = System::SystemClock().GetMonotonicTimestamp();
     tracker.mEndTime   = tracker.mStartTime;
     tracker.mOperation = aOperation;

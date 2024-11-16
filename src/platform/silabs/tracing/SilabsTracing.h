@@ -121,7 +121,7 @@ public:
     SilabsTracer & operator=(SilabsTracer const &) = delete;
 
     // Methods to get the time trackers metrics values
-    TimeTracker GetTimeTracker(TimeTraceOperation aOperation) { return mTimeTrackers[to_underlying(aOperation)]; }
+    TimeTracker GetTimeTracker(TimeTraceOperation aOperation) { return mLatestTimeTrackers[to_underlying(aOperation)]; }
     Watermark GetWatermark(TimeTraceOperation aOperation) { return mWatermarks[to_underlying(aOperation)]; }
 
     // Method to save the time trackers in the NVM, this will likely be time consuming and should not be called frequently
@@ -187,7 +187,7 @@ private:
     TimeTrackerList mTimeTrackerList;
 
     // Time trackers to store time stamps for ongoing operations
-    TimeTracker mTimeTrackers[kNumTraces];
+    TimeTracker mLatestTimeTrackers[kNumTraces];
 
     // Watermarks for each operation
     Watermark mWatermarks[kNumTraces];
