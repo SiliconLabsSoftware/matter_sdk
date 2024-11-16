@@ -85,9 +85,6 @@ namespace {
 #if CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
 // TODO: should be removed once we are getting the press interrupt for button 0 with sleep
 bool btn0_pressed = false;
-#ifdef ENABLE_CHIP_SHELL
-bool ps_requirement_added = false;
-#endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
 
 bool hasNotifiedWifiConnectivity = false;
