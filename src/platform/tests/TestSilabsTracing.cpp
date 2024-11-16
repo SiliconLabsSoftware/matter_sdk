@@ -49,7 +49,17 @@ using namespace chip::Tracing::Silabs;
 namespace {
 chip::System::Clock::Internal::MockClock gMockClock;
 chip::System::Clock::ClockBase * gRealClock;
+#ifndef SILABS_LOG_ENABLED
+bool logInitialized = false;
+#endif
 } // namespace
+
+#ifndef SILABS_LOG_ENABLED
+bool isLogInitialized()
+{
+    return logInitialized;
+}
+#endif
 
 class TestSilabsTracing : public ::testing::Test
 {
@@ -76,7 +86,7 @@ TEST_F(TestSilabsTracing, TestTimeTrackerMethods)
 
     SilabsTracer::Instance().Init();
 
-    traceCount = SilabsTracer::Instance().GetTraceCount();
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 0u);
 
     // Start tracking time for a specific event
@@ -173,7 +183,7 @@ TEST_F(TestSilabsTracing, TestTimeTrackerMethods)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(2));
 
     // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
-    traceCount = SilabsTracer::Instance().GetTraceCount();
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 11u); // 11 calls: 6 TimeTraceBegin and 5 TimeTraceEnd
 }
 
@@ -183,7 +193,7 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
     SilabsTracer::Instance().Init();
 
     size_t traceCount = 0;
-    traceCount        = SilabsTracer::Instance().GetTraceCount();
+    traceCount        = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 0u);
 
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
@@ -238,12 +248,12 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
 
     // Simulate a second simulation where we have a reboot during Silabs Init
     gMockClock.SetMonotonic(0_ms64);
-    // TODO : Here we simulate that we have restore the number of traces from NVM so we do not do the Init, we should call it and
-    // call the LoadWatermarks method here
+    // TODO : Here we simulate that we have restore the watermarks stored in the NVM so we do not do the Init, we should call it
+    // and call the LoadWatermarks method here
 
     // SilabsTracer::Instance().Init();
 
-    // traceCount = SilabsTracer::Instance().GetTraceCount();
+    // traceCount = SilabsTracer::Instance().GetTimeTracesCount();
     // EXPECT_EQ(traceCount, 0u);
 
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
@@ -300,7 +310,7 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(0));
 
     // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
-    traceCount = SilabsTracer::Instance().GetTraceCount();
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 14u); // 14 calls: 8 TimeTraceBegin and 6 TimeTraceEnd
 }
 
@@ -310,7 +320,7 @@ TEST_F(TestSilabsTracing, TestCommissioning)
     SilabsTracer::Instance().Init();
 
     size_t traceCount = 0;
-    traceCount        = SilabsTracer::Instance().GetTraceCount();
+    traceCount        = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 0u);
 
     // Simulate Spake2p steps
@@ -512,7 +522,7 @@ TEST_F(TestSilabsTracing, TestCommissioning)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(0));
 
     // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
-    traceCount = SilabsTracer::Instance().GetTraceCount();
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 27u);
 }
 
@@ -521,7 +531,7 @@ TEST_F(TestSilabsTracing, TestOTA)
     gMockClock.SetMonotonic(0_ms64);
     SilabsTracer::Instance().Init();
     size_t traceCount = 0;
-    traceCount        = SilabsTracer::Instance().GetTraceCount();
+    traceCount        = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 0u);
 
     // Simulate OTA steps
@@ -596,8 +606,164 @@ TEST_F(TestSilabsTracing, TestOTA)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(1));
 
     // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
-    traceCount = SilabsTracer::Instance().GetTraceCount();
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 8u); // 8 calls: 4 TimeTraceBegin and 4 TimeTraceEnd
 }
 
-// TODO Implement a function that test the Logs formating depending on the operation, event type, error, etc.
+TEST_F(TestSilabsTracing, TestLogs)
+{
+    gMockClock.SetMonotonic(0_ms64);
+    SilabsTracer::Instance().Init();
+
+#ifndef SILABS_LOG_ENABLED
+    logInitialized = true;
+#endif
+    size_t traceCount = 0;
+
+    // Simulate OTA steps
+    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kOTA);
+    gMockClock.AdvanceMonotonic(100_ms64);
+    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kOTA);
+
+    // Simulate Bootup steps
+    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
+    gMockClock.AdvanceMonotonic(200_ms64);
+    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kBootup);
+
+    // Verify the time tracker values for OTA
+    auto timeTracker = SilabsTracer::Instance().GetTimeTracker(TimeTraceOperation::kOTA);
+    auto trackedTime = timeTracker.mEndTime.count() - timeTracker.mStartTime.count();
+    EXPECT_EQ(trackedTime, uint32_t(100));
+
+    // Retrieve the watermark for the operation
+    auto watermark = SilabsTracer::Instance().GetWatermark(TimeTraceOperation::kOTA);
+    EXPECT_EQ(watermark.mTotalCount, uint32_t(1));
+    EXPECT_EQ(watermark.mMovingAverage.count(), uint32_t(100));
+    EXPECT_EQ(watermark.mMaxTimeMs.count(), uint32_t(100));
+    EXPECT_EQ(watermark.mMinTimeMs.count(), uint32_t(100));
+    EXPECT_EQ(watermark.mSuccessfullCount, uint32_t(1));
+    EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(0));
+
+    // Verify the time tracker values for Bootup
+    timeTracker = SilabsTracer::Instance().GetTimeTracker(TimeTraceOperation::kBootup);
+    trackedTime = timeTracker.mEndTime.count() - timeTracker.mStartTime.count();
+    watermark   = SilabsTracer::Instance().GetWatermark(TimeTraceOperation::kBootup);
+    EXPECT_EQ(trackedTime, uint32_t(200));
+    EXPECT_EQ(watermark.mTotalCount, uint32_t(1));
+    EXPECT_EQ(watermark.mMovingAverage.count(), uint32_t(200));
+    EXPECT_EQ(watermark.mMaxTimeMs.count(), uint32_t(200));
+    EXPECT_EQ(watermark.mMinTimeMs.count(), uint32_t(200));
+    EXPECT_EQ(watermark.mSuccessfullCount, uint32_t(1));
+    EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(0));
+
+    // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
+    EXPECT_EQ(traceCount, 4u); // 4 calls: 2 TimeTraceBegin and 2 TimeTraceEnd
+
+    // Verify the output logs using GetTraceByOperation
+    char logBuffer[256];
+    auto bufferSize = sizeof(logBuffer);
+
+    // Verify OTA log
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kOTA, logBuffer, bufferSize), CHIP_NO_ERROR);
+    const char * expectedOTALogFormat =
+        "TimeTracker - StartTime: 0, EndTime: 100, Duration: 100 ms, Operation: OTA, Type: End, Error: 0x0";
+    EXPECT_STREQ(logBuffer, expectedOTALogFormat);
+
+    // Verify Bootup log
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kBootup, logBuffer, bufferSize), CHIP_NO_ERROR);
+    const char * expectedBootupLogFormat =
+        "TimeTracker - StartTime: 100, EndTime: 300, Duration: 200 ms, Operation: Bootup, Type: End, Error: 0x0";
+    EXPECT_STREQ(logBuffer, expectedBootupLogFormat);
+
+    // Test buffer too small behavior
+    char smallBuffer[10];
+    bufferSize = sizeof(smallBuffer);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kOTA, smallBuffer, bufferSize),
+              CHIP_ERROR_BUFFER_TOO_SMALL);
+    EXPECT_GT(bufferSize, sizeof(smallBuffer)); // Ensure the required size is greater than the small buffer
+
+    // Test TraceBufferFlushByOperation
+    EXPECT_EQ(SilabsTracer::Instance().TraceBufferFlushByOperation(TimeTraceOperation::kOTA), CHIP_NO_ERROR);
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
+    EXPECT_EQ(traceCount, 2u); // Only Bootup traces should remain
+
+    // Verify Bootup log still exists
+    bufferSize = sizeof(logBuffer);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kBootup, logBuffer, bufferSize), CHIP_NO_ERROR);
+    EXPECT_STREQ(logBuffer, expectedBootupLogFormat);
+
+    // Verify OTA log is removed
+    bufferSize = sizeof(logBuffer);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kOTA, logBuffer, bufferSize), CHIP_ERROR_NOT_FOUND);
+
+    // Test TraceBufferFlushAll
+    EXPECT_EQ(SilabsTracer::Instance().TraceBufferFlushAll(), CHIP_NO_ERROR);
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
+    EXPECT_EQ(traceCount, 0u); // All traces should be flushed
+
+    // Verify no logs exist
+    bufferSize = sizeof(logBuffer);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kBootup, logBuffer, bufferSize),
+              CHIP_ERROR_NOT_FOUND);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kOTA, logBuffer, bufferSize), CHIP_ERROR_NOT_FOUND);
+}
+
+TEST_F(TestSilabsTracing, TestBufferBusting)
+{
+    gMockClock.SetMonotonic(0_ms64);
+    SilabsTracer::Instance().Init();
+    size_t traceCount = 0;
+    traceCount        = SilabsTracer::Instance().GetTimeTracesCount();
+    EXPECT_EQ(traceCount, 0u);
+
+    // Simulate a large number of traces
+    while (traceCount < SilabsTracer::kMaxBufferedTraces - 2)
+    {
+        EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kCaseSession));
+        gMockClock.AdvanceMonotonic(100_ms64);
+        traceCount = SilabsTracer::Instance().GetTimeTracesCount();
+    }
+
+    EXPECT_EQ(SilabsTracer::kMaxBufferedTraces - 2, SilabsTracer::Instance().GetTimeTracesCount());
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kOTA));
+    EXPECT_EQ(CHIP_ERROR_BUFFER_TOO_SMALL, SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kImageUpload));
+
+    // Verify an overflow operation is added (kBufferFull)
+    EXPECT_EQ(SilabsTracer::kMaxBufferedTraces, SilabsTracer::Instance().GetTimeTracesCount());
+    char logBuffer[256];
+    auto bufferSize = sizeof(logBuffer);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kBufferFull, logBuffer, bufferSize), CHIP_NO_ERROR);
+    const char * expectedNumLogFormat = "TimeTracker - EventTime: 6200, Operation: BufferFull, Type: Instant, Error: 0x19";
+    EXPECT_STREQ(logBuffer, expectedNumLogFormat);
+
+    // Verify the kImageUpload operation was not added
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kImageUpload, logBuffer, bufferSize),
+              CHIP_ERROR_NOT_FOUND);
+
+    // Flush kOTA operation
+    EXPECT_EQ(SilabsTracer::Instance().TraceBufferFlushByOperation(TimeTraceOperation::kOTA), CHIP_NO_ERROR);
+    EXPECT_EQ(SilabsTracer::kMaxBufferedTraces - 1, SilabsTracer::Instance().GetTimeTracesCount());
+
+    // Verify that adding a new operation still results in a buffer full operation since we are at size -1
+    EXPECT_EQ(CHIP_ERROR_BUFFER_TOO_SMALL, SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kImageUpload));
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kImageUpload, logBuffer, bufferSize),
+              CHIP_ERROR_NOT_FOUND);
+
+    // Flush the overflow operations
+    EXPECT_EQ(SilabsTracer::Instance().TraceBufferFlushByOperation(TimeTraceOperation::kBufferFull), CHIP_NO_ERROR);
+    EXPECT_EQ(SilabsTracer::kMaxBufferedTraces - 2, SilabsTracer::Instance().GetTimeTracesCount());
+
+    // Verify that adding a new operation now succeeds
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kImageUpload));
+    bufferSize = sizeof(logBuffer);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kImageUpload, logBuffer, bufferSize), CHIP_NO_ERROR);
+
+    // Verify that the buffer full operation is removed
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(TimeTraceOperation::kBufferFull, logBuffer, bufferSize),
+              CHIP_ERROR_NOT_FOUND);
+
+    // Flush all operations
+    EXPECT_EQ(SilabsTracer::Instance().TraceBufferFlushAll(), CHIP_NO_ERROR);
+    EXPECT_EQ(0u, SilabsTracer::Instance().GetTimeTracesCount());
+}
