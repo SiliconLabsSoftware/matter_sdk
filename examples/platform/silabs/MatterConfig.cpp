@@ -20,12 +20,16 @@
 #include "AppConfig.h"
 #include "BaseApplication.h"
 #include <MatterConfig.h>
+#include <app/icd/server/ICDServerConfig.h>
 #include <cmsis_os2.h>
-
 #include <mbedtls/platform.h>
 
 #ifdef SL_WIFI
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <platform/silabs/wifi/icd/PlatformSleepManager.h>
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif /* SL_WIFI */
 
 #if PW_RPC_ENABLED
@@ -45,10 +49,9 @@
 #include <platform/silabs/wifi/wiseconnect-abstraction/WiseconnectInterfaceAbstraction.h>
 #endif // SLI_SI91X_MCU_INTERFACE
 
-// sl-only: Wi-Fi Sleep Manager support
-#if SL_MATTER_SLEEP_MANAGER_ENABLED
-#include "SleepManager.h"
-#endif // SL_MATTER_SLEEP_MANAGER_ENABLED
+// TODO: Add suport for the WF200 in the PlatformSleepManager
+#if defined(RS911X_WIFI) || SLI_SI91X_MCU_INTERFACE
+#endif // defined(RS911X_WIFI) || SLI_SI91X_MCU_INTERFACE
 
 #include <crypto/CHIPCryptoPAL.h>
 // If building with the EFR32-provided crypto backend, we can use the
@@ -91,6 +94,8 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #define CURRENT_MODULE_NAME "OPENTHREAD"
 #include "sl_power_manager.h"
 #endif
+
+// #include "sl_si91x_power_manager.h"
 
 /**********************************************************
  * Defines
@@ -245,7 +250,12 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     // See comment above about OpenThread memory allocation as to why this is WIFI only here.
     ReturnErrorOnFailure(chip::Platform::MemoryInit());
     ReturnErrorOnFailure(InitWiFi());
-#endif
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    err = DeviceLayer::Silabs::PlatformSleepManager::GetInstance().Init();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#endif // SL_WIFI
 
     ReturnErrorOnFailure(PlatformMgr().InitChipStack());
 
@@ -305,13 +315,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 
     initParams.appDelegate = &BaseApplication::sAppDelegate;
 
-#if SL_MATTER_SLEEP_MANAGER_ENABLED
-    err = DeviceLayer::Silabs::SleepManager::GetInstance()
-              .SetInteractionModelEngine(app::InteractionModelEngine::GetInstance())
-              .SetFabricTable(&Server::GetInstance().GetFabricTable())
-              .Init();
-    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
-#endif // SL_MATTER_SLEEP_MANAGER_ENABLED
+    // sl_status_t status = sl_si91x_power_manager_add_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
 
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);

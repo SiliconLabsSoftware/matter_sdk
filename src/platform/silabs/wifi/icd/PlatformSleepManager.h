@@ -1,10 +1,22 @@
+/*
+ *
+ *    Copyright (c) 2024 Project CHIP Authors
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 #pragma once
 
-#include <app/InteractionModelEngine.h>
-#include <app/ReadHandler.h>
-#include <app/icd/server/ICDManager.h>
-#include <app/icd/server/ICDStateObserver.h>
-#include <credentials/FabricTable.h>
 #include <lib/core/CHIPError.h>
 
 namespace chip {
@@ -51,36 +63,18 @@ public:
      */
     CHIP_ERROR RemoveHighPerformanceRequest();
 
-    static void OnPlatformEvent(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
+    void HandleCommissioningComplete();
+    void HandleInternetConnectivityChange();
+    void HandleCommissioningWindowClose();
+    void HandleCommissioningSessionStarted();
+    void HandleCommissioningSessionStopped();
 
 private:
     PlatformSleepManager()  = default;
     ~PlatformSleepManager() = default;
 
-    void HandleCommissioningComplete();
-    void HandleInternetConnectivityChange(const chip::DeviceLayer::ChipDeviceEvent * event);
-    void HandleCommissioningWindowClose();
-    void HandleCommissioningSessionStarted();
-    void HandleCommissioningSessionStopped();
-
-    /**
-     * @brief Set the commissioning status of the device
-     *
-     * @param[in] inProgress bool true if commissioning is in progress, false otherwise
-     */
-    void SetCommissioningInProgress(bool inProgress) { isCommissioningInProgress = inProgress; }
-
-    /**
-     * @brief Returns the current commissioning status of the device
-     *
-     * @return bool true if commissioning is in progress, false otherwise
-     */
-    bool IsCommissioningInProgress() { return isCommissioningInProgress; }
-
     /**
      * @brief Transition the device to the Lowest Power State.
-     *        The function is responsible of deciding if the device can go to a LI based sleep
-     *        or is required to stay in a DTIM based sleep to be able to receive mDNS messages
      *
      * @return CHIP_ERROR CHIP_NO_ERROR if the device was transitionned to low power
      *         CHIP_ERROR_INTERNAL if an error occured

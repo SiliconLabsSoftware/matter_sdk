@@ -162,16 +162,6 @@ static_library("efr32") {
       "${silabs_platform_dir}/NetworkCommissioningWiFiDriver.h",
     ]
 
-    # [sl-only] Support for the Wi-Fi Sleep Manager
-    if (chip_enable_icd_server) {
-      public_deps += [ "${silabs_common_plat_dir}/wifi/icd:sleep-manager" ]
-    }
-
-    # [sl-only] Support for the Wi-Fi Sleep Manager
     public_deps += [ "${silabs_platform_dir}/wifi:wifi-platform" ]
-
-    if (chip_enable_icd_server && use_SiWx917) {
-      public_deps += [ "${silabs_common_plat_dir}/wifi/icd:sleep-manager" ]
-    }
   }
 }

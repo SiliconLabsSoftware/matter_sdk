@@ -1,7 +1,24 @@
-#include "SleepManager.h"
+/*
+ *
+ *    Copyright (c) 2024 Project CHIP Authors
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
+#include <platform/silabs/wifi/icd/PlatformSleepManager.h>
 
 using namespace chip::app;
 
@@ -14,29 +31,19 @@ PlatformSleepManager PlatformSleepManager::mInstance;
 
 CHIP_ERROR PlatformSleepManager::Init()
 {
-    PlatformMgr().AddEventHandler(OnPlatformEvent, reinterpret_cast<intptr_t>(this));
     return CHIP_NO_ERROR;
 }
 
 void PlatformSleepManager::HandleCommissioningComplete()
 {
-    if (wfx_power_save(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) != SL_STATUS_OK)
-    {
-        ChipLogError(AppServer, "wfx_power_save failed");
-    }
+    TransitionToLowPowerMode();
 }
 
-void PlatformSleepManager::HandleInternetConnectivityChange(const ChipDeviceEvent * event)
+void PlatformSleepManager::HandleInternetConnectivityChange()
 {
-    if (event->InternetConnectivityChange.IPv6 == kConnectivity_Established)
+    if (!isCommissioningInProgress)
     {
-        if (!IsCommissioningInProgress())
-        {
-            if
-            {
-                ChipLogError(AppServer, "wfx_power_save failed");
-            }
-        }
+        TransitionToLowPowerMode();
     }
 }
 
@@ -44,60 +51,30 @@ void PlatformSleepManager::HandleCommissioningWindowClose() {}
 
 void PlatformSleepManager::HandleCommissioningSessionStarted()
 {
-    SetCommissioningInProgress(true);
+    isCommissioningInProgress = true;
 }
 
 void PlatformSleepManager::HandleCommissioningSessionStopped()
 {
-    SetCommissioningInProgress(false);
-}
-
-void PlatformSleepManager::OnPlatformEvent(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg)
-{
-    PlatformSleepManager * manager = reinterpret_cast<PlatformSleepManager *>(arg);
-    VerifyOrDie(manager != nullptr);
-
-    switch (event->Type)
-    {
-    case DeviceEventType::kCommissioningComplete:
-        manager->HandleCommissioningComplete();
-        break;
-
-    case DeviceEventType::kInternetConnectivityChange:
-        manager->HandleInternetConnectivityChange(event);
-        break;
-
-    case DeviceEventType::kCommissioningWindowClose:
-        manager->HandleCommissioningWindowClose();
-        break;
-
-    case DeviceEventType::kCommissioningSessionStarted:
-        manager->HandleCommissioningSessionStarted();
-        break;
-
-    case DeviceEventType::kCommissioningSessionStopped:
-        manager->HandleCommissioningSessionStopped();
-        break;
-
-    default:
-        break;
-    }
+    isCommissioningInProgress = false;
 }
 
 CHIP_ERROR PlatformSleepManager::RequestHighPerformance()
 {
-    VerifyOrReturnError(mRequestHighPerformanceCounter < std::numeric_limits<uint8_t>::max(), CHIP_ERROR_INTERNAL,
+    VerifyOrReturnError(mHighPerformanceRequestCounter < std::numeric_limits<uint8_t>::max(), CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "High performance request counter overflow"));
 
-    if (mRequestHighPerformanceCounter == 0)
+    if (mHighPerformanceRequestCounter == 0)
     {
+#if SLI_SI917 // 917 SoC & NCP
         VerifyOrReturnError(wfx_power_save(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                             ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance"));
         VerifyOrReturnError(ConfigureBroadcastFilter(false) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                             ChipLogError(DeviceLayer, "Failed to disable broadcast filter"));
+#endif // SLI_SI917
     }
 
-    mRequestHighPerformanceCounter++;
+    mHighPerformanceRequestCounter++;
     return CHIP_NO_ERROR;
 }
 
@@ -121,16 +98,25 @@ CHIP_ERROR PlatformSleepManager::TransitionToLowPowerMode()
     VerifyOrReturnError(mHighPerformanceRequestCounter == 0, CHIP_NO_ERROR,
                         ChipLogDetail(DeviceLayer, "High Performance Requested - Device cannot go to a lower power mode."));
 
-    if (!ConnectivityMgr().IsWiFiStationProvisioned() && !IsCommissioningInProgress())
+#if SLI_SI917 // 917 SoC & NCP
+    // TODO: Clean this up when the Wi-Fi interface re-work is finished
+    wfx_wifi_provision_t wifiConfig;
+    wfx_get_wifi_provision(&wifiConfig);
+
+    if (!(wifiConfig.ssid[0] != 0) && !isCommissioningInProgress)
     {
-        VerifyOrReturnError(wfx_power_save(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0) != SL_STATUS_OK,
-                            ChipLogError(DeviceLayer, "Failed to enable the TA Deep Sleep");)
+        VerifyOrReturnError(wfx_power_save(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0) != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                            ChipLogError(DeviceLayer, "Failed to enable Deep Sleep."));
     }
     else
     {
-        VerifyOrReturnError(wfx_power_save(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) != SL_STATUS_OK,
-                            ChipLogError(DeviceLayer, "Failed to enable the TA Deep Sleep");)
+        VerifyOrReturnError(wfx_power_save(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                            ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
     }
+#elif RS911X_WIFI // rs9116
+    VerifyOrReturnError(wfx_power_save() != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
+#endif
 
     return CHIP_NO_ERROR;
 }

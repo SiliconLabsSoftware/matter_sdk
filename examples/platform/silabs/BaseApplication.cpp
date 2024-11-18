@@ -67,6 +67,10 @@
 #include <app/clusters/network-commissioning/network-commissioning.h>
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <platform/silabs/wifi/icd/PlatformSleepManager.h>
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
 #ifdef DIC_ENABLE
@@ -183,16 +187,18 @@ void BaseApplicationDelegate::OnCommissioningSessionStarted()
 {
     isComissioningStarted = true;
 
-    ChipDeviceEvent event = { .Type = DeviceEventType::kCommissioningSessionStarted };
-    (void) PlatformMgr().PostEvent(&event);
+#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+    PlatformSleepManager::GetInstance().HandleCommissioningSessionStarted();
+#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
 void BaseApplicationDelegate::OnCommissioningSessionStopped()
 {
     isComissioningStarted = false;
 
-    ChipDeviceEvent event = { .Type = DeviceEventType::kCommissioningSessionStopped };
-    (void) PlatformMgr().PostEvent(&event);
+#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+    PlatformSleepManager::GetInstance().HandleCommissioningSessionStopped();
+#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
 void BaseApplicationDelegate::OnCommissioningWindowClosed()
@@ -212,15 +218,12 @@ void BaseApplicationDelegate::OnCommissioningWindowClosed()
 #endif // DISPLAY_ENABLED
     }
 
-    ChipDeviceEvent event = { .Type = DeviceEventType::kCommissioningWindowClose };
-    (void) PlatformMgr().PostEvent(&event);
+#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+    PlatformSleepManager::GetInstance().HandleCommissioningWindowClose();
+#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
-void BaseApplicationDelegate::OnCommissioningWindowOpened()
-{
-    ChipDeviceEvent event = { .Type = DeviceEventType::kCommissioningWindowOpen };
-    (void) PlatformMgr().PostEvent(&event);
-}
+void BaseApplicationDelegate::OnCommissioningWindowOpened() {}
 
 void BaseApplicationDelegate::OnFabricCommitted(const FabricTable & fabricTable, FabricIndex fabricIndex)
 {
@@ -899,44 +902,25 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
         if ((event->ThreadConnectivityChange.Result == kConnectivity_Established) ||
             (event->InternetConnectivityChange.IPv6 == kConnectivity_Established))
         {
-#if SL_WIFI
+#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
             chip::app::DnssdServer::Instance().StartServer();
-#endif // SL_WIFI
+            PlatformSleepManager::GetInstance().HandleInternetConnectivityChange();
+#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #if SILABS_OTA_ENABLED
             ChipLogProgress(AppServer, "Scheduling OTA Requestor initialization");
             chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(OTAConfig::kInitOTARequestorDelaySec),
                                                         InitOTARequestorHandler, nullptr);
 #endif // SILABS_OTA_ENABLED
-#if (CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI)
-#if !SLI_SI917
-            // [sl-only] Only 9116 - 917 is managed by the SleepManager
-            // on power cycle, let the device go to sleep after connection is established
-            if (BaseApplication::sAppDelegate.isCommissioningInProgress() == false)
-            {
-                sl_status_t err = wfx_power_save();
-                if (err != SL_STATUS_OK)
-                {
-                    ChipLogError(AppServer, "wfx_power_save failed: 0x%lx", err);
-                }
-            }
-#endif // !SLI_SI917
-#endif /* CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI */
         }
     }
     break;
 
     case DeviceEventType::kCommissioningComplete: {
-#if (CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI)
-#if !SLI_SI917
-        // [sl-only] Only 9116 - 917 is managed by the SleepManager
-        sl_status_t status = wfx_power_save();
-        if (status != SL_STATUS_OK)
-        {
-            ChipLogError(AppServer, "wfx_power_save failed: 0x%lx", status);
-        }
-#endif /* !SLI_SI917 */
-#endif /* CHIP_CONFIG_ENABLE_ICD_SERVER && RS911X_WIFI */
+#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+        PlatformSleepManager::GetInstance().HandleCommissioningComplete();
+#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+
 // SL-Only
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 #if defined(SL_MATTER_ZIGBEE_CMP) && defined(_SILICON_LABS_32B_SERIES_3)
