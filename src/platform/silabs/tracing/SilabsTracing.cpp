@@ -1,3 +1,19 @@
+/***************************************************************************
+ * @file SilabsTracing.cpp
+ * @brief Instrumenting for matter operation tracing for the Silicon Labs platform.
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
 #include "SilabsTracing.h"
 #include <cstring>
 #include <lib/support/CodeUtils.h>
@@ -19,9 +35,9 @@ namespace Tracing {
 namespace Silabs {
 
 // TODO add string mapping to log the operation names and types
-
-static constexpr size_t kPersistentTimeTrackerBufferMax = SERIALIZED_TIME_TRACKERS_SIZE_BYTES;
-
+namespace {
+constexpr size_t kPersistentTimeTrackerBufferMax = SERIALIZED_TIME_TRACKERS_SIZE_BYTES;
+} // namespace
 struct TimeTrackerStorage : public TimeTracker, PersistentData<kPersistentTimeTrackerBufferMax>
 {
     // TODO implement the Persistent Array class and use it here for logging the watermark array
@@ -146,9 +162,9 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
         mTimeTrackerList.Insert(tracker);
         mBufferedTrackerCount++;
     }
-    else
+    else if (mBufferedTrackerCount == kMaxBufferedTraces - 1)
     {
-        // Save a tracker with 0xFFFF to indicate that the buffer is full
+        // Save a tracker with TimeTraceOperation::kNumTraces and CHIP_ERROR_BUFFER_TOO_SMALL to indicate that the buffer is full
         TimeTracker resourceExhaustedTracker = tracker;
         resourceExhaustedTracker.mStartTime  = System::SystemClock().GetMonotonicTimestamp();
         resourceExhaustedTracker.mEndTime    = resourceExhaustedTracker.mStartTime;
@@ -156,6 +172,10 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
         resourceExhaustedTracker.mType       = OperationType::kInstant;
         resourceExhaustedTracker.mError      = CHIP_ERROR_BUFFER_TOO_SMALL;
         mTimeTrackerList.Insert(resourceExhaustedTracker);
+        return CHIP_ERROR_BUFFER_TOO_SMALL;
+    }
+    else
+    {
         return CHIP_ERROR_BUFFER_TOO_SMALL;
     }
 
@@ -253,10 +273,9 @@ CHIP_ERROR SilabsTracer::LoadWatermarks()
 }
 
 #if CONFIG_BUILD_FOR_HOST_UNIT_TEST
-CHIP_ERROR SilabsTracer::GetTraceCount(size_t & count) const
+size_t SilabsTracer::GetTraceCount()
 {
-    count = mBufferedTrackerCount;
-    return CHIP_NO_ERROR;
+    return mBufferedTrackerCount;
 }
 
 CHIP_ERROR SilabsTracer::GetTraceByIndex(size_t index, const char *& trace) const

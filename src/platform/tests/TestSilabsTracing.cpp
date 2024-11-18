@@ -51,10 +51,6 @@ chip::System::Clock::Internal::MockClock gMockClock;
 chip::System::Clock::ClockBase * gRealClock;
 } // namespace
 
-// =================================
-//      Unit tests
-// =================================
-
 class TestSilabsTracing : public ::testing::Test
 {
 public:
@@ -80,7 +76,7 @@ TEST_F(TestSilabsTracing, TestTimeTrackerMethods)
 
     SilabsTracer::Instance().Init();
 
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    traceCount = SilabsTracer::Instance().GetTraceCount();
     EXPECT_EQ(traceCount, 0u);
 
     // Start tracking time for a specific event
@@ -177,7 +173,7 @@ TEST_F(TestSilabsTracing, TestTimeTrackerMethods)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(2));
 
     // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    traceCount = SilabsTracer::Instance().GetTraceCount();
     EXPECT_EQ(traceCount, 11u); // 11 calls: 6 TimeTraceBegin and 5 TimeTraceEnd
 }
 
@@ -187,7 +183,7 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
     SilabsTracer::Instance().Init();
 
     size_t traceCount = 0;
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    traceCount        = SilabsTracer::Instance().GetTraceCount();
     EXPECT_EQ(traceCount, 0u);
 
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
@@ -247,7 +243,7 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
 
     // SilabsTracer::Instance().Init();
 
-    // EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    // traceCount = SilabsTracer::Instance().GetTraceCount();
     // EXPECT_EQ(traceCount, 0u);
 
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
@@ -304,7 +300,7 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(0));
 
     // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    traceCount = SilabsTracer::Instance().GetTraceCount();
     EXPECT_EQ(traceCount, 14u); // 14 calls: 8 TimeTraceBegin and 6 TimeTraceEnd
 }
 
@@ -314,7 +310,7 @@ TEST_F(TestSilabsTracing, TestCommissioning)
     SilabsTracer::Instance().Init();
 
     size_t traceCount = 0;
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    traceCount        = SilabsTracer::Instance().GetTraceCount();
     EXPECT_EQ(traceCount, 0u);
 
     // Simulate Spake2p steps
@@ -516,7 +512,7 @@ TEST_F(TestSilabsTracing, TestCommissioning)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(0));
 
     // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    traceCount = SilabsTracer::Instance().GetTraceCount();
     EXPECT_EQ(traceCount, 27u);
 }
 
@@ -525,7 +521,7 @@ TEST_F(TestSilabsTracing, TestOTA)
     gMockClock.SetMonotonic(0_ms64);
     SilabsTracer::Instance().Init();
     size_t traceCount = 0;
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    traceCount        = SilabsTracer::Instance().GetTraceCount();
     EXPECT_EQ(traceCount, 0u);
 
     // Simulate OTA steps
@@ -600,7 +596,7 @@ TEST_F(TestSilabsTracing, TestOTA)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(1));
 
     // Check that traceCount is equal to the number of TimeTraceBegin and TimeTraceEnd calls
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceCount(traceCount), CHIP_NO_ERROR);
+    traceCount = SilabsTracer::Instance().GetTraceCount();
     EXPECT_EQ(traceCount, 8u); // 8 calls: 4 TimeTraceBegin and 4 TimeTraceEnd
 }
 
