@@ -95,8 +95,6 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #include "sl_power_manager.h"
 #endif
 
-// #include "sl_si91x_power_manager.h"
-
 /**********************************************************
  * Defines
  *********************************************************/
@@ -314,8 +312,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #endif
 
     initParams.appDelegate = &BaseApplication::sAppDelegate;
-
-    // sl_status_t status = sl_si91x_power_manager_add_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
 
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
