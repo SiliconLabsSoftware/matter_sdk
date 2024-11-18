@@ -14,15 +14,15 @@
 
 import("//build_overrides/chip.gni")
 
-config("sleep-manager-config") {
+config("platform-sleep-manager-config") {
   include_dirs = [ "." ]
   defines = [ "SL_MATTER_SLEEP_MANAGER_ENABLED=1" ]
 }
 
-source_set("sleep-manager") {
+source_set("platform-sleep-manager") {
   sources = [
-    "SleepManager.cpp",
-    "SleepManager.h",
+    "PlatformSleepManager.cpp",
+    "PlatformSleepManager.h",
   ]
 
   public_deps = [
@@ -35,5 +35,5 @@ source_set("sleep-manager") {
     "${chip_root}/src/platform/silabs/wifi:wifi-platform",
   ]
 
-  public_configs = [ ":sleep-manager-config" ]
+  public_configs = [ ":platform-sleep-manager-config" ]
 }

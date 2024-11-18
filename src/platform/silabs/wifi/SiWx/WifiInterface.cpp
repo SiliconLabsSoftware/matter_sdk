@@ -83,10 +83,18 @@ extern osSemaphoreId_t sl_rs_ble_init_sem;
 
 namespace {
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+
+constexpr uint32_t kTimeToFullBeaconReception = 5000; // 5 seconds
+
+#if SLI_SI91X_MCU_INTERFACE
 // TODO: should be removed once we are getting the press interrupt for button 0 with sleep
 bool btn0_pressed = false;
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#ifdef ENABLE_CHIP_SHELL
+bool ps_requirement_added = false;
+#endif // ENABLE_CHIP_SHELL
+#endif // SLI_SI91X_MCU_INTERFACE
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 bool hasNotifiedWifiConnectivity = false;
 bool hasNotifiedIPV6             = false;
@@ -856,36 +864,47 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
 }
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
-#if SL_ICD_ENABLED
-/*********************************************************************
- * @fn  sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t
- sl_si91x_wifi_state)
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+/**
  * @brief
- *      Implements the power save in sleepy application
- * @param[in]  sl_si91x_ble_state : State to set for the BLE
-               sl_si91x_wifi_state : State to set for the WiFi
- * @return  SL_STATUS_OK if successful,
- *          SL_STATUS_FAIL otherwise
- ***********************************************************************/
-sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state)
+ *
+ * @param sl_si91x_ble_state
+ * @param sl_si91x_wifi_state
+ * @param listenInterval
+ * @param enableBroadcastFilter
+ * @return sl_status_t
+ */
+sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
+                           uint32_t listenInterval)
 {
     int32_t error = rsi_bt_power_save_profile(sl_si91x_ble_state, 0);
-    if (error != RSI_SUCCESS)
-    {
-        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error);
-        return SL_STATUS_FAIL;
-    }
+    VerifyOrReturnError(error == RSI_SUCCESS, SL_STATUS_FAIL,
+                        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error));
 
-    sl_wifi_performance_profile_t wifi_profile = { .profile           = sl_si91x_wifi_state,
+    sl_wifi_performance_profile_t wifi_profile = { .profile = sl_si91x_wifi_state,
+                                                   // TODO: Performance profile fails if not alligned with DTIM
                                                    .dtim_aligned_type = SL_SI91X_ALIGN_WITH_DTIM_BEACON,
-                                                   .listen_interval   = 0 };
-    sl_status_t status                         = sl_wifi_set_performance_profile(&wifi_profile);
-    if (status != SL_STATUS_OK)
-    {
-        ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile failed: 0x%lx", static_cast<uint32_t>(status));
-        return status;
-    }
+                                                   // TODO: Different types need to be fixe in the Wi-Fi SDK
+                                                   .listen_interval = static_cast<uint16_t>(listenInterval) };
 
-    return SL_STATUS_OK;
+    sl_status_t status = sl_wifi_set_performance_profile(&wifi_profile);
+    VerifyOrReturnError(status == SL_STATUS_OK, status,
+                        ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile failed: 0x%lx", status));
+
+    return status;
 }
-#endif
+
+sl_status_t ConfigureBroadcastFilter(bool enableBroadcastFilter)
+{
+    sl_status_t status = SL_STATUS_OK;
+
+    uint16_t beaconDropThreshold = (enableBroadcastFilter) ? kTimeToFullBeaconReception : 0;
+    uint8_t filterBcastInTim     = (enableBroadcastFilter) ? 1 : 0;
+
+    status = sl_wifi_filter_broadcast(5000, 1, 1 /* valid till next update*/);
+    VerifyOrReturnError(status == SL_STATUS_OK, status,
+                        ChipLogError(DeviceLayer, "sl_wifi_filter_broadcast failed: 0x%lx", static_cast<uint32_t>(status)));
+
+    return status;
+}
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
