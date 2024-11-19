@@ -21,6 +21,7 @@
 #include <lib/core/CHIPError.h>
 #include <lib/core/CHIPPersistentStorageDelegate.h>
 #include <lib/support/LinkedList.h>
+#include <lib/support/Span.h>
 #include <stdint.h>
 #include <system/SystemClock.h>
 
@@ -82,11 +83,20 @@ struct TimeTracker
 
     /** @brief Convert the TimeTracker to a string for logs
      * Behaves like snprintf, but formats the output differently based on the OperationType
-     * May be used with nullptr and 0 to get the required buffer size
+     * May be used with a buffer of size == 0 to get the required buffer size
      * @param buffer The buffer to write the string to
-     * @param bufferSize The size of the buffer
+     * @return The number of characters written to the buffer, or the size of the buffer required if the buffer is too small
      */
-    int ToCharArray(char * buffer, size_t bufferSize) const;
+    int ToCharArray(MutableByteSpan & buffer) const;
+
+    /** @brief Get the size of the string representation of the TimeTracker
+     * @return The size of the string representation of the TimeTracker
+     */
+    int GetSize() const
+    {
+        MutableByteSpan temp;
+        return ToCharArray(temp);
+    }
 };
 
 struct Watermark
@@ -107,6 +117,7 @@ class SilabsTracer
 public:
     static constexpr size_t kNumTraces         = to_underlying(TimeTraceOperation::kNumTraces);
     static constexpr size_t kMaxBufferedTraces = 64;
+    static constexpr size_t kMaxTraceSize      = 256;
 
     /** @brief Get the singleton instance of SilabsTracer */
     static SilabsTracer & Instance() { return sInstance; }
@@ -211,7 +222,7 @@ public:
      */
     Watermark GetWatermark(TimeTraceOperation aOperation) { return mWatermarks[to_underlying(aOperation)]; }
     size_t GetTimeTracesCount() { return mBufferedTrackerCount; }
-    CHIP_ERROR GetTraceByOperation(TimeTraceOperation aOperation, char * buffer, size_t & size) const;
+    CHIP_ERROR GetTraceByOperation(TimeTraceOperation aOperation, MutableByteSpan & buffer) const;
 
 private:
     struct TimeTrackerList
