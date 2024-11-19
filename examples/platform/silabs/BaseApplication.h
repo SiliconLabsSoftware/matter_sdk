@@ -71,6 +71,7 @@ public:
 private:
     // AppDelegate
     bool isComissioningStarted = false;
+    void OnCommissioningWindowOpened() override;
     void OnCommissioningSessionStarted() override;
     void OnCommissioningSessionStopped() override;
     void OnCommissioningWindowClosed() override;

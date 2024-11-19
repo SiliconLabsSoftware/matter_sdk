@@ -195,9 +195,6 @@ typedef struct wfx_rsi_s
     uint8_t ip4_addr[4]; /* Not sure if this is enough */
 } WfxRsi_t;
 
-// TODO: We shouldn't need to have access to a global variable in the interface here
-extern WfxRsi_t wfx_rsi;
-
 sl_status_t wfx_wifi_start(void);
 void wfx_enable_sta_mode(void);
 void wfx_get_wifi_mac_addr(sl_wfx_interface_t interface, sl_wfx_mac_address_t * addr);
@@ -253,16 +250,17 @@ int32_t wfx_rsi_send_data(void * p, uint16_t len);
 
 bool wfx_hw_ready(void);
 
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
 #ifdef RS911X_WIFI // for RS9116, 917 NCP and 917 SoC
 /* RSI Power Save */
-#if SL_ICD_ENABLED
 #if (SLI_SI91X_MCU_INTERFACE | EXP_BOARD)
-sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state);
+sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
+                           uint32_t listenInterval);
 #else
 sl_status_t wfx_power_save();
 #endif /* (SLI_SI91X_MCU_INTERFACE | EXP_BOARD) */
-#endif /* SL_ICD_ENABLED */
 #endif /* RS911X_WIFI */
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 void sl_matter_wifi_task(void * arg);
 

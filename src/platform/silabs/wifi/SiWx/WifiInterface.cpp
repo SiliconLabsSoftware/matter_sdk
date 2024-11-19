@@ -33,6 +33,7 @@
 #include "sl_status.h"
 #include "sl_wifi_device.h"
 #include "task.h"
+#include <app/icd/server/ICDConfigurationData.h>
 #include <app/icd/server/ICDServerConfig.h>
 #include <inet/IPAddress.h>
 #include <lib/support/CHIPMem.h>
@@ -82,10 +83,18 @@ extern osSemaphoreId_t sl_rs_ble_init_sem;
 
 namespace {
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+
+constexpr uint32_t kTimeToFullBeaconReception = 5000; // 5 seconds
+
+#if SLI_SI91X_MCU_INTERFACE
 // TODO: should be removed once we are getting the press interrupt for button 0 with sleep
 bool btn0_pressed = false;
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#ifdef ENABLE_CHIP_SHELL
+bool ps_requirement_added = false;
+#endif // ENABLE_CHIP_SHELL
+#endif // SLI_SI91X_MCU_INTERFACE
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 bool hasNotifiedWifiConnectivity = false;
 bool hasNotifiedIPV6             = false;
@@ -338,14 +347,21 @@ sl_status_t SetWifiConfigurations()
     sl_status_t status = SL_STATUS_OK;
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-    // Setting the listen interval to 0 which will set it to DTIM interval
-    sl_wifi_listen_interval_t sleep_interval = { .listen_interval = 0 };
+    // [sl-only] Set the listen interval to the slow polling interval during association
+    sl_wifi_listen_interval_t sleep_interval = { .listen_interval =
+                                                     chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count() };
     status                                   = sl_wifi_set_listen_interval(SL_WIFI_CLIENT_INTERFACE, sleep_interval);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
     sl_wifi_advanced_client_configuration_t client_config = { .max_retry_attempts = 5 };
     status = sl_wifi_set_advanced_client_configuration(SL_WIFI_CLIENT_INTERFACE, &client_config);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
+
+    // [sl-only] Required configuration for listen interval changes at runtime
+    status = sl_si91x_set_join_configuration(
+        SL_WIFI_CLIENT_INTERFACE, (SL_SI91X_JOIN_FEAT_LISTEN_INTERVAL_VALID | SL_SI91X_JOIN_FEAT_PS_CMD_LISTEN_INTERVAL_VALID));
+    VerifyOrReturnError(status == SL_STATUS_OK, status);
+
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
     status = sl_net_set_credential(SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID, SL_NET_WIFI_PSK, &wfx_rsi.sec.passkey[0],
@@ -402,6 +418,8 @@ sl_status_t JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK || status == SL_STATUS_IN_PROGRESS)
     {
+        // TODO: Set listen interval to 0 with DTIM sync
+
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
         return status;
@@ -846,34 +864,25 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
 }
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
-#if SL_ICD_ENABLED
-/*********************************************************************
- * @fn  sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t
- sl_si91x_wifi_state)
- * @brief
- *      Implements the power save in sleepy application
- * @param[in]  sl_si91x_ble_state : State to set for the BLE
-               sl_si91x_wifi_state : State to set for the WiFi
- * @return  SL_STATUS_OK if successful,
- *          SL_STATUS_FAIL otherwise
- ***********************************************************************/
-sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state)
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+
+sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
+                           uint32_t listenInterval)
 {
     int32_t error = rsi_bt_power_save_profile(sl_si91x_ble_state, 0);
-    if (error != RSI_SUCCESS)
-    {
-        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error);
-        return SL_STATUS_FAIL;
-    }
+    VerifyOrReturnError(error == RSI_SUCCESS, SL_STATUS_FAIL,
+                        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error));
 
-    sl_wifi_performance_profile_t wifi_profile = { .profile = sl_si91x_wifi_state };
-    sl_status_t status                         = sl_wifi_set_performance_profile(&wifi_profile);
-    if (status != SL_STATUS_OK)
-    {
-        ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile failed: 0x%lx", static_cast<uint32_t>(status));
-        return status;
-    }
+    sl_wifi_performance_profile_t wifi_profile = { .profile = sl_si91x_wifi_state,
+                                                   // TODO: Performance profile fails if not alligned with DTIM
+                                                   .dtim_aligned_type = SL_SI91X_ALIGN_WITH_DTIM_BEACON,
+                                                   // TODO: Different types need to be fixe in the Wi-Fi SDK
+                                                   .listen_interval = static_cast<uint16_t>(listenInterval) };
 
-    return SL_STATUS_OK;
+    sl_status_t status = sl_wifi_set_performance_profile(&wifi_profile);
+    VerifyOrReturnError(status == SL_STATUS_OK, status,
+                        ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile failed: 0x%lx", status));
+
+    return status;
 }
-#endif
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER

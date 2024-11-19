@@ -39,7 +39,7 @@ namespace DeviceEventType {
  */
 enum PublicPlatformSpecificEventTypes
 {
-    /* None currently defined */
+    // No public platform specific events
 };
 
 /**

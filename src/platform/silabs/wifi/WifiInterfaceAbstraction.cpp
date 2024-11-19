@@ -23,6 +23,7 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,6 +38,9 @@ using namespace chip::DeviceLayer;
 //       As such we can't depend on the platform here as well
 extern void HandleWFXSystemEvent(wfx_event_base_t eventBase, sl_wfx_generic_message_t * eventData);
 
+// TODO: We shouldn't need to have access to a global variable in the interface here
+extern WfxRsi_t wfx_rsi;
+
 namespace {
 
 constexpr uint8_t kWlanMinRetryIntervalsInSec = 1;
@@ -50,9 +54,10 @@ osTimerId_t sRetryTimer;
  */
 void RetryConnectionTimerHandler(void * arg)
 {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
-    wfx_power_save(RSI_ACTIVE, HIGH_PERFORMANCE);
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+
     if (wfx_connect_to_ap() != SL_STATUS_OK)
     {
         ChipLogError(DeviceLayer, "wfx_connect_to_ap() failed.");
@@ -191,9 +196,9 @@ void wfx_retry_connection(uint16_t retryAttempt)
         }
         return;
     }
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
-    wfx_power_save(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION);
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
     ChipLogProgress(DeviceLayer, "wfx_retry_connection : Next attempt after %d Seconds", retryInterval);
     retryInterval += retryInterval;
 }

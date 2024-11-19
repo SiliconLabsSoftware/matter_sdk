@@ -174,11 +174,6 @@ source_set("siwx917-common") {
     }
   }
 
-  # Sl-Only: Support for the Wi-Fi Sleep Manager
-  if (chip_enable_icd_server) {
-    public_deps += [ "${silabs_common_plat_dir}/wifi/icd:sleep-manager" ]
-  }
-
   # DIC
   if (enable_dic) {
     public_deps +=

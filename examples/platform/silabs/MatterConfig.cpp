@@ -20,12 +20,16 @@
 #include "AppConfig.h"
 #include "BaseApplication.h"
 #include <MatterConfig.h>
+#include <app/icd/server/ICDServerConfig.h>
 #include <cmsis_os2.h>
-
 #include <mbedtls/platform.h>
 
 #ifdef SL_WIFI
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif /* SL_WIFI */
 
 #if PW_RPC_ENABLED
@@ -240,7 +244,12 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     // See comment above about OpenThread memory allocation as to why this is WIFI only here.
     ReturnErrorOnFailure(chip::Platform::MemoryInit());
     ReturnErrorOnFailure(InitWiFi());
-#endif
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    err = DeviceLayer::Silabs::WifiSleepManager::GetInstance().Init();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#endif // SL_WIFI
 
     ReturnErrorOnFailure(PlatformMgr().InitChipStack());
 
@@ -299,6 +308,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #endif
 
     initParams.appDelegate = &BaseApplication::sAppDelegate;
+
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
 
