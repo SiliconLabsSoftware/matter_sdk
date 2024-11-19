@@ -68,7 +68,7 @@ CHIP_ERROR WifiSleepManager::RequestHighPerformance()
     if (mHighPerformanceRequestCounter == 0)
     {
 #if SLI_SI917 // 917 SoC & NCP
-        VerifyOrReturnError(wfx_power_save(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+        VerifyOrReturnError(CofigurePowerSave(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                             ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance"));
 #endif // SLI_SI917
     }
@@ -102,16 +102,34 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
 
     if (!(wifiConfig.ssid[0] != 0) && !isCommissioningInProgress)
     {
-        VerifyOrReturnError(wfx_power_save(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0) != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                            ChipLogError(DeviceLayer, "Failed to enable Deep Sleep."));
+        VerifyOrReturnError(CofigurePowerSave(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0) != SL_STATUS_OK,
+                            CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to enable Deep Sleep."));
     }
     else
     {
-        VerifyOrReturnError(wfx_power_save(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                            ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
+
+        if (mCallbacks && mCallbacks->CanGoToLIBasedSleep())
+        {
+            VerifyOrReturnError(CofigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
+                                                  ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) !=
+                                    SL_STATUS_OK,
+                                CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
+
+            VerifyOrReturnError(ConfigureBroadcastFilter(true), CHIP_ERROR_INTERNAL,
+                                ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
+        }
+        else
+        {
+
+            VerifyOrReturnError(CofigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                                ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
+
+            VerifyOrReturnError(ConfigureBroadcastFilter(false), CHIP_ERROR_INTERNAL,
+                                ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
+        }
     }
 #elif RS911X_WIFI // rs9116
-    VerifyOrReturnError(wfx_power_save() != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+    VerifyOrReturnError(CofigurePowerSave() != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
 #endif
 

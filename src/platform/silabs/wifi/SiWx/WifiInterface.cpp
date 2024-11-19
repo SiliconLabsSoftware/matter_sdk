@@ -865,9 +865,8 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-
-sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
-                           uint32_t listenInterval)
+sl_status_t CofigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
+                              uint32_t listenInterval)
 {
     int32_t error = rsi_bt_power_save_profile(sl_si91x_ble_state, 0);
     VerifyOrReturnError(error == RSI_SUCCESS, SL_STATUS_FAIL,
@@ -882,6 +881,20 @@ sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_
     sl_status_t status = sl_wifi_set_performance_profile(&wifi_profile);
     VerifyOrReturnError(status == SL_STATUS_OK, status,
                         ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile failed: 0x%lx", status));
+
+    return status;
+}
+
+sl_status_t ConfigureBroadcastFilter(bool enableBroadcastFilter)
+{
+    sl_status_t status = SL_STATUS_OK;
+
+    uint16_t beaconDropThreshold = (enableBroadcastFilter) ? kTimeToFullBeaconReception : 0;
+    uint8_t filterBcastInTim     = (enableBroadcastFilter) ? 1 : 0;
+
+    status = sl_wifi_filter_broadcast(beaconDropThreshold, filterBcastInTim, 1 /* valid till next update*/);
+    VerifyOrReturnError(status == SL_STATUS_OK, status,
+                        ChipLogError(DeviceLayer, "sl_wifi_filter_broadcast failed: 0x%lx", static_cast<uint32_t>(status)));
 
     return status;
 }

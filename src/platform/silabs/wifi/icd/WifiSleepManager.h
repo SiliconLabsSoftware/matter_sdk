@@ -36,6 +36,36 @@ public:
     static WifiSleepManager & GetInstance() { return mInstance; }
 
     /**
+     * @brief Class implements the callbacks that the application can implement
+     *        to alter the WifiSleepManager behaviors.
+     */
+    class ApplicationCallbacks
+    {
+    public:
+        virtual ~ApplicationCallbacks() = default;
+
+        /**
+         * @brief Function informs the WifiSleepManager in which Low Power mode the device can go to.
+         *        The two supported sleep modes are DTIM based sleep and LI based sleep.
+         *
+         *        When the function is called, the WifiSleepManager is about to go to sleep and using this function to make decision
+         *        as too wether it can go LI based sleep, lowest power mode, or DTIM based sleep.
+         *
+         *        DTIM based sleep requires the Wi-Fi devices to be synced with the DTIM beacon.
+         *        In this mode, the broadcast filter is disabled and the device will process multicast and
+         *        broadcast messages.
+         *
+         *        LI based sleep allows the Wi-Fi devices to sleep for configurable amounts of time without needing to be synced
+         *        with the DTIM beacon. The sleep time is configurable trough the ICD Manager feature-set.
+         *        In the LI based sleep, the broadcast filter is enabled.
+         *
+         * @return true The Wi-Fi Sleep Manager can go to LI based sleep
+         * @return false The Wi-Fi Sleep Manager cannot go to LI based sleep or an error occured in the processing.
+         */
+        virtual bool CanGoToLIBasedSleep() = 0;
+    };
+
+    /**
      * @brief Init function that configure the SleepManager APIs based on the type of ICD.
      *        Function validates that the SleepManager configuration were correctly set as well.
      *
@@ -63,6 +93,14 @@ public:
      */
     CHIP_ERROR RemoveHighPerformanceRequest();
 
+    /**
+     * @brief Set the Application Callbacks
+     *
+     * @param callbacks pointer to the application callbacks.
+     *                  The callbacks can be set to nullptr if the application wants to remove its callbacks
+     */
+    void SetApplicationCallbacks(ApplicationCallbacks * callbacks);
+
     void HandleCommissioningComplete();
     void HandleInternetConnectivityChange();
     void HandleCommissioningWindowClose();
@@ -85,9 +123,11 @@ private:
     CHIP_ERROR VerifyAndTransitionToLowPowerMode();
 
     static WifiSleepManager mInstance;
-    bool isCommissioningInProgress = false;
 
+    bool isCommissioningInProgress         = false;
     uint8_t mHighPerformanceRequestCounter = 0;
+
+    ApplicationCallbacks * mCallbacks = nullptr;
 };
 
 } // namespace Silabs
