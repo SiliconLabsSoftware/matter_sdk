@@ -22,12 +22,17 @@
 #include <cmsis_os2.h>
 #include <lib/core/CHIPCore.h>
 #include <lib/shell/Engine.h>
+#include <matter/tracing/build_config.h>
 #include <sl_cmsis_os2_common.h>
 #ifdef SL_CATALOG_CLI_PRESENT
 #include "sl_cli.h"
 #include "sl_cli_config.h"
 #include "sli_cli_io.h"
 #endif
+
+#if MATTER_TRACING_ENABLED
+#include <platform/silabs/tracing/SilabsTracing.h>
+#endif // MATTER_TRACING_ENABLED
 
 using namespace ::chip;
 using chip::Shell::Engine;
@@ -112,6 +117,154 @@ void cmdSilabsInit()
 
 #endif // SL_CATALOG_CLI_PRESENT
 
+#if MATTER_TRACING_ENABLED
+using TimeTraceOperation = Tracing::Silabs::TimeTraceOperation;
+
+TimeTraceOperation StringToTimeTraceOperation(const char * str)
+{
+    if (strcmp(str, "Spake2p") == 0)
+    {
+        return TimeTraceOperation::kSpake2p;
+    }
+    else if (strcmp(str, "Pake1") == 0)
+    {
+        return TimeTraceOperation::kPake1;
+    }
+    else if (strcmp(str, "Pake2") == 0)
+    {
+        return TimeTraceOperation::kPake2;
+    }
+    else if (strcmp(str, "Pake3") == 0)
+    {
+        return TimeTraceOperation::kPake3;
+    }
+    else if (strcmp(str, "OperationalCredentials") == 0)
+    {
+        return TimeTraceOperation::kOperationalCredentials;
+    }
+    else if (strcmp(str, "AttestationVerification") == 0)
+    {
+        return TimeTraceOperation::kAttestationVerification;
+    }
+    else if (strcmp(str, "CSR") == 0)
+    {
+        return TimeTraceOperation::kCSR;
+    }
+    else if (strcmp(str, "NOC") == 0)
+    {
+        return TimeTraceOperation::kNOC;
+    }
+    else if (strcmp(str, "TransportLayer") == 0)
+    {
+        return TimeTraceOperation::kTransportLayer;
+    }
+    else if (strcmp(str, "TransportSetup") == 0)
+    {
+        return TimeTraceOperation::kTransportSetup;
+    }
+    else if (strcmp(str, "FindOperational") == 0)
+    {
+        return TimeTraceOperation::kFindOperational;
+    }
+    else if (strcmp(str, "CaseSession") == 0)
+    {
+        return TimeTraceOperation::kCaseSession;
+    }
+    else if (strcmp(str, "Sigma1") == 0)
+    {
+        return TimeTraceOperation::kSigma1;
+    }
+    else if (strcmp(str, "Sigma2") == 0)
+    {
+        return TimeTraceOperation::kSigma2;
+    }
+    else if (strcmp(str, "Sigma3") == 0)
+    {
+        return TimeTraceOperation::kSigma3;
+    }
+    else if (strcmp(str, "OTA") == 0)
+    {
+        return TimeTraceOperation::kOTA;
+    }
+    else if (strcmp(str, "ImageUpload") == 0)
+    {
+        return TimeTraceOperation::kImageUpload;
+    }
+    else if (strcmp(str, "ImageVerification") == 0)
+    {
+        return TimeTraceOperation::kImageVerification;
+    }
+    else if (strcmp(str, "AppApplyTime") == 0)
+    {
+        return TimeTraceOperation::kAppApplyTime;
+    }
+    else if (strcmp(str, "Bootup") == 0)
+    {
+        return TimeTraceOperation::kBootup;
+    }
+    else if (strcmp(str, "SilabsInit") == 0)
+    {
+        return TimeTraceOperation::kSilabsInit;
+    }
+    else if (strcmp(str, "MatterInit") == 0)
+    {
+        return TimeTraceOperation::kMatterInit;
+    }
+    else if (strcmp(str, "BufferFull") == 0)
+    {
+        return TimeTraceOperation::kBufferFull;
+    }
+    else
+    {
+        return TimeTraceOperation::kNumTraces;
+    }
+}
+
+CHIP_ERROR CmdTracingDispatch(int argc, char ** argv)
+{
+    CHIP_ERROR error = CHIP_NO_ERROR;
+
+    VerifyOrReturnError(argc > 1, error = CHIP_ERROR_INVALID_ARGUMENT);
+
+    if (strcmp(argv[0], "flush") == 0)
+    {
+        if (strcmp(argv[1], "all") == 0)
+        {
+            error = Tracing::Silabs::SilabsTracer::Instance().TraceBufferFlushAll();
+        }
+        else
+        {
+            TimeTraceOperation operation = StringToTimeTraceOperation(argv[1]);
+            error                        = Tracing::Silabs::SilabsTracer::Instance().TraceBufferFlushByOperation(operation);
+        }
+    }
+    else if (strcmp(argv[0], "watermarks") == 0)
+    {
+        if (strcmp(argv[1], "all") == 0)
+        {
+            error = Tracing::Silabs::SilabsTracer::Instance().OutputAllWaterMarks();
+        }
+        else
+        {
+            TimeTraceOperation operation = StringToTimeTraceOperation(argv[1]);
+            error                        = Tracing::Silabs::SilabsTracer::Instance().OutputWaterMark(operation);
+        }
+    }
+    else
+    {
+        error = CHIP_ERROR_INVALID_ARGUMENT;
+    }
+    return error;
+}
+static const Shell::shell_command_t cmds_silabs_tracing = { &CmdTracingDispatch, "tracing",
+                                                            "Dispatch Silicon Labs Tracing command" };
+void CmdTracingInit()
+{
+    // Register tracing commands with the top-level shell.
+    Engine::Root().RegisterCommands(&cmds_silabs_tracing, 2);
+}
+#endif // MATTER_TRACING_ENABLED
+
 void startShellTask()
 {
     int status = chip::Shell::Engine::Root().Init();
@@ -127,6 +280,9 @@ void startShellTask()
 #ifdef SL_CATALOG_CLI_PRESENT
     cmdSilabsInit();
 #endif
+#if MATTER_TRACING_ENABLED
+    CmdTracingInit();
+#endif // MATTER_TRACING_ENABLED
 
     shellTaskHandle = osThreadNew(MatterShellTask, nullptr, &kShellTaskAttr);
     VerifyOrDie(shellTaskHandle);

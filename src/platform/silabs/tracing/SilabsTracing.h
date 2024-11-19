@@ -151,6 +151,7 @@ public:
      * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
     CHIP_ERROR TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error = CHIP_NO_ERROR);
+    CHIP_ERROR TimeTraceEnd(TimeTraceOperation aOperation, uint32_t error) { return TimeTraceEnd(aOperation, ChipError((error))); }
 
     /** @brief Trace an instant time operation
      * This calls the OutputTrace method to log the trace if logs are enabled, and stores the time tracker in the buffer if the
@@ -160,6 +161,10 @@ public:
      * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
     CHIP_ERROR TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR error = CHIP_NO_ERROR);
+    CHIP_ERROR TimeTraceInstant(TimeTraceOperation aOperation, uint32_t error)
+    {
+        return TimeTraceInstant(aOperation, ChipError((error)));
+    }
 
     /** @brief Output a time tracker
      * This will output the latest time tracker for a specific operation, without affecting the buffer.

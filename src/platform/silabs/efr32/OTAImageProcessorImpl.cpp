@@ -25,6 +25,11 @@
 #include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
 #endif // SL_WIFI
 
+#include <matter/tracing/build_config.h>
+#if MATTER_TRACING_ENABLED
+#include <platform/silabs/tracing/SilabsTracing.h>
+#endif // MATTER_TRACING_ENABLED
+
 extern "C" {
 #include "btl_interface.h"
 #include "sl_core.h"
@@ -50,6 +55,11 @@ extern "C" {
 static chip::OTAImageProcessorImpl gImageProcessor;
 
 namespace chip {
+
+#if MATTER_TRACING_ENABLED
+using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
+using SilabsTracer       = chip::Tracing::Silabs::SilabsTracer;
+#endif // MATTER_TRACING_ENABLED
 
 // Define static memebers
 uint8_t OTAImageProcessorImpl::mSlotId                                                  = 0;
@@ -158,12 +168,19 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
 
     ChipLogProgress(SoftwareUpdate, "HandlePrepareDownload: started");
 
+#if MATTER_TRACING_ENABLED
+    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kImageUpload);
+#endif // MATTER_TRACING_ENABLED
+
 #ifdef _SILICON_LABS_32B_SERIES_2
     // TODO sl-temp: bootloader_init is called previously sl_platform_init(). Recalling it for series3 causes a crash.
     WRAP_BL_DFU_CALL(err = bootloader_init())
     if (err != SL_BOOTLOADER_OK)
     {
         ChipLogProgress(SoftwareUpdate, "bootloader_init Failed error: %ld", err);
+#if MATTER_TRACING_ENABLED
+        SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageUpload, CHIP_ERROR_INTERNAL);
+#endif // MATTER_TRACING_ENABLED
     }
 #endif
 
@@ -205,6 +222,9 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
         if (err != SL_STATUS_OK)
         {
             ChipLogError(SoftwareUpdate, "sl_wfx_host_pre_bootloader_spi_transfer() error: %ld", err);
+#if MATTER_TRACING_ENABLED
+            SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageUpload, CHIP_ERROR_INTERNAL);
+#endif // MATTER_TRACING_ENABLED
             return;
         }
 #endif // SL_BTLCTRL_MUX
@@ -215,6 +235,9 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
         if (err != SL_STATUS_OK)
         {
             ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
+#if MATTER_TRACING_ENABLED
+            SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageUpload, CHIP_ERROR_INTERNAL);
+#endif // MATTER_TRACING_ENABLED
             return;
         }
 #endif // SL_BTLCTRL_MUX
@@ -222,6 +245,9 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
         {
             ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %ld", err);
             imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
+#if MATTER_TRACING_ENABLED
+            SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageUpload, CHIP_ERROR_WRITE_FAILED);
+#endif // MATTER_TRACING_ENABLED
             return;
         }
     }
@@ -229,6 +255,9 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     imageProcessor->ReleaseBlock();
 
     ChipLogProgress(SoftwareUpdate, "OTA image downloaded successfully");
+#if MATTER_TRACING_ENABLED
+    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageUpload);
+#endif // MATTER_TRACING_ENABLED
 }
 
 // TODO: SE access is not thread safe. It assert if other tasks accesses it during bootloader_verifyImage or
@@ -252,6 +281,9 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     uint32_t err = SL_BOOTLOADER_OK;
 
     ChipLogProgress(SoftwareUpdate, "HandleApply: verifying image");
+#if MATTER_TRACING_ENABLED
+    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kImageVerification);
+#endif // MATTER_TRACING_ENABLED
 
     // Force KVS to store pending keys such as data from StoreCurrentUpdateInfo()
     chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().ForceKeyMapSave();
@@ -260,6 +292,9 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     if (err != SL_STATUS_OK)
     {
         ChipLogError(SoftwareUpdate, "sl_wfx_host_pre_bootloader_spi_transfer() error: %ld", err);
+#if MATTER_TRACING_ENABLED
+        SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageVerification, CHIP_ERROR_INTERNAL);
+#endif // MATTER_TRACING_ENABLED
         return;
     }
 #endif // SL_BTLCTRL_MUX
@@ -282,6 +317,9 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
             ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
         }
 #endif // SL_BTLCTRL_MUX
+#if MATTER_TRACING_ENABLED
+        SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageVerification, err);
+#endif // MATTER_TRACING_ENABLED
         return;
     }
     ChipLogProgress(SoftwareUpdate, "Image verified, Set image to bootload");
@@ -300,6 +338,9 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
             ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
         }
 #endif // SL_BTLCTRL_MUX
+#if MATTER_TRACING_ENABLED
+        SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageVerification, err);
+#endif // MATTER_TRACING_ENABLED
         return;
     }
 
@@ -308,11 +349,17 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     if (err != SL_STATUS_OK)
     {
         ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
+#if MATTER_TRACING_ENABLED
+        SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageVerification, err);
+#endif // MATTER_TRACING_ENABLED
         return;
     }
 #endif // SL_BTLCTRL_MUX
 
     ChipLogProgress(SoftwareUpdate, "Reboot and install new image...");
+#if MATTER_TRACING_ENABLED
+    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageVerification);
+#endif // MATTER_TRACING_ENABLED
 #if defined(_SILICON_LABS_32B_SERIES_3) && CHIP_PROGRESS_LOGGING
     osDelay(100); // sl-temp: delay for uart print before reboot
 #endif            // _SILICON_LABS_32B_SERIES_3 && CHIP_PROGRESS_LOGGING

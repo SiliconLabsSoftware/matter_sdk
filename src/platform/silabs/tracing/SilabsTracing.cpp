@@ -20,7 +20,7 @@
 #include <lib/support/PersistentData.h>
 
 #if !CONFIG_BUILD_FOR_HOST_UNIT_TEST
-#include <Logging.h> // for isLogInitialized
+#include <platform/silabs/Logging.h> // for isLogInitialized
 #endif
 
 // The following functions needs to be implemented by the application to allows logging or storing the traces /
@@ -120,18 +120,20 @@ int TimeTracker::ToCharArray(MutableByteSpan & buffer) const
     {
     case OperationType::kBegin:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
-                        "TimeTracker - StartTime: %" PRIu32 ", Operation: %s, Type: %s, Error: 0x%" PRIx32, mStartTime.count(),
-                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
+                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ",  StartTime: %" PRIu32 "",
+                        OperationTypeToString(mType), TimeTraceOperationToString(mOperation), mError.AsInteger(),
+                        mStartTime.count());
     case OperationType::kEnd:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
-                        "TimeTracker - StartTime: %" PRIu32 ", EndTime: %" PRIu32 ", Duration: %" PRIu32
-                        " ms, Operation: %s, Type: %s, Error: 0x%" PRIx32,
-                        mStartTime.count(), mEndTime.count(), (mEndTime - mStartTime).count(),
-                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
+                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ", StartTime: %" PRIu32 ", EndTime: %" PRIu32
+                        ", Duration: %" PRIu32 " ms",
+                        OperationTypeToString(mType), TimeTraceOperationToString(mOperation), mError.AsInteger(),
+                        mStartTime.count(), mEndTime.count(), (mEndTime - mStartTime).count());
     case OperationType::kInstant:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
-                        "TimeTracker - EventTime: %" PRIu32 ", Operation: %s, Type: %s, Error: 0x%" PRIx32, mStartTime.count(),
-                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
+                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ", EventTime: %" PRIu32 "",
+                        OperationTypeToString(mType), TimeTraceOperationToString(mOperation), mError.AsInteger(),
+                        mStartTime.count());
     default:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(), "TimeTracker - Unknown operation type");
     }
@@ -237,6 +239,8 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ER
 
 CHIP_ERROR SilabsTracer::OutputTimeTracker(const TimeTracker & tracker)
 {
+    VerifyOrReturnError(to_underlying(tracker.mOperation) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(DeviceLayer, "Invalid tracker"));
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     // Allocate a buffer to store the trace
     uint8_t buffer[kMaxTraceSize];
@@ -279,16 +283,17 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
 
 CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
 {
-    size_t index     = static_cast<size_t>(aOperation);
+    VerifyOrReturnError(to_underlying(aOperation) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(DeviceLayer, "Invalid watermark"));
+    size_t index     = to_underlying(aOperation);
     auto & watermark = mWatermarks[index];
 
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     ChipLogProgress(DeviceLayer,
-                    "Operation: %s, TotalCount=%" PRIu32 ", SuccessFullCount=%" PRIu32 ", MaxTime=%" PRIu32 ", MinTime=%" PRIu32
-                    ", AvgTime=%" PRIu32 ", CountAboveAvg=%" PRIu32 "",
-                    TimeTraceOperationToString(aOperation), watermark.mTotalCount, watermark.mSuccessfullCount,
-                    watermark.mMaxTimeMs.count(), watermark.mMinTimeMs.count(), watermark.mMovingAverage.count(),
-                    watermark.mCountAboveAvg);
+                    "| Operation: %-25s| MaxTime:%-5" PRIu32 "| MinTime:%-5" PRIu32 "| AvgTime:%-5" PRIu32 "| TotalCount:%-8" PRIu32
+                    ", SuccessFullCount:%-8" PRIu32 "| CountAboveAvg:%-8" PRIu32 "|",
+                    TimeTraceOperationToString(aOperation), watermark.mMaxTimeMs.count(), watermark.mMinTimeMs.count(),
+                    watermark.mMovingAverage.count(), watermark.mTotalCount, watermark.mSuccessfullCount, watermark.mCountAboveAvg);
 
     return CHIP_NO_ERROR;
 }

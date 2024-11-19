@@ -18,8 +18,14 @@
 import("//build_overrides/build.gni")
 import("//build_overrides/chip.gni")
 
+config("tracing") {
+  include_dirs = [ "include" ]
+}
+
 static_library("SilabsTracing") {
   sources = [
+    "BackendImpl.cpp",
+    "BackendImpl.h",
     "SilabsTracing.cpp",
     "SilabsTracing.h",
   ]
@@ -27,7 +33,14 @@ static_library("SilabsTracing") {
   deps = [
     "${chip_root}/src/lib/core",
     "${chip_root}/src/lib/support",
-    "${chip_root}/src/platform",
     "${chip_root}/src/system",
   ]
+
+  public_deps = [ "${chip_root}/src/tracing:tracing" ]
+}
+
+source_set("silabs_tracing") {
+  public = [ "include/matter/tracing/macros_impl.h" ]
+  public_configs = [ ":tracing" ]
+  deps = [ ":SilabsTracing" ]
 }
