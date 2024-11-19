@@ -20,7 +20,7 @@
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 #include <platform/silabs/OTAImageProcessorImpl.h>
 #include <platform/silabs/SilabsConfig.h>
-#include <platform/silabs/wifi/icd/PlatformSleepManager.h>
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -159,7 +159,7 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     // Setting the device is in high performace - no-sleepy mode during OTA tranfer
-    DeviceLayer::Silabs::PlatformSleepManager::GetInstance().RequestHighPerformance();
+    DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER*/
 
     imageProcessor->mDownloader->OnPreparedForDownload(CHIP_NO_ERROR);
@@ -198,7 +198,7 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
 
 #if (CHIP_CONFIG_ENABLE_ICD_SERVER)
     // Setting the device back to power save mode when transfer is completed successfully
-    DeviceLayer::Silabs::PlatformSleepManager::GetInstance().RemoveHighPerformanceRequest();
+    DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER*/
 
     ChipLogProgress(SoftwareUpdate, "OTA image downloaded successfully");
@@ -217,7 +217,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     // Setting the device is in high performace - no-sleepy mode before soft reset as soft reset is not happening in sleep mode
-    DeviceLayer::Silabs::PlatformSleepManager::GetInstance().RequestHighPerformance();
+    DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER*/
 
     if (mReset)
@@ -240,7 +240,7 @@ void OTAImageProcessorImpl::HandleAbort(intptr_t context)
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     // Setting the device back to power save mode when transfer is aborted in the middle
-    DeviceLayer::Silabs::PlatformSleepManager::GetInstance().RemoveHighPerformanceRequest();
+    DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER*/
 
     // Not clearing the image storage area as it is done during each write

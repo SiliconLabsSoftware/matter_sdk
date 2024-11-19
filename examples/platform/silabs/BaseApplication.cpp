@@ -69,7 +69,7 @@
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-#include <platform/silabs/wifi/icd/PlatformSleepManager.h>
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
@@ -188,7 +188,7 @@ void BaseApplicationDelegate::OnCommissioningSessionStarted()
     isComissioningStarted = true;
 
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-    PlatformSleepManager::GetInstance().HandleCommissioningSessionStarted();
+    WifiSleepManager::GetInstance().HandleCommissioningSessionStarted();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
@@ -197,7 +197,7 @@ void BaseApplicationDelegate::OnCommissioningSessionStopped()
     isComissioningStarted = false;
 
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-    PlatformSleepManager::GetInstance().HandleCommissioningSessionStopped();
+    WifiSleepManager::GetInstance().HandleCommissioningSessionStopped();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
@@ -219,7 +219,7 @@ void BaseApplicationDelegate::OnCommissioningWindowClosed()
     }
 
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-    PlatformSleepManager::GetInstance().HandleCommissioningWindowClose();
+    WifiSleepManager::GetInstance().HandleCommissioningWindowClose();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
@@ -904,7 +904,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
         {
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
             chip::app::DnssdServer::Instance().StartServer();
-            PlatformSleepManager::GetInstance().HandleInternetConnectivityChange();
+            WifiSleepManager::GetInstance().HandleInternetConnectivityChange();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #if SILABS_OTA_ENABLED
@@ -918,7 +918,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
     case DeviceEventType::kCommissioningComplete: {
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-        PlatformSleepManager::GetInstance().HandleCommissioningComplete();
+        WifiSleepManager::GetInstance().HandleCommissioningComplete();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 
 // SL-Only

@@ -28,7 +28,7 @@
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-#include <platform/silabs/wifi/icd/PlatformSleepManager.h>
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif /* SL_WIFI */
 
@@ -49,7 +49,7 @@
 #include <platform/silabs/wifi/wiseconnect-abstraction/WiseconnectInterfaceAbstraction.h>
 #endif // SLI_SI91X_MCU_INTERFACE
 
-// TODO: Add suport for the WF200 in the PlatformSleepManager
+// TODO: Add suport for the WF200 in the WifiSleepManager
 #if defined(RS911X_WIFI) || SLI_SI91X_MCU_INTERFACE
 #endif // defined(RS911X_WIFI) || SLI_SI91X_MCU_INTERFACE
 
@@ -250,7 +250,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     ReturnErrorOnFailure(InitWiFi());
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-    err = DeviceLayer::Silabs::PlatformSleepManager::GetInstance().Init();
+    err = DeviceLayer::Silabs::WifiSleepManager::GetInstance().Init();
     VerifyOrReturnError(err == CHIP_NO_ERROR, err);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI

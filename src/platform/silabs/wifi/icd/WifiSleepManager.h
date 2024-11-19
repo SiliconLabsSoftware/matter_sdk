@@ -24,16 +24,16 @@ namespace DeviceLayer {
 namespace Silabs {
 
 /**
- * @brief PlatformSleepManager is a singleton class that manages the sleep modes for Wi-Fi devices.
+ * @brief WifiSleepManager is a singleton class that manages the sleep modes for Wi-Fi devices.
  *        The class contains the buisness logic associated with optimizing the sleep states based on the Matter SDK internal states
  */
-class PlatformSleepManager
+class WifiSleepManager
 {
 public:
-    PlatformSleepManager(const PlatformSleepManager &)             = delete;
-    PlatformSleepManager & operator=(const PlatformSleepManager &) = delete;
+    WifiSleepManager(const WifiSleepManager &)             = delete;
+    WifiSleepManager & operator=(const WifiSleepManager &) = delete;
 
-    static PlatformSleepManager & GetInstance() { return mInstance; }
+    static WifiSleepManager & GetInstance() { return mInstance; }
 
     /**
      * @brief Init function that configure the SleepManager APIs based on the type of ICD.
@@ -70,8 +70,8 @@ public:
     void HandleCommissioningSessionStopped();
 
 private:
-    PlatformSleepManager()  = default;
-    ~PlatformSleepManager() = default;
+    WifiSleepManager()  = default;
+    ~WifiSleepManager() = default;
 
     /**
      * @brief Transition the device to the Lowest Power State.
@@ -81,7 +81,7 @@ private:
      */
     CHIP_ERROR TransitionToLowPowerMode();
 
-    static PlatformSleepManager mInstance;
+    static WifiSleepManager mInstance;
     bool isCommissioningInProgress = false;
 
     uint8_t mHighPerformanceRequestCounter = 0;

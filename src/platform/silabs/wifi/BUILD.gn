@@ -154,8 +154,8 @@ source_set("wifi-platform") {
     public_deps += [ "${chip_root}/src/app/icd/server:configuration-data" ]
 
     sources += [
-      "${silabs_platform_dir}/wifi/icd/PlatformSleepManager.cpp",
-      "${silabs_platform_dir}/wifi/icd/PlatformSleepManager.h",
+      "${silabs_platform_dir}/wifi/icd/WifiSleepManager.cpp",
+      "${silabs_platform_dir}/wifi/icd/WifiSleepManager.h",
     ]
   }
 }

@@ -18,7 +18,7 @@
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-#include <platform/silabs/wifi/icd/PlatformSleepManager.h>
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
 using namespace chip::app;
 
@@ -27,19 +27,19 @@ namespace DeviceLayer {
 namespace Silabs {
 
 // Initialize the static instance
-PlatformSleepManager PlatformSleepManager::mInstance;
+WifiSleepManager WifiSleepManager::mInstance;
 
-CHIP_ERROR PlatformSleepManager::Init()
+CHIP_ERROR WifiSleepManager::Init()
 {
     return CHIP_NO_ERROR;
 }
 
-void PlatformSleepManager::HandleCommissioningComplete()
+void WifiSleepManager::HandleCommissioningComplete()
 {
     TransitionToLowPowerMode();
 }
 
-void PlatformSleepManager::HandleInternetConnectivityChange()
+void WifiSleepManager::HandleInternetConnectivityChange()
 {
     if (!isCommissioningInProgress)
     {
@@ -47,19 +47,19 @@ void PlatformSleepManager::HandleInternetConnectivityChange()
     }
 }
 
-void PlatformSleepManager::HandleCommissioningWindowClose() {}
+void WifiSleepManager::HandleCommissioningWindowClose() {}
 
-void PlatformSleepManager::HandleCommissioningSessionStarted()
+void WifiSleepManager::HandleCommissioningSessionStarted()
 {
     isCommissioningInProgress = true;
 }
 
-void PlatformSleepManager::HandleCommissioningSessionStopped()
+void WifiSleepManager::HandleCommissioningSessionStopped()
 {
     isCommissioningInProgress = false;
 }
 
-CHIP_ERROR PlatformSleepManager::RequestHighPerformance()
+CHIP_ERROR WifiSleepManager::RequestHighPerformance()
 {
     VerifyOrReturnError(mHighPerformanceRequestCounter < std::numeric_limits<uint8_t>::max(), CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "High performance request counter overflow"));
@@ -78,7 +78,7 @@ CHIP_ERROR PlatformSleepManager::RequestHighPerformance()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR PlatformSleepManager::RemoveHighPerformanceRequest()
+CHIP_ERROR WifiSleepManager::RemoveHighPerformanceRequest()
 {
     VerifyOrReturnError(mHighPerformanceRequestCounter > 0, CHIP_NO_ERROR,
                         ChipLogError(DeviceLayer, "Wi-Fi configuration already in low power mode"));
@@ -93,7 +93,7 @@ CHIP_ERROR PlatformSleepManager::RemoveHighPerformanceRequest()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR PlatformSleepManager::TransitionToLowPowerMode()
+CHIP_ERROR WifiSleepManager::TransitionToLowPowerMode()
 {
     VerifyOrReturnError(mHighPerformanceRequestCounter == 0, CHIP_NO_ERROR,
                         ChipLogDetail(DeviceLayer, "High Performance Requested - Device cannot go to a lower power mode."));

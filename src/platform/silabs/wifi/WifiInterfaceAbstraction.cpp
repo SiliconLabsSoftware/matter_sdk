@@ -23,7 +23,7 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-#include <platform/silabs/wifi/icd/PlatformSleepManager.h>
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,7 +55,7 @@ osTimerId_t sRetryTimer;
 void RetryConnectionTimerHandler(void * arg)
 {
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-    Silabs::PlatformSleepManager::GetInstance().RequestHighPerformance();
+    Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
     if (wfx_connect_to_ap() != SL_STATUS_OK)
@@ -197,7 +197,7 @@ void wfx_retry_connection(uint16_t retryAttempt)
         return;
     }
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-    Silabs::PlatformSleepManager::GetInstance().RemoveHighPerformanceRequest();
+    Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
     ChipLogProgress(DeviceLayer, "wfx_retry_connection : Next attempt after %d Seconds", retryInterval);
     retryInterval += retryInterval;
