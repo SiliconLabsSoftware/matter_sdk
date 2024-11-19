@@ -36,14 +36,15 @@ CHIP_ERROR WifiSleepManager::Init()
 
 void WifiSleepManager::HandleCommissioningComplete()
 {
-    TransitionToLowPowerMode();
+    VerifyAndTransitionToLowPowerMode();
 }
 
 void WifiSleepManager::HandleInternetConnectivityChange()
 {
+    // TODO: Centralize the buisness logic in the VerifyAndTransitionToLowPowerMode
     if (!isCommissioningInProgress)
     {
-        TransitionToLowPowerMode();
+        VerifyAndTransitionToLowPowerMode();
     }
 }
 
@@ -69,8 +70,6 @@ CHIP_ERROR WifiSleepManager::RequestHighPerformance()
 #if SLI_SI917 // 917 SoC & NCP
         VerifyOrReturnError(wfx_power_save(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                             ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance"));
-        VerifyOrReturnError(ConfigureBroadcastFilter(false) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                            ChipLogError(DeviceLayer, "Failed to disable broadcast filter"));
 #endif // SLI_SI917
     }
 
@@ -85,17 +84,15 @@ CHIP_ERROR WifiSleepManager::RemoveHighPerformanceRequest()
 
     mHighPerformanceRequestCounter--;
 
-    if (mHighPerformanceRequestCounter == 0)
-    {
-        ReturnErrorOnFailure(TransitionToLowPowerMode());
-    }
+    // We don't do the mHighPerformanceRequestCounter check here; the check is in TransitionToLowPowerMode function
+    ReturnErrorOnFailure(VerifyAndTransitionToLowPowerMode());
 
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR WifiSleepManager::TransitionToLowPowerMode()
+CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
 {
-    VerifyOrReturnError(mHighPerformanceRequestCounter == 0, CHIP_NO_ERROR,
+    VerifyOrReturnValue(mHighPerformanceRequestCounter == 0, CHIP_NO_ERROR,
                         ChipLogDetail(DeviceLayer, "High Performance Requested - Device cannot go to a lower power mode."));
 
 #if SLI_SI917 // 917 SoC & NCP

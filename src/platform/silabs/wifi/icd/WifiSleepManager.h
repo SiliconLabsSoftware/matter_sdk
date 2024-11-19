@@ -74,12 +74,15 @@ private:
     ~WifiSleepManager() = default;
 
     /**
-     * @brief Transition the device to the Lowest Power State.
+     * @brief Function validates what is the lowest power mode the device can got to and transitions the device to a low pwoer
+     *        state.
+     *        - Unprovisionned and no commissioning in progress: Deep Sleep
+     *        - Otherwise, DTIM based low power mode
      *
      * @return CHIP_ERROR CHIP_NO_ERROR if the device was transitionned to low power
      *         CHIP_ERROR_INTERNAL if an error occured
      */
-    CHIP_ERROR TransitionToLowPowerMode();
+    CHIP_ERROR VerifyAndTransitionToLowPowerMode();
 
     static WifiSleepManager mInstance;
     bool isCommissioningInProgress = false;

@@ -902,10 +902,12 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
         if ((event->ThreadConnectivityChange.Result == kConnectivity_Established) ||
             (event->InternetConnectivityChange.IPv6 == kConnectivity_Established))
         {
-#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+#if SL_WIFI
             chip::app::DnssdServer::Instance().StartServer();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
             WifiSleepManager::GetInstance().HandleInternetConnectivityChange();
-#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#endif // SL_WIFI
 
 #if SILABS_OTA_ENABLED
             ChipLogProgress(AppServer, "Scheduling OTA Requestor initialization");

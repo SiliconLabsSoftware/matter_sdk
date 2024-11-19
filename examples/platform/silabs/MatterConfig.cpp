@@ -49,10 +49,6 @@
 #include <platform/silabs/wifi/wiseconnect-abstraction/WiseconnectInterfaceAbstraction.h>
 #endif // SLI_SI91X_MCU_INTERFACE
 
-// TODO: Add suport for the WF200 in the WifiSleepManager
-#if defined(RS911X_WIFI) || SLI_SI91X_MCU_INTERFACE
-#endif // defined(RS911X_WIFI) || SLI_SI91X_MCU_INTERFACE
-
 #include <crypto/CHIPCryptoPAL.h>
 // If building with the EFR32-provided crypto backend, we can use the
 // opaque keystore
