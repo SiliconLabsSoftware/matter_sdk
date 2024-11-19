@@ -34,32 +34,62 @@ namespace chip {
 namespace Tracing {
 namespace Silabs {
 
-const char * TimeTraceOperationString[] = {
-    [to_underlying(TimeTraceOperation::kSpake2p)]                 = "Spake2p",
-    [to_underlying(TimeTraceOperation::kPake1)]                   = "Pake1",
-    [to_underlying(TimeTraceOperation::kPake2)]                   = "Pake2",
-    [to_underlying(TimeTraceOperation::kPake3)]                   = "Pake3",
-    [to_underlying(TimeTraceOperation::kOperationalCredentials)]  = "OperationalCredentials",
-    [to_underlying(TimeTraceOperation::kAttestationVerification)] = "AttestationVerification",
-    [to_underlying(TimeTraceOperation::kCSR)]                     = "CSR",
-    [to_underlying(TimeTraceOperation::kNOC)]                     = "NOC",
-    [to_underlying(TimeTraceOperation::kTransportLayer)]          = "TransportLayer",
-    [to_underlying(TimeTraceOperation::kTransportSetup)]          = "TransportSetup",
-    [to_underlying(TimeTraceOperation::kFindOperational)]         = "FindOperational",
-    [to_underlying(TimeTraceOperation::kCaseSession)]             = "CaseSession",
-    [to_underlying(TimeTraceOperation::kSigma1)]                  = "Sigma1",
-    [to_underlying(TimeTraceOperation::kSigma2)]                  = "Sigma2",
-    [to_underlying(TimeTraceOperation::kSigma3)]                  = "Sigma3",
-    [to_underlying(TimeTraceOperation::kOTA)]                     = "OTA",
-    [to_underlying(TimeTraceOperation::kImageUpload)]             = "ImageUpload",
-    [to_underlying(TimeTraceOperation::kImageVerification)]       = "ImageVerification",
-    [to_underlying(TimeTraceOperation::kAppApplyTime)]            = "AppApplyTime",
-    [to_underlying(TimeTraceOperation::kBootup)]                  = "Bootup",
-    [to_underlying(TimeTraceOperation::kSilabsInit)]              = "SilabsInit",
-    [to_underlying(TimeTraceOperation::kMatterInit)]              = "MatterInit",
-    [to_underlying(TimeTraceOperation::kBufferFull)]              = "BufferFull",
-    [to_underlying(TimeTraceOperation::kNumTraces)]               = "NumTraces",
-};
+const char * TimeTraceOperationToString(TimeTraceOperation operation)
+{
+    switch (operation)
+    {
+    case TimeTraceOperation::kSpake2p:
+        return "Spake2p";
+    case TimeTraceOperation::kPake1:
+        return "Pake1";
+    case TimeTraceOperation::kPake2:
+        return "Pake2";
+    case TimeTraceOperation::kPake3:
+        return "Pake3";
+    case TimeTraceOperation::kOperationalCredentials:
+        return "OperationalCredentials";
+    case TimeTraceOperation::kAttestationVerification:
+        return "AttestationVerification";
+    case TimeTraceOperation::kCSR:
+        return "CSR";
+    case TimeTraceOperation::kNOC:
+        return "NOC";
+    case TimeTraceOperation::kTransportLayer:
+        return "TransportLayer";
+    case TimeTraceOperation::kTransportSetup:
+        return "TransportSetup";
+    case TimeTraceOperation::kFindOperational:
+        return "FindOperational";
+    case TimeTraceOperation::kCaseSession:
+        return "CaseSession";
+    case TimeTraceOperation::kSigma1:
+        return "Sigma1";
+    case TimeTraceOperation::kSigma2:
+        return "Sigma2";
+    case TimeTraceOperation::kSigma3:
+        return "Sigma3";
+    case TimeTraceOperation::kOTA:
+        return "OTA";
+    case TimeTraceOperation::kImageUpload:
+        return "ImageUpload";
+    case TimeTraceOperation::kImageVerification:
+        return "ImageVerification";
+    case TimeTraceOperation::kAppApplyTime:
+        return "AppApplyTime";
+    case TimeTraceOperation::kBootup:
+        return "Bootup";
+    case TimeTraceOperation::kSilabsInit:
+        return "SilabsInit";
+    case TimeTraceOperation::kMatterInit:
+        return "MatterInit";
+    case TimeTraceOperation::kNumTraces:
+        return "NumTraces";
+    case TimeTraceOperation::kBufferFull:
+        return "BufferFull";
+    default:
+        return "Unknown";
+    }
+}
 
 const char * OperationTypeToString(OperationType type)
 {
@@ -91,17 +121,17 @@ int TimeTracker::ToCharArray(MutableByteSpan & buffer) const
     case OperationType::kBegin:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
                         "TimeTracker - StartTime: %" PRIu32 ", Operation: %s, Type: %s, Error: 0x%" PRIx32, mStartTime.count(),
-                        TimeTraceOperationString[to_underlying(mOperation)], OperationTypeToString(mType), mError.AsInteger());
+                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
     case OperationType::kEnd:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
                         "TimeTracker - StartTime: %" PRIu32 ", EndTime: %" PRIu32 ", Duration: %" PRIu32
                         " ms, Operation: %s, Type: %s, Error: 0x%" PRIx32,
                         mStartTime.count(), mEndTime.count(), (mEndTime - mStartTime).count(),
-                        TimeTraceOperationString[to_underlying(mOperation)], OperationTypeToString(mType), mError.AsInteger());
+                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
     case OperationType::kInstant:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
                         "TimeTracker - EventTime: %" PRIu32 ", Operation: %s, Type: %s, Error: 0x%" PRIx32, mStartTime.count(),
-                        TimeTraceOperationString[to_underlying(mOperation)], OperationTypeToString(mType), mError.AsInteger());
+                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
     default:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(), "TimeTracker - Unknown operation type");
     }
@@ -256,7 +286,7 @@ CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
     ChipLogProgress(DeviceLayer,
                     "Operation: %s, TotalCount=%" PRIu32 ", SuccessFullCount=%" PRIu32 ", MaxTime=%" PRIu32 ", MinTime=%" PRIu32
                     ", AvgTime=%" PRIu32 ", CountAboveAvg=%" PRIu32 "",
-                    TimeTraceOperationString[to_underlying(aOperation)], watermark.mTotalCount, watermark.mSuccessfullCount,
+                    TimeTraceOperationToString(aOperation), watermark.mTotalCount, watermark.mSuccessfullCount,
                     watermark.mMaxTimeMs.count(), watermark.mMinTimeMs.count(), watermark.mMovingAverage.count(),
                     watermark.mCountAboveAvg);
 
