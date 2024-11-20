@@ -217,13 +217,7 @@ void BaseApplicationDelegate::OnCommissioningWindowClosed()
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
     }
-
-#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-    WifiSleepManager::GetInstance().HandleCommissioningWindowClose();
-#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
-
-void BaseApplicationDelegate::OnCommissioningWindowOpened() {}
 
 void BaseApplicationDelegate::OnFabricCommitted(const FabricTable & fabricTable, FabricIndex fabricIndex)
 {
@@ -905,7 +899,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #if SL_WIFI
             chip::app::DnssdServer::Instance().StartServer();
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-            WifiSleepManager::GetInstance().HandleInternetConnectivityChange();
+            WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
@@ -920,7 +914,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
     case DeviceEventType::kCommissioningComplete: {
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-        WifiSleepManager::GetInstance().HandleCommissioningComplete();
+        WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 
 // SL-Only

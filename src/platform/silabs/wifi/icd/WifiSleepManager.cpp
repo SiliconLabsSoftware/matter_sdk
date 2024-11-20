@@ -20,7 +20,74 @@
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
-using namespace chip::app;
+namespace {
+
+#if SLI_SI917 // 917 SoC & NCP
+
+/**
+ * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+ *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureLIBasedSleep()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
+                                           chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) ==
+                            SL_STATUS_OK,
+                        CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to enable LI based sleep."));
+
+    VerifyOrReturnError(ConfigureBroadcastFilter(true) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
+ *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureDTIMBasedSleep()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to enable to enable DTIM basedsleep."));
+
+    VerifyOrReturnError(ConfigureBroadcastFilter(false) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to configure broadcast filter."));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi chip to go Deep Sleep.
+ *        Function doesn't change the state of the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureDeepSleep()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to DeepSleep."));
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi chip to go to High Performance.
+ *        Function doesn't change the broad cast filter configuration.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureHighPerformance()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance."));
+    return CHIP_NO_ERROR;
+}
+#endif // SLI_SI917
+
+} // namespace
 
 namespace chip {
 namespace DeviceLayer {
@@ -34,46 +101,16 @@ CHIP_ERROR WifiSleepManager::Init()
     return CHIP_NO_ERROR;
 }
 
-void WifiSleepManager::HandleCommissioningComplete()
-{
-    VerifyAndTransitionToLowPowerMode();
-}
-
-void WifiSleepManager::HandleInternetConnectivityChange()
-{
-    // TODO: Centralize the buisness logic in the VerifyAndTransitionToLowPowerMode
-    if (!isCommissioningInProgress)
-    {
-        VerifyAndTransitionToLowPowerMode();
-    }
-}
-
-void WifiSleepManager::HandleCommissioningWindowClose() {}
-
-void WifiSleepManager::HandleCommissioningSessionStarted()
-{
-    isCommissioningInProgress = true;
-}
-
-void WifiSleepManager::HandleCommissioningSessionStopped()
-{
-    isCommissioningInProgress = false;
-}
-
 CHIP_ERROR WifiSleepManager::RequestHighPerformance()
 {
     VerifyOrReturnError(mHighPerformanceRequestCounter < std::numeric_limits<uint8_t>::max(), CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "High performance request counter overflow"));
 
-    if (mHighPerformanceRequestCounter == 0)
-    {
-#if SLI_SI917 // 917 SoC & NCP
-        VerifyOrReturnError(wfx_power_save(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                            ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance"));
-#endif // SLI_SI917
-    }
-
     mHighPerformanceRequestCounter++;
+
+    // We don't do the mHighPerformanceRequestCounter check here; the check is in TransitionToLowPowerMode function
+    ReturnErrorOnFailure(VerifyAndTransitionToLowPowerMode());
+
     return CHIP_NO_ERROR;
 }
 
@@ -92,30 +129,38 @@ CHIP_ERROR WifiSleepManager::RemoveHighPerformanceRequest()
 
 CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
 {
-    VerifyOrReturnValue(mHighPerformanceRequestCounter == 0, CHIP_NO_ERROR,
-                        ChipLogDetail(DeviceLayer, "High Performance Requested - Device cannot go to a lower power mode."));
 
 #if SLI_SI917 // 917 SoC & NCP
+    if (mHighPerformanceRequestCounter > 0)
+    {
+        return ConfigureHighPerformance();
+    }
+
+    if (mIsCommissioningInProgress)
+    {
+        return ConfigureDTIMBasedSleep();
+    }
+
     // TODO: Clean this up when the Wi-Fi interface re-work is finished
     wfx_wifi_provision_t wifiConfig;
     wfx_get_wifi_provision(&wifiConfig);
 
-    if (!(wifiConfig.ssid[0] != 0) && !isCommissioningInProgress)
+    if (!(wifiConfig.ssid[0] != 0))
     {
-        VerifyOrReturnError(wfx_power_save(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0) != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                            ChipLogError(DeviceLayer, "Failed to enable Deep Sleep."));
+        return ConfigureDeepSleep();
     }
-    else
-    {
-        VerifyOrReturnError(wfx_power_save(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                            ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
-    }
-#elif RS911X_WIFI // rs9116
-    VerifyOrReturnError(wfx_power_save() != SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
-#endif
 
+    if (mCallback && mCallback->CanGoToLIBasedSleep())
+    {
+        return ConfigureLIBasedSleep();
+    }
+
+    return ConfigureDTIMBasedSleep();
+
+#elif RS911X_WIFI // rs9116
+    VerifyOrReturnError(ConfigurePowerSave() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
     return CHIP_NO_ERROR;
+#endif
 }
 
 } // namespace Silabs

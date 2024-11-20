@@ -254,12 +254,20 @@ bool wfx_hw_ready(void);
 #ifdef RS911X_WIFI // for RS9116, 917 NCP and 917 SoC
 /* RSI Power Save */
 #if (SLI_SI91X_MCU_INTERFACE | EXP_BOARD)
-sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
-                           uint32_t listenInterval);
+sl_status_t ConfigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
+                              uint32_t listenInterval);
 #else
-sl_status_t wfx_power_save();
+sl_status_t ConfigurePowerSave();
 #endif /* (SLI_SI91X_MCU_INTERFACE | EXP_BOARD) */
 #endif /* RS911X_WIFI */
+
+/**
+ * @brief Configures the broadcast filter.
+ *
+ * @param[in] enableBroadcastFilter Boolean to enable or disable the broadcast filter.
+ * @return sl_status_t Returns the status of the operation.
+ */
+sl_status_t ConfigureBroadcastFilter(bool enableBroadcastFilter);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 void sl_matter_wifi_task(void * arg);

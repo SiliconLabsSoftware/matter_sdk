@@ -71,12 +71,16 @@ extern "C" {
 #include <platform/silabs/wifi/rs911x/platform/sl_board_configuration.h>
 #endif
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
+
+#if SLI_SI91X_MCU_INTERFACE
 #include "rsi_rom_power_save.h"
 #include "sl_gpio_board.h"
 #include "sl_si91x_driver_gpio.h"
 #include "sl_si91x_power_manager.h"
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#endif // SLI_SI91X_MCU_INTERFACE
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 WfxRsi_t wfx_rsi;
 extern osSemaphoreId_t sl_rs_ble_init_sem;
@@ -418,7 +422,11 @@ sl_status_t JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK || status == SL_STATUS_IN_PROGRESS)
     {
-        // TODO: Set listen interval to 0 with DTIM sync
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        // TODO: We need a way to identify if this was a retry or a first attempt connect to avoid removing a req that was not ours
+        //  Remove High performance request that might have been added during the retry process
+        chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
@@ -865,9 +873,8 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-
-sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
-                           uint32_t listenInterval)
+sl_status_t ConfigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
+                               uint32_t listenInterval)
 {
     int32_t error = rsi_bt_power_save_profile(sl_si91x_ble_state, 0);
     VerifyOrReturnError(error == RSI_SUCCESS, SL_STATUS_FAIL,
@@ -882,6 +889,20 @@ sl_status_t wfx_power_save(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_
     sl_status_t status = sl_wifi_set_performance_profile(&wifi_profile);
     VerifyOrReturnError(status == SL_STATUS_OK, status,
                         ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile failed: 0x%lx", status));
+
+    return status;
+}
+
+sl_status_t ConfigureBroadcastFilter(bool enableBroadcastFilter)
+{
+    sl_status_t status = SL_STATUS_OK;
+
+    uint16_t beaconDropThreshold = (enableBroadcastFilter) ? kTimeToFullBeaconReception : 0;
+    uint8_t filterBcastInTim     = (enableBroadcastFilter) ? 1 : 0;
+
+    status = sl_wifi_filter_broadcast(beaconDropThreshold, filterBcastInTim, 1 /* valid till next update*/);
+    VerifyOrReturnError(status == SL_STATUS_OK, status,
+                        ChipLogError(DeviceLayer, "sl_wifi_filter_broadcast failed: 0x%lx", static_cast<uint32_t>(status)));
 
     return status;
 }
