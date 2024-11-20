@@ -20,6 +20,75 @@
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
+namespace {
+
+#if SLI_SI917 // 917 SoC & NCP
+
+/**
+ * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+ *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureLIBasedSleep()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
+                                           chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) ==
+                            SL_STATUS_OK,
+                        CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to enable LI based sleep."));
+
+    VerifyOrReturnError(ConfigureBroadcastFilter(true) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
+ *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureDTIMBasedSleep()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to enable to enable DTIM basedsleep."));
+
+    VerifyOrReturnError(ConfigureBroadcastFilter(false) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to configure broadcast filter."));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi chip to go Deep Sleep.
+ *        Function doesn't change the state of the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureDeepSleep()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to DeepSleep."));
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi chip to go to High Performance.
+ *        Function doesn't change the broad cast filter configuration.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureHighPerformance()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance."));
+    return CHIP_NO_ERROR;
+}
+#endif // SLI_SI917
+
+} // namespace
+
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -78,7 +147,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
 
     if (!(wifiConfig.ssid[0] != 0))
     {
-        return ConfigurePowerSave(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0);
+        return ConfigureDeepSleep();
     }
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
@@ -93,38 +162,6 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
     return CHIP_NO_ERROR;
 #endif
 }
-
-#if SLI_SI917 // 917 SoC & NCP
-CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
-{
-    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
-                                           ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) == SL_STATUS_OK,
-                        CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to enable LI based sleep."));
-
-    VerifyOrReturnError(ConfigureBroadcastFilter(true) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
-
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR WifiSleepManager::ConfigureDTIMBasedSleep()
-{
-    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to enable to enable DTIM basedsleep."));
-
-    VerifyOrReturnError(ConfigureBroadcastFilter(false) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to configure broadcast filter."));
-
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
-{
-    VerifyOrReturnError(ConfigurePowerSave(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance."));
-    return CHIP_NO_ERROR;
-}
-#endif // SLI_SI917
 
 } // namespace Silabs
 } // namespace DeviceLayer

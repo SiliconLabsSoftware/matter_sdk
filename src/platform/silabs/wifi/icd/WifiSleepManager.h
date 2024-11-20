@@ -131,38 +131,6 @@ private:
     WifiSleepManager()  = default;
     ~WifiSleepManager() = default;
 
-#if SLI_SI917 // 917 SoC & NCP
-    /**
-     * @brief Configures the Wi-Fi Chip to go to LI based sleep.
-     *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
-     *
-     * @return sl_status_t SL_STATUS_OK if the configurations of the Wi-Fi was successful
-     *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
-     *         possible errors.
-     */
-    CHIP_ERROR ConfigureLIBasedSleep();
-
-    /**
-     * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
-     *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
-     *
-     * @return sl_status_t SL_STATUS_OK if the configurations of the Wi-Fi was successful
-     *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
-     *         possible errors.
-     */
-    CHIP_ERROR ConfigureDTIMBasedSleep();
-
-    /**
-     * @brief Configures the Wi-Fi Chip to go to High Performance.
-     *        Function doesn't change the broad cast filter configuration.
-     *
-     * @return sl_status_t SL_STATUS_OK if the configurations of the Wi-Fi was successful
-     *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
-     *         possible errors.
-     */
-    CHIP_ERROR ConfigureHighPerformance();
-#endif // SLI_SI917
-
     static WifiSleepManager mInstance;
 
     bool mIsCommissioningInProgress        = false;
