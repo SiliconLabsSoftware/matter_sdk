@@ -27,8 +27,10 @@
 #include "sl_rsi_utility.h"
 #include "sl_si91x_host_interface.h"
 #include "sl_si91x_status.h"
+#include "sl_si91x_ncp_utility.h"
 #include "sl_status.h"
 #include "sl_wifi_constants.h"
+#include "spi_multiplex.h"
 #include <stdbool.h>
 #include <string.h>
 
@@ -39,9 +41,6 @@
 #ifdef SL_BOARD_NAME
 #include "sl_board_control.h"
 #endif // SL_BOARD_NAME
-
-#include "sl_si91x_ncp_utility.h"
-#include "spi_multiplex.h"
 
 #include "sl_spidrv_exp_config.h"
 #include "sl_spidrv_instances.h"
