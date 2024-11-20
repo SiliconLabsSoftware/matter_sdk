@@ -926,14 +926,14 @@ int32_t wfx_rsi_send_data(void * p, uint16_t len)
 
 #if SL_ICD_ENABLED
 /*********************************************************************
- * @fn  sl_status_t CofigurePowerSave(void)
+ * @fn  sl_status_t ConfigurePowerSave(void)
  * @brief
  *      Implements the power save in sleepy application
  * @param[in]  None
  * @return  SL_STATUS_OK if successful,
  *          SL_STATUS_FAIL otherwise
  ***********************************************************************/
-sl_status_t CofigurePowerSave(void)
+sl_status_t ConfigurePowerSave(void)
 {
     int32_t status;
 #ifdef RSI_BLE_ENABLE
