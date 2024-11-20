@@ -34,7 +34,78 @@ namespace chip {
 namespace Tracing {
 namespace Silabs {
 
-// TODO add string mapping to log the operation names and types
+const char * TimeTraceOperationToString(TimeTraceOperation operation)
+{
+    switch (operation)
+    {
+    case TimeTraceOperation::kSpake2p:
+        return "Spake2p";
+    case TimeTraceOperation::kPake1:
+        return "Pake1";
+    case TimeTraceOperation::kPake2:
+        return "Pake2";
+    case TimeTraceOperation::kPake3:
+        return "Pake3";
+    case TimeTraceOperation::kOperationalCredentials:
+        return "OperationalCredentials";
+    case TimeTraceOperation::kAttestationVerification:
+        return "AttestationVerification";
+    case TimeTraceOperation::kCSR:
+        return "CSR";
+    case TimeTraceOperation::kNOC:
+        return "NOC";
+    case TimeTraceOperation::kTransportLayer:
+        return "TransportLayer";
+    case TimeTraceOperation::kTransportSetup:
+        return "TransportSetup";
+    case TimeTraceOperation::kFindOperational:
+        return "FindOperational";
+    case TimeTraceOperation::kCaseSession:
+        return "CaseSession";
+    case TimeTraceOperation::kSigma1:
+        return "Sigma1";
+    case TimeTraceOperation::kSigma2:
+        return "Sigma2";
+    case TimeTraceOperation::kSigma3:
+        return "Sigma3";
+    case TimeTraceOperation::kOTA:
+        return "OTA";
+    case TimeTraceOperation::kImageUpload:
+        return "ImageUpload";
+    case TimeTraceOperation::kImageVerification:
+        return "ImageVerification";
+    case TimeTraceOperation::kAppApplyTime:
+        return "AppApplyTime";
+    case TimeTraceOperation::kBootup:
+        return "Bootup";
+    case TimeTraceOperation::kSilabsInit:
+        return "SilabsInit";
+    case TimeTraceOperation::kMatterInit:
+        return "MatterInit";
+    case TimeTraceOperation::kNumTraces:
+        return "NumTraces";
+    case TimeTraceOperation::kBufferFull:
+        return "BufferFull";
+    default:
+        return "Unknown";
+    }
+}
+
+const char * OperationTypeToString(OperationType type)
+{
+    switch (type)
+    {
+    case OperationType::kBegin:
+        return "Begin";
+    case OperationType::kEnd:
+        return "End";
+    case OperationType::kInstant:
+        return "Instant";
+    default:
+        return "Unknown";
+    }
+}
+
 namespace {
 constexpr size_t kPersistentTimeTrackerBufferMax = SERIALIZED_TIME_TRACKERS_SIZE_BYTES;
 } // namespace
@@ -42,6 +113,29 @@ struct TimeTrackerStorage : public TimeTracker, PersistentData<kPersistentTimeTr
 {
     // TODO implement the Persistent Array class and use it here for logging the watermark array
 };
+
+int TimeTracker::ToCharArray(MutableByteSpan & buffer) const
+{
+    switch (mType)
+    {
+    case OperationType::kBegin:
+        return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
+                        "TimeTracker - StartTime: %" PRIu32 ", Operation: %s, Type: %s, Error: 0x%" PRIx32, mStartTime.count(),
+                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
+    case OperationType::kEnd:
+        return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
+                        "TimeTracker - StartTime: %" PRIu32 ", EndTime: %" PRIu32 ", Duration: %" PRIu32
+                        " ms, Operation: %s, Type: %s, Error: 0x%" PRIx32,
+                        mStartTime.count(), mEndTime.count(), (mEndTime - mStartTime).count(),
+                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
+    case OperationType::kInstant:
+        return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
+                        "TimeTracker - EventTime: %" PRIu32 ", Operation: %s, Type: %s, Error: 0x%" PRIx32, mStartTime.count(),
+                        TimeTraceOperationToString(mOperation), OperationTypeToString(mType), mError.AsInteger());
+    default:
+        return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(), "TimeTracker - Unknown operation type");
+    }
+}
 
 SilabsTracer SilabsTracer::sInstance;
 
@@ -78,7 +172,7 @@ CHIP_ERROR SilabsTracer::StartWatermarksStorage(PersistentStorageDelegate * stor
     return CHIP_NO_ERROR;
 }
 
-void SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
+CHIP_ERROR SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
 {
     // Log the start time of the operation
     auto & tracker     = mLatestTimeTrackers[static_cast<size_t>(aOperation)];
@@ -90,10 +184,10 @@ void SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
     auto & watermark = mWatermarks[static_cast<size_t>(aOperation)];
     watermark.mTotalCount++;
 
-    OutputTrace(tracker);
+    return OutputTrace(tracker);
 }
 
-void SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error)
+CHIP_ERROR SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error)
 {
     auto & tracker   = mLatestTimeTrackers[static_cast<size_t>(aOperation)];
     tracker.mEndTime = System::SystemClock().GetMonotonicTimestamp();
@@ -127,10 +221,10 @@ void SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error)
         }
     }
 
-    OutputTrace(tracker);
+    return OutputTrace(tracker);
 }
 
-void SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR error)
+CHIP_ERROR SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR error)
 {
     TimeTracker tracker;
     tracker.mStartTime = System::SystemClock().GetMonotonicTimestamp();
@@ -138,17 +232,17 @@ void SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR er
     tracker.mOperation = aOperation;
     tracker.mType      = OperationType::kInstant;
     tracker.mError     = error;
-    OutputTrace(tracker);
+    return OutputTrace(tracker);
 }
 
 CHIP_ERROR SilabsTracer::OutputTimeTracker(const TimeTracker & tracker)
 {
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
-    ChipLogProgress(DeviceLayer,
-                    "TimeTracker - StartTime: %" PRIu32 ", EndTime: %" PRIu32 ", Operation: %" PRIu8 ", Type: %" PRIu8
-                    ", Error: %" CHIP_ERROR_FORMAT,
-                    tracker.mStartTime.count(), tracker.mEndTime.count(), static_cast<uint8_t>(tracker.mOperation),
-                    static_cast<uint8_t>(tracker.mType), tracker.mError.Format());
+    // Allocate a buffer to store the trace
+    uint8_t buffer[kMaxTraceSize];
+    MutableByteSpan span(buffer);
+    tracker.ToCharArray(span);
+    ChipLogProgress(DeviceLayer, "%s", buffer); // Use format string literal
     return CHIP_NO_ERROR;
 }
 
@@ -168,10 +262,11 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
         TimeTracker resourceExhaustedTracker = tracker;
         resourceExhaustedTracker.mStartTime  = System::SystemClock().GetMonotonicTimestamp();
         resourceExhaustedTracker.mEndTime    = resourceExhaustedTracker.mStartTime;
-        resourceExhaustedTracker.mOperation  = TimeTraceOperation::kNumTraces;
+        resourceExhaustedTracker.mOperation  = TimeTraceOperation::kBufferFull;
         resourceExhaustedTracker.mType       = OperationType::kInstant;
         resourceExhaustedTracker.mError      = CHIP_ERROR_BUFFER_TOO_SMALL;
         mTimeTrackerList.Insert(resourceExhaustedTracker);
+        mBufferedTrackerCount++;
         return CHIP_ERROR_BUFFER_TOO_SMALL;
     }
     else
@@ -189,10 +284,11 @@ CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
 
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     ChipLogProgress(DeviceLayer,
-                    "Trace %zu: TotalCount=%" PRIu32 ", SuccessFullCount=%" PRIu32 ", MaxTime=%" PRIu32 ", MinTime=%" PRIu32
+                    "Operation: %s, TotalCount=%" PRIu32 ", SuccessFullCount=%" PRIu32 ", MaxTime=%" PRIu32 ", MinTime=%" PRIu32
                     ", AvgTime=%" PRIu32 ", CountAboveAvg=%" PRIu32 "",
-                    index, watermark.mTotalCount, watermark.mSuccessfullCount, watermark.mMaxTimeMs.count(),
-                    watermark.mMinTimeMs.count(), watermark.mMovingAverage.count(), watermark.mCountAboveAvg);
+                    TimeTraceOperationToString(aOperation), watermark.mTotalCount, watermark.mSuccessfullCount,
+                    watermark.mMaxTimeMs.count(), watermark.mMinTimeMs.count(), watermark.mMovingAverage.count(),
+                    watermark.mCountAboveAvg);
 
     return CHIP_NO_ERROR;
 }
@@ -272,24 +368,33 @@ CHIP_ERROR SilabsTracer::LoadWatermarks()
     return CHIP_NO_ERROR;
 }
 
-#if CONFIG_BUILD_FOR_HOST_UNIT_TEST
-size_t SilabsTracer::GetTraceCount()
-{
-    return mBufferedTrackerCount;
-}
-
-CHIP_ERROR SilabsTracer::GetTraceByIndex(size_t index, const char *& trace) const
+CHIP_ERROR SilabsTracer::GetTraceByOperation(TimeTraceOperation aOperation, MutableByteSpan & buffer) const
 {
     auto * current = mTimeTrackerList.head;
-    for (size_t i = 0; i < index && current != nullptr; ++i)
+    while (current != nullptr)
     {
+        if (current->mValue.mOperation == aOperation)
+        {
+            // Check if the buffer is large enough
+            auto requiredSize = current->mValue.GetSize();
+
+            if (requiredSize < 0)
+            {
+                return CHIP_ERROR_INTERNAL;
+            }
+
+            if (static_cast<size_t>(requiredSize) >= buffer.size())
+            {
+                return CHIP_ERROR_BUFFER_TOO_SMALL;
+            }
+
+            current->mValue.ToCharArray(buffer);
+            return CHIP_NO_ERROR;
+        }
         current = current->mpNext;
     }
-    VerifyOrReturnError(current != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    trace = reinterpret_cast<const char *>(&current->mValue);
-    return CHIP_NO_ERROR;
+    return CHIP_ERROR_NOT_FOUND;
 }
-#endif
 
 } // namespace Silabs
 } // namespace Tracing
