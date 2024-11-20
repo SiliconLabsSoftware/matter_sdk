@@ -865,8 +865,8 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-sl_status_t CofigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
-                              uint32_t listenInterval)
+sl_status_t ConfigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
+                               uint32_t listenInterval)
 {
     int32_t error = rsi_bt_power_save_profile(sl_si91x_ble_state, 0);
     VerifyOrReturnError(error == RSI_SUCCESS, SL_STATUS_FAIL,
