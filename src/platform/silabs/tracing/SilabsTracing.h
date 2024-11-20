@@ -21,6 +21,7 @@
 #include <lib/core/CHIPError.h>
 #include <lib/core/CHIPPersistentStorageDelegate.h>
 #include <lib/support/LinkedList.h>
+#include <lib/support/Span.h>
 #include <stdint.h>
 #include <system/SystemClock.h>
 
@@ -60,6 +61,7 @@ enum class TimeTraceOperation : uint8_t
     kBootup,
     kSilabsInit,
     kMatterInit,
+    kBufferFull,
     kNumTraces,
 };
 
@@ -78,6 +80,23 @@ struct TimeTracker
     TimeTraceOperation mOperation;
     OperationType mType;
     CHIP_ERROR mError;
+
+    /** @brief Convert the TimeTracker to a string for logs
+     * Behaves like snprintf, but formats the output differently based on the OperationType
+     * May be used with a buffer of size == 0 to get the required buffer size
+     * @param buffer The buffer to write the string to
+     * @return The number of characters written to the buffer, or the size of the buffer required if the buffer is too small
+     */
+    int ToCharArray(MutableByteSpan & buffer) const;
+
+    /** @brief Get the size of the string representation of the TimeTracker
+     * @return The size of the string representation of the TimeTracker
+     */
+    int GetSize() const
+    {
+        MutableByteSpan temp;
+        return ToCharArray(temp);
+    }
 };
 
 struct Watermark
@@ -95,10 +114,11 @@ struct Watermark
 //
 class SilabsTracer
 {
+public:
     static constexpr size_t kNumTraces         = to_underlying(TimeTraceOperation::kNumTraces);
     static constexpr size_t kMaxBufferedTraces = 64;
+    static constexpr size_t kMaxTraceSize      = 256;
 
-public:
     /** @brief Get the singleton instance of SilabsTracer */
     static SilabsTracer & Instance() { return sInstance; }
 
@@ -119,24 +139,27 @@ public:
      * This calls the OutputTrace method to log the trace if logs are enabled, and stores the time tracker in the buffer if the
      * buffer is not full.
      *  @param aOperation
+     * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
-    void TimeTraceBegin(TimeTraceOperation aOperation);
+    CHIP_ERROR TimeTraceBegin(TimeTraceOperation aOperation);
 
     /** @brief End tracing a time operation
      * This calls the OutputTrace method to log the trace if logs are enabled, and stores the time tracker in the buffer if the
      * buffer is not full.
      *  @param aOperation
      *  @param error
+     * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
-    void TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error = CHIP_NO_ERROR);
+    CHIP_ERROR TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error = CHIP_NO_ERROR);
 
     /** @brief Trace an instant time operation
      * This calls the OutputTrace method to log the trace if logs are enabled, and stores the time tracker in the buffer if the
      * buffer is not full.
      *  @param aOperation
      *  @param error
+     * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
-    void TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR error = CHIP_NO_ERROR);
+    CHIP_ERROR TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ERROR error = CHIP_NO_ERROR);
 
     /** @brief Output a time tracker
      * This will output the latest time tracker for a specific operation, without affecting the buffer.
@@ -175,6 +198,18 @@ public:
     SilabsTracer(SilabsTracer const &)             = delete;
     SilabsTracer & operator=(SilabsTracer const &) = delete;
 
+    /** @brief Save the watermarks to persistent storage
+     *  @return CHIP_ERROR, returns an error if the storage is not initialized
+     */
+    CHIP_ERROR SaveWatermarks();
+
+    /** @brief Load the watermarks from persistent storage
+     *  @return CHIP_ERROR, returns an error if the storage is not initialized
+     */
+    CHIP_ERROR LoadWatermarks();
+
+    // Methods to get the time trackers metrics values
+
     /** @brief Get the latest time tracker for a specific operation
      *  @param aOperation The operation to get the time tracker for
      *  @return TimeTracker, the latest time tracker for the operation
@@ -186,30 +221,8 @@ public:
      *  @return Watermark, the watermark for the operation
      */
     Watermark GetWatermark(TimeTraceOperation aOperation) { return mWatermarks[to_underlying(aOperation)]; }
-
-    /** @brief Save the watermarks to persistent storage
-     *  @return CHIP_ERROR, returns an error if the storage is not initialized
-     */
-    CHIP_ERROR SaveWatermarks();
-
-    /** @brief Load the watermarks from persistent storage
-     *  @return CHIP_ERROR, returns an error if the storage is not initialized
-     */
-    CHIP_ERROR LoadWatermarks();
-
-#if CONFIG_BUILD_FOR_HOST_UNIT_TEST
-    /** @brief Get the count of buffered traces
-     *  @param count Reference to store the count of buffered traces
-     */
-    size_t GetTraceCount();
-
-    /** @brief Get a trace by its index
-     *  @param index The index of the trace to retrieve
-     *  @param trace Reference to store the trace
-     *  @return CHIP_ERROR, returns CHIP_ERROR_INVALID_ARGUMENT if the index is invalid
-     */
-    CHIP_ERROR GetTraceByIndex(size_t index, const char *& trace) const;
-#endif
+    size_t GetTimeTracesCount() { return mBufferedTrackerCount; }
+    CHIP_ERROR GetTraceByOperation(TimeTraceOperation aOperation, MutableByteSpan & buffer) const;
 
 private:
     struct TimeTrackerList
