@@ -64,14 +64,12 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
 #if SLI_SI917 // 917 SoC & NCP
     if (mHighPerformanceRequestCounter > 0)
     {
-        VerifyOrReturnError(ConfigureHighPerformance() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
-        return CHIP_NO_ERROR;
+        return ConfigureHighPerformance();
     }
 
     if (mIsCommissioningInProgress)
     {
-        VerifyOrReturnError(ConfigureDTIMBasedSleep() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
-        return CHIP_NO_ERROR;
+        return ConfigureDTIMBasedSleep();
     }
 
     // TODO: Clean this up when the Wi-Fi interface re-work is finished
@@ -80,63 +78,51 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
 
     if (!(wifiConfig.ssid[0] != 0))
     {
-        VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0) == SL_STATUS_OK,
-                            CHIP_ERROR_INTERNAL);
-        return CHIP_NO_ERROR;
+        return ConfigurePowerSave(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0);
     }
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
-        VerifyOrReturnError(ConfigureLIBasedSleep() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
-        return CHIP_NO_ERROR;
+        return ConfigureLIBasedSleep();
     }
 
-    VerifyOrReturnError(ConfigureDTIMBasedSleep() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
+    return ConfigureDTIMBasedSleep();
 
 #elif RS911X_WIFI // rs9116
     VerifyOrReturnError(ConfigurePowerSave() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
+    return CHIP_NO_ERROR;
 #endif
+}
+
+#if SLI_SI917 // 917 SoC & NCP
+CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
+                                           ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) == SL_STATUS_OK,
+                        CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to enable LI based sleep."));
+
+    VerifyOrReturnError(ConfigureBroadcastFilter(true) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
 
     return CHIP_NO_ERROR;
 }
 
-#if SLI_SI917 // 917 SoC & NCP
-sl_status_t WifiSleepManager::ConfigureLIBasedSleep()
+CHIP_ERROR WifiSleepManager::ConfigureDTIMBasedSleep()
 {
-    sl_status_t status = SL_STATUS_OK;
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to enable to enable DTIM basedsleep."));
 
-    status = ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
-                                ICDConfigurationData::GetInstance().GetSlowPollingInterval().count());
-    VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failed to enable LI based sleep."));
+    VerifyOrReturnError(ConfigureBroadcastFilter(false) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to configure broadcast filter."));
 
-    status = ConfigureBroadcastFilter(true);
-    VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
-
-    return status;
+    return CHIP_NO_ERROR;
 }
 
-sl_status_t WifiSleepManager::ConfigureDTIMBasedSleep()
+CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
 {
-    sl_status_t status = SL_STATUS_OK;
-
-    status = ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0);
-    VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failed to enable to enable DTIM basedsleep."));
-
-    status = ConfigureBroadcastFilter(false);
-    VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failed to configure broadcast filter."));
-
-    return status;
-}
-
-sl_status_t WifiSleepManager::ConfigureHighPerformance()
-{
-    sl_status_t status = ConfigurePowerSave(RSI_ACTIVE, HIGH_PERFORMANCE, 0);
-    if (status != SL_STATUS_OK)
-    {
-        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance");
-    }
-
-    return status;
+    VerifyOrReturnError(ConfigurePowerSave(RSI_ACTIVE, HIGH_PERFORMANCE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance."));
+    return CHIP_NO_ERROR;
 }
 #endif // SLI_SI917
 

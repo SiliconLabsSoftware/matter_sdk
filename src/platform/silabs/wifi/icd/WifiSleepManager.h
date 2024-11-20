@@ -140,7 +140,7 @@ private:
      *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
      *         possible errors.
      */
-    sl_status_t ConfigureLIBasedSleep();
+    CHIP_ERROR ConfigureLIBasedSleep();
 
     /**
      * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
@@ -150,7 +150,7 @@ private:
      *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
      *         possible errors.
      */
-    sl_status_t ConfigureDTIMBasedSleep();
+    CHIP_ERROR ConfigureDTIMBasedSleep();
 
     /**
      * @brief Configures the Wi-Fi Chip to go to High Performance.
@@ -160,7 +160,7 @@ private:
      *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
      *         possible errors.
      */
-    sl_status_t ConfigureHighPerformance();
+    CHIP_ERROR ConfigureHighPerformance();
 #endif // SLI_SI917
 
     static WifiSleepManager mInstance;
