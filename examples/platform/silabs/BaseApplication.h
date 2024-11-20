@@ -71,7 +71,6 @@ public:
 private:
     // AppDelegate
     bool isComissioningStarted = false;
-    void OnCommissioningWindowOpened() override;
     void OnCommissioningSessionStarted() override;
     void OnCommissioningSessionStopped() override;
     void OnCommissioningWindowClosed() override;
@@ -90,7 +89,7 @@ class BaseApplication
 
 public:
     BaseApplication() = default;
-    virtual ~BaseApplication(){};
+    virtual ~BaseApplication() {};
     static bool sIsProvisioned;
     static bool sIsFactoryResetTriggered;
     static LEDWidget * sAppActionLed;

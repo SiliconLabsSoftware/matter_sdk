@@ -73,10 +73,25 @@ public:
      */
     CHIP_ERROR Init();
 
+    inline void HandleCommissioningSessionStarted() { mIsCommissioningInProgress = true; }
+
+    inline void HandleCommissioningSessionStopped() { mIsCommissioningInProgress = false; }
+
+    /**
+     * @brief Set the Application Callback
+     *
+     * @param callbacks pointer to the application callbacks.
+     *                  The callback can be set to nullptr if the application wants to remove its callback
+     */
+    void SetApplicationCallback(ApplicationCallback * callback) { mCallback = callback; }
+
     /**
      * @brief Public API to request the Wi-Fi chip to transition to High Performance.
      *        Function increases the HighPerformance request counter to prevent the chip from going to sleep
      *        while the Matter SDK is in a state that requires High Performance
+     *
+     *        It is not necessary to call VerifyAndTransitionToLowPowerMode after calling this function.
+     *        The API does the call after incrementing the HighPerformance request counter.
      *
      * @return CHIP_ERROR CHIP_NO_ERROR if the chip was set to high performance or already in high performance
      *                    CHIP_ERROR_INTERNAL, if the high performance configuration failed
@@ -88,43 +103,70 @@ public:
      *        If calling this function removes the last High performance request,
      *        The chip will transition to sleep based on its lowest sleep level allowed
      *
+     *
+     *        It is not necessary to call VerifyAndTransitionToLowPowerMode after calling this function.
+     *        The API does the call after decreasing the HighPerformance request counter.
+     *
      * @return CHIP_ERROR CHIP_NO_ERROR if the req removal and sleep transition succeed
      *                    CHIP_ERROR_INTERNAL, if the req removal or the transition to sleep failed
      */
     CHIP_ERROR RemoveHighPerformanceRequest();
 
     /**
-     * @brief Set the Application Callback
+     * @brief Public API to validate what is the lowest power mode the device can got to and transitions the device to the
+     *        determined low power state.
      *
-     * @param callbacks pointer to the application callbacks.
-     *                  The callback can be set to nullptr if the application wants to remove its callback
-     */
-    void SetApplicationCallback(ApplicationCallback * callback) { mCallback = callback; }
-
-    void HandleCommissioningComplete();
-    void HandleInternetConnectivityChange();
-    void HandleCommissioningWindowClose();
-    void HandleCommissioningSessionStarted();
-    void HandleCommissioningSessionStopped();
-
-private:
-    WifiSleepManager()  = default;
-    ~WifiSleepManager() = default;
-
-    /**
-     * @brief Function validates what is the lowest power mode the device can got to and transitions the device to a low pwoer
-     *        state.
-     *        - Unprovisionned and no commissioning in progress: Deep Sleep
-     *        - Otherwise, DTIM based low power mode
+     *        State machine logic:
+     *        1. If there are high performance requests, configure high performance mode.
+     *        2. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
+     *        3. If commissioning is in progress, use the application callback to decide between LI based sleep and DTIM based
+     *           sleep.
+     *        4. If none of the above conditions are met, configure DTIM based sleep.
      *
      * @return CHIP_ERROR CHIP_NO_ERROR if the device was transitionned to low power
      *         CHIP_ERROR_INTERNAL if an error occured
      */
     CHIP_ERROR VerifyAndTransitionToLowPowerMode();
 
+private:
+    WifiSleepManager()  = default;
+    ~WifiSleepManager() = default;
+
+#if SLI_SI917 // 917 SoC & NCP
+    /**
+     * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+     *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+     *
+     * @return sl_status_t SL_STATUS_OK if the configurations of the Wi-Fi was successful
+     *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
+     *         possible errors.
+     */
+    sl_status_t ConfigureLIBasedSleep();
+
+    /**
+     * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
+     *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
+     *
+     * @return sl_status_t SL_STATUS_OK if the configurations of the Wi-Fi was successful
+     *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
+     *         possible errors.
+     */
+    sl_status_t ConfigureDTIMBasedSleep();
+
+    /**
+     * @brief Configures the Wi-Fi Chip to go to High Performance.
+     *        Function doesn't change the broad cast filter configuration.
+     *
+     * @return sl_status_t SL_STATUS_OK if the configurations of the Wi-Fi was successful
+     *         returns WifiInterface error if the configuration failed. See ConfigurePowerSave and ConfigureBroadcastFilter of the
+     *         possible errors.
+     */
+    sl_status_t ConfigureHighPerformance();
+#endif // SLI_SI917
+
     static WifiSleepManager mInstance;
 
-    bool isCommissioningInProgress         = false;
+    bool mIsCommissioningInProgress        = false;
     uint8_t mHighPerformanceRequestCounter = 0;
 
     ApplicationCallback * mCallback = nullptr;

@@ -186,6 +186,7 @@ void wfx_retry_connection(uint16_t retryAttempt)
     {
         retryInterval = kWlanMaxRetryIntervalsInSec;
     }
+
     if (osTimerStart(sRetryTimer, pdMS_TO_TICKS(CONVERT_SEC_TO_MS(retryInterval))) != osOK)
     {
         ChipLogProgress(DeviceLayer, "Failed to start retry timer");
@@ -194,11 +195,18 @@ void wfx_retry_connection(uint16_t retryAttempt)
         {
             ChipLogError(DeviceLayer, "wfx_connect_to_ap() failed.");
         }
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        //  Remove High performance request before giving up due to a timer start errorto save battery life
+        Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         return;
     }
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+
     ChipLogProgress(DeviceLayer, "wfx_retry_connection : Next attempt after %d Seconds", retryInterval);
     retryInterval += retryInterval;
 }

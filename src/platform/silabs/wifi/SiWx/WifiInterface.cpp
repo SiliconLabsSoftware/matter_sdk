@@ -71,12 +71,16 @@ extern "C" {
 #include <platform/silabs/wifi/rs911x/platform/sl_board_configuration.h>
 #endif
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
+
+#if SLI_SI91X_MCU_INTERFACE
 #include "rsi_rom_power_save.h"
 #include "sl_gpio_board.h"
 #include "sl_si91x_driver_gpio.h"
 #include "sl_si91x_power_manager.h"
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SLI_SI91X_MCU_INTERFACE
+#endif // SLI_SI91X_MCU_INTERFACE
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 WfxRsi_t wfx_rsi;
 extern osSemaphoreId_t sl_rs_ble_init_sem;
@@ -418,7 +422,11 @@ sl_status_t JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK || status == SL_STATUS_IN_PROGRESS)
     {
-        // TODO: Set listen interval to 0 with DTIM sync
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        // TODO: We need a way to identify if this was a retry or a first attempt connect to avoid removing a req that was not ours
+        //  Remove High performance request that might have been added during the retry process
+        chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
