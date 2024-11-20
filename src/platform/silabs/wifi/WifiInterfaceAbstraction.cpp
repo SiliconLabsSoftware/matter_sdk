@@ -197,7 +197,7 @@ void wfx_retry_connection(uint16_t retryAttempt)
         }
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-        //  Remove High performance request before giving up due to a timer start errorto save battery life
+        //  Remove High performance request before giving up due to a timer start error to save battery life
         Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         return;
