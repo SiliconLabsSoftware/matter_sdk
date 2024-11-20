@@ -62,11 +62,6 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
 {
 
 #if SLI_SI917 // 917 SoC & NCP
-    // State machine logic:
-    // 1. If there are high performance requests, configure high performance mode.
-    // 2. If commissioning is in progress, configure DTIM based sleep.
-    // 3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
-    // 4. If the application callback allows, configure LI based sleep; otherwise, configure DTIM based sleep.
     if (mHighPerformanceRequestCounter > 0)
     {
         VerifyOrReturnError(ConfigureHighPerformance() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);

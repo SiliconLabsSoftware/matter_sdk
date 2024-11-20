@@ -118,10 +118,9 @@ public:
      *
      *        State machine logic:
      *        1. If there are high performance requests, configure high performance mode.
-     *        2. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
-     *        3. If commissioning is in progress, use the application callback to decide between LI based sleep and DTIM based
-     *           sleep.
-     *        4. If none of the above conditions are met, configure DTIM based sleep.
+     *        2. If commissioning is in progress, configure DTIM based sleep.
+     *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
+     *        4. If the application callback allows, configure LI based sleep; otherwise, configure DTIM based sleep.
      *
      * @return CHIP_ERROR CHIP_NO_ERROR if the device was transitionned to low power
      *         CHIP_ERROR_INTERNAL if an error occured
