@@ -69,6 +69,7 @@ public:
     void TestSubscriptionResumptionTimer();
     void TestDecrementNumSubscriptionsToResume();
     void TestFabricHasAtLeastOneActiveSubscription();
+    void TestFabricHasAtLeastOneActiveSubscriptionWithMixedStates();
     static int GetAttributePathListLength(SingleLinkedListNode<AttributePathParams> * apattributePathParamsList);
 };
 
@@ -376,11 +377,6 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestSubjectHasActiveSubscription
         engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx1, ReadHandler::InteractionType::Subscribe,
                                                   reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
 
-    // Create and setup readHandler 2
-    ReadHandler * readHandler2 =
-        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe,
-                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
-
     // Verify that Bob still doesn't have an active subscription
     EXPECT_FALSE(engine->SubjectHasActiveSubscription(bobFabricIndex, bobNodeId));
 
@@ -392,6 +388,11 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestSubjectHasActiveSubscription
 
     // Verify that Alice still doesn't have an active subscription
     EXPECT_FALSE(engine->SubjectHasActiveSubscription(aliceFabricIndex, aliceNodeId));
+
+    // Create and setup readHandler 2
+    ReadHandler * readHandler2 =
+        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe,
+                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
 
     // Set readHandler2 to active
     readHandler2->SetStateFlag(ReadHandler::ReadHandlerFlags::ActiveSubscription, true);
@@ -767,6 +768,67 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestFabricHasAtLeastOneActiveSub
     // Verify that both fabrics have no active subscriptions
     EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex1));
     EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex2));
+}
+
+TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestFabricHasAtLeastOneActiveSubscriptionWithMixedStates)
+{
+    NullReadHandlerCallback nullCallback;
+    InteractionModelEngine * engine = InteractionModelEngine::GetInstance();
+
+    FabricIndex fabricIndex = 1;
+
+    // Create ExchangeContexts
+    Messaging::ExchangeContext * exchangeCtx1 = NewExchangeToBob(nullptr, false);
+    ASSERT_TRUE(exchangeCtx1);
+
+    Messaging::ExchangeContext * exchangeCtx2 = NewExchangeToBob(nullptr, false);
+    ASSERT_TRUE(exchangeCtx2);
+
+    // InteractionModelEngine init
+    EXPECT_EQ(CHIP_NO_ERROR, engine->Init(&GetExchangeManager(), &GetFabricTable(), reporting::GetDefaultReportScheduler()));
+
+    // Verify that the fabric has no active subscriptions
+    EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
+
+    // Create and setup readHandler 1
+    ReadHandler * readHandler1 =
+        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx1, ReadHandler::InteractionType::Subscribe,
+                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
+
+    // Verify that the fabric still doesn't have an active subscription
+    EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
+
+    // Set readHandler1 to active
+    readHandler1->SetStateFlag(ReadHandler::ReadHandlerFlags::ActiveSubscription, true);
+
+    // Verify that the fabric has an active subscription
+    EXPECT_TRUE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
+
+    // Create and setup readHandler 2
+    ReadHandler * readHandler2 =
+        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe,
+                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
+
+    // Verify that the fabric still has an active subscription
+    EXPECT_TRUE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
+
+    // Set readHandler2 to inactive
+    readHandler2->SetStateFlag(ReadHandler::ReadHandlerFlags::ActiveSubscription, false);
+
+    // Verify that the fabric still has an active subscription
+    EXPECT_TRUE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
+
+    // Set readHandler1 to inactive
+    readHandler1->SetStateFlag(ReadHandler::ReadHandlerFlags::ActiveSubscription, false);
+
+    // Verify that the fabric doesn't have an active subscription
+    EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
+
+    // Clean up read handlers
+    engine->GetReadHandlerPool().ReleaseAll();
+
+    // Verify that the fabric has no active subscriptions
+    EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
 }
 
 } // namespace app
