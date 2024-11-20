@@ -15,7 +15,7 @@ def get_git_log(start_sha, end_sha, prefixes):
         )
        
         # Split the result into lines
-        log_lines = result.stdout.split('\n')
+        log_lines = result.stdout.splitlines()
        
         # Initialize a dictionary to hold commits by prefix
         commits_by_prefix = {prefix: [] for prefix in prefixes}
