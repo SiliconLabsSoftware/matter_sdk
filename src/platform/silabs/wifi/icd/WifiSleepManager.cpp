@@ -108,10 +108,10 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
     else
     {
 
-        if (mCallbacks && mCallbacks->CanGoToLIBasedSleep())
+        if (mCallback && mCallback->CanGoToLIBasedSleep())
         {
             VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
-                                                  ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) !=
+                                                   ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) !=
                                     SL_STATUS_OK,
                                 CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to enable to go to sleep."));
 

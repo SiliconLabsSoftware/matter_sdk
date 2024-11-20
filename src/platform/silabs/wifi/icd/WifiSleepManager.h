@@ -39,10 +39,10 @@ public:
      * @brief Class implements the callbacks that the application can implement
      *        to alter the WifiSleepManager behaviors.
      */
-    class ApplicationCallbacks
+    class ApplicationCallback
     {
     public:
-        virtual ~ApplicationCallbacks() = default;
+        virtual ~ApplicationCallback() = default;
 
         /**
          * @brief Function informs the WifiSleepManager in which Low Power mode the device can go to.
@@ -94,12 +94,12 @@ public:
     CHIP_ERROR RemoveHighPerformanceRequest();
 
     /**
-     * @brief Set the Application Callbacks
+     * @brief Set the Application Callback
      *
      * @param callbacks pointer to the application callbacks.
-     *                  The callbacks can be set to nullptr if the application wants to remove its callbacks
+     *                  The callback can be set to nullptr if the application wants to remove its callback
      */
-    void SetApplicationCallbacks(ApplicationCallbacks * callbacks);
+    void SetApplicationCallback(ApplicationCallback * callback) { mCallback = callback; }
 
     void HandleCommissioningComplete();
     void HandleInternetConnectivityChange();
@@ -127,7 +127,7 @@ private:
     bool isCommissioningInProgress         = false;
     uint8_t mHighPerformanceRequestCounter = 0;
 
-    ApplicationCallbacks * mCallbacks = nullptr;
+    ApplicationCallback * mCallback = nullptr;
 };
 
 } // namespace Silabs
