@@ -298,7 +298,12 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
     sl_status_t status = SL_STATUS_OK;
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
-        ChipLogError(DeviceLayer, "Scan Netwrok Failed: 0x%lx", *reinterpret_cast<sl_status_t *>(status));
+        if (NULL != scan_result)
+        {
+            sl_status_t callback_status = *(sl_status_t *) scan_result;
+            ChipLogError(DeviceLayer, "scan_callback_handler: failed: 0x%lx", static_cast<uint32_t>(callback_status));
+        }
+
 #if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
         security = SL_WIFI_WPA3;
 #else
@@ -408,6 +413,30 @@ sl_status_t SetWifiConfigurations()
     return status;
 }
 
+sl_status_t join_callback_handler(sl_wifi_event_t event, char * result, uint32_t result_length, void * arg)
+{
+    sl_status_t callback_status = SL_STATUS_OK;
+    wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
+    if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
+    {
+        callback_status = *(sl_status_t *) result;
+        ChipLogError(DeviceLayer, "join_callback_handler: failed: 0x%lx", static_cast<uint32_t>(callback_status));
+        wfx_rsi.dev_state.Clear(WifiState::kStationConnected);
+        wfx_retry_connection(++wfx_rsi.join_retries);
+        return SL_STATUS_FAIL;
+    }
+
+    /*
+     * Join was complete - Do the DHCP
+     */
+    ChipLogDetail(DeviceLayer, "join_callback_handler: success");
+    memset(&temp_reset, 0, sizeof(temp_reset));
+
+    WifiEvent wifievent = WifiEvent::kStationConnect;
+    sl_matter_wifi_post_event(wifievent);
+    wfx_rsi.join_retries = 0;
+    return SL_STATUS_OK;
+}
 sl_status_t JoinWifiNetwork(void)
 {
     VerifyOrReturnError(!wfx_rsi.dev_state.HasAny(WifiState::kStationConnecting, WifiState::kStationConnected),
@@ -419,6 +448,9 @@ sl_status_t JoinWifiNetwork(void)
 
     status = SetWifiConfigurations();
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failure to set the Wifi Configurations!"));
+
+    status = sl_wifi_set_join_callback(join_callback_handler, NULL);
+    VerifyOrReturnError(status == SL_STATUS_OK, status);
 
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
 
@@ -437,15 +469,11 @@ sl_status_t JoinWifiNetwork(void)
 
     // failure only happens when the firmware returns an error
     ChipLogError(DeviceLayer, "sl_wifi_connect failed: 0x%lx", static_cast<uint32_t>(status));
-    VerifyOrReturnError((wfx_rsi.join_retries <= MAX_JOIN_RETRIES_COUNT), status);
 
     wfx_rsi.dev_state.Clear(WifiState::kStationConnecting).Clear(WifiState::kStationConnected);
 
     ChipLogProgress(DeviceLayer, "Connection retry attempt %d", wfx_rsi.join_retries);
     wfx_retry_connection(++wfx_rsi.join_retries);
-
-    WifiEvent event = WifiEvent::kStationStartJoin;
-    sl_matter_wifi_post_event(event);
 
     return status;
 }
