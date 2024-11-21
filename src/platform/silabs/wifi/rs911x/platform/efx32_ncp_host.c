@@ -30,7 +30,7 @@
 #include "sl_si91x_ncp_utility.h"
 #include "sl_status.h"
 #include "sl_wifi_constants.h"
-#include "spi_multiplex.h"
+#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
 #include <stdbool.h>
 #include <string.h>
 
