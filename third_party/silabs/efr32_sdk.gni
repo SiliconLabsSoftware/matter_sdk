@@ -1010,8 +1010,6 @@ template("efr32_sdk") {
       sources += [
         "${efr32_sdk_root}/platform/radio/wifi/wfx_fmac_driver/bus/sl_wfx_bus.c",
         "${efr32_sdk_root}/platform/radio/wifi/wfx_fmac_driver/bus/sl_wfx_bus_spi.c",
-
-        # "${efr32_sdk_root}/platform/radio/wifi/wfx_fmac_driver/secure_link/sl_wfx_secure_link.c",
         "${efr32_sdk_root}/platform/radio/wifi/wfx_fmac_driver/sl_wfx.c",
       ]
     }
