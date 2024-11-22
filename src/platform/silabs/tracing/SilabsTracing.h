@@ -61,6 +61,7 @@ enum class TimeTraceOperation : uint8_t
     kBootup,
     kSilabsInit,
     kMatterInit,
+    kAppInit,
     kBufferFull,
     kNumTraces,
 };

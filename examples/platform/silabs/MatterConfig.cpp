@@ -187,6 +187,11 @@ void ApplicationStart(void * unused)
     if (err != CHIP_NO_ERROR)
         appError(err);
 
+#if MATTER_TRACING_ENABLED
+    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kMatterInit);
+    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kAppInit);
+#endif // MATTER_TRACING_ENABLED
+
     gExampleDeviceInfoProvider.SetStorageDelegate(&chip::Server::GetInstance().GetPersistentStorage());
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
 
@@ -218,9 +223,6 @@ void SilabsMatterConfig::AppInit()
     ChipLogProgress(DeviceLayer, "Starting scheduler");
     VerifyOrDie(sMainTaskHandle); // We can't proceed if the Main Task creation failed.
 
-#if MATTER_TRACING_ENABLED
-    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kMatterInit);
-#endif // MATTER_TRACING_ENABLED
 #if MATTER_TRACING_ENABLED
     SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kBootup);
 #endif // MATTER_TRACING_ENABLED

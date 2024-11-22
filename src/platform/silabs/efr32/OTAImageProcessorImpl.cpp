@@ -356,9 +356,15 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     }
 #endif // SL_BTLCTRL_MUX
 
-    ChipLogProgress(SoftwareUpdate, "Reboot and install new image...");
 #if MATTER_TRACING_ENABLED
     SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kImageVerification);
+    SilabsTracer::Instance().TimeTraceInstant(TimeTraceOperation::kAppApplyTime);
+#endif // MATTER_TRACING_ENABLED
+    ChipLogProgress(SoftwareUpdate, "Reboot and install new image...");
+
+#if MATTER_TRACING_ENABLED
+    // Flush all traces before reboot since we do not store them in NVM currently
+    SilabsTracer::Instance().TraceBufferFlushAll();
 #endif // MATTER_TRACING_ENABLED
 #if defined(_SILICON_LABS_32B_SERIES_3) && CHIP_PROGRESS_LOGGING
     osDelay(100); // sl-temp: delay for uart print before reboot

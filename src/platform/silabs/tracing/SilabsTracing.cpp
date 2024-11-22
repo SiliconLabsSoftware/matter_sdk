@@ -82,6 +82,8 @@ const char * TimeTraceOperationToString(TimeTraceOperation operation)
         return "SilabsInit";
     case TimeTraceOperation::kMatterInit:
         return "MatterInit";
+    case TimeTraceOperation::kAppInit:
+        return "AppInit";
     case TimeTraceOperation::kNumTraces:
         return "NumTraces";
     case TimeTraceOperation::kBufferFull:

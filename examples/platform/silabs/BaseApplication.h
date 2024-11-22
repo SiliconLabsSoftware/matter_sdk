@@ -89,7 +89,7 @@ class BaseApplication
 
 public:
     BaseApplication() = default;
-    virtual ~BaseApplication() {};
+    virtual ~BaseApplication(){};
     static bool sIsProvisioned;
     static bool sIsFactoryResetTriggered;
     static LEDWidget * sAppActionLed;
@@ -122,6 +122,7 @@ public:
      *
      * @param event AppEvent to post
      */
+
     static void PostEvent(const AppEvent * event);
 
     /**
@@ -175,6 +176,12 @@ public:
 
 protected:
     CHIP_ERROR Init();
+
+    /** @brief
+     * Function to be called at the end of Init to indicate that the application has completed its initialization.
+     * Currently only used for tracing, might want to move logging here as well in the future
+     */
+    void InitCompleteCallback(CHIP_ERROR err);
 
     /**
      * @brief Function called to start the function timer
