@@ -63,11 +63,6 @@
 #define GET_IPV6_FAIL (0)
 #define IP_STATUS_SUCCESS (1)
 
-#define SL_WFX_STARTUP_IND_ID (1)
-#define SL_WFX_CONNECT_IND_ID (2)
-#define SL_WFX_DISCONNECT_IND_ID (3)
-#define SL_WFX_SCAN_COMPLETE_ID (4)
-
 // TASK and Interrupt Macros
 #define SUCCESS_STATUS (1)
 
@@ -255,7 +250,7 @@ bool wfx_hw_ready(void);
 /* RSI Power Save */
 #if (SLI_SI91X_MCU_INTERFACE | EXP_BOARD)
 sl_status_t ConfigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
-                              uint32_t listenInterval);
+                               uint32_t listenInterval);
 #else
 sl_status_t ConfigurePowerSave();
 #endif /* (SLI_SI91X_MCU_INTERFACE | EXP_BOARD) */
