@@ -312,6 +312,25 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
 
+    // [sl-only]: Configure Wi-Fi App Sleep Manager
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    err = app::Silabs::ApplicationSleepManager::GetInstance()
+              .SetFabricTable(&Server::GetInstance().GetFabricTable())
+              .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
+              .SetCommissioningWindowManager(&Server::GetInstance().GetCommissioningWindowManager())
+              .Init();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "ApplicationSleepManager init failed"));
+
+    // Register WifiSleepManager::ApplicationCallback
+    DeviceLayer::Silabs::WifiSleepManager::GetInstance().SetApplicationCallback(
+        &app::Silabs::ApplicationSleepManager::GetInstance());
+
+    // Register ReadHandler::ApplicationCallback
+    app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(
+        &app::Silabs::ApplicationSleepManager::GetInstance());
+
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     ReturnErrorOnFailure(err);
