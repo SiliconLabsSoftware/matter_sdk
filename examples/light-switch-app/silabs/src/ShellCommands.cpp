@@ -20,6 +20,7 @@
 
 #include "ShellCommands.h"
 #include "BindingHandler.h"
+#include "LightSwitchMgr.h"
 
 #include <app/clusters/bindings/bindings.h>
 #include <lib/shell/Engine.h>
@@ -38,9 +39,11 @@ using Shell::streamer_printf;
 
 Engine sShellSwitchSubCommands;
 Engine sShellSwitchOnOffSubCommands;
+Engine sShellSwitchLevelControlSubCommands;
 
 Engine sShellSwitchGroupsSubCommands;
 Engine sShellSwitchGroupsOnOffSubCommands;
+Engine sShellSwitchGroupsLevelControlSubCommands;
 
 Engine sShellSwitchBindingSubCommands;
 
@@ -111,6 +114,45 @@ CHIP_ERROR ToggleSwitchCommandHandler(int argc, char ** argv)
     data->clusterId           = Clusters::OnOff::Id;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
+    return CHIP_NO_ERROR;
+}
+
+/********************************************************
+ * LevelControl switch shell functions
+ *********************************************************/
+
+CHIP_ERROR LevelControlHelpHandler(int argc, char ** argv)
+{
+    sShellSwitchLevelControlSubCommands.ForEachCommand(Shell::PrintCommandHelp, nullptr);
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR LevelControlSwitchCommandHandler(int argc, char ** argv)
+{
+    if (argc == 0)
+    {
+        return LevelControlHelpHandler(argc, argv);
+    }
+
+    return sShellSwitchLevelControlSubCommands.ExecCommand(argc, argv);
+}
+
+CHIP_ERROR MoveToLevelCommandHandler(int argc, char ** argv)
+{
+    BindingCommandData * data = Platform::New<BindingCommandData>();
+    data->commandId           = Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
+    data->clusterId           = Clusters::LevelControl::Id;
+    data->level               = atoi(argv[0]);
+    if (LightSwitchMgr::GetInstance().currentLevel > MIN_LEVEL && data->level == MIN_LEVEL)
+    {
+        OffSwitchCommandHandler(0,NULL);
+    }
+    if (LightSwitchMgr::GetInstance().currentLevel == MIN_LEVEL && data->level > MIN_LEVEL)
+    {
+        OnSwitchCommandHandler(1,NULL);
+    }
+    LightSwitchMgr::GetInstance().currentLevel = data->level;
+    DeviceLayer::PlatformMgr().ScheduleWork(LevelWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
 }
 
@@ -238,6 +280,47 @@ CHIP_ERROR GroupToggleSwitchCommandHandler(int argc, char ** argv)
     return CHIP_NO_ERROR;
 }
 
+/********************************************************
+ * Groups LevelControl switch shell functions
+ *********************************************************/
+
+CHIP_ERROR GroupsLevelControlHelpHandler(int argc, char ** argv)
+{
+    sShellSwitchGroupsLevelControlSubCommands.ForEachCommand(Shell::PrintCommandHelp, nullptr);
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR GroupsLevelControlSwitchCommandHandler(int argc, char ** argv)
+{
+    if (argc == 0)
+    {
+        return GroupsLevelControlHelpHandler(argc, argv);
+    }
+
+    return sShellSwitchGroupsLevelControlSubCommands.ExecCommand(argc, argv);
+}
+
+CHIP_ERROR GroupLevelControlSwitchCommandHandler(int argc, char ** argv)
+{
+    BindingCommandData * data = Platform::New<BindingCommandData>();
+    data->commandId           = Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
+    data->clusterId           = Clusters::LevelControl::Id;
+    data->level               = atoi(argv[0]);
+    data->isGroup             = true;
+
+    if (LightSwitchMgr::GetInstance().currentLevel > MIN_LEVEL && data->level == MIN_LEVEL)
+    {
+        OffSwitchCommandHandler(0,NULL);
+    }
+    if (LightSwitchMgr::GetInstance().currentLevel == MIN_LEVEL && data->level > MIN_LEVEL)
+    {
+        OnSwitchCommandHandler(1,NULL);
+    }
+    LightSwitchMgr::GetInstance().currentLevel = data->level;
+    DeviceLayer::PlatformMgr().ScheduleWork(LevelWorkerFunction, reinterpret_cast<intptr_t>(data));
+    return CHIP_NO_ERROR;
+}
+
 /**
  * @brief configures switch matter shell
  */
@@ -246,6 +329,7 @@ void RegisterSwitchCommands()
     static const shell_command_t sSwitchSubCommands[] = {
         { &SwitchHelpHandler, "help", "Usage: switch <subcommand>" },
         { &OnOffSwitchCommandHandler, "onoff", " Usage: switch onoff <subcommand>" },
+        { &LevelControlSwitchCommandHandler, "levelcontrol", " Usage: switch levelcontrol <subcommand>" },
         { &GroupsSwitchCommandHandler, "groups", "Usage: switch groups <subcommand>" },
         { &BindingSwitchCommandHandler, "binding", "Usage: switch binding <subcommand>" }
     };
@@ -255,6 +339,11 @@ void RegisterSwitchCommands()
         { &OnSwitchCommandHandler, "on", "Sends on command to bound lighting app" },
         { &OffSwitchCommandHandler, "off", "Sends off command to bound lighting app" },
         { &ToggleSwitchCommandHandler, "toggle", "Sends toggle command to bound lighting app" }
+    };
+
+    static const shell_command_t sSwitchLevelControlSubCommands[] = {
+        { &LevelControlHelpHandler, "help", "Usage : switch levelcontrol <subcommand>" },
+        { &MoveToLevelCommandHandler, "move-to-level-with-on-off", "Sends move-to-level command to bound lighting app" },
     };
 
     static const shell_command_t sSwitchGroupsSubCommands[] = { { &GroupsHelpHandler, "help", "Usage: switch groups <subcommand>" },
@@ -268,6 +357,11 @@ void RegisterSwitchCommands()
         { &GroupToggleSwitchCommandHandler, "toggle", "Sends toggle command to group" }
     };
 
+    static const shell_command_t sSwitchGroupsLevelControlSubCommands[] = {
+        { &GroupsLevelControlHelpHandler, "help", "Usage: switch groups levelcontrol <subcommand>" },
+        { &GroupLevelControlSwitchCommandHandler, "move-to-level-with-on-off", "Sends move-to-level command to bound group" },
+    };
+
     static const shell_command_t sSwitchBindingSubCommands[] = {
         { &BindingHelpHandler, "help", "Usage: switch binding <subcommand>" },
         { &BindingGroupBindCommandHandler, "group", "Usage: switch binding group <fabric index> <group id>" },
@@ -278,7 +372,9 @@ void RegisterSwitchCommands()
                                                     "Light-switch commands. Usage: switch <subcommand>" };
 
     sShellSwitchGroupsOnOffSubCommands.RegisterCommands(sSwitchGroupsOnOffSubCommands, ArraySize(sSwitchGroupsOnOffSubCommands));
+    sShellSwitchGroupsLevelControlSubCommands.RegisterCommands(sSwitchGroupsLevelControlSubCommands, ArraySize(sSwitchGroupsLevelControlSubCommands));
     sShellSwitchOnOffSubCommands.RegisterCommands(sSwitchOnOffSubCommands, ArraySize(sSwitchOnOffSubCommands));
+    sShellSwitchLevelControlSubCommands.RegisterCommands(sSwitchLevelControlSubCommands, ArraySize(sSwitchLevelControlSubCommands));
     sShellSwitchGroupsSubCommands.RegisterCommands(sSwitchGroupsSubCommands, ArraySize(sSwitchGroupsSubCommands));
     sShellSwitchBindingSubCommands.RegisterCommands(sSwitchBindingSubCommands, ArraySize(sSwitchBindingSubCommands));
     sShellSwitchSubCommands.RegisterCommands(sSwitchSubCommands, ArraySize(sSwitchSubCommands));

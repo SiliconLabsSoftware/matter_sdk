@@ -23,6 +23,9 @@
 #include <lib/core/CHIPError.h>
 #include <lib/support/CodeUtils.h>
 
+#define MIN_LEVEL 0
+#define MAX_LEVEL 254
+
 class LightSwitchMgr
 {
 public:
@@ -45,6 +48,8 @@ public:
     void GenericSwitchOnShortRelease();
 
     void TriggerLightSwitchAction(LightSwitchAction action, bool isGroupCommand = false);
+    void TriggerLevelControlAction(uint8_t level, bool isGroupCommand = false);
+    uint8_t currentLevel;
 
     static LightSwitchMgr & GetInstance() { return sSwitch; }
 

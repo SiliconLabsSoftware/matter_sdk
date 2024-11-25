@@ -61,6 +61,28 @@ void ProcessOnOffUnicastBindingCommand(CommandId commandId, const EmberBindingTa
     }
 }
 
+void ProcessLevelControlUnicastBindingCommand(CommandId commandId, const EmberBindingTableEntry & binding,
+                                       Messaging::ExchangeManager * exchangeMgr, const SessionHandle & sessionHandle, 
+                                       BindingCommandData * data)
+{
+    auto onSuccess = [](const ConcreteCommandPath & commandPath, const StatusIB & status, const auto & dataResponse) {
+        ChipLogProgress(NotSpecified, "MoveToLevel command succeeds");
+    };
+
+    auto onFailure = [](CHIP_ERROR error) {
+        ChipLogError(NotSpecified, "MoveToLevel command failed: %" CHIP_ERROR_FORMAT, error.Format());
+    };
+
+    switch (commandId)
+    {
+        case Clusters::LevelControl::Commands::Move::Id:
+            Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveCommand;
+            moveCommand.level = data->level;
+            Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, moveCommand, onSuccess, onFailure);
+            break;
+    }
+}
+
 void ProcessOnOffGroupBindingCommand(CommandId commandId, const EmberBindingTableEntry & binding)
 {
     Messaging::ExchangeManager & exchangeMgr = Server::GetInstance().GetExchangeManager();
@@ -85,6 +107,20 @@ void ProcessOnOffGroupBindingCommand(CommandId commandId, const EmberBindingTabl
     }
 }
 
+void ProcessLevelControlGroupBindingCommand(CommandId commandId, const EmberBindingTableEntry & binding, BindingCommandData * data)
+{
+    Messaging::ExchangeManager & exchangeMgr = Server::GetInstance().GetExchangeManager();
+
+    switch (commandId)
+    {
+        case Clusters::LevelControl::Commands::Move::Id:
+            Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveCommand;
+            moveCommand.level = data->level;
+            Controller::InvokeCommandRequest(exchangeMgr, binding.fabricIndex, binding.groupId, moveCommand);
+            break;
+    }
+}
+
 void LightSwitchChangedHandler(const EmberBindingTableEntry & binding, OperationalDeviceProxy * peer_device, void * context)
 {
     VerifyOrReturn(context != nullptr, ChipLogError(NotSpecified, "OnDeviceConnectedFn: context is null"));
@@ -97,6 +133,9 @@ void LightSwitchChangedHandler(const EmberBindingTableEntry & binding, Operation
         case Clusters::OnOff::Id:
             ProcessOnOffGroupBindingCommand(data->commandId, binding);
             break;
+        case Clusters::LevelControl::Id:
+            ProcessLevelControlGroupBindingCommand(data->commandId, binding, data);
+            break;
         }
     }
     else if (binding.type == MATTER_UNICAST_BINDING && !data->isGroup)
@@ -107,6 +146,10 @@ void LightSwitchChangedHandler(const EmberBindingTableEntry & binding, Operation
             VerifyOrDie(peer_device != nullptr && peer_device->ConnectionReady());
             ProcessOnOffUnicastBindingCommand(data->commandId, binding, peer_device->GetExchangeManager(),
                                               peer_device->GetSecureSession().Value());
+            break;
+        case Clusters::LevelControl::Id:
+            ProcessLevelControlUnicastBindingCommand(data->commandId, binding, peer_device->GetExchangeManager(),
+                                                      peer_device->GetSecureSession().Value(), data);
             break;
         }
     }
@@ -136,6 +179,14 @@ void InitBindingHandlerInternal(intptr_t arg)
 void SwitchWorkerFunction(intptr_t context)
 {
     VerifyOrReturn(context != 0, ChipLogError(NotSpecified, "SwitchWorkerFunction - Invalid work data"));
+
+    BindingCommandData * data = reinterpret_cast<BindingCommandData *>(context);
+    BindingManager::GetInstance().NotifyBoundClusterChanged(data->localEndpointId, data->clusterId, static_cast<void *>(data));
+}
+
+void LevelWorkerFunction(intptr_t context)
+{
+    VerifyOrReturn(context != 0, ChipLogError(NotSpecified, "LevelWorkerFunction - Invalid work data"));
 
     BindingCommandData * data = reinterpret_cast<BindingCommandData *>(context);
     BindingManager::GetInstance().NotifyBoundClusterChanged(data->localEndpointId, data->clusterId, static_cast<void *>(data));

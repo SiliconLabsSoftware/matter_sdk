@@ -102,4 +102,6 @@ private:
      * @param aEvent button event being processed
      */
     static void SwitchActionEventHandler(AppEvent * aEvent);
+    static void LevelUpEventHandler(AppEvent * aEvent);
+    static void LevelDownEventHandler(AppEvent * aEvent);
 };

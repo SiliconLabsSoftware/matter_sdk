@@ -52,6 +52,8 @@
 #define APP_FUNCTION_BUTTON 0
 #define APP_LIGHT_SWITCH 1
 
+#define LEVEL_UP_SWITCH 1
+#define LEVEL_DOWN_SWITCH 0
 namespace {
 constexpr chip::EndpointId kLightSwitchEndpoint   = 1;
 constexpr chip::EndpointId kGenericSwitchEndpoint = 2;
@@ -130,7 +132,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 }
 
-void AppTask::SwitchActionEventHandler(AppEvent * aEvent)
+void AppTask::LevelUpEventHandler(AppEvent * aEvent)
 {
     VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Button);
 
@@ -138,16 +140,53 @@ void AppTask::SwitchActionEventHandler(AppEvent * aEvent)
 
     if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        mCurrentButtonState = !mCurrentButtonState;
-        LightSwitchMgr::LightSwitchAction action =
-            mCurrentButtonState ? LightSwitchMgr::LightSwitchAction::On : LightSwitchMgr::LightSwitchAction::Off;
-
-        LightSwitchMgr::GetInstance().TriggerLightSwitchAction(action);
-        LightSwitchMgr::GetInstance().GenericSwitchOnInitialPress();
-
+        if (LightSwitchMgr::GetInstance().currentLevel == MIN_LEVEL)
+        {
+            LightSwitchMgr::LightSwitchAction action = LightSwitchMgr::LightSwitchAction::On;
+            LightSwitchMgr::GetInstance().TriggerLightSwitchAction(action);
+            mCurrentButtonState = true;
+        }
+        // level implementation
+        if (LightSwitchMgr::GetInstance().currentLevel <= MAX_LEVEL)
+        {
+            LightSwitchMgr::GetInstance().currentLevel++;
+            LightSwitchMgr::GetInstance().TriggerLevelControlAction(LightSwitchMgr::GetInstance().currentLevel);
+        }
 #ifdef DISPLAY_ENABLED
         sAppTask.GetLCD().WriteDemoUI(mCurrentButtonState);
 #endif
+        LightSwitchMgr::GetInstance().GenericSwitchOnInitialPress();
+    }
+    else if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonReleased))
+    {
+        LightSwitchMgr::GetInstance().GenericSwitchOnShortRelease();
+    }
+}
+
+void AppTask::LevelDownEventHandler(AppEvent * aEvent)
+{
+    VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Button);
+
+    static bool mCurrentButtonState = false;
+
+    if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
+    {
+        // level implementation
+        if (LightSwitchMgr::GetInstance().currentLevel > MIN_LEVEL)
+        {
+            LightSwitchMgr::GetInstance().currentLevel--;
+            LightSwitchMgr::GetInstance().TriggerLevelControlAction(LightSwitchMgr::GetInstance().currentLevel);
+        }
+        if (LightSwitchMgr::GetInstance().currentLevel == MIN_LEVEL)
+        {
+            LightSwitchMgr::LightSwitchAction action = LightSwitchMgr::LightSwitchAction::Off;
+            LightSwitchMgr::GetInstance().TriggerLightSwitchAction(action);
+            mCurrentButtonState = false;
+        }
+#ifdef DISPLAY_ENABLED
+        sAppTask.GetLCD().WriteDemoUI(mCurrentButtonState);
+#endif
+        LightSwitchMgr::GetInstance().GenericSwitchOnInitialPress();
     }
     else if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonReleased))
     {
@@ -157,18 +196,17 @@ void AppTask::SwitchActionEventHandler(AppEvent * aEvent)
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
-    AppEvent button_event           = {};
-    button_event.Type               = AppEvent::kEventType_Button;
-    button_event.ButtonEvent.Action = btnAction;
-
-    if (button == APP_LIGHT_SWITCH)
+    AppEvent button_event              = {};
+    button_event.Type                  = AppEvent::kEventType_Button;
+    button_event.ButtonEvent.Action    = btnAction;
+    if (button == LEVEL_UP_SWITCH)
     {
-        button_event.Handler = SwitchActionEventHandler;
+        button_event.Handler = LevelUpEventHandler;
         sAppTask.PostEvent(&button_event);
     }
-    else if (button == APP_FUNCTION_BUTTON)
+    else if (button == LEVEL_DOWN_SWITCH)
     {
-        button_event.Handler = BaseApplication::ButtonHandler;
+        button_event.Handler = LevelDownEventHandler;
         sAppTask.PostEvent(&button_event);
     }
 }

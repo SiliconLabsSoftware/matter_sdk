@@ -38,6 +38,7 @@ struct AppEvent
     {
         struct
         {
+            uint8_t ButtonId;
             uint8_t Action;
         } ButtonEvent;
         struct
