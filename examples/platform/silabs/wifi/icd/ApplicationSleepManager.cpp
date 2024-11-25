@@ -18,8 +18,6 @@
 #include "ApplicationSleepManager.h"
 #include <lib/support/logging/CHIPLogging.h>
 
-using namespace chip::DeviceLayer::Silabs;
-
 namespace chip {
 namespace app {
 namespace Silabs {
@@ -33,20 +31,25 @@ CHIP_ERROR ApplicationSleepManager::Init()
                         ChipLogError(AppServer, "SubscriptionsInfoProvider is null"));
     VerifyOrReturnError(mCommissioningWindowManager != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(AppServer, "CommissioningWindowManager is null"));
+    VerifyOrReturnError(mWifiSleepManager != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(AppServer, "WifiSleepManager is null"));
 
     ReturnErrorOnFailure(mFabricTable->AddFabricDelegate(this));
+
+    // Register WifiSleepManager::ApplicationCallback
+    mWifiSleepManager->SetApplicationCallback(this);
 
     return CHIP_NO_ERROR;
 }
 
 void ApplicationSleepManager::OnSubscriptionEstablished(chip::app::ReadHandler & aReadHandler)
 {
-    WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode();
+    mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
 }
 
 void ApplicationSleepManager::OnSubscriptionTerminated(chip::app::ReadHandler & aReadHandler)
 {
-    WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode();
+    mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
 }
 
 CHIP_ERROR ApplicationSleepManager::OnSubscriptionRequested(chip::app::ReadHandler & aReadHandler,
@@ -58,12 +61,12 @@ CHIP_ERROR ApplicationSleepManager::OnSubscriptionRequested(chip::app::ReadHandl
 
 void ApplicationSleepManager::OnFabricRemoved(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex)
 {
-    WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode();
+    mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
 }
 
 void ApplicationSleepManager::OnFabricCommitted(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex)
 {
-    WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode();
+    mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
 }
 
 bool ApplicationSleepManager::CanGoToLIBasedSleep()

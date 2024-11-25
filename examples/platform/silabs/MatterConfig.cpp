@@ -32,6 +32,10 @@
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif /* SL_WIFI */
 
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#include "ApplicationSleepManager.h"
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
 #if PW_RPC_ENABLED
 #include "Rpc.h"
 #endif
@@ -318,17 +322,13 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
               .SetFabricTable(&Server::GetInstance().GetFabricTable())
               .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
               .SetCommissioningWindowManager(&Server::GetInstance().GetCommissioningWindowManager())
+              .SetWifiSleepManager(&WifiSleepManager::GetInstance())
               .Init();
     VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "ApplicationSleepManager init failed"));
-
-    // Register WifiSleepManager::ApplicationCallback
-    DeviceLayer::Silabs::WifiSleepManager::GetInstance().SetApplicationCallback(
-        &app::Silabs::ApplicationSleepManager::GetInstance());
 
     // Register ReadHandler::ApplicationCallback
     app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(
         &app::Silabs::ApplicationSleepManager::GetInstance());
-
 #endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();

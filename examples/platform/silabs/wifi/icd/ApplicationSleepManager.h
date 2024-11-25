@@ -43,8 +43,8 @@ public:
      *
      *
      * @return CHIP_ERROR CHIP_NO_ERROR if the init succeed
-     *         CHIP_ERROR_INVALID_ARGUMENT, if the fabricTable, subscriptionsInfoProvider or commissioningWindowManager were not set
-     *                                      correctly
+     *         CHIP_ERROR_INVALID_ARGUMENT, if the fabricTable, subscriptionsInfoProvider or commissioningWindowManager,
+     *                                      wifiSleepManager were not set correctly
      *         other, if the FabricTable::AddFabricDelegate failed
      */
     CHIP_ERROR Init();
@@ -64,6 +64,12 @@ public:
     ApplicationSleepManager & SetCommissioningWindowManager(chip::CommissioningWindowManager * commissioningWindowManager)
     {
         mCommissioningWindowManager = commissioningWindowManager;
+        return *this;
+    }
+
+    ApplicationSleepManager & SetWifiSleepManager(chip::DeviceLayer::Silabs::WifiSleepManager * wifiSleepManager)
+    {
+        mWifiSleepManager = wifiSleepManager;
         return *this;
     }
 
@@ -124,6 +130,7 @@ private:
     chip::FabricTable * mFabricTable                                  = nullptr;
     chip::app::SubscriptionsInfoProvider * mSubscriptionsInfoProvider = nullptr;
     chip::CommissioningWindowManager * mCommissioningWindowManager    = nullptr;
+    chip::DeviceLayer::Silabs::WifiSleepManager * mWifiSleepManager   = nullptr;
 };
 
 } // namespace Silabs
