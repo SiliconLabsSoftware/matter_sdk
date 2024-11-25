@@ -92,6 +92,7 @@
 // Tracing
 #include <matter/tracing/build_config.h>
 #if MATTER_TRACING_ENABLED
+#include <TracingShellCommands.h>
 #include <platform/silabs/tracing/SilabsTracing.h>
 #endif // MATTER_TRACING_ENABLED
 
@@ -333,6 +334,9 @@ CHIP_ERROR BaseApplication::Init()
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     ICDCommands::RegisterCommands();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#if MATTER_TRACING_ENABLED
+    TracingCommands::RegisterCommands();
+#endif // MATTER_TRACING_ENABLED
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED

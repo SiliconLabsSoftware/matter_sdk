@@ -217,6 +217,9 @@ source_set("efr32-common") {
     if (chip_enable_icd_server) {
       deps += [ "${silabs_common_plat_dir}/shell:icd" ]
     }
+    if (matter_enable_tracing_support) {
+      public_deps += [ "${silabs_common_plat_dir}/shell:tracing" ]
+    }
   }
 
   public_deps += [
