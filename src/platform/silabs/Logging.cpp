@@ -201,7 +201,7 @@ extern "C" void silabsLog(const char * aFormat, ...)
     va_end(v);
 }
 
-#ifdef SILABS_LOG_ENABLED
+#if SILABS_LOG_ENABLED
 bool isLogInitialized()
 {
     return sLogInitialized;
