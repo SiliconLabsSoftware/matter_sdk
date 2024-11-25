@@ -71,7 +71,7 @@ extern "C" {
 #endif
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-#include <app/icd/server/ICDConfigurationData.h>
+#include <app/icd/server/ICDConfigurationData.h> // nogncheck
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
 #if SLI_SI91X_MCU_INTERFACE
