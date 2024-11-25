@@ -46,13 +46,14 @@
 #include "sl_spidrv_instances.h"
 #include "spidrv.h"
 
+#define MAX_DATA_PACKET_SIZE 1800
 #define LDMA_MAX_TRANSFER_LENGTH 4096
 #define LDMA_DESCRIPTOR_ARRAY_LENGTH (LDMA_MAX_TRANSFER_LENGTH / 2048)
 
 // use SPI handle for EXP header (configured in project settings)
 extern SPIDRV_Handle_t sl_spidrv_exp_handle;
 #define SPI_HANDLE sl_spidrv_exp_handle
-static uint8_t dummy_buffer[1800] = { 0 };
+static uint8_t dummy_buffer[MAX_DATA_PACKET_SIZE] = { 0 };
 
 uint32_t rx_ldma_channel;
 uint32_t tx_ldma_channel;
