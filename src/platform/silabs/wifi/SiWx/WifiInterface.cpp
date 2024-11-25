@@ -33,7 +33,6 @@
 #include "sl_status.h"
 #include "sl_wifi_device.h"
 #include "task.h"
-#include <app/icd/server/ICDConfigurationData.h>
 #include <app/icd/server/ICDServerConfig.h>
 #include <inet/IPAddress.h>
 #include <lib/support/CHIPMem.h>
@@ -72,6 +71,7 @@ extern "C" {
 #endif
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <app/icd/server/ICDConfigurationData.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
 #if SLI_SI91X_MCU_INTERFACE
