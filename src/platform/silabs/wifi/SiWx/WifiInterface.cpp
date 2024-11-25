@@ -116,11 +116,19 @@ osMessageQueueId_t sWifiEventQueue = nullptr;
 sl_net_wifi_lwip_context_t wifi_client_context;
 sl_wifi_security_t security = SL_WIFI_SECURITY_UNKNOWN;
 
+// TODO : Temporary work-around for wifi-init failure in 917NCP ACX module board(BRD4357A). Can be removed after 
+// Wiseconnect fixes region code for all ACX module boards.
+#ifdef EXP_BOARD
+#define REGION_CODE IGNORE_REGION
+#else
+#define REGION_CODE US
+#endif // EXP_BOARD
+
 const sl_wifi_device_configuration_t config = {
     .boot_option = LOAD_NWP_FW,
     .mac_address = NULL,
     .band        = SL_SI91X_WIFI_BAND_2_4GHZ,
-    .region_code = US,
+    .region_code = REGION_CODE,
     .boot_config = { .oper_mode = SL_SI91X_CLIENT_MODE,
                      .coex_mode = SL_SI91X_WLAN_BLE_MODE,
                      .feature_bit_map =
@@ -285,8 +293,6 @@ sl_status_t sl_wifi_siwx917_init(void)
     return status;
 }
 
-// TODO: this changes will be reverted back after the Silabs WiFi SDK team fix the scan API
-#ifndef EXP_BOARD
 sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_result, uint32_t result_length, void * arg)
 {
     sl_status_t status = SL_STATUS_OK;
@@ -311,14 +317,11 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
     osSemaphoreRelease(sScanCompleteSemaphore);
     return status;
 }
-#endif
 
 sl_status_t InitiateScan()
 {
     sl_status_t status = SL_STATUS_OK;
 
-// TODO: this changes will be reverted back after the Silabs WiFi SDK team fix the scan API
-#ifndef EXP_BOARD
     sl_wifi_ssid_t ssid = { 0 };
 
     // TODO: this changes will be reverted back after the Silabs WiFi SDK team fix the scan API
@@ -341,7 +344,6 @@ sl_status_t InitiateScan()
     }
 
     osSemaphoreRelease(sScanInProgressSemaphore);
-#endif
 
     return status;
 }
