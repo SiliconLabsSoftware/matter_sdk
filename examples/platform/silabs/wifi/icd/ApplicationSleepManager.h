@@ -105,14 +105,14 @@ public:
 
     /**
      * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
-     *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of queriyng the ApplicationSleepManager to
      *        determine in which low power state the Wi-Fi device can transition to.
      */
     void OnFabricRemoved(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
 
     /**
      * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
-     *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of queriyng the ApplicationSleepManager to
      *        determine in which low power state the Wi-Fi device can transition to.
      */
     void OnFabricCommitted(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
