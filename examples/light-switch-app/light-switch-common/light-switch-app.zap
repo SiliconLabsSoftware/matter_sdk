@@ -4400,29 +4400,29 @@
     },
     {
       "id": 2,
-      "name": "MA-onofflightswitch",
+      "name": "MA-dimmablelight",
       "deviceTypeRef": {
-        "code": 259,
+        "code": 257,
         "profileId": 259,
-        "label": "MA-onofflightswitch",
-        "name": "MA-onofflightswitch"
+        "label": "MA-dimmablelight",
+        "name": "MA-dimmablelight"
       },
       "deviceTypes": [
         {
-          "code": 259,
+          "code": 257,
           "profileId": 259,
-          "label": "MA-onofflightswitch",
-          "name": "MA-onofflightswitch"
+          "label": "MA-dimmablelight",
+          "name": "MA-dimmablelight"
         }
       ],
       "deviceVersions": [
         1
       ],
       "deviceIdentifiers": [
-        259
+        257
       ],
-      "deviceTypeName": "MA-onofflightswitch",
-      "deviceTypeCode": 259,
+      "deviceTypeName": "MA-dimmablelight",
+      "deviceTypeCode": 257,
       "deviceTypeProfileId": 259,
       "clusters": [
         {
@@ -5651,7 +5651,7 @@
       "parentEndpointIdentifier": null
     },
     {
-      "endpointTypeName": "MA-onofflightswitch",
+      "endpointTypeName": "MA-dimmablelight",
       "endpointTypeIndex": 1,
       "profileId": 259,
       "endpointId": 1,
