@@ -19,5 +19,5 @@
 
 /* Ensure we do not have double tracing macros defined */
 #if defined(MATTER_TRACE_BEGIN)
-#error "Tracing macros seem to be double defined"
+#error "Tracing macro seems to be double defined"
 #endif
