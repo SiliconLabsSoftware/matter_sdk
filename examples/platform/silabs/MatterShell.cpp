@@ -22,7 +22,6 @@
 #include <cmsis_os2.h>
 #include <lib/core/CHIPCore.h>
 #include <lib/shell/Engine.h>
-#include <matter/tracing/build_config.h>
 #include <sl_cmsis_os2_common.h>
 #ifdef SL_CATALOG_CLI_PRESENT
 #include "sl_cli.h"

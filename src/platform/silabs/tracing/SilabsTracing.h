@@ -303,6 +303,8 @@ private:
     CHIP_ERROR OutputTrace(const TimeTracker & tracker);
 };
 
+const char * TimeTraceOperationToString(TimeTraceOperation operation);
+
 } // namespace Silabs
 } // namespace Tracing
 } // namespace chip

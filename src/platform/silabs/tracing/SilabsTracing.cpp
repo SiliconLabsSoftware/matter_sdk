@@ -286,7 +286,7 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
 CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
 {
     VerifyOrReturnError(to_underlying(aOperation) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
-                        ChipLogError(DeviceLayer, "Invalid watermark"));
+                        ChipLogError(DeviceLayer, "Invalid TimeTraceOperation"));
     size_t index     = to_underlying(aOperation);
     auto & watermark = mWatermarks[index];
 
@@ -329,7 +329,8 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushAll()
 
 CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(TimeTraceOperation aOperation)
 {
-
+    VerifyOrReturnError(to_underlying(aOperation) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(DeviceLayer, "Invalid TimeTraceOperation"));
     auto * current = mTimeTrackerList.head;
     auto * prev    = static_cast<chip::SingleLinkedListNode<TimeTracker> *>(nullptr);
     while (current != nullptr)

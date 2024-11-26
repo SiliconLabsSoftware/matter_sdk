@@ -142,6 +142,15 @@ CHIP_ERROR TracingHelpHandler(int argc, char ** argv)
     return CHIP_NO_ERROR;
 }
 
+CHIP_ERROR TracingListTimeOperations(int argc, char ** argv)
+{
+    for (size_t i = 0; i < static_cast<size_t>(TimeTraceOperation::kNumTraces); ++i)
+    {
+        streamer_printf(streamer_get(), "Operation: %s\r\n", TimeTraceOperationToString(static_cast<TimeTraceOperation>(i)));
+    }
+    return CHIP_NO_ERROR;
+}
+
 CHIP_ERROR TracingCommandHandler(int argc, char ** argv)
 {
     if (argc == 0)
@@ -161,7 +170,7 @@ CHIP_ERROR WatermarksCommandHandler(int argc, char ** argv)
     }
     else
     {
-        TimeTraceOperation operation = StringToTimeTraceOperation(argv[1]);
+        TimeTraceOperation operation = StringToTimeTraceOperation(argv[0]);
         error                        = Tracing::Silabs::SilabsTracer::Instance().OutputWaterMark(operation);
     }
     return error;
@@ -176,7 +185,7 @@ CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
     }
     else
     {
-        TimeTraceOperation operation = StringToTimeTraceOperation(argv[1]);
+        TimeTraceOperation operation = StringToTimeTraceOperation(argv[0]);
         error                        = Tracing::Silabs::SilabsTracer::Instance().TraceBufferFlushByOperation(operation);
     }
     return error;
@@ -189,9 +198,10 @@ namespace TracingCommands {
 void RegisterCommands()
 {
     static const Shell::Command sTracingSubCommands[] = {
-        { &TracingHelpHandler, "help", "Usage: Output this message" },
-        { &WatermarksCommandHandler, "watermarks", " Usage: watermarks <TimeTraceOperation>" },
-        { &FlushCommandHandler, "flush", "Usage: flush <TimeTraceOperation>" },
+        { &TracingHelpHandler, "help", "Output the help menu" },
+        { &TracingListTimeOperations, "list", "List all available TimeTraceOperations" },
+        { &WatermarksCommandHandler, "watermarks", "Display runtime watermarks. Usage: watermarks <TimeTraceOperation>" },
+        { &FlushCommandHandler, "flush", "Display buffered traces. Usage: flush <TimeTraceOperation>" },
     };
     static const Shell::Command cmds_silabs_tracing = { &TracingCommandHandler, "tracing",
                                                         "Dispatch Silicon Labs Tracing command" };

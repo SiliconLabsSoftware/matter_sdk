@@ -1,0 +1,16 @@
+````mermaid
+sequenceDiagram
+    participant Client
+    participant SilabsTracer
+    participant TimeTracker
+    participant Watermark
+
+    Client->>SilabsTracer: TimeTraceInstant(aOperation, error)
+    SilabsTracer->>TimeTracker: Create tracker
+    SilabsTracer->>SilabsTracer: OutputTrace(tracker)
+    SilabsTracer->>SilabsTracer: OutputTimeTracker(tracker)
+    SilabsTracer->>Watermark: Update Watermark
+    SilabsTracer->>Client: Return result
+
+```mermaid
+````
