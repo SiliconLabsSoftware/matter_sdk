@@ -23,7 +23,9 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

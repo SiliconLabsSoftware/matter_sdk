@@ -20,7 +20,10 @@
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 #include <platform/silabs/OTAImageProcessorImpl.h>
 #include <platform/silabs/SilabsConfig.h>
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #ifdef __cplusplus
 extern "C" {
