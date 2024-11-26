@@ -41,7 +41,6 @@ int main(void)
 #if MATTER_TRACING_ENABLED
     SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kSilabsInit);
 #endif // MATTER_TRACING_ENABLED
-#if MATTER_TRACING_ENABLED
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kMatterInit);
 #endif // MATTER_TRACING_ENABLED
     // Initialize the application. For example, create periodic timer(s) or
