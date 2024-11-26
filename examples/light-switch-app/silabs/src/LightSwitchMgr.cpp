@@ -136,7 +136,7 @@ void LightSwitchMgr::TriggerLevelControlAction(uint8_t level, bool isGroupComman
     data->level     = level;
 
     ChipLogProgress(DeviceLayer, "Level is - %d", data->level);
-    DeviceLayer::PlatformMgr().ScheduleWork(LevelWorkerFunction, reinterpret_cast<intptr_t>(data));
+    DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
 }
 
 void LightSwitchMgr::GenericSwitchWorkerFunction(intptr_t context)

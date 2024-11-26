@@ -152,7 +152,7 @@ CHIP_ERROR MoveToLevelCommandHandler(int argc, char ** argv)
         OnSwitchCommandHandler(1,NULL);
     }
     LightSwitchMgr::GetInstance().currentLevel = data->level;
-    DeviceLayer::PlatformMgr().ScheduleWork(LevelWorkerFunction, reinterpret_cast<intptr_t>(data));
+    DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
 }
 
@@ -317,7 +317,7 @@ CHIP_ERROR GroupLevelControlSwitchCommandHandler(int argc, char ** argv)
         OnSwitchCommandHandler(1,NULL);
     }
     LightSwitchMgr::GetInstance().currentLevel = data->level;
-    DeviceLayer::PlatformMgr().ScheduleWork(LevelWorkerFunction, reinterpret_cast<intptr_t>(data));
+    DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
 }
 

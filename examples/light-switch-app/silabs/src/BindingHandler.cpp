@@ -75,11 +75,11 @@ void ProcessLevelControlUnicastBindingCommand(CommandId commandId, const EmberBi
 
     switch (commandId)
     {
-        case Clusters::LevelControl::Commands::Move::Id:
-            Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveCommand;
-            moveCommand.level = data->level;
-            Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, moveCommand, onSuccess, onFailure);
-            break;
+    case Clusters::LevelControl::Commands::Move::Id:
+        Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveCommand;
+        moveCommand.level = data->level;
+        Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, moveCommand, onSuccess, onFailure);
+        break;
     }
 }
 
@@ -113,11 +113,11 @@ void ProcessLevelControlGroupBindingCommand(CommandId commandId, const EmberBind
 
     switch (commandId)
     {
-        case Clusters::LevelControl::Commands::Move::Id:
-            Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveCommand;
-            moveCommand.level = data->level;
-            Controller::InvokeCommandRequest(exchangeMgr, binding.fabricIndex, binding.groupId, moveCommand);
-            break;
+    case Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id:
+        Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveCommand;
+        moveCommand.level = data->level;
+        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveCommand);
+        break;
     }
 }
 
@@ -179,14 +179,6 @@ void InitBindingHandlerInternal(intptr_t arg)
 void SwitchWorkerFunction(intptr_t context)
 {
     VerifyOrReturn(context != 0, ChipLogError(NotSpecified, "SwitchWorkerFunction - Invalid work data"));
-
-    BindingCommandData * data = reinterpret_cast<BindingCommandData *>(context);
-    BindingManager::GetInstance().NotifyBoundClusterChanged(data->localEndpointId, data->clusterId, static_cast<void *>(data));
-}
-
-void LevelWorkerFunction(intptr_t context)
-{
-    VerifyOrReturn(context != 0, ChipLogError(NotSpecified, "LevelWorkerFunction - Invalid work data"));
 
     BindingCommandData * data = reinterpret_cast<BindingCommandData *>(context);
     BindingManager::GetInstance().NotifyBoundClusterChanged(data->localEndpointId, data->clusterId, static_cast<void *>(data));
