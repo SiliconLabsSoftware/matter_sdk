@@ -32,7 +32,6 @@ source_set("app-sleep-manager") {
     "${chip_root}/src/app",
     "${chip_root}/src/app/server:server",
     "${chip_root}/src/lib/core",
-    "${chip_root}/src/lib/support",
     "${chip_root}/src/platform/silabs/wifi:wifi-platform",
   ]
 
