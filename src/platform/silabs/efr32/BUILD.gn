@@ -17,6 +17,7 @@ import("//build_overrides/chip.gni")
 import("${chip_root}/build/chip/buildconfig_header.gni")
 import("${chip_root}/src/crypto/crypto.gni")
 import("${chip_root}/src/platform/device.gni")
+import("${chip_root}/src/tracing/tracing_args.gni")
 import("${chip_root}/third_party/silabs/efr32_sdk.gni")
 import("${chip_root}/third_party/silabs/silabs_board.gni")
 import("${matter_support_root}/provision/args.gni")
@@ -115,8 +116,17 @@ static_library("efr32") {
     "${chip_root}/src/platform:platform_base",
     "${chip_root}/src/platform/logging:headers",
   ]
-  deps = [ "${sl_provision_root}:headers" ]
+
+  deps = [
+    "${chip_root}/src/tracing",
+    "${sl_provision_root}:headers",
+  ]
+
   public_configs = []
+
+  if (matter_enable_tracing_support) {
+    public_deps += [ "${chip_root}/src/platform/silabs/tracing:SilabsTracing" ]
+  }
 
   # Add platform crypto implementation
   if (chip_crypto == "platform") {

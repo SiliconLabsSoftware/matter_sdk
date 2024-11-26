@@ -92,6 +92,13 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #include "sl_power_manager.h"
 #endif
 
+#include <matter/tracing/build_config.h>
+#if MATTER_TRACING_ENABLED
+#include <platform/silabs/tracing/BackendImpl.h>
+#include <platform/silabs/tracing/SilabsTracing.h>
+#include <tracing/registry.h>
+#endif // MATTER_TRACING_ENABLED
+
 /**********************************************************
  * Defines
  *********************************************************/
@@ -101,6 +108,11 @@ using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::Credentials;
 using namespace chip::DeviceLayer::Silabs;
+
+#if MATTER_TRACING_ENABLED
+using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
+using SilabsTracer       = chip::Tracing::Silabs::SilabsTracer;
+#endif // MATTER_TRACING_ENABLED
 
 #if CHIP_ENABLE_OPENTHREAD
 #include <inet/EndPointStateOpenThread.h>
@@ -176,6 +188,11 @@ void ApplicationStart(void * unused)
     if (err != CHIP_NO_ERROR)
         appError(err);
 
+#if MATTER_TRACING_ENABLED
+    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kMatterInit);
+    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kAppInit);
+#endif // MATTER_TRACING_ENABLED
+
     gExampleDeviceInfoProvider.SetStorageDelegate(&chip::Server::GetInstance().GetPersistentStorage());
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
 
@@ -206,6 +223,10 @@ void SilabsMatterConfig::AppInit()
     sMainTaskHandle = osThreadNew(ApplicationStart, nullptr, &kMainTaskAttr);
     ChipLogProgress(DeviceLayer, "Starting scheduler");
     VerifyOrDie(sMainTaskHandle); // We can't proceed if the Main Task creation failed.
+
+#if MATTER_TRACING_ENABLED
+    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kBootup);
+#endif // MATTER_TRACING_ENABLED
     GetPlatform().StartScheduler();
 
     // Should never get here.
@@ -313,6 +334,11 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     initParams.appDelegate = &BaseApplication::sAppDelegate;
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
+
+#if MATTER_TRACING_ENABLED
+    static Tracing::Silabs::BackendImpl backend;
+    Tracing::Register(backend);
+#endif // MATTER_TRACING_ENABLED
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
