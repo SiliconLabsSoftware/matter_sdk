@@ -145,10 +145,7 @@ config("efr32-common-config") {
 }
 
 source_set("efr32-common") {
-  deps = [
-    "${chip_root}/src/tracing",
-    "${silabs_common_plat_dir}/provision:storage",
-  ]
+  deps = [ "${silabs_common_plat_dir}/provision:storage" ]
   defines = []
   public_deps = []
   public_configs = [
