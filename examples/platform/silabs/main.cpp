@@ -35,7 +35,6 @@ int main(void)
 {
 #if MATTER_TRACING_ENABLED
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
-#if MATTER_TRACING_ENABLED
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kSilabsInit);
 #endif // MATTER_TRACING_ENABLED
     sl_system_init();
