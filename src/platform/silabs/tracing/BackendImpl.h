@@ -46,7 +46,7 @@ class BackendImpl : public ::chip::Tracing::Backend
 public:
     BackendImpl() = default;
     // TraceBegin, TraceEnd and TraceInstant are redundant with LogMetricEvent in the usecases that we are trying to track,
-    // so we are not implementing them at current to avoid duplication of the same information in the trace. We might implement it
+    // so we are not implementing these at the moment to avoid duplication of the same information in the trace. We might implement them
     // in the future if we want to add new traces that are not related to our metrics measurements
     void TraceBegin(const char * label, const char * group) override;
     void TraceEnd(const char * label, const char * group) override;
