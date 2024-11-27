@@ -90,7 +90,7 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
     }
     else
     {
-        for (ConstFabricIterator it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
+        for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
         {
             if (!mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
             {

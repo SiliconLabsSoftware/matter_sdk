@@ -109,7 +109,7 @@ public:
      *             Wi-Fi cannot go to LI based sleep.
      *
      * @return true if the device can go to LI sleep
-     * @return false if the device cannot go to LI sleep
+     *         false if the device cannot go to LI sleep
      */
     bool CanGoToLIBasedSleep() override;
 
