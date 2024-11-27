@@ -35,11 +35,11 @@ void ProcessOnOffUnicastBindingCommand(CommandId commandId, const EmberBindingTa
                                        Messaging::ExchangeManager * exchangeMgr, const SessionHandle & sessionHandle)
 {
     auto onSuccess = [](const ConcreteCommandPath & commandPath, const StatusIB & status, const auto & dataResponse) {
-        ChipLogProgress(NotSpecified, "OnOff command succeeds");
+        ChipLogProgress(AppServer, "OnOff command succeeds");
     };
 
     auto onFailure = [](CHIP_ERROR error) {
-        ChipLogError(NotSpecified, "OnOff command failed: %" CHIP_ERROR_FORMAT, error.Format());
+        ChipLogError(AppServer, "OnOff command failed: %" CHIP_ERROR_FORMAT, error.Format());
     };
 
     switch (commandId)
@@ -66,11 +66,11 @@ void ProcessLevelControlUnicastBindingCommand(CommandId commandId, const EmberBi
                                        BindingCommandData * data)
 {
     auto onSuccess = [](const ConcreteCommandPath & commandPath, const StatusIB & status, const auto & dataResponse) {
-        ChipLogProgress(NotSpecified, "MoveToLevel command succeeds");
+        ChipLogProgress(AppServer, "LevelControl command succeeds");
     };
 
     auto onFailure = [](CHIP_ERROR error) {
-        ChipLogError(NotSpecified, "MoveToLevel command failed: %" CHIP_ERROR_FORMAT, error.Format());
+        ChipLogError(AppServer, "LevelControl command failed: %" CHIP_ERROR_FORMAT, error.Format());
     };
 
     switch (commandId)
@@ -123,7 +123,7 @@ void ProcessLevelControlGroupBindingCommand(CommandId commandId, const EmberBind
 
 void LightSwitchChangedHandler(const EmberBindingTableEntry & binding, OperationalDeviceProxy * peer_device, void * context)
 {
-    VerifyOrReturn(context != nullptr, ChipLogError(NotSpecified, "OnDeviceConnectedFn: context is null"));
+    VerifyOrReturn(context != nullptr, ChipLogError(AppServer, "OnDeviceConnectedFn: context is null"));
     BindingCommandData * data = static_cast<BindingCommandData *>(context);
 
     if (binding.type == MATTER_MULTICAST_BINDING && data->isGroup)
@@ -148,6 +148,7 @@ void LightSwitchChangedHandler(const EmberBindingTableEntry & binding, Operation
                                               peer_device->GetSecureSession().Value());
             break;
         case Clusters::LevelControl::Id:
+            VerifyOrDie(peer_device != nullptr && peer_device->ConnectionReady());
             ProcessLevelControlUnicastBindingCommand(data->commandId, binding, peer_device->GetExchangeManager(),
                                                       peer_device->GetSecureSession().Value(), data);
             break;
@@ -157,7 +158,7 @@ void LightSwitchChangedHandler(const EmberBindingTableEntry & binding, Operation
 
 void LightSwitchContextReleaseHandler(void * context)
 {
-    VerifyOrReturn(context != nullptr, ChipLogError(NotSpecified, "LightSwitchContextReleaseHandler: context is null"));
+    VerifyOrReturn(context != nullptr, ChipLogError(AppServer, "LightSwitchContextReleaseHandler: context is null"));
     Platform::Delete(static_cast<BindingCommandData *>(context));
 }
 
@@ -178,15 +179,17 @@ void InitBindingHandlerInternal(intptr_t arg)
 
 void SwitchWorkerFunction(intptr_t context)
 {
-    VerifyOrReturn(context != 0, ChipLogError(NotSpecified, "SwitchWorkerFunction - Invalid work data"));
+    VerifyOrReturn(context != 0, ChipLogError(AppServer, "SwitchWorkerFunction - Invalid work data"));
 
     BindingCommandData * data = reinterpret_cast<BindingCommandData *>(context);
     BindingManager::GetInstance().NotifyBoundClusterChanged(data->localEndpointId, data->clusterId, static_cast<void *>(data));
+
+    Platform::Delete(data);
 }
 
 void BindingWorkerFunction(intptr_t context)
 {
-    VerifyOrReturn(context != 0, ChipLogError(NotSpecified, "BindingWorkerFunction - Invalid work data"));
+    VerifyOrReturn(context != 0, ChipLogError(AppServer, "BindingWorkerFunction - Invalid work data"));
 
     EmberBindingTableEntry * entry = reinterpret_cast<EmberBindingTableEntry *>(context);
     AddBindingEntry(*entry);
