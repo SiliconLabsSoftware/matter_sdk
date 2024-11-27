@@ -413,6 +413,18 @@ sl_status_t SetWifiConfigurations()
     return status;
 }
 
+/**
+ * @brief Callback function for the SL_WIFI_JOIN_EVENTS group
+ *
+ * This callback handler will be invoked when any event within join event group occurs, providing the event details and any associated data
+ *
+ * @param[out] event sl_wifi_event_t that triggered the callback
+ * @param[out] result Pointer to the response data received
+ * @param[out] result_length Length of the data received in bytes
+ * @param[out] arg Optional user provided argument
+ *
+ * @return sl_status_t Returns the status of the operation.
+ */
 sl_status_t join_callback_handler(sl_wifi_event_t event, char * result, uint32_t result_length, void * arg)
 {
     sl_status_t callback_status = SL_STATUS_OK;
