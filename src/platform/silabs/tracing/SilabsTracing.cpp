@@ -179,13 +179,13 @@ CHIP_ERROR SilabsTracer::StartWatermarksStorage(PersistentStorageDelegate * stor
 CHIP_ERROR SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
 {
     // Log the start time of the operation
-    auto & tracker     = mLatestTimeTrackers[static_cast<size_t>(aOperation)];
+    auto & tracker     = mLatestTimeTrackers[to_underlying(aOperation)];
     tracker.mStartTime = System::SystemClock().GetMonotonicTimestamp();
     tracker.mOperation = aOperation;
     tracker.mType      = OperationType::kBegin;
     tracker.mError     = CHIP_NO_ERROR;
 
-    auto & watermark = mWatermarks[static_cast<size_t>(aOperation)];
+    auto & watermark = mWatermarks[to_underlying(aOperation)];
     watermark.mTotalCount++;
 
     return OutputTrace(tracker);
@@ -193,7 +193,7 @@ CHIP_ERROR SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
 
 CHIP_ERROR SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR error)
 {
-    auto & tracker   = mLatestTimeTrackers[static_cast<size_t>(aOperation)];
+    auto & tracker   = mLatestTimeTrackers[to_underlying(aOperation)];
     tracker.mEndTime = System::SystemClock().GetMonotonicTimestamp();
     tracker.mType    = OperationType::kEnd;
     tracker.mError   = error;
@@ -203,7 +203,7 @@ CHIP_ERROR SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR 
         // Calculate the duration and update the time tracker
         auto duration = tracker.mEndTime - tracker.mStartTime;
 
-        auto & watermark = mWatermarks[static_cast<size_t>(aOperation)];
+        auto & watermark = mWatermarks[to_underlying(aOperation)];
         watermark.mSuccessfullCount++;
         watermark.mMovingAverage = System::Clock::Milliseconds32(
             (watermark.mMovingAverage.count() * (watermark.mSuccessfullCount - 1) + duration.count()) /
@@ -287,15 +287,15 @@ CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
 {
     VerifyOrReturnError(to_underlying(aOperation) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(DeviceLayer, "Invalid TimeTraceOperation"));
-    size_t index     = to_underlying(aOperation);
-    auto & watermark = mWatermarks[index];
+    size_t index = to_underlying(aOperation);
 
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     ChipLogProgress(DeviceLayer,
                     "| Operation: %-25s| MaxTime:%-5" PRIu32 "| MinTime:%-5" PRIu32 "| AvgTime:%-5" PRIu32 "| TotalCount:%-8" PRIu32
                     ", SuccessFullCount:%-8" PRIu32 "| CountAboveAvg:%-8" PRIu32 "|",
-                    TimeTraceOperationToString(aOperation), watermark.mMaxTimeMs.count(), watermark.mMinTimeMs.count(),
-                    watermark.mMovingAverage.count(), watermark.mTotalCount, watermark.mSuccessfullCount, watermark.mCountAboveAvg);
+                    TimeTraceOperationToString(aOperation), mWatermarks[index].mMaxTimeMs.count(),
+                    mWatermarks[index].mMinTimeMs.count(), mWatermarks[index].mMovingAverage.count(),
+                    mWatermarks[index].mTotalCount, mWatermarks[index].mSuccessfullCount, mWatermarks[index].mCountAboveAvg);
 
     return CHIP_NO_ERROR;
 }
