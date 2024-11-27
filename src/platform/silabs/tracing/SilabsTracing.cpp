@@ -287,15 +287,16 @@ CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
 {
     VerifyOrReturnError(to_underlying(aOperation) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(DeviceLayer, "Invalid TimeTraceOperation"));
-    size_t index = to_underlying(aOperation);
 
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     ChipLogProgress(DeviceLayer,
                     "| Operation: %-25s| MaxTime:%-5" PRIu32 "| MinTime:%-5" PRIu32 "| AvgTime:%-5" PRIu32 "| TotalCount:%-8" PRIu32
                     ", SuccessFullCount:%-8" PRIu32 "| CountAboveAvg:%-8" PRIu32 "|",
-                    TimeTraceOperationToString(aOperation), mWatermarks[index].mMaxTimeMs.count(),
-                    mWatermarks[index].mMinTimeMs.count(), mWatermarks[index].mMovingAverage.count(),
-                    mWatermarks[index].mTotalCount, mWatermarks[index].mSuccessfullCount, mWatermarks[index].mCountAboveAvg);
+                    TimeTraceOperationToString(aOperation), mWatermarks[to_underlying(aOperation)].mMaxTimeMs.count(),
+                    mWatermarks[to_underlying(aOperation)].mMinTimeMs.count(),
+                    mWatermarks[to_underlying(aOperation)].mMovingAverage.count(),
+                    mWatermarks[to_underlying(aOperation)].mTotalCount, mWatermarks[to_underlying(aOperation)].mSuccessfullCount,
+                    mWatermarks[to_underlying(aOperation)].mCountAboveAvg);
 
     return CHIP_NO_ERROR;
 }
