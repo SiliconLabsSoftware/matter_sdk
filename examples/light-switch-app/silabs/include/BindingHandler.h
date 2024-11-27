@@ -29,6 +29,12 @@ struct BindingCommandData
     chip::EndpointId localEndpointId = 1;
     chip::CommandId commandId;
     chip::ClusterId clusterId;
-    uint8_t level;
     bool isGroup = false;
+    union
+    {
+        struct
+        {
+            uint8_t level;
+        } LevelData;
+    };
 };

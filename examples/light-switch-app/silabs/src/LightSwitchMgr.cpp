@@ -129,13 +129,13 @@ void LightSwitchMgr::TriggerLevelControlAction(uint8_t level, bool isGroupComman
 {
     BindingCommandData * data = Platform::New<BindingCommandData>();
 
-    data->clusterId = chip::app::Clusters::LevelControl::Id;
-    data->isGroup   = isGroupCommand;
+    data->clusterId       = chip::app::Clusters::LevelControl::Id;
+    data->isGroup         = isGroupCommand;
 
-    data->commandId = chip::app::Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
-    data->level     = level;
+    data->commandId       = chip::app::Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
+    data->LevelData.level = level;
 
-    ChipLogProgress(DeviceLayer, "Level is - %d", data->level);
+    ChipLogProgress(DeviceLayer, "Level is - %d", data->LevelData.level);
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
 }
 

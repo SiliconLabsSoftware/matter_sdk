@@ -142,16 +142,16 @@ CHIP_ERROR MoveToLevelCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->level               = atoi(argv[0]);
-    if (LightSwitchMgr::GetInstance().currentLevel > MIN_LEVEL && data->level == MIN_LEVEL)
+    data->LevelData.level     = atoi(argv[0]);
+    if (LightSwitchMgr::GetInstance().currentLevel > MIN_LEVEL && data->LevelData.level == MIN_LEVEL)
     {
         OffSwitchCommandHandler(0,NULL);
     }
-    if (LightSwitchMgr::GetInstance().currentLevel == MIN_LEVEL && data->level > MIN_LEVEL)
+    if (LightSwitchMgr::GetInstance().currentLevel == MIN_LEVEL && data->LevelData.level > MIN_LEVEL)
     {
-        OnSwitchCommandHandler(1,NULL);
+        OnSwitchCommandHandler(0,NULL);
     }
-    LightSwitchMgr::GetInstance().currentLevel = data->level;
+    LightSwitchMgr::GetInstance().currentLevel = data->LevelData.level;
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
 }
@@ -305,18 +305,18 @@ CHIP_ERROR GroupLevelControlSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->level               = atoi(argv[0]);
+    data->LevelData.level     = atoi(argv[0]);
     data->isGroup             = true;
 
-    if (LightSwitchMgr::GetInstance().currentLevel > MIN_LEVEL && data->level == MIN_LEVEL)
+    if (LightSwitchMgr::GetInstance().currentLevel > MIN_LEVEL && data->LevelData.level == MIN_LEVEL)
     {
         OffSwitchCommandHandler(0,NULL);
     }
-    if (LightSwitchMgr::GetInstance().currentLevel == MIN_LEVEL && data->level > MIN_LEVEL)
+    if (LightSwitchMgr::GetInstance().currentLevel == MIN_LEVEL && data->LevelData.level > MIN_LEVEL)
     {
-        OnSwitchCommandHandler(1,NULL);
+        OnSwitchCommandHandler(0,NULL);
     }
-    LightSwitchMgr::GetInstance().currentLevel = data->level;
+    LightSwitchMgr::GetInstance().currentLevel = data->LevelData.level;
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
 }

@@ -77,7 +77,7 @@ void ProcessLevelControlUnicastBindingCommand(CommandId commandId, const EmberBi
     {
     case Clusters::LevelControl::Commands::Move::Id:
         Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveCommand;
-        moveCommand.level = data->level;
+        moveCommand.level = data->LevelData.level;
         Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, moveCommand, onSuccess, onFailure);
         break;
     }
@@ -115,7 +115,7 @@ void ProcessLevelControlGroupBindingCommand(CommandId commandId, const EmberBind
     {
     case Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id:
         Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveCommand;
-        moveCommand.level = data->level;
+        moveCommand.level = data->LevelData.level;
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveCommand);
         break;
     }
