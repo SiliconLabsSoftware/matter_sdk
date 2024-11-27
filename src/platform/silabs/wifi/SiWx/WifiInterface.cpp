@@ -431,7 +431,7 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
     wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
-        callback_status = *(sl_status_t *) result;
+        status = *reinterpret_cast<sl_status_t *> result;
         ChipLogError(DeviceLayer, "join_callback_handler: failed: 0x%lx", static_cast<uint32_t>(callback_status));
         wfx_rsi.dev_state.Clear(WifiState::kStationConnected);
         wfx_retry_connection(++wfx_rsi.join_retries);
