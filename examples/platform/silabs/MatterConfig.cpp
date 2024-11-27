@@ -32,6 +32,10 @@
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif /* SL_WIFI */
 
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#include "ApplicationSleepManager.h"
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
 #if PW_RPC_ENABLED
 #include "Rpc.h"
 #endif
@@ -332,6 +336,21 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
+
+    // [sl-only]: Configure Wi-Fi App Sleep Manager
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    err = app::Silabs::ApplicationSleepManager::GetInstance()
+              .SetFabricTable(&Server::GetInstance().GetFabricTable())
+              .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
+              .SetCommissioningWindowManager(&Server::GetInstance().GetCommissioningWindowManager())
+              .SetWifiSleepManager(&WifiSleepManager::GetInstance())
+              .Init();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "ApplicationSleepManager init failed"));
+
+    // Register ReadHandler::ApplicationCallback
+    app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(
+        &app::Silabs::ApplicationSleepManager::GetInstance());
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
 #if MATTER_TRACING_ENABLED
     static Tracing::Silabs::BackendImpl backend;
