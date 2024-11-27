@@ -427,7 +427,7 @@ sl_status_t SetWifiConfigurations()
  */
 sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLenght, void * arg)
 {
-    sl_status_t callback_status = SL_STATUS_OK;
+    sl_status_t status = SL_STATUS_OK;
     wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
