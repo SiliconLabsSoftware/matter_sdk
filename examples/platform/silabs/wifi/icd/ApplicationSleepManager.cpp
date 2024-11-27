@@ -29,8 +29,6 @@ CHIP_ERROR ApplicationSleepManager::Init()
     VerifyOrReturnError(mFabricTable != nullptr, CHIP_ERROR_INVALID_ARGUMENT, ChipLogError(AppServer, "FabricTable is null"));
     VerifyOrReturnError(mSubscriptionsInfoProvider != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(AppServer, "SubscriptionsInfoProvider is null"));
-    VerifyOrReturnError(mCommissioningWindowManager != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
-                        ChipLogError(AppServer, "CommissioningWindowManager is null"));
     VerifyOrReturnError(mWifiSleepManager != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(AppServer, "WifiSleepManager is null"));
 
@@ -40,6 +38,18 @@ CHIP_ERROR ApplicationSleepManager::Init()
     mWifiSleepManager->SetApplicationCallback(this);
 
     return CHIP_NO_ERROR;
+}
+
+void ApplicationSleepManager::OnCommissioningWindowOpened()
+{
+    mIsCommissionningWindowOpen = true;
+    mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
+}
+
+void ApplicationSleepManager::OnCommissioningWindowClosed()
+{
+    mIsCommissionningWindowOpen = false;
+    mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
 }
 
 void ApplicationSleepManager::OnSubscriptionEstablished(chip::app::ReadHandler & aReadHandler)
@@ -71,10 +81,28 @@ void ApplicationSleepManager::OnFabricCommitted(const chip::FabricTable & fabric
 
 bool ApplicationSleepManager::CanGoToLIBasedSleep()
 {
-    // TODO: Implement your logic here
+    bool canGoToLIBasedSleep = true;
 
-    ChipLogProgress(AppServer, "CanGoToLIBasedSleep was called!");
-    return false;
+    if (mIsCommissionningWindowOpen)
+    {
+        ChipLogProgress(AppServer, "Commissioning Window is Open - Cannot go to LI based sleep");
+        canGoToLIBasedSleep = false;
+    }
+    else
+    {
+        for (ConstFabricIterator it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
+        {
+            if (!mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
+            {
+                ChipLogProgress(AppServer, "Fabric index %u has no active subscriptions - Cannot go to LI based sleep",
+                                it->GetFabricIndex());
+                canGoToLIBasedSleep = false;
+                break;
+            }
+        }
+    }
+
+    return canGoToLIBasedSleep;
 }
 
 } // namespace Silabs

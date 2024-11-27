@@ -61,17 +61,25 @@ public:
         return *this;
     }
 
-    ApplicationSleepManager & SetCommissioningWindowManager(chip::CommissioningWindowManager * commissioningWindowManager)
-    {
-        mCommissioningWindowManager = commissioningWindowManager;
-        return *this;
-    }
-
     ApplicationSleepManager & SetWifiSleepManager(chip::DeviceLayer::Silabs::WifiSleepManager * wifiSleepManager)
     {
         mWifiSleepManager = wifiSleepManager;
         return *this;
     }
+
+    /**
+     * @brief Sets the commissioning window state to open and calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
+     *        determine in which low power state the Wi-Fi device can transition to.
+     */
+    void OnCommissioningWindowOpened();
+
+    /**
+     * @brief Sets the commissioning window state to open and calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
+     *        determine in which low power state the Wi-Fi device can transition to.
+     */
+    void OnCommissioningWindowClosed();
 
     // ReadHandler::ApplicationCallback implementation
 
@@ -94,10 +102,14 @@ public:
     // WifiSleepManager::ApplicationCallback implementation
 
     /**
-     * @brief TODO
+     * @brief Function encapsulates the application logic to determine if the Wi-Fi device can go into LI based sleep.
      *
-     * @return true
-     * @return false
+     *        - 1. Check if the commissioning window is open. If it is open, the Wi-Fi device cannot go to LI based sleep.
+     *        - 2. Check if all Fabrics have at least 1 subscription. If there is at least one fabric without a subscription, the
+     *             Wi-Fi cannot go to LI based sleep.
+     *
+     * @return true if the device can go to LI sleep
+     * @return false if the device cannot go to LI sleep
      */
     bool CanGoToLIBasedSleep() override;
 
@@ -131,6 +143,8 @@ private:
     chip::app::SubscriptionsInfoProvider * mSubscriptionsInfoProvider = nullptr;
     chip::CommissioningWindowManager * mCommissioningWindowManager    = nullptr;
     chip::DeviceLayer::Silabs::WifiSleepManager * mWifiSleepManager   = nullptr;
+
+    bool mIsCommissionningWindowOpen = false;
 };
 
 } // namespace Silabs

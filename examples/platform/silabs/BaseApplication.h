@@ -74,6 +74,7 @@ private:
     void OnCommissioningSessionStarted() override;
     void OnCommissioningSessionStopped() override;
     void OnCommissioningWindowClosed() override;
+    void OnCommissioningWindowOpened() override;
 
     // FabricTable::Delegate
     void OnFabricCommitted(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
