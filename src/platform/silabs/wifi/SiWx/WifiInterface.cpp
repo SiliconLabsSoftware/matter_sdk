@@ -461,7 +461,7 @@ sl_status_t JoinWifiNetwork(void)
     status = SetWifiConfigurations();
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failure to set the Wifi Configurations!"));
 
-    status = sl_wifi_set_join_callback(join_callback_handler, NULL);
+    status = sl_wifi_set_join_callback(join_callback_handler, nullptr);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
