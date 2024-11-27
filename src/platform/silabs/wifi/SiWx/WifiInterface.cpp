@@ -298,7 +298,7 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
     sl_status_t status = SL_STATUS_OK;
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
-        if (NULL != scan_result)
+        if (scan_result != nullptr)
         {
             sl_status_t callback_status = *(sl_status_t *) scan_result;
             ChipLogError(DeviceLayer, "scan_callback_handler: failed: 0x%lx", static_cast<uint32_t>(callback_status));
