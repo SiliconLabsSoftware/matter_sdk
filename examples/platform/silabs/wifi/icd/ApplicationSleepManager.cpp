@@ -99,6 +99,7 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
                 canGoToLIBasedSleep = false;
                 break;
             }
+            ChipLogProgress(AppServer, "All Fabrics have at least 1 active subscription!");
         }
     }
 
