@@ -228,9 +228,6 @@ void SilabsMatterConfig::AppInit()
     ChipLogProgress(DeviceLayer, "Starting scheduler");
     VerifyOrDie(sMainTaskHandle); // We can't proceed if the Main Task creation failed.
 
-#if MATTER_TRACING_ENABLED
-    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kBootup);
-#endif // MATTER_TRACING_ENABLED
     GetPlatform().StartScheduler();
 
     // Should never get here.
