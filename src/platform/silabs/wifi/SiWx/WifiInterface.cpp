@@ -300,8 +300,8 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
     {
         if (scan_result != nullptr)
         {
-            sl_status_t callback_status = *reinterpret_cast<sl_status_t *>(scan_result);
-            ChipLogError(DeviceLayer, "ScanCallback: failed: 0x%lx", static_cast<uint32_t>(callback_status));
+            status = *reinterpret_cast<sl_status_t *>(scan_result);
+            ChipLogError(DeviceLayer, "ScanCallback: failed: 0x%lx", static_cast<uint32_t>(status));
         }
 
 #if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
@@ -309,8 +309,6 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
 #else
         security = SL_WIFI_WPA_WPA2_MIXED;
 #endif /* WIFI_ENABLE_SECURITY_WPA3_TRANSITION */
-
-        status = SL_STATUS_FAIL;
     }
     else
     {
@@ -415,14 +413,17 @@ sl_status_t SetWifiConfigurations()
 
 /**
  * @brief Callback function for the SL_WIFI_JOIN_EVENTS group
- * This callback handler will be invoked when any event within the join event group occurs, providing the event details and any associated data
+ *
+ * This callback handler will be invoked when any event within join event group occurs, providing the event details and any associated data
+ * The callback doesn't get called when we join a network using the sl net APIs
  *
  * @param[in] event sl_wifi_event_t that triggered the callback
  * @param[in] result Pointer to the response data received
  * @param[in] result_length Length of the data received in bytes
  * @param[in] arg Optional user provided argument
  *
- * @return sl_status_t Returns the status of the operation.
+ * @return sl_status_t Returns the status of the operation
+ * @note In case of failure, the 'result' parameter will be of type sl_status_t, and the 'resultLenght' parameter should be ignored
  */
 sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLenght, void * arg)
 {
@@ -434,7 +435,7 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%lx", static_cast<uint32_t>(status));
         wfx_rsi.dev_state.Clear(WifiState::kStationConnected);
         wfx_retry_connection(++wfx_rsi.join_retries);
-        return SL_STATUS_FAIL;
+        return status;
     }
 
     /*
@@ -446,7 +447,7 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
     WifiEvent wifievent = WifiEvent::kStationConnect;
     sl_matter_wifi_post_event(wifievent);
     wfx_rsi.join_retries = 0;
-    return SL_STATUS_OK;
+    return status;
 }
 sl_status_t JoinWifiNetwork(void)
 {
