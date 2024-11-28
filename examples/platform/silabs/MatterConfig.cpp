@@ -227,9 +227,6 @@ void SilabsMatterConfig::AppInit()
     ChipLogProgress(DeviceLayer, "Starting scheduler");
     VerifyOrDie(sMainTaskHandle); // We can't proceed if the Main Task creation failed.
 
-#if MATTER_TRACING_ENABLED
-    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kBootup);
-#endif // MATTER_TRACING_ENABLED
     GetPlatform().StartScheduler();
 
     // Should never get here.
@@ -342,7 +339,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     err = app::Silabs::ApplicationSleepManager::GetInstance()
               .SetFabricTable(&Server::GetInstance().GetFabricTable())
               .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
-              .SetCommissioningWindowManager(&Server::GetInstance().GetCommissioningWindowManager())
               .SetWifiSleepManager(&WifiSleepManager::GetInstance())
               .Init();
     VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "ApplicationSleepManager init failed"));
