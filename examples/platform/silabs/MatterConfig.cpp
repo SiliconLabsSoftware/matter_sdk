@@ -333,8 +333,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #endif
 
     initParams.appDelegate = &BaseApplication::sAppDelegate;
-    // Init Matter Server and Start Event Loop
-    err = chip::Server::GetInstance().Init(initParams);
 
     // [sl-only]: Configure Wi-Fi App Sleep Manager
 #if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
@@ -349,6 +347,9 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(
         &app::Silabs::ApplicationSleepManager::GetInstance());
 #endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
+    // Init Matter Server and Start Event Loop
+    err = chip::Server::GetInstance().Init(initParams);
 
 #if MATTER_TRACING_ENABLED
     static Tracing::Silabs::BackendImpl backend;
