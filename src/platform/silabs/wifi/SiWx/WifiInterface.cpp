@@ -300,7 +300,7 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
     {
         if (scan_result != nullptr)
         {
-            sl_status_t callback_status = *reinterpret_cast<sl_status_t *> scan_result;
+            sl_status_t callback_status = *reinterpret_cast<sl_status_t *>(scan_result);
             ChipLogError(DeviceLayer, "ScanCallback: failed: 0x%lx", static_cast<uint32_t>(callback_status));
         }
 
@@ -418,10 +418,10 @@ sl_status_t SetWifiConfigurations()
  *
  * This callback handler will be invoked when any event within join event group occurs, providing the event details and any associated data
  *
- * @param[out] event sl_wifi_event_t that triggered the callback
- * @param[out] result Pointer to the response data received
- * @param[out] result_length Length of the data received in bytes
- * @param[out] arg Optional user provided argument
+ * @param[in] event sl_wifi_event_t that triggered the callback
+ * @param[in] result Pointer to the response data received
+ * @param[in] result_length Length of the data received in bytes
+ * @param[in] arg Optional user provided argument
  *
  * @return sl_status_t Returns the status of the operation.
  */
@@ -431,8 +431,8 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
     wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
-        status = *reinterpret_cast<sl_status_t *> result;
-        ChipLogError(DeviceLayer, "join_callback_handler: failed: 0x%lx", static_cast<uint32_t>(callback_status));
+        status = *reinterpret_cast<sl_status_t *>(result);
+        ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%lx", static_cast<uint32_t>(status));
         wfx_rsi.dev_state.Clear(WifiState::kStationConnected);
         wfx_retry_connection(++wfx_rsi.join_retries);
         return SL_STATUS_FAIL;
@@ -441,7 +441,7 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
     /*
      * Join was complete - Do the DHCP
      */
-    ChipLogDetail(DeviceLayer, "join_callback_handler: success");
+    ChipLogDetail(DeviceLayer, "JoinCallback: success");
     memset(&temp_reset, 0, sizeof(temp_reset));
 
     WifiEvent wifievent = WifiEvent::kStationConnect;
@@ -461,7 +461,7 @@ sl_status_t JoinWifiNetwork(void)
     status = SetWifiConfigurations();
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failure to set the Wifi Configurations!"));
 
-    status = sl_wifi_set_join_callback(join_callback_handler, nullptr);
+    status = sl_wifi_set_join_callback(JoinCallback, nullptr);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
