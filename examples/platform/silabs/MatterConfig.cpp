@@ -344,7 +344,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     err = app::Silabs::ApplicationSleepManager::GetInstance()
               .SetFabricTable(&Server::GetInstance().GetFabricTable())
               .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
-              .SetCommissioningWindowManager(&Server::GetInstance().GetCommissioningWindowManager())
               .SetWifiSleepManager(&WifiSleepManager::GetInstance())
               .Init();
     VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "ApplicationSleepManager init failed"));
