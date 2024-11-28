@@ -416,7 +416,7 @@ sl_status_t SetWifiConfigurations()
 /**
  * @brief Callback function for the SL_WIFI_JOIN_EVENTS group
  *
- * This callback handler will be invoked when any event within join event group occurs, providing the event details and any associated data
+ * This callback handler will be invoked when any event within the join event group occurs, providing the event details and any associated data
  *
  * @param[in] event sl_wifi_event_t that triggered the callback
  * @param[in] result Pointer to the response data received
