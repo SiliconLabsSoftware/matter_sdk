@@ -27,8 +27,10 @@
 #include "sl_rsi_utility.h"
 #include "sl_si91x_host_interface.h"
 #include "sl_si91x_status.h"
+#include "sl_si91x_ncp_utility.h"
 #include "sl_status.h"
 #include "sl_wifi_constants.h"
+#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -40,9 +42,6 @@
 #include "sl_board_control.h"
 #endif // SL_BOARD_NAME
 
-#include "sl_si91x_ncp_utility.h"
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
-
 #include "sl_spidrv_exp_config.h"
 #include "sl_spidrv_instances.h"
 #include "spidrv.h"
@@ -53,7 +52,8 @@
 // use SPI handle for EXP header (configured in project settings)
 extern SPIDRV_Handle_t sl_spidrv_exp_handle;
 #define SPI_HANDLE sl_spidrv_exp_handle
-static uint8_t dummy_buffer[1800] = { 0 };
+#define MAX_DATA_PACKET_SIZE 1800
+static uint8_t dummy_buffer[MAX_DATA_PACKET_SIZE] = { 0 };
 
 uint32_t rx_ldma_channel;
 uint32_t tx_ldma_channel;
