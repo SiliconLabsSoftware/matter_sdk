@@ -29,5 +29,6 @@ struct BindingCommandData
     chip::EndpointId localEndpointId = 1;
     chip::CommandId commandId;
     chip::ClusterId clusterId;
-    bool isGroup = false;
+    bool isGroup         = false;
+    uint32_t args[7];
 };
