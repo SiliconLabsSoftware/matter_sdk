@@ -32,6 +32,9 @@ declare_args() {
 
   #default Wifi Password
   chip_default_wifi_psk = ""
+
+  # Argument to enable LwIP debug logs
+  sl_enable_wifi_debug_logs = false
 }
 
 if (chip_enable_wifi && !wifi_soc) {
@@ -52,6 +55,12 @@ config("wifi-platform-config") {
   defines = []
   include_dirs = []
 
+  if (sl_enable_wifi_debug_logs) {
+    defines += [ "WIFI_DEBUG_ENABLED=1" ]
+  } else {
+    defines += [ "WIFI_DEBUG_ENABLED=0" ]
+  }
+
   if (use_rs9116) {
     # All the stuff from wiseconnect
     include_dirs += rs911x_inc_plat
@@ -59,7 +68,6 @@ config("wifi-platform-config") {
     # All the stuff from wiseconnect
     include_dirs += rs9117_inc_plat
   }
-
   if (chip_default_wifi_ssid != "") {
     defines += [
       "SL_ONNETWORK_PAIRING=1",
@@ -122,8 +130,6 @@ source_set("wifi-platform") {
 
     # All the stuff from wiseconnect
     sources += rs9117_src_sapi
-
-    #add compilation flags for rs991x build. This will be addressed directly in wiseconnect sdk in the next version release of that sdk
   } else if (use_wf200) {
     sources += wf200_plat_src
   }
@@ -144,6 +150,7 @@ source_set("wifi-platform") {
   if (use_wf200 || use_rs9116) {
     sources += [
       "${silabs_platform_dir}/wifi/lwip-support/dhcp_client.cpp",
+      "${silabs_platform_dir}/wifi/lwip-support/dhcp_client.h",
       "${silabs_platform_dir}/wifi/lwip-support/ethernetif.cpp",
       "${silabs_platform_dir}/wifi/lwip-support/ethernetif.h",
       "${silabs_platform_dir}/wifi/lwip-support/lwip_netif.cpp",
