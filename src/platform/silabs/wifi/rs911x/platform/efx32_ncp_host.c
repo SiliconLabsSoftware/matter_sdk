@@ -41,7 +41,7 @@
 #endif // SL_BOARD_NAME
 
 #include "sl_si91x_ncp_utility.h"
-#include "spi_multiplex.h"
+#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
 
 #include "sl_spidrv_exp_config.h"
 #include "sl_spidrv_instances.h"
@@ -162,7 +162,7 @@ uint32_t sl_si91x_host_get_wake_indicator(void)
     return GPIO_PinInGet(WAKE_INDICATOR_PIN.port, WAKE_INDICATOR_PIN.pin);
 }
 
-sl_status_t sl_si91x_host_init(sl_si91x_host_init_configuration * config)
+sl_status_t sl_si91x_host_init(const sl_si91x_host_init_configuration * config)
 {
 #if SL_SPICTRL_MUX
     sl_status_t status = sl_board_disable_display();
