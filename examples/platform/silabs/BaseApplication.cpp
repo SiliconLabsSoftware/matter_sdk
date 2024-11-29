@@ -96,6 +96,11 @@
 #include <platform/silabs/tracing/SilabsTracing.h>
 #endif // MATTER_TRACING_ENABLED
 
+// sl-only
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#include <ApplicationSleepManager.h>
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
 /**********************************************************
  * Defines and Constants
  *********************************************************/
@@ -213,8 +218,19 @@ void BaseApplicationDelegate::OnCommissioningSessionStopped()
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
+void BaseApplicationDelegate::OnCommissioningWindowOpened()
+{
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowOpened();
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+}
+
 void BaseApplicationDelegate::OnCommissioningWindowClosed()
 {
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowClosed();
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
     if (BaseApplication::GetProvisionStatus())
     {
         // After the device is provisioned and the commissioning passed
