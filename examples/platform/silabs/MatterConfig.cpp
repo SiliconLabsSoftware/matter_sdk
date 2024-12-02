@@ -48,10 +48,12 @@
 #include "MemMonitoring.h"
 #endif
 
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1
-#include <platform/silabs/SiWx917/SiWxPlatformInterface.h>
+#if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
 #include <platform/silabs/wifi/wiseconnect-abstraction/WiseconnectInterfaceAbstraction.h>
-#endif // SLI_SI91X_MCU_INTERFACE
+#if !defined(EXP_BOARD)
+#include <platform/silabs/SiWx917/SiWxPlatformInterface.h>
+#endif  //!defined(EXP_BOARD)
+#endif // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
 
 #include <crypto/CHIPCryptoPAL.h>
 // If building with the EFR32-provided crypto backend, we can use the
@@ -379,9 +381,9 @@ CHIP_ERROR SilabsMatterConfig::InitWiFi(void)
 #endif // SL_WFX_USE_SECURE_LINK
 #endif // WF200_WIFI
 
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1
+#if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
     VerifyOrReturnError(sl_matter_wifi_platform_init() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
-#endif // SLI_SI91X_MCU_INTERFACE
+#endif // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
 
     return CHIP_NO_ERROR;
 }
