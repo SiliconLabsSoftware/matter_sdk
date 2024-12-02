@@ -49,8 +49,10 @@
 #endif
 
 #if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
-#include <platform/silabs/SiWx917/SiWxPlatformInterface.h>
 #include <platform/silabs/wifi/wiseconnect-abstraction/WiseconnectInterfaceAbstraction.h>
+#if !defined(EXP_BOARD)
+#include <platform/silabs/SiWx917/SiWxPlatformInterface.h>
+#endif  //!defined(EXP_BOARD)
 #endif // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
 
 #include <crypto/CHIPCryptoPAL.h>
