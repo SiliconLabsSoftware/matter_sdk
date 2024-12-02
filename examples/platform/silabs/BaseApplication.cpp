@@ -92,7 +92,9 @@
 // Tracing
 #include <matter/tracing/build_config.h>
 #if MATTER_TRACING_ENABLED
+#ifdef ENABLE_CHIP_SHELL
 #include <TracingShellCommands.h>
+#endif // ENABLE_CHIP_SHELL
 #include <platform/silabs/tracing/SilabsTracing.h>
 #endif // MATTER_TRACING_ENABLED
 
