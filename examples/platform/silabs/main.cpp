@@ -20,28 +20,17 @@
 #include "sl_system_init.h"
 #include "sl_system_kernel.h"
 #include <MatterConfig.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 
-#include <matter/tracing/build_config.h>
-#if MATTER_TRACING_ENABLED
-#include <platform/silabs/tracing/SilabsTracing.h>
-#endif // MATTER_TRACING_ENABLED
-
-#if MATTER_TRACING_ENABLED
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
-using SilabsTracer       = chip::Tracing::Silabs::SilabsTracer;
-#endif // MATTER_TRACING_ENABLED
 
 int main(void)
 {
-#if MATTER_TRACING_ENABLED
-    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
-    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kSilabsInit);
-#endif // MATTER_TRACING_ENABLED
+    SILABS_TRACE_BEGIN(chip::Tracing::Silabs::TimeTraceOperation::kBootup);
+    SILABS_TRACE_BEGIN(chip::Tracing::Silabs::TimeTraceOperation::kSilabsInit);
     sl_system_init();
-#if MATTER_TRACING_ENABLED
-    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kSilabsInit);
-    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kMatterInit);
-#endif // MATTER_TRACING_ENABLED
+    SILABS_TRACE_END(chip::Tracing::Silabs::TimeTraceOperation::kSilabsInit);
+    SILABS_TRACE_BEGIN(chip::Tracing::Silabs::TimeTraceOperation::kMatterInit);
     // Initialize the application. For example, create periodic timer(s) or
     // task(s) if the kernel is present.
     SilabsMatterConfig::AppInit();

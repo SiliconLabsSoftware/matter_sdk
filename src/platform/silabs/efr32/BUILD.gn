@@ -116,14 +116,17 @@ static_library("efr32") {
     "${chip_root}/src/platform/logging:headers",
   ]
   deps = [
-    "${chip_root}/src/tracing",
+    "${chip_root}/src/tracing/silabs:silabs_tracing",
     "${silabs_platform_dir}/provision:provision-headers",
   ]
 
   public_configs = []
 
   if (matter_enable_tracing_support) {
-    public_deps += [ "${chip_root}/src/platform/silabs/tracing:SilabsTracing" ]
+    public_deps += [
+      "${chip_root}/src/platform/silabs/tracing:SilabsTracing",
+      "${chip_root}/src/tracing",
+    ]
   }
 
   # Add platform crypto implementation

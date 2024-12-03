@@ -48,11 +48,11 @@
 #include "MemMonitoring.h"
 #endif
 
-#if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
+#if ((defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1) || defined(EXP_BOARD))
 #include <platform/silabs/wifi/wiseconnect-abstraction/WiseconnectInterfaceAbstraction.h>
 #if !defined(EXP_BOARD)
 #include <platform/silabs/SiWx917/SiWxPlatformInterface.h>
-#endif  //!defined(EXP_BOARD)
+#endif //! defined(EXP_BOARD)
 #endif // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
 
 #include <crypto/CHIPCryptoPAL.h>
@@ -97,10 +97,9 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #include "sl_power_manager.h"
 #endif
 
-#include <matter/tracing/build_config.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 #if MATTER_TRACING_ENABLED
 #include <platform/silabs/tracing/BackendImpl.h>
-#include <platform/silabs/tracing/SilabsTracing.h>
 #include <tracing/registry.h>
 #endif // MATTER_TRACING_ENABLED
 
@@ -113,11 +112,7 @@ using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::Credentials;
 using namespace chip::DeviceLayer::Silabs;
-
-#if MATTER_TRACING_ENABLED
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
-using SilabsTracer       = chip::Tracing::Silabs::SilabsTracer;
-#endif // MATTER_TRACING_ENABLED
 
 #if CHIP_ENABLE_OPENTHREAD
 #include <inet/EndPointStateOpenThread.h>
@@ -193,10 +188,8 @@ void ApplicationStart(void * unused)
     if (err != CHIP_NO_ERROR)
         appError(err);
 
-#if MATTER_TRACING_ENABLED
-    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kMatterInit);
-    SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kAppInit);
-#endif // MATTER_TRACING_ENABLED
+    SILABS_TRACE_END(TimeTraceOperation::kMatterInit);
+    SILABS_TRACE_BEGIN(TimeTraceOperation::kAppInit);
 
     gExampleDeviceInfoProvider.SetStorageDelegate(&chip::Server::GetInstance().GetPersistentStorage());
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
@@ -381,7 +374,7 @@ CHIP_ERROR SilabsMatterConfig::InitWiFi(void)
 #endif // SL_WFX_USE_SECURE_LINK
 #endif // WF200_WIFI
 
-#if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
+#if ((defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1) || defined(EXP_BOARD))
     VerifyOrReturnError(sl_matter_wifi_platform_init() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
 #endif // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) || defined(EXP_BOARD) )
 

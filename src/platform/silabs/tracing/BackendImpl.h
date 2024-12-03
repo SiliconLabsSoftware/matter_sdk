@@ -20,20 +20,6 @@
 #include <tracing/metric_event.h>
 #include <tracing/registry.h>
 
-#define _MATTER_TRACE_DISABLE(...)                                                                                                 \
-    do                                                                                                                             \
-    {                                                                                                                              \
-    } while (false)
-
-// This gets forwarded to the multiplexed instance
-#define MATTER_TRACE_BEGIN(label, group) ::chip::Tracing::Internal::Begin(label, group)
-#define MATTER_TRACE_END(label, group) ::chip::Tracing::Internal::End(label, group)
-#define MATTER_TRACE_INSTANT(label, group) ::chip::Tracing::Internal::Instant(label, group)
-#define MATTER_TRACE_COUNTER(label) ::chip::Tracing::Internal::Counter(label)
-
-// We are not using this in our current implementation, so we are disabling it.
-#define MATTER_TRACE_SCOPE(...) _MATTER_TRACE_DISABLE(__VA_ARGS__)
-
 namespace chip {
 namespace Tracing {
 namespace Silabs {
@@ -46,8 +32,8 @@ class BackendImpl : public ::chip::Tracing::Backend
 public:
     BackendImpl() = default;
     // TraceBegin, TraceEnd and TraceInstant are redundant with LogMetricEvent in the usecases that we are trying to track,
-    // so we are not implementing these at the moment to avoid duplication of the same information in the trace. We might implement them
-    // in the future if we want to add new traces that are not related to our metrics measurements
+    // so we are not implementing these at the moment to avoid duplication of the same information in the trace. We might implement
+    // them in the future if we want to add new traces that are not related to our metrics measurements
     void TraceBegin(const char * label, const char * group) override;
     void TraceEnd(const char * label, const char * group) override;
     void TraceInstant(const char * label, const char * group) override;
