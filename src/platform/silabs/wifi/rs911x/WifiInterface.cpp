@@ -928,7 +928,7 @@ int32_t wfx_rsi_send_data(void * p, uint16_t len)
     return status;
 }
 
-#if SL_ICD_ENABLED
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
 /*********************************************************************
  * @fn  sl_status_t ConfigurePowerSave(void)
  * @brief
@@ -959,4 +959,4 @@ sl_status_t ConfigurePowerSave(void)
     ChipLogDetail(DeviceLayer, "Powersave Config Success");
     return SL_STATUS_OK;
 }
-#endif /* SL_ICD_ENABLED */
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER

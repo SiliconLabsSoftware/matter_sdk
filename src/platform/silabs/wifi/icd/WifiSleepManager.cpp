@@ -178,9 +178,9 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     return ConfigureDTIMBasedSleep();
 
 #elif RS911X_WIFI // rs9116
-#if SL_ICD_ENABLED
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
     VerifyOrReturnError(ConfigurePowerSave() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
-#endif // SL_ICD_ENABLED
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
     return CHIP_NO_ERROR;
 #else             // wf200
     return CHIP_NO_ERROR;
