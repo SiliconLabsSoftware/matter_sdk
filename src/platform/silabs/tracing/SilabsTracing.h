@@ -82,7 +82,7 @@ class SilabsTracer
 public:
     static constexpr size_t kNumTraces         = to_underlying(TimeTraceOperation::kNumTraces);
     static constexpr size_t kMaxBufferedTraces = 64;
-    static constexpr size_t kMaxTraceSize      = 256;
+    static constexpr size_t kMaxTraceSize      = 128;
 
     /** @brief Get the singleton instance of SilabsTracer */
     static SilabsTracer & Instance() { return sInstance; }
