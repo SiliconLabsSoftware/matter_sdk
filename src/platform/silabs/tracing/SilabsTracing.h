@@ -16,6 +16,7 @@
  ******************************************************************************/
 #pragma once
 
+#include "SilabsTracingTypes.h"
 #include <cstddef>
 #include <cstdlib>
 #include <lib/core/CHIPError.h>
@@ -35,43 +36,6 @@
 namespace chip {
 namespace Tracing {
 namespace Silabs {
-
-// Enum for the different operation to trace
-enum class TimeTraceOperation : uint8_t
-{
-    kSpake2p,
-    kPake1,
-    kPake2,
-    kPake3,
-    kOperationalCredentials,
-    kAttestationVerification,
-    kCSR,
-    kNOC,
-    kTransportLayer,
-    kTransportSetup,
-    kFindOperational,
-    kCaseSession,
-    kSigma1,
-    kSigma2,
-    kSigma3,
-    kOTA,
-    kImageUpload,
-    kImageVerification,
-    kAppApplyTime,
-    kBootup,
-    kSilabsInit,
-    kMatterInit,
-    kAppInit,
-    kBufferFull,
-    kNumTraces,
-};
-
-enum class OperationType : uint8_t
-{
-    kBegin,
-    kEnd,
-    kInstant,
-};
 
 struct TimeTracker
 {

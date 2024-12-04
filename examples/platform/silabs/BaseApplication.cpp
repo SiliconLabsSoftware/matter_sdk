@@ -90,12 +90,9 @@
 #endif
 
 // Tracing
-#include <matter/tracing/build_config.h>
-#if MATTER_TRACING_ENABLED
-#ifdef ENABLE_CHIP_SHELL
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
+#if MATTER_TRACING_ENABLED && defined(ENABLE_CHIP_SHELL)
 #include <TracingShellCommands.h>
-#endif // ENABLE_CHIP_SHELL
-#include <platform/silabs/tracing/SilabsTracing.h>
 #endif // MATTER_TRACING_ENABLED
 
 // sl-only
@@ -127,11 +124,7 @@ using namespace chip::app;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 
-#if MATTER_TRACING_ENABLED
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
-using SilabsTracer       = chip::Tracing::Silabs::SilabsTracer;
-#endif // MATTER_TRACING_ENABLED
-
 namespace {
 
 /**********************************************************
@@ -384,10 +377,8 @@ CHIP_ERROR BaseApplication::Init()
 
 void BaseApplication::InitCompleteCallback(CHIP_ERROR err)
 {
-#if MATTER_TRACING_ENABLED
-    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kAppInit);
-    SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kBootup);
-#endif // MATTER_TRACING_ENABLED
+    SILABS_TRACE_END(TimeTraceOperation::kAppInit);
+    SILABS_TRACE_END(TimeTraceOperation::kBootup);
 }
 
 void BaseApplication::FunctionTimerEventHandler(void * timerCbArg)
