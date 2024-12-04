@@ -116,7 +116,7 @@ osMessageQueueId_t sWifiEventQueue = nullptr;
 sl_net_wifi_lwip_context_t wifi_client_context;
 sl_wifi_security_t security = SL_WIFI_SECURITY_UNKNOWN;
 
-// TODO : Temporary work-around for wifi-init failure in 917NCP ACX module board(BRD4357A). Can be removed after 
+// TODO : Temporary work-around for wifi-init failure in 917NCP ACX module board(BRD4357A). Can be removed after
 // Wiseconnect fixes region code for all ACX module boards.
 #ifdef EXP_BOARD
 #define REGION_CODE IGNORE_REGION
@@ -409,11 +409,11 @@ sl_status_t SetWifiConfigurations()
 /**
  * @brief Callback function for the SL_WIFI_JOIN_EVENTS group
  *
- * This callback handler will be invoked when any event within join event group occurs, providing the event details and any associated data
- * The callback doesn't get called when we join a network using the sl net APIs
+ * This callback handler will be invoked when any event within join event group occurs, providing the event details and any
+ * associated data The callback doesn't get called when we join a network using the sl net APIs
  *
-  * @note In case of failure, the 'result' parameter will be of type sl_status_t, and the 'resultLenght' parameter should be ignored
-  *
+ * @note In case of failure, the 'result' parameter will be of type sl_status_t, and the 'resultLenght' parameter should be ignored
+ *
  * @param[in] event sl_wifi_event_t that triggered the callback
  * @param[in] result Pointer to the response data received
  * @param[in] result_length Length of the data received in bytes
@@ -906,7 +906,7 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
     /*
      * Acquire the new IP address
      */
-    wfx_rsi.ip4_addr[0] = (ip) & 0xFF;
+    wfx_rsi.ip4_addr[0] = (ip) &0xFF;
     wfx_rsi.ip4_addr[1] = (ip >> 8) & 0xFF;
     wfx_rsi.ip4_addr[2] = (ip >> 16) & 0xFF;
     wfx_rsi.ip4_addr[3] = (ip >> 24) & 0xFF;
