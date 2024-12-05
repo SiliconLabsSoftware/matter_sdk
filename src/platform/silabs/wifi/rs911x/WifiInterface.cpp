@@ -365,7 +365,7 @@ static int32_t sl_matter_wifi_init(void)
     }
 
     buf[sizeof(buf) - 1] = 0;
-    ChipLogProgress(DeviceLayer, "RSI firmware version: %s", buf);
+
     //! Send feature frame
     if ((status = rsi_send_feature_frame()) != RSI_SUCCESS)
     {
@@ -382,6 +382,7 @@ static int32_t sl_matter_wifi_init(void)
         return status;
     }
 
+    ChipLogProgress(DeviceLayer, "rsi_firmware_version: %s", buf);
     ChipLogDetail(DeviceLayer, "MAC: %02x:%02x:%02x %02x:%02x:%02x", wfx_rsi.sta_mac.octet[0], wfx_rsi.sta_mac.octet[1],
                   wfx_rsi.sta_mac.octet[2], wfx_rsi.sta_mac.octet[3], wfx_rsi.sta_mac.octet[4], wfx_rsi.sta_mac.octet[5]);
 
@@ -776,6 +777,22 @@ void ProcessEvent(WifiEvent event)
     }
 }
 
+/**
+ * @brief Wifi initialization called from app main
+ *
+ * @return sl_status_t Returns underlying Wi-Fi initialization error
+ */
+sl_status_t sl_matter_wifi_platform_init(void)
+{
+    uint32_t rsi_status = sl_matter_wifi_init();
+    if (rsi_status != RSI_SUCCESS)
+    {
+        ChipLogError(DeviceLayer, "sl_matter_wifi_platform_init: sl_matter_wifi_init failed: %ld", rsi_status);
+        return SL_STATUS_FAIL;
+    }
+    return SL_STATUS_OK;
+}
+
 /*********************************************************************************
  * @fn  void sl_matter_wifi_task(void *arg)
  * @brief
@@ -790,12 +807,6 @@ void ProcessEvent(WifiEvent event)
 void sl_matter_wifi_task(void * arg)
 {
     (void) arg;
-    uint32_t rsi_status = sl_matter_wifi_init();
-    if (rsi_status != RSI_SUCCESS)
-    {
-        ChipLogError(DeviceLayer, "sl_matter_wifi_task: sl_matter_wifi_init failed: %ld", rsi_status);
-        return;
-    }
     WifiEvent event;
     sl_matter_lwip_start();
     sl_matter_wifi_task_started();
