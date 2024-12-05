@@ -32,13 +32,13 @@ namespace {
  */
 CHIP_ERROR ConfigureLIBasedSleep()
 {
+    VerifyOrReturnError(ConfigureBroadcastFilter(true) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
+
     VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
                                            chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) ==
                             SL_STATUS_OK,
                         CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to enable LI based sleep."));
-
-    VerifyOrReturnError(ConfigureBroadcastFilter(true) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
 
     return CHIP_NO_ERROR;
 }
@@ -51,11 +51,11 @@ CHIP_ERROR ConfigureLIBasedSleep()
  */
 CHIP_ERROR ConfigureDTIMBasedSleep()
 {
-    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to enable to enable DTIM basedsleep."));
-
     VerifyOrReturnError(ConfigureBroadcastFilter(false) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "Failed to configure broadcast filter."));
+
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to enable to enable DTIM basedsleep."));
 
     return CHIP_NO_ERROR;
 }
