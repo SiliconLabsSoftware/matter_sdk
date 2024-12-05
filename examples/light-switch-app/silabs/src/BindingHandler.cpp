@@ -323,6 +323,8 @@ void SwitchWorkerFunction(intptr_t context)
 
     BindingCommandData * data = reinterpret_cast<BindingCommandData *>(context);
     BindingManager::GetInstance().NotifyBoundClusterChanged(data->localEndpointId, data->clusterId, static_cast<void *>(data));
+
+    Platform::Delete(data);
 }
 
 void BindingWorkerFunction(intptr_t context)

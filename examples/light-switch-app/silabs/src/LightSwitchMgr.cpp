@@ -26,17 +26,130 @@
 
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "AppTask.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/switch-server/switch-server.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <cmsis_os2.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 using namespace chip;
 using namespace chip::app;
 using namespace chip::app::Clusters;
+using namespace chip::DeviceLayer;
+using namespace chip::DeviceLayer::Silabs;
+
+#define LONG_PRESS_TIMEOUT 3000
+#define STEP_SIZE 1
+#define TRANSITION_TIME 0
+#define OPTIONS_MASK 0
+#define OPTIONS_OVERRIDE 0
 
 LightSwitchMgr LightSwitchMgr::sSwitch;
+
+LightSwitchMgr::LightSwitchMgr() {}
+
+AppEvent CreateNewEvent(AppEvent::AppEventTypes type)
+{
+    AppEvent aEvent;
+    aEvent.Type                      = type;
+    aEvent.Handler                   = LightSwitchMgr::GeneralEventHandler;
+    LightSwitchMgr * lightSwitch         = static_cast<LightSwitchMgr *>(&LightSwitchMgr::GetInstance());
+    aEvent.LightSwitchEvent.Context  = lightSwitch;
+    return aEvent;
+}
+
+void LightSwitchMgr::Timer::Start()
+{
+    // Starts or restarts the function timer
+    if (osTimerStart(mHandler, pdMS_TO_TICKS(100)) != osOK)
+    {
+        SILABS_LOG("Timer start() failed");
+        appError(CHIP_ERROR_INTERNAL);
+    }
+
+    mIsActive = true;
+}
+
+void LightSwitchMgr::Timer::Timeout()
+{
+    mIsActive = false;
+    if (mCallback)
+    {
+        mCallback(*this);
+    }
+}
+
+void LightSwitchMgr::HandleLongPress()
+{
+    AppEvent event;
+    event.Handler             = GeneralEventHandler;
+    LightSwitchMgr * lightSwitch  = static_cast<LightSwitchMgr *>(&LightSwitchMgr::GetInstance());
+    event.LightSwitchEvent.Context  = lightSwitch;
+    if (mDownPressed)
+    {
+        if (!mResetWarning)
+        {
+            // Long press button up: Reset warning!
+            event.Type = AppEvent::kEventType_ResetWarning;
+            AppTask::GetAppTask().PostEvent(&event);
+        }
+    }
+}
+
+void LightSwitchMgr::OnLongPressTimeout(LightSwitchMgr::Timer & timer)
+{
+    LightSwitchMgr * app = static_cast<LightSwitchMgr *>(timer.mContext);
+    if (app)
+    {
+        app->HandleLongPress();
+    }
+}
+
+LightSwitchMgr::Timer::Timer(uint32_t timeoutInMs, Callback callback, void * context) : mCallback(callback), mContext(context)
+{
+    mHandler = osTimerNew(TimerCallback, // timer callback handler
+                          osTimerOnce,   // no timer reload (one-shot timer)
+                          this,          // pass the app task obj context
+                          NULL           // No osTimerAttr_t to provide.
+    );
+    
+    if (mHandler == NULL)
+    {
+        SILABS_LOG("Timer create failed");
+        appError(CHIP_ERROR_INTERNAL);
+    }
+}
+
+LightSwitchMgr::Timer::~Timer()
+{
+    if (mHandler)
+    {
+        osTimerDelete(mHandler);
+        mHandler = nullptr;
+    }
+}
+
+void LightSwitchMgr::Timer::Stop()
+{
+    mIsActive = false;
+    if (osTimerStop(mHandler) == osError)
+    {
+        SILABS_LOG("Timer stop() failed");
+        appError(CHIP_ERROR_INTERNAL);
+    }
+}
+
+void LightSwitchMgr::Timer::TimerCallback(void * timerCbArg)
+{
+    Timer * timer = static_cast<Timer *>(timerCbArg);
+    if (timer)
+    {
+        timer->Timeout();
+    }
+}
 
 /**
  * @brief Configures LightSwitchMgr
@@ -52,6 +165,8 @@ CHIP_ERROR LightSwitchMgr::Init(EndpointId lightSwitchEndpoint, chip::EndpointId
 
     mLightSwitchEndpoint   = lightSwitchEndpoint;
     mGenericSwitchEndpoint = genericSwitchEndpoint;
+
+    mLongPressTimer = new Timer(LONG_PRESS_TIMEOUT, OnLongPressTimeout, this);
 
     // Configure Bindings
     CHIP_ERROR error = InitBindingHandler();
@@ -125,6 +240,22 @@ void LightSwitchMgr::TriggerLightSwitchAction(LightSwitchAction action, bool isG
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
 }
 
+void LightSwitchMgr::TriggerLevelControlAction(uint8_t stepMode, bool isGroupCommand)
+{
+    BindingCommandData * data = Platform::New<BindingCommandData>();
+
+    data->clusterId = chip::app::Clusters::LevelControl::Id;
+    data->isGroup   = isGroupCommand;
+    data->commandId = LevelControl::Commands::StepWithOnOff::Id;
+    data->args[0]   = static_cast<uint32_t>(stepMode);
+    data->args[1]   = STEP_SIZE;            // Keeping the default stepSize as 1
+    data->args[2]   = TRANSITION_TIME;      // Keeping the default TransitionTime as 0
+    data->args[3]   = OPTIONS_MASK;         // Keeping the default OptionsMask as 0
+    data->args[4]   = OPTIONS_OVERRIDE;     // Keeping the default OptionsOverride as 0
+
+    DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
+}
+
 void LightSwitchMgr::GenericSwitchWorkerFunction(intptr_t context)
 {
 
@@ -158,4 +289,81 @@ void LightSwitchMgr::GenericSwitchWorkerFunction(intptr_t context)
     }
 
     Platform::Delete(data);
+}
+
+void LightSwitchMgr::ButtonEventHandler(uint8_t button, uint8_t btnAction)
+{
+    AppEvent event = {};
+    if (btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
+    {
+        event = CreateNewEvent(button ? AppEvent::kEventType_UpPressed : AppEvent::kEventType_DownPressed);
+    }
+    else
+    {
+        event = CreateNewEvent(button ? AppEvent::kEventType_UpReleased : AppEvent::kEventType_DownReleased);
+    }
+    AppTask::GetAppTask().PostEvent(&event);
+}
+
+void LightSwitchMgr::GeneralEventHandler(AppEvent * aEvent)
+{
+    LightSwitchMgr * lightSwitch = static_cast<LightSwitchMgr *>(aEvent->LightSwitchEvent.Context);
+    switch(aEvent->Type)
+    {
+    case AppEvent::kEventType_ResetWarning:
+        lightSwitch->mResetWarning = true;
+        AppTask::GetAppTask().StartFactoryResetSequence();
+        break;
+    case AppEvent::kEventType_ResetCanceled:
+        lightSwitch->mResetWarning = false;
+        AppTask::GetAppTask().CancelFactoryResetSequence();
+        break;
+    case AppEvent::kEventType_DownPressed:
+        aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
+        AppTask::GetAppTask().PostEvent(aEvent);
+        lightSwitch->mDownPressed = true;
+        if (lightSwitch->mLongPressTimer)
+        {
+            lightSwitch->mLongPressTimer->Start();
+        }
+        break;
+    case AppEvent::kEventType_DownReleased:
+        lightSwitch->mDownPressed = false;
+        if (lightSwitch->mLongPressTimer)
+        {
+            lightSwitch->mLongPressTimer->Stop();
+        }
+        if (lightSwitch->mResetWarning)
+        {
+            aEvent->Type = AppEvent::kEventType_ResetCanceled;
+            AppTask::GetAppTask().PostEvent(aEvent);
+        }
+        break;
+    case AppEvent::kEventType_UpPressed:
+    case AppEvent::kEventType_UpReleased:
+        aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
+        AppTask::GetAppTask().PostEvent(aEvent);
+        break;
+    default:
+        break;
+    }
+}
+
+void LightSwitchMgr::SwitchActionEventHandler(AppEvent * aEvent)
+{
+    switch(aEvent->Type)
+    {
+    case AppEvent::kEventType_UpPressed:
+        LightSwitchMgr::GetInstance().TriggerLevelControlAction(static_cast<uint8_t>(LevelControl::StepModeEnum::kUp));
+        LightSwitchMgr::GetInstance().GenericSwitchOnInitialPress();
+        break;
+    case AppEvent::kEventType_UpReleased:
+        LightSwitchMgr::GetInstance().GenericSwitchOnShortRelease();
+        break;
+    case AppEvent::kEventType_DownPressed:
+        LightSwitchMgr::GetInstance().TriggerLevelControlAction(static_cast<uint8_t>(LevelControl::StepModeEnum::kDown));
+        break;
+    default:
+        break;
+    }
 }

@@ -23,6 +23,10 @@
 #include <lib/core/CHIPError.h>
 #include <lib/support/CodeUtils.h>
 
+#include "AppEvent.h"
+#include <cmsis_os2.h>
+#include <string>
+
 class LightSwitchMgr
 {
 public:
@@ -38,21 +42,63 @@ public:
         chip::EndpointId endpoint;
         chip::EventId event;
     };
+    struct Timer
+    {
+        typedef void (*Callback)(Timer & timer);
 
+        Timer(uint32_t timeoutInMs, Callback callback, void * context);
+        ~Timer();
+
+        void Start();
+        void Stop();
+        void Timeout();
+
+        Callback mCallback = nullptr;
+        void * mContext    = nullptr;
+        bool mIsActive     = false;
+
+        osTimerId_t mHandler = nullptr;
+
+    private:
+        static void TimerCallback(void * timerCbArg);
+    };
     CHIP_ERROR Init(chip::EndpointId lightSwitchEndpoint, chip::EndpointId genericSwitchEndpoint);
 
     void GenericSwitchOnInitialPress();
     void GenericSwitchOnShortRelease();
 
     void TriggerLightSwitchAction(LightSwitchAction action, bool isGroupCommand = false);
+    void TriggerLevelControlAction(uint8_t stepMode, bool isGroupCommand = false);
 
     static LightSwitchMgr & GetInstance() { return sSwitch; }
 
+    LightSwitchMgr();
+
+    static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
+
+    static void GeneralEventHandler(AppEvent * aEvent);
+
+protected:
+
+    static void OnLongPressTimeout(Timer & timer);
+
+    Timer * mLongPressTimer = nullptr;
+    bool mDownPressed       = false;
+    bool mResetWarning      = false;
+
 private:
     static LightSwitchMgr sSwitch;
+    void HandleLongPress();
 
     static void GenericSwitchWorkerFunction(intptr_t context);
 
     chip::EndpointId mLightSwitchEndpoint   = chip::kInvalidEndpointId;
     chip::EndpointId mGenericSwitchEndpoint = chip::kInvalidEndpointId;
+    /**
+     * @brief Button event processing function
+     *        Function triggers a switch action sent to the CHIP task
+     *
+     * @param aEvent button event being processed
+     */
+    static void SwitchActionEventHandler(AppEvent * aEvent);
 };
