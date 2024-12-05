@@ -77,10 +77,6 @@ bool hasNotifiedIPV4 = false;
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 bool hasNotifiedWifiConnectivity = false;
 
-#if (RSI_BLE_ENABLE)
-extern rsi_semaphore_handle_t sl_rs_ble_init_sem;
-#endif
-
 // DHCP Poll timer
 static osTimerId_t sDHCPTimer;
 static osMessageQueueId_t sWifiEventQueue = NULL;
@@ -414,10 +410,6 @@ static int32_t sl_matter_wifi_init(void)
         ChipLogError(DeviceLayer, "rsi_wlan_register_callbacks failed: %ld", status);
         return status;
     }
-
-#if (RSI_BLE_ENABLE)
-    rsi_semaphore_post(&sl_rs_ble_init_sem);
-#endif
 
     wfx_rsi.dev_state.Set(WifiState::kStationInit);
     return RSI_SUCCESS;
