@@ -45,7 +45,7 @@ void ApplicationSleepManager::OnCommissioningWindowOpened()
     mIsCommissionningWindowOpen = true;
 #if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) )
     mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
-#endif
+#endif  // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) )
 }
 
 void ApplicationSleepManager::OnCommissioningWindowClosed()
@@ -53,7 +53,7 @@ void ApplicationSleepManager::OnCommissioningWindowClosed()
     mIsCommissionningWindowOpen = false;
 #if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) )
     mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
-#endif
+#endif  // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) )
 }
 
 void ApplicationSleepManager::OnSubscriptionEstablished(chip::app::ReadHandler & aReadHandler)
