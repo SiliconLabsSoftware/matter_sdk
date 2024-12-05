@@ -20,6 +20,7 @@
 #include <lib/core/CHIPError.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <cstdlib>
 
 namespace chip {
 namespace DeviceLayer {
@@ -27,16 +28,38 @@ namespace Silabs {
 namespace Provision {
 namespace Encoding {
 
+/*
+begin            out             in               end
+  |---------------v---------------v----------------|
+  |.....offset....|......left.....|.....spare......|
+  |..............size.............|
+  |......................limit.....................|
+*/
+
 struct Buffer
 {
     Buffer(uint8_t * ptr, size_t size, bool at_end = false) { Init(ptr, size, at_end); }
 
     void Init(uint8_t * ptr, size_t size, bool at_end = false)
     {
+        Finish();
+        if(nullptr == ptr)
+        {
+            ptr = static_cast<uint8_t *>(malloc(size));
+            allocated = true;
+        }
         this->begin = ptr;
         this->end   = ptr + size;
         this->in    = at_end ? end : begin;
         this->out   = ptr;
+    }
+    void Finish()
+    {
+        if(this->begin && allocated)
+        {
+            free(this->begin);
+        }
+        this->begin = this->end = this->in = this->out = nullptr;
     }
 
     void Clear() { this->in = this->out = this->begin; }
@@ -62,6 +85,7 @@ struct Buffer
     uint8_t * end   = nullptr;
     uint8_t * in    = nullptr;
     uint8_t * out   = nullptr;
+    bool allocated = false;
 };
 
 //------------------------------------------------------------------------------
@@ -142,7 +166,7 @@ struct Argument : public Buffer
         State_Ready = 5,
     };
 
-    Argument(uint8_t * ptr, size_t size) : Buffer(ptr, size) { Reset(); }
+    Argument(uint8_t * ptr = nullptr, size_t size = 0) : Buffer(ptr, size) { Reset(); }
 
     void Reset()
     {

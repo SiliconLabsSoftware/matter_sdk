@@ -70,15 +70,25 @@ CHIP_ERROR ErasePage(uint32_t addr)
     return chip::DeviceLayer::Silabs::GetPlatform().FlashErasePage(addr);
 }
 
-CHIP_ERROR WritePage(uint32_t addr, const uint8_t * data, size_t size)
-{
-    return chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(addr, data, size);
-}
-
 size_t RoundNearest(size_t n, size_t multiple)
 {
     return (n % multiple) > 0 ? n + (multiple - n % multiple) : n;
 }
+
+CHIP_ERROR WritePage(uint32_t addr, const uint8_t * data, size_t size, size_t max)
+{
+    size_t size_32 = RoundNearest(size, 4);
+    if(size_32 != size)
+    {
+        uint8_t * p = (uint8_t *) data;
+        VerifyOrReturnError(size_32 <= max, CHIP_ERROR_BUFFER_TOO_SMALL);
+        memset(p + size, 0xff, size_32 - size);
+        size = size_32;
+    }
+    return chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(addr, data, size);
+}
+
+
 
 CHIP_ERROR WriteFile(Storage & store, SilabsConfig::Key offset_key, SilabsConfig::Key size_key, const ByteSpan & value)
 {
@@ -89,17 +99,7 @@ CHIP_ERROR WriteFile(Storage & store, SilabsConfig::Key offset_key, SilabsConfig
         ReturnErrorOnFailure(ErasePage(base_addr));
     }
 
-    memcpy(Storage::aux_buffer, value.data(), value.size());
-    if (value.size() < Storage::kArgumentSizeMax)
-    {
-        memset(Storage::aux_buffer + value.size(), 0xff, Storage::kArgumentSizeMax - value.size());
-    }
-
-    ChipLogProgress(DeviceLayer, "WriteFile, addr:0x%06x+%03u, size:%u", (unsigned) base_addr, (unsigned) sCredentialsOffset,
-                    (unsigned) value.size());
-    // ChipLogByteSpan(DeviceLayer, ByteSpan(value.data(), value.size() < kDebugLength ? value.size() : kDebugLength));
-
-    ReturnErrorOnFailure(WritePage(base_addr + sCredentialsOffset, Storage::aux_buffer, Storage::kArgumentSizeMax));
+    ReturnErrorOnFailure(WritePage(base_addr + sCredentialsOffset, value.data(), value.size(), store.GetBufferSize()));
 
     // Store file offset
     ReturnErrorOnFailure(SilabsConfig::WriteConfigValue(offset_key, (uint32_t) sCredentialsOffset));
@@ -119,7 +119,6 @@ CHIP_ERROR ReadFileByOffset(Storage & store, const char * description, uint32_t 
     ByteSpan span(address, size);
     ChipLogProgress(DeviceLayer, "%s, addr:0x%06x+%03u, size:%u", description, (unsigned) base_addr, (unsigned) offset,
                     (unsigned) size);
-    // ChipLogByteSpan(DeviceLayer, ByteSpan(span.data(), span.size() < kDebugLength ? span.size() : kDebugLength));
     return CopySpanToMutableSpan(span, value);
 }
 
