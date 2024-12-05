@@ -270,10 +270,11 @@ CHIP_ERROR MoveToLevelSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevel::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
+    for(int i = 0; i < 4; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
@@ -289,10 +290,11 @@ CHIP_ERROR MoveSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Move::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
+    for(int i = 0; i < 4; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
@@ -308,11 +310,11 @@ CHIP_ERROR StepSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Step::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
-    data->args[4]             = atoi(argv[4]);
+    for(int i = 0; i < 5; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
@@ -328,8 +330,11 @@ CHIP_ERROR StopSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Stop::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
+    for(int i = 0; i < 2; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
@@ -345,10 +350,11 @@ CHIP_ERROR MoveToLevelWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
+    for(int i = 0; i < 4; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
@@ -364,10 +370,11 @@ CHIP_ERROR MoveWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
+    for(int i = 0; i < 4; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
@@ -383,11 +390,11 @@ CHIP_ERROR StepWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::StepWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
-    data->args[4]             = atoi(argv[4]);
+    for(int i = 0; i < 5; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
@@ -403,8 +410,11 @@ CHIP_ERROR StopWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::StopWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
+    for(int i = 0; i < 2; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
@@ -628,10 +638,11 @@ CHIP_ERROR GroupsMoveToLevelSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevel::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
+    for(int i = 0; i < 4; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
     data->isGroup             = true;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -648,10 +659,11 @@ CHIP_ERROR GroupsMoveSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Move::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
+    for(int i = 0; i < 4; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
     data->isGroup             = true;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -668,11 +680,11 @@ CHIP_ERROR GroupsStepSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Step::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
-    data->args[4]             = atoi(argv[4]);
+    for(int i = 0; i < 5; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
     data->isGroup             = true;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -689,8 +701,11 @@ CHIP_ERROR GroupsStopSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Stop::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
+    for(int i = 0; i < 2; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
     data->isGroup             = true;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -707,10 +722,11 @@ CHIP_ERROR GroupsMoveToLevelWithOnOffSwitchCommandHandler(int argc, char ** argv
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
+    for(int i = 0; i < 4; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
     data->isGroup             = true;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -727,10 +743,11 @@ CHIP_ERROR GroupsMoveWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
+    for(int i = 0; i < 4; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
     data->isGroup             = true;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -747,11 +764,11 @@ CHIP_ERROR GroupsStepWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::StepWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
-    data->args[2]             = atoi(argv[2]);
-    data->args[3]             = atoi(argv[3]);
-    data->args[4]             = atoi(argv[4]);
+    for(int i = 0; i < 5; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
     data->isGroup             = true;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -768,8 +785,11 @@ CHIP_ERROR GroupsStopWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::StopWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    data->args[0]             = atoi(argv[0]);
-    data->args[1]             = atoi(argv[1]);
+    for(int i = 0; i < 2; i++)
+    {
+        char *endPtr;
+        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+    }
     data->isGroup             = true;
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));

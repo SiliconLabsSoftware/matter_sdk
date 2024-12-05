@@ -101,18 +101,11 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
 
     VerifyOrDie(peer_device != nullptr && peer_device->ConnectionReady());
 
-    Clusters::LevelControl::Commands::MoveToLevel::Type moveToLevelCommand;
-    Clusters::LevelControl::Commands::Move::Type moveCommand;
-    Clusters::LevelControl::Commands::Step::Type stepCommand;
-    Clusters::LevelControl::Commands::Stop::Type stopCommand;
-    Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveToLevelWithOnOffCommand;
-    Clusters::LevelControl::Commands::MoveWithOnOff::Type moveWithOnOffCommand;
-    Clusters::LevelControl::Commands::StepWithOnOff::Type stepWithOnOffCommand;
-    Clusters::LevelControl::Commands::StopWithOnOff::Type stopWithOnOffCommand;
-
     switch (data->commandId)
     {
     case Clusters::LevelControl::Commands::MoveToLevel::Id:
+    {
+        Clusters::LevelControl::Commands::MoveToLevel::Type moveToLevelCommand;
         moveToLevelCommand.level           = static_cast<uint8_t>(data->args[0]);
         moveToLevelCommand.transitionTime  = static_cast<DataModel::Nullable<uint16_t>>(data->args[1]);
         moveToLevelCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[2]);
@@ -120,8 +113,11 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
         Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          moveToLevelCommand, onSuccess, onFailure);
         break;
+    }
 
     case Clusters::LevelControl::Commands::Move::Id:
+    {
+        Clusters::LevelControl::Commands::Move::Type moveCommand;
         moveCommand.moveMode        = static_cast<MoveModeEnum>(data->args[0]);
         moveCommand.rate            = static_cast<DataModel::Nullable<uint8_t>>(data->args[1]);
         moveCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[2]);
@@ -129,8 +125,11 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
         Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          moveCommand, onSuccess, onFailure);
         break;
+    }
 
     case Clusters::LevelControl::Commands::Step::Id:
+    {
+        Clusters::LevelControl::Commands::Step::Type stepCommand;
         stepCommand.stepMode        = static_cast<StepModeEnum>(data->args[0]);
         stepCommand.stepSize        = static_cast<uint8_t>(data->args[1]);
         stepCommand.transitionTime  = static_cast<DataModel::Nullable<uint16_t>>(data->args[2]);
@@ -139,15 +138,21 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
         Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          stepCommand, onSuccess, onFailure);
         break;
+    }
 
     case Clusters::LevelControl::Commands::Stop::Id:
+    {
+        Clusters::LevelControl::Commands::Stop::Type stopCommand;
         stopCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[0]);
         stopCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[1]);
         Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          stopCommand, onSuccess, onFailure);
         break;
+    }
 
     case Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id:
+    {
+        Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveToLevelWithOnOffCommand;
         moveToLevelWithOnOffCommand.level           = static_cast<uint8_t>(data->args[0]);
         moveToLevelWithOnOffCommand.transitionTime  = static_cast<DataModel::Nullable<uint16_t>>(data->args[1]);
         moveToLevelWithOnOffCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[2]);
@@ -155,8 +160,11 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
         Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          moveToLevelWithOnOffCommand, onSuccess, onFailure);
         break;
+    }
 
     case Clusters::LevelControl::Commands::MoveWithOnOff::Id:
+    {
+        Clusters::LevelControl::Commands::MoveWithOnOff::Type moveWithOnOffCommand;
         moveWithOnOffCommand.moveMode        = static_cast<MoveModeEnum>(data->args[0]);
         moveWithOnOffCommand.rate            = static_cast<DataModel::Nullable<uint8_t>>(data->args[1]);
         moveWithOnOffCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[2]);
@@ -164,8 +172,11 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
         Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          moveWithOnOffCommand, onSuccess, onFailure);
         break;
+    }
 
     case Clusters::LevelControl::Commands::StepWithOnOff::Id:
+    {
+        Clusters::LevelControl::Commands::StepWithOnOff::Type stepWithOnOffCommand;
         stepWithOnOffCommand.stepMode        = static_cast<StepModeEnum>(data->args[0]);
         stepWithOnOffCommand.stepSize        = static_cast<uint8_t>(data->args[1]);
         stepWithOnOffCommand.transitionTime  = static_cast<DataModel::Nullable<uint16_t>>(data->args[2]);
@@ -174,12 +185,18 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
         Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          stepWithOnOffCommand, onSuccess, onFailure);
         break;
+    }
 
     case Clusters::LevelControl::Commands::StopWithOnOff::Id:
+    {
+        Clusters::LevelControl::Commands::StopWithOnOff::Type stopWithOnOffCommand;
         stopWithOnOffCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[0]);
         stopWithOnOffCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[1]);
         Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          stopWithOnOffCommand, onSuccess, onFailure);
+        break;
+    }
+    default:
         break;
     }
 }
@@ -188,34 +205,33 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
 {
     Messaging::ExchangeManager & exchangeMgr = Server::GetInstance().GetExchangeManager();
 
-    Clusters::LevelControl::Commands::MoveToLevel::Type moveToLevelCommand;
-    Clusters::LevelControl::Commands::Move::Type moveCommand;
-    Clusters::LevelControl::Commands::Step::Type stepCommand;
-    Clusters::LevelControl::Commands::Stop::Type stopCommand;
-    Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveToLevelWithOnOffCommand;
-    Clusters::LevelControl::Commands::MoveWithOnOff::Type moveWithOnOffCommand;
-    Clusters::LevelControl::Commands::StepWithOnOff::Type stepWithOnOffCommand;
-    Clusters::LevelControl::Commands::StopWithOnOff::Type stopWithOnOffCommand;
-
     switch (data->commandId)
     {
     case Clusters::LevelControl::Commands::MoveToLevel::Id:
+    {
+        Clusters::LevelControl::Commands::MoveToLevel::Type moveToLevelCommand;
         moveToLevelCommand.level           = static_cast<uint8_t>(data->args[0]);
         moveToLevelCommand.transitionTime  = static_cast<DataModel::Nullable<uint16_t>>(data->args[1]);
         moveToLevelCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[2]);
         moveToLevelCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[3]);
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveToLevelCommand);
         break;
+    }
 
     case Clusters::LevelControl::Commands::Move::Id:
+    {
+        Clusters::LevelControl::Commands::Move::Type moveCommand;
         moveCommand.moveMode        = static_cast<MoveModeEnum>(data->args[0]);
         moveCommand.rate            = static_cast<DataModel::Nullable<uint8_t>>(data->args[1]);
         moveCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[2]);
         moveCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[3]);
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveCommand);
         break;
+    }
 
     case Clusters::LevelControl::Commands::Step::Id:
+    {
+        Clusters::LevelControl::Commands::Step::Type stepCommand;
         stepCommand.stepMode        = static_cast<StepModeEnum>(data->args[0]);
         stepCommand.stepSize        = static_cast<uint8_t>(data->args[1]);
         stepCommand.transitionTime  = static_cast<DataModel::Nullable<uint16_t>>(data->args[2]);
@@ -223,30 +239,42 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
         stepCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[4]);
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stepCommand);
         break;
+    }
 
     case Clusters::LevelControl::Commands::Stop::Id:
+    {
+        Clusters::LevelControl::Commands::Stop::Type stopCommand;
         stopCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[0]);
         stopCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[1]);
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stopCommand);
         break;
+    }
 
     case Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id:
+    {
+        Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveToLevelWithOnOffCommand;
         moveToLevelWithOnOffCommand.level           = static_cast<uint8_t>(data->args[0]);
         moveToLevelWithOnOffCommand.transitionTime  = static_cast<DataModel::Nullable<uint16_t>>(data->args[1]);
         moveToLevelWithOnOffCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[2]);
         moveToLevelWithOnOffCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[3]);
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveToLevelWithOnOffCommand);
         break;
+    }
 
     case Clusters::LevelControl::Commands::MoveWithOnOff::Id:
+    {
+        Clusters::LevelControl::Commands::MoveWithOnOff::Type moveWithOnOffCommand;
         moveWithOnOffCommand.moveMode        = static_cast<MoveModeEnum>(data->args[0]);
         moveWithOnOffCommand.rate            = static_cast<DataModel::Nullable<uint8_t>>(data->args[1]);
         moveWithOnOffCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[2]);
         moveWithOnOffCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[3]);
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveWithOnOffCommand);
         break;
+    }
 
     case Clusters::LevelControl::Commands::StepWithOnOff::Id:
+    {
+        Clusters::LevelControl::Commands::StepWithOnOff::Type stepWithOnOffCommand;
         stepWithOnOffCommand.stepMode        = static_cast<StepModeEnum>(data->args[0]);
         stepWithOnOffCommand.stepSize        = static_cast<uint8_t>(data->args[1]);
         stepWithOnOffCommand.transitionTime  = static_cast<DataModel::Nullable<uint16_t>>(data->args[2]);
@@ -254,11 +282,17 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
         stepWithOnOffCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[4]);
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stepWithOnOffCommand);
         break;
+    }
 
     case Clusters::LevelControl::Commands::StopWithOnOff::Id:
+    {
+        Clusters::LevelControl::Commands::StopWithOnOff::Type stopWithOnOffCommand;
         stopWithOnOffCommand.optionsMask     = static_cast<chip::BitMask<OptionsBitmap>>(data->args[0]);
         stopWithOnOffCommand.optionsOverride = static_cast<chip::BitMask<OptionsBitmap>>(data->args[1]);
         Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stopWithOnOffCommand);
+        break;
+    }
+    default:
         break;
     }
 }
