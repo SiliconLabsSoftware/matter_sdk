@@ -458,7 +458,8 @@ CHIP_ERROR SilabsTracer::RegisterAppTimeTraceOperation(CharSpan & appOperationKe
     size_t index = 0;
     VerifyOrReturnError(CHIP_ERROR_NOT_FOUND == FindAppOperationIndex(appOperationKey, index), CHIP_ERROR_INVALID_ARGUMENT);
 
-    memcpy(mAppOperationKeys[mAppOperationKeyCount], appOperationKey.data(), appOperationKey.size());
+    MutableCharSpan newAppKey(mAppOperationKeys[mAppOperationKeyCount]);
+    CopyCharSpanToMutableCharSpan(appOperationKey, newAppKey);
     mAppOperationKeyCount++;
     return CHIP_NO_ERROR;
 }
@@ -467,7 +468,8 @@ CHIP_ERROR SilabsTracer::FindAppOperationIndex(CharSpan & appOperationKey, size_
 {
     for (size_t i = 0; i < mAppOperationKeyCount; ++i)
     {
-        if (strncmp(mAppOperationKeys[i], appOperationKey.data(), appOperationKey.size()) == 0)
+        CharSpan appKey(mAppOperationKeys[i], appOperationKey.size());
+        if (appKey.data_equal(appOperationKey))
         {
             index = i;
             return CHIP_NO_ERROR;
