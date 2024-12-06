@@ -815,7 +815,7 @@ TEST_F(TestSilabsTracing, TestAppSpecificTraces)
     const char * expectedAppSpecificLogFormat2 = "TimeTracker - Type: Instant, Operation: AppTrace2, Status: 0x0, EventTime: 0";
     EXPECT_STREQ(reinterpret_cast<const char *>(span.data()), expectedAppSpecificLogFormat2);
 
-    // confirm trace count
+    // Confirm trace count
     traceCount = SilabsTracer::Instance().GetTimeTracesCount();
     EXPECT_EQ(traceCount, 2u);
     // Flush the app specific traces
