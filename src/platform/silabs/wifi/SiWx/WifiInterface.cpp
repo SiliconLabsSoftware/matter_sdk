@@ -625,7 +625,6 @@ sl_status_t show_scan_results(sl_wifi_scan_result_t * scan_result)
         chip::Platform::CopyString(cur_scan_result.ssid, cur_scan_result.ssid_length + 1,
                                    (char *) scan_result->scan_info[idx].ssid); // +1 for null termination
 
-
         // if user has provided ssid, then check if the current scan result ssid matches the user provided ssid
         if (wfx_rsi.scan_ssid != nullptr &&
             (strncmp(wfx_rsi.scan_ssid, cur_scan_result.ssid, std::min(strlen(wfx_rsi.scan_ssid), strlen(cur_scan_result.ssid))) ==
