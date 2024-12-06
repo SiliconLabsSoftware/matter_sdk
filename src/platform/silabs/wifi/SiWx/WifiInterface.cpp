@@ -461,7 +461,7 @@ sl_status_t JoinWifiNetwork(void)
 
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
 
-    if (status == SL_STATUS_OK || status == SL_STATUS_IN_PROGRESS)
+    if (status == SL_STATUS_OK)
     {
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
         // TODO: We need a way to identify if this was a retry or a first attempt connect to avoid removing a req that was not ours
@@ -475,7 +475,14 @@ sl_status_t JoinWifiNetwork(void)
     }
 
     // failure only happens when the firmware returns an error
-    ChipLogError(DeviceLayer, "sl_wifi_connect failed: 0x%lx", static_cast<uint32_t>(status));
+    ChipLogError(DeviceLayer, "sl_net_up failed: 0x%lx", static_cast<uint32_t>(status));
+
+    //Deactivate the network interface before activating it on the next retry.
+    if ((status == SL_STATUS_SI91X_SCAN_ISSUED_IN_ASSOCIATED_STATE) || (status == SL_STATUS_SI91X_COMMAND_GIVEN_IN_INVALID_STATE))
+    {
+        status = sl_net_down((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE);
+        ChipLogProgress(DeviceLayer, "sl_net_down status 0x%lx", static_cast<uint32_t>(status));
+    }
 
     wfx_rsi.dev_state.Clear(WifiState::kStationConnecting).Clear(WifiState::kStationConnected);
 
@@ -617,6 +624,7 @@ sl_status_t show_scan_results(sl_wifi_scan_result_t * scan_result)
         // cur_scan_result.ssid is of size WFX_MAX_SSID_LENGTH+1, we are safe with the cur_scan_result.ssid_length calculated above
         chip::Platform::CopyString(cur_scan_result.ssid, cur_scan_result.ssid_length + 1,
                                    (char *) scan_result->scan_info[idx].ssid); // +1 for null termination
+
 
         // if user has provided ssid, then check if the current scan result ssid matches the user provided ssid
         if (wfx_rsi.scan_ssid != nullptr &&
