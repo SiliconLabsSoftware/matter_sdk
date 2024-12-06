@@ -160,7 +160,7 @@ struct Storage : public GenericStorage,
     static constexpr size_t kTotalPayloadDataSize = kTotalPayloadDataSizeInBits / 8;
 
 public:
-   friend class Manager;
+    friend class Manager;
     friend class Protocol1;
     friend class Command;
     friend class CsrCommand;
@@ -236,7 +236,7 @@ public:
     CHIP_ERROR SetProvisionRequest(bool value);
     CHIP_ERROR GetProvisionRequest(bool & value);
     CHIP_ERROR GetTestEventTriggerKey(MutableByteSpan & keySpan);
-    void SetBufferSize(size_t size) { mBufferSize = size; }
+    void SetBufferSize(size_t size) { mBufferSize = size > 0 ? size : kArgumentSizeMax; }
     size_t GetBufferSize() { return mBufferSize; }
 
 private:
