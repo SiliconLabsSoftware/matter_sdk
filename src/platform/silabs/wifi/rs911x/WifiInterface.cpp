@@ -943,6 +943,9 @@ int32_t wfx_rsi_send_data(void * p, uint16_t len)
 sl_status_t ConfigurePowerSave(void)
 {
     int32_t status;
+    // RSI_SLEEP_2 is supported for associated stations only 
+    // RSI_SLEEP_8 is non-associated sleep.
+    // FW will switch modes automatically
 #ifdef RSI_BLE_ENABLE
     status = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
     if (status != RSI_SUCCESS)
