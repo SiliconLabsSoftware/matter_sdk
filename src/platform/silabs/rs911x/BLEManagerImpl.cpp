@@ -535,6 +535,7 @@ CHIP_ERROR BLEManagerImpl::MapBLEError(int bleErr)
 
 void BLEManagerImpl::DriveBLEState(void)
 {
+    ChipLogDetail(DeviceLayer, "[DBG] DriveBLEState");
     CHIP_ERROR err = CHIP_NO_ERROR;
 
     // Check if BLE stack is initialized ( TODO )
@@ -636,10 +637,7 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
         ChipLogError(DeviceLayer, "rsi_ble_set_advertise_data() failed: %ld", result);
         ExitNow();
     }
-    else
-    {
-        ChipLogError(DeviceLayer, "rsi_ble_set_advertise_data() success: %ld", result);
-    }
+
     index                 = 0;
     responseData[index++] = 0x02;                     // length
     responseData[index++] = CHIP_ADV_DATA_TYPE_FLAGS; // AD type : flags
@@ -724,7 +722,10 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
 
 exit:
     // TODO: Add MapBLEError to return the correct error code
-    ChipLogError(DeviceLayer, "StartAdvertising() End error: %s", ErrorStr(err));
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "StartAdvertising() End error: %s", ErrorStr(err));
+    }
     return err;
 }
 
@@ -763,7 +764,7 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
     {
         // Since DriveBLEState is not called the device is still advertising
         status = rsi_ble_stop_advertising();
-        if (status != RSI_SUCCESS)
+        if (status == RSI_SUCCESS || status == 0x4E0C)
         {
             mFlags.Clear(Flags::kAdvertising).Clear(Flags::kRestartAdvertising);
             mFlags.Set(Flags::kFastAdvertisingEnabled, true);

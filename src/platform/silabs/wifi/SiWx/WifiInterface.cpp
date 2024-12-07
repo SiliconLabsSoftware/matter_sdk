@@ -476,7 +476,7 @@ sl_status_t JoinWifiNetwork(void)
     // failure only happens when the firmware returns an error
     ChipLogError(DeviceLayer, "sl_net_up failed: 0x%lx", static_cast<uint32_t>(status));
 
-    //Deactivate the network interface before activating it on the next retry.
+    // Deactivate the network interface before activating it on the next retry.
     if ((status == SL_STATUS_SI91X_SCAN_ISSUED_IN_ASSOCIATED_STATE) || (status == SL_STATUS_SI91X_COMMAND_GIVEN_IN_INVALID_STATE))
     {
         status = sl_net_down((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE);
@@ -920,7 +920,7 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
 sl_status_t ConfigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
                                uint32_t listenInterval)
 {
-    int32_t error = rsi_bt_power_save_profile(sl_si91x_ble_state, 0);
+    int32_t error = rsi_bt_power_save_profile(sl_si91x_ble_state, RSI_MAX_PSP);
     VerifyOrReturnError(error == RSI_SUCCESS, SL_STATUS_FAIL,
                         ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error));
 

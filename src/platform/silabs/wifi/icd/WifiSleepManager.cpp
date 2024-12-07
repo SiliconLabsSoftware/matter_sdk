@@ -16,6 +16,7 @@
  */
 
 #include <app/icd/server/ICDConfigurationData.h>
+#include <examples/platform/silabs/BaseApplication.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
@@ -182,7 +183,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     VerifyOrReturnError(ConfigurePowerSave() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
     return CHIP_NO_ERROR;
-#else             // wf200
+#else  // wf200
     return CHIP_NO_ERROR;
 #endif
 }
