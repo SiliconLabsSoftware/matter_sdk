@@ -535,7 +535,6 @@ CHIP_ERROR BLEManagerImpl::MapBLEError(int bleErr)
 
 void BLEManagerImpl::DriveBLEState(void)
 {
-    ChipLogDetail(DeviceLayer, "[DBG] DriveBLEState");
     CHIP_ERROR err = CHIP_NO_ERROR;
 
     // Check if BLE stack is initialized ( TODO )
@@ -764,7 +763,7 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
     {
         // Since DriveBLEState is not called the device is still advertising
         status = rsi_ble_stop_advertising();
-        if (status == RSI_SUCCESS || status == 0x4E0C)
+        if (status != RSI_SUCCESS)
         {
             mFlags.Clear(Flags::kAdvertising).Clear(Flags::kRestartAdvertising);
             mFlags.Set(Flags::kFastAdvertisingEnabled, true);
