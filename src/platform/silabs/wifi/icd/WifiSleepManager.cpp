@@ -16,7 +16,6 @@
  */
 
 #include <app/icd/server/ICDConfigurationData.h>
-#include <examples/platform/silabs/BaseApplication.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
