@@ -108,7 +108,7 @@ CHIP_ERROR WifiSleepManager::RequestHighPerformance()
 
     mHighPerformanceRequestCounter++;
 
-    // We don't do the mHighPerformanceRequestCounter check here; the check is in TransitionToLowPowerMode function
+    // We don't do the mHighPerformanceRequestCounter check here; the check is in VerifyAndTransitionToLowPowerMode function
     ReturnErrorOnFailure(VerifyAndTransitionToLowPowerMode());
 
     return CHIP_NO_ERROR;
@@ -121,14 +121,34 @@ CHIP_ERROR WifiSleepManager::RemoveHighPerformanceRequest()
 
     mHighPerformanceRequestCounter--;
 
-    // We don't do the mHighPerformanceRequestCounter check here; the check is in TransitionToLowPowerMode function
+    // We don't do the mHighPerformanceRequestCounter check here; the check is in VerifyAndTransitionToLowPowerMode function
     ReturnErrorOnFailure(VerifyAndTransitionToLowPowerMode());
 
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode()
+CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 {
+    switch (event)
+    {
+    case PowerEvent::kCommissioningComplete:
+        ChipLogProgress(AppServer, "WifiSleepManager: Handling Commissioning Complete Event");
+        mIsCommissioningInProgress = false;
+        break;
+    case PowerEvent::kConnectivityChange:
+    case PowerEvent::kGenericEvent:
+        // No additional processing needed for these events at the moment
+        break;
+    default:
+        ChipLogError(AppServer, "Unknown Power Event");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
+{
+    ReturnErrorOnFailure(HandlePowerEvent(event));
 
 #if SLI_SI917 // 917 SoC & NCP
     if (mHighPerformanceRequestCounter > 0)

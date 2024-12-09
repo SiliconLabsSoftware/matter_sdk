@@ -43,17 +43,17 @@ CHIP_ERROR ApplicationSleepManager::Init()
 void ApplicationSleepManager::OnCommissioningWindowOpened()
 {
     mIsCommissionningWindowOpen = true;
-#if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) )
+#if (defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1)
     mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
-#endif  // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) )
+#endif // (defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1)
 }
 
 void ApplicationSleepManager::OnCommissioningWindowClosed()
 {
     mIsCommissionningWindowOpen = false;
-#if ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) )
+#if (defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1)
     mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
-#endif  // ( ( defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1 ) )
+#endif // (defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1)
 }
 
 void ApplicationSleepManager::OnSubscriptionEstablished(chip::app::ReadHandler & aReadHandler)
@@ -103,7 +103,7 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
                 canGoToLIBasedSleep = false;
                 break;
             }
-            ChipLogProgress(AppServer, "All Fabrics have at least 1 active subscription!");
+            ChipLogProgress(AppServer, "Fabric index %u has an active subscriptions!", it->GetFabricIndex());
         }
     }
 
