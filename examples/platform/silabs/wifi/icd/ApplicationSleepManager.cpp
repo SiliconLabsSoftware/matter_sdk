@@ -16,11 +16,22 @@
  ******************************************************************************/
 
 #include "ApplicationSleepManager.h"
+#include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
 
 namespace chip {
 namespace app {
 namespace Silabs {
+
+namespace {
+
+enum class SpecialCaseVendorID : uint16_t
+{
+    kAppleHome     = 4937,
+    kAppleKeychain = 4996,
+};
+
+} // namespace
 
 ApplicationSleepManager ApplicationSleepManager::mInstance;
 
@@ -92,22 +103,95 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
         ChipLogProgress(AppServer, "Commissioning Window is Open - Cannot go to LI based sleep");
         canGoToLIBasedSleep = false;
     }
+    else if (mIsInActiveMode)
+    {
+        ChipLogProgress(AppServer, "Device is in active mode - Cannot go to LI based sleep");
+        canGoToLIBasedSleep = false;
+    }
     else
     {
         for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
         {
             if (!mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
             {
-                ChipLogProgress(AppServer, "Fabric index %u has no active subscriptions - Cannot go to LI based sleep",
-                                it->GetFabricIndex());
-                canGoToLIBasedSleep = false;
-                break;
+                ChipLogProgress(AppServer, "Fabric index %u has no active subscriptions", it->GetFabricIndex());
+                canGoToLIBasedSleep = ProcessSpecialVendorIDCase(it->GetVendorId());
+
+                if (canGoToLIBasedSleep)
+                {
+                    ChipLogProgress(AppServer,
+                                    "Fabric index %u with vendor ID : %d  has an edge case that allows for LI based sleep",
+                                    it->GetFabricIndex(), it->GetVendorId());
+                }
+                else
+                {
+                    // Fabric doesn't meet the requirements to allow us to go to LI based sleep
+                    break;
+                }
             }
-            ChipLogProgress(AppServer, "Fabric index %u has an active subscriptions!", it->GetFabricIndex());
+            else
+            {
+                ChipLogProgress(AppServer, "Fabric index %u has an active subscriptions!", it->GetFabricIndex());
+            }
         }
     }
 
     return canGoToLIBasedSleep;
+}
+
+bool ApplicationSleepManager::ProcessSpecialVendorIDCase(chip::VendorId vendorId)
+{
+    bool canGoToLIBasedSleep = false;
+    switch (to_underlying(vendorId))
+    {
+    case to_underlying(SpecialCaseVendorID::kAppleKeychain):
+        canGoToLIBasedSleep = ProcessAppleKeychainEdgeCase();
+        break;
+
+    default:
+        ChipLogProgress(AppServer, "Vendor ID doesn't have an edge case to process.");
+        break;
+    }
+
+    return canGoToLIBasedSleep;
+}
+
+bool ApplicationSleepManager::ProcessAppleKeychainEdgeCase()
+{
+    bool canGoToLIBasedSleep = false;
+
+    for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
+    {
+        if (to_underlying(it->GetVendorId()) == to_underlying(SpecialCaseVendorID::kAppleHome) &&
+            mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
+        {
+            canGoToLIBasedSleep = true;
+        }
+    }
+
+    return canGoToLIBasedSleep;
+}
+
+void ApplicationSleepManager::OnEnterActiveMode()
+{
+    mIsInActiveMode = true;
+    mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
+}
+
+void ApplicationSleepManager::OnEnterIdleMode()
+{
+    mIsInActiveMode = false;
+    mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
+}
+
+void ApplicationSleepManager::OnTransitionToIdle()
+{
+    // Nothing to do
+}
+
+void ApplicationSleepManager::OnICDModeChange()
+{
+    // Nothing to do
 }
 
 } // namespace Silabs
