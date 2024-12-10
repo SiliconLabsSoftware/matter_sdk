@@ -171,7 +171,7 @@ private:
      *
      * @return true if the Apple Keychain edge case allows low-power mode, false otherwise.
      */
-    bool ProcessAppleKeychainEdgeCase();
+    bool ProcessKeychainEdgeCase();
 
     static ApplicationSleepManager mInstance;
     chip::FabricTable * mFabricTable                                  = nullptr;
