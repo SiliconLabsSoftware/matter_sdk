@@ -136,7 +136,7 @@ void LightSwitchMgr::Timer::Stop()
 
 void LightSwitchMgr::Timer::TimerCallback(void * timerCbArg)
 {
-    Timer * timer = static_cast<Timer *>(timerCbArg);
+    Timer * timer = reinterpret_cast<Timer *>(timerCbArg);
     if (timer)
     {
         timer->Timeout();
@@ -290,7 +290,7 @@ void LightSwitchMgr::GenericSwitchWorkerFunction(intptr_t context)
 void LightSwitchMgr::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
     AppEvent event = {};
-    if (btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
+    if (btnAction == to_underlying(SilabsPlatform::ButtonAction::ButtonPressed))
     {
         event = CreateNewEvent(button ? AppEvent::kEventType_UpPressed : AppEvent::kEventType_DownPressed);
     }

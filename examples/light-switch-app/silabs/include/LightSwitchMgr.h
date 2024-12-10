@@ -24,8 +24,7 @@
 #include <lib/support/CodeUtils.h>
 #include <app/clusters/bindings/bindings.h>
 #include <platform/CHIPDeviceLayer.h>
-#include "app-common/zap-generated/ids/Clusters.h"
-
+#include <app-common/zap-generated/ids/Clusters.h>
 #include "AppEvent.h"
 #include <cmsis_os2.h>
 #include <string>
@@ -107,7 +106,8 @@ private:
 
     chip::EndpointId mLightSwitchEndpoint   = chip::kInvalidEndpointId;
     chip::EndpointId mGenericSwitchEndpoint = chip::kInvalidEndpointId;
-    /**
+   
+     /**
      * @brief Button event processing function
      *        Function triggers a switch action sent to the CHIP task
      *
