@@ -777,7 +777,7 @@ void ProcessEvent(WifiEvent event)
 sl_status_t sl_matter_wifi_platform_init(void)
 {
     uint32_t rsi_status = sl_matter_wifi_init();
-    VerifyOrReturn(rsi_status == RSI_SUCCESS, SL_STATUS_FAIL);
+    VerifyOrReturnError(rsi_status == RSI_SUCCESS, SL_STATUS_FAIL);
     return SL_STATUS_OK;
 }
 
