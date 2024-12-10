@@ -27,7 +27,6 @@ namespace {
 
 enum class SpecialCaseVendorID : uint16_t
 {
-    kAppleHome     = 4937,
     kAppleKeychain = 4996,
 };
 
@@ -157,7 +156,7 @@ bool ApplicationSleepManager::ProcessKeychainEdgeCase()
 
     for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
     {
-        if (to_underlying(it->GetVendorId()) == to_underlying(SpecialCaseVendorID::kAppleHome) &&
+        if (to_underlying(it->GetVendorId()) == chip::VendorId::Apple &&
             mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
         {
             hasValidException = true;
