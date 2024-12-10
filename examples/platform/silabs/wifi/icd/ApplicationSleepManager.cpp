@@ -129,10 +129,6 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
                     break;
                 }
             }
-            else
-            {
-                ChipLogProgress(AppServer, "Fabric index %u has an active subscriptions!", it->GetFabricIndex());
-            }
         }
     }
 
@@ -141,35 +137,34 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
 
 bool ApplicationSleepManager::ProcessSpecialVendorIDCase(chip::VendorId vendorId)
 {
-    bool canGoToLIBasedSleep = false;
+    bool hasValidException = false;
     switch (to_underlying(vendorId))
     {
     case to_underlying(SpecialCaseVendorID::kAppleKeychain):
-        canGoToLIBasedSleep = ProcessAppleKeychainEdgeCase();
+        hasValidException = ProcessKeychainEdgeCase();
         break;
 
     default:
-        ChipLogProgress(AppServer, "Vendor ID doesn't have an edge case to process.");
         break;
     }
 
-    return canGoToLIBasedSleep;
+    return hasValidException;
 }
 
-bool ApplicationSleepManager::ProcessAppleKeychainEdgeCase()
+bool ApplicationSleepManager::ProcessKeychainEdgeCase()
 {
-    bool canGoToLIBasedSleep = false;
+    bool hasValidException = false;
 
     for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
     {
         if (to_underlying(it->GetVendorId()) == to_underlying(SpecialCaseVendorID::kAppleHome) &&
             mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
         {
-            canGoToLIBasedSleep = true;
+            hasValidException = true;
         }
     }
 
-    return canGoToLIBasedSleep;
+    return hasValidException;
 }
 
 void ApplicationSleepManager::OnEnterActiveMode()
