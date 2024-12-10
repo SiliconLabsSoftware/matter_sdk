@@ -22,11 +22,17 @@
 #include <app/util/basic-types.h>
 #include <lib/core/CHIPError.h>
 #include <lib/support/CodeUtils.h>
+#include <app/clusters/bindings/bindings.h>
+#include <platform/CHIPDeviceLayer.h>
+#include "app-common/zap-generated/ids/Clusters.h"
 
 #include "AppEvent.h"
 #include <cmsis_os2.h>
 #include <string>
 
+using namespace chip;
+using namespace chip::app;
+using namespace chip::app::Clusters::LevelControl;
 class LightSwitchMgr
 {
 public:
@@ -42,6 +48,12 @@ public:
         chip::EndpointId endpoint;
         chip::EventId event;
     };
+
+    static constexpr uint8_t stepSize = 1;
+    static constexpr DataModel::Nullable<uint16_t> transitionTime = 0;
+    static constexpr chip::BitMask<OptionsBitmap> optionsMask = 0;
+    static constexpr chip::BitMask<OptionsBitmap> optionsOverride = 0;
+
     struct Timer
     {
         typedef void (*Callback)(Timer & timer);
@@ -62,6 +74,9 @@ public:
     private:
         static void TimerCallback(void * timerCbArg);
     };
+
+    LightSwitchMgr() = default;
+
     CHIP_ERROR Init(chip::EndpointId lightSwitchEndpoint, chip::EndpointId genericSwitchEndpoint);
 
     void GenericSwitchOnInitialPress();
@@ -71,8 +86,6 @@ public:
     void TriggerLevelControlAction(uint8_t stepMode, bool isGroupCommand = false);
 
     static LightSwitchMgr & GetInstance() { return sSwitch; }
-
-    LightSwitchMgr();
 
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 

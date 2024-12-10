@@ -19,16 +19,57 @@
 #include "app-common/zap-generated/ids/Clusters.h"
 #include "app-common/zap-generated/ids/Commands.h"
 #include "lib/core/CHIPError.h"
+#include <platform/CHIPDeviceLayer.h>
+#include <app/clusters/bindings/bindings.h>
+#include <variant>
+
+using namespace chip;
+using namespace chip::app;
+using namespace chip::app::Clusters::LevelControl;
 
 CHIP_ERROR InitBindingHandler();
 void SwitchWorkerFunction(intptr_t context);
 void BindingWorkerFunction(intptr_t context);
+
 
 struct BindingCommandData
 {
     chip::EndpointId localEndpointId = 1;
     chip::CommandId commandId;
     chip::ClusterId clusterId;
-    bool isGroup         = false;
-    uint32_t args[7];
+    bool isGroup = false;
+
+    struct MoveToLevel
+    {
+        uint8_t level;
+        DataModel::Nullable<uint16_t> transitionTime;
+        chip::BitMask<OptionsBitmap> optionsMask;
+        chip::BitMask<OptionsBitmap> optionsOverride;
+    };
+
+    struct Move
+    {
+        MoveModeEnum moveMode;
+        DataModel::Nullable<uint8_t> rate;
+        chip::BitMask<OptionsBitmap> optionsMask;
+        chip::BitMask<OptionsBitmap> optionsOverride;
+    };
+
+    struct Step
+    {
+        StepModeEnum stepMode;
+        uint8_t stepSize;
+        DataModel::Nullable<uint16_t> transitionTime;
+        chip::BitMask<OptionsBitmap> optionsMask;
+        chip::BitMask<OptionsBitmap> optionsOverride;
+    };
+
+    struct Stop
+    {
+        chip::BitMask<OptionsBitmap> optionsMask;
+        chip::BitMask<OptionsBitmap> optionsOverride;
+    };
+
+    // Use std::variant to replace the union
+    std::variant<MoveToLevel, Move, Step, Stop> commandData;
 };

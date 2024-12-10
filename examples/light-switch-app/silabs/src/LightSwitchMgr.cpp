@@ -41,22 +41,14 @@ using namespace chip::app::Clusters;
 using namespace chip::DeviceLayer;
 using namespace chip::DeviceLayer::Silabs;
 
-#define LONG_PRESS_TIMEOUT 3000
-#define STEP_SIZE 1
-#define TRANSITION_TIME 0
-#define OPTIONS_MASK 0
-#define OPTIONS_OVERRIDE 0
-
 LightSwitchMgr LightSwitchMgr::sSwitch;
-
-LightSwitchMgr::LightSwitchMgr() {}
 
 AppEvent CreateNewEvent(AppEvent::AppEventTypes type)
 {
     AppEvent aEvent;
     aEvent.Type                      = type;
     aEvent.Handler                   = LightSwitchMgr::GeneralEventHandler;
-    LightSwitchMgr * lightSwitch         = static_cast<LightSwitchMgr *>(&LightSwitchMgr::GetInstance());
+    LightSwitchMgr * lightSwitch         = &LightSwitchMgr::GetInstance();
     aEvent.LightSwitchEvent.Context  = lightSwitch;
     return aEvent;
 }
@@ -86,7 +78,7 @@ void LightSwitchMgr::HandleLongPress()
 {
     AppEvent event;
     event.Handler             = GeneralEventHandler;
-    LightSwitchMgr * lightSwitch  = static_cast<LightSwitchMgr *>(&LightSwitchMgr::GetInstance());
+    LightSwitchMgr * lightSwitch  = &LightSwitchMgr::GetInstance();
     event.LightSwitchEvent.Context  = lightSwitch;
     if (mDownPressed)
     {
@@ -247,11 +239,15 @@ void LightSwitchMgr::TriggerLevelControlAction(uint8_t stepMode, bool isGroupCom
     data->clusterId = chip::app::Clusters::LevelControl::Id;
     data->isGroup   = isGroupCommand;
     data->commandId = LevelControl::Commands::StepWithOnOff::Id;
-    data->args[0]   = static_cast<uint32_t>(stepMode);
-    data->args[1]   = STEP_SIZE;            // Keeping the default stepSize as 1
-    data->args[2]   = TRANSITION_TIME;      // Keeping the default TransitionTime as 0
-    data->args[3]   = OPTIONS_MASK;         // Keeping the default OptionsMask as 0
-    data->args[4]   = OPTIONS_OVERRIDE;     // Keeping the default OptionsOverride as 0
+    data->commandData = BindingCommandData::Step{};
+    if (auto *step = std::get_if<BindingCommandData::Step>(&data->commandData))
+    {
+        step->stepMode = static_cast<Clusters::LevelControl::StepModeEnum>(stepMode);
+        step->stepSize = LightSwitchMgr::stepSize;
+        step->transitionTime = LightSwitchMgr::transitionTime;
+        step->optionsMask = LightSwitchMgr::optionsMask;
+        step->optionsOverride = LightSwitchMgr::optionsOverride;
+    }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
 }

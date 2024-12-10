@@ -270,12 +270,15 @@ CHIP_ERROR MoveToLevelSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevel::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 4; i++)
+    data->commandData = BindingCommandData::MoveToLevel{};
+    char * endPtr;
+    if (auto *moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        moveToLevel->level = static_cast<uint8_t>(strtol(argv[0], &endPtr, 10));
+        moveToLevel->transitionTime = DataModel::Nullable<uint16_t>(strtol(argv[1], &endPtr, 10));
+        moveToLevel->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[2], &endPtr, 10));
+        moveToLevel->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
     }
-
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
 }
@@ -290,10 +293,14 @@ CHIP_ERROR MoveSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Move::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 4; i++)
+    data->commandData = BindingCommandData::Move{};
+    char * endPtr;
+    if (auto *move = std::get_if<BindingCommandData::Move>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        move->moveMode = static_cast<Clusters::LevelControl::MoveModeEnum>(strtol(argv[0], &endPtr, 10));
+        move->rate = static_cast<DataModel::Nullable<uint8_t>>(strtol(argv[1], &endPtr, 10));
+        move->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[2], &endPtr, 10));
+        move->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
     }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -310,12 +317,16 @@ CHIP_ERROR StepSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Step::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 5; i++)
+    char * endPtr;
+    data->commandData = BindingCommandData::Step{};
+    if (auto *step = std::get_if<BindingCommandData::Step>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        step->stepMode = static_cast<Clusters::LevelControl::StepModeEnum>(strtol(argv[0], &endPtr, 10));
+        step->stepSize = static_cast<uint8_t>(strtol(argv[1], &endPtr, 10));
+        step->transitionTime = DataModel::Nullable<uint16_t>(strtol(argv[2], &endPtr, 10));
+        step->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
+        step->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[4], &endPtr, 10));
     }
-
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
     return CHIP_NO_ERROR;
 }
@@ -330,10 +341,12 @@ CHIP_ERROR StopSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Stop::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 2; i++)
+    char * endPtr;
+    data->commandData = BindingCommandData::Stop{};
+    if (auto *stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        stop->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[0], &endPtr, 10));
+        stop->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[1], &endPtr, 10));
     }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -350,10 +363,14 @@ CHIP_ERROR MoveToLevelWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 4; i++)
+    data->commandData = BindingCommandData::MoveToLevel{};
+    char * endPtr;
+    if (auto *moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        moveToLevel->level = static_cast<uint8_t>(strtol(argv[0], &endPtr, 10));
+        moveToLevel->transitionTime = DataModel::Nullable<uint16_t>(strtol(argv[1], &endPtr, 10));
+        moveToLevel->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[2], &endPtr, 10));
+        moveToLevel->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
     }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -370,10 +387,14 @@ CHIP_ERROR MoveWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 4; i++)
+    data->commandData = BindingCommandData::Move{};
+    char * endPtr;
+    if (auto *move = std::get_if<BindingCommandData::Move>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        move->moveMode = static_cast<Clusters::LevelControl::MoveModeEnum>(strtol(argv[0], &endPtr, 10));
+        move->rate = static_cast<DataModel::Nullable<uint8_t>>(strtol(argv[1], &endPtr, 10));
+        move->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[2], &endPtr, 10));
+        move->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
     }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -390,10 +411,15 @@ CHIP_ERROR StepWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::StepWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 5; i++)
+    char * endPtr;
+    data->commandData = BindingCommandData::Step{};
+    if (auto *step = std::get_if<BindingCommandData::Step>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        step->stepMode = static_cast<Clusters::LevelControl::StepModeEnum>(strtol(argv[0], &endPtr, 10));
+        step->stepSize = static_cast<uint8_t>(strtol(argv[1], &endPtr, 10));
+        step->transitionTime = DataModel::Nullable<uint16_t>(strtol(argv[2], &endPtr, 10));
+        step->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
+        step->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[4], &endPtr, 10));
     }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -410,10 +436,12 @@ CHIP_ERROR StopWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::StopWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 2; i++)
+    char * endPtr;
+    data->commandData = BindingCommandData::Stop{};
+    if (auto *stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        stop->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[0], &endPtr, 10));
+        stop->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[1], &endPtr, 10));
     }
 
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -638,10 +666,14 @@ CHIP_ERROR GroupsMoveToLevelSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevel::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 4; i++)
+    data->commandData = BindingCommandData::MoveToLevel{};
+    char * endPtr;
+    if (auto *moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        moveToLevel->level = static_cast<uint8_t>(strtol(argv[0], &endPtr, 10));
+        moveToLevel->transitionTime = DataModel::Nullable<uint16_t>(strtol(argv[1], &endPtr, 10));
+        moveToLevel->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[2], &endPtr, 10));
+        moveToLevel->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
     }
     data->isGroup             = true;
 
@@ -659,10 +691,14 @@ CHIP_ERROR GroupsMoveSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Move::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 4; i++)
+    data->commandData = BindingCommandData::Move{};
+    char * endPtr;
+    if (auto *move = std::get_if<BindingCommandData::Move>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        move->moveMode = static_cast<Clusters::LevelControl::MoveModeEnum>(strtol(argv[0], &endPtr, 10));
+        move->rate = static_cast<DataModel::Nullable<uint8_t>>(strtol(argv[1], &endPtr, 10));
+        move->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[2], &endPtr, 10));
+        move->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
     }
     data->isGroup             = true;
 
@@ -680,10 +716,15 @@ CHIP_ERROR GroupsStepSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Step::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 5; i++)
+    char * endPtr;
+    data->commandData = BindingCommandData::Step{};
+    if (auto *step = std::get_if<BindingCommandData::Step>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        step->stepMode = static_cast<Clusters::LevelControl::StepModeEnum>(strtol(argv[0], &endPtr, 10));
+        step->stepSize = static_cast<uint8_t>(strtol(argv[1], &endPtr, 10));
+        step->transitionTime = DataModel::Nullable<uint16_t>(strtol(argv[2], &endPtr, 10));
+        step->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
+        step->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[4], &endPtr, 10));
     }
     data->isGroup             = true;
 
@@ -701,10 +742,12 @@ CHIP_ERROR GroupsStopSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::Stop::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 2; i++)
+    char * endPtr;
+    data->commandData = BindingCommandData::Stop{};
+    if (auto *stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        stop->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[0], &endPtr, 10));
+        stop->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[1], &endPtr, 10));
     }
     data->isGroup             = true;
 
@@ -722,10 +765,14 @@ CHIP_ERROR GroupsMoveToLevelWithOnOffSwitchCommandHandler(int argc, char ** argv
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 4; i++)
+    data->commandData = BindingCommandData::MoveToLevel{};
+    char * endPtr;
+    if (auto *moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        moveToLevel->level = static_cast<uint8_t>(strtol(argv[0], &endPtr, 10));
+        moveToLevel->transitionTime = DataModel::Nullable<uint16_t>(strtol(argv[1], &endPtr, 10));
+        moveToLevel->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[2], &endPtr, 10));
+        moveToLevel->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
     }
     data->isGroup             = true;
 
@@ -743,10 +790,14 @@ CHIP_ERROR GroupsMoveWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::MoveWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 4; i++)
+    data->commandData = BindingCommandData::Move{};
+    char * endPtr;
+    if (auto *move = std::get_if<BindingCommandData::Move>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        move->moveMode = static_cast<Clusters::LevelControl::MoveModeEnum>(strtol(argv[0], &endPtr, 10));
+        move->rate = static_cast<DataModel::Nullable<uint8_t>>(strtol(argv[1], &endPtr, 10));
+        move->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[2], &endPtr, 10));
+        move->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
     }
     data->isGroup             = true;
 
@@ -764,10 +815,15 @@ CHIP_ERROR GroupsStepWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::StepWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 5; i++)
+    char * endPtr;
+    data->commandData = BindingCommandData::Step{};
+    if (auto *step = std::get_if<BindingCommandData::Step>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        step->stepMode = static_cast<Clusters::LevelControl::StepModeEnum>(strtol(argv[0], &endPtr, 10));
+        step->stepSize = static_cast<uint8_t>(strtol(argv[1], &endPtr, 10));
+        step->transitionTime = DataModel::Nullable<uint16_t>(strtol(argv[2], &endPtr, 10));
+        step->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[3], &endPtr, 10));
+        step->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[4], &endPtr, 10));
     }
     data->isGroup             = true;
 
@@ -785,10 +841,12 @@ CHIP_ERROR GroupsStopWithOnOffSwitchCommandHandler(int argc, char ** argv)
     BindingCommandData * data = Platform::New<BindingCommandData>();
     data->commandId           = Clusters::LevelControl::Commands::StopWithOnOff::Id;
     data->clusterId           = Clusters::LevelControl::Id;
-    for(int i = 0; i < 2; i++)
+    char * endPtr;
+    data->commandData = BindingCommandData::Stop{};
+    if (auto *stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
     {
-        char *endPtr;
-        data->args[i] = static_cast<int>(strtol(argv[i], &endPtr, 10));
+        stop->optionsMask = chip::BitMask<OptionsBitmap>(strtol(argv[0], &endPtr, 10));
+        stop->optionsOverride = chip::BitMask<OptionsBitmap>(strtol(argv[1], &endPtr, 10));
     }
     data->isGroup             = true;
 
