@@ -84,7 +84,7 @@ void LightSwitchMgr::HandleLongPress()
     {
         if (!mResetWarning)
         {
-            // Long press button up: Reset warning!
+            // Long press button down: Reset warning!
             event.Type = AppEvent::kEventType_ResetWarning;
             AppTask::GetAppTask().PostEvent(&event);
         }

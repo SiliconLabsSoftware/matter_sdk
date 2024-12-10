@@ -88,12 +88,17 @@ public:
 
     static LightSwitchMgr & GetInstance() { return sSwitch; }
 
+    /**
+     * @brief Event handler when a button is pressed
+     * Function posts an event for button processing
+     *
+     * @param button BUTTON0 or BUTTON1
+     * @param btnAction button action - SL_SIMPLE_BUTTON_PRESSED,
+     *                  SL_SIMPLE_BUTTON_RELEASED
+     */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
     static void AppEventHandler(AppEvent * aEvent);
-
-// protected:
-
 
 private:
     static LightSwitchMgr sSwitch;
@@ -105,6 +110,10 @@ private:
     static void OnLongPressTimeout(Timer & timer);
     LightSwitchMgr() = default;
 
+    /*
+    This function will be called when PB0 is 
+    long-pressed to trigger the factory-reset
+    */
     void HandleLongPress();
 
     static void GenericSwitchWorkerFunction(intptr_t context);
