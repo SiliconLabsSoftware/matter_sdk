@@ -32,6 +32,16 @@ void SwitchWorkerFunction(intptr_t context);
 void BindingWorkerFunction(intptr_t context);
 
 
+struct CommandBase
+{
+    chip::BitMask<OptionsBitmap> optionsMask;
+    chip::BitMask<OptionsBitmap> optionsOverride;
+
+    // Constructor to initialize the BitMask
+    CommandBase()
+        : optionsMask(0), optionsOverride(0) {}
+};
+
 struct BindingCommandData
 {
     chip::EndpointId localEndpointId = 1;
@@ -39,37 +49,26 @@ struct BindingCommandData
     chip::ClusterId clusterId;
     bool isGroup = false;
 
-    struct MoveToLevel
+    struct MoveToLevel : public CommandBase
     {
         uint8_t level;
         DataModel::Nullable<uint16_t> transitionTime;
-        chip::BitMask<OptionsBitmap> optionsMask;
-        chip::BitMask<OptionsBitmap> optionsOverride;
     };
-
-    struct Move
+    struct Move : public CommandBase
     {
         MoveModeEnum moveMode;
         DataModel::Nullable<uint8_t> rate;
-        chip::BitMask<OptionsBitmap> optionsMask;
-        chip::BitMask<OptionsBitmap> optionsOverride;
     };
-
-    struct Step
+    struct Step : public CommandBase
     {
         StepModeEnum stepMode;
         uint8_t stepSize;
         DataModel::Nullable<uint16_t> transitionTime;
-        chip::BitMask<OptionsBitmap> optionsMask;
-        chip::BitMask<OptionsBitmap> optionsOverride;
     };
-
-    struct Stop
+    struct Stop : public CommandBase
     {
-        chip::BitMask<OptionsBitmap> optionsMask;
-        chip::BitMask<OptionsBitmap> optionsOverride;
+        // Inherits optionsMask and optionsOverride from CommandBase
     };
-
-    // Use std::variant to replace the union
+    // Use std::variant to hold different command types
     std::variant<MoveToLevel, Move, Step, Stop> commandData;
 };

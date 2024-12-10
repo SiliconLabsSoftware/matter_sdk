@@ -48,10 +48,12 @@ public:
         chip::EventId event;
     };
 
-    static constexpr uint8_t stepSize = 1;
-    static constexpr DataModel::Nullable<uint16_t> transitionTime = 0;
-    static constexpr chip::BitMask<OptionsBitmap> optionsMask = 0;
-    static constexpr chip::BitMask<OptionsBitmap> optionsOverride = 0;
+    static constexpr Clusters::LevelControl::Commands::Step::Type stepCommand = {
+        .stepSize = 1,
+        .transitionTime = 0,
+        .optionsMask = 0,
+        .optionsOverride = 0
+    };
 
     struct Timer
     {
@@ -74,32 +76,35 @@ public:
         static void TimerCallback(void * timerCbArg);
     };
 
-    LightSwitchMgr() = default;
-
     CHIP_ERROR Init(chip::EndpointId lightSwitchEndpoint, chip::EndpointId genericSwitchEndpoint);
 
     void GenericSwitchOnInitialPress();
     void GenericSwitchOnShortRelease();
 
     void TriggerLightSwitchAction(LightSwitchAction action, bool isGroupCommand = false);
-    void TriggerLevelControlAction(uint8_t stepMode, bool isGroupCommand = false);
+    void TriggerLevelControlAction(StepModeEnum stepMode, bool isGroupCommand = false);
+
+    AppEvent CreateNewEvent(AppEvent::AppEventTypes type);
 
     static LightSwitchMgr & GetInstance() { return sSwitch; }
 
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
-    static void GeneralEventHandler(AppEvent * aEvent);
+    static void AppEventHandler(AppEvent * aEvent);
 
-protected:
+// protected:
 
-    static void OnLongPressTimeout(Timer & timer);
+
+private:
+    static LightSwitchMgr sSwitch;
 
     Timer * mLongPressTimer = nullptr;
     bool mDownPressed       = false;
     bool mResetWarning      = false;
 
-private:
-    static LightSwitchMgr sSwitch;
+    static void OnLongPressTimeout(Timer & timer);
+    LightSwitchMgr() = default;
+
     void HandleLongPress();
 
     static void GenericSwitchWorkerFunction(intptr_t context);

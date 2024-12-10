@@ -43,11 +43,11 @@ using namespace chip::DeviceLayer::Silabs;
 
 LightSwitchMgr LightSwitchMgr::sSwitch;
 
-AppEvent CreateNewEvent(AppEvent::AppEventTypes type)
+AppEvent LightSwitchMgr::CreateNewEvent(AppEvent::AppEventTypes type)
 {
     AppEvent aEvent;
     aEvent.Type                      = type;
-    aEvent.Handler                   = LightSwitchMgr::GeneralEventHandler;
+    aEvent.Handler                   = LightSwitchMgr::AppEventHandler;
     LightSwitchMgr * lightSwitch         = &LightSwitchMgr::GetInstance();
     aEvent.LightSwitchEvent.Context  = lightSwitch;
     return aEvent;
@@ -77,7 +77,7 @@ void LightSwitchMgr::Timer::Timeout()
 void LightSwitchMgr::HandleLongPress()
 {
     AppEvent event;
-    event.Handler             = GeneralEventHandler;
+    event.Handler             = AppEventHandler;
     LightSwitchMgr * lightSwitch  = &LightSwitchMgr::GetInstance();
     event.LightSwitchEvent.Context  = lightSwitch;
     if (mDownPressed)
@@ -232,23 +232,21 @@ void LightSwitchMgr::TriggerLightSwitchAction(LightSwitchAction action, bool isG
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
 }
 
-void LightSwitchMgr::TriggerLevelControlAction(uint8_t stepMode, bool isGroupCommand)
+void LightSwitchMgr::TriggerLevelControlAction(LevelControl::StepModeEnum stepMode, bool isGroupCommand)
 {
     BindingCommandData * data = Platform::New<BindingCommandData>();
 
     data->clusterId = chip::app::Clusters::LevelControl::Id;
     data->isGroup   = isGroupCommand;
     data->commandId = LevelControl::Commands::StepWithOnOff::Id;
-    data->commandData = BindingCommandData::Step{};
-    if (auto *step = std::get_if<BindingCommandData::Step>(&data->commandData))
-    {
-        step->stepMode = static_cast<Clusters::LevelControl::StepModeEnum>(stepMode);
-        step->stepSize = LightSwitchMgr::stepSize;
-        step->transitionTime = LightSwitchMgr::transitionTime;
-        step->optionsMask = LightSwitchMgr::optionsMask;
-        step->optionsOverride = LightSwitchMgr::optionsOverride;
-    }
-
+    BindingCommandData::Step stepData{
+        .stepMode = stepMode,
+        .stepSize = LightSwitchMgr::stepCommand.stepSize,
+        .transitionTime = LightSwitchMgr::stepCommand.transitionTime
+    };
+    stepData.optionsMask.Set(LightSwitchMgr::stepCommand.optionsMask);
+    stepData.optionsOverride.Set(LightSwitchMgr::stepCommand.optionsOverride);
+    data->commandData = stepData;
     DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
 }
 
@@ -292,16 +290,16 @@ void LightSwitchMgr::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     AppEvent event = {};
     if (btnAction == to_underlying(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        event = CreateNewEvent(button ? AppEvent::kEventType_UpPressed : AppEvent::kEventType_DownPressed);
+        event = LightSwitchMgr::GetInstance().CreateNewEvent(button ? AppEvent::kEventType_UpPressed : AppEvent::kEventType_DownPressed);
     }
     else
     {
-        event = CreateNewEvent(button ? AppEvent::kEventType_UpReleased : AppEvent::kEventType_DownReleased);
+        event = LightSwitchMgr::GetInstance().CreateNewEvent(button ? AppEvent::kEventType_UpReleased : AppEvent::kEventType_DownReleased);
     }
     AppTask::GetAppTask().PostEvent(&event);
 }
 
-void LightSwitchMgr::GeneralEventHandler(AppEvent * aEvent)
+void LightSwitchMgr::AppEventHandler(AppEvent * aEvent)
 {
     LightSwitchMgr * lightSwitch = static_cast<LightSwitchMgr *>(aEvent->LightSwitchEvent.Context);
     switch(aEvent->Type)
@@ -350,14 +348,14 @@ void LightSwitchMgr::SwitchActionEventHandler(AppEvent * aEvent)
     switch(aEvent->Type)
     {
     case AppEvent::kEventType_UpPressed:
-        LightSwitchMgr::GetInstance().TriggerLevelControlAction(static_cast<uint8_t>(LevelControl::StepModeEnum::kUp));
+        LightSwitchMgr::GetInstance().TriggerLevelControlAction(LevelControl::StepModeEnum::kUp);
         LightSwitchMgr::GetInstance().GenericSwitchOnInitialPress();
         break;
     case AppEvent::kEventType_UpReleased:
         LightSwitchMgr::GetInstance().GenericSwitchOnShortRelease();
         break;
     case AppEvent::kEventType_DownPressed:
-        LightSwitchMgr::GetInstance().TriggerLevelControlAction(static_cast<uint8_t>(LevelControl::StepModeEnum::kDown));
+        LightSwitchMgr::GetInstance().TriggerLevelControlAction(LevelControl::StepModeEnum::kDown);
         break;
     default:
         break;

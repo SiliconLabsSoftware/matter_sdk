@@ -53,11 +53,6 @@ struct AppEvent
         } TimerEvent;
         struct
         {
-            uint8_t Action;
-            int32_t Actor;
-        } LightEvent;
-        struct
-        {
             void * Context;
         } LightSwitchEvent;
     };

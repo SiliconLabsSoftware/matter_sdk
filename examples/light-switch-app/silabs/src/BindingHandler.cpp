@@ -110,9 +110,9 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
             moveToLevelCommand.transitionTime  = moveToLevel->transitionTime;
             moveToLevelCommand.optionsMask     = moveToLevel->optionsMask;
             moveToLevelCommand.optionsOverride = moveToLevel->optionsOverride;
-        }
-        Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
+            Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          moveToLevelCommand, onSuccess, onFailure);
+        }
         break;
     }
 
@@ -125,9 +125,9 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
             moveCommand.rate            = move->rate;
             moveCommand.optionsMask     = move->optionsMask;
             moveCommand.optionsOverride = move->optionsOverride;
-        }
-        Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
+            Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          moveCommand, onSuccess, onFailure);
+        }
         break;
     }
 
@@ -141,9 +141,9 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
             stepCommand.transitionTime  = step->transitionTime;
             stepCommand.optionsMask     = step->optionsMask;
             stepCommand.optionsOverride = step->optionsOverride;
-        }
-        Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
+            Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          stepCommand, onSuccess, onFailure);
+        }
         break;
     }
 
@@ -154,9 +154,9 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
         {
             stopCommand.optionsMask     = stop->optionsMask;
             stopCommand.optionsOverride = stop->optionsOverride;
-        }
-        Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
+            Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          stopCommand, onSuccess, onFailure);
+        }
         break;
     }
 
@@ -169,9 +169,9 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
             moveToLevelWithOnOffCommand.transitionTime  = moveToLevel->transitionTime;
             moveToLevelWithOnOffCommand.optionsMask     = moveToLevel->optionsMask;
             moveToLevelWithOnOffCommand.optionsOverride = moveToLevel->optionsOverride;
-        }
-        Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
+            Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          moveToLevelWithOnOffCommand, onSuccess, onFailure);
+        }
         break;
     }
 
@@ -184,9 +184,9 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
             moveWithOnOffCommand.rate            = move->rate;
             moveWithOnOffCommand.optionsMask     = move->optionsMask;
             moveWithOnOffCommand.optionsOverride = move->optionsOverride;
-        }
-        Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
+            Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          moveWithOnOffCommand, onSuccess, onFailure);
+        }
         break;
     }
 
@@ -200,9 +200,9 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
             stepWithOnOffCommand.transitionTime  = step->transitionTime;
             stepWithOnOffCommand.optionsMask     = step->optionsMask;
             stepWithOnOffCommand.optionsOverride = step->optionsOverride;
-        }
-        Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
+            Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          stepWithOnOffCommand, onSuccess, onFailure);
+        }
         break;
     }
 
@@ -213,9 +213,9 @@ void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const E
         {
             stopWithOnOffCommand.optionsMask     = stop->optionsMask;
             stopWithOnOffCommand.optionsOverride = stop->optionsOverride;
-        }
-        Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
+            Controller::InvokeCommandRequest(peer_device->GetExchangeManager(), peer_device->GetSecureSession().Value(), binding.remote,
                                          stopWithOnOffCommand, onSuccess, onFailure);
+        }
         break;
     }
     default:
@@ -238,8 +238,8 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
             moveToLevelCommand.transitionTime  = moveToLevel->transitionTime;
             moveToLevelCommand.optionsMask     = moveToLevel->optionsMask;
             moveToLevelCommand.optionsOverride = moveToLevel->optionsOverride;
+            Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveToLevelCommand);
         }
-        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveToLevelCommand);
         break;
     }
 
@@ -252,8 +252,8 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
             moveCommand.rate            = move->rate;
             moveCommand.optionsMask     = move->optionsMask;
             moveCommand.optionsOverride = move->optionsOverride;
+            Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveCommand);
         }
-        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveCommand);
         break;
     }
 
@@ -267,8 +267,8 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
             stepCommand.transitionTime  = step->transitionTime;
             stepCommand.optionsMask     = step->optionsMask;
             stepCommand.optionsOverride = step->optionsOverride;
+            Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stepCommand);
         }
-        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stepCommand);
         break;
     }
 
@@ -279,8 +279,8 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
         {
             stopCommand.optionsMask     = stop->optionsMask;
             stopCommand.optionsOverride = stop->optionsOverride;
+            Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stopCommand);
         }
-        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stopCommand);
         break;
     }
 
@@ -293,8 +293,8 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
             moveToLevelWithOnOffCommand.transitionTime  = moveToLevel->transitionTime;
             moveToLevelWithOnOffCommand.optionsMask     = moveToLevel->optionsMask;
             moveToLevelWithOnOffCommand.optionsOverride = moveToLevel->optionsOverride;
+            Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveToLevelWithOnOffCommand);
         }
-        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveToLevelWithOnOffCommand);
         break;
     }
 
@@ -307,8 +307,8 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
             moveWithOnOffCommand.rate            = move->rate;
             moveWithOnOffCommand.optionsMask     = move->optionsMask;
             moveWithOnOffCommand.optionsOverride = move->optionsOverride;
+            Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveWithOnOffCommand);
         }
-        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, moveWithOnOffCommand);
         break;
     }
 
@@ -322,8 +322,8 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
             stepWithOnOffCommand.transitionTime  = step->transitionTime;
             stepWithOnOffCommand.optionsMask     = step->optionsMask;
             stepWithOnOffCommand.optionsOverride = step->optionsOverride;
+            Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stepWithOnOffCommand);
         }
-        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stepWithOnOffCommand);
         break;
     }
 
@@ -334,8 +334,8 @@ void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const Emb
         {
             stopWithOnOffCommand.optionsMask     = stop->optionsMask;
             stopWithOnOffCommand.optionsOverride = stop->optionsOverride;
+            Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stopWithOnOffCommand);
         }
-        Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId, stopWithOnOffCommand);
         break;
     }
     default:
