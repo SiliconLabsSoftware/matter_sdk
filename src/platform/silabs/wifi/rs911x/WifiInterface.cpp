@@ -777,11 +777,7 @@ void ProcessEvent(WifiEvent event)
 sl_status_t sl_matter_wifi_platform_init(void)
 {
     uint32_t rsi_status = sl_matter_wifi_init();
-    if (rsi_status != RSI_SUCCESS)
-    {
-        ChipLogError(DeviceLayer, "sl_matter_wifi_platform_init: sl_matter_wifi_init failed: %ld", rsi_status);
-        return SL_STATUS_FAIL;
-    }
+    VerifyOrReturn(rsi_status == RSI_SUCCESS, SL_STATUS_FAIL);
     return SL_STATUS_OK;
 }
 
