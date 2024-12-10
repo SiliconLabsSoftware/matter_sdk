@@ -75,9 +75,16 @@ size_t RoundNearest(size_t n, size_t multiple)
     return (n % multiple) > 0 ? n + (multiple - n % multiple) : n;
 }
 
+/**
+ * Writes "size" bytes to the flash page. The data is padded with 0xff
+ * up to the nearest 32-bit boundary. The "max" argument is used to ensure
+ * that the padding won't exceed the limits of the buffer.
+ */
 CHIP_ERROR WritePage(uint32_t addr, const uint8_t * data, size_t size, size_t max)
 {
+    // The flash driver fails if the size is not a multiple of 4 (32-bits)
     size_t size_32 = RoundNearest(size, 4);
+    // If the input data is smaller than the 32-bit size, pad the buffer with "0xff"
     if(size_32 != size)
     {
         uint8_t * p = (uint8_t *) data;
@@ -87,8 +94,6 @@ CHIP_ERROR WritePage(uint32_t addr, const uint8_t * data, size_t size, size_t ma
     }
     return chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(addr, data, size);
 }
-
-
 
 CHIP_ERROR WriteFile(Storage & store, SilabsConfig::Key offset_key, SilabsConfig::Key size_key, const ByteSpan & value)
 {
