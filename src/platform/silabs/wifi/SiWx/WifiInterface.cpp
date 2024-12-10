@@ -199,6 +199,7 @@ constexpr uint8_t kAdvRssiToleranceThreshold = 5;
 constexpr uint8_t kAdvActiveScanDuration     = 15;
 constexpr uint8_t kAdvPassiveScanDuration    = 20;
 constexpr uint8_t kAdvMultiProbe             = 1;
+constexpr uint8_t kAdvEnableInstantbgScan    = 1;
 constexpr uint8_t kAdvScanPeriodicity        = 10;
 
 // TODO: Confirm that this value works for size and timing
@@ -792,6 +793,7 @@ void ProcessEvent(WifiEvent event)
             advanced_scan_configuration.trigger_level        = kAdvScanThreshold;
             advanced_scan_configuration.trigger_level_change = kAdvRssiToleranceThreshold;
             advanced_scan_configuration.enable_multi_probe   = kAdvMultiProbe;
+            advanced_scan_configuration.enable_instant_scan  = kAdvEnableInstantbgScan;
             status = sl_wifi_set_advanced_scan_configuration(&advanced_scan_configuration);
             if (SL_STATUS_OK != status)
             {
