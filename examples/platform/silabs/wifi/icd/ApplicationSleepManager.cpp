@@ -161,6 +161,7 @@ bool ApplicationSleepManager::ProcessKeychainEdgeCase()
             mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
         {
             hasValidException = true;
+            break;
         }
     }
 
