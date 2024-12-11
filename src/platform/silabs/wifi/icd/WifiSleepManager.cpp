@@ -54,6 +54,7 @@ CHIP_ERROR ConfigureDTIMBasedSleep()
     VerifyOrReturnError(ConfigureBroadcastFilter(false) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "Failed to configure broadcast filter."));
 
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
     VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "Failed to enable to enable DTIM basedsleep."));
 
