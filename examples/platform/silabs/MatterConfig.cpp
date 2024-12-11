@@ -338,6 +338,9 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     // Register ReadHandler::ApplicationCallback
     app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(
         &app::Silabs::ApplicationSleepManager::GetInstance());
+
+    // Register ICDStateObserver
+    chip::Server::GetInstance().GetICDManager().RegisterObserver(&app::Silabs::ApplicationSleepManager::GetInstance());
 #endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
     // Init Matter Server and Start Event Loop
