@@ -156,7 +156,7 @@ bool ApplicationSleepManager::ProcessKeychainEdgeCase()
 
     for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
     {
-        if (to_underlying(it->GetVendorId()) == chip::VendorId::Apple &&
+        if ((it->GetVendorId() == chip::VendorId::Apple) &&
             mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
         {
             hasValidException = true;
