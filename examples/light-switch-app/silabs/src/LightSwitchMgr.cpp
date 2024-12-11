@@ -345,18 +345,28 @@ void LightSwitchMgr::AppEventHandler(AppEvent * aEvent)
 
 void LightSwitchMgr::SwitchActionEventHandler(AppEvent * aEvent)
 {
+    static bool mCurrentButtonState = false;
+
     switch(aEvent->Type)
     {
-    case AppEvent::kEventType_UpPressed:
-        LightSwitchMgr::GetInstance().TriggerLevelControlAction(LevelControl::StepModeEnum::kUp);
+    case AppEvent::kEventType_UpPressed: {
+        mCurrentButtonState = !mCurrentButtonState;
+        LightSwitchMgr::LightSwitchAction action =
+            mCurrentButtonState ? LightSwitchMgr::LightSwitchAction::On : LightSwitchMgr::LightSwitchAction::Off;
+        
+        LightSwitchMgr::GetInstance().TriggerLightSwitchAction(action);
         LightSwitchMgr::GetInstance().GenericSwitchOnInitialPress();
+        }
         break;
     case AppEvent::kEventType_UpReleased:
         LightSwitchMgr::GetInstance().GenericSwitchOnShortRelease();
         break;
+#if 0
+    // TODO: Fix the button handling for the btn0 and btn1
     case AppEvent::kEventType_DownPressed:
-        LightSwitchMgr::GetInstance().TriggerLevelControlAction(LevelControl::StepModeEnum::kDown);
+        LightSwitchMgr::GetInstance().TriggerLightSwitchAction(action);
         break;
+#endif
     default:
         break;
     }
