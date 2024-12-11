@@ -34,7 +34,8 @@ CHIP_ERROR ConfigureLIBasedSleep()
 {
     VerifyOrReturnError(ConfigureBroadcastFilter(true) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
-    // powersave has to be invoked at the last else the configure boardcast filter fails
+    
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
     VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
                                            chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) ==
                             SL_STATUS_OK,
