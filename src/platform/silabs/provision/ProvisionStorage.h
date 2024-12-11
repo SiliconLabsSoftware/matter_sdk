@@ -240,7 +240,7 @@ public:
     /**
      * @brief Reads the test event trigger key from NVM. If the key isn't present, returns default value if defined.
      *
-     * @param[out] keySpan output buffer. Must be at least large enough for 16 bytes (ken length)
+     * @param[out] keySpan output buffer. Must be at least large enough for 16 bytes (key length)
      * @return CHIP_ERROR
      */
     CHIP_ERROR GetTestEventTriggerKey(MutableByteSpan & keySpan);
