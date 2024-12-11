@@ -32,7 +32,7 @@ bool SilabsTestEventTriggerDelegate::DoesEnableKeyMatch(const ByteSpan & enableK
     CHIP_ERROR error = Silabs::Provision::Manager::GetInstance().GetStorage().GetTestEventTriggerKey(storedEnableKeySpan);
     if (error != CHIP_NO_ERROR)
     {
-        // If we fail to the read the enableKey from storage, the MutableByteSpan will be empty to a zero bytespan.
+        // If we fail to read the enableKey from storage, the MutableByteSpan is not modified by the getter which leaves the span equal to a zero bytepsan (size = 0).
         // This garantees that we will be able to inform the stack that the test event trigger is not enabled when the stack tries
         // to match the zero bytespan to our enableKey.
         ChipLogError(DeviceLayer, "Failed to get test event trigger key: %s", ErrorStr(error));
