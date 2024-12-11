@@ -34,7 +34,7 @@ CHIP_ERROR ConfigureLIBasedSleep()
 {
     VerifyOrReturnError(ConfigureBroadcastFilter(true) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
-
+    // powersave has to be invoked at the last else the configure boardcast filter fails
     VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
                                            chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()) ==
                             SL_STATUS_OK,
@@ -178,11 +178,9 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     return ConfigureDTIMBasedSleep();
 
 #elif RS911X_WIFI // rs9116
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
     VerifyOrReturnError(ConfigurePowerSave() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
     return CHIP_NO_ERROR;
-#else  // wf200
+#else             // wf200
     return CHIP_NO_ERROR;
 #endif
 }

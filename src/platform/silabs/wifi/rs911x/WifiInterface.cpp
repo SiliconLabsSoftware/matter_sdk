@@ -769,15 +769,9 @@ void ProcessEvent(WifiEvent event)
     }
 }
 
-/**
- * @brief Wifi initialization called from app main
- *
- * @return sl_status_t Returns underlying Wi-Fi initialization error
- */
 sl_status_t sl_matter_wifi_platform_init(void)
 {
-    uint32_t rsi_status = sl_matter_wifi_init();
-    VerifyOrReturnError(rsi_status == RSI_SUCCESS, SL_STATUS_FAIL);
+    VerifyOrReturnError(sl_matter_wifi_init() == RSI_SUCCESS, SL_STATUS_FAIL);
     return SL_STATUS_OK;
 }
 
