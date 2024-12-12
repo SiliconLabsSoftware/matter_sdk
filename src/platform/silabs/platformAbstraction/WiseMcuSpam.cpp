@@ -41,16 +41,6 @@ extern "C" {
 #include "sl_si91x_button_pin_config.h"
 #endif  //SL_CATALOG_SIMPLE_BUTTON_PRESENT
 
-#if defined(ENABLE_WSTK_LEDS) && defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
-#include "sl_si91x_rgb_led.h"
-#include "sl_si91x_rgb_led_config.h"
-#include "sl_si91x_rgb_led_instances.h"
-#else
-#include "sl_si91x_led.h"
-#include "sl_si91x_led_config.h"
-#include "sl_si91x_led_instances.h"
-#endif  //defined(ENABLE_WSTK_LEDS) && defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
-
 #if CHIP_CONFIG_ENABLE_ICD_SERVER == 0
 void soc_pll_config(void);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
@@ -64,14 +54,22 @@ void soc_pll_config(void);
 #include "uart.h"
 #endif
 
-#if defined(ENABLE_WSTK_LEDS) && defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
+#ifdef ENABLE_WSTK_LEDS
+#if defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
+#include "sl_si91x_rgb_led.h"
+#include "sl_si91x_rgb_led_config.h"
+#include "sl_si91x_rgb_led_instances.h"
 #define SL_LED_COUNT SL_SI91X_RGB_LED_COUNT
-const sl_rgb_led_t * ledPinArray[SL_LED_COUNT] = { &led_led0 };
+const sl_rgb_led_t *ledPinArray[SL_LED_COUNT] = { &led_led0 };
 #define SL_RGB_LED_INSTANCE(n) (ledPinArray[n])
 #else
-#define SL_LED_COUNT SL_SI91x_LED_COUNT
+#include "sl_si91x_led.h"
+#include "sl_si91x_led_config.h"
+#include "sl_si91x_led_instances.h"
+#define SL_LED_COUNT SL_SI91X_LED_COUNT
 uint8_t ledPinArray[SL_LED_COUNT] = { SL_LED_LED0_PIN, SL_LED_LED1_PIN };
-#endif  //defined(ENABLE_WSTK_LEDS) && defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
+#endif // SL_MATTER_RGB_LED_ENABLED
+#endif // ENABLE_WSTK_LEDS
 
 namespace chip {
 namespace DeviceLayer {
