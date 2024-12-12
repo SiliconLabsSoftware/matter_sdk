@@ -110,10 +110,10 @@ private:
     static void OnLongPressTimeout(Timer & timer);
     LightSwitchMgr() = default;
 
-    /*
-    This function will be called when PB0 is 
-    long-pressed to trigger the factory-reset
-    */
+     /**
+     * @brief This function will be called when PB0 is 
+     *        long-pressed to trigger the factory-reset
+     */
     void HandleLongPress();
 
     static void GenericSwitchWorkerFunction(intptr_t context);
