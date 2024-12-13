@@ -1,7 +1,7 @@
 {
     "lighting-app": [
         {
-            "boards": ["BRD4187C"],
+            "boards": ["BRD416C", "BRD4187C", "BRD4338A"],
             "arguments": ["--docker"]
         }
     ]
