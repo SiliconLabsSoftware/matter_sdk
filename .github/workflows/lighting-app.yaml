@@ -24,3 +24,10 @@ jobs:
               uses: ./.github/actions/checkout-submodules-and-bootstrap
               with:
                   platform: silabs_docker
+
+            - name: Build Lighting-App configurations
+              uses: SiliconLabsSoftware/matter-gn-build-action
+              with:
+                  json-content: "./.github/silabs-builds.json"
+                  example-app: "lighting-app"
+                  build-script: "./scripts/examples/gn_silabs_example.sh"
