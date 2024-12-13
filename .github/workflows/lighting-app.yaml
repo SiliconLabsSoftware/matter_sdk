@@ -28,6 +28,6 @@ jobs:
             - name: Build Lighting-App configurations
               uses: SiliconLabsSoftware/matter-gn-build-action@v0.0.1
               with:
-                  json-content: "./.github/silabs-builds.json"
+                  json-content: ".github/silabs-builds.json"
                   example-app: "lighting-app"
-                  build-script: "./scripts/examples/gn_silabs_example.sh"
+                  build-script: "scripts/examples/gn_silabs_example.sh"
