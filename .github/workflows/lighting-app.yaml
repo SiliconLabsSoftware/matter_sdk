@@ -1,0 +1,26 @@
+name: Build Lighting App
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+            - "release_*"
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        container:
+            image: ghcr.io/project-chip/chip-build-efr32:90
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Checkout submodules & Bootstrap
+              uses: ./.github/actions/checkout-submodules-and-bootstrap
+              with:
+                  platform: silabs_docker
