@@ -26,7 +26,7 @@ jobs:
                   platform: silabs_docker
 
             - name: Build Lighting-App configurations
-              uses: SiliconLabsSoftware/matter-gn-build-action
+              uses: SiliconLabsSoftware/matter-gn-build-action@latest
               with:
                   json-content: "./.github/silabs-builds.json"
                   example-app: "lighting-app"
