@@ -17,14 +17,8 @@ jobs:
             image: ghcr.io/project-chip/chip-build-efr32:90
 
         steps:
-            - name: Print GITHUB_WORKSPACE
-              run: echo "GITHUB_WORKSPACE is $GITHUB_WORKSPACE"
-
             - name: Checkout
               uses: actions/checkout@v4
-
-            - name: Print GITHUB_WORKSPACE
-              run: echo "GITHUB_WORKSPACE is $GITHUB_WORKSPACE"
 
             - name: Checkout submodules & Bootstrap
               uses: ./.github/actions/checkout-submodules-and-bootstrap
