@@ -17,8 +17,14 @@ jobs:
             image: ghcr.io/project-chip/chip-build-efr32:90
 
         steps:
+            - name: Print GITHUB_WORKSPACE
+              run: echo "GITHUB_WORKSPACE is $GITHUB_WORKSPACE"
+
             - name: Checkout
               uses: actions/checkout@v4
+
+            - name: Print GITHUB_WORKSPACE
+              run: echo "GITHUB_WORKSPACE is $GITHUB_WORKSPACE"
 
             - name: Checkout submodules & Bootstrap
               uses: ./.github/actions/checkout-submodules-and-bootstrap
@@ -28,6 +34,6 @@ jobs:
             - name: Build Lighting-App configurations
               uses: SiliconLabsSoftware/matter-gn-build-action@v0.0.1
               with:
-                  json-file-path: ".github/silabs-builds.json"
+                  json-file-path: "./.github/silabs-builds.json"
                   example-app: "lighting-app"
-                  build-script: "scripts/examples/gn_silabs_example.sh"
+                  build-script: "./scripts/examples/gn_silabs_example.sh"
