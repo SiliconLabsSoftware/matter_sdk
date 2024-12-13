@@ -41,6 +41,23 @@ extern "C" {
 #include "sl_si91x_button_pin_config.h"
 #endif  //SL_CATALOG_SIMPLE_BUTTON_PRESENT
 
+#ifdef ENABLE_WSTK_LEDS
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+#include "sl_si91x_rgb_led.h"
+#include "sl_si91x_rgb_led_config.h"
+#include "sl_si91x_rgb_led_instances.h"
+#define SL_LED_COUNT SL_SI91X_RGB_LED_COUNT
+const sl_rgb_led_t *ledPinArray[SL_LED_COUNT] = { &led_led0 };
+#define SL_RGB_LED_INSTANCE(n) (ledPinArray[n])
+#else
+#include "sl_si91x_led.h"
+#include "sl_si91x_led_config.h"
+#include "sl_si91x_led_instances.h"
+#define SL_LED_COUNT SL_SI91x_LED_COUNT
+uint8_t ledPinArray[SL_LED_COUNT] = { SL_LED_LED0_PIN, SL_LED_LED1_PIN };
+#endif // SL_MATTER_RGB_LED_ENABLED
+#endif // ENABLE_WSTK_LEDS
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER == 0
 void soc_pll_config(void);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
@@ -54,22 +71,6 @@ void soc_pll_config(void);
 #include "uart.h"
 #endif
 
-#ifdef ENABLE_WSTK_LEDS
-#if defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
-#include "sl_si91x_rgb_led.h"
-#include "sl_si91x_rgb_led_config.h"
-#include "sl_si91x_rgb_led_instances.h"
-#define SL_LED_COUNT SL_SI91X_RGB_LED_COUNT
-const sl_rgb_led_t *ledPinArray[SL_LED_COUNT] = { &led_led0 };
-#define SL_RGB_LED_INSTANCE(n) (ledPinArray[n])
-#else
-#include "sl_si91x_led.h"
-#include "sl_si91x_led_config.h"
-#include "sl_si91x_led_instances.h"
-#define SL_LED_COUNT SL_SI91X_LED_COUNT
-uint8_t ledPinArray[SL_LED_COUNT] = { SL_LED_LED0_PIN, SL_LED_LED1_PIN };
-#endif // SL_MATTER_RGB_LED_ENABLED
-#endif // ENABLE_WSTK_LEDS
 
 namespace chip {
 namespace DeviceLayer {
@@ -126,7 +127,7 @@ void SilabsPlatform::InitLed(void)
 CHIP_ERROR SilabsPlatform::SetLed(bool state, uint8_t led)
 {
     VerifyOrReturnError(led < SL_LED_COUNT, CHIP_ERROR_INVALID_ARGUMENT);
-#if defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     (state) ? sl_si91x_simple_rgb_led_on(SL_RGB_LED_INSTANCE(led)) : sl_si91x_simple_rgb_led_off(SL_RGB_LED_INSTANCE(led));
 #else
     (state) ? sl_si91x_led_set(ledPinArray[led]) : sl_si91x_led_clear(ledPinArray[led]);
@@ -143,7 +144,7 @@ bool SilabsPlatform::GetLedState(uint8_t led)
 CHIP_ERROR SilabsPlatform::ToggleLed(uint8_t led)
 {
     VerifyOrReturnError(led < SL_LED_COUNT, CHIP_ERROR_INVALID_ARGUMENT);
-#if defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     sl_si91x_simple_rgb_led_toggle(SL_RGB_LED_INSTANCE(led));
 #else
     sl_si91x_led_toggle(ledPinArray[led]);
