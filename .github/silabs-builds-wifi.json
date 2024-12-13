@@ -1,0 +1,20 @@
+{
+    "lighting-app": [
+        {
+            "boards": ["BRD4338A", "BRD2605A", "BRD43343A"],
+            "arguments": ["--docker", "use_rps_extension=false"]
+        },
+        {
+            "boards": ["BRD4187C", "BRD4186C"],
+            "arguments": ["--docker", "--wifi wf200", "--clean"]
+        },
+        {
+            "boards": ["BRD4187C", "BRD4186C"],
+            "arguments": ["--docker", "--wifi rs9116", "--clean"]
+        },
+        {
+            "boards": ["BRD4187C", "BRD4186C"],
+            "arguments": ["--docker", "--wifi SiWx917", "--clean"]
+        }
+    ]
+}

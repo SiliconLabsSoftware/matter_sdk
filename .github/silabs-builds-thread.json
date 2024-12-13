@@ -1,0 +1,16 @@
+{
+    "lighting-app": [
+        {
+            "boards": ["BRD4186C", "BRD4187C", "BRD2601B", "BRD2703A"],
+            "arguments": ["--docker"]
+        },
+        {
+            "boards": ["BRD4316A", "BRD4317A", "BRD4318A", "BRD4319A", "BRD2704A"],
+            "arguments": ["--docker"]
+        },
+        {
+            "boards": ["BRD4116A", "BRD4117A", "BRD4118A", "BRD2608A"],
+            "arguments": ["--docker"]
+        }
+    ]
+}

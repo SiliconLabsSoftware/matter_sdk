@@ -16,6 +16,10 @@ jobs:
         container:
             image: ghcr.io/project-chip/chip-build-efr32:90
 
+        strategy:
+            matrix:
+                platform: [thread, wifi]
+
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -28,6 +32,6 @@ jobs:
             - name: Build Lighting-App configurations
               uses: SiliconLabsSoftware/matter-gn-build-action@v0.0.1
               with:
-                  json-file-path: "./.github/silabs-builds.json"
+                  json-file-path: ${{ matrix.platform == 'thread' && './.github/silabs-builds-thread.json' || './.github/silabs-builds-wifi.json' }}
                   example-app: "lighting-app"
                   build-script: "./scripts/examples/gn_silabs_example.sh"
