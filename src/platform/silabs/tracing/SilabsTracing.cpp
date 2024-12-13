@@ -15,9 +15,11 @@
  *
  ******************************************************************************/
 #include "SilabsTracing.h"
+#include <cstdio> // Include the necessary header for snprintf
 #include <cstring>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/PersistentData.h>
+#include <string> // Include the necessary header for std::string
 
 #if !CONFIG_BUILD_FOR_HOST_UNIT_TEST
 #include <platform/silabs/Logging.h> // for isLogInitialized
@@ -122,6 +124,22 @@ const char * OperationTypeToString(OperationType type)
     }
 }
 
+std::string FormatTimeStamp(std::chrono::milliseconds time)
+{
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(time).count();
+    auto s  = ms / 1000;
+    ms %= 1000;
+    auto m = s / 60;
+    s %= 60;
+    auto h = m / 60;
+    m %= 60;
+
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d.%03d", static_cast<int>(h), static_cast<int>(m), static_cast<int>(s),
+             static_cast<int>(ms));
+    return std::string(buffer);
+}
+
 namespace {
 constexpr size_t kPersistentTimeTrackerBufferMax = SERIALIZED_TIME_TRACKERS_SIZE_BYTES;
 } // namespace
@@ -136,20 +154,19 @@ int TimeTracker::ToCharArray(MutableByteSpan & buffer) const
     {
     case OperationType::kBegin:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
-                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ",  StartTime: %" PRIu32 "",
+                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ",  StartTime: %s",
                         OperationTypeToString(mType), TimeTraceOperationToString(mOperation), mError.AsInteger(),
-                        mStartTime.count());
+                        FormatTimeStamp(mStartTime).c_str());
     case OperationType::kEnd:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
-                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ", StartTime: %" PRIu32 ", EndTime: %" PRIu32
-                        ", Duration: %" PRIu32 " ms",
+                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ", Start: %s, End: %s, Duration: %s",
                         OperationTypeToString(mType), TimeTraceOperationToString(mOperation), mError.AsInteger(),
-                        mStartTime.count(), mEndTime.count(), (mEndTime - mStartTime).count());
+                        FormatTimeStamp(mStartTime).c_str(), FormatTimeStamp(mEndTime).c_str(),
+                        FormatTimeStamp(mEndTime - mStartTime).c_str());
     case OperationType::kInstant:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(),
-                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ", EventTime: %" PRIu32 "",
-                        OperationTypeToString(mType), TimeTraceOperationToString(mOperation), mError.AsInteger(),
-                        mStartTime.count());
+                        "TimeTracker - Type: %s, Operation: %s, Status: 0x%" PRIx32 ", EventTime: %s", OperationTypeToString(mType),
+                        TimeTraceOperationToString(mOperation), mError.AsInteger(), FormatTimeStamp(mStartTime).c_str());
     default:
         return snprintf(reinterpret_cast<char *>(buffer.data()), buffer.size(), "TimeTracker - Unknown operation type");
     }
@@ -316,7 +333,9 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
 CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
 {
     VerifyOrReturnError(to_underlying(aOperation) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
-                        ChipLogError(DeviceLayer, "Invalid TimeTraceOperation"));
+                        ChipLogError(DeviceLayer,
+                                     "Invalid Watemarks TimeTraceOperation\r\nNote: App specific operations are not "
+                                     "supported by Watermarks"));
 
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     ChipLogProgress(DeviceLayer,
