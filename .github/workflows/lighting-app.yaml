@@ -28,10 +28,15 @@ jobs:
               uses: ./.github/actions/checkout-submodules-and-bootstrap
               with:
                   platform: silabs_docker
+                  bootstrap-log-name:
+                      bootstrap-logs-lighting-app-${{ matrix.platform }}
 
             - name: Build Lighting-App configurations
               uses: SiliconLabsSoftware/matter-gn-build-action@v0.0.1
               with:
-                  json-file-path: ${{ matrix.platform == 'thread' && './.github/silabs-builds-thread.json' || './.github/silabs-builds-wifi.json' }}
+                  json-file-path:
+                      ${{ matrix.platform == 'thread' &&
+                      './.github/silabs-builds-thread.json' ||
+                      './.github/silabs-builds-wifi.json' }}
                   example-app: "lighting-app"
                   build-script: "./scripts/examples/gn_silabs_example.sh"
