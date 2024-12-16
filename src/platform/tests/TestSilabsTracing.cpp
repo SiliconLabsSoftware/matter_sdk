@@ -661,25 +661,25 @@ TEST_F(TestSilabsTracing, TestLogs)
     EXPECT_EQ(traceCount, 4u); // 4 calls: 2 TimeTraceBegin and 2 TimeTraceEnd
 
     // Verify the output logs using Operation
-    uint8_t logBuffer[256];
-    MutableByteSpan span(logBuffer);
+    char logBuffer[256];
+    MutableCharSpan span(logBuffer);
 
     // Verify OTA log
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), span), CHIP_NO_ERROR);
     const char * expectedOTALogFormat =
         "TimeTracker - Type: End, Operation: OTA, Status: 0x0, Start: 00:00:00.000, End: 00:00:00.100, Duration: 00:00:00.100";
-    EXPECT_STREQ(reinterpret_cast<const char *>(span.data()), expectedOTALogFormat);
+    EXPECT_STREQ(span.data(), expectedOTALogFormat);
 
     // Verify Bootup log
-    span = MutableByteSpan(logBuffer);
+    span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBootup), span), CHIP_NO_ERROR);
     const char * expectedBootupLogFormat =
         "TimeTracker - Type: End, Operation: Bootup, Status: 0x0, Start: 00:00:00.100, End: 00:00:00.300, Duration: 00:00:00.200";
-    EXPECT_STREQ(reinterpret_cast<const char *>(span.data()), expectedBootupLogFormat);
+    EXPECT_STREQ(span.data(), expectedBootupLogFormat);
 
     // Test buffer too small behavior
-    uint8_t smallBuffer[10];
-    MutableByteSpan smallSpan(smallBuffer);
+    char smallBuffer[10];
+    MutableCharSpan smallSpan(smallBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), smallSpan),
               CHIP_ERROR_BUFFER_TOO_SMALL);
 
@@ -689,12 +689,12 @@ TEST_F(TestSilabsTracing, TestLogs)
     EXPECT_EQ(traceCount, 2u); // Only Bootup traces should remain
 
     // Verify Bootup log still exists
-    span = MutableByteSpan(logBuffer);
+    span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBootup), span), CHIP_NO_ERROR);
-    EXPECT_STREQ(reinterpret_cast<const char *>(span.data()), expectedBootupLogFormat);
+    EXPECT_STREQ(span.data(), expectedBootupLogFormat);
 
     // Verify OTA log is removed
-    span = MutableByteSpan(logBuffer);
+    span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), span), CHIP_ERROR_NOT_FOUND);
 
     // Test TraceBufferFlushAll
@@ -703,9 +703,9 @@ TEST_F(TestSilabsTracing, TestLogs)
     EXPECT_EQ(traceCount, 0u); // All traces should be flushed
 
     // Verify no logs exist
-    span = MutableByteSpan(logBuffer);
+    span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBootup), span), CHIP_ERROR_NOT_FOUND);
-    span = MutableByteSpan(logBuffer);
+    span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), span), CHIP_ERROR_NOT_FOUND);
 }
 
@@ -731,11 +731,11 @@ TEST_F(TestSilabsTracing, TestBufferBusting)
 
     // Verify an overflow operation is added (kBufferFull)
     EXPECT_EQ(SilabsTracer::kMaxBufferedTraces, SilabsTracer::Instance().GetTimeTracesCount());
-    uint8_t logBuffer[256];
-    MutableByteSpan logSpan(logBuffer);
+    char logBuffer[256];
+    MutableCharSpan logSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBufferFull), logSpan), CHIP_NO_ERROR);
     const char * expectedNumLogFormat = "TimeTracker - Type: Instant, Operation: BufferFull, Status: 0x19, EventTime: 00:00:06.200";
-    EXPECT_STREQ(reinterpret_cast<const char *>(logSpan.data()), expectedNumLogFormat);
+    EXPECT_STREQ(logSpan.data(), expectedNumLogFormat);
 
     // Verify the kImageUpload operation was not added
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kImageUpload), logSpan),
@@ -804,18 +804,18 @@ TEST_F(TestSilabsTracing, TestAppSpecificTraces)
     EXPECT_EQ(SilabsTracer::Instance().TimeTraceInstant(appSpecificSpan2), CHIP_NO_ERROR);
 
     // Verify that the logs match expectation
-    uint8_t logBuffer[256];
-    MutableByteSpan span(logBuffer);
+    char logBuffer[256];
+    MutableCharSpan span(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(appSpecificSpan, span), CHIP_NO_ERROR);
     const char * expectedAppSpecificLogFormat =
         "TimeTracker - Type: Instant, Operation: AppTrace, Status: 0x0, EventTime: 00:00:00.000";
-    EXPECT_STREQ(reinterpret_cast<const char *>(span.data()), expectedAppSpecificLogFormat);
+    EXPECT_STREQ(span.data(), expectedAppSpecificLogFormat);
 
-    span = MutableByteSpan(logBuffer);
+    span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(appSpecificSpan2, span), CHIP_NO_ERROR);
     const char * expectedAppSpecificLogFormat2 =
         "TimeTracker - Type: Instant, Operation: AppTrace2, Status: 0x0, EventTime: 00:00:00.000";
-    EXPECT_STREQ(reinterpret_cast<const char *>(span.data()), expectedAppSpecificLogFormat2);
+    EXPECT_STREQ(span.data(), expectedAppSpecificLogFormat2);
 
     // Confirm trace count
     traceCount = SilabsTracer::Instance().GetTimeTracesCount();

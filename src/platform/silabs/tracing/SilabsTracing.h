@@ -52,14 +52,14 @@ struct TimeTracker
      * @param buffer The buffer to write the string to
      * @return The number of characters written to the buffer, or the size of the buffer required if the buffer is too small
      */
-    int ToCharArray(MutableByteSpan & buffer) const;
+    int ToCharArray(MutableCharSpan & buffer) const;
 
     /** @brief Get the size of the string representation of the TimeTracker
      * @return The size of the string representation of the TimeTracker
      */
     int GetSize() const
     {
-        MutableByteSpan temp;
+        MutableCharSpan temp;
         return ToCharArray(temp);
     }
 };
@@ -202,8 +202,8 @@ public:
     Watermark GetWatermark(TimeTraceOperation aOperation) { return mWatermarks[to_underlying(aOperation)]; }
     size_t GetTimeTracesCount() { return mBufferedTrackerCount; }
 
-    CHIP_ERROR GetTraceByOperation(size_t aOperation, MutableByteSpan & buffer) const;
-    CHIP_ERROR GetTraceByOperation(CharSpan & appOperationKey, MutableByteSpan & buffer) const;
+    CHIP_ERROR GetTraceByOperation(size_t aOperation, MutableCharSpan & buffer) const;
+    CHIP_ERROR GetTraceByOperation(CharSpan & appOperationKey, MutableCharSpan & buffer) const;
 
     /** @brief Register an App specific time trace operation
      * This will register an App specific operation to be tracked by the time tracer. The string will be mapped to a
