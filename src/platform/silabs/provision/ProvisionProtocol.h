@@ -37,8 +37,8 @@ public:
     /**
      * Must hold the header plus complete argument value
      */
-    virtual ~Protocol()                                                  = default;
-    virtual bool Execute(ByteSpan & request, MutableByteSpan & response) = 0;
+    virtual ~Protocol()                                                                   = default;
+    virtual bool Execute(Storage * store, ByteSpan & request, MutableByteSpan & response) = 0;
 };
 
 //------------------------------------------------------------------------------
