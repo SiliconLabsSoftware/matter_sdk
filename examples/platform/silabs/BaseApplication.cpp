@@ -961,7 +961,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
 // SL-Only
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
-#if defined(SL_MATTER_ZIGBEE_CMP)
+#if defined(SL_MATTER_ZIGBEE_CMP) && !defined(SL_CATALOG_RAIL_UTIL_IEEE802154_FAST_CHANNEL_SWITCHING_PRESENT)
         uint8_t channel = otLinkGetChannel(DeviceLayer::ThreadStackMgrImpl().OTInstance());
         Zigbee::RequestStart(channel);     // leave handle internally
 #elif defined(SL_MATTER_ZIGBEE_SEQUENTIAL) // Matter Zigbee sequential
