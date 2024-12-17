@@ -39,7 +39,7 @@ extern "C" {
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
 #include "sl_si91x_button.h"
 #include "sl_si91x_button_pin_config.h"
-#endif  //SL_CATALOG_SIMPLE_BUTTON_PRESENT
+#endif // SL_CATALOG_SIMPLE_BUTTON_PRESENT
 
 #ifdef ENABLE_WSTK_LEDS
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
@@ -47,7 +47,7 @@ extern "C" {
 #include "sl_si91x_rgb_led_config.h"
 #include "sl_si91x_rgb_led_instances.h"
 #define SL_LED_COUNT SL_SI91X_RGB_LED_COUNT
-const sl_rgb_led_t *ledPinArray[SL_LED_COUNT] = { &led_led0 };
+const sl_rgb_led_t * ledPinArray[SL_LED_COUNT] = { &led_led0 };
 #define SL_RGB_LED_INSTANCE(n) (ledPinArray[n])
 #else
 #include "sl_si91x_led.h"
@@ -71,7 +71,6 @@ void soc_pll_config(void);
 #include "uart.h"
 #endif
 
-
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -79,7 +78,7 @@ namespace {
 
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
 uint8_t sButtonStates[SL_SI91x_BUTTON_COUNT] = { 0 };
-#endif  //SL_CATALOG_SIMPLE_BUTTON_PRESENT
+#endif // SL_CATALOG_SIMPLE_BUTTON_PRESENT
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 bool btn0_pressed = false;
@@ -96,10 +95,10 @@ CHIP_ERROR SilabsPlatform::Init(void)
     // TODO: Setting the highest priority for SVCall_IRQn to avoid the HardFault issue
     NVIC_SetPriority(SVCall_IRQn, CORE_INTERRUPT_HIGHEST_PRIORITY);
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER == 0
+#if (CHIP_CONFIG_ENABLE_ICD_SERVER == 0) && (SL_PROVISION_GENERATOR == 0)
     // Configuration the clock rate
     soc_pll_config();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#endif // !CHIP_CONFIG_ENABLE_ICD_SERVER && !SL_PROVISION_GENERATOR
 
 #if SILABS_LOG_ENABLED
     silabsInitLog();

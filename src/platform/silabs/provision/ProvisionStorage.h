@@ -247,7 +247,7 @@ public:
 #endif // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
 
     void SetBufferSize(size_t size) { mBufferSize = size > 0 ? size : kArgumentSizeMax; }
-    size_t GetBufferSize() { return mBufferSize; }
+    size_t GetBufferSize() { return mBufferSize > 0 ? mBufferSize : kArgumentSizeMax; }
 
 private:
     // Generic Interface

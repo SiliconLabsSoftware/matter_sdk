@@ -634,7 +634,14 @@ CHIP_ERROR Storage::GetDeviceAttestationCert(MutableByteSpan & value)
 
 CHIP_ERROR Storage::SetDeviceAttestationKey(const ByteSpan & value)
 {
+#if (defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE)
+    uint8_t temp[kDeviceAttestationKeySizeMax] = { 0 };
+    MutableByteSpan private_key(temp);
+    AttestationKey::Unwrap(value.data(), value.size(), private_key);
+    return Flash::Set(Parameters::ID::kDacKey, private_key.data(), private_key.size());
+#else
     return Flash::Set(Parameters::ID::kDacKey, value.data(), value.size());
+#endif // SLI_SI91X_MCU_INTERFACE
 }
 
 CHIP_ERROR Storage::GetDeviceAttestationCSR(uint16_t vid, uint16_t pid, const CharSpan & cn, MutableCharSpan & csr)
@@ -649,7 +656,6 @@ CHIP_ERROR Storage::GetDeviceAttestationCSR(uint16_t vid, uint16_t pid, const Ch
 
 CHIP_ERROR Storage::SignWithDeviceAttestationKey(const ByteSpan & message, MutableByteSpan & signature)
 {
-    AttestationKey key;
     uint8_t temp[kDeviceAttestationKeySizeMax] = { 0 };
     size_t size                                = 0;
     CHIP_ERROR err                             = Flash::Get(Parameters::ID::kDacKey, temp, sizeof(temp), size);
@@ -661,8 +667,13 @@ CHIP_ERROR Storage::SignWithDeviceAttestationKey(const ByteSpan & message, Mutab
     }
 #endif // CHIP_DEVICE_CONFIG_ENABLE_EXAMPLE_CREDENTIALS
     ReturnErrorOnFailure(err);
+#if (defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE)
+    return AttestationKey::SignMessageWithKey(temp, message, signature);
+#else
+    AttestationKey key;
     ReturnErrorOnFailure(key.Import(temp, size));
     return key.SignMessage(message, signature);
+#endif // SLI_SI91X_MCU_INTERFACE
 }
 
 //
