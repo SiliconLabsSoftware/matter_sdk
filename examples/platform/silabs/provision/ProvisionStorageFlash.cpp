@@ -664,7 +664,7 @@ CHIP_ERROR Storage::SignWithDeviceAttestationKey(const ByteSpan & message, Mutab
     uint8_t key_buffer[kDeviceAttestationKeySizeMax] = { 0 };
     MutableByteSpan private_key(key_buffer);
     AttestationKey::Unwrap(temp, size, private_key);
-    return AttestationKey::SignMessageWithKey(private_key, message, signature);
+    return AttestationKey::SignMessageWithKey((const uint8_t *) key_buffer, message, signature);
 #else
     AttestationKey key;
     ReturnErrorOnFailure(key.Import(temp, size));
