@@ -462,12 +462,6 @@ sl_status_t JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK)
     {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-        // TODO: We need a way to identify if this was a retry or a first attempt connect to avoid removing a req that was not ours
-        //  Remove High performance request that might have been added during the retry process
-        chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
         return status;
