@@ -11,6 +11,7 @@ on:
 
 jobs:
     build:
+        name: Build Lighting-App variations
         runs-on: ubuntu-latest
 
         container:
@@ -18,7 +19,7 @@ jobs:
 
         strategy:
             matrix:
-                platform: [thread, wifi]
+                platform: [mg24, mgm24, mg26, siwx]
 
         steps:
             - name: Checkout
@@ -34,10 +35,11 @@ jobs:
             - name: Build Lighting-App configurations
               uses: SiliconLabsSoftware/matter-gn-build-action@v1.0.0
               with:
-                  json-file-path:
-                      ${{ matrix.platform == 'thread' &&
-                      './.github/silabs-builds-thread.json' ||
-                      './.github/silabs-builds-wifi.json' }}
+                  json-file-path: >
+                      ${{ matrix.platform == 'mg24' && './.github/silabs-builds-mg24.json' ||
+                          matrix.platform == 'mgm24' && './.github/silabs-builds-mgm24.json' ||
+                          matrix.platform == 'mg26' && './.github/silabs-builds-mg26.json' ||
+                          matrix.platform == 'siwx' && './.github/silabs-builds-siwx.json' }}
                   example-app: "lighting-app"
                   build-script: "./scripts/examples/gn_silabs_example.sh"
                   output-directory: "./out/lighting-app"
