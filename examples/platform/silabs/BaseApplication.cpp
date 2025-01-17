@@ -962,6 +962,8 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
     case DeviceEventType::kCommissioningComplete: {
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+        // DUT is commissioned, removing the High Performance request
+        WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
         WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kCommissioningComplete);
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 

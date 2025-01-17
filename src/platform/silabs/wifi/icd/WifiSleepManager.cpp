@@ -135,8 +135,6 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     {
     case PowerEvent::kCommissioningComplete:
         ChipLogProgress(AppServer, "WifiSleepManager: Handling Commissioning Complete Event");
-        // DUT is commissioned, removing the High Performance request
-        mHighPerformanceRequestCounter--;
         mIsCommissioningInProgress = false;
         break;
     case PowerEvent::kConnectivityChange:
@@ -163,6 +161,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     if (mIsCommissioningInProgress)
     {
         // During commissioning, don't let the device to go to sleep
+        // This is needed to interrupt the sleep and retry to join the network
         return CHIP_NO_ERROR;
     }
 
