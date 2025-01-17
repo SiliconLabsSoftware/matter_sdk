@@ -14,7 +14,7 @@ jobs:
         runs-on: ubuntu-latest
 
         container:
-            image: ghcr.io/project-chip/chip-build-efr32:90
+            image: ghcr.io/project-chip/chip-build-efr32:95
 
         strategy:
             matrix:
@@ -32,7 +32,7 @@ jobs:
                       bootstrap-logs-lighting-app-${{ matrix.platform }}
 
             - name: Build Lighting-App configurations
-              uses: SiliconLabsSoftware/matter-gn-build-action@v0.0.1
+              uses: SiliconLabsSoftware/matter-gn-build-action@v1.0.0
               with:
                   json-file-path:
                       ${{ matrix.platform == 'thread' &&
@@ -40,3 +40,4 @@ jobs:
                       './.github/silabs-builds-wifi.json' }}
                   example-app: "lighting-app"
                   build-script: "./scripts/examples/gn_silabs_example.sh"
+                  output-directory: "./out/lighting-app"
