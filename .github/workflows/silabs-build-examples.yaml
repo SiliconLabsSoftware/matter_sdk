@@ -71,8 +71,8 @@ jobs:
         name: Build Smoke-CO-Alarm variations
         uses: ./.github/workflows/silabs-common-build.yaml
         with:
-            example-app: "smoke-co-alarm"
-            output-directory: "./out/smoke-co-alarm"
+            example-app: "smoke-co-alarm-app"
+            output-directory: "./out/smoke-co-alarm-app"
 
     build-lit-icd-app:
         name: Build Lit-ICD-App variations
