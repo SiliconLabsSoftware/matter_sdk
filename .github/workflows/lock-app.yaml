@@ -12,7 +12,7 @@ on:
 jobs:
     build:
         name: Build Lock-App variations
-        uses: ./.github/workflows/common-build.yaml
+        uses: ./.github/workflows/silabs-common-build.yaml
         with:
             example-app: "lock-app"
             output-directory: "./out/lock-app"
