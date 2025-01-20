@@ -4,6 +4,7 @@ permissions:
     contents: write
 
 on:
+    push:
     schedule:
         - cron: "0 0 * * *" # Runs once a day at midnight
 
@@ -21,16 +22,13 @@ jobs:
 
             - name: Add CSA repository remote
               run:
-                  git remote add csa
+                  git remote add upstream
                   https://github.com/project-chip/connectedhomeip.git
 
-            - name: Fetch master branch from CSA repository
-              run: git fetch csa master
+            - name: Update the csa branch locally
+              run: git pull upstream master
 
-            - name: Checkout master branch from CSA repository
-              run: git checkout csa/master
-
-            - name: Push csa::master to matter_sdk::csa
+            - name: Push the update csa branch to the remote
               run: |
                   git push origin csa
               env:
