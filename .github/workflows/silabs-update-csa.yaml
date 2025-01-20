@@ -4,12 +4,12 @@ permissions:
     contents: write
 
 on:
-    workflow_dispatch:
     schedule:
         - cron: "0 0 * * *" # Runs once a day at midnight
 
 jobs:
     sync:
+        if: github.ref == 'refs/heads/main'
         runs-on: ubuntu-latest
 
         steps:
