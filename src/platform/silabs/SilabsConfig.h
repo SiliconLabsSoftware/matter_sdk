@@ -134,6 +134,7 @@ public:
     static constexpr Key kConfigKey_Provision_Request  = SilabsConfigKey(kMatterFactory_KeyBase, 0x28);
     static constexpr Key kConfigKey_Provision_Version  = SilabsConfigKey(kMatterFactory_KeyBase, 0x29);
     static constexpr Key kOtaTlvEncryption_KeyId       = SilabsConfigKey(kMatterFactory_KeyBase, 0x30);
+    static constexpr Key kConfigKey_HardwareVersion    = SilabsConfigKey(kMatterFactory_KeyBase, 0x31);
 
     // Matter Config Keys
     static constexpr Key kConfigKey_ServiceConfig      = SilabsConfigKey(kMatterConfig_KeyBase, 0x01);
@@ -142,7 +143,6 @@ public:
     static constexpr Key kConfigKey_LastUsedEpochKeyId = SilabsConfigKey(kMatterConfig_KeyBase, 0x05);
     static constexpr Key kConfigKey_FailSafeArmed      = SilabsConfigKey(kMatterConfig_KeyBase, 0x06);
     static constexpr Key kConfigKey_GroupKey           = SilabsConfigKey(kMatterConfig_KeyBase, 0x07);
-    static constexpr Key kConfigKey_HardwareVersion    = SilabsConfigKey(kMatterConfig_KeyBase, 0x08);
     static constexpr Key kConfigKey_RegulatoryLocation = SilabsConfigKey(kMatterConfig_KeyBase, 0x09);
     static constexpr Key kConfigKey_CountryCode        = SilabsConfigKey(kMatterConfig_KeyBase, 0x0A);
     static constexpr Key kConfigKey_WiFiSSID           = SilabsConfigKey(kMatterConfig_KeyBase, 0x0C);
