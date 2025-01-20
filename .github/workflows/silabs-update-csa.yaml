@@ -1,0 +1,34 @@
+name: Daily Sync of the csa branch
+
+permissions:
+    contents: write
+
+on:
+    schedule:
+        - cron: "0 0 * * *" # Runs once a day at midnight
+
+jobs:
+    sync:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout matter_sdk::csa branch
+              uses: actions/checkout@v2
+              with:
+                  repository: SiliconLabsSoftware/matter_sdk
+                  ref: csa
+
+            - name: Add CSA repository remote
+              run:
+                  git remote add upstream
+                  https://github.com/project-chip/connectedhomeip.git
+
+            - name: Update the csa branch locally
+              run: git pull upstream master
+
+            - name: Push the update csa branch to the remote
+              run: |
+                  git push origin csa
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
