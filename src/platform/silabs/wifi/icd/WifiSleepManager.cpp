@@ -20,6 +20,8 @@
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
+extern WfxRsi_t wfx_rsi;
+
 namespace {
 
 #if SLI_SI917 // 917 SoC & NCP
@@ -167,7 +169,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     wfx_wifi_provision_t wifiConfig;
     wfx_get_wifi_provision(&wifiConfig);
 
-    if (!(wifiConfig.ssid[0] != 0))
+    if ((wifiConfig.ssid[0] == 0) || !(wfx_rsi.dev_state.Has(WifiState::kStationConnected)))
     {
         return ConfigureDeepSleep();
     }
