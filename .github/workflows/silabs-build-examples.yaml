@@ -25,13 +25,6 @@ jobs:
             example-app: "air-quality-sensor-app"
             output-directory: "./out/air-quality-sensor-app"
 
-    build-dishwasher-app:
-        name: Build Dishwasher-App variations
-        uses: ./.github/workflows/silabs-common-build.yaml
-        with:
-            example-app: "dishwasher-app"
-            output-directory: "./out/dishwasher-app"
-
     build-light-switch-app:
         name: Build Light-Switch-App variations
         uses: ./.github/workflows/silabs-common-build.yaml
