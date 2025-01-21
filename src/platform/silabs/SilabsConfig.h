@@ -120,6 +120,7 @@ public:
     static constexpr Key kConfigKey_hostname               = SilabsConfigKey(kMatterFactory_KeyBase, 0x15);
     static constexpr Key kConfigKey_clientid               = SilabsConfigKey(kMatterFactory_KeyBase, 0x16);
     static constexpr Key kConfigKey_Test_Event_Trigger_Key = SilabsConfigKey(kMatterFactory_KeyBase, 0x17);
+    static constexpr Key kConfigKey_HardwareVersion        = SilabsConfigKey(kMatterFactory_KeyBase, 0x18);
     // kConfigKey_PersistentUniqueId is the inputkey in the generating of the Rotating Device ID
     // SHALL NOT be the same as the UniqueID attribute exposed in the Basic Information cluster.
     static constexpr Key kConfigKey_PersistentUniqueId = SilabsConfigKey(kMatterFactory_KeyBase, 0x1F);
@@ -134,7 +135,6 @@ public:
     static constexpr Key kConfigKey_Provision_Request  = SilabsConfigKey(kMatterFactory_KeyBase, 0x28);
     static constexpr Key kConfigKey_Provision_Version  = SilabsConfigKey(kMatterFactory_KeyBase, 0x29);
     static constexpr Key kOtaTlvEncryption_KeyId       = SilabsConfigKey(kMatterFactory_KeyBase, 0x30);
-    static constexpr Key kConfigKey_HardwareVersion    = SilabsConfigKey(kMatterFactory_KeyBase, 0x31);
 
     // Matter Config Keys
     static constexpr Key kConfigKey_ServiceConfig      = SilabsConfigKey(kMatterConfig_KeyBase, 0x01);

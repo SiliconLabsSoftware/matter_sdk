@@ -31,6 +31,7 @@ public:
      */
     static MigrationManager & GetMigrationInstance();
     static void applyMigrations();
+    static void MigrateUint16(uint32_t old_key, uint32_t new_key);
     static void MigrateUint32(uint32_t old_key, uint32_t new_key);
 
 private:
