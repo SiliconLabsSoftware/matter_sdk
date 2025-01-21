@@ -29,9 +29,9 @@ overrides:
   ############################################################
   #  Conditions to Skip Review
   ############################################################
-  - if: "base.ref != 'master'"
+  - if: "base.ref != 'main' || !base.ref.startsWith('release_')"
     status: success
-    explanation: "Review not required unless merging to master"
+    explanation: "Review not required unless merging to main or release_* branches"
 
   ############################################################
   #  Require Issues
