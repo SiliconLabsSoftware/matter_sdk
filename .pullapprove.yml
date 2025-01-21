@@ -29,7 +29,7 @@ overrides:
   ############################################################
   #  Conditions to Skip Review
   ############################################################
-  - if: "base.ref != 'main'"
+  - if: "base.ref != 'feature/rework_pullapprove'"
     status: success
     explanation: "Review not required unless merging to main or release_* branches"
 
