@@ -37,6 +37,8 @@ struct AppEvent
         kEventType_UpReleased,
         kEventType_DownPressed,
         kEventType_DownReleased,
+        kEventType_TriggerLevelControlAction,
+        kEventType_TriggerToggle,
     };
 
     uint16_t Type;

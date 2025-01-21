@@ -84,6 +84,8 @@ public:
     void TriggerLightSwitchAction(LightSwitchAction action, bool isGroupCommand = false);
     void TriggerLevelControlAction(StepModeEnum stepMode, bool isGroupCommand = false);
 
+    StepModeEnum getStepMode();
+
     AppEvent CreateNewEvent(AppEvent::AppEventTypes type);
 
     static LightSwitchMgr & GetInstance() { return sSwitch; }
@@ -103,9 +105,12 @@ public:
 private:
     static LightSwitchMgr sSwitch;
 
-    Timer * mLongPressTimer = nullptr;
-    bool mDownPressed       = false;
-    bool mResetWarning      = false;
+    Timer * mLongPressTimer    = nullptr;
+    bool mDownPressed          = false;
+    bool mUpPressed            = false;
+    bool mUpSuppressed         = false;
+    bool mResetWarning         = false;
+    StepModeEnum stepDirection = StepModeEnum::kUp;
 
     static void OnLongPressTimeout(Timer & timer);
     LightSwitchMgr() = default;
