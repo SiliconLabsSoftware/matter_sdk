@@ -9,3 +9,5 @@ on any PR
 | [reviewers-nordic](https://github.com/orgs/project-chip/teams/reviewers-nordic)   | Nordic Semiconductor |
 | [reviewers-samsung](https://github.com/orgs/project-chip/teams/reviewers-samsung) | Samsung SmartThings  |
 | [reviewers-silabs](https://github.com/orgs/project-chip/teams/reviewers-silabs)   | Silicon Labs         |
+
+test
