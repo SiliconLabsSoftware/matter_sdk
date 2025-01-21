@@ -324,8 +324,6 @@ void LightSwitchMgr::AppEventHandler(AppEvent * aEvent)
         AppTask::GetAppTask().CancelFactoryResetSequence();
         break;
     case AppEvent::kEventType_DownPressed:
-        // aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
-        // AppTask::GetAppTask().PostEvent(aEvent);
         lightSwitch->mDownPressed = true;
         if (lightSwitch->mLongPressTimer)
         {
