@@ -68,7 +68,7 @@ source_set("test-event-trigger") {
     "${silabs_common_plat_dir}/SilabsTestEventTriggerDelegate.h",
   ]
 
-  deps = [ "${chip_root}/src/platform/silabs/provision:provision-headers" ]
+  deps = [ "${sl_provision_root}:provision-headers" ]
   public_configs = [ ":test-event-trigger-config" ]
   public_deps = [
     "${chip_root}/src/app:test-event-trigger",
