@@ -80,7 +80,7 @@ void LightSwitchMgr::HandleLongPress()
     event.Handler             = AppEventHandler;
     LightSwitchMgr * lightSwitch  = &LightSwitchMgr::GetInstance();
     event.LightSwitchEvent.Context  = lightSwitch;
-    if (mDownPressed)
+    if (mLevelDownPressed)
     {
         if (!mResetWarning)
         {
@@ -89,9 +89,9 @@ void LightSwitchMgr::HandleLongPress()
             AppTask::GetAppTask().PostEvent(&event);
         }
     }
-    else if (mUpPressed)
+    else if (mLevelUpPressed)
     {
-        mUpSuppressed = true;
+        mLevelUpSuppressed = true;
         // Long press button up : Trigger Level Control Action
         event.Type = AppEvent::kEventType_TriggerLevelControlAction;
         AppTask::GetAppTask().PostEvent(&event);
@@ -301,11 +301,11 @@ void LightSwitchMgr::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     AppEvent event = {};
     if (btnAction == to_underlying(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        event = LightSwitchMgr::GetInstance().CreateNewEvent(button ? AppEvent::kEventType_UpPressed : AppEvent::kEventType_DownPressed);
+        event = LightSwitchMgr::GetInstance().CreateNewEvent(button ? AppEvent::kEventType_LevelUpPressed : AppEvent::kEventType_LevelDownPressed);
     }
     else
     {
-        event = LightSwitchMgr::GetInstance().CreateNewEvent(button ? AppEvent::kEventType_UpReleased : AppEvent::kEventType_DownReleased);
+        event = LightSwitchMgr::GetInstance().CreateNewEvent(button ? AppEvent::kEventType_LevelUpReleased : AppEvent::kEventType_LevelDownReleased);
     }
     AppTask::GetAppTask().PostEvent(&event);
 }
@@ -323,21 +323,21 @@ void LightSwitchMgr::AppEventHandler(AppEvent * aEvent)
         lightSwitch->mResetWarning = false;
         AppTask::GetAppTask().CancelFactoryResetSequence();
         break;
-    case AppEvent::kEventType_DownPressed:
-        lightSwitch->mDownPressed = true;
+    case AppEvent::kEventType_LevelDownPressed:
+        lightSwitch->mLevelDownPressed = true;
         if (lightSwitch->mLongPressTimer)
         {
             lightSwitch->mLongPressTimer->Start();
         }
-        if (lightSwitch->mUpPressed)
+        if (lightSwitch->mLevelUpPressed)
         {
-            lightSwitch->mUpSuppressed = true;
+            lightSwitch->mLevelUpSuppressed = true;
             lightSwitch->stepDirection = (lightSwitch->stepDirection == StepModeEnum::kUp) ? StepModeEnum::kDown : StepModeEnum::kUp;
             ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s", ((lightSwitch->stepDirection == StepModeEnum::kUp) ? "kUp" : "kDown"));
         }
         break;
-    case AppEvent::kEventType_DownReleased:
-        lightSwitch->mDownPressed = false;
+    case AppEvent::kEventType_LevelDownReleased:
+        lightSwitch->mLevelDownPressed = false;
         if (lightSwitch->mLongPressTimer)
         {
             lightSwitch->mLongPressTimer->Stop();
@@ -348,30 +348,30 @@ void LightSwitchMgr::AppEventHandler(AppEvent * aEvent)
             AppTask::GetAppTask().PostEvent(aEvent);
         }
         break;
-    case AppEvent::kEventType_UpPressed:
-        lightSwitch->mUpPressed = true;
+    case AppEvent::kEventType_LevelUpPressed:
+        lightSwitch->mLevelUpPressed = true;
         aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
         AppTask::GetAppTask().PostEvent(aEvent);
         if (lightSwitch->mLongPressTimer)
         {
             lightSwitch->mLongPressTimer->Start();
         }
-        if (lightSwitch->mDownPressed)
+        if (lightSwitch->mLevelDownPressed)
         {
-            lightSwitch->mUpSuppressed = true;
+            lightSwitch->mLevelUpSuppressed = true;
             lightSwitch->stepDirection = (lightSwitch->stepDirection == StepModeEnum::kUp) ? StepModeEnum::kDown : StepModeEnum::kUp;
             ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s", ((lightSwitch->stepDirection == StepModeEnum::kUp) ? "kUp" : "kDown"));
         }
         break;
-    case AppEvent::kEventType_UpReleased:
-        lightSwitch->mUpPressed = false;
+    case AppEvent::kEventType_LevelUpReleased:
+        lightSwitch->mLevelUpPressed = false;
         if (lightSwitch->mLongPressTimer)
         {
             lightSwitch->mLongPressTimer->Stop();
         }
-        if (lightSwitch->mUpSuppressed)
+        if (lightSwitch->mLevelUpSuppressed)
         {
-            lightSwitch->mUpSuppressed = false;
+            lightSwitch->mLevelUpSuppressed = false;
         }
         else
         {
@@ -379,7 +379,7 @@ void LightSwitchMgr::AppEventHandler(AppEvent * aEvent)
             aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
             AppTask::GetAppTask().PostEvent(aEvent);
         }
-        aEvent->Type = AppEvent::kEventType_UpReleased;
+        aEvent->Type = AppEvent::kEventType_LevelUpReleased;
         aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
         AppTask::GetAppTask().PostEvent(aEvent);
         break;
@@ -395,10 +395,10 @@ void LightSwitchMgr::SwitchActionEventHandler(AppEvent * aEvent)
 {
     switch(aEvent->Type)
     {
-    case AppEvent::kEventType_UpPressed:
+    case AppEvent::kEventType_LevelUpPressed:
         LightSwitchMgr::GetInstance().GenericSwitchOnInitialPress();
         break;
-    case AppEvent::kEventType_UpReleased:
+    case AppEvent::kEventType_LevelUpReleased:
         LightSwitchMgr::GetInstance().GenericSwitchOnShortRelease();
         break;
     case AppEvent::kEventType_TriggerLevelControlAction:

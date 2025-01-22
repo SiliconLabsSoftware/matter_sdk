@@ -33,10 +33,10 @@ struct AppEvent
         kEventType_ResetWarning,
         kEventType_ResetCanceled,
         // Button events
-        kEventType_UpPressed,
-        kEventType_UpReleased,
-        kEventType_DownPressed,
-        kEventType_DownReleased,
+        kEventType_LevelUpPressed,
+        kEventType_LevelUpReleased,
+        kEventType_LevelDownPressed,
+        kEventType_LevelDownReleased,
         kEventType_TriggerLevelControlAction,
         kEventType_TriggerToggle,
     };

@@ -105,12 +105,14 @@ public:
 private:
     static LightSwitchMgr sSwitch;
 
-    Timer * mLongPressTimer    = nullptr;
-    bool mDownPressed          = false;
-    bool mUpPressed            = false;
-    bool mUpSuppressed         = false;
-    bool mResetWarning         = false;
-    StepModeEnum stepDirection = StepModeEnum::kUp;
+    Timer * mLongPressTimer         = nullptr;
+    bool mLevelDownPressed          = false;    // True when the level-down button (button0) is pressed
+    bool mLevelUpPressed            = false;    // True when the level-up button (button1) is pressed
+    bool mLevelUpSuppressed         = false;    // True when both level-down (button0) and level-up (button1) buttons are pressed
+    bool mResetWarning              = false;
+
+    // Default Step direction for Level control
+    StepModeEnum stepDirection      = StepModeEnum::kUp;
 
     static void OnLongPressTimeout(Timer & timer);
     LightSwitchMgr() = default;
