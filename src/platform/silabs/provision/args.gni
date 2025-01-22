@@ -1,0 +1,5 @@
+import("//build_overrides/chip.gni")
+
+declare_args() {
+  sl_provision_root = "${chip_root}/src/platform/silabs/provision"
+}
