@@ -208,7 +208,7 @@
 [submodule "third_party/silabs/matter_support"]
 	path = third_party/silabs/matter_support
 	url = https://github.com/SiliconLabs/sdk_support.git
-	branch = main
+	branch = brd4350a_support
 	platforms = silabs,silabs_docker
 [submodule "third_party/silabs/simplicity_sdk"]
 	path = third_party/silabs/simplicity_sdk
