@@ -146,6 +146,8 @@ class Efr32Board(Enum):
             return 'BRD4343A'
         elif self == Efr32Board.BRD4342A:
             return 'BRD4342A'
+        elif self == Efr32Board.BRD4350A:
+            return 'BRD4350A'
         else:
             raise Exception('Unknown board #: %r' % self)
 
