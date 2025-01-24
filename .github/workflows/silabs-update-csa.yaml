@@ -31,4 +31,4 @@ jobs:
 
             - name: Push the update csa branch to the remote
               run: |
-                  git push https://github.com/SiliconLabsSoftware/matter_sdk.git csa
+                  git push origin csa
