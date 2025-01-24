@@ -6,6 +6,7 @@ permissions:
 on:
     schedule:
         - cron: "0 0 * * *" # Runs once a day at midnight
+    workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
     sync:
@@ -18,6 +19,7 @@ jobs:
               with:
                   repository: SiliconLabsSoftware/matter_sdk
                   ref: csa
+                  token: ${{ secrets.WORKFLOW_TOKEN }}
 
             - name: Add CSA repository remote
               run:
@@ -30,5 +32,3 @@ jobs:
             - name: Push the update csa branch to the remote
               run: |
                   git push origin csa
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
