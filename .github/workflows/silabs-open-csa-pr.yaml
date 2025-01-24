@@ -39,3 +39,16 @@ jobs:
                   token: ${{secrets.GITHUB_TOKEN}}
                   branch-token: ${{secrets.WORKFLOW_TOKEN}}
                   labels: changing-submodules-on-purpose
+
+            - name: Comment on Pull Request
+              uses: actions/github-script@v6
+              with:
+                  github-token: ${{secrets.GITHUB_TOKEN}}
+                  script: |
+                      const pr_number = context.payload.workflow_run.pull_requests[0].number;
+                      github.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: pr_number,
+                        body: "Please merge this PR using **Merge Commit**."
+                      });
