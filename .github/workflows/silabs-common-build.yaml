@@ -15,11 +15,11 @@ jobs:
         runs-on: ubuntu-latest
 
         container:
-            image: ghcr.io/project-chip/chip-build-efr32:95
+            image: ghcr.io/project-chip/chip-build-efr32:101
 
         strategy:
             matrix:
-                platform: [mg24, mgm24, mg26, siwx]
+                platform: [mg24, mgm24, mg26, mgm26, siwx]
 
         steps:
             - name: Checkout
@@ -38,6 +38,7 @@ jobs:
                       ${{ matrix.platform == 'mg24' && './.github/silabs-builds-mg24.json' ||
                           matrix.platform == 'mgm24' && './.github/silabs-builds-mgm24.json' ||
                           matrix.platform == 'mg26' && './.github/silabs-builds-mg26.json' ||
+                          matrix.platform == 'mgm26' && './.github/silabs-builds-mgm26.json' ||
                           matrix.platform == 'siwx' && './.github/silabs-builds-siwx.json' }}
                   example-app: ${{ inputs.example-app }}
                   build-script: "./scripts/examples/gn_silabs_example.sh"
