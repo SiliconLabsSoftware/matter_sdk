@@ -35,3 +35,4 @@ jobs:
                   body: "This PR syncs the csa branch with the main branch."
                   token: ${{secrets.GITHUB_TOKEN}}
                   branch-token: ${{secrets.WORKFLOW_TOKEN}}
+                  labels: changing-submodules-on-purpose
