@@ -32,7 +32,10 @@ jobs:
                   branch: automation/update_main
                   base: main
                   title: "Sync csa branch with main"
-                  body: "This PR syncs the csa branch with the main branch."
+                  body: |
+                      This PR syncs the csa branch with the main branch.
+
+                      **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
                   token: ${{secrets.GITHUB_TOKEN}}
                   branch-token: ${{secrets.WORKFLOW_TOKEN}}
                   labels: changing-submodules-on-purpose
