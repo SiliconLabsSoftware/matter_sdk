@@ -56,7 +56,7 @@ jobs:
                       echo "pr_needs_reopen=false" >> $GITHUB_OUTPUT
                   fi
               env:
-                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+                  GITHUB_TOKEN: ${{secrets.WORKFLOW_TOKEN}}
 
             - name: Close and Reopen PR
               if: ${{ steps.check_pr.outputs.pr_needs_reopen }}
@@ -66,4 +66,4 @@ jobs:
                   gh pr reopen $PR_NUMBER --repo ${{ github.repository }}
                   gh pr edit $PR_NUMBER --add-label "sl-automation-triggered"
               env:
-                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+                  GITHUB_TOKEN: ${{secrets.WORKFLOW_TOKEN}}
