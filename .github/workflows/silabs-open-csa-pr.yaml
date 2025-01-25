@@ -38,8 +38,8 @@ jobs:
                   token: ${{secrets.GITHUB_TOKEN}}
                   labels: changing-submodules-on-purpose
 
-            # The next two steps are necessary to force the CI to be executed when a PR is opened but the github-bot.
-            # PR event isn't triggered when the bot opens the PR and as such doesn't trigger the workflows that check the event.
+            # The next two steps are necessary to force the CI to be executed when a PR is opened by the github-bot.
+            # The PR event isn't triggered when the bot opens the PR and as such doesn't trigger the workflows that use the event as their trigger.
             # By closing and opening the PR, it forces the PR event to be triggered.
             - name: Check if PR is already closed and reopened
               id: check_pr
