@@ -38,11 +38,11 @@ jobs:
                   token: ${{secrets.GITHUB_TOKEN}}
                   labels: changing-submodules-on-purpose
 
-            # The next two steps are necessary to force the CI to be executed when a PR is opened by the github-bot.
+            # The next step is necessary to force the CI to be executed when a PR is opened by the github-bot.
             # The PR event isn't triggered when the bot opens the PR and as such doesn't trigger the workflows that use the event as their trigger.
             # By closing and opening the PR, it forces the PR event to be triggered.
-            - name: Check if PR is already closed and reopened
-              id: check_pr
+            - name: Check if PR is already closed and reopen if necessary
+              id: check_and_reopen_pr
               run: |
                   PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --head automation/update_main --json number --jq '.[0].number')
                   if [ -z "$PR_NUMBER" ]; then
@@ -50,20 +50,20 @@ jobs:
                       exit 1
                   fi
                   LABELS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json labels --jq '.labels[].name')
-                  if echo "$LABELS" | grep -q "sl-automation-triggered"; then
-                      echo "pr_needs_reopen=true" >> $GITHUB_OUTPUT
+                  if ! echo "$LABELS" | grep -q "sl-automation-triggered"; then
+                      gh pr close $PR_NUMBER --repo ${{ github.repository }}
+                      gh pr reopen $PR_NUMBER --repo ${{ github.repository }}
+                      echo "pr_needs_label=true" >> $GITHUB_OUTPUT
                   else
-                      echo "pr_needs_reopen=false" >> $GITHUB_OUTPUT
+                      echo "pr_needs_label=false" >> $GITHUB_OUTPUT
                   fi
               env:
                   GITHUB_TOKEN: ${{secrets.WORKFLOW_TOKEN}}
 
-            - name: Close and Reopen PR
-              if: ${{ steps.check_pr.outputs.pr_needs_reopen }}
+            - name: Add label to PR
+              if: ${{ steps.check_and_reopen_pr.outputs.pr_needs_label }}
               run: |
                   PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --head automation/update_main --json number --jq '.[0].number')
-                  gh pr close $PR_NUMBER --repo ${{ github.repository }}
-                  gh pr reopen $PR_NUMBER --repo ${{ github.repository }}
                   gh pr edit $PR_NUMBER --add-label "sl-automation-triggered"
               env:
-                  GITHUB_TOKEN: ${{secrets.WORKFLOW_TOKEN}}
+                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
