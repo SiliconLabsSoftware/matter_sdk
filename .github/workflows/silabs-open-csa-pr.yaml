@@ -42,7 +42,6 @@ jobs:
             # The PR event isn't triggered when the bot opens the PR and as such doesn't trigger the workflows that use the event as their trigger.
             # By closing and opening the PR, it forces the PR event to be triggered.
             - name: Check if PR is already closed and reopen if necessary
-              id: check_and_reopen_pr
               run: |
                   PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --head automation/update_main --json number --jq '.[0].number')
                   if [ -z "$PR_NUMBER" ]; then
@@ -53,17 +52,6 @@ jobs:
                   if ! echo "$LABELS" | grep -q "sl-automation-triggered"; then
                       gh pr close $PR_NUMBER --repo ${{ github.repository }}
                       gh pr reopen $PR_NUMBER --repo ${{ github.repository }}
-                      echo "pr_needs_label=true" >> $GITHUB_OUTPUT
-                  else
-                      echo "pr_needs_label=false" >> $GITHUB_OUTPUT
                   fi
               env:
                   GITHUB_TOKEN: ${{secrets.WORKFLOW_TOKEN}}
-
-            - name: Add label to PR
-              if: ${{ steps.check_and_reopen_pr.outputs.pr_needs_label }}
-              run: |
-                  PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --head automation/update_main --json number --jq '.[0].number')
-                  gh pr edit $PR_NUMBER --add-label "sl-automation-triggered"
-              env:
-                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
