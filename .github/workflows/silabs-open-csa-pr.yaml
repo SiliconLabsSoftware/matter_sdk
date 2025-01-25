@@ -49,15 +49,15 @@ jobs:
                   fi
                   LABELS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json labels --jq '.labels[].name')
                   if echo "$LABELS" | grep -q "sl-automation-triggered"; then
-                      echo "::set-output name=pr_already_closed::true"
+                      echo "pr_already_closed=true" >> $GITHUB_OUTPUT
                   else
-                      echo "::set-output name=pr_already_closed::false"
+                      echo "pr_already_closed=false" >> $GITHUB_OUTPUT
                   fi
               env:
                   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
             - name: Close and Reopen PR
-              if: steps.check_pr.outputs.pr_already_closed == 'false'
+              if: ${{ steps.check_pr.outputs.pr_already_closed == 'false' }}
               run: |
                   PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --head automation/update_main --json number --jq '.[0].number')
                   gh pr close $PR_NUMBER --repo ${{ github.repository }}
