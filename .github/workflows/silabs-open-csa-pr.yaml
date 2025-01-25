@@ -5,7 +5,6 @@ permissions:
     pull-requests: write
 
 on:
-    push:
     workflow_run:
         workflows: ["Daily Sync of the csa branch"]
         types:
@@ -14,7 +13,7 @@ on:
 
 jobs:
     open-pr:
-        # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -39,6 +38,9 @@ jobs:
                   token: ${{secrets.GITHUB_TOKEN}}
                   labels: changing-submodules-on-purpose
 
+            # The next two steps are necessary to force the CI to be executed when a PR is opened but the github-bot.
+            # PR event isn't triggered when the bot opens the PR and as such doesn't trigger the workflows that check the event.
+            # By closing and opening the PR, it forces the PR event to be triggered.
             - name: Check if PR is already closed and reopened
               id: check_pr
               run: |
@@ -49,15 +51,15 @@ jobs:
                   fi
                   LABELS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json labels --jq '.labels[].name')
                   if echo "$LABELS" | grep -q "sl-automation-triggered"; then
-                      echo "pr_already_closed=true" >> $GITHUB_OUTPUT
+                      echo "pr_needs_reopen=true" >> $GITHUB_OUTPUT
                   else
-                      echo "pr_already_closed=false" >> $GITHUB_OUTPUT
+                      echo "pr_needs_reopen=false" >> $GITHUB_OUTPUT
                   fi
               env:
                   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
             - name: Close and Reopen PR
-              if: ${{ steps.check_pr.outputs.pr_already_closed == 'false' }}
+              if: ${{ steps.check_pr.outputs.pr_needs_reopen }}
               run: |
                   PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --head automation/update_main --json number --jq '.[0].number')
                   gh pr close $PR_NUMBER --repo ${{ github.repository }}
