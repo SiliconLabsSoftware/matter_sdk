@@ -15,7 +15,7 @@ jobs:
 
         steps:
             - name: Checkout matter_sdk::csa branch
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                   repository: SiliconLabsSoftware/matter_sdk
                   ref: csa
