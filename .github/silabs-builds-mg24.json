@@ -6,15 +6,15 @@
         },
         {
             "boards": ["BRD4187C"],
-            "arguments": ["--docker", "--wifi wf200"]
+            "arguments": ["--docker", "--wifi wf200", "--clean"]
         },
         {
             "boards": ["BRD4187C"],
-            "arguments": ["--docker", "--wifi rs9116"]
+            "arguments": ["--docker", "--wifi rs9116", "--clean"]
         },
         {
             "boards": ["BRD4187C"],
-            "arguments": ["--docker", "--wifi SiWx917"]
+            "arguments": ["--docker", "--wifi SiWx917", "--clean"]
         }
     ]
 }
