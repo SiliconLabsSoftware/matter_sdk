@@ -55,7 +55,6 @@
 #include <mbedtls/error.h>
 #endif // defined(MBEDTLS_ERROR_C)
 
-
 namespace chip {
 namespace Crypto {
 

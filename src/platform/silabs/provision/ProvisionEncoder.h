@@ -51,9 +51,9 @@ struct Buffer
     void Init(uint8_t * ptr, size_t size, bool at_end = false)
     {
         Finish();
-        if(nullptr == ptr)
+        if (nullptr == ptr)
         {
-            ptr = new uint8_t[size];
+            ptr       = new uint8_t[size];
             allocated = true;
         }
         this->begin = ptr;
@@ -63,7 +63,7 @@ struct Buffer
     }
     void Finish()
     {
-        if(this->begin && allocated)
+        if (this->begin && allocated)
         {
             delete[] this->begin;
         }
@@ -99,7 +99,7 @@ struct Buffer
     uint8_t * end   = nullptr;
     uint8_t * in    = nullptr;
     uint8_t * out   = nullptr;
-    bool allocated = false;
+    bool allocated  = false;
 };
 
 //------------------------------------------------------------------------------
