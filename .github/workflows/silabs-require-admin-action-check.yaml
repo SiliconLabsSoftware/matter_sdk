@@ -1,4 +1,4 @@
-name: Check for sl-require-admin-action label
+name: chec
 
 on:
     pull_request:
@@ -17,6 +17,7 @@ permissions:
 
 jobs:
     check-label:
+        name: Check sl-require-admin-action label is present
         runs-on: ubuntu-latest
         if:
             ${{ contains(github.event.pull_request.labels.*.name,
@@ -51,6 +52,7 @@ jobs:
                       process.exit(1);
 
     prevent-label-removal:
+        name: Prevent sl-require-admin-action label removal
         runs-on: ubuntu-latest
         if:
             github.event.action == 'unlabeled' && github.event.label.name ==
