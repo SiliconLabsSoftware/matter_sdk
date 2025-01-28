@@ -21,7 +21,7 @@ jobs:
         steps:
             - name: Check for sl-require-admin-action label
               run: |
-                  if contains(github.event.pull_request.labels.*.name, 'sl-require-admin-action'); then
+                  if contains(${{github.event.pull_request.labels.*.name}} , 'sl-require-admin-action'); then
                     echo "The sl-require-admin-action label is present. Failing the job."
                     if ! contains(github.event.pull_request.comments.*.body, 'The CI failure for this job is normal. An admin must do the merge.'); then
                       echo "The CI failure for this job is normal. An admin must do the merge." | gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
