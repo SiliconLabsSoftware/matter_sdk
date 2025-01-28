@@ -35,3 +35,21 @@ jobs:
                   fi
               env:
                   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+    prevent-label-removal:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Prevent sl-require-admin-action label removal
+              if: github.event.action == 'unlabeled'
+              run: |
+                  PR_NUMBER=${{ github.event.pull_request.number }}
+                  REMOVED_LABEL=${{ github.event.label.name }}
+                  if [ "$REMOVED_LABEL" == "sl-require-admin-action" ]; then
+                    echo "The sl-require-admin-action label cannot be removed. Failing the job."
+                    gh pr comment $PR_NUMBER --repo ${{ github.repository }} --body "The sl-require-admin-action label cannot be removed once it has been added."
+                    exit 1
+                  else
+                    echo "A different label was removed. Passing the job."
+                  fi
+              env:
+                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
