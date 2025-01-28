@@ -23,12 +23,6 @@ jobs:
             ${{ contains(github.event.pull_request.labels.*.name,
             'sl-require-admin-action') }}
         steps:
-            - name: Check for sl-require-admin-action label
-              run:
-                  echo "The sl-require-admin-action label is present. Failing
-                  the job."
-              env:
-                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
             - name: Add comment to PR
               uses: actions/github-script@v6
               with:
@@ -49,7 +43,13 @@ jobs:
                           body: comment,
                         });
                       }
-                      process.exit(1);
+
+            - name: Check for sl-require-admin-action label
+              run: |
+                  echo "The sl-require-admin-action label is present. Failing the job."
+                  process.exit(1);
+              env:
+                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
     prevent-label-removal:
         name: Prevent sl-require-admin-action label removal
@@ -58,12 +58,6 @@ jobs:
             github.event.action == 'unlabeled' && github.event.label.name ==
             'sl-require-admin-action'
         steps:
-            - name: Prevent sl-require-admin-action label removal
-              run:
-                  echo "The sl-require-admin-action label cannot be removed.
-                  Failing the job."
-              env:
-                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
             - name: Add comment to PR
               uses: actions/github-script@v6
               with:
@@ -84,4 +78,10 @@ jobs:
                           body: comment,
                         });
                       }
-                      process.exit(1);
+
+            - name: Prevent sl-require-admin-action label removal
+              run: |
+                  echo "The sl-require-admin-action label cannot be removed. Failing the job."
+                  process.exit(1);
+              env:
+                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
