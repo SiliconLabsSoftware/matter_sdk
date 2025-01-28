@@ -18,36 +18,68 @@ permissions:
 jobs:
     check-label:
         runs-on: ubuntu-latest
+        if:
+            ${{ contains(github.event.pull_request.labels.*.name,
+            'sl-require-admin-action') }}
         steps:
             - name: Check for sl-require-admin-action label
-              run: |
-                  if contains(${{github.event.pull_request.labels.*.name}} , 'sl-require-admin-action'); then
-                    echo "The sl-require-admin-action label is present. Failing the job."
-                    if ! contains(github.event.pull_request.comments.*.body, 'The CI failure for this job is normal. An admin must do the merge.'); then
-                      echo "The CI failure for this job is normal. An admin must do the merge." | gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
-                    fi
-                    exit 1
-                  else
-                    echo "The sl-require-admin-action label is not present. Passing the job."
-                  fi
+              run:
+                  echo "The sl-require-admin-action label is present. Failing
+                  the job."
               env:
                   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+            - name: Add comment to PR
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      const prNumber = context.payload.pull_request.number;
+                      const comment = "The CI failure for this job is normal. An admin must do the merge.";
+                      const { data: comments } = await github.issues.listComments({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: prNumber,
+                      });
+                      const existingComment = comments.find(c => c.body.includes(comment));
+                      if (!existingComment) {
+                        await github.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: prNumber,
+                          body: comment,
+                        });
+                      }
+                      process.exit(1);
 
     prevent-label-removal:
         runs-on: ubuntu-latest
+        if:
+            github.event.action == 'unlabeled' && github.event.label.name ==
+            'sl-require-admin-action'
         steps:
             - name: Prevent sl-require-admin-action label removal
-              if: github.event.action == 'unlabeled'
-              run: |
-                  REMOVED_LABEL=${{ github.event.label.name }}
-                  if [ "$REMOVED_LABEL" == "sl-require-admin-action" ]; then
-                    echo "The sl-require-admin-action label cannot be removed. Failing the job."
-                    if ! contains(github.event.pull_request.comments.*.body, 'The sl-require-admin-action label cannot be removed once it has been added.'); then
-                      echo "The sl-require-admin-action label cannot be removed once it has been added." | gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
-                    fi
-                    exit 1
-                  else
-                    echo "A different label was removed. Passing the job."
-                  fi
+              run:
+                  echo "The sl-require-admin-action label cannot be removed.
+                  Failing the job."
               env:
                   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+            - name: Add comment to PR
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      const prNumber = context.payload.pull_request.number;
+                      const comment = "The sl-require-admin-action label cannot be removed once it has been added.";
+                      const { data: comments } = await github.issues.listComments({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: prNumber,
+                      });
+                      const existingComment = comments.find(c => c.body.includes(comment));
+                      if (!existingComment) {
+                        await github.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: prNumber,
+                          body: comment,
+                        });
+                      }
+                      process.exit(1);
