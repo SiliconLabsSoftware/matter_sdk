@@ -1,4 +1,4 @@
-name: chec
+name: Check for sl-require-admin-action label
 
 on:
     pull_request:
