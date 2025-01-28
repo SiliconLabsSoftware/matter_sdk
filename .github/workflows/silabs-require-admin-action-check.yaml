@@ -46,7 +46,10 @@ jobs:
                   REMOVED_LABEL=${{ github.event.label.name }}
                   if [ "$REMOVED_LABEL" == "sl-require-admin-action" ]; then
                     echo "The sl-require-admin-action label cannot be removed. Failing the job."
-                    gh pr comment $PR_NUMBER --repo ${{ github.repository }} --body "The sl-require-admin-action label cannot be removed once it has been added."
+                    COMMENTS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body')
+                    if ! echo "$COMMENTS" | grep -q "The sl-require-admin-action label cannot be removed once it has been added."; then
+                      gh pr comment $PR_NUMBER --repo ${{ github.repository }} --body "The sl-require-admin-action label cannot be removed once it has been added."
+                    fi
                     exit 1
                   else
                     echo "A different label was removed. Passing the job."
