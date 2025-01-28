@@ -1240,19 +1240,29 @@ void wfx_enable_sta_mode(void)
  *         false otherwise
  *****************************************************************************/
 #ifdef SL_WFX_CONFIG_SCAN
-bool wfx_start_scan(char * ssid, void (*callback)(wfx_wifi_scan_result_t *))
+CHIP_ERROR wfx_start_scan(chip::ByteSpan ssid, void (*callback)(wfx_wifi_scan_result_t *))
 {
-    VerifyOrReturnError(scan_cb != nullptr, false);
-    if (ssid)
+    VerifyOrReturnError(scan_cb == nullptr, CHIP_ERROR_IN_PROGRESS);
+
+    // Validate SSID length
+    VerifyOrReturnError(ssid.size() <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_INVALID_STRING_LENGTH);
+    // Handle scan based on whether SSID is empty or not
+    if (ssid.empty()) 
     {
-        scan_ssid_length = strnlen(ssid, chip::min<size_t>(sizeof(ssid), WFX_MAX_SSID_LENGTH));
+        // Scan all networks
+        scan_ssid        = nullptr;
+        scan_ssid_length = 0;
+    } 
+    else 
+    {
+        scan_ssid_length = ssid.size();
         scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(scan_ssid_length + 1));
-        VerifyOrReturnError(scan_ssid != nullptr, false);
+        VerifyOrReturnError(scan_ssid != nullptr, CHIP_ERROR_NO_MEMORY);
         Platform::CopyString(scan_ssid, scan_ssid_length + 1, ssid);
     }
     scan_cb = callback;
     xEventGroupSetBits(sl_wfx_event_group, SL_WFX_SCAN_START);
-    return true;
+    return CHIP_NO_ERROR;
 }
 
 /****************************************************************************

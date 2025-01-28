@@ -24,6 +24,8 @@
 
 #include "sl_status.h"
 #include <stdbool.h>
+#include "CHIPError.h"
+#include <lib/support/Span.h>
 
 /* LwIP includes. */
 #include "lwip/ip_addr.h"
@@ -65,6 +67,8 @@
 
 // TASK and Interrupt Macros
 #define SUCCESS_STATUS (1)
+
+using namespace ::chip;
 
 enum class WifiState : uint16_t
 {
