@@ -21,13 +21,10 @@ jobs:
         steps:
             - name: Check for sl-require-admin-action label
               run: |
-                  PR_NUMBER=${{ github.event.pull_request.number }}
-                  LABELS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json labels --jq '.labels[].name')
-                  if echo "$LABELS" | grep -q "sl-require-admin-action"; then
+                  if contains(github.event.pull_request.labels.*.name, 'sl-require-admin-action'); then
                     echo "The sl-require-admin-action label is present. Failing the job."
-                    COMMENTS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body')
-                    if ! echo "$COMMENTS" | grep -q "The CI failure for this job is normal. An admin must do the merge."; then
-                      gh pr comment $PR_NUMBER --repo ${{ github.repository }} --body "The CI failure for this job is normal. An admin must do the merge."
+                    if ! contains(github.event.pull_request.comments.*.body, 'The CI failure for this job is normal. An admin must do the merge.'); then
+                      echo "The CI failure for this job is normal. An admin must do the merge." | gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
                     fi
                     exit 1
                   else
@@ -42,13 +39,11 @@ jobs:
             - name: Prevent sl-require-admin-action label removal
               if: github.event.action == 'unlabeled'
               run: |
-                  PR_NUMBER=${{ github.event.pull_request.number }}
                   REMOVED_LABEL=${{ github.event.label.name }}
                   if [ "$REMOVED_LABEL" == "sl-require-admin-action" ]; then
                     echo "The sl-require-admin-action label cannot be removed. Failing the job."
-                    COMMENTS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body')
-                    if ! echo "$COMMENTS" | grep -q "The sl-require-admin-action label cannot be removed once it has been added."; then
-                      gh pr comment $PR_NUMBER --repo ${{ github.repository }} --body "The sl-require-admin-action label cannot be removed once it has been added."
+                    if ! contains(github.event.pull_request.comments.*.body, 'The sl-require-admin-action label cannot be removed once it has been added.'); then
+                      echo "The sl-require-admin-action label cannot be removed once it has been added." | gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
                     fi
                     exit 1
                   else
