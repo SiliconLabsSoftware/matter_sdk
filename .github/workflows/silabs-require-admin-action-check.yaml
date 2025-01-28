@@ -1,0 +1,37 @@
+name: Check for sl-require-admin-action label
+
+on:
+    pull_request:
+        branches:
+            - main
+            - release_*
+        types:
+            - opened
+            - reopened
+            - synchronize
+            - labeled
+            - unlabeled
+
+permissions:
+    pull-requests: write
+
+jobs:
+    check-label:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check for sl-require-admin-action label
+              run: |
+                  PR_NUMBER=${{ github.event.pull_request.number }}
+                  LABELS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json labels --jq '.labels[].name')
+                  if echo "$LABELS" | grep -q "sl-require-admin-action"; then
+                    echo "The sl-require-admin-action label is present. Failing the job."
+                    COMMENTS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body')
+                    if ! echo "$COMMENTS" | grep -q "The CI failure for this job is normal. An admin must do the merge."; then
+                      gh pr comment $PR_NUMBER --repo ${{ github.repository }} --body "The CI failure for this job is normal. An admin must do the merge."
+                    fi
+                    exit 1
+                  else
+                    echo "The sl-require-admin-action label is not present. Passing the job."
+                  fi
+              env:
+                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
