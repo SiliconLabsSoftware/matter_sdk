@@ -36,7 +36,8 @@ jobs:
 
                       **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
                   token: ${{secrets.GITHUB_TOKEN}}
-                  labels: changing-submodules-on-purpose
+                  labels:
+                      changing-submodules-on-purpose, sl-require-admin-action
 
             # The next step is necessary to force the CI to be executed when a PR is opened by the github-bot.
             # The PR event isn't triggered when the bot opens the PR and as such doesn't trigger the workflows that use the event as their trigger.
