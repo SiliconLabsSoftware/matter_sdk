@@ -28,7 +28,7 @@ jobs:
               with:
                   script: |
                       const prNumber = context.payload.pull_request.number;
-                      const comment = "The Check for sl-require-admin-action label CI failure for this job is normal. An admin must do the merge.";
+                      const comment = "The check for `sl-require-admin-action` label CI failure for this job is normal. An admin must do the merge.";
                       const { data: comments } = await github.rest.issues.listComments({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
@@ -63,7 +63,7 @@ jobs:
               with:
                   script: |
                       const prNumber = context.payload.pull_request.number;
-                      const comment = "The sl-require-admin-action label cannot be removed once it has been added.";
+                      const comment = "The `sl-require-admin-action` label cannot be removed once it has been added.";
                       const { data: comments } = await github.rest.issues.listComments({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
