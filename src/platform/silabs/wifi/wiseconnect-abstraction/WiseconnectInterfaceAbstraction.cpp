@@ -308,7 +308,7 @@ int32_t wfx_reset_counts(void)
 
 #ifdef SL_WFX_CONFIG_SCAN
 /*******************************************************************************
- * @fn   CHIP_ERROR wfx_start_scan(char *ssid, void (*callback)(wfx_wifi_scan_result_t *))
+ * @fn   CHIP_ERROR wfx_start_scan(chip::ByteSpan ssid, void (*callback)(wfx_wifi_scan_result_t *))
  * @brief
  *       called fuction when driver start scaning
  * @param[in]  ssid:

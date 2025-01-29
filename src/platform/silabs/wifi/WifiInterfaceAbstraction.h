@@ -24,7 +24,7 @@
 
 #include "sl_status.h"
 #include <stdbool.h>
-#include "CHIPError.h"
+#include <lib/core/CHIPError.h>
 #include <lib/support/Span.h>
 
 /* LwIP includes. */
