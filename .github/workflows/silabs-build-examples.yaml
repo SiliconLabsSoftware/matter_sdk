@@ -9,6 +9,11 @@ on:
         branches:
             - main
             - "release_*"
+    workflow_dispatch:
+
+concurrency:
+    group: silabs-build-examples-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
     build-lighting-app:
