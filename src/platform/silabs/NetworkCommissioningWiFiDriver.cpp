@@ -263,17 +263,10 @@ chip::BitFlags<WiFiSecurity> SlWiFiDriver::ConvertSecuritytype(wfx_sec_t securit
     return securityType;
 }
 
-bool SlWiFiDriver::StartScanWiFiNetworks(ByteSpan ssid)
+CHIP_ERROR SlWiFiDriver::StartScanWiFiNetworks(ByteSpan ssid)
 {
     ChipLogProgress(DeviceLayer, "Start Scan WiFi Networks");
-
-    CHIP_ERROR err = wfx_start_scan(ssid, OnScanWiFiNetworkDone);
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "wfx_start_scan failed : %s", chip::ErrorStr(err));
-        return false;
-    }
-    return true;
+    return wfx_start_scan(ssid, OnScanWiFiNetworkDone);
 }
 
 void SlWiFiDriver::OnScanWiFiNetworkDone(wfx_wifi_scan_result_t * aScanResult)
@@ -318,7 +311,7 @@ void SlWiFiDriver::ScanNetworks(ByteSpan ssid, WiFiDriver::ScanCallback * callba
     if (callback != nullptr)
     {
         mpScanCallback = callback;
-        if (!StartScanWiFiNetworks(ssid))
+        if (StartScanWiFiNetworks(ssid) != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "ScanWiFiNetworks failed to start");
             mpScanCallback = nullptr;
