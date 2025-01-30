@@ -1245,7 +1245,7 @@ CHIP_ERROR wfx_start_scan(chip::ByteSpan ssid, void (*callback)(wfx_wifi_scan_re
     VerifyOrReturnError(scan_cb == nullptr, CHIP_ERROR_IN_PROGRESS);
 
     // Validate SSID length
-    VerifyOrReturnError(ssid.size() <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_INVALID_STRING_LENGTH);
+    VerifyOrReturnError(ssid.size() <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_BUFFER_TOO_SMALL);
     // Handle scan based on whether SSID is empty or not
     if (ssid.empty()) 
     {
