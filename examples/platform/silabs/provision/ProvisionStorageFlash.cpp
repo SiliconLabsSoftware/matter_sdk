@@ -734,9 +734,6 @@ CHIP_ERROR Storage::GetTestEventTriggerKey(MutableByteSpan & keySpan)
 #endif // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
 
 } // namespace Provision
-
-void MigrateDacProvider(void) {}
-
 } // namespace Silabs
 } // namespace DeviceLayer
 } // namespace chip

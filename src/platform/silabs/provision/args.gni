@@ -12,18 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build_overrides/build.gni")
+import("//build_overrides/chip.gni")
 
-# The location of the build configuration file.
-buildconfig = "${build_root}/config/BUILDCONFIG.gn"
-
-# CHIP uses angle bracket includes.
-check_system_includes = true
-
-default_args = {
-  target_cpu = "arm"
-  target_os = "freertos"
-  chip_enable_wifi = true
-  chip_device_platform = "SiWx917"
-  import("//build_for_wifi_args.gni")
+declare_args() {
+  sl_provision_root = "${chip_root}/src/platform/silabs/provision"
 }

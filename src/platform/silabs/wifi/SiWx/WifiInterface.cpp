@@ -474,13 +474,6 @@ sl_status_t JoinWifiNetwork(void)
     // failure only happens when the firmware returns an error
     ChipLogError(DeviceLayer, "sl_net_up failed: 0x%lx", static_cast<uint32_t>(status));
 
-    // Deactivate the network interface before activating it on the next retry.
-    if ((status == SL_STATUS_SI91X_SCAN_ISSUED_IN_ASSOCIATED_STATE) || (status == SL_STATUS_SI91X_COMMAND_GIVEN_IN_INVALID_STATE))
-    {
-        status = sl_net_down((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE);
-        ChipLogProgress(DeviceLayer, "sl_net_down status 0x%lx", static_cast<uint32_t>(status));
-    }
-
     wfx_rsi.dev_state.Clear(WifiState::kStationConnecting).Clear(WifiState::kStationConnected);
 
     ChipLogProgress(DeviceLayer, "Connection retry attempt %d", wfx_rsi.join_retries);
