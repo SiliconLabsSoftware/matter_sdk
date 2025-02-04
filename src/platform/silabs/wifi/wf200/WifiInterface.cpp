@@ -913,7 +913,7 @@ int32_t wfx_get_ap_info(wfx_wifi_scan_result_t * ap)
     sl_status_t status = sl_wfx_get_signal_strength((uint32_t *) &signal_strength);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
     ChipLogDetail(DeviceLayer, "signal_strength: %ld", signal_strength);
-    ap->rssi = (signal_strength - 220) / 2;
+    ap->rssi = (signal_strength / 2) - 110;
     return status;
 }
 
