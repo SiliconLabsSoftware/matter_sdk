@@ -479,7 +479,7 @@ static void sl_wfx_scan_result_callback(sl_wfx_scan_result_ind_body_t * scan_res
             ap->scan.security = WFX_SEC_NONE;
         }
         ap->scan.chan = scan_result->channel;
-        ap->scan.rssi = scan_result->rcpi;
+        ap->scan.rssi = (scan_result->rcpi)/2 - 110;
         memcpy(&ap->scan.bssid[0], &scan_result->mac[0], BSSID_LEN);
         scan_count++;
     }
