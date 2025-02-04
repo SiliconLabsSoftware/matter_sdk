@@ -819,9 +819,9 @@ void ProcessEvent(WifiEvent event)
     case WifiEvent::kStationStartJoin:
         ChipLogDetail(DeviceLayer, "WifiEvent::kStationStartJoin");
 
+// To avoid IOP issues, it is recommended to enable high-performance mode before joining the network.
+// TODO: Remove this once the IOP issue related to power save mode switching is fixed in the Wi-Fi SDK.
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-        // Request high-performance mode before joining the network
-        // Issuing power-save enable commands from the timer handler was causing a timeout issue; hence, it is moved here.
         chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
