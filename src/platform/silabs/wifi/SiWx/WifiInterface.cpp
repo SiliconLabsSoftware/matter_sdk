@@ -462,6 +462,10 @@ sl_status_t JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK)
     {
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        // Remove High performance request that might have been added during the connect/retry process
+        chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
         return status;
@@ -815,6 +819,11 @@ void ProcessEvent(WifiEvent event)
     case WifiEvent::kStationStartJoin:
         ChipLogDetail(DeviceLayer, "WifiEvent::kStationStartJoin");
 
+// To avoid IOP issues, it is recommended to enable high-performance mode before joining the network.
+// TODO: Remove this once the IOP issue related to power save mode switching is fixed in the Wi-Fi SDK.
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
         JoinWifiNetwork();
         break;
