@@ -301,12 +301,6 @@ void sl_button_on_change(uint8_t btn, uint8_t btnAction);
 #ifdef WF200_WIFI
 void sl_wfx_host_gpio_init(void);
 void wfx_bus_start(void);
-/**
- * @brief Convert RCPI to RSSI
- * @param[in]  rcpi: Received Channel Power Indicator value
- * @return RSSI value
- */
-inline int32_t ConvertRcpiToRssi(int32_t rcpi) { return (rcpi / 2) - 110; }
 #endif /* WF200_WIFI */
 
 #ifdef __cplusplus

@@ -292,6 +292,15 @@ error_handler:
 
     return result;
 }
+
+/**
+ * @brief Convert RCPI to RSSI
+ * @param[in]  rcpi: Received Channel Power Indicator value
+ * @return RSSI value
+ */
+int32_t ConvertRcpiToRssi(int32_t rcpi) {
+    return (rcpi / 2) - 110;
+}
 } // namespace
 
 /***************************************************************************
