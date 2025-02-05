@@ -292,7 +292,6 @@ error_handler:
 
     return result;
 }
-
 } // namespace
 
 /***************************************************************************
@@ -436,7 +435,7 @@ static void sl_wfx_scan_result_callback(sl_wfx_scan_result_ind_body_t * scan_res
     struct scan_result_holder * ap;
 
     ChipLogDetail(DeviceLayer, "# %2d %2d  %03d %02X:%02X:%02X:%02X:%02X:%02X  %s", scan_count, scan_result->channel,
-                  ((int16_t) (scan_result->rcpi - 220) / 2), scan_result->mac[0], scan_result->mac[1], scan_result->mac[2],
+                  ((int16_t) (ConvertRcpiToRssi(scan_result->rcpi))), scan_result->mac[0], scan_result->mac[1], scan_result->mac[2],
                   scan_result->mac[3], scan_result->mac[4], scan_result->mac[5], scan_result->ssid_def.ssid);
     /* Report one AP information */
     /* don't save if filter only wants specific ssid */
@@ -479,7 +478,7 @@ static void sl_wfx_scan_result_callback(sl_wfx_scan_result_ind_body_t * scan_res
             ap->scan.security = WFX_SEC_NONE;
         }
         ap->scan.chan = scan_result->channel;
-        ap->scan.rssi = (scan_result->rcpi)/2 - 110;
+        ap->scan.rssi = ConvertRcpiToRssi(scan_result->rcpi);
         memcpy(&ap->scan.bssid[0], &scan_result->mac[0], BSSID_LEN);
         scan_count++;
     }
@@ -913,7 +912,7 @@ int32_t wfx_get_ap_info(wfx_wifi_scan_result_t * ap)
     sl_status_t status = sl_wfx_get_signal_strength((uint32_t *) &signal_strength);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
     ChipLogDetail(DeviceLayer, "signal_strength: %ld", signal_strength);
-    ap->rssi = (signal_strength / 2) - 110;
+    ap->rssi = ConvertRcpiToRssi(signal_strength);
     return status;
 }
 
