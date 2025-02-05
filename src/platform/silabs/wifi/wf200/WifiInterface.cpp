@@ -298,7 +298,7 @@ error_handler:
  * @param[in]  rcpi: Received Channel Power Indicator value
  * @return RSSI value
  */
-int32_t ConvertRcpiToRssi(int32_t rcpi) {
+int16_t ConvertRcpiToRssi(uint16_t rcpi) {
     return (rcpi / 2) - 110;
 }
 } // namespace
@@ -904,7 +904,7 @@ static void wfx_wifi_hw_start(void)
  **************************************************************************/
 int32_t wfx_get_ap_info(wfx_wifi_scan_result_t * ap)
 {
-    int32_t signal_strength;
+    uint16_t signal_strength;
 
     ap->ssid_length = strnlen(ap_info.ssid, chip::min<size_t>(sizeof(ap_info.ssid), WFX_MAX_SSID_LENGTH));
     // ap->ssid is of size WFX_MAX_SSID_LENGTH+1, we are safe with the ap->ssid_length calculated above
