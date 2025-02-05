@@ -18,6 +18,7 @@ jobs:
             image: ghcr.io/project-chip/chip-build-efr32:101
 
         strategy:
+            fail-fast: false
             matrix:
                 platform: [mg24, mgm24, mg26, mgm26, siwx]
 
