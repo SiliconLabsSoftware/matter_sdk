@@ -298,7 +298,10 @@ error_handler:
  * @param[in]  rcpi: Received Channel Power Indicator value
  * @return RSSI value
  */
-int16_t ConvertRcpiToRssi(uint16_t rcpi) {
+int16_t ConvertRcpiToRssi(uint32_t rcpi) {
+    // Checking for the overflows
+    // If rcpi is greater than or equal to INT16_MAX, return INT16_MIN to indicate an error
+    VerifyOrReturnValue(rcpi < INT16_MAX, INT16_MIN);
     return (rcpi / 2) - 110;
 }
 } // namespace
@@ -444,7 +447,7 @@ static void sl_wfx_scan_result_callback(sl_wfx_scan_result_ind_body_t * scan_res
     struct scan_result_holder * ap;
 
     ChipLogDetail(DeviceLayer, "# %2d %2d  %03d %02X:%02X:%02X:%02X:%02X:%02X  %s", scan_count, scan_result->channel,
-                  ((int16_t) (ConvertRcpiToRssi(scan_result->rcpi))), scan_result->mac[0], scan_result->mac[1], scan_result->mac[2],
+                  (ConvertRcpiToRssi(scan_result->rcpi)), scan_result->mac[0], scan_result->mac[1], scan_result->mac[2],
                   scan_result->mac[3], scan_result->mac[4], scan_result->mac[5], scan_result->ssid_def.ssid);
     /* Report one AP information */
     /* don't save if filter only wants specific ssid */
@@ -904,7 +907,7 @@ static void wfx_wifi_hw_start(void)
  **************************************************************************/
 int32_t wfx_get_ap_info(wfx_wifi_scan_result_t * ap)
 {
-    uint16_t signal_strength;
+    uint32_t signal_strength;
 
     ap->ssid_length = strnlen(ap_info.ssid, chip::min<size_t>(sizeof(ap_info.ssid), WFX_MAX_SSID_LENGTH));
     // ap->ssid is of size WFX_MAX_SSID_LENGTH+1, we are safe with the ap->ssid_length calculated above
@@ -918,9 +921,9 @@ int32_t wfx_get_ap_info(wfx_wifi_scan_result_t * ap)
     ChipLogDetail(DeviceLayer, "WIFI:security :: %d", ap->security);
     ChipLogDetail(DeviceLayer, "WIFI:channel  ::  %d", ap->chan);
 
-    sl_status_t status = sl_wfx_get_signal_strength((uint32_t *) &signal_strength);
+    sl_status_t status = sl_wfx_get_signal_strength(&signal_strength);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
-    ChipLogDetail(DeviceLayer, "signal_strength: %d", signal_strength);
+    ChipLogDetail(DeviceLayer, "signal_strength: %ld", signal_strength);
     ap->rssi = ConvertRcpiToRssi(signal_strength);
     return status;
 }
