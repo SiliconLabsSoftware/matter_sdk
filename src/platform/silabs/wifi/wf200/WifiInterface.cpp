@@ -300,7 +300,7 @@ error_handler:
  */
 inline int16_t ConvertRcpiToRssi(uint32_t rcpi) {
     int64_t rssi = (rcpi / 2) - 110;
-    // Checking for the overflows
+    // Checking for overflows
     VerifyOrReturnValue(rssi < std::numeric_limits<int16_t>::max(), std::numeric_limits<int16_t>::max());
     VerifyOrReturnValue(rssi > std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::min());
     return rssi;
