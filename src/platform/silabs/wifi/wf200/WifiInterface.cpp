@@ -298,11 +298,12 @@ error_handler:
  * @param[in]  rcpi: Received Channel Power Indicator value
  * @return RSSI value
  */
-int16_t ConvertRcpiToRssi(uint32_t rcpi) {
+inline int16_t ConvertRcpiToRssi(uint32_t rcpi) {
+    int16_t rssi = (rcpi / 2) - 110;
     // Checking for the overflows
-    // If rcpi is greater than or equal to INT16_MAX, return INT16_MIN to indicate an error
-    VerifyOrReturnValue(rcpi < INT16_MAX, INT16_MIN);
-    return (rcpi / 2) - 110;
+    VerifyOrReturnValue(rssi < std::numeric_limits<int16_t>::max(), std::numeric_limits<int16_t>::max());
+    VerifyOrReturnValue(rssi > std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::min());
+    return rssi;
 }
 } // namespace
 
