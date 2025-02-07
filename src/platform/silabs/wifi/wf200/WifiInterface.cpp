@@ -295,6 +295,10 @@ error_handler:
 
 /**
  * @brief Convert RCPI to RSSI
+ * This function converts the Received Channel Power Indicator (RCPI) value to
+ * the Received Signal Strength Indicator (RSSI) value. If the result of the
+ * conversion exceeds the range of int16_t, it will be clamped to the maximum
+ * or minimum value of int16_t.
  * @param[in]  rcpi: Received Channel Power Indicator value
  * @return RSSI value
  */
