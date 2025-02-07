@@ -293,6 +293,23 @@ error_handler:
     return result;
 }
 
+/**
+ * @brief Convert RCPI to RSSI
+ * This function converts the Received Channel Power Indicator (RCPI) value to
+ * the Received Signal Strength Indicator (RSSI) value. If the result of the
+ * conversion exceeds the range of int16_t, it will be clamped to the maximum
+ * or minimum value of int16_t.
+ * @param[in]  rcpi: Received Channel Power Indicator value
+ * @return RSSI value
+ */
+inline int16_t ConvertRcpiToRssi(uint32_t rcpi)
+{
+    int64_t rssi = (rcpi / 2) - 110;
+    // Checking for overflows
+    VerifyOrReturnValue(rssi < std::numeric_limits<int16_t>::max(), std::numeric_limits<int16_t>::max());
+    VerifyOrReturnValue(rssi > std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::min());
+    return rssi;
+}
 } // namespace
 
 /***************************************************************************
@@ -436,7 +453,7 @@ static void sl_wfx_scan_result_callback(sl_wfx_scan_result_ind_body_t * scan_res
     struct scan_result_holder * ap;
 
     ChipLogDetail(DeviceLayer, "# %2d %2d  %03d %02X:%02X:%02X:%02X:%02X:%02X  %s", scan_count, scan_result->channel,
-                  ((int16_t) (scan_result->rcpi - 220) / 2), scan_result->mac[0], scan_result->mac[1], scan_result->mac[2],
+                  (ConvertRcpiToRssi(scan_result->rcpi)), scan_result->mac[0], scan_result->mac[1], scan_result->mac[2],
                   scan_result->mac[3], scan_result->mac[4], scan_result->mac[5], scan_result->ssid_def.ssid);
     /* Report one AP information */
     /* don't save if filter only wants specific ssid */
@@ -479,7 +496,7 @@ static void sl_wfx_scan_result_callback(sl_wfx_scan_result_ind_body_t * scan_res
             ap->scan.security = WFX_SEC_NONE;
         }
         ap->scan.chan = scan_result->channel;
-        ap->scan.rssi = scan_result->rcpi;
+        ap->scan.rssi = ConvertRcpiToRssi(scan_result->rcpi);
         memcpy(&ap->scan.bssid[0], &scan_result->mac[0], BSSID_LEN);
         scan_count++;
     }
@@ -896,7 +913,7 @@ static void wfx_wifi_hw_start(void)
  **************************************************************************/
 int32_t wfx_get_ap_info(wfx_wifi_scan_result_t * ap)
 {
-    int32_t signal_strength;
+    uint32_t signal_strength;
 
     ap->ssid_length = strnlen(ap_info.ssid, chip::min<size_t>(sizeof(ap_info.ssid), WFX_MAX_SSID_LENGTH));
     // ap->ssid is of size WFX_MAX_SSID_LENGTH+1, we are safe with the ap->ssid_length calculated above
@@ -910,10 +927,10 @@ int32_t wfx_get_ap_info(wfx_wifi_scan_result_t * ap)
     ChipLogDetail(DeviceLayer, "WIFI:security :: %d", ap->security);
     ChipLogDetail(DeviceLayer, "WIFI:channel  ::  %d", ap->chan);
 
-    sl_status_t status = sl_wfx_get_signal_strength((uint32_t *) &signal_strength);
+    sl_status_t status = sl_wfx_get_signal_strength(&signal_strength);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
     ChipLogDetail(DeviceLayer, "signal_strength: %ld", signal_strength);
-    ap->rssi = (signal_strength - 220) / 2;
+    ap->rssi = ConvertRcpiToRssi(signal_strength);
     return status;
 }
 
@@ -1210,7 +1227,7 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
      */
     uint8_t ip4_addr[4];
 
-    ip4_addr[0] = (ip) & 0xFF;
+    ip4_addr[0] = (ip) &0xFF;
     ip4_addr[1] = (ip >> 8) & 0xFF;
     ip4_addr[2] = (ip >> 16) & 0xFF;
     ip4_addr[3] = (ip >> 24) & 0xFF;
@@ -1247,13 +1264,13 @@ CHIP_ERROR wfx_start_scan(chip::ByteSpan ssid, void (*callback)(wfx_wifi_scan_re
     // Validate SSID length
     VerifyOrReturnError(ssid.size() <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_BUFFER_TOO_SMALL);
     // Handle scan based on whether SSID is empty or not
-    if (ssid.empty()) 
+    if (ssid.empty())
     {
         // Scan all networks
         scan_ssid        = nullptr;
         scan_ssid_length = 0;
-    } 
-    else 
+    }
+    else
     {
         scan_ssid_length = ssid.size();
         scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(scan_ssid_length + 1));
