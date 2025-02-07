@@ -302,7 +302,8 @@ error_handler:
  * @param[in]  rcpi: Received Channel Power Indicator value
  * @return RSSI value
  */
-inline int16_t ConvertRcpiToRssi(uint32_t rcpi) {
+inline int16_t ConvertRcpiToRssi(uint32_t rcpi)
+{
     int64_t rssi = (rcpi / 2) - 110;
     // Checking for overflows
     VerifyOrReturnValue(rssi < std::numeric_limits<int16_t>::max(), std::numeric_limits<int16_t>::max());
@@ -1226,7 +1227,7 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
      */
     uint8_t ip4_addr[4];
 
-    ip4_addr[0] = (ip) & 0xFF;
+    ip4_addr[0] = (ip) &0xFF;
     ip4_addr[1] = (ip >> 8) & 0xFF;
     ip4_addr[2] = (ip >> 16) & 0xFF;
     ip4_addr[3] = (ip >> 24) & 0xFF;
@@ -1263,13 +1264,13 @@ CHIP_ERROR wfx_start_scan(chip::ByteSpan ssid, void (*callback)(wfx_wifi_scan_re
     // Validate SSID length
     VerifyOrReturnError(ssid.size() <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_BUFFER_TOO_SMALL);
     // Handle scan based on whether SSID is empty or not
-    if (ssid.empty()) 
+    if (ssid.empty())
     {
         // Scan all networks
         scan_ssid        = nullptr;
         scan_ssid_length = 0;
-    } 
-    else 
+    }
+    else
     {
         scan_ssid_length = ssid.size();
         scan_ssid        = reinterpret_cast<char *>(chip::Platform::MemoryAlloc(scan_ssid_length + 1));
