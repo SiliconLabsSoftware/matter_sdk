@@ -98,7 +98,7 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 #if MATTER_TRACING_ENABLED
-#include <platform/silabs/tracing/BackendImpl.h>
+#include <platform/silabs/tracing/BackendImpl.h> // nogncheck
 #include <tracing/registry.h>
 #endif // MATTER_TRACING_ENABLED
 
