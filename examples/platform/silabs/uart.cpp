@@ -583,6 +583,19 @@ void uartSendBytes(uint8_t * buffer, uint16_t nbOfBytes)
 #endif // SLI_SI91X_MCU_INTERFACE
 }
 
+/**
+ * @brief Flush the UART TX queue in a blocking manner.
+ */
+void uartFlushTxQueue(void)
+{
+    UartTxStruct_t workBuffer;
+
+    while (osMessageQueueGet(sUartTxQueue, &workBuffer, nullptr, 0) == osOK)
+    {
+        UARTDRV_ForceTransmit(vcom_handle, workBuffer.data, workBuffer.length);
+    }
+}
+
 #ifdef __cplusplus
 }
 #endif
