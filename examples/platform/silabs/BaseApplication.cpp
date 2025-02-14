@@ -82,6 +82,13 @@
 #include <performance_test_commands.h>
 #endif // PERFORMANCE_TEST_ENABLED
 
+// SL-Only
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+#include "ZigbeeCallbacks.h"
+#include "sl_cmp_config.h"
+#endif
+
 /**********************************************************
  * Defines and Constants
  *********************************************************/
@@ -894,6 +901,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
             AppTask::GetLCD().SetScreen(screen);
         }
 #endif // DISPLAY_ENABLED
+
         if ((event->ThreadConnectivityChange.Result == kConnectivity_Established) ||
             (event->InternetConnectivityChange.IPv6 == kConnectivity_Established))
         {
@@ -918,6 +926,16 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
         WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kCommissioningComplete);
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+
+// SL-Only
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+#if defined(SL_MATTER_ZIGBEE_CMP)
+        uint8_t channel = otLinkGetChannel(DeviceLayer::ThreadStackMgrImpl().OTInstance());
+        Zigbee::RequestStart(channel);     // leave handle internally
+#elif defined(SL_MATTER_ZIGBEE_SEQUENTIAL) // Matter Zigbee sequential
+        Zigbee::RequestLeave();
+#endif                                     // SL_MATTER_ZIGBEE_CMP
+#endif                                     // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
     }
     break;
     default:
