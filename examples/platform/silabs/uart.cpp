@@ -20,6 +20,7 @@
 #include "MatterShell.h" // nogncheck
 #endif
 #include <cmsis_os2.h>
+#include <lib/support/CodeUtils.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <sl_cmsis_os2_common.h>
 
