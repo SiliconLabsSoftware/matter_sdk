@@ -637,6 +637,9 @@ sl_status_t bg_scan_callback_handler(sl_wifi_event_t event, sl_wifi_scan_result_
 void NotifyConnectivity(void)
 {
     VerifyOrReturn(!hasNotifiedWifiConnectivity);
+#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
+    wfx_ip_changed_notify(IP_STATUS_SUCCESS);
+#endif // CHIP_DEVICE_CONFIG_ENABLE_IPV4
     wfx_ipv6_notify(GET_IPV6_SUCCESS);
     wfx_connected_notify(CONNECTION_STATUS_SUCCESS, &wfx_rsi.ap_mac);
     hasNotifiedWifiConnectivity = true;
@@ -808,32 +811,6 @@ void sl_matter_wifi_task(void * arg)
         }
     }
 }
-
-#if CHIP_DEVICE_CONFIG_ENABLE_IPV4
-/********************************************************************************************
- * @fn   void wfx_dhcp_got_ipv4(uint32_t ip)
- * @brief
- *        Acquire the new ip address
- * @param[in] ip: internet protocol
- * @return
- *        None
- **********************************************************************************************/
-void wfx_dhcp_got_ipv4(uint32_t ip)
-{
-    /*
-     * Acquire the new IP address
-     */
-    wfx_rsi.ip4_addr[0] = (ip) &0xFF;
-    wfx_rsi.ip4_addr[1] = (ip >> 8) & 0xFF;
-    wfx_rsi.ip4_addr[2] = (ip >> 16) & 0xFF;
-    wfx_rsi.ip4_addr[3] = (ip >> 24) & 0xFF;
-    ChipLogDetail(DeviceLayer, "DHCP OK: IP=%d.%d.%d.%d", wfx_rsi.ip4_addr[0], wfx_rsi.ip4_addr[1], wfx_rsi.ip4_addr[2],
-                  wfx_rsi.ip4_addr[3]);
-    /* Notify the Connectivity Manager - via the app */
-    wfx_rsi.dev_state.Set(WifiState::kStationDhcpDone).Set(WifiState::kStationReady);
-    wfx_ip_changed_notify(IP_STATUS_SUCCESS);
-}
-#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 sl_status_t ConfigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
