@@ -100,10 +100,6 @@ bool ps_requirement_added = false;
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 bool hasNotifiedWifiConnectivity = false;
-bool hasNotifiedIPV6             = false;
-#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
-bool hasNotifiedIPV4 = false;
-#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
 wfx_wifi_scan_ext_t temp_reset;
 
