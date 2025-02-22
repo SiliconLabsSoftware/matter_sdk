@@ -70,7 +70,7 @@ public:
      */
     Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override;
 
-    struct AttributeUpdateInfo 
+    struct AttributeUpdateInfo
     {
         FanModeEnum fanMode;
         uint8_t speedCurrent;
