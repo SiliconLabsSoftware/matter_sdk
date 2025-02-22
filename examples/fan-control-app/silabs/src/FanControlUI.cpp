@@ -19,11 +19,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "FanControlUI.h"
+#include "AppTask.h"
 #include "FanControlManager.h"
+#include "FanControlUI.h"
 #include "demo-ui-bitmaps.h"
 #include "dmd.h"
-#include "AppTask.h"
 #if DISPLAY_ENABLED
 #include "glib.h"
 #include "lcd.h"
@@ -32,7 +32,7 @@
 using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::FanControl;
 
-namespace{
+namespace {
 // Bitmap
 const uint8_t silabsLogo[]       = { SILABS_LOGO_SMALL };
 const uint8_t matterLogoBitmap[] = { MATTER_LOGO_BITMAP };
@@ -46,13 +46,13 @@ constexpr bool UI_WIFI = true;
 #else
 constexpr bool UI_WIFI = false;
 #endif
-}
+} // namespace
 
 void FanControlUI::DrawUI(GLIB_Context_t * glibContext)
 {
     if (glibContext == nullptr)
     {
-        ChipLogError(AppServer,"Context is null");
+        ChipLogError(AppServer, "Context is null");
         return;
     }
 
