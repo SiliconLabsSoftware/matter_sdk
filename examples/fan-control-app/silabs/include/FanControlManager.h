@@ -24,8 +24,8 @@
 
 #include "AppEvent.h"
 
-#include <app/clusters/fan-control-server/fan-control-server.h>
 #include <app/clusters/fan-control-server/fan-control-delegate.h>
+#include <app/clusters/fan-control-server/fan-control-server.h>
 #include <lib/core/CHIPError.h>
 
 using namespace chip;
@@ -78,9 +78,9 @@ public:
         uint8_t speedSetting;
         uint8_t percentSetting;
         bool isPercentCurrent = false;
-        bool isSpeedCurrent = false;
-        bool isSpeedSetting = false;
-        bool isFanMode = false;
+        bool isSpeedCurrent   = false;
+        bool isSpeedSetting   = false;
+        bool isFanMode        = false;
         bool isPercentSetting = false;
         EndpointId endPoint;
     };
@@ -103,7 +103,7 @@ private:
     static constexpr int kFanModeHighLowerBound   = 8;
     static constexpr int kFanModeHighUpperBound   = 10;
 
-    static constexpr int kaLowestOffTrue = 0;
+    static constexpr int kaLowestOffTrue  = 0;
     static constexpr int kaLowestOffFalse = 1;
 
     static FanControlManager sFan;

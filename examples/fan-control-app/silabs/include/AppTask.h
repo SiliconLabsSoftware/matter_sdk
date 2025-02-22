@@ -80,7 +80,6 @@ public:
     void UpdateFanControlUI();
 
 private:
-
     /**
      * @brief AppTask initialisation function
      *
@@ -100,5 +99,4 @@ private:
      * @param aEvent button event being processed
      */
     static void ButtonHandler(AppEvent * aEvent);
-
 };
