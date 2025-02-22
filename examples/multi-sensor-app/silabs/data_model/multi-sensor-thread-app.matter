@@ -800,6 +800,7 @@ cluster GeneralCommissioning = 48 {
   provisional readonly attribute access(read: administer) optional int16u TCMinRequiredVersion = 6;
   provisional readonly attribute access(read: administer) optional bitmap16 TCAcknowledgements = 7;
   provisional readonly attribute access(read: administer) optional boolean TCAcknowledgementsRequired = 8;
+  provisional readonly attribute access(read: administer) optional nullable int32u TCUpdateDeadline = 9;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
   readonly attribute event_id eventList[] = 65530;
@@ -1160,7 +1161,7 @@ cluster GeneralDiagnostics = 51 {
   /** Take a snapshot of system time and epoch time. */
   command TimeSnapshot(): TimeSnapshotResponse = 1;
   /** Request a variable length payload response. */
-  command PayloadTestRequest(PayloadTestRequestRequest): PayloadTestResponse = 3;
+  command access(invoke: manage) PayloadTestRequest(PayloadTestRequestRequest): PayloadTestResponse = 3;
 }
 
 /** The Software Diagnostics Cluster provides a means to acquire standardized diagnostics metrics that MAY be used by a Node to assist a user or Administrative Node in diagnosing potential problems. */
@@ -1444,12 +1445,14 @@ cluster OperationalCredentials = 62 {
     fabric_id fabricID = 3;
     node_id nodeID = 4;
     char_string<32> label = 5;
+    optional octet_string<85> vidVerificationStatement = 6;
     fabric_idx fabricIndex = 254;
   }
 
   fabric_scoped struct NOCStruct {
-    fabric_sensitive octet_string noc = 1;
-    nullable fabric_sensitive octet_string icac = 2;
+    octet_string noc = 1;
+    nullable octet_string icac = 2;
+    optional octet_string vvsc = 3;
     fabric_idx fabricIndex = 254;
   }
 
@@ -1524,6 +1527,23 @@ cluster OperationalCredentials = 62 {
     octet_string rootCACertificate = 0;
   }
 
+  request struct SetVidVerificationStatementRequest {
+    optional vendor_id vendorID = 0;
+    optional octet_string vidVerificationStatement = 1;
+    optional octet_string vvsc = 2;
+  }
+
+  request struct SignVidVerificationRequestRequest {
+    fabric_idx fabricIndex = 0;
+    octet_string<32> clientChallenge = 1;
+  }
+
+  response struct SignVidVerificationResponse = 14 {
+    fabric_idx fabricIndex = 0;
+    int8u fabricBindingVersion = 1;
+    octet_string signature = 2;
+  }
+
   /** Sender is requesting attestation information from the receiver. */
   command access(invoke: administer) AttestationRequest(AttestationRequestRequest): AttestationResponse = 0;
   /** Sender is requesting a device attestation certificate from the receiver. */
@@ -1540,6 +1560,10 @@ cluster OperationalCredentials = 62 {
   command access(invoke: administer) RemoveFabric(RemoveFabricRequest): NOCResponse = 10;
   /** This command SHALL add a Trusted Root CA Certificate, provided as its CHIP Certificate representation. */
   command access(invoke: administer) AddTrustedRootCertificate(AddTrustedRootCertificateRequest): DefaultSuccess = 11;
+  /** This command SHALL be used to update any of the accessing fabric's associated VendorID, VidVerificatioNStatement or VVSC (Vendor Verification Signing Certificate). */
+  fabric command access(invoke: administer) SetVidVerificationStatement(SetVidVerificationStatementRequest): DefaultSuccess = 12;
+  /** This command SHALL be used to request that the server authenticate the fabric associated with the FabricIndex given. */
+  command access(invoke: administer) SignVidVerificationRequest(SignVidVerificationRequestRequest): SignVidVerificationResponse = 13;
 }
 
 /** The Group Key Management Cluster is the mechanism by which group keys are managed. */
@@ -1711,10 +1735,10 @@ cluster IcdManagement = 70 {
   readonly attribute access(read: administer) optional MonitoringRegistrationStruct registeredClients[] = 3;
   readonly attribute access(read: administer) optional int32u ICDCounter = 4;
   readonly attribute optional int16u clientsSupportedPerFabric = 5;
-  provisional readonly attribute optional UserActiveModeTriggerBitmap userActiveModeTriggerHint = 6;
-  provisional readonly attribute optional char_string<128> userActiveModeTriggerInstruction = 7;
-  provisional readonly attribute optional OperatingModeEnum operatingMode = 8;
-  provisional readonly attribute optional int32u maximumCheckInBackOff = 9;
+  readonly attribute optional UserActiveModeTriggerBitmap userActiveModeTriggerHint = 6;
+  readonly attribute optional char_string<128> userActiveModeTriggerInstruction = 7;
+  readonly attribute optional OperatingModeEnum operatingMode = 8;
+  readonly attribute optional int32u maximumCheckInBackOff = 9;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
   readonly attribute event_id eventList[] = 65530;
@@ -1873,7 +1897,6 @@ endpoint 0 {
     callback attribute accessControlEntriesPerFabric;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     callback attribute clusterRevision;
@@ -1940,7 +1963,6 @@ endpoint 0 {
     callback attribute supportsConcurrentConnection;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 1;
@@ -1966,7 +1988,6 @@ endpoint 0 {
     callback attribute threadVersion;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 2;
     ram      attribute clusterRevision default = 1;
@@ -2083,7 +2104,6 @@ endpoint 0 {
     callback attribute adminVendorId;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 1;
@@ -2102,7 +2122,6 @@ endpoint 0 {
     callback attribute currentFabricIndex;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 1;
@@ -2128,7 +2147,6 @@ endpoint 0 {
     callback attribute maxGroupKeysPerFabric;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     callback attribute featureMap;
     callback attribute clusterRevision;
@@ -2162,13 +2180,12 @@ endpoint 0 {
     callback attribute clientsSupportedPerFabric;
     ram      attribute userActiveModeTriggerHint default = 0x1115;
     ram      attribute userActiveModeTriggerInstruction default = "Power Cycle";
-    ram      attribute operatingMode default = 0;
+    callback attribute operatingMode;
     callback attribute maximumCheckInBackOff;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 7;
+    callback attribute featureMap;
     ram      attribute clusterRevision default = 3;
 
     handle command RegisterClient;
@@ -2187,7 +2204,6 @@ endpoint 1 {
     ram      attribute identifyType default = 0x0;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 4;
@@ -2203,7 +2219,6 @@ endpoint 1 {
     callback attribute partsList;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     callback attribute featureMap;
     callback attribute clusterRevision;
@@ -2215,7 +2230,6 @@ endpoint 1 {
     ram      attribute occupancySensorTypeBitmap default = 0x04;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     callback attribute featureMap;
     ram      attribute clusterRevision default = 3;
@@ -2230,7 +2244,6 @@ endpoint 2 {
     ram      attribute identifyType default = 0x00;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 4;
@@ -2246,7 +2259,6 @@ endpoint 2 {
     callback attribute partsList;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     callback attribute featureMap;
     callback attribute clusterRevision;
@@ -2259,7 +2271,6 @@ endpoint 2 {
     ram      attribute tolerance default = 40;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 4;
@@ -2274,7 +2285,6 @@ endpoint 3 {
     ram      attribute identifyType default = 0x00;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 4;
@@ -2290,7 +2300,6 @@ endpoint 3 {
     callback attribute partsList;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     callback attribute featureMap;
     callback attribute clusterRevision;
@@ -2303,7 +2312,6 @@ endpoint 3 {
     ram      attribute tolerance default = 300;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
-    callback attribute eventList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 3;
