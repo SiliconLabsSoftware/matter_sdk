@@ -45,9 +45,9 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
     {
 
-    #ifdef DIC_ENABLE
-        dic_sendmsg("light/state", (const char *)(value ? ( *value ? "on" : "off") : "invalid"));
-    #endif // DIC ENABLE
+#ifdef DIC_ENABLE
+        dic_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
+#endif // DIC ENABLE
 
         PlugMgr().InitiateAction(AppEvent::kEventType_Plug, *value ? OnOffPlugManager::ON_ACTION : OnOffPlugManager::OFF_ACTION);
     }

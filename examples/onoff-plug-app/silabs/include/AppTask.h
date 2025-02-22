@@ -51,7 +51,6 @@ class AppTask : public BaseApplication
 {
 
 public:
-
     AppTask() = default;
 
     static AppTask & GetAppTask() { return sAppTask; }
