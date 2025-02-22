@@ -241,7 +241,7 @@ void OnOffPlugManager::OnTriggerOffWithEffect(OnOffEffect * effect)
 {
     auto effectId              = effect->mEffectIdentifier;
     auto effectVariant         = effect->mEffectVariant;
-    uint32_t offEffectDuration                                 = 0;
+    uint32_t offEffectDuration = 0;
 
     // Temporary print outs and delay to test OffEffect behaviour
     // Until dimming is supported for dev boards.
