@@ -106,3 +106,10 @@ jobs:
         with:
             example-app: "multi-sensor-app"
             output-directory: "./out/multi-sensor-app"
+
+    build-onoff-plug-app:
+        name: Build OnOff-Plug-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "onoff-plug-app"
+            output-directory: "./out/onoff-plug-app"
