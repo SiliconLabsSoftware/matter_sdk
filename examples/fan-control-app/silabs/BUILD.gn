@@ -139,8 +139,11 @@ silabs_executable("fan-control-app") {
     "src/AppTask.cpp",
     "src/DataModelCallbacks.cpp",
     "src/FanControlManager.cpp",
-    "src/FanControlUI.cpp",
   ]
+
+  if (!disable_lcd) {
+    sources += [ "src/FanControlUI.cpp" ]
+  }
 
   deps = [
     ":sdk",
