@@ -92,3 +92,10 @@ jobs:
         with:
             example-app: "refrigerator-app"
             output-directory: "./out/refrigerator-app"
+
+    build-fan-control-app:
+        name: Build Fan-Control-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "fan-control-app"
+            output-directory: "./out/fan-control-app"
