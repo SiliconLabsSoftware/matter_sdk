@@ -99,3 +99,10 @@ jobs:
         with:
             example-app: "fan-control-app"
             output-directory: "./out/fan-control-app"
+
+    build-multi-sensor-app:
+        name: Build Multi-Sensor-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "multi-sensor-app"
+            output-directory: "./out/multi-sensor-app"
