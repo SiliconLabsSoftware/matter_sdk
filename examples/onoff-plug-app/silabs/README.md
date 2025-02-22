@@ -4,23 +4,23 @@ An example showing the use of MATTER on the Silicon Labs EFR32 MG24.
 
 <hr>
 
-- [MATTER EFR32 Onoff-plug Example](#matter-efr32-onoff-plug-example)
-  - [Introduction](#introduction)
-  - [Building](#building)
-  - [Flashing the Application](#flashing-the-application)
-  - [Viewing Logging Output](#viewing-logging-output)
-  - [Running the Complete Example](#running-the-complete-example)
-    - [Notes](#notes)
-  - [Running RPC console](#running-rpc-console)
-  - [Device Tracing](#device-tracing)
-  - [Memory settings](#memory-settings)
-  - [OTA Software Update](#ota-software-update)
-  - [Group Communication (Multicast)](#group-communication-multicast)
-  - [Building options](#building-options)
-    - [Disabling logging](#disabling-logging)
-    - [Debug build / release build](#debug-build--release-build)
-    - [Disabling LCD](#disabling-lcd)
-    - [KVS maximum entry count](#kvs-maximum-entry-count)
+-   [MATTER EFR32 Onoff-plug Example](#matter-efr32-onoff-plug-example)
+    -   [Introduction](#introduction)
+    -   [Building](#building)
+    -   [Flashing the Application](#flashing-the-application)
+    -   [Viewing Logging Output](#viewing-logging-output)
+    -   [Running the Complete Example](#running-the-complete-example)
+        -   [Notes](#notes)
+    -   [Running RPC console](#running-rpc-console)
+    -   [Device Tracing](#device-tracing)
+    -   [Memory settings](#memory-settings)
+    -   [OTA Software Update](#ota-software-update)
+    -   [Group Communication (Multicast)](#group-communication-multicast)
+    -   [Building options](#building-options)
+        -   [Disabling logging](#disabling-logging)
+        -   [Debug build / release build](#debug-build--release-build)
+        -   [Disabling LCD](#disabling-lcd)
+        -   [KVS maximum entry count](#kvs-maximum-entry-count)
 
 <hr>
 
@@ -230,14 +230,15 @@ combination with JLinkRTTClient as follows:
 
 ### Commissioning
 
-  You can provision and control the Matter device using the python controller,
-  `mattertool` standalone, Android, or iOS app.
+You can provision and control the Matter device using the python controller,
+`mattertool` standalone, Android, or iOS app.
 
-  Silabs provides `mattertool` as a wrapper function and more user-friendly method of using 
-  [chip-tool](../../examples/chip-tool/README.md) within the pre-built Raspberry Pi image. For more info on using `mattertool`, see 
-  [Mattertool](../../docs/silabs/thread/CHIP_TOOL.md).
+Silabs provides `mattertool` as a wrapper function and more user-friendly method
+of using [chip-tool](../../examples/chip-tool/README.md) within the pre-built
+Raspberry Pi image. For more info on using `mattertool`, see
+[Mattertool](../../docs/silabs/thread/CHIP_TOOL.md).
 
-  Here is an example using `mattertool`:
+Here is an example using `mattertool`:
 
     $ mattertool startThread
     $ mattertool bleThread
