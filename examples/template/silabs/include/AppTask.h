@@ -19,12 +19,12 @@
 
 #pragma once
 
-#include <stdbool.h>
-#include <stdint.h>
-#include "BaseApplication.h"
 #include "AppEvent.h"
+#include "BaseApplication.h"
 #include "FreeRTOS.h"
 #include "sl_simple_button_instances.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 #include "timers.h" // provides FreeRTOS timer support
 #include <ble/BLEEndPoint.h>
@@ -41,7 +41,6 @@
 
 class AppTask : public BaseApplication
 {
-
 
 public:
     AppTask() = default;
@@ -73,5 +72,4 @@ private:
      * @param aEvent button event being processed
      */
     static void SwitchActionEventHandler(AppEvent * aEvent);
-
 };
