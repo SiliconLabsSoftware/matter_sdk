@@ -28,7 +28,7 @@
 #include <string.h>
 
 #if SL_WIFI && !SLI_SI91X_MCU_INTERFACE
-#include "spi_multiplex.h"
+#include <platform/silabs/wifi/ncp/spi_multiplex.h>
 #endif // SL_WIFI && !SLI_SI91X_MCU_INTERFACE
 
 using namespace chip::Protocols::InteractionModel;
