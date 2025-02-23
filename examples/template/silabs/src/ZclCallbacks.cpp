@@ -42,15 +42,15 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     switch (clusterId)
     {
         case OnOff::Id:
-            ChipLogProgress(Zcl, " OnOff command received with attribute ID: " ChipLogFormatMEI 
+            ChipLogProgress(Zcl, " OnOff command received with attribute ID: " ChipLogFormatMEI
             " Type: %u, Value: %u, length %u", ChipLogValueMEI(attributeId), type, *value, size);
             break;
         case LevelControl::Id:
-            ChipLogProgress(Zcl, " LevelControl command received with attribute ID: " ChipLogFormatMEI 
+            ChipLogProgress(Zcl, " LevelControl command received with attribute ID: " ChipLogFormatMEI
             " Type: %u, Value: %u, length %u", ChipLogValueMEI(attributeId), type, *value, size);
             break;
         default :
-            ChipLogProgress(Zcl, " A cluster command was received with attribute ID: " ChipLogFormatMEI 
+            ChipLogProgress(Zcl, " A cluster command was received with attribute ID: " ChipLogFormatMEI
             " Type: %u, Value: %u, length %u", ChipLogValueMEI(attributeId), type, *value, size);
     }
 }
