@@ -86,7 +86,7 @@ void RequestLeave()
 
 void ZLLNotFactoryNew(void)
 {
-  sl_zigbee_af_zll_unset_factory_new();
+    sl_zigbee_af_zll_unset_factory_new();
 }
 
 uint8_t GetZigbeeChannel()

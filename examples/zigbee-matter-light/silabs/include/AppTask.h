@@ -36,7 +36,7 @@
 #include <platform/CHIPDeviceLayer.h>
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
 #include "sl_simple_button_instances.h"
-#endif //SL_CATALOG_SIMPLE_BUTTON_PRESENT
+#endif // SL_CATALOG_SIMPLE_BUTTON_PRESENT
 
 /**********************************************************
  * Defines

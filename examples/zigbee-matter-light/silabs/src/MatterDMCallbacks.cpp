@@ -30,8 +30,8 @@
 
 #include "sl_component_catalog.h"
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-#include "app/framework/include/af.h"
 #include "app/framework/include/af-storage.h"
+#include "app/framework/include/af.h"
 #endif
 
 using namespace ::chip;
@@ -44,15 +44,15 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     AttributeId attributeId = attributePath.mAttributeId;
     ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
 
-
     if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
     {
         LightMgr().InitiateAction(AppEvent::kEventType_Light, *value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION);
-    #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-    // Update zigbee DM
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+        // Update zigbee DM
 
-    sl_zigbee_af_write_attribute(1, static_cast<uint8_t>(clusterId), static_cast<uint16_t>(attributeId), CLUSTER_MASK_SERVER, value, type);
-    #endif
+        sl_zigbee_af_write_attribute(1, static_cast<uint8_t>(clusterId), static_cast<uint16_t>(attributeId), CLUSTER_MASK_SERVER,
+                                     value, type);
+#endif
     }
     else if (clusterId == LevelControl::Id)
     {
@@ -60,10 +60,11 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
                         ChipLogValueMEI(attributeId), type, *value, size);
 
         // WIP Apply attribute change to Light
-    #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-    // Update zigbee DM
-    sl_zigbee_af_write_attribute(1, static_cast<uint8_t>(clusterId), static_cast<uint16_t>(attributeId), CLUSTER_MASK_SERVER, value, type);
-    #endif
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+        // Update zigbee DM
+        sl_zigbee_af_write_attribute(1, static_cast<uint8_t>(clusterId), static_cast<uint16_t>(attributeId), CLUSTER_MASK_SERVER,
+                                     value, type);
+#endif
     }
     else if (clusterId == ColorControl::Id)
     {
@@ -71,11 +72,11 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
                         ChipLogValueMEI(attributeId), type, *value, size);
 
         // WIP Apply attribute change to Light
-    #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-    // Update zigbee DM
-    sl_zigbee_af_write_attribute(1, static_cast<uint8_t>(clusterId), static_cast<uint16_t>(attributeId), CLUSTER_MASK_SERVER, value, type);
-    #endif
-
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+        // Update zigbee DM
+        sl_zigbee_af_write_attribute(1, static_cast<uint8_t>(clusterId), static_cast<uint16_t>(attributeId), CLUSTER_MASK_SERVER,
+                                     value, type);
+#endif
     }
     else if (clusterId == Identify::Id)
     {
