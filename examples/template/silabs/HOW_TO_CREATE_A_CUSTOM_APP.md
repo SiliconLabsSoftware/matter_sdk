@@ -2,18 +2,18 @@
 
 <hr>
 
-- [How to Create an EFR32 Matter Application](#how-to-create-an-efr32-matter-application)
-  - [Introduction](#introduction)
-  - [Create your app](#create-your-app)
-    - [Create a new directory](#create-a-new-directory)
-    - [Modify the application](#modify-the-application)
-      - [Using ZAP to configure clusters](#using-zap-to-configure-clusters)
-        - [Create a Data Model](#create-a-data-model)
-        - [Cluster Configuration and Generation](#cluster-configuration-and-generation)
-      - [Modifying the GN Build files](#modifying-the-gn-build-files)
-      - [Modifying the source code](#modifying-the-source-code)
-    - [Running your app](#running-your-app)
-          - [Last modified August 5th, 2022.](#last-modified-august-5th-2022)
+-   [How to Create an EFR32 Matter Application](#how-to-create-an-efr32-matter-application)
+    -   [Introduction](#introduction)
+    -   [Create your app](#create-your-app)
+        -   [Create a new directory](#create-a-new-directory)
+        -   [Modify the application](#modify-the-application)
+            -   [Using ZAP to configure clusters](#using-zap-to-configure-clusters)
+                -   [Create a Data Model](#create-a-data-model)
+                -   [Cluster Configuration and Generation](#cluster-configuration-and-generation)
+            -   [Modifying the GN Build files](#modifying-the-gn-build-files)
+            -   [Modifying the source code](#modifying-the-source-code)
+        -   [Running your app](#running-your-app) -
+            [Last modified August 5th, 2022.](#last-modified-august-5th-2022)
 
 <hr>
 
@@ -197,8 +197,8 @@ choice and handle them there. Refer to [Color Lighting][8] to see how this can
 be done.
 
 Note: If you add .cpp files to **your_app**, modify [BUILD.gn](BUILD.gn) to take
-account of it. To do so, navigate to the section "silabs_executable" in the file,
-locate the "sources" subsection and add your new "file.cpp" there.
+account of it. To do so, navigate to the section "silabs_executable" in the
+file, locate the "sources" subsection and add your new "file.cpp" there.
 
 Note: Both in the source files and in the [BUILD.gn](BUILD.gn), you might have
 to rename certain variables. Simply renaming any instance of "sl_template" or
