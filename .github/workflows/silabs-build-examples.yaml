@@ -113,3 +113,10 @@ jobs:
         with:
             example-app: "onoff-plug-app"
             output-directory: "./out/onoff-plug-app"
+
+    build-tempalte-app:
+        name: Build Template-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "template"
+            output-directory: "./out/template-app"
