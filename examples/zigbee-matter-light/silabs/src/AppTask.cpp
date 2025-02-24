@@ -25,9 +25,9 @@
 
 #include <app/DeferredAttributePersistenceProvider.h>
 #include <app/clusters/on-off-server/on-off-server.h>
-#include <app/server/OnboardingCodesUtil.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
+#include <setup_payload/OnboardingCodesUtil.h>
 
 #ifdef MATTER_DM_PLUGIN_SCENES_MANAGEMENT
 #include <app/clusters/scenes-server/scenes-server.h>
