@@ -33,7 +33,7 @@ jobs:
                   bootstrap-log-name: bootstrap-logs-${{ inputs.example-app }}-${{ matrix.platform }}
 
             - name: Build ${{ inputs.example-app }} configurations
-              uses: SiliconLabsSoftware/matter-gn-build-action@v1.1.2
+              uses: SiliconLabsSoftware/matter_build_action@v1.2.0
               with:
                   json-file-path: >
                       ${{ matrix.platform == 'mg24' && './.github/silabs-builds-mg24.json' ||
