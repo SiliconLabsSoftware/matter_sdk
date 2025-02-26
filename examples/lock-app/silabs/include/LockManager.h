@@ -27,6 +27,8 @@
 #include <cmsis_os2.h>
 #include <lib/core/CHIPError.h>
 
+#include <lib/support/DefaultStorageKeyAllocator.h>
+
 struct WeekDaysScheduleInfo
 {
     DlScheduleStatus status;
@@ -111,6 +113,30 @@ private:
 
 using namespace ::chip;
 using namespace EFR32DoorLock::ResourceRanges;
+
+struct LockUserInfo
+{
+    char userName[DOOR_LOCK_USER_NAME_BUFFER_SIZE]; 
+    size_t userNameSize;
+    uint32_t userUniqueId; 
+    UserStatusEnum userStatus; 
+    UserTypeEnum userType;
+    CredentialRuleEnum credentialRule;
+    chip::EndpointId endpointId;
+    chip::FabricIndex createdBy;
+    chip::FabricIndex lastModifiedBy;
+    uint16_t currentCredentialCount;
+};
+
+struct LockCredentialInfo
+{
+    DlCredentialStatus status;
+    CredentialTypeEnum credentialType;
+    chip::FabricIndex createdBy;
+    chip::FabricIndex lastModifiedBy;
+    uint8_t credentialData[kMaxCredentialSize];
+    size_t credentialDataSize;
+};
 
 class LockManager
 {
@@ -255,6 +281,18 @@ private:
     CredentialStruct mCredentials[kMaxUsers][kMaxCredentials];
 
     EFR32DoorLock::LockInitParams::LockParam LockParams;
+
+    LockUserInfo userInStorage;
+    LockCredentialInfo credentialInStorage;
+
+    static StorageKeyName LockUserEndpoint(uint16_t userIndex, chip::EndpointId endpoint) { return StorageKeyName::Formatted("g/lu/%x/e/%x", userIndex, endpoint); }
+    static StorageKeyName LockCredentialEndpoint(uint16_t credentialIndex, chip::EndpointId endpoint) { return StorageKeyName::Formatted("g/lc/%x/e/%x", credentialIndex, endpoint); }
+    //static StorageKeyName LockScheduleEndpoint(uint8_t scheduleIndex, chip::EndpointId endpoint) { return StorageKeyName::Formatted("g/ls/%x/e/%x", scheduleIndex, endpoint); }
+    static StorageKeyName LockUserCredentialMap(uint16_t userIndex) { return StorageKeyName::Formatted("g/lu/%x/lc", userIndex); } // Stores all the credential indices that belong to a user
+
+    CredentialStruct tempCredentials;
+    CredentialStruct tempCredentials2[kMaxCredentialsPerUser];
+
 };
 
 LockManager & LockMgr();
