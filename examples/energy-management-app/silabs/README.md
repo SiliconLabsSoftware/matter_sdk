@@ -353,19 +353,19 @@ passed to the build scripts.
 
 `chip_progress_logging, chip_detail_logging, chip_automation_logging`
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/energy-management-app/silabs ./out/energy-management-app BRD4164A "chip_detail_logging=false chip_automation_logging=false chip_progress_logging=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/energy-management-app/silabs ./out/energy-management-app BRD4187C "chip_detail_logging=false chip_automation_logging=false chip_progress_logging=false"
 
 ### Debug build / release build
 
 `is_debug`
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/energy-management-app/silabs ./out/energy-management-app BRD4164A "is_debug=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/energy-management-app/silabs ./out/energy-management-app BRD4187C "is_debug=false"
 
 ### Disabling LCD
 
 `show_qr_code`
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/energy-management-app/silabs ./out/energy-management-app BRD4164A "show_qr_code=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/energy-management-app/silabs ./out/energy-management-app BRD4187C "show_qr_code=false"
 
 ### KVS maximum entry count
 
@@ -374,4 +374,4 @@ passed to the build scripts.
     Set the maximum Kvs entries that can be stored in NVM (Default 75)
     Thresholds: 30 <= kvs_max_entries <= 255
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/energy-management-app/silabs ./out/energy-management-app BRD4164A kvs_max_entries=50
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/energy-management-app/silabs ./out/energy-management-app BRD4187C kvs_max_entries=50
