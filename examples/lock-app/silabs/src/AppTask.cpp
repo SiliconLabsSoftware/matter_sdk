@@ -146,7 +146,8 @@ CHIP_ERROR AppTask::Init()
     chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state;
     chip::EndpointId endpointId{ 1 };
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    chip::app::Clusters::DoorLock::Attributes::LockState::Get(endpointId, state);
+    //TODO: revisit this
+    //chip::app::Clusters::DoorLock::Attributes::LockState::Get(endpointId, state);
 
     uint8_t numberOfCredentialsPerUser = 0;
     if (!DoorLockServer::Instance().GetNumberOfCredentialsSupportedPerUser(endpointId, numberOfCredentialsPerUser))
@@ -266,8 +267,6 @@ void AppTask::AppTaskMain(void * pvParameter)
 
     SILABS_LOG("App Task started");
 
-    // Users and credentials should be checked once from nvm flash on boot
-    LockMgr().ReadConfigValues();
 
     while (true)
     {

@@ -218,8 +218,6 @@ public:
                       OperationErrorEnum & err);
     const char * lockStateToString(DlLockState lockState) const;
 
-    bool ReadConfigValues();
-
     void UnlockAfterUnlatch();
 
 private:
@@ -270,28 +268,29 @@ private:
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);
 
     osTimerId_t mLockTimer;
-    EmberAfPluginDoorLockUserInfo mLockUsers[kMaxUsers];
-    EmberAfPluginDoorLockCredentialInfo mLockCredentials[kNumCredentialTypes][kMaxCredentials];
+    //EmberAfPluginDoorLockUserInfo mLockUsers[kMaxUsers];
+    //EmberAfPluginDoorLockCredentialInfo mLockCredentials[kNumCredentialTypes][kMaxCredentials];
     WeekDaysScheduleInfo mWeekdaySchedule[kMaxUsers][kMaxWeekdaySchedulesPerUser];
     YearDayScheduleInfo mYeardaySchedule[kMaxUsers][kMaxYeardaySchedulesPerUser];
     HolidayScheduleInfo mHolidaySchedule[kMaxHolidaySchedules];
 
-    char mUserNames[ArraySize(mLockUsers)][DOOR_LOCK_MAX_USER_NAME_SIZE];
-    uint8_t mCredentialData[kNumCredentialTypes][kMaxCredentials][kMaxCredentialSize];
-    CredentialStruct mCredentials[kMaxUsers][kMaxCredentials];
+    //char mUserNames[ArraySize(mLockUsers)][DOOR_LOCK_MAX_USER_NAME_SIZE];
+    //uint8_t mCredentialData[kNumCredentialTypes][kMaxCredentials][kMaxCredentialSize];
+    //CredentialStruct mCredentials[kMaxUsers][kMaxCredentials];
 
     EFR32DoorLock::LockInitParams::LockParam LockParams;
 
-    LockUserInfo userInStorage;
-    LockCredentialInfo credentialInStorage;
+
 
     static StorageKeyName LockUserEndpoint(uint16_t userIndex, chip::EndpointId endpoint) { return StorageKeyName::Formatted("g/lu/%x/e/%x", userIndex, endpoint); }
     static StorageKeyName LockCredentialEndpoint(uint16_t credentialIndex, chip::EndpointId endpoint) { return StorageKeyName::Formatted("g/lc/%x/e/%x", credentialIndex, endpoint); }
     //static StorageKeyName LockScheduleEndpoint(uint8_t scheduleIndex, chip::EndpointId endpoint) { return StorageKeyName::Formatted("g/ls/%x/e/%x", scheduleIndex, endpoint); }
     static StorageKeyName LockUserCredentialMap(uint16_t userIndex) { return StorageKeyName::Formatted("g/lu/%x/lc", userIndex); } // Stores all the credential indices that belong to a user
 
-    CredentialStruct tempCredentials;
-    CredentialStruct tempCredentials2[kMaxCredentialsPerUser];
+    LockUserInfo userInStorage;
+    LockCredentialInfo credentialInStorage;    
+    CredentialStruct mCredential;
+    CredentialStruct mCredentials[kMaxCredentialsPerUser];
 
 };
 
