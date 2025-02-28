@@ -101,11 +101,11 @@ Silicon Labs platform.
 
 *   Build the example as Sleepy End Device (SED)
 
-          $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32/ ./out/onoff-plug-app_SED BRD4161A --sed
+          $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32/ ./out/onoff-plug-app_SED BRD4187C --sed
 
     or use gn as previously mentioned but adding the following arguments:
 
-          $ gn gen out/debug '--args=silabs_board="BRD4161A" enable_sleepy_device=true matter_openthread_ftd=false'
+          $ gn gen out/debug '--args=silabs_board="BRD4187C" enable_sleepy_device=true matter_openthread_ftd=false'
 
 For more build options, help is provided when running the build script without
 arguments
@@ -315,19 +315,19 @@ passed to the build scripts.
 
 `matter_progress_logging, matter_detail_logging, matter_automation_logging`
 
-    $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32 ./out/onoff-plug-app BRD4164A "matter_detail_logging=false matter_automation_logging=false matter_progress_logging=false"
+    $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32 ./out/onoff-plug-app BRD4187C "matter_detail_logging=false matter_automation_logging=false matter_progress_logging=false"
 
 ### Debug build / release build
 
 `is_debug`
 
-    $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32 ./out/onoff-plug-app BRD4164A "is_debug=false"
+    $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32 ./out/onoff-plug-app BRD4187C "is_debug=false"
 
 ### Disabling LCD
 
 `show_qr_code`
 
-    $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32 ./out/onoff-plug-app BRD4164A "show_qr_code=false"
+    $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32 ./out/onoff-plug-app BRD4187C "show_qr_code=false"
 
 ### KVS maximum entry count
 
@@ -336,4 +336,4 @@ passed to the build scripts.
     Set the maximum Kvs entries that can be stored in NVM (Default 75)
     Thresholds: 30 <= kvs_max_entries <= 255
 
-    $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32 ./out/onoff-plug-app BRD4164A kvs_max_entries=50
+    $ ./scripts/examples/gn_efr32_example.sh ./examples/onoff-plug-app/efr32 ./out/onoff-plug-app BRD4187C kvs_max_entries=50
