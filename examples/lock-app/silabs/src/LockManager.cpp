@@ -373,7 +373,7 @@ bool LockManager::GetUser(chip::EndpointId endpointId, uint16_t userIndex, Ember
     user.modificationSource = DlAssetSource::kMatterIM;
     user.lastModifiedBy     = userInStorage.lastModifiedBy;
     
-    // Get credential structs from nvm3
+    // Get credential struct from nvm3
     chip::StorageKeyName credentialKey = LockUserCredentialMap(userIndex);
 
     uint16_t credentialSize = static_cast<uint16_t>(sizeof(CredentialStruct)*userInStorage.currentCredentialCount);
@@ -453,7 +453,7 @@ bool LockManager::SetUser(chip::EndpointId endpointId, uint16_t userIndex, chip:
 
     userInStorage.currentCredentialCount = totalCredentials;
 
-    // Save credential structs in nvm3
+    // Save credential struct in nvm3
     chip::StorageKeyName credentialKey = LockUserCredentialMap(userIndex);
 
     error = chip::Server::GetInstance().GetPersistentStorage().SyncSetKeyValue(credentialKey.KeyName(), credentials, static_cast<uint16_t>(sizeof(CredentialStruct)*totalCredentials));
@@ -602,6 +602,7 @@ bool LockManager::SetCredential(chip::EndpointId endpointId, uint16_t credential
 DlStatus LockManager::GetWeekdaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
                                          EmberAfPluginDoorLockWeekDaySchedule & schedule)
 {
+    CHIP_ERROR error;
 
     VerifyOrReturnValue(weekdayIndex > 0, DlStatus::kFailure); // indices are one-indexed
     VerifyOrReturnValue(userIndex > 0, DlStatus::kFailure);    // indices are one-indexed
@@ -612,13 +613,36 @@ DlStatus LockManager::GetWeekdaySchedule(chip::EndpointId endpointId, uint8_t we
     VerifyOrReturnValue(IsValidWeekdayScheduleIndex(weekdayIndex), DlStatus::kFailure);
     VerifyOrReturnValue(IsValidUserIndex(userIndex), DlStatus::kFailure);
 
-    const auto & scheduleInStorage = mWeekdaySchedule[userIndex][weekdayIndex];
-    if (DlScheduleStatus::kAvailable == scheduleInStorage.status)
+    // Get schedule data from nvm3
+    chip::StorageKeyName scheduleDataKey = LockUserWeekDayScheduleEndpoint(userIndex, weekdayIndex, endpointId);
+
+    uint16_t scheduleSize = static_cast<uint16_t>(sizeof(WeekDayScheduleInfo));
+
+    error = chip::Server::GetInstance().GetPersistentStorage().SyncGetKeyValue(scheduleDataKey.KeyName(), &weekDayScheduleInStorage, scheduleSize);
+
+    // If no data is found at scheduleUserMapKey key
+    if(error == CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND)
     {
+        ChipLogError(Zcl, "No schedule data found for user");
         return DlStatus::kNotFound;
     }
+    // Else if KVS read was successful
+    else if(error == CHIP_NO_ERROR)
+    {
 
-    schedule = scheduleInStorage.schedule;
+        if (weekDayScheduleInStorage.status == DlScheduleStatus::kAvailable)
+        {
+            return DlStatus::kNotFound;
+        }
+    
+    }
+    else
+    {
+        ChipLogError(Zcl, "Error reading from KVS key");
+        return DlStatus::kFailure;
+    }
+
+    schedule = weekDayScheduleInStorage.schedule;
 
     return DlStatus::kSuccess;
 }
@@ -627,6 +651,7 @@ DlStatus LockManager::SetWeekdaySchedule(chip::EndpointId endpointId, uint8_t we
                                          DlScheduleStatus status, DaysMaskMap daysMask, uint8_t startHour, uint8_t startMinute,
                                          uint8_t endHour, uint8_t endMinute)
 {
+    CHIP_ERROR error;
 
     VerifyOrReturnValue(weekdayIndex > 0, DlStatus::kFailure); // indices are one-indexed
     VerifyOrReturnValue(userIndex > 0, DlStatus::kFailure);    // indices are one-indexed
@@ -637,19 +662,23 @@ DlStatus LockManager::SetWeekdaySchedule(chip::EndpointId endpointId, uint8_t we
     VerifyOrReturnValue(IsValidWeekdayScheduleIndex(weekdayIndex), DlStatus::kFailure);
     VerifyOrReturnValue(IsValidUserIndex(userIndex), DlStatus::kFailure);
 
-    auto & scheduleInStorage = mWeekdaySchedule[userIndex][weekdayIndex];
+    weekDayScheduleInStorage.schedule.daysMask    = daysMask;
+    weekDayScheduleInStorage.schedule.startHour   = startHour;
+    weekDayScheduleInStorage.schedule.startMinute = startMinute;
+    weekDayScheduleInStorage.schedule.endHour     = endHour;
+    weekDayScheduleInStorage.schedule.endMinute   = endMinute;
+    weekDayScheduleInStorage.status               = status;
 
-    scheduleInStorage.schedule.daysMask    = daysMask;
-    scheduleInStorage.schedule.startHour   = startHour;
-    scheduleInStorage.schedule.startMinute = startMinute;
-    scheduleInStorage.schedule.endHour     = endHour;
-    scheduleInStorage.schedule.endMinute   = endMinute;
-    scheduleInStorage.status               = status;
+    // Save schedule data in nvm3
+    chip::StorageKeyName scheduleDataKey = LockUserWeekDayScheduleEndpoint(userIndex, weekdayIndex, endpointId);
 
-    // Save schedule information in NVM flash
-    SilabsConfig::WriteConfigValueBin(
-        SilabsConfig::kConfigKey_WeekDaySchedules, reinterpret_cast<const uint8_t *>(mWeekdaySchedule),
-        sizeof(EmberAfPluginDoorLockWeekDaySchedule) * LockParams.numberOfWeekdaySchedulesPerUser * LockParams.numberOfUsers);
+    error = chip::Server::GetInstance().GetPersistentStorage().SyncSetKeyValue(scheduleDataKey.KeyName(), &weekDayScheduleInStorage, static_cast<uint16_t>(sizeof(WeekDayScheduleInfo)));
+
+    if((error != CHIP_NO_ERROR))
+    {
+        ChipLogError(Zcl, "Error reading from KVS key");
+        return DlStatus::kFailure;     
+    }  
 
     return DlStatus::kSuccess;
 }
@@ -657,6 +686,8 @@ DlStatus LockManager::SetWeekdaySchedule(chip::EndpointId endpointId, uint8_t we
 DlStatus LockManager::GetYeardaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                          EmberAfPluginDoorLockYearDaySchedule & schedule)
 {
+    CHIP_ERROR error;
+
     VerifyOrReturnValue(yearDayIndex > 0, DlStatus::kFailure); // indices are one-indexed
     VerifyOrReturnValue(userIndex > 0, DlStatus::kFailure);    // indices are one-indexed
 
@@ -666,13 +697,36 @@ DlStatus LockManager::GetYeardaySchedule(chip::EndpointId endpointId, uint8_t ye
     VerifyOrReturnValue(IsValidYeardayScheduleIndex(yearDayIndex), DlStatus::kFailure);
     VerifyOrReturnValue(IsValidUserIndex(userIndex), DlStatus::kFailure);
 
-    const auto & scheduleInStorage = mYeardaySchedule[userIndex][yearDayIndex];
-    if (DlScheduleStatus::kAvailable == scheduleInStorage.status)
+    // Get schedule data from nvm3
+    chip::StorageKeyName scheduleDataKey = LockUserYearDayScheduleEndpoint(userIndex, yearDayIndex, endpointId);
+
+    uint16_t scheduleSize = static_cast<uint16_t>(sizeof(YearDayScheduleInfo));
+
+    error = chip::Server::GetInstance().GetPersistentStorage().SyncGetKeyValue(scheduleDataKey.KeyName(), &yearDayScheduleInStorage, scheduleSize);
+
+    // If no data is found at scheduleUserMapKey key
+    if(error == CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND)
     {
+        ChipLogError(Zcl, "No schedule data found for user");
         return DlStatus::kNotFound;
     }
+    // Else if KVS read was successful
+    else if(error == CHIP_NO_ERROR)
+    {
 
-    schedule = scheduleInStorage.schedule;
+        if (yearDayScheduleInStorage.status == DlScheduleStatus::kAvailable)
+        {
+            return DlStatus::kNotFound;
+        }
+    
+    }
+    else
+    {
+        ChipLogError(Zcl, "Error reading from KVS key");
+        return DlStatus::kFailure;
+    }
+
+    schedule = yearDayScheduleInStorage.schedule;
 
     return DlStatus::kSuccess;
 }
@@ -680,6 +734,8 @@ DlStatus LockManager::GetYeardaySchedule(chip::EndpointId endpointId, uint8_t ye
 DlStatus LockManager::SetYeardaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                          DlScheduleStatus status, uint32_t localStartTime, uint32_t localEndTime)
 {
+    CHIP_ERROR error;
+
     VerifyOrReturnValue(yearDayIndex > 0, DlStatus::kFailure); // indices are one-indexed
     VerifyOrReturnValue(userIndex > 0, DlStatus::kFailure);    // indices are one-indexed
 
@@ -689,16 +745,20 @@ DlStatus LockManager::SetYeardaySchedule(chip::EndpointId endpointId, uint8_t ye
     VerifyOrReturnValue(IsValidYeardayScheduleIndex(yearDayIndex), DlStatus::kFailure);
     VerifyOrReturnValue(IsValidUserIndex(userIndex), DlStatus::kFailure);
 
-    auto & scheduleInStorage = mYeardaySchedule[userIndex][yearDayIndex];
+    yearDayScheduleInStorage.schedule.localStartTime = localStartTime;
+    yearDayScheduleInStorage.schedule.localEndTime   = localEndTime;
+    yearDayScheduleInStorage.status                  = status;
 
-    scheduleInStorage.schedule.localStartTime = localStartTime;
-    scheduleInStorage.schedule.localEndTime   = localEndTime;
-    scheduleInStorage.status                  = status;
+    // Save schedule data in nvm3
+    chip::StorageKeyName scheduleDataKey = LockUserYearDayScheduleEndpoint(userIndex, yearDayIndex, endpointId);
 
-    // Save schedule information in NVM flash
-    SilabsConfig::WriteConfigValueBin(
-        SilabsConfig::kConfigKey_YearDaySchedules, reinterpret_cast<const uint8_t *>(mYeardaySchedule),
-        sizeof(EmberAfPluginDoorLockYearDaySchedule) * LockParams.numberOfYeardaySchedulesPerUser * LockParams.numberOfUsers);
+    error = chip::Server::GetInstance().GetPersistentStorage().SyncSetKeyValue(scheduleDataKey.KeyName(), &yearDayScheduleInStorage, static_cast<uint16_t>(sizeof(YearDayScheduleInfo)));
+
+    if((error != CHIP_NO_ERROR))
+    {
+        ChipLogError(Zcl, "Error reading from KVS key");
+        return DlStatus::kFailure;     
+    } 
 
     return DlStatus::kSuccess;
 }
@@ -706,19 +766,44 @@ DlStatus LockManager::SetYeardaySchedule(chip::EndpointId endpointId, uint8_t ye
 DlStatus LockManager::GetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex,
                                          EmberAfPluginDoorLockHolidaySchedule & schedule)
 {
+    CHIP_ERROR error;
+
     VerifyOrReturnValue(holidayIndex > 0, DlStatus::kFailure); // indices are one-indexed
 
     holidayIndex--;
 
     VerifyOrReturnValue(IsValidHolidayScheduleIndex(holidayIndex), DlStatus::kFailure);
 
-    const auto & scheduleInStorage = mHolidaySchedule[holidayIndex];
-    if (DlScheduleStatus::kAvailable == scheduleInStorage.status)
+    // Get schedule data from nvm3
+    chip::StorageKeyName scheduleDataKey = LockHolidayScheduleEndpoint(holidayIndex, endpointId);
+
+    uint16_t scheduleSize = static_cast<uint16_t>(sizeof(HolidayScheduleInfo));
+
+    error = chip::Server::GetInstance().GetPersistentStorage().SyncGetKeyValue(scheduleDataKey.KeyName(), &holidayScheduleInStorage, scheduleSize);
+
+    // If no data is found at scheduleUserMapKey key
+    if(error == CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND)
     {
+        ChipLogError(Zcl, "No schedule data found for user");
         return DlStatus::kNotFound;
     }
+    // Else if KVS read was successful
+    else if(error == CHIP_NO_ERROR)
+    {
 
-    schedule = scheduleInStorage.schedule;
+        if (holidayScheduleInStorage.status == DlScheduleStatus::kAvailable)
+        {
+            return DlStatus::kNotFound;
+        }
+    
+    }
+    else
+    {
+        ChipLogError(Zcl, "Error reading from KVS key");
+        return DlStatus::kFailure;
+    }
+
+    schedule = holidayScheduleInStorage.schedule;
 
     return DlStatus::kSuccess;
 }
@@ -726,23 +811,29 @@ DlStatus LockManager::GetHolidaySchedule(chip::EndpointId endpointId, uint8_t ho
 DlStatus LockManager::SetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus status,
                                          uint32_t localStartTime, uint32_t localEndTime, OperatingModeEnum operatingMode)
 {
+    CHIP_ERROR error;
+
     VerifyOrReturnValue(holidayIndex > 0, DlStatus::kFailure); // indices are one-indexed
 
     holidayIndex--;
 
     VerifyOrReturnValue(IsValidHolidayScheduleIndex(holidayIndex), DlStatus::kFailure);
 
-    auto & scheduleInStorage = mHolidaySchedule[holidayIndex];
+    holidayScheduleInStorage.schedule.localStartTime = localStartTime;
+    holidayScheduleInStorage.schedule.localEndTime   = localEndTime;
+    holidayScheduleInStorage.schedule.operatingMode  = operatingMode;
+    holidayScheduleInStorage.status                  = status;
 
-    scheduleInStorage.schedule.localStartTime = localStartTime;
-    scheduleInStorage.schedule.localEndTime   = localEndTime;
-    scheduleInStorage.schedule.operatingMode  = operatingMode;
-    scheduleInStorage.status                  = status;
+    // Save schedule data in nvm3
+    chip::StorageKeyName scheduleDataKey = LockHolidayScheduleEndpoint(holidayIndex, endpointId);
 
-    // Save schedule information in NVM flash
-    SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_HolidaySchedules,
-                                      reinterpret_cast<const uint8_t *>(&(mHolidaySchedule)),
-                                      sizeof(EmberAfPluginDoorLockHolidaySchedule) * LockParams.numberOfHolidaySchedules);
+    error = chip::Server::GetInstance().GetPersistentStorage().SyncSetKeyValue(scheduleDataKey.KeyName(), &holidayScheduleInStorage, static_cast<uint16_t>(sizeof(HolidayScheduleInfo)));
+
+    if((error != CHIP_NO_ERROR))
+    {
+        ChipLogError(Zcl, "Error reading from KVS key");
+        return DlStatus::kFailure;     
+    } 
 
     return DlStatus::kSuccess;
 }
