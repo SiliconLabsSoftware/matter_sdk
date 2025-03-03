@@ -92,3 +92,31 @@ jobs:
         with:
             example-app: "refrigerator-app"
             output-directory: "./out/refrigerator-app"
+
+    build-fan-control-app:
+        name: Build Fan-Control-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "fan-control-app"
+            output-directory: "./out/fan-control-app"
+
+    build-multi-sensor-app:
+        name: Build Multi-Sensor-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "multi-sensor-app"
+            output-directory: "./out/multi-sensor-app"
+
+    build-onoff-plug-app:
+        name: Build OnOff-Plug-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "onoff-plug-app"
+            output-directory: "./out/onoff-plug-app"
+
+    build-tempalte-app:
+        name: Build Template-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "template"
+            output-directory: "./out/template-app"
