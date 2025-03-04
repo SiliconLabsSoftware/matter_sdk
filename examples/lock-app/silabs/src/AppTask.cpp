@@ -146,8 +146,7 @@ CHIP_ERROR AppTask::Init()
     chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state;
     chip::EndpointId endpointId{ 1 };
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    //TODO: revisit this
-    //chip::app::Clusters::DoorLock::Attributes::LockState::Get(endpointId, state);
+    chip::app::Clusters::DoorLock::Attributes::LockState::Get(endpointId, state);
 
     uint8_t numberOfCredentialsPerUser = 0;
     if (!DoorLockServer::Instance().GetNumberOfCredentialsSupportedPerUser(endpointId, numberOfCredentialsPerUser))
