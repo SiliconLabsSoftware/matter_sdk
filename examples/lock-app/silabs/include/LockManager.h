@@ -276,10 +276,10 @@ private:
     {
         return StorageKeyName::Formatted("g/lu/%x/e/%x", userIndex, endpoint);
     }
-    // Stores LockCredentialInfo corresponding to a credential Index 
-    static StorageKeyName LockCredentialEndpoint(uint16_t credentialIndex, chip::EndpointId endpoint)
+    // Stores LockCredentialInfo corresponding to a credential Index and type
+    static StorageKeyName LockCredentialEndpoint(uint16_t credentialIndex, CredentialTypeEnum credentialType, chip::EndpointId endpoint)
     {
-        return StorageKeyName::Formatted("g/lc/%x/e/%x", credentialIndex, endpoint);
+        return StorageKeyName::Formatted("g/lc/%x/t/%x/e/%x", credentialIndex, credentialType, endpoint);
     }
     // Stores all the credential indices that belong to a user
     static StorageKeyName LockUserCredentialMap(uint16_t userIndex)

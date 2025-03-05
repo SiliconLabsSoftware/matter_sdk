@@ -502,7 +502,7 @@ bool LockManager::GetCredential(chip::EndpointId endpointId, uint16_t credential
 
     uint16_t size = static_cast<uint16_t>(sizeof(LockCredentialInfo));
 
-    chip::StorageKeyName key = LockCredentialEndpoint(credentialIndex, endpointId);
+    chip::StorageKeyName key = LockCredentialEndpoint(credentialIndex, credentialType, endpointId);
 
     error = chip::Server::GetInstance().GetPersistentStorage().SyncGetKeyValue(key.KeyName(), &credentialInStorage, size);
 
@@ -577,7 +577,7 @@ bool LockManager::SetCredential(chip::EndpointId endpointId, uint16_t credential
 
     memcpy(credentialInStorage.credentialData, credentialData.data(), credentialInStorage.credentialDataSize);
 
-    chip::StorageKeyName key = LockCredentialEndpoint(credentialIndex, endpointId);
+    chip::StorageKeyName key = LockCredentialEndpoint(credentialIndex, credentialType, endpointId);
 
     if ((error != CHIP_NO_ERROR))
     {
@@ -931,7 +931,7 @@ bool LockManager::setLockState(chip::EndpointId endpointId, const Nullable<chip:
                 // Read the individual credential at credentialIndex j
                 uint16_t credentialSize = static_cast<uint16_t>(sizeof(LockCredentialInfo));
 
-                chip::StorageKeyName key = LockCredentialEndpoint(mCredentials[j].credentialIndex, endpointId);
+                chip::StorageKeyName key = LockCredentialEndpoint(mCredentials[j].credentialIndex, mCredentials[j].credentialType, endpointId);
 
                 error = chip::Server::GetInstance().GetPersistentStorage().SyncGetKeyValue(key.KeyName(), &credentialInStorage,
                                                                                            credentialSize);
