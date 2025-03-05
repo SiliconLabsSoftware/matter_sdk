@@ -35,11 +35,11 @@ namespace {
  */
 CHIP_ERROR ConfigureLIBasedSleep()
 {
-    ReturnLogErrorOnFailure(ConfigureBroadcastFilter(true));
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigureBroadcastFilter(true));
 
     // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
-    ReturnLogErrorOnFailure(ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
-                                               chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigurePowerSave(
+        RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
 
     return CHIP_NO_ERROR;
 }
