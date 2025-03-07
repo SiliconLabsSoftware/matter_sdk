@@ -178,6 +178,8 @@ public:
 
 protected:
     CHIP_ERROR Init();
+    CHIP_ERROR BaseInit();
+    virtual CHIP_ERROR AppInit() { return CHIP_NO_ERROR; }
 
     /** @brief
      * Function to be called at the end of Init to indicate that the application has completed its initialization.
