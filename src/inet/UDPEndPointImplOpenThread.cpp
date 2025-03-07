@@ -127,7 +127,7 @@ CHIP_ERROR UDPEndPointImplOT::IPv6Bind(otUdpSocket & socket, const IPAddress & a
 
     LockOpenThread();
     otUdpOpen(mOTInstance, &socket, handleUdpReceive, this);
-    otUdpBind(mOTInstance, &socket, &listenSockAddr, OT_NETIF_THREAD);
+    otUdpBind(mOTInstance, &socket, &listenSockAddr, OT_NETIF_THREAD_HOST);
     UnlockOpenThread();
 
     return chip::DeviceLayer::Internal::MapOpenThreadError(err);
