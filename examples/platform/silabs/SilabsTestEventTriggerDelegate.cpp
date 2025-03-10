@@ -17,7 +17,7 @@
  */
 
 #include "SilabsTestEventTriggerDelegate.h"
-#include <ProvisionManager.h>
+#include <headers/ProvisionManager.h>
 #include <lib/core/ErrorStr.h>
 
 using namespace ::chip::DeviceLayer;
