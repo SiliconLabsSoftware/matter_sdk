@@ -27,6 +27,11 @@
 
 #include <system/SystemPacketBuffer.h>
 
+// Temporary until we manage to update the OT version in the CI
+#ifndef OT_NETIF_THREAD_HOST
+#define OT_NETIF_THREAD_HOST OT_NETIF_THREAD
+#endif
+
 namespace chip {
 namespace Inet {
 
