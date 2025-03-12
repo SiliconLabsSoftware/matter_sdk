@@ -169,7 +169,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     wfx_wifi_provision_t wifiConfig;
     wfx_get_wifi_provision(&wifiConfig);
 
-    if (!(wifiConfig.ssid[0] != 0))
+    if (!(wifiConfig.ssid[0] != 0) && (mCallback && mCallback->CanGoToDeepSleep()))
     {
         return ConfigureDeepSleep();
     }

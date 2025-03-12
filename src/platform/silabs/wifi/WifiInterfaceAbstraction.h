@@ -118,9 +118,9 @@ typedef enum
 
 typedef struct
 {
-    char ssid[WFX_MAX_SSID_LENGTH + 1];
+    char ssid[WFX_MAX_SSID_LENGTH + 1] = {0};
     size_t ssid_length;
-    char passkey[WFX_MAX_PASSKEY_LENGTH + 1];
+    char passkey[WFX_MAX_PASSKEY_LENGTH + 1] = {0};
     size_t passkey_length;
     wfx_sec_t security;
 } wfx_wifi_provision_t;

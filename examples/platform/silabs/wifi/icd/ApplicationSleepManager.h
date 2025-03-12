@@ -114,6 +114,7 @@ public:
      *         false if the device cannot go to LI sleep
      */
     bool CanGoToLIBasedSleep() override;
+    bool CanGoToDeepSleep() override;
 
     // FabricTable::Delegate implementation
 
