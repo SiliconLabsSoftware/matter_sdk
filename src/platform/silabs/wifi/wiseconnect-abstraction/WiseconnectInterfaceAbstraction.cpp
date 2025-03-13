@@ -141,7 +141,6 @@ bool wfx_get_wifi_provision(wfx_wifi_provision_t * wifiConfig)
  ***********************************************************************/
 void wfx_clear_wifi_provision(void)
 {
-    memset(&wfx_rsi.sec, 0, sizeof(wfx_rsi.sec));
     wfx_rsi.dev_state.Clear(WifiState::kStationProvisioned);
     ChipLogProgress(DeviceLayer, "Clear WiFi Provision");
 }
