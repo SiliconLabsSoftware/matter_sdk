@@ -93,17 +93,6 @@ void ApplicationSleepManager::OnFabricCommitted(const chip::FabricTable & fabric
     mWifiSleepManager->VerifyAndTransitionToLowPowerMode();
 }
 
-bool ApplicationSleepManager::CanGoToDeepSleep()
-{
-    bool canGoToDeepSleep = true;
-    if (mIsCommissionningWindowOpen)
-    {
-        ChipLogProgress(AppServer, "Commissioning Window is Open - Cannot go to Deep sleep");
-        canGoToDeepSleep = false;
-    }
-    return canGoToDeepSleep;
-}
-
 bool ApplicationSleepManager::CanGoToLIBasedSleep()
 {
     bool canGoToLIBasedSleep = true;

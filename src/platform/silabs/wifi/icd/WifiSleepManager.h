@@ -70,7 +70,6 @@ public:
          * @return false The Wi-Fi Sleep Manager cannot go to LI based sleep or an error occured in the processing.
          */
         virtual bool CanGoToLIBasedSleep() = 0;
-        virtual bool CanGoToDeepSleep()    = 0;
     };
 
     /**
