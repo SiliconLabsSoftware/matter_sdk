@@ -94,7 +94,7 @@ using namespace ::chip::DeviceLayer;
 
 AppTask AppTask::sAppTask;
 
-CHIP_ERROR AppTask::Init()
+CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
     app::SetAttributePersistenceProvider(&gDeferredAttributePersister);
@@ -112,13 +112,6 @@ CHIP_ERROR AppTask::Init()
 #else
     ChipLogProgress(AppServer, "Sequential CMP app");
 #endif
-
-    err = BaseApplication::Init();
-    if (err != CHIP_NO_ERROR)
-    {
-        SILABS_LOG("BaseApplication::Init() failed");
-        appError(err);
-    }
 
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
