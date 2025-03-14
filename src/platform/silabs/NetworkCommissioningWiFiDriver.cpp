@@ -150,7 +150,6 @@ CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
 
     // Set the wifi configuration
     wfx_wifi_provision_t wifiConfig;
-    memset(&wifiConfig, 0, sizeof(wifiConfig));
 
     VerifyOrReturnError(ssidLen <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_BUFFER_TOO_SMALL);
     memcpy(wifiConfig.ssid, ssid, ssidLen);
