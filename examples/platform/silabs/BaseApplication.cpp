@@ -311,6 +311,8 @@ CHIP_ERROR BaseApplication::Init()
         return err;
     }
 
+    SILABS_TRACE_END_ERROR(TimeTraceOperation::kAppInit, err);
+    SILABS_TRACE_END_ERROR(TimeTraceOperation::kBootup, err);
     return err;
 }
 
