@@ -1,8 +1,8 @@
-# Matter Linux Fabric Bridge Example
+# Matter Linux Fabric Sync Example
 
-An example application to implement the Aggregator device type with Fabric
-Synchronization condition met and demonstrates the end-to-end Fabric
-Synchronization feature using dynamic endpoints.
+An example application to implement the Fabric Synchronization feature and
+demonstrates the end-to-end Fabric Synchronization feature using dynamic
+endpoints.
 
 Fabric Synchronization feature will facilitate the commissioning of end devices
 from one fabric to another without requiring user intervention for every end
@@ -14,7 +14,7 @@ This doc is tested on **Ubuntu 22.04 LTS (aarch64)**
 
 <hr>
 
--   [Matter Linux Fabric Bridge Example](#matter-linux-fabric-bridge-example)
+-   [Matter Linux Fabric Sync Example](#matter-linux-fabric-sync-example)
     -   [Theory of Operation](#theory-of-operation)
     -   [Building](#building)
     -   [Running the Complete Example on Ubuntu](#running-the-complete-example-on-ubuntu)
@@ -25,7 +25,7 @@ This doc is tested on **Ubuntu 22.04 LTS (aarch64)**
 
 ### Dynamic Endpoints
 
-The Bridge Example makes use of Dynamic Endpoints. Current SDK support is
+The Fabric-Sync Example makes use of Dynamic Endpoints. Current SDK support is
 limited for dynamic endpoints, since endpoints are typically defined (along with
 the clusters and attributes they contain) in a .zap file which then generates
 code and static structures to define the endpoints.
@@ -80,61 +80,44 @@ defined:
 
 ## Building
 
--   Install tool chain
+-   For Linux host example:
 
     ```sh
-    sudo apt-get install git gcc g++ python pkg-config libssl-dev libdbus-1-dev libglib2.0-dev ninja-build python3-venv python3-dev unzip
-    ```
-
--   Build the example application:
-
-    ### For Linux host example:
-
-    ```
     source scripts/activate.sh
-    ./scripts/build/build_examples.py --target linux-x64-fabric-bridge-rpc-no-ble build
+    ./scripts/build/build_examples.py --target linux-x64-fabric-sync-no-ble build
     ```
 
-    ### For Raspberry Pi 4 example:
+-   For Raspberry Pi 4 example:
 
     Pull Docker Images
 
-    ```
-    docker pull connectedhomeip/chip-build-vscode:latest
+    ```sh
+    docker pull ghcr.io/project-chip/chip-build-crosscompile:112
     ```
 
     Run docker
 
-    ```
-    docker run -it -v ~/connectedhomeip:/var/connectedhomeip connectedhomeip/chip-build-vscode:latest /bin/bash
+    ```sh
+    docker run -it -v ~/connectedhomeip:/var/connectedhomeip ghcr.io/project-chip/chip-build-crosscompile:112 /bin/bash
     ```
 
     Build
 
-    ```
+    ```sh
     cd /var/connectedhomeip
 
     git config --global --add safe.directory /var/connectedhomeip
-    git config --global --add safe.directory /var/connectedhomeip/third_party/pigweed/repo
-    git config --global --add safe.directory /var/connectedhomeip/examples/common/QRCode/repo
 
     ./scripts/run_in_build_env.sh \
      "./scripts/build/build_examples.py \
-        --target linux-arm64-fabric-bridge-no-ble-clang-rpc \
+        --target linux-arm64-fabric-sync-no-ble-clang \
         build"
     ```
 
     Transfer the fabric-bridge-app binary to a Raspberry Pi
 
-    ```
-    scp ./fabric-bridge-app ubuntu@xxx.xxx.xxx.xxx:/home/ubuntu
-    ```
-
--   To delete generated executable, libraries and object files use:
-
     ```sh
-    cd ~/connectedhomeip/examples/fabric-bridge-app/linux
-    rm -rf out/
+    scp ./fabric-sync ubuntu@xxx.xxx.xxx.xxx:/home/ubuntu
     ```
 
 ## Running the Complete Example on Ubuntu
@@ -143,11 +126,60 @@ defined:
 
     Follow [Building](#building) section of this document.
 
--   Run Linux Fabric Bridge Example App
+-   Run Linux Fabric Sync Example App on two Linux machine E1 and E2
 
     ```sh
-    cd ~/connectedhomeip/examples/fabric-bridge-app/linux
-    sudo out/debug/fabric-bridge-app
+    sudo rm -rf /tmp/chip_*
+    cd ~/connectedhomeip/
+    out/debug/fabric-sync
     ```
 
--   Test the device using FabricAdmin on your laptop / workstation etc.
+-   Initiate the FS Setup Process from E1 to E2
+
+    ```sh
+    > app add-bridge 1 20202021 192.168.86.246 5540
+    Done
+    > New device with Node ID: 0000000000000001 has been successfully added.
+    A new device has been added on Endpoint: 2.
+    ```
+
+-   Verify Reverse Commissioning of the Fabric-Bridge from E1 on E2
+
+    ```sh
+    > New device with Node ID: 0000000000000002 has been successfully added.
+    ```
+
+-   Pair Light Example to E2
+
+    Since Fabric-Bridge also functions as a Matter server, running it alongside
+    the Light Example app on the same machine would cause conflicts. Therefore,
+    you need to run the Matter Light Example app on a separate physical machine
+    from the one hosting Fabric-Sync.
+
+    ```sh
+    > app add-device 3 <setup-pin-code> <device-remote-ip> <device-remote-port>
+    ```
+
+    After the device is successfully added, you will observe the following
+    message on E2 with the newly assigned Node ID:
+
+    ```sh
+    > New device with Node ID: 0x3 has been successfully added.
+    ```
+
+    Additionally, you should also get notified when a new device is added to E2
+    from the E1:
+
+    ```sh
+    > A new device is added on Endpoint 3.
+    ```
+
+-   Synchronize Light Example to E1
+
+    After the Light Example is successfully paired in E2, we can start to
+    synchronize the light device to E1 using the new assigned dynamic endpointid
+    on Ecosystem 2.
+
+    ```sh
+    > app sync-device <endpointid>
+    ```
