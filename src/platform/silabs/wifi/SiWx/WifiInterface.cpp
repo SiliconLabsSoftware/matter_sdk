@@ -647,7 +647,7 @@ void NotifySuccessfulConnection(void)
     struct netif * sta_netif = &wifi_client_context.netif;
     VerifyOrReturn(sta_netif != nullptr, ChipLogError(DeviceLayer, "HandleDHCPPolling: failed to get STA netif"));
 #if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
-    wfx_dhcp_got_ipv4((uint32_t) sta_netif->ip_addr.u_addr.ip4.addr)
+    wfx_dhcp_got_ipv4((uint32_t) sta_netif->ip_addr.u_addr.ip4.addr);
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
     char addrStr[chip::Inet::IPAddress::kMaxStringLength] = { 0 };
     VerifyOrReturn(ip6addr_ntoa_r(netif_ip6_addr(sta_netif, 0), addrStr, sizeof(addrStr)) != nullptr);
@@ -848,7 +848,6 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
     wfx_ip_changed_notify(IP_STATUS_SUCCESS);
 }
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
-
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 sl_status_t ConfigurePowerSave(rsi_power_save_profile_mode_t sl_si91x_ble_state, sl_si91x_performance_profile_t sl_si91x_wifi_state,
