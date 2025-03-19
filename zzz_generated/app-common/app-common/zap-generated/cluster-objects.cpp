@@ -14197,6 +14197,194 @@ CHIP_ERROR TypeInfo::DecodableType::Decode(TLV::TLVReader & reader, const Concre
 namespace Events {} // namespace Events
 
 } // namespace ScenesManagement
+namespace Multicast {
+namespace Structs {
+
+namespace MulticastTargetStruct {
+CHIP_ERROR Type::EncodeForWrite(TLV::TLVWriter & aWriter, TLV::Tag aTag) const
+{
+    return DoEncode(aWriter, aTag, NullOptional);
+}
+
+CHIP_ERROR Type::EncodeForRead(TLV::TLVWriter & aWriter, TLV::Tag aTag, FabricIndex aAccessingFabricIndex) const
+{
+    return DoEncode(aWriter, aTag, MakeOptional(aAccessingFabricIndex));
+}
+
+CHIP_ERROR Type::DoEncode(TLV::TLVWriter & aWriter, TLV::Tag aTag, const Optional<FabricIndex> & aAccessingFabricIndex) const
+{
+
+    DataModel::WrappedStructEncoder encoder{ aWriter, aTag };
+
+    encoder.Encode(to_underlying(Fields::kGroupId), groupId);
+    encoder.Encode(to_underlying(Fields::kEndpoints), endpoints);
+    if (aAccessingFabricIndex.HasValue())
+    {
+        encoder.Encode(to_underlying(Fields::kFabricIndex), fabricIndex);
+    }
+
+    return encoder.Finalize();
+}
+
+CHIP_ERROR DecodableType::Decode(TLV::TLVReader & reader)
+{
+    detail::StructDecodeIterator __iterator(reader);
+    while (true)
+    {
+        auto __element = __iterator.Next();
+        if (std::holds_alternative<CHIP_ERROR>(__element))
+        {
+            return std::get<CHIP_ERROR>(__element);
+        }
+
+        CHIP_ERROR err              = CHIP_NO_ERROR;
+        const uint8_t __context_tag = std::get<uint8_t>(__element);
+
+        if (__context_tag == to_underlying(Fields::kGroupId))
+        {
+            err = DataModel::Decode(reader, groupId);
+        }
+        else if (__context_tag == to_underlying(Fields::kEndpoints))
+        {
+            err = DataModel::Decode(reader, endpoints);
+        }
+        else if (__context_tag == to_underlying(Fields::kFabricIndex))
+        {
+            err = DataModel::Decode(reader, fabricIndex);
+        }
+        else
+        {
+        }
+
+        ReturnErrorOnFailure(err);
+    }
+}
+
+} // namespace MulticastTargetStruct
+} // namespace Structs
+
+namespace Commands {
+namespace SetTarget {
+CHIP_ERROR Type::Encode(TLV::TLVWriter & aWriter, TLV::Tag aTag) const
+{
+    DataModel::WrappedStructEncoder encoder{ aWriter, aTag };
+    encoder.Encode(to_underlying(Fields::kGroupId), groupId);
+    encoder.Encode(to_underlying(Fields::kEndpoints), endpoints);
+    encoder.Encode(to_underlying(Fields::kKey), key);
+    encoder.Encode(to_underlying(Fields::kGracePeriod), gracePeriod);
+    return encoder.Finalize();
+}
+
+CHIP_ERROR DecodableType::Decode(TLV::TLVReader & reader)
+{
+    detail::StructDecodeIterator __iterator(reader);
+    while (true)
+    {
+        auto __element = __iterator.Next();
+        if (std::holds_alternative<CHIP_ERROR>(__element))
+        {
+            return std::get<CHIP_ERROR>(__element);
+        }
+
+        CHIP_ERROR err              = CHIP_NO_ERROR;
+        const uint8_t __context_tag = std::get<uint8_t>(__element);
+
+        if (__context_tag == to_underlying(Fields::kGroupId))
+        {
+            err = DataModel::Decode(reader, groupId);
+        }
+        else if (__context_tag == to_underlying(Fields::kEndpoints))
+        {
+            err = DataModel::Decode(reader, endpoints);
+        }
+        else if (__context_tag == to_underlying(Fields::kKey))
+        {
+            err = DataModel::Decode(reader, key);
+        }
+        else if (__context_tag == to_underlying(Fields::kGracePeriod))
+        {
+            err = DataModel::Decode(reader, gracePeriod);
+        }
+        else
+        {
+        }
+
+        ReturnErrorOnFailure(err);
+    }
+}
+} // namespace SetTarget.
+namespace RemoveTarget {
+CHIP_ERROR Type::Encode(TLV::TLVWriter & aWriter, TLV::Tag aTag) const
+{
+    DataModel::WrappedStructEncoder encoder{ aWriter, aTag };
+    encoder.Encode(to_underlying(Fields::kGroupId), groupId);
+    encoder.Encode(to_underlying(Fields::kEndpoints), endpoints);
+    encoder.Encode(to_underlying(Fields::kGracePeriod), gracePeriod);
+    return encoder.Finalize();
+}
+
+CHIP_ERROR DecodableType::Decode(TLV::TLVReader & reader)
+{
+    detail::StructDecodeIterator __iterator(reader);
+    while (true)
+    {
+        auto __element = __iterator.Next();
+        if (std::holds_alternative<CHIP_ERROR>(__element))
+        {
+            return std::get<CHIP_ERROR>(__element);
+        }
+
+        CHIP_ERROR err              = CHIP_NO_ERROR;
+        const uint8_t __context_tag = std::get<uint8_t>(__element);
+
+        if (__context_tag == to_underlying(Fields::kGroupId))
+        {
+            err = DataModel::Decode(reader, groupId);
+        }
+        else if (__context_tag == to_underlying(Fields::kEndpoints))
+        {
+            err = DataModel::Decode(reader, endpoints);
+        }
+        else if (__context_tag == to_underlying(Fields::kGracePeriod))
+        {
+            err = DataModel::Decode(reader, gracePeriod);
+        }
+        else
+        {
+        }
+
+        ReturnErrorOnFailure(err);
+    }
+}
+} // namespace RemoveTarget.
+} // namespace Commands
+
+namespace Attributes {
+CHIP_ERROR TypeInfo::DecodableType::Decode(TLV::TLVReader & reader, const ConcreteAttributePath & path)
+{
+    switch (path.mAttributeId)
+    {
+    case Attributes::Targets::TypeInfo::GetAttributeId():
+        return DataModel::Decode(reader, targets);
+    case Attributes::GeneratedCommandList::TypeInfo::GetAttributeId():
+        return DataModel::Decode(reader, generatedCommandList);
+    case Attributes::AcceptedCommandList::TypeInfo::GetAttributeId():
+        return DataModel::Decode(reader, acceptedCommandList);
+    case Attributes::AttributeList::TypeInfo::GetAttributeId():
+        return DataModel::Decode(reader, attributeList);
+    case Attributes::FeatureMap::TypeInfo::GetAttributeId():
+        return DataModel::Decode(reader, featureMap);
+    case Attributes::ClusterRevision::TypeInfo::GetAttributeId():
+        return DataModel::Decode(reader, clusterRevision);
+    default:
+        return CHIP_NO_ERROR;
+    }
+}
+} // namespace Attributes
+
+namespace Events {} // namespace Events
+
+} // namespace Multicast
 namespace HepaFilterMonitoring {
 namespace Structs {
 
@@ -37126,6 +37314,17 @@ bool CommandIsFabricScoped(ClusterId aCluster, CommandId aCommand)
         case Clusters::ScenesManagement::Commands::GetSceneMembership::Id:
             return true;
         case Clusters::ScenesManagement::Commands::CopyScene::Id:
+            return true;
+        default:
+            return false;
+        }
+    }
+    case Clusters::Multicast::Id: {
+        switch (aCommand)
+        {
+        case Clusters::Multicast::Commands::SetTarget::Id:
+            return true;
+        case Clusters::Multicast::Commands::RemoveTarget::Id:
             return true;
         default:
             return false;

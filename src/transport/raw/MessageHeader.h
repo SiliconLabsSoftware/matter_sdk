@@ -89,8 +89,9 @@ namespace Header {
 
 enum class SessionType : uint8_t
 {
-    kUnicastSession = 0,
-    kGroupSession   = 1,
+    kUnicastSession   = 0,
+    kGroupSession     = 1,
+    kMulticastSession = 2,
 };
 
 /**
@@ -154,6 +155,8 @@ enum SecFlagMask
 {
     kSessionTypeMask = 0b00000011, ///< Mask to extract sessionType
 };
+
+constexpr uint16_t kMulticastGroupMask = 0x8000;
 
 using MsgFlags = BitFlags<MsgFlagValues>;
 using SecFlags = BitFlags<SecFlagValues>;
@@ -233,14 +236,15 @@ public:
 
     bool IsGroupSession() const { return mSessionType == Header::SessionType::kGroupSession; }
     bool IsUnicastSession() const { return mSessionType == Header::SessionType::kUnicastSession; }
+    bool IsMulticastSession() const { return mSessionType == Header::SessionType::kMulticastSession; }
 
     bool IsSessionTypeValid() const
     {
         switch (mSessionType)
         {
         case Header::SessionType::kUnicastSession:
-            return true;
         case Header::SessionType::kGroupSession:
+        case Header::SessionType::kMulticastSession:
             return true;
         default:
             return false;
@@ -251,6 +255,11 @@ public:
     {
         // Check is based on spec 4.11.2
         return (IsGroupSession() && HasSourceNodeId() && HasDestinationGroupId() && !IsSecureSessionControlMsg());
+    }
+
+    bool IsValidMulticastMsg() const
+    {
+        return (IsMulticastSession() && HasSourceNodeId() && HasDestinationNodeId() && !IsSecureSessionControlMsg());
     }
 
     bool IsValidMCSPMsg() const

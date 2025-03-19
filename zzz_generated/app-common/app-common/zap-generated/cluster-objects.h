@@ -19171,6 +19171,217 @@ struct TypeInfo
 };
 } // namespace Attributes
 } // namespace ScenesManagement
+namespace Multicast {
+namespace Structs {
+namespace MulticastTargetStruct {
+enum class Fields : uint8_t
+{
+    kGroupId     = 1,
+    kEndpoints   = 2,
+    kFabricIndex = 254,
+};
+
+struct Type
+{
+public:
+    chip::GroupId groupId = static_cast<chip::GroupId>(0);
+    DataModel::List<const chip::EndpointId> endpoints;
+    chip::FabricIndex fabricIndex = static_cast<chip::FabricIndex>(0);
+
+    static constexpr bool kIsFabricScoped = true;
+
+    auto GetFabricIndex() const { return fabricIndex; }
+
+    void SetFabricIndex(chip::FabricIndex fabricIndex_) { fabricIndex = fabricIndex_; }
+
+    CHIP_ERROR EncodeForWrite(TLV::TLVWriter & aWriter, TLV::Tag aTag) const;
+    CHIP_ERROR EncodeForRead(TLV::TLVWriter & aWriter, TLV::Tag aTag, FabricIndex aAccessingFabricIndex) const;
+
+private:
+    CHIP_ERROR DoEncode(TLV::TLVWriter & aWriter, TLV::Tag aTag, const Optional<FabricIndex> & aAccessingFabricIndex) const;
+};
+
+struct DecodableType
+{
+public:
+    chip::GroupId groupId = static_cast<chip::GroupId>(0);
+    DataModel::DecodableList<chip::EndpointId> endpoints;
+    chip::FabricIndex fabricIndex = static_cast<chip::FabricIndex>(0);
+
+    CHIP_ERROR Decode(TLV::TLVReader & reader);
+
+    static constexpr bool kIsFabricScoped = true;
+
+    auto GetFabricIndex() const { return fabricIndex; }
+
+    void SetFabricIndex(chip::FabricIndex fabricIndex_) { fabricIndex = fabricIndex_; }
+};
+
+} // namespace MulticastTargetStruct
+} // namespace Structs
+
+namespace Commands {
+// Forward-declarations so we can reference these later.
+
+namespace SetTarget {
+struct Type;
+struct DecodableType;
+} // namespace SetTarget
+
+namespace RemoveTarget {
+struct Type;
+struct DecodableType;
+} // namespace RemoveTarget
+
+} // namespace Commands
+
+namespace Commands {
+namespace SetTarget {
+enum class Fields : uint8_t
+{
+    kGroupId     = 0,
+    kEndpoints   = 1,
+    kKey         = 2,
+    kGracePeriod = 3,
+};
+
+struct Type
+{
+public:
+    // Use GetCommandId instead of commandId directly to avoid naming conflict with CommandIdentification in ExecutionOfACommand
+    static constexpr CommandId GetCommandId() { return Commands::SetTarget::Id; }
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+
+    chip::GroupId groupId = static_cast<chip::GroupId>(0);
+    DataModel::List<const chip::EndpointId> endpoints;
+    chip::ByteSpan key;
+    uint32_t gracePeriod = static_cast<uint32_t>(0);
+
+    CHIP_ERROR Encode(TLV::TLVWriter & aWriter, TLV::Tag aTag) const;
+
+    using ResponseType = DataModel::NullObjectType;
+
+    static constexpr bool MustUseTimedInvoke() { return false; }
+};
+
+struct DecodableType
+{
+public:
+    static constexpr CommandId GetCommandId() { return Commands::SetTarget::Id; }
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+
+    chip::GroupId groupId = static_cast<chip::GroupId>(0);
+    DataModel::DecodableList<chip::EndpointId> endpoints;
+    chip::ByteSpan key;
+    uint32_t gracePeriod = static_cast<uint32_t>(0);
+    CHIP_ERROR Decode(TLV::TLVReader & reader);
+};
+}; // namespace SetTarget
+namespace RemoveTarget {
+enum class Fields : uint8_t
+{
+    kGroupId     = 0,
+    kEndpoints   = 1,
+    kGracePeriod = 2,
+};
+
+struct Type
+{
+public:
+    // Use GetCommandId instead of commandId directly to avoid naming conflict with CommandIdentification in ExecutionOfACommand
+    static constexpr CommandId GetCommandId() { return Commands::RemoveTarget::Id; }
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+
+    chip::GroupId groupId = static_cast<chip::GroupId>(0);
+    DataModel::List<const chip::EndpointId> endpoints;
+    uint32_t gracePeriod = static_cast<uint32_t>(0);
+
+    CHIP_ERROR Encode(TLV::TLVWriter & aWriter, TLV::Tag aTag) const;
+
+    using ResponseType = DataModel::NullObjectType;
+
+    static constexpr bool MustUseTimedInvoke() { return false; }
+};
+
+struct DecodableType
+{
+public:
+    static constexpr CommandId GetCommandId() { return Commands::RemoveTarget::Id; }
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+
+    chip::GroupId groupId = static_cast<chip::GroupId>(0);
+    DataModel::DecodableList<chip::EndpointId> endpoints;
+    uint32_t gracePeriod = static_cast<uint32_t>(0);
+    CHIP_ERROR Decode(TLV::TLVReader & reader);
+};
+}; // namespace RemoveTarget
+} // namespace Commands
+
+namespace Attributes {
+
+namespace Targets {
+struct TypeInfo
+{
+    using Type = chip::app::DataModel::List<const chip::app::Clusters::Multicast::Structs::MulticastTargetStruct::Type>;
+    using DecodableType =
+        chip::app::DataModel::DecodableList<chip::app::Clusters::Multicast::Structs::MulticastTargetStruct::DecodableType>;
+    using DecodableArgType =
+        const chip::app::DataModel::DecodableList<chip::app::Clusters::Multicast::Structs::MulticastTargetStruct::DecodableType> &;
+
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+    static constexpr AttributeId GetAttributeId() { return Attributes::Targets::Id; }
+    static constexpr bool MustUseTimedWrite() { return false; }
+};
+} // namespace Targets
+namespace GeneratedCommandList {
+struct TypeInfo : public Clusters::Globals::Attributes::GeneratedCommandList::TypeInfo
+{
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+};
+} // namespace GeneratedCommandList
+namespace AcceptedCommandList {
+struct TypeInfo : public Clusters::Globals::Attributes::AcceptedCommandList::TypeInfo
+{
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+};
+} // namespace AcceptedCommandList
+namespace AttributeList {
+struct TypeInfo : public Clusters::Globals::Attributes::AttributeList::TypeInfo
+{
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+};
+} // namespace AttributeList
+namespace FeatureMap {
+struct TypeInfo : public Clusters::Globals::Attributes::FeatureMap::TypeInfo
+{
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+};
+} // namespace FeatureMap
+namespace ClusterRevision {
+struct TypeInfo : public Clusters::Globals::Attributes::ClusterRevision::TypeInfo
+{
+    static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+};
+} // namespace ClusterRevision
+
+struct TypeInfo
+{
+    struct DecodableType
+    {
+        static constexpr ClusterId GetClusterId() { return Clusters::Multicast::Id; }
+
+        CHIP_ERROR Decode(TLV::TLVReader & reader, const ConcreteAttributePath & path);
+
+        Attributes::Targets::TypeInfo::DecodableType targets;
+        Attributes::GeneratedCommandList::TypeInfo::DecodableType generatedCommandList;
+        Attributes::AcceptedCommandList::TypeInfo::DecodableType acceptedCommandList;
+        Attributes::AttributeList::TypeInfo::DecodableType attributeList;
+        Attributes::FeatureMap::TypeInfo::DecodableType featureMap           = static_cast<uint32_t>(0);
+        Attributes::ClusterRevision::TypeInfo::DecodableType clusterRevision = static_cast<uint16_t>(0);
+    };
+};
+} // namespace Attributes
+} // namespace Multicast
 namespace HepaFilterMonitoring {
 namespace Structs {
 namespace ReplacementProductStruct {

@@ -21,6 +21,7 @@
 #include <lib/core/ReferenceCounted.h>
 #include <lib/support/Pool.h>
 #include <transport/Session.h>
+#include <transport/raw/MessageHeader.h>
 
 namespace chip {
 namespace Transport {
@@ -28,7 +29,8 @@ namespace Transport {
 class IncomingGroupSession : public Session, public ReferenceCounted<IncomingGroupSession, NoopDeletor<IncomingGroupSession>, 0>
 {
 public:
-    IncomingGroupSession(GroupId group, FabricIndex fabricIndex, NodeId peerNodeId) : mGroupId(group), mPeerNodeId(peerNodeId)
+    IncomingGroupSession(GroupId group, FabricIndex fabricIndex, NodeId peerNodeId) :
+        mGroupId(group), mPeerNodeId(peerNodeId), mIsMulticast(group & Header::kMulticastGroupMask)
     {
         SetFabricIndex(fabricIndex);
     }
@@ -84,15 +86,22 @@ public:
 
     GroupId GetGroupId() const { return mGroupId; }
 
+    bool IsMulticast() const { return mIsMulticast; }
+
 private:
     const GroupId mGroupId;
     const NodeId mPeerNodeId;
+    bool mIsMulticast = false;
 };
 
 class OutgoingGroupSession : public Session, public ReferenceCounted<OutgoingGroupSession, NoopDeletor<OutgoingGroupSession>, 0>
 {
 public:
-    OutgoingGroupSession(GroupId group, FabricIndex fabricIndex) : mGroupId(group) { SetFabricIndex(fabricIndex); }
+    OutgoingGroupSession(GroupId group, FabricIndex fabricIndex) :
+        mGroupId(group), mIsMulticast(group & Header::kMulticastGroupMask)
+    {
+        SetFabricIndex(fabricIndex);
+    }
     ~OutgoingGroupSession() override
     {
         NotifySessionReleased();
@@ -143,8 +152,11 @@ public:
 
     GroupId GetGroupId() const { return mGroupId; }
 
+    bool IsMulticast() const { return mIsMulticast; }
+
 private:
     const GroupId mGroupId;
+    bool mIsMulticast = false;
 };
 
 } // namespace Transport

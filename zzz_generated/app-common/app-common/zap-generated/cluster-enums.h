@@ -2614,6 +2614,15 @@ enum class Feature : uint32_t
 };
 } // namespace ScenesManagement
 
+namespace Multicast {
+
+// Bitmap for Feature
+enum class Feature : uint32_t
+{
+    kCacheAndSync = 0x1,
+};
+} // namespace Multicast
+
 namespace HepaFilterMonitoring {
 
 using ChangeIndicationEnum = Clusters::detail::ChangeIndicationEnum;

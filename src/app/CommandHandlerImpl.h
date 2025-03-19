@@ -455,6 +455,8 @@ private:
 
     bool TestOnlyIsInIdleState() const { return mState == State::Idle; }
 
+    void ProcessGroupCommand(ClusterId clusterId, CommandId commandId, EndpointId endpointId, TLV::TLVReader & commandDataReader);
+
     Callback * mpCallback = nullptr;
     InvokeResponseMessage::Builder mInvokeResponseBuilder;
     TLV::TLVType mDataElementContainerType = TLV::kTLVType_NotSpecified;
