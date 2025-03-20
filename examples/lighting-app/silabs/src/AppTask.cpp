@@ -68,12 +68,10 @@ CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+
     char rebootLightOnKey[] = "Reboot->LightOn";
     CharSpan rebootLighOnSpan(rebootLightOnKey);
     SILABS_TRACE_REGISTER(rebootLighOnSpan);
-#ifdef DISPLAY_ENABLED
-    GetLCD().Init((uint8_t *) "Lighting-App");
-#endif
 
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
