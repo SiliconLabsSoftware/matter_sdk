@@ -78,7 +78,7 @@ public:
         static void TimerCallback(void * timerCbArg);
     };
 
-    Timer * longPressTimer      = nullptr;
+    Timer * longPressTimer = nullptr;
 
     /**
      * @brief AppTask task main loop function

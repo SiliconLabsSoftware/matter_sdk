@@ -106,7 +106,7 @@ StepModeEnum LightSwitchMgr::getStepMode()
 
 void LightSwitchMgr::changeStepMode()
 {
-    stepDirection = (stepDirection==StepModeEnum::kUp) ? StepModeEnum::kDown : StepModeEnum::kUp;
+    stepDirection = (stepDirection == StepModeEnum::kUp) ? StepModeEnum::kDown : StepModeEnum::kUp;
 }
 
 void LightSwitchMgr::TriggerLightSwitchAction(LightSwitchAction action, bool isGroupCommand)

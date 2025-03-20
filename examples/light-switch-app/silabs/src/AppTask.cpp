@@ -69,10 +69,10 @@ using namespace ::chip::DeviceLayer;
  *********************************************************/
 
 AppTask AppTask::sAppTask;
-bool sFunctionButtonPressed  = false;       // True when button0 is pressed, used to trigger factory reset
-bool sActionButtonPressed    = false;       // True when button1 is pressed, used to initiate toggle or level-up/down
-bool sActionButtonSuppressed = false;       // True when both button0 and button1 are pressed, used to switch step direction
-bool sFunctionButtonSuppressed = false;     // True when both button0 and button1 are pressed
+bool sFunctionButtonPressed    = false; // True when button0 is pressed, used to trigger factory reset
+bool sActionButtonPressed      = false; // True when button1 is pressed, used to initiate toggle or level-up/down
+bool sActionButtonSuppressed   = false; // True when both button0 and button1 are pressed, used to switch step direction
+bool sFunctionButtonSuppressed = false; // True when both button0 and button1 are pressed
 
 CHIP_ERROR AppTask::Init()
 {
@@ -126,7 +126,7 @@ void AppTask::Timer::Timeout()
 void AppTask::HandleLongPress()
 {
     AppEvent event;
-    event.Handler                  = AppTask::AppEventHandler;
+    event.Handler = AppTask::AppEventHandler;
 
     if (sActionButtonPressed)
     {
@@ -225,8 +225,8 @@ void AppTask::AppTaskMain(void * pvParameter)
 AppEvent AppTask::CreateNewEvent(AppEvent::AppEventTypes type)
 {
     AppEvent aEvent;
-    aEvent.Type                     = type;
-    aEvent.Handler                  = AppTask::AppEventHandler;
+    aEvent.Type    = type;
+    aEvent.Handler = AppTask::AppEventHandler;
     return aEvent;
 }
 
@@ -236,12 +236,12 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (btnAction == to_underlying(SilabsPlatform::ButtonAction::ButtonPressed))
     {
         event = AppTask::GetAppTask().CreateNewEvent(button ? AppEvent::kEventType_ActionButtonPressed
-                                                                    : AppEvent::kEventType_FunctionButtonPressed);
+                                                            : AppEvent::kEventType_FunctionButtonPressed);
     }
     else
     {
         event = AppTask::GetAppTask().CreateNewEvent(button ? AppEvent::kEventType_ActionButtonReleased
-                                                                    : AppEvent::kEventType_FunctionButtonReleased);
+                                                            : AppEvent::kEventType_FunctionButtonReleased);
     }
     AppTask::GetAppTask().PostEvent(&event);
 }
@@ -250,11 +250,11 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
 {
     switch (aEvent->Type)
     {
-        case AppEvent::kEventType_FunctionButtonPressed:
+    case AppEvent::kEventType_FunctionButtonPressed:
         sFunctionButtonPressed = true;
         if (sActionButtonPressed)
         {
-            sActionButtonSuppressed = true;
+            sActionButtonSuppressed   = true;
             sFunctionButtonSuppressed = true;
             LightSwitchMgr::GetInstance().changeStepMode();
             ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s",
@@ -270,8 +270,7 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
             AppTask::GetAppTask().PostEvent(&button_event);
         }
         break;
-    case AppEvent::kEventType_FunctionButtonReleased:
-    {
+    case AppEvent::kEventType_FunctionButtonReleased: {
         sFunctionButtonPressed = false;
         if (sFunctionButtonSuppressed)
         {
@@ -287,11 +286,11 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
     }
     case AppEvent::kEventType_ActionButtonPressed:
         sActionButtonPressed = true;
-        aEvent->Handler                   = LightSwitchMgr::SwitchActionEventHandler;
+        aEvent->Handler      = LightSwitchMgr::SwitchActionEventHandler;
         AppTask::GetAppTask().PostEvent(aEvent);
         if (sFunctionButtonPressed)
         {
-            sActionButtonSuppressed = true;
+            sActionButtonSuppressed   = true;
             sFunctionButtonSuppressed = true;
             LightSwitchMgr::GetInstance().changeStepMode();
             ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s",

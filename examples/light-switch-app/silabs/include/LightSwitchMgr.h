@@ -78,11 +78,10 @@ private:
 
     // Default Step direction for Level control
     StepModeEnum stepDirection = StepModeEnum::kUp;
-    LightSwitchMgr() = default;
+    LightSwitchMgr()           = default;
 
     static void GenericSwitchWorkerFunction(intptr_t context);
 
     chip::EndpointId mLightSwitchEndpoint   = chip::kInvalidEndpointId;
     chip::EndpointId mGenericSwitchEndpoint = chip::kInvalidEndpointId;
-
 };
