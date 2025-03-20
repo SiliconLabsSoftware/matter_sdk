@@ -49,6 +49,8 @@
 
 #define SYSTEM_STATE_LED &sl_led_led0
 
+#define APP_FUNCTION_BUTTON 0
+#define APP_LIGHT_SWITCH 1
 namespace {
 constexpr chip::EndpointId kLightSwitchEndpoint   = 1;
 constexpr chip::EndpointId kGenericSwitchEndpoint = 2;
@@ -67,11 +69,15 @@ using namespace ::chip::DeviceLayer;
  *********************************************************/
 
 AppTask AppTask::sAppTask;
+bool sFunctionButtonPressed  = false;       // True when button0 is pressed, used to trigger factory reset
+bool sActionButtonPressed    = false;       // True when button1 is pressed, used to initiate toggle or level-up/down
+bool sActionButtonSuppressed = false;       // True when both button0 and button1 are pressed, used to switch step direction
+bool sFunctionButtonSuppressed = false;     // True when both button0 and button1 are pressed
 
 CHIP_ERROR AppTask::Init()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(LightSwitchMgr::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
 #ifdef DISPLAY_ENABLED
     GetLCD().Init((uint8_t *) "Light Switch");
@@ -91,7 +97,96 @@ CHIP_ERROR AppTask::Init()
         appError(err);
     }
 
+    longPressTimer = new Timer(LONG_PRESS_TIMEOUT, OnLongPressTimeout, this);
+
     return err;
+}
+
+void AppTask::Timer::Start()
+{
+    // Starts or restarts the function timer
+    if (osTimerStart(mHandler, pdMS_TO_TICKS(LONG_PRESS_TIMEOUT)) != osOK)
+    {
+        SILABS_LOG("Timer start() failed");
+        appError(CHIP_ERROR_INTERNAL);
+    }
+
+    mIsActive = true;
+}
+
+void AppTask::Timer::Timeout()
+{
+    mIsActive = false;
+    if (mCallback)
+    {
+        mCallback(*this);
+    }
+}
+
+void AppTask::HandleLongPress()
+{
+    AppEvent event;
+    event.Handler                  = AppTask::AppEventHandler;
+
+    if (sActionButtonPressed)
+    {
+        sActionButtonSuppressed = true;
+        // Long press button up : Trigger Level Control Action
+        event.Type = AppEvent::kEventType_TriggerLevelControlAction;
+        AppTask::GetAppTask().PostEvent(&event);
+    }
+}
+
+void AppTask::OnLongPressTimeout(AppTask::Timer & timer)
+{
+    AppTask * app = static_cast<AppTask *>(timer.mContext);
+    if (app)
+    {
+        app->HandleLongPress();
+    }
+}
+
+AppTask::Timer::Timer(uint32_t timeoutInMs, Callback callback, void * context) : mCallback(callback), mContext(context)
+{
+    mHandler = osTimerNew(TimerCallback, // timer callback handler
+                          osTimerOnce,   // no timer reload (one-shot timer)
+                          this,          // pass the app task obj context
+                          NULL           // No osTimerAttr_t to provide.
+    );
+
+    if (mHandler == NULL)
+    {
+        SILABS_LOG("Timer create failed");
+        appError(CHIP_ERROR_INTERNAL);
+    }
+}
+
+AppTask::Timer::~Timer()
+{
+    if (mHandler)
+    {
+        osTimerDelete(mHandler);
+        mHandler = nullptr;
+    }
+}
+
+void AppTask::Timer::Stop()
+{
+    mIsActive = false;
+    if (osTimerStop(mHandler) == osError)
+    {
+        SILABS_LOG("Timer stop() failed");
+        appError(CHIP_ERROR_INTERNAL);
+    }
+}
+
+void AppTask::Timer::TimerCallback(void * timerCbArg)
+{
+    Timer * timer = reinterpret_cast<Timer *>(timerCbArg);
+    if (timer)
+    {
+        timer->Timeout();
+    }
 }
 
 CHIP_ERROR AppTask::StartAppTask()
@@ -124,5 +219,113 @@ void AppTask::AppTaskMain(void * pvParameter)
             sAppTask.DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
+    }
+}
+
+AppEvent AppTask::CreateNewEvent(AppEvent::AppEventTypes type)
+{
+    AppEvent aEvent;
+    aEvent.Type                     = type;
+    aEvent.Handler                  = AppTask::AppEventHandler;
+    return aEvent;
+}
+
+void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
+{
+    AppEvent event = {};
+    if (btnAction == to_underlying(SilabsPlatform::ButtonAction::ButtonPressed))
+    {
+        event = AppTask::GetAppTask().CreateNewEvent(button ? AppEvent::kEventType_ActionButtonPressed
+                                                                    : AppEvent::kEventType_FunctionButtonPressed);
+    }
+    else
+    {
+        event = AppTask::GetAppTask().CreateNewEvent(button ? AppEvent::kEventType_ActionButtonReleased
+                                                                    : AppEvent::kEventType_FunctionButtonReleased);
+    }
+    AppTask::GetAppTask().PostEvent(&event);
+}
+
+void AppTask::AppEventHandler(AppEvent * aEvent)
+{
+    switch (aEvent->Type)
+    {
+        case AppEvent::kEventType_FunctionButtonPressed:
+        sFunctionButtonPressed = true;
+        if (sActionButtonPressed)
+        {
+            sActionButtonSuppressed = true;
+            sFunctionButtonSuppressed = true;
+            LightSwitchMgr::GetInstance().changeStepMode();
+            ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s",
+                            ((LightSwitchMgr::GetInstance().getStepMode() == StepModeEnum::kUp) ? "kUp" : "kDown"));
+        }
+        else
+        {
+            // Post button press event to BaseApplication
+            AppEvent button_event           = {};
+            button_event.Type               = AppEvent::kEventType_Button;
+            button_event.ButtonEvent.Action = static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed);
+            button_event.Handler            = BaseApplication::ButtonHandler;
+            AppTask::GetAppTask().PostEvent(&button_event);
+        }
+        break;
+    case AppEvent::kEventType_FunctionButtonReleased:
+    {
+        sFunctionButtonPressed = false;
+        if (sFunctionButtonSuppressed)
+        {
+            sFunctionButtonSuppressed = false;
+        }
+        // Post button release event to BaseApplication
+        AppEvent button_event           = {};
+        button_event.Type               = AppEvent::kEventType_Button;
+        button_event.ButtonEvent.Action = static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonReleased);
+        button_event.Handler            = BaseApplication::ButtonHandler;
+        AppTask::GetAppTask().PostEvent(&button_event);
+        break;
+    }
+    case AppEvent::kEventType_ActionButtonPressed:
+        sActionButtonPressed = true;
+        aEvent->Handler                   = LightSwitchMgr::SwitchActionEventHandler;
+        AppTask::GetAppTask().PostEvent(aEvent);
+        if (sFunctionButtonPressed)
+        {
+            sActionButtonSuppressed = true;
+            sFunctionButtonSuppressed = true;
+            LightSwitchMgr::GetInstance().changeStepMode();
+            ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s",
+                            ((LightSwitchMgr::GetInstance().getStepMode() == StepModeEnum::kUp) ? "kUp" : "kDown"));
+        }
+        else if (sAppTask.longPressTimer)
+        {
+            sAppTask.longPressTimer->Start();
+        }
+        break;
+    case AppEvent::kEventType_ActionButtonReleased:
+        sActionButtonPressed = false;
+        if (sAppTask.longPressTimer)
+        {
+            sAppTask.longPressTimer->Stop();
+        }
+        if (sActionButtonSuppressed)
+        {
+            sActionButtonSuppressed = false;
+        }
+        else
+        {
+            aEvent->Type    = AppEvent::kEventType_TriggerToggle;
+            aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
+            AppTask::GetAppTask().PostEvent(aEvent);
+        }
+        aEvent->Type    = AppEvent::kEventType_ActionButtonReleased;
+        aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
+        AppTask::GetAppTask().PostEvent(aEvent);
+        break;
+    case AppEvent::kEventType_TriggerLevelControlAction:
+        aEvent->Handler = LightSwitchMgr::SwitchActionEventHandler;
+        AppTask::GetAppTask().PostEvent(aEvent);
+    default:
+        break;
     }
 }
