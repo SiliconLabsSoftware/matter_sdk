@@ -8181,6 +8181,87 @@ public class ClusterReadMapping {
      
        return result;
     }
+    private static Map<String, InteractionInfo> readMulticastInteractionInfo() {
+       Map<String, InteractionInfo> result = new LinkedHashMap<>();Map<String, CommandParameterInfo> readMulticastTargetsCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
+        InteractionInfo readMulticastTargetsAttributeInteractionInfo = new InteractionInfo(
+          (cluster, callback, commandArguments) -> {
+            ((ChipClusters.MulticastCluster) cluster).readTargetsAttribute(
+              (ChipClusters.MulticastCluster.TargetsAttributeCallback) callback
+            );
+          },
+          () -> new ClusterInfoMapping.DelegatedMulticastClusterTargetsAttributeCallback(),
+          readMulticastTargetsCommandParams
+        );
+        result.put("readTargetsAttribute", readMulticastTargetsAttributeInteractionInfo);
+     Map<String, CommandParameterInfo> readMulticastGeneratedCommandListCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
+        InteractionInfo readMulticastGeneratedCommandListAttributeInteractionInfo = new InteractionInfo(
+          (cluster, callback, commandArguments) -> {
+            ((ChipClusters.MulticastCluster) cluster).readGeneratedCommandListAttribute(
+              (ChipClusters.MulticastCluster.GeneratedCommandListAttributeCallback) callback
+            );
+          },
+          () -> new ClusterInfoMapping.DelegatedMulticastClusterGeneratedCommandListAttributeCallback(),
+          readMulticastGeneratedCommandListCommandParams
+        );
+        result.put("readGeneratedCommandListAttribute", readMulticastGeneratedCommandListAttributeInteractionInfo);
+     Map<String, CommandParameterInfo> readMulticastAcceptedCommandListCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
+        InteractionInfo readMulticastAcceptedCommandListAttributeInteractionInfo = new InteractionInfo(
+          (cluster, callback, commandArguments) -> {
+            ((ChipClusters.MulticastCluster) cluster).readAcceptedCommandListAttribute(
+              (ChipClusters.MulticastCluster.AcceptedCommandListAttributeCallback) callback
+            );
+          },
+          () -> new ClusterInfoMapping.DelegatedMulticastClusterAcceptedCommandListAttributeCallback(),
+          readMulticastAcceptedCommandListCommandParams
+        );
+        result.put("readAcceptedCommandListAttribute", readMulticastAcceptedCommandListAttributeInteractionInfo);
+     Map<String, CommandParameterInfo> readMulticastEventListCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
+        InteractionInfo readMulticastEventListAttributeInteractionInfo = new InteractionInfo(
+          (cluster, callback, commandArguments) -> {
+            ((ChipClusters.MulticastCluster) cluster).readEventListAttribute(
+              (ChipClusters.MulticastCluster.EventListAttributeCallback) callback
+            );
+          },
+          () -> new ClusterInfoMapping.DelegatedMulticastClusterEventListAttributeCallback(),
+          readMulticastEventListCommandParams
+        );
+        result.put("readEventListAttribute", readMulticastEventListAttributeInteractionInfo);
+     Map<String, CommandParameterInfo> readMulticastAttributeListCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
+        InteractionInfo readMulticastAttributeListAttributeInteractionInfo = new InteractionInfo(
+          (cluster, callback, commandArguments) -> {
+            ((ChipClusters.MulticastCluster) cluster).readAttributeListAttribute(
+              (ChipClusters.MulticastCluster.AttributeListAttributeCallback) callback
+            );
+          },
+          () -> new ClusterInfoMapping.DelegatedMulticastClusterAttributeListAttributeCallback(),
+          readMulticastAttributeListCommandParams
+        );
+        result.put("readAttributeListAttribute", readMulticastAttributeListAttributeInteractionInfo);
+     Map<String, CommandParameterInfo> readMulticastFeatureMapCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
+        InteractionInfo readMulticastFeatureMapAttributeInteractionInfo = new InteractionInfo(
+          (cluster, callback, commandArguments) -> {
+            ((ChipClusters.MulticastCluster) cluster).readFeatureMapAttribute(
+              (ChipClusters.LongAttributeCallback) callback
+            );
+          },
+          () -> new ClusterInfoMapping.DelegatedLongAttributeCallback(),
+          readMulticastFeatureMapCommandParams
+        );
+        result.put("readFeatureMapAttribute", readMulticastFeatureMapAttributeInteractionInfo);
+     Map<String, CommandParameterInfo> readMulticastClusterRevisionCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
+        InteractionInfo readMulticastClusterRevisionAttributeInteractionInfo = new InteractionInfo(
+          (cluster, callback, commandArguments) -> {
+            ((ChipClusters.MulticastCluster) cluster).readClusterRevisionAttribute(
+              (ChipClusters.IntegerAttributeCallback) callback
+            );
+          },
+          () -> new ClusterInfoMapping.DelegatedIntegerAttributeCallback(),
+          readMulticastClusterRevisionCommandParams
+        );
+        result.put("readClusterRevisionAttribute", readMulticastClusterRevisionAttributeInteractionInfo);
+     
+       return result;
+    }
     private static Map<String, InteractionInfo> readHepaFilterMonitoringInteractionInfo() {
        Map<String, InteractionInfo> result = new LinkedHashMap<>();Map<String, CommandParameterInfo> readHepaFilterMonitoringConditionCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
         InteractionInfo readHepaFilterMonitoringConditionAttributeInteractionInfo = new InteractionInfo(
@@ -21043,6 +21124,7 @@ public class ClusterReadMapping {
             put("operationalState", readOperationalStateInteractionInfo());
             put("rvcOperationalState", readRvcOperationalStateInteractionInfo());
             put("scenesManagement", readScenesManagementInteractionInfo());
+            put("multicast", readMulticastInteractionInfo());
             put("hepaFilterMonitoring", readHepaFilterMonitoringInteractionInfo());
             put("activatedCarbonFilterMonitoring", readActivatedCarbonFilterMonitoringInteractionInfo());
             put("booleanStateConfiguration", readBooleanStateConfigurationInteractionInfo());
