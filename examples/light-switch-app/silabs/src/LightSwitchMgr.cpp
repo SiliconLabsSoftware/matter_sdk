@@ -111,7 +111,6 @@ void LightSwitchMgr::changeStepMode()
 
 void LightSwitchMgr::TriggerLightSwitchAction(LightSwitchAction action, bool isGroupCommand)
 {
-    ChipLogProgress(AppServer, "1");
     BindingCommandData * data = Platform::New<BindingCommandData>();
 
     data->clusterId = chip::app::Clusters::OnOff::Id;
@@ -143,7 +142,6 @@ void LightSwitchMgr::TriggerLightSwitchAction(LightSwitchAction action, bool isG
 
 void LightSwitchMgr::TriggerLevelControlAction(LevelControl::StepModeEnum stepMode, bool isGroupCommand)
 {
-    ChipLogProgress(AppServer, "2");
     BindingCommandData * data = Platform::New<BindingCommandData>();
 
     data->clusterId = chip::app::Clusters::LevelControl::Id;
@@ -195,7 +193,6 @@ void LightSwitchMgr::GenericSwitchWorkerFunction(intptr_t context)
 
 void LightSwitchMgr::SwitchActionEventHandler(AppEvent * aEvent)
 {
-    ChipLogProgress(AppServer, "0");
     switch (aEvent->Type)
     {
     case AppEvent::kEventType_ActionButtonPressed:

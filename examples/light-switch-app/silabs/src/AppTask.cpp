@@ -49,8 +49,6 @@
 
 #define SYSTEM_STATE_LED &sl_led_led0
 
-#define APP_FUNCTION_BUTTON 0
-#define APP_LIGHT_SWITCH 1
 namespace {
 constexpr chip::EndpointId kLightSwitchEndpoint   = 1;
 constexpr chip::EndpointId kGenericSwitchEndpoint = 2;
