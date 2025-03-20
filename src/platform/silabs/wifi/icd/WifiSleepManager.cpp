@@ -28,6 +28,23 @@ namespace {
 #if SLI_SI917 // 917 SoC & NCP
 
 /**
+ * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+ *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureLIBasedSleep()
+{
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigureBroadcastFilter(true));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigurePowerSave(
+        RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
  * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
  *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
  *
@@ -153,6 +170,11 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     if (!WifiInterface::GetInstance().IsWifiProvisioned())
     {
         return ConfigureDeepSleep();
+    }
+
+    if (mCallback && mCallback->CanGoToLIBasedSleep())
+    {
+        return ConfigureLIBasedSleep();
     }
 
     return ConfigureDTIMBasedSleep();
