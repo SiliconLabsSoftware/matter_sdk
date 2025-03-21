@@ -67,10 +67,10 @@ using namespace ::chip::DeviceLayer;
  *********************************************************/
 
 AppTask AppTask::sAppTask;
-bool sFunctionButtonPressed    = false; // True when button0 is pressed, used to trigger factory reset
-bool sActionButtonPressed      = false; // True when button1 is pressed, used to initiate toggle or level-up/down
-bool sActionButtonSuppressed   = false; // True when both button0 and button1 are pressed, used to switch step direction
-bool sIsButtonEventTriggered   = false; // True when button0 press event is posted to BaseApplication
+bool sFunctionButtonPressed  = false; // True when button0 is pressed, used to trigger factory reset
+bool sActionButtonPressed    = false; // True when button1 is pressed, used to initiate toggle or level-up/down
+bool sActionButtonSuppressed = false; // True when both button0 and button1 are pressed, used to switch step direction
+bool sIsButtonEventTriggered = false; // True when button0 press event is posted to BaseApplication
 
 CHIP_ERROR AppTask::Init()
 {
@@ -252,14 +252,14 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
         sFunctionButtonPressed = true;
         if (sActionButtonPressed)
         {
-            sActionButtonSuppressed   = true;
+            sActionButtonSuppressed = true;
             LightSwitchMgr::GetInstance().changeStepMode();
             ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s",
                             ((LightSwitchMgr::GetInstance().getStepMode() == StepModeEnum::kUp) ? "kUp" : "kDown"));
         }
         else
         {
-            sIsButtonEventTriggered         = true;
+            sIsButtonEventTriggered = true;
             // Post button press event to BaseApplication
             AppEvent button_event           = {};
             button_event.Type               = AppEvent::kEventType_Button;
@@ -272,7 +272,7 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
         sFunctionButtonPressed = false;
         if (sIsButtonEventTriggered)
         {
-            sIsButtonEventTriggered         = false;
+            sIsButtonEventTriggered = false;
             // Post button release event to BaseApplication
             AppEvent button_event           = {};
             button_event.Type               = AppEvent::kEventType_Button;
@@ -288,7 +288,7 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
         AppTask::GetAppTask().PostEvent(aEvent);
         if (sFunctionButtonPressed)
         {
-            sActionButtonSuppressed   = true;
+            sActionButtonSuppressed = true;
             LightSwitchMgr::GetInstance().changeStepMode();
             ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s",
                             ((LightSwitchMgr::GetInstance().getStepMode() == StepModeEnum::kUp) ? "kUp" : "kDown"));
