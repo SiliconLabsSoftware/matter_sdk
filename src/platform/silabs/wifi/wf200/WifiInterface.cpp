@@ -1048,7 +1048,11 @@ bool wfx_get_wifi_provision(wfx_wifi_provision_t * wifiConfig)
  *****************************************************************************/
 void wfx_clear_wifi_provision(void)
 {
-    memset(&wifi_provision, 0, sizeof(wifi_provision));
+    memset(wifi_provision.ssid, 0, WFX_MAX_SSID_LENGTH);
+    wifi_provision.ssid_length = 0;
+    memset(wifi_provision.passkey, 0, WFX_MAX_PASSKEY_LENGTH);
+    wifi_provision.passkey_length = 0;
+    wifi_provision.security       = WFX_SEC_UNSPECIFIED;
 }
 
 /****************************************************************************
@@ -1227,7 +1231,7 @@ void wfx_dhcp_got_ipv4(uint32_t ip)
      */
     uint8_t ip4_addr[4];
 
-    ip4_addr[0] = (ip) &0xFF;
+    ip4_addr[0] = (ip) & 0xFF;
     ip4_addr[1] = (ip >> 8) & 0xFF;
     ip4_addr[2] = (ip >> 16) & 0xFF;
     ip4_addr[3] = (ip >> 24) & 0xFF;
