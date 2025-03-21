@@ -70,7 +70,7 @@ AppTask AppTask::sAppTask;
 bool sFunctionButtonPressed    = false; // True when button0 is pressed, used to trigger factory reset
 bool sActionButtonPressed      = false; // True when button1 is pressed, used to initiate toggle or level-up/down
 bool sActionButtonSuppressed   = false; // True when both button0 and button1 are pressed, used to switch step direction
-bool sFunctionButtonSuppressed = false; // True when both button0 and button1 are pressed
+bool sIsButtonEventTriggered   = false; // True when button0 press event is posted to BaseApplication
 
 CHIP_ERROR AppTask::Init()
 {
@@ -253,13 +253,13 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
         if (sActionButtonPressed)
         {
             sActionButtonSuppressed   = true;
-            sFunctionButtonSuppressed = true;
             LightSwitchMgr::GetInstance().changeStepMode();
             ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s",
                             ((LightSwitchMgr::GetInstance().getStepMode() == StepModeEnum::kUp) ? "kUp" : "kDown"));
         }
         else
         {
+            sIsButtonEventTriggered         = true;
             // Post button press event to BaseApplication
             AppEvent button_event           = {};
             button_event.Type               = AppEvent::kEventType_Button;
@@ -270,16 +270,16 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
         break;
     case AppEvent::kEventType_FunctionButtonReleased: {
         sFunctionButtonPressed = false;
-        if (sFunctionButtonSuppressed)
+        if (sIsButtonEventTriggered)
         {
-            sFunctionButtonSuppressed = false;
+            sIsButtonEventTriggered         = false;
+            // Post button release event to BaseApplication
+            AppEvent button_event           = {};
+            button_event.Type               = AppEvent::kEventType_Button;
+            button_event.ButtonEvent.Action = static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonReleased);
+            button_event.Handler            = BaseApplication::ButtonHandler;
+            AppTask::GetAppTask().PostEvent(&button_event);
         }
-        // Post button release event to BaseApplication
-        AppEvent button_event           = {};
-        button_event.Type               = AppEvent::kEventType_Button;
-        button_event.ButtonEvent.Action = static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonReleased);
-        button_event.Handler            = BaseApplication::ButtonHandler;
-        AppTask::GetAppTask().PostEvent(&button_event);
         break;
     }
     case AppEvent::kEventType_ActionButtonPressed:
@@ -289,7 +289,6 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
         if (sFunctionButtonPressed)
         {
             sActionButtonSuppressed   = true;
-            sFunctionButtonSuppressed = true;
             LightSwitchMgr::GetInstance().changeStepMode();
             ChipLogProgress(AppServer, "Step direction changed. Current Step Direction : %s",
                             ((LightSwitchMgr::GetInstance().getStepMode() == StepModeEnum::kUp) ? "kUp" : "kDown"));
