@@ -251,7 +251,10 @@ void BaseApplicationDelegate::OnCommissioningWindowClosed()
         SilabsLCD::Screen_e screen;
         slLCD.GetScreen(screen);
         VerifyOrReturn(screen == SilabsLCD::Screen_e::QRCodeScreen);
-        slLCD.SetScreen(SilabsLCD::Screen_e::DemoScreen);
+        AppEvent event;
+        event.Type    = AppEvent::kEventType_LCD;
+        event.Handler = AppTask::GetAppTask().UpdateDisplayHandler;
+        BaseApplication::PostEvent(&event);
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
     }
@@ -597,8 +600,6 @@ void BaseApplication::ButtonHandler(AppEvent * aEvent)
             // - Cycle LCD screen
             CancelFunctionTimer();
 
-            AppTask::GetAppTask().UpdateDisplay();
-
 #ifdef SL_WIFI
             if (!ConnectivityMgr().IsWiFiStationProvisioned())
 #else
@@ -622,8 +623,19 @@ void BaseApplication::ButtonHandler(AppEvent * aEvent)
                 PlatformMgr().ScheduleWork([](intptr_t) { ICDNotifier::GetInstance().NotifyNetworkActivityNotification(); });
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
             }
+
+            AppEvent event;
+            event.Type    = AppEvent::kEventType_LCD;
+            event.Handler = AppTask::GetAppTask().UpdateDisplayHandler;
+            PostEvent(&event);
         }
     }
+}
+
+void BaseApplication::UpdateDisplayHandler(AppEvent * aEvent)
+{
+    VerifyOrReturn(aEvent->Type == AppEvent::kEventType_LCD);
+    AppTask::GetAppTask().UpdateDisplay();
 }
 
 void BaseApplication::UpdateDisplay()
@@ -793,14 +805,11 @@ SilabsLCD & BaseApplication::GetLCD(void)
     return slLCD;
 }
 
-void BaseApplication::UpdateLCDStatusScreen(bool withChipStackLock)
+void BaseApplication::UpdateLCDStatusScreen()
 {
     SilabsLCD::DisplayStatus_t status;
     bool enabled, attached;
-    if (withChipStackLock)
-    {
-        chip::DeviceLayer::PlatformMgr().LockChipStack();
-    }
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
 #ifdef SL_WIFI
     enabled  = ConnectivityMgr().IsWiFiStationEnabled();
     attached = ConnectivityMgr().IsWiFiStationConnected();
@@ -825,10 +834,7 @@ void BaseApplication::UpdateLCDStatusScreen(bool withChipStackLock)
         ? SilabsLCD::ICDMode_e::SIT
         : SilabsLCD::ICDMode_e::LIT;
 #endif
-    if (withChipStackLock)
-    {
-        chip::DeviceLayer::PlatformMgr().UnlockChipStack();
-    }
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
     slLCD.SetStatus(status);
 }
 #endif
@@ -935,8 +941,10 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
         // Update the LCD screen with SSID and connected state
         if (screen == SilabsLCD::Screen_e::StatusScreen)
         {
-            BaseApplication::UpdateLCDStatusScreen(false);
-            AppTask::GetLCD().SetScreen(screen);
+            AppEvent event;
+            event.Type    = AppEvent::kEventType_LCD;
+            event.Handler = AppTask::GetAppTask().UpdateDisplayHandler;
+            PostEvent(&event);
         }
 #endif // DISPLAY_ENABLED
 

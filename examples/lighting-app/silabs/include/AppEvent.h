@@ -27,6 +27,7 @@ struct AppEvent
     enum AppEventTypes
     {
         kEventType_Button = 0,
+        kEventType_LCD,
         kEventType_Timer,
         kEventType_Light,
         kEventType_Install,

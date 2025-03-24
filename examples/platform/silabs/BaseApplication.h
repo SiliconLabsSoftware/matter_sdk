@@ -138,7 +138,15 @@ public:
      */
     static SilabsLCD & GetLCD(void);
 
-    static void UpdateLCDStatusScreen(bool withChipStackLock = true);
+    static void UpdateLCDStatusScreen();
+
+    /**
+     * @brief LCD Event processing function
+     *        Update the LCD status based on the screen
+     *
+     * @param aEvent post event being processed
+     */
+    static void UpdateDisplayHandler(AppEvent * aEvent);
 #endif
 
     /**
