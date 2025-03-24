@@ -19,6 +19,73 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
+using namespace chip::DeviceLayer::Silabs;
+
+namespace {
+
+// TODO: Once the platform sleep calls are unified, we can removed this ifdef
+#if SLI_SI917 // 917 SoC & NCP
+
+/**
+ * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+ *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureLIBasedSleep()
+{
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigureBroadcastFilter(true));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigurePowerSave(
+        RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
+ *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureDTIMBasedSleep()
+{
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigureBroadcastFilter(false));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi chip to go Deep Sleep.
+ *        Function doesn't change the state of the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureDeepSleep()
+{
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigurePowerSave(RSI_SLEEP_MODE_8, DEEP_SLEEP_WITH_RAM_RETENTION, 0));
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi chip to go to High Performance.
+ *        Function doesn't change the broad cast filter configuration.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureHighPerformance()
+{
+    ReturnLogErrorOnFailure(WifiInterface::GetInstance().ConfigurePowerSave(RSI_ACTIVE, HIGH_PERFORMANCE, 0));
+    return CHIP_NO_ERROR;
+}
+#endif // SLI_SI917
+
+} // namespace
+
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -115,6 +182,11 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
         return ConfigureDeepSleep();
     }
 
+    if (mCallback && mCallback->CanGoToLIBasedSleep())
+    {
+        return ConfigureLIBasedSleep();
+    }
+
     return ConfigureDTIMBasedSleep();
 }
 
@@ -145,6 +217,18 @@ CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
 
     ReturnLogErrorOnFailure(
         mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kHighPerformance, 0));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
+{
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    ReturnLogErrorOnFailure(
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kConnectedSleep,
+                                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+
     return CHIP_NO_ERROR;
 }
 
