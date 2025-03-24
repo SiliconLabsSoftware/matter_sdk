@@ -224,6 +224,14 @@ private:
     CHIP_ERROR ConfigureDTIMBasedSleep();
 
     /**
+     * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+     *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+     */
+    CHIP_ERROR ConfigureLIBasedSleep();
+
+    /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
      *
      * @param triggerTransition true, triggers the transition to High Performance
