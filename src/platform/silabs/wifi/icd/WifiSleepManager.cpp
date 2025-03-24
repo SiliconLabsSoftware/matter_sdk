@@ -63,6 +63,19 @@ CHIP_ERROR ConfigureDTIMBasedSleep()
 }
 
 /**
+ * @brief Configures the Wi-Fi chip to go Deep Sleep.
+ *        Function doesn't change the state of the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+ */
+CHIP_ERROR ConfigureDeepSleep()
+{
+    VerifyOrReturnError(ConfigurePowerSave(RSI_SLEEP_MODE_2, DEEP_SLEEP_WITH_RAM_RETENTION, 0) == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to DeepSleep."));
+    return CHIP_NO_ERROR;
+}
+
+/**
  * @brief Configures the Wi-Fi chip to go to High Performance.
  *        Function doesn't change the broad cast filter configuration.
  *
@@ -150,6 +163,15 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
         // During commissioning, don't let the device to go to sleep
         // This is needed to interrupt the sleep and retry to join the network
         return CHIP_NO_ERROR;
+    }
+    
+    // TODO: Clean this up when the Wi-Fi interface re-work is finished
+    wfx_wifi_provision_t wifiConfig;
+    wfx_get_wifi_provision(&wifiConfig);
+
+    if (!(wifiConfig.ssid[0] != 0))
+    {
+        return ConfigureDeepSleep();
     }
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
