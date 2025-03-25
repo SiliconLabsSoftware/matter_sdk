@@ -82,7 +82,6 @@
 #define LWIP_DNS 0
 #define MEMP_NUM_UDP_PCB (5)
 #define TCP_MSS (1152)
-
 #endif // DIC_ENABLE
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1
