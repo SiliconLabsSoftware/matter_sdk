@@ -30,8 +30,8 @@
 #include <lwip/lwip_buildconfig.h>
 #endif
 
-#include <stdlib.h>
 #include "cmsis_os2.h"
+#include <stdlib.h>
 
 #if (SL_MATTER_GN_BUILD == 0)
 #include "sl_matter_wifi_config.h"
