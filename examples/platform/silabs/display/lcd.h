@@ -40,6 +40,7 @@ public:
         QRCodeScreen,
 #endif
         InvalidScreen,
+        CycleScreen,
     } Screen_e;
 
     typedef enum icdMode

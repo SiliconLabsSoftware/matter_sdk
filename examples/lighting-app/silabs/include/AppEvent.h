@@ -41,6 +41,12 @@ struct AppEvent
         {
             uint8_t Action;
         } ButtonEvent;
+#ifdef DISPLAY_ENABLED
+        struct
+        {
+            void * screen;
+        } LCDEvent;
+#endif
         struct
         {
             void * Context;
