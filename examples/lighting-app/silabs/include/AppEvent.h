@@ -22,6 +22,7 @@
 #ifdef DISPLAY_ENABLED
 #include "lcd.h"
 #endif
+
 struct AppEvent;
 typedef void (*EventHandler)(AppEvent *);
 
