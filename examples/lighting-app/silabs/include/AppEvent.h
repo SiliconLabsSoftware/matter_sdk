@@ -19,6 +19,9 @@
 
 #pragma once
 
+#ifdef DISPLAY_ENABLED
+#include "lcd.h"
+#endif
 struct AppEvent;
 typedef void (*EventHandler)(AppEvent *);
 
@@ -44,7 +47,7 @@ struct AppEvent
 #ifdef DISPLAY_ENABLED
         struct
         {
-            void * screen;
+            SilabsLCD::Screen_e screen;
         } LCDEvent;
 #endif
         struct

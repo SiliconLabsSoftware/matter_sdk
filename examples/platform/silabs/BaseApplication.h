@@ -127,11 +127,6 @@ public:
 
     static void PostEvent(const AppEvent * event);
 
-    /**
-     * @brief Overridable function used to update display on button press
-     */
-    virtual void UpdateDisplay();
-
 #ifdef DISPLAY_ENABLED
     /**
      * @brief Return LCD object
@@ -141,12 +136,24 @@ public:
     static void UpdateLCDStatusScreen();
 
     /**
+     * @brief Overridable function used to update display on button press
+     */
+    virtual void UpdateDisplay();
+
+    /**
      * @brief LCD Event processing function
      *        Update the LCD status based on the screen
      *
      * @param aEvent post event being processed
      */
     static void UpdateDisplayHandler(AppEvent * aEvent);
+
+    /**
+     * @brief Post an event to update the display screen
+     *
+     * @param screen The screen to be displayed
+     */
+    static void PostUpdateDisplayEvent(SilabsLCD::Screen_e screen);
 #endif
 
     /**

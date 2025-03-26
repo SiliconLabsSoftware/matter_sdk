@@ -251,11 +251,7 @@ void BaseApplicationDelegate::OnCommissioningWindowClosed()
         SilabsLCD::Screen_e screen;
         slLCD.GetScreen(screen);
         VerifyOrReturn(screen == SilabsLCD::Screen_e::QRCodeScreen);
-        AppEvent event;
-        event.Type            = AppEvent::kEventType_LCD;
-        event.LCDEvent.screen = reinterpret_cast<void *>(static_cast<uintptr_t>(SilabsLCD::Screen_e::DemoScreen));
-        event.Handler         = AppTask::GetAppTask().UpdateDisplayHandler;
-        BaseApplication::PostEvent(&event);
+        BaseApplication::PostUpdateDisplayEvent(SilabsLCD::Screen_e::DemoScreen);
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
     }
@@ -625,29 +621,13 @@ void BaseApplication::ButtonHandler(AppEvent * aEvent)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
             }
 
-            AppEvent event;
-            event.Type            = AppEvent::kEventType_LCD;
-            event.LCDEvent.screen = reinterpret_cast<void *>(static_cast<uintptr_t>(SilabsLCD::Screen_e::CycleScreen));
-            event.Handler         = AppTask::GetAppTask().UpdateDisplayHandler;
-            PostEvent(&event);
+            // Print the QR Code
+            OutputQrCode(false);
+#ifdef DISPLAY_ENABLED
+            PostUpdateDisplayEvent(SilabsLCD::Screen_e::CycleScreen);
+#endif // DISPLAY_ENABLED
         }
     }
-}
-
-void BaseApplication::UpdateDisplayHandler(AppEvent * aEvent)
-{
-    VerifyOrReturn(aEvent->Type == AppEvent::kEventType_LCD);
-    SilabsLCD::Screen_e screen = static_cast<SilabsLCD::Screen_e>(reinterpret_cast<uintptr_t>(aEvent->LCDEvent.screen));
-    (screen == SilabsLCD::Screen_e::CycleScreen) ? AppTask::GetAppTask().UpdateDisplay() : AppTask::GetLCD().SetScreen(screen);
-}
-
-void BaseApplication::UpdateDisplay()
-{
-    OutputQrCode(false);
-#ifdef DISPLAY_ENABLED
-    UpdateLCDStatusScreen();
-    slLCD.CycleScreens();
-#endif
 }
 
 void BaseApplication::CancelFunctionTimer()
@@ -808,6 +788,32 @@ SilabsLCD & BaseApplication::GetLCD(void)
     return slLCD;
 }
 
+void BaseApplication::PostUpdateDisplayEvent(SilabsLCD::Screen_e screen)
+{
+    AppEvent event;
+    event.Type            = AppEvent::kEventType_LCD;
+    event.LCDEvent.screen = screen;
+    event.Handler         = AppTask::GetAppTask().UpdateDisplayHandler;
+    BaseApplication::PostEvent(&event);
+}
+
+void BaseApplication::UpdateDisplayHandler(AppEvent * aEvent)
+{
+    VerifyOrReturn(aEvent->Type == AppEvent::kEventType_LCD);
+    SilabsLCD::Screen_e screen = aEvent->LCDEvent.screen;
+    if (screen == SilabsLCD::Screen_e::StatusScreen)
+    {
+        UpdateLCDStatusScreen();
+    }
+    (screen == SilabsLCD::Screen_e::CycleScreen) ? AppTask::GetAppTask().UpdateDisplay() : AppTask::GetLCD().SetScreen(screen);
+}
+
+void BaseApplication::UpdateDisplay()
+{
+    UpdateLCDStatusScreen();
+    slLCD.CycleScreens();
+}
+
 void BaseApplication::UpdateLCDStatusScreen()
 {
     SilabsLCD::DisplayStatus_t status;
@@ -944,11 +950,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
         // Update the LCD screen with SSID and connected state
         if (screen == SilabsLCD::Screen_e::StatusScreen)
         {
-            AppEvent event;
-            event.Type            = AppEvent::kEventType_LCD;
-            event.LCDEvent.screen = reinterpret_cast<void *>(static_cast<uintptr_t>(SilabsLCD::Screen_e::StatusScreen));
-            event.Handler         = AppTask::GetAppTask().UpdateDisplayHandler;
-            PostEvent(&event);
+            PostUpdateDisplayEvent(SilabsLCD::Screen_e::StatusScreen);
         }
 #endif // DISPLAY_ENABLED
 
