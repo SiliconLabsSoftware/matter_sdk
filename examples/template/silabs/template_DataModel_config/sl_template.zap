@@ -1,6 +1,6 @@
 {
   "fileFormat": 2,
-  "featureLevel": 102,
+  "featureLevel": 106,
   "creator": "zap",
   "keyValuePairs": [
     {
@@ -41,14 +41,16 @@
         "code": 22,
         "profileId": 259,
         "label": "MA-rootdevice",
-        "name": "MA-rootdevice"
+        "name": "MA-rootdevice",
+        "deviceTypeOrder": 0
       },
       "deviceTypes": [
         {
           "code": 22,
           "profileId": 259,
           "label": "MA-rootdevice",
-          "name": "MA-rootdevice"
+          "name": "MA-rootdevice",
+          "deviceTypeOrder": 0
         }
       ],
       "deviceVersions": [
@@ -714,24 +716,6 @@
               "source": "client",
               "isIncoming": 0,
               "isEnabled": 1
-            }
-          ],
-          "attributes": [
-            {
-              "name": "ClusterRevision",
-              "code": 65533,
-              "mfgCode": null,
-              "side": "client",
-              "type": "int16u",
-              "included": 1,
-              "storageOption": "RAM",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": "1",
-              "reportable": 1,
-              "minInterval": 0,
-              "maxInterval": 65344,
-              "reportableChange": 0
             }
           ]
         },
@@ -2816,7 +2800,7 @@
           ]
         },
         {
-          "name": "WiFi Network Diagnostics",
+          "name": "Wi-Fi Network Diagnostics",
           "code": 54,
           "mfgCode": null,
           "define": "WIFI_NETWORK_DIAGNOSTICS_CLUSTER",
@@ -3904,14 +3888,16 @@
         "code": 257,
         "profileId": 259,
         "label": "MA-dimmablelight",
-        "name": "MA-dimmablelight"
+        "name": "MA-dimmablelight",
+        "deviceTypeOrder": 0
       },
       "deviceTypes": [
         {
           "code": 257,
           "profileId": 259,
           "label": "MA-dimmablelight",
-          "name": "MA-dimmablelight"
+          "name": "MA-dimmablelight",
+          "deviceTypeOrder": 0
         }
       ],
       "deviceVersions": [
@@ -4962,22 +4948,6 @@
               "reportableChange": 0
             },
             {
-              "name": "EventList",
-              "code": 65530,
-              "mfgCode": null,
-              "side": "server",
-              "type": "array",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
               "name": "AttributeList",
               "code": 65531,
               "mfgCode": null,
@@ -5290,7 +5260,7 @@
               "code": 8,
               "mfgCode": null,
               "side": "server",
-              "type": "enum8",
+              "type": "ColorModeEnum",
               "included": 1,
               "storageOption": "RAM",
               "singleton": 0,
@@ -5306,7 +5276,7 @@
               "code": 15,
               "mfgCode": null,
               "side": "server",
-              "type": "bitmap8",
+              "type": "OptionsBitmap",
               "included": 1,
               "storageOption": "RAM",
               "singleton": 0,
@@ -5354,7 +5324,7 @@
               "code": 16385,
               "mfgCode": null,
               "side": "server",
-              "type": "enum8",
+              "type": "EnhancedColorModeEnum",
               "included": 1,
               "storageOption": "RAM",
               "singleton": 0,
@@ -5450,7 +5420,7 @@
               "code": 16394,
               "mfgCode": null,
               "side": "server",
-              "type": "bitmap16",
+              "type": "ColorCapabilitiesBitmap",
               "included": 1,
               "storageOption": "RAM",
               "singleton": 0,
@@ -5622,10 +5592,10 @@
               "side": "server",
               "type": "bitmap32",
               "included": 1,
-              "storageOption": "RAM",
+              "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "0",
+              "defaultValue": null,
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
