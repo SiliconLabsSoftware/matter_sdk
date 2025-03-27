@@ -632,6 +632,11 @@ void WindowManager::UpdateLED()
     }
 }
 
+void WindowManager::DrawUI(GLIB_Context_t * glibContext)
+{
+    sWindow.UpdateLCD();
+}
+
 void WindowManager::UpdateLCD()
 {
     // Update LCD

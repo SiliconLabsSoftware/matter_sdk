@@ -126,6 +126,7 @@ public:
     void PostAttributeChange(chip::EndpointId endpoint, chip::AttributeId attributeId);
 
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
+    static void DrawUI(GLIB_Context_t * glibContext);
     void UpdateLED();
     void UpdateLCD();
 
