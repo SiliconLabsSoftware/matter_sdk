@@ -157,22 +157,6 @@ private:
      */
     bool ProcessVendorIdExceptions(chip::VendorId vendorId);
 
-    /**
-     * @brief Processes the Apple Keychain edge case.
-     *
-     * Apple, when commissioning, adds two fabric to the device. One for Apple Home and one for the Appley Keychain.
-     * Apple Home is the active fabric which is used to communication with the device. The associated fabric also has the active
-     * subcription. Applye Keychain fabric acts as a safety and doesn't have an active fabric with the device. As such, we need an
-     * alternate method to check if the device can go to LI based sleep.
-     *
-     * This method checks if there is any fabric with the Apple Home vendor ID that
-     * has at least one active subscription. If such a fabric is found, it allows
-     * the device to go to LI based sleep.
-     *
-     * @return true if the Apple Keychain edge case allows low-power mode, false otherwise.
-     */
-    bool ProcessKeychainEdgeCase();
-
     static ApplicationSleepManager mInstance;
     chip::FabricTable * mFabricTable                                  = nullptr;
     chip::app::SubscriptionsInfoProvider * mSubscriptionsInfoProvider = nullptr;

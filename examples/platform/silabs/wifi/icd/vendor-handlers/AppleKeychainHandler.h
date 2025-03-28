@@ -25,10 +25,16 @@ namespace app {
 namespace Silabs {
 
 /**
- * @brief Apple Keychain edge-case processing handler.
- *        Handler is called when we validate if the Apple Keychain fabric has an active subscription which it never does.
- *        In this case, we validate if the main Apple fabric has an active subscription.
+ * @brief Processes the Apple Keychain edge case.
  *
+ * Apple, when commissioning, adds two fabric to the device. One for Apple Home and one for the Apple Keychain.
+ * Apple Home is the active fabric which is used to communication with the device. The associated fabric also has the active
+ * subcription. The Apple Keychain fabric acts as a safety and doesn't have an active fabric with the device. As such, we need an
+ * alternate method to check if the device can go to LI based sleep.
+ *
+ * This method checks if there is any fabric with the Apple Home vendor ID that
+ * has at least one active subscription. If such a fabric is found, it allows
+ * the device to go to LI based sleep.
  */
 class AppleKeychainHandler : public VendorHandler<AppleKeychainHandler>
 {
