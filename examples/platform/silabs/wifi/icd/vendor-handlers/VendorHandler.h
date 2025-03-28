@@ -27,6 +27,7 @@ namespace Silabs {
 /**
  * @brief Delegate innterface class that defines edge-case processing logic.
  *
+ * @tparam VendorHandlerImpl The derived class that implements the edge-case processing logic.
  */
 template <typename VendorHandlerImpl>
 class VendorHandler
@@ -42,9 +43,9 @@ public:
      * @return true, if the device can go to LI based sleep.
      *         false, if the device cannot go to LI based sleep.
      */
-    bool ProcessVendorCase(chip::app::SubscriptionsInfoProvider * subscriptionsInfoProvider, chip::FabricTable * fabricTable) const
+    static bool ProcessVendorCase(chip::app::SubscriptionsInfoProvider * subscriptionsInfoProvider, chip::FabricTable * fabricTable)
     {
-        return static_cast<const VendorHandlerImpl *>(this)->ProcessVendorCaseImpl(subscriptionsInfoProvider, fabricTable);
+        return VendorHandlerImpl::ProcessVendorCaseImpl(subscriptionsInfoProvider, fabricTable);
     }
 
     /**
@@ -55,7 +56,7 @@ public:
      * @return true, if the vendor ID matches the derived class vendor ID.
      *         false, if the vendor ID does not match the derived class vendor ID.
      */
-    static bool IsMatchingVendorID(uint16_t vendorId) { return VendorHandlerImpl::IsMatchingVendorIDImpl(vendorId); }
+    static bool IsMatchingVendorID(chip::VendorId vendorId) { return VendorHandlerImpl::IsMatchingVendorIDImpl(vendorId); }
 };
 
 } // namespace Silabs

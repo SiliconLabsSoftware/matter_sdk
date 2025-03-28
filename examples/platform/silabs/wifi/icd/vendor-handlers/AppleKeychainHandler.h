@@ -33,8 +33,8 @@ namespace Silabs {
 class AppleKeychainHandler : public VendorHandler<AppleKeychainHandler>
 {
 public:
-    bool ProcessVendorCaseImpl(chip::app::SubscriptionsInfoProvider * subscriptionsInfoProvider,
-                               chip::FabricTable * fabricTable) const
+    static bool ProcessVendorCaseImpl(chip::app::SubscriptionsInfoProvider * subscriptionsInfoProvider,
+                                      chip::FabricTable * fabricTable)
     {
         VerifyOrReturnValue(subscriptionsInfoProvider != nullptr && fabricTable != nullptr, false);
 
@@ -53,7 +53,7 @@ public:
         return hasValidException;
     }
 
-    static bool IsMatchingVendorID(uint16_t vendorId) { return vendorId == kAppleKeychainVendorId; }
+    static bool IsMatchingVendorID(chip::VendorId vendorId) { return vendorId == kAppleKeychainVendorId; }
 
 private:
     // Official Apple Keychain vendor ID from the CSA database

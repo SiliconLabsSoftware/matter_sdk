@@ -34,7 +34,7 @@ public:
                                   chip::FabricTable * fabricTable)
     {
         // Iterate over all handlers and process the applicable one
-        return ((Handlers::IsMatchingVendorID(vendorId) && Handlers().ProcessVendorCase(subscriptionsInfoProvider, fabricTable)) ||
+        return ((Handlers::IsMatchingVendorID(vendorId) && Handlers::ProcessVendorCase(subscriptionsInfoProvider, fabricTable)) ||
                 ...);
     }
 };

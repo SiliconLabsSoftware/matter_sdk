@@ -155,7 +155,7 @@ private:
      * @param vendorId The vendor ID to check for special cases.
      * @return true if the vendor ID has a special case that allows LI based sleep, false otherwise.
      */
-    bool ProcessSpecialVendorIDCase(chip::VendorId vendorId);
+    bool ProcessVendorIdExceptions(chip::VendorId vendorId);
 
     /**
      * @brief Processes the Apple Keychain edge case.

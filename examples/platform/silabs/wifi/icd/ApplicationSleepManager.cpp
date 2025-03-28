@@ -104,7 +104,7 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
             if (!mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
             {
                 ChipLogProgress(AppServer, "Fabric index %u has no active subscriptions", it->GetFabricIndex());
-                canGoToLIBasedSleep = ProcessSpecialVendorIDCase(it->GetVendorId());
+                canGoToLIBasedSleep = ProcessVendorIdExceptions(it->GetVendorId());
 
                 if (canGoToLIBasedSleep)
                 {
@@ -124,7 +124,7 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
     return canGoToLIBasedSleep;
 }
 
-bool ApplicationSleepManager::ProcessSpecialVendorIDCase(chip::VendorId vendorId)
+bool ApplicationSleepManager::ProcessVendorIdExceptions(chip::VendorId vendorId)
 {
     // Add new handlers here for them to be processed by the factory
     using Factory = VendorHandlerFactory<AppleKeychainHandler>;
