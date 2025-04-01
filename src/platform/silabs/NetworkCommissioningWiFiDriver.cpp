@@ -334,7 +334,7 @@ CHIP_ERROR GetConnectedNetwork(Network & network)
     VerifyOrReturnError(wfx_is_sta_connected(), CHIP_ERROR_NOT_CONNECTED);
     network.connected = true;
     uint8_t length    = strnlen(wifiConfig.ssid, DeviceLayer::Internal::kMaxWiFiSSIDLength);
-    VerifyOrReturnError(length < sizeof(network.networkID), CHIP_ERROR_BUFFER_TOO_SMALL);
+    VerifyOrReturnError(length <= sizeof(network.networkID), CHIP_ERROR_BUFFER_TOO_SMALL);
     memcpy(network.networkID, wifiConfig.ssid, length);
     network.networkIDLen = length;
 
