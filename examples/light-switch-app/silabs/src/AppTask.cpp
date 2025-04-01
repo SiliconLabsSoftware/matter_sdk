@@ -97,7 +97,7 @@ CHIP_ERROR AppTask::Init()
     }
 
     longPressTimer = new Timer(LONG_PRESS_TIMEOUT_MS, OnLongPressTimeout, this);
-    
+
     return err;
 }
 
