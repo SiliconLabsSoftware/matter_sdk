@@ -16,20 +16,21 @@
 cmake_minimum_required(VERSION 3.13.1)
 
 get_filename_component(CHIP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/third_party/connectedhomeip REALPATH)
-get_filename_component(NRFCONNECT_COMMON ${CHIP_ROOT}/examples/platform/nrfconnect REALPATH)
+# get_filename_component(NRFCONNECT_COMMON ${CHIP_ROOT}/examples/platform/nrfconnect REALPATH) # TODO replace with silabs specific stuff
 get_filename_component(LIGHTING_COMMON ${CHIP_ROOT}/examples/lighting-app/lighting-common REALPATH)
 get_filename_component(GEN_DIR ${CHIP_ROOT}/zzz_generated/ REALPATH)
 
-include(${CHIP_ROOT}/config/nrfconnect/app/check-nrfconnect-version.cmake)
+# include(${CHIP_ROOT}/config/nrfconnect/app/check-nrfconnect-version.cmake) # TODO replace with silabs specific stuff
 
-list(APPEND ZEPHYR_EXTRA_MODULES ${CHIP_ROOT}/config/nrfconnect/chip-module)
+# Not need for now
+# list(APPEND ZEPHYR_EXTRA_MODULES ${CHIP_ROOT}/config/silabs)
 find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
 
 project(chip-nrfconnect-lighting-example)
 
-include(${CHIP_ROOT}/config/nrfconnect/app/check-sysbuild-use.cmake)
-include(${CHIP_ROOT}/config/nrfconnect/app/enable-gnu-std.cmake)
-include(${CHIP_ROOT}/config/nrfconnect/app/flashing.cmake)
+# include(${CHIP_ROOT}/config/nrfconnect/app/check-sysbuild-use.cmake) # TODO replace with silabs specific stuff
+# include(${CHIP_ROOT}/config/nrfconnect/app/enable-gnu-std.cmake) # TODO replace with silabs specific stuff
+# include(${CHIP_ROOT}/config/nrfconnect/app/flashing.cmake) # TODO replace with silabs specific stuff
 include(${CHIP_ROOT}/src/app/chip_data_model.cmake)
 
 # -Wmaybe-uninitialized has too many false positives, including on std::optional
@@ -44,32 +45,34 @@ target_include_directories(app PRIVATE
                            ${GEN_DIR}
                            ${GEN_DIR}/app-common
                            ${GEN_DIR}/lighting-app
-                           ${NRFCONNECT_COMMON}/util/include
-                           ${NRFCONNECT_COMMON}/app/include)
+                           # ${NRFCONNECT_COMMON}/util/include # TODO replace with silabs specific stuff
+                           # ${NRFCONNECT_COMMON}/app/include # TODO replace with silabs specific stuff
+)
 
 target_sources(app PRIVATE
                main/AppTask.cpp
                main/main.cpp
                main/ZclCallbacks.cpp
                ${CHIP_ROOT}/src/app/util/persistence/DeferredAttributePersistenceProvider.cpp
-               ${NRFCONNECT_COMMON}/util/LEDWidget.cpp
-               ${NRFCONNECT_COMMON}/util/PWMDevice.cpp)
+               # ${NRFCONNECT_COMMON}/util/LEDWidget.cpp # TODO replace with silabs specific stuff
+               # ${NRFCONNECT_COMMON}/util/PWMDevice.cpp # TODO replace with silabs specific stuff
+               )
 
 chip_configure_data_model(app
     ZAP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../lighting-common/lighting-app.zap
 )
 
 if(CONFIG_CHIP_OTA_REQUESTOR OR CONFIG_MCUMGR_TRANSPORT_BT)
-    target_sources(app PRIVATE ${NRFCONNECT_COMMON}/util/OTAUtil.cpp)
+    # target_sources(app PRIVATE ${NRFCONNECT_COMMON}/util/OTAUtil.cpp) # TODO replace with silabs specific stuff
 endif()
 
 if(CONFIG_MCUMGR_TRANSPORT_BT)
     zephyr_library_link_libraries(MCUBOOT_BOOTUTIL)
-    target_sources(app PRIVATE ${NRFCONNECT_COMMON}/util/DFUOverSMP.cpp)
+    # target_sources(app PRIVATE ${NRFCONNECT_COMMON}/util/DFUOverSMP.cpp) # TODO replace with silabs specific stuff
 endif()
 
 if (CONFIG_SHELL AND BOARD STREQUAL "nrf52840dongle_nrf52840")
-  target_sources(app PRIVATE ${NRFCONNECT_COMMON}/util/DFUTrigger.cpp)
+  # target_sources(app PRIVATE ${NRFCONNECT_COMMON}/util/DFUTrigger.cpp) # TODO replace with silabs specific stuff
 endif()
 
 if (CONFIG_CHIP_PW_RPC)
@@ -85,10 +88,10 @@ pw_set_module_config(pw_rpc_CONFIG pw_rpc.disable_global_mutex_config)
 pw_set_backend(pw_log pw_log_basic)
 pw_set_backend(pw_assert.check pw_assert_log.check_backend)
 pw_set_backend(pw_assert.assert pw_assert.assert_compatibility_backend)
-pw_set_backend(pw_sys_io pw_sys_io.nrfconnect)
+pw_set_backend(pw_sys_io pw_sys_io.nrfconnect) # TODO replace with silabs specific stuff
 set(dir_pw_third_party_nanopb "${CHIP_ROOT}/third_party/nanopb/repo" CACHE STRING "" FORCE)
 
-add_subdirectory(third_party/connectedhomeip/examples/platform/nrfconnect/pw_sys_io)
+add_subdirectory(third_party/connectedhomeip/examples/platform/nrfconnect/pw_sys_io) # TODO replace with silabs specific stuff
 add_subdirectory(third_party/connectedhomeip/third_party/nanopb/repo)
 add_subdirectory(third_party/connectedhomeip/third_party/pigweed/repo)
 
@@ -179,18 +182,18 @@ pw_proto_library(thread_service
 
 target_sources(app PRIVATE
   ../../common/pigweed/RpcService.cpp
-  ../../common/pigweed/nrfconnect/PigweedLoggerMutex.cpp
-  ${NRFCONNECT_COMMON}/Rpc.cpp
-  ${NRFCONNECT_COMMON}/util/PigweedLogger.cpp
+  ../../common/pigweed/nrfconnect/PigweedLoggerMutex.cpp # TODO replace with silabs specific stuff
+  # ${NRFCONNECT_COMMON}/Rpc.cpp # TODO replace with silabs specific stuff
+  # ${NRFCONNECT_COMMON}/util/PigweedLogger.cpp # TODO replace with silabs specific stuff
 )
 
 target_include_directories(app PRIVATE
   ${CHIP_ROOT}/src/lib/support
   ${CHIP_ROOT}/src/system
-  ${NRFCONNECT_COMMON}
+  # ${NRFCONNECT_COMMON} # TODO replace with silabs specific stuff
   ../../common
   ../../common/pigweed
-  ../../common/pigweed/nrfconnect)
+  ../../common/pigweed/nrfconnect) # TODO replace with silabs specific stuff
 
 target_compile_options(app PRIVATE
                        "-DPW_RPC_ATTRIBUTE_SERVICE=1"

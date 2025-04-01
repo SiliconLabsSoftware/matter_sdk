@@ -13,14 +13,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-mainmenu "Matter nRF Connect Lighting Example Application"
+mainmenu "Matter Silabs Lighting Example Application"
 
 # Sample configuration used for Thread networking
 if NET_L2_OPENTHREAD
 
-choice OPENTHREAD_NORDIC_LIBRARY_CONFIGURATION
-	default OPENTHREAD_NORDIC_LIBRARY_FTD
-endchoice
+#choice OPENTHREAD_NORDIC_LIBRARY_CONFIGURATION
+#	default OPENTHREAD_NORDIC_LIBRARY_FTD
+#endchoice
 
 choice OPENTHREAD_DEVICE_TYPE
 	default OPENTHREAD_FTD
@@ -29,6 +29,7 @@ endchoice
 endif # NET_L2_OPENTHREAD
 
 
-rsource "../../../config/nrfconnect/chip-module/Kconfig.features"
-rsource "../../../config/nrfconnect/chip-module/Kconfig.defaults"
+rsource "../../../config/silabs/Kconfig.features"
+rsource "../../../config/silabs/Kconfig.defaults"
+rsource "../../../config/silabs/KConfig"
 source "Kconfig.zephyr"
