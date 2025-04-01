@@ -9,6 +9,9 @@ on:
             output-directory:
                 required: true
                 type: string
+            build-type:
+                required: true
+                type: string
 
 jobs:
     build:
@@ -33,7 +36,7 @@ jobs:
                   bootstrap-log-name: bootstrap-logs-${{ inputs.example-app }}-${{ matrix.platform }}
 
             - name: Build ${{ inputs.example-app }} configurations
-              uses: SiliconLabsSoftware/matter_build_action@v1.2.0
+              uses: SiliconLabsSoftware/matter_build_action@c8bf467
               with:
                   json-file-path: >
                       ${{ matrix.platform == 'mg24' && './.github/silabs-builds-mg24.json' ||
@@ -41,5 +44,7 @@ jobs:
                           matrix.platform == 'mg26' && './.github/silabs-builds-mg26.json' ||
                           matrix.platform == 'siwx' && './.github/silabs-builds-siwx.json' }}
                   example-app: ${{ inputs.example-app }}
+                  path-to-example-app: examples/${{ inputs.example-app }}/silabs
                   build-script: "./scripts/examples/gn_silabs_example.sh"
                   output-directory: ${{ inputs.output-directory }}
+                  build-type: ${{ inputs.build-type }}
