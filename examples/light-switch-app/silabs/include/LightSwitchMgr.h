@@ -85,5 +85,4 @@ private:
 
     chip::EndpointId mLightSwitchEndpoint   = chip::kInvalidEndpointId;
     chip::EndpointId mGenericSwitchEndpoint = chip::kInvalidEndpointId;
-
 };
