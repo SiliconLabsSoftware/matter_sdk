@@ -572,6 +572,8 @@ void Server::RejoinExistingMulticastGroups()
 {
     ChipLogProgress(AppServer, "Joining Multicast groups");
     CHIP_ERROR err = CHIP_NO_ERROR;
+
+    // Groups cluster
     for (const FabricInfo & fabric : mFabrics)
     {
         Credentials::GroupDataProvider::GroupInfo groupInfo;
@@ -599,6 +601,9 @@ void Server::RejoinExistingMulticastGroups()
             iterator->Release();
         }
     }
+
+    // Multicast cluster
+    mTransports.MulticastGroupJoinLeave(Transport::PeerAddress::Multicast(), true);
 }
 
 #if CHIP_CONFIG_ENABLE_ICD_CIP
