@@ -139,10 +139,8 @@ if [ "$#" == "0" ]; then
         --low-power
             disables all power consuming features for the most power efficient build
             This flag is to be used with --icd
-        --wifi <wf200 | rs9116>
-            build wifi example variant for given exansion board
-        --brd4357a
-            build 917ncp wifi example for brd4357a board
+        --wifi <wf200 | rs9116 | SiWx917 | SiWx917_module>
+            build wifi example variant for given expansion board
         --additional_data_advertising
             enable Addition data advertissing and rotating device ID
         --use_ot_lib
@@ -194,6 +192,8 @@ else
                     optArgs+="use_rs9116=true "
                 elif [ "$2" = "SiWx917" ]; then
                     optArgs+="use_SiWx917=true "
+                elif [ "$2" = "SiWx917_module" ]; then
+                    optArgs+="use_SiWx917=true use_SiWx917_module=true "
                 elif [ "$2" = "wf200" ]; then
                     optArgs+="use_wf200=true "
                 else
@@ -203,10 +203,6 @@ else
                 USE_WIFI=true
                 optArgs+="chip_device_platform =\"efr32\" chip_crypto_keystore=\"psa\""
                 shift
-                shift
-                ;;
-            --brd4357a)
-                optArgs+="use_brd4357a=true "
                 shift
                 ;;
             --icd)

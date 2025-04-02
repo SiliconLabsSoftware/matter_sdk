@@ -42,10 +42,10 @@ declare_args() {
   use_wf200 = false
   use_rs9116 = false
   use_SiWx917 = false
+  use_SiWx917_module = false
 
   wifi_soc = false
 
-  use_brd4357a = false
 
   #Disable MQTT by default
   enable_dic = false
