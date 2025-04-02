@@ -33,6 +33,7 @@ config CHIP_DEVICE_VENDOR_NAME
 # See config/zephyr/Kconfig for full definition
 config CHIP_OTA_REQUESTOR
 	bool
+	default y
 	imply DFU_MULTI_IMAGE
 	imply DFU_TARGET
 	imply BOOTLOADER_MCUBOOT
