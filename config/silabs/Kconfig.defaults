@@ -375,7 +375,7 @@ endif # !CHIP_CRYPTO_PSA
 
 config MBEDTLS_SSL_OUT_CONTENT_LEN
     int "Maximum content length for MbedTLS SSL output"
-    default 900 if CHIP_WIFI
+    default 1560
 
 config MBEDTLS_SHA384_C
     bool "Enable SHA-384 support in MbedTLS"
