@@ -46,7 +46,6 @@ declare_args() {
 
   wifi_soc = false
 
-
   #Disable MQTT by default
   enable_dic = false
 
