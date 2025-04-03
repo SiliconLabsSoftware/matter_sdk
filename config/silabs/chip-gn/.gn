@@ -25,5 +25,5 @@ default_args = {
   target_cpu = "arm"
   target_os = "zephyr"
 
-  import("${chip_root}/config/nxp/chip-gn/args.gni")
+  import("${chip_root}/config/silabs/chip-gn/args.gni")
 }
