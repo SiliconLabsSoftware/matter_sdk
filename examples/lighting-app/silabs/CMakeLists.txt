@@ -17,6 +17,7 @@ cmake_minimum_required(VERSION 3.13.1)
 
 get_filename_component(CHIP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/third_party/connectedhomeip REALPATH)
 get_filename_component(GEN_DIR ${CHIP_ROOT}/zzz_generated/ REALPATH)
+get_filename_component(SILABS_PLATFORM_COMMON ${CHIP_ROOT}/examples/platform/silabs REALPATH)
 get_filename_component(ALL_CLUSTERS_COMMON_DIR ${CHIP_ROOT}/examples/all-clusters-app/all-clusters-common REALPATH)
 #get_filename_component(EXAMPLE_PLATFORM_SILABS_COMMON_DIR ${CHIP_ROOT}/examples/platform/nxp/common REALPATH)
 #get_filename_component(EXAMPLE_PLATFORM_SILABS_ZEPHYR_DIR ${CHIP_ROOT}/examples/platform/nxp/zephyr REALPATH)
@@ -52,7 +53,7 @@ target_include_directories(app
 
 target_sources(app
     PRIVATE
-    src/zephyr/main.cpp
+    ${SILABS_PLATFORM_COMMON}/zephyr/src/main.cpp
     # ${LAUNDRY_WASHER_SILABS_COMMON_DIR}/main/AppTask.cpp
     # ${EXAMPLE_PLATFORM_SILABS_COMMON_DIR}/device_manager/source/CHIPDeviceManager.cpp
     # ${LAUNDRY_WASHER_SILABS_COMMON_DIR}/main/DeviceCallbacks.cpp
