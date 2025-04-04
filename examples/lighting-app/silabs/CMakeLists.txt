@@ -40,7 +40,7 @@ include(${CHIP_ROOT}/src/app/chip_data_model.cmake)
 
 target_include_directories(app
     PRIVATE
-    ${LAUNDRY_WASHER_SILABS_COMMON_DIR}/main/include
+    include
     ${LAUNDRY_WASHER_SILABS_COMMON_DIR}/Zephyr/include
     ${ALL_CLUSTERS_COMMON_DIR}/include
     ${GEN_DIR}/app-common
