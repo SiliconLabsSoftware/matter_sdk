@@ -24,14 +24,15 @@ config CHIP_WIFI
 	default y if BOARD_SIWX917_RB4338A
 	select WIFI
 	select WIFI_NM_WPA_SUPPLICANT
-	imply NORDIC_SECURITY_BACKEND
 	imply MBEDTLS_ENTROPY_C
 	imply MBEDTLS_PSA_CRYPTO_C
+	imply MBEDTLS_KEY_EXCHANGE_RSA_ENABLED
+	imply MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED
+	imply PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY
 	imply NET_STATISTICS
-	imply NET_L2_ETHERNET
 	imply NET_PKT_TXTIME
 	imply NET_PKT_TIMESTAMP
-	imply MBEDTLS_PROMPTLESS
+	#imply MBEDTLS_PROMPTLESS
 	imply BUILD_OUTPUT_META
 	imply USE_DT_CODE_PARTITION # might be removed when the OTA is enabled
 	imply NET_IPV6_ND # enable Neighbor Discovery to handle Router Advertisements

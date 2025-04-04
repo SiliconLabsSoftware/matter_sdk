@@ -39,29 +39,29 @@
 &flash0 {
 	status = "okay";
 	partitions {
-		boot_partition: partition@0 {
+		boot_partition: partition@08202000 {
 			label = "mcuboot";
-			reg = <0x0000000 DT_SIZE_K(128)>;
+			reg = <0x08202000 DT_SIZE_K(128)>;
 		};
 
-		slot0_partition: partition@20000 {
+		slot0_partition: partition@08222000 {
 			label = "image-0";
-			reg = <0x00020000 0x440000>;
+			reg = <0x08222000 DT_SIZE_K(2048)>;
 		};
 
-		slot1_partition: partition@460000 {
+		slot1_partition: partition@08422000 {
 			label = "image-1";
-			reg = <0x00460000 0x440000>;
+			reg = <0x08422000 DT_SIZE_K(2048)>;
 		};
 
-		storage_partition: partition@3FEF000 {
+		storage_partition: partition@08622000 {
 			label = "storage";
-			reg = <0x03FEF000 DT_SIZE_K(64)>;
+			reg = <0x08622000 DT_SIZE_K(64)>;
 		};
 
-		factory_partition: partition@3FFF000 {
+		factory_partition: partition@08632000 {
 			label = "factory-data";
-			reg = <0x03FFF000 DT_SIZE_K(4)>;
+			reg = <0x08632000 DT_SIZE_K(4)>;
 		};
 
 	};
