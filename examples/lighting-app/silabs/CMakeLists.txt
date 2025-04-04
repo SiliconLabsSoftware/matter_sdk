@@ -106,11 +106,12 @@ if(CONFIG_CHIP_LIB_SHELL)
     )
 endif()
 
-target_sources(app
-    PRIVATE
-    ${ALL_CLUSTERS_COMMON_DIR}/src/smco-stub.cpp
-    ${ALL_CLUSTERS_COMMON_DIR}/src/bridged-actions-stub.cpp
-    ${ALL_CLUSTERS_COMMON_DIR}/src/static-supported-temperature-levels.cpp
-    ${ALL_CLUSTERS_COMMON_DIR}/src/laundry-washer-controls-delegate-impl.cpp
-    ${ALL_CLUSTERS_COMMON_DIR}/src/operational-state-delegate-impl.cpp
-)
+# TODO MATTER-4291
+# target_sources(app
+#     PRIVATE
+#     ${ALL_CLUSTERS_COMMON_DIR}/src/smco-stub.cpp
+#     ${ALL_CLUSTERS_COMMON_DIR}/src/bridged-actions-stub.cpp
+#     # ${ALL_CLUSTERS_COMMON_DIR}/src/static-supported-temperature-levels.cpp
+#     # ${ALL_CLUSTERS_COMMON_DIR}/src/laundry-washer-controls-delegate-impl.cpp
+#     # ${ALL_CLUSTERS_COMMON_DIR}/src/operational-state-delegate-impl.cpp
+# )
