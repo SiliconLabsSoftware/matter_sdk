@@ -43,6 +43,10 @@
 #include <platform/internal/GenericConnectivityManagerImpl_Thread.ipp>
 #endif
 
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+#include <platform/internal/GenericConnectivityManagerImpl_WiFi.ipp>
+#endif
+
 using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer::Internal;
 

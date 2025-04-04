@@ -301,7 +301,7 @@ CHIP_ERROR WiFiManager::GetWiFiInfo(WiFiInfo & info) const
         info.mRssi           = static_cast<int8_t>(status.rssi);
         info.mChannel        = static_cast<uint16_t>(status.channel);
         info.mSsidLen        = status.ssid_len;
-        info.mCurrentPhyRate = static_cast<uint64_t>(status.current_phy_rate);
+        info.mCurrentPhyRate = static_cast<uint64_t>(status.current_phy_tx_rate);
         memcpy(info.mSsid, status.ssid, status.ssid_len);
         memcpy(info.mBssId, status.bssid, sizeof(status.bssid));
 

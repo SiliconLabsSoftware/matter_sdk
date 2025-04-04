@@ -33,7 +33,7 @@ using namespace ::chip::System;
 namespace chip {
 namespace DeviceLayer {
 
-CHIP_ERROR ConnectivityManagerImplWiFi::InitWiFi()
+CHIP_ERROR ConnectivityManagerImpl::InitWiFi()
 {
     return WiFiManager::Instance().Init();
 }

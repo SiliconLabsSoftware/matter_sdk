@@ -36,9 +36,6 @@ class ConnectivityManagerImplWiFi
 {
     friend class ConnectivityManager;
 
-protected:
-    CHIP_ERROR InitWiFi();
-
 private:
     // Wi-Fi station
     ConnectivityManager::WiFiStationMode _GetWiFiStationMode(void);

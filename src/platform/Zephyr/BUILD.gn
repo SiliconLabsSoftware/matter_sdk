@@ -76,6 +76,14 @@ static_library("Zephyr") {
     }
   }
 
+  if (chip_enable_wifi) {
+    sources += [
+      "wifi/ConnectivityManagerImplWiFi.cpp",
+      "wifi/WiFiManager.cpp",
+      "wifi/ZephyrWiFiDriver.cpp",
+    ]
+  }
+
   if (chip_malloc_sys_heap) {
     sources += [ "SysHeapMalloc.cpp" ]
   }

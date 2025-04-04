@@ -23,6 +23,11 @@
 #if INET_CONFIG_ENABLE_TCP_ENDPOINT
 #include <platform/internal/GenericConnectivityManagerImpl_TCP.h>
 #endif
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+#include <platform/internal/GenericConnectivityManagerImpl_WiFi.h>
+#else
+#include <platform/internal/GenericConnectivityManagerImpl_NoWiFi.h>
+#endif
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 #include <platform/internal/GenericConnectivityManagerImpl_BLE.h>
 #else
@@ -33,7 +38,6 @@
 #else
 #include <platform/internal/GenericConnectivityManagerImpl_NoThread.h>
 #endif
-#include <platform/internal/GenericConnectivityManagerImpl_NoWiFi.h>
 
 #include <lib/support/logging/CHIPLogging.h>
 
@@ -55,17 +59,21 @@ class ConnectivityManagerImpl final : public ConnectivityManager,
 #if INET_CONFIG_ENABLE_TCP_ENDPOINT
                                       public Internal::GenericConnectivityManagerImpl_TCP<ConnectivityManagerImpl>,
 #endif
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+                                      public Internal::GenericConnectivityManagerImpl_WiFi<ConnectivityManagerImpl>,
+#else
+                                      public Internal::GenericConnectivityManagerImpl_NoWiFi<ConnectivityManagerImpl>,
+#endif
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
                                       public Internal::GenericConnectivityManagerImpl_BLE<ConnectivityManagerImpl>,
 #else
                                       public Internal::GenericConnectivityManagerImpl_NoBLE<ConnectivityManagerImpl>,
 #endif
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-                                      public Internal::GenericConnectivityManagerImpl_Thread<ConnectivityManagerImpl>,
+                                      public Internal::GenericConnectivityManagerImpl_Thread<ConnectivityManagerImpl>
 #else
-                                      public Internal::GenericConnectivityManagerImpl_NoThread<ConnectivityManagerImpl>,
+                                      public Internal::GenericConnectivityManagerImpl_NoThread<ConnectivityManagerImpl>
 #endif
-                                      public Internal::GenericConnectivityManagerImpl_NoWiFi<ConnectivityManagerImpl>
 {
     // Allow the ConnectivityManager interface class to delegate method calls to
     // the implementation methods provided by this class.
@@ -76,6 +84,69 @@ private:
 
     CHIP_ERROR _Init(void);
     void _OnPlatformEvent(const ChipDeviceEvent * event);
+
+    #if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+    using Flags = GenericConnectivityManagerImpl_WiFi::ConnectivityFlags;
+    // ===== Members that implement the ConnectivityManager abstract interface.
+
+    WiFiStationMode _GetWiFiStationMode(void);
+    CHIP_ERROR _SetWiFiStationMode(WiFiStationMode val);
+    bool _IsWiFiStationEnabled(void);
+    bool _IsWiFiStationApplicationControlled(void);
+    bool _IsWiFiStationConnected(void);
+    System::Clock::Timeout _GetWiFiStationReconnectInterval(void);
+    CHIP_ERROR _SetWiFiStationReconnectInterval(System::Clock::Timeout val);
+    bool _IsWiFiStationProvisioned(void);
+    void _ClearWiFiStationProvision(void);
+    CHIP_ERROR _GetAndLogWiFiStatsCounters(void);
+    bool _CanStartWiFiScan();
+    void _OnWiFiScanDone();
+    void _OnWiFiStationProvisionChange();
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    CHIP_ERROR _SetPollingInterval(System::Clock::Milliseconds32 pollingInterval);
+#endif
+    // ===== Private members reserved for use by this class only.
+
+    System::Clock::Timestamp mLastStationConnectFailTime;
+    WiFiStationMode mWiFiStationMode;
+    WiFiStationState mWiFiStationState;
+    System::Clock::Timeout mWiFiStationReconnectInterval;
+    BitFlags<Flags> mFlags;
+
+    CHIP_ERROR InitWiFi(void);
+    void OnWiFiPlatformEvent(const ChipDeviceEvent * event);
+
+    void DriveStationState(void);
+    void OnStationConnected(void);
+    void OnStationDisconnected(void);
+    void ChangeWiFiStationState(WiFiStationState newState);
+    static void DriveStationState(::chip::System::Layer * aLayer, void * aAppState);
+
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_AP
+    WiFiAPMode _GetWiFiAPMode(void);
+    CHIP_ERROR _SetWiFiAPMode(WiFiAPMode val);
+    bool _IsWiFiAPActive(void);
+    void _DemandStartWiFiAP(void);
+    void _StopOnDemandWiFiAP(void);
+    void _MaintainOnDemandWiFiAP(void);
+    System::Clock::Timeout _GetWiFiAPIdleTimeout(void);
+    void _SetWiFiAPIdleTimeout(System::Clock::Timeout val);
+    bool _IsWiFiAPApplicationControlled(void);
+
+    System::Clock::Timestamp mLastAPDemandTime;
+    WiFiAPMode mWiFiAPMode;
+    WiFiAPState mWiFiAPState;
+    System::Clock::Timeout mWiFiAPIdleTimeout;
+
+    void DriveAPState(void);
+    CHIP_ERROR ConfigureWiFiAP(void);
+    void ChangeWiFiAPState(WiFiAPState newState);
+    static void DriveAPState(::chip::System::Layer * aLayer, void * aAppState);
+#endif // CHIP_DEVICE_CONFIG_ENABLE_WIFI_AP
+
+#endif // CHIP_DEVICE_CONFIG_ENABLE_WIFI
+
 
     // ===== Members for internal use by the following friends.
 
