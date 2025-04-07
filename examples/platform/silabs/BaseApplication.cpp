@@ -980,7 +980,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #if SILABS_OTA_ENABLED
         ChipLogProgress(AppServer, "DNS-SD initialized, scheduling OTA Requestor initialization");
         chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(OTAConfig::kInitOTARequestorDelaySec),
-                                                        InitOTARequestorHandler, nullptr);
+                                                    InitOTARequestorHandler, nullptr);
 #endif // SILABS_OTA_ENABLED
     }
     break;
