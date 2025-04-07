@@ -36,6 +36,12 @@
  * 4. Factory settings (certificate and others)
  */
 
+&sram0 {
+	status = "okay";
+	compatible = "mmio-sram";
+	reg = <0x00000000 DT_SIZE_K(1024)>;
+};
+
 &flash0 {
 	status = "okay";
 	partitions {
