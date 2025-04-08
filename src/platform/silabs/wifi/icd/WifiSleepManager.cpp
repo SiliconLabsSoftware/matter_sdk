@@ -19,6 +19,8 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
+using namespace chip::DeviceLayer::Silabs;
+
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -115,6 +117,11 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
         return ConfigureDeepSleep();
     }
 
+    if (mCallback && mCallback->CanGoToLIBasedSleep())
+    {
+        return ConfigureLIBasedSleep();
+    }
+
     return ConfigureDTIMBasedSleep();
 }
 
@@ -145,6 +152,18 @@ CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
 
     ReturnLogErrorOnFailure(
         mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kHighPerformance, 0));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
+{
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    ReturnLogErrorOnFailure(
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kConnectedSleep,
+                                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+
     return CHIP_NO_ERROR;
 }
 
