@@ -231,7 +231,7 @@ TEST_F(TestAppleKeychainHandler, ProcessVendorCaseImpl_InvalidExceptionNoAppleFa
     FabricTable & fabricTable = fabricTableHolder.GetFabricTable();
 
     EXPECT_EQ(CHIP_NO_ERROR, LoadAppleKeychainFabric(fabricTable));
-    EXPECT_FALSE(AppleKeychainHandler::ProcessVendorCaseImpl(&subscriptionsInfoProvider, &fabricTable));
+    EXPECT_TRUE(AppleKeychainHandler::ProcessVendorCaseImpl(&subscriptionsInfoProvider, &fabricTable));
 }
 
 TEST_F(TestAppleKeychainHandler, ProcessVendorCaseImpl_InvalidExceptionNoFabrics)
@@ -243,6 +243,13 @@ TEST_F(TestAppleKeychainHandler, ProcessVendorCaseImpl_InvalidExceptionNoFabrics
     EXPECT_EQ(fabricTableHolder.Init(&testStorage), CHIP_NO_ERROR);
     FabricTable & fabricTable = fabricTableHolder.GetFabricTable();
 
+    /*
+     * In this case, we have no fabrics in the fabric table. The Apple Keychain
+     * handler should return False since we cannot determine if the device can go to LI based sleep.
+     *
+     * In practice, this use-case should never happen since we shouldn't be calling an excepting handler if there are no fabrics.
+     * But if it does, we can assume that the device is in a state where it cannot go to LI based sleep.
+     */
     EXPECT_FALSE(AppleKeychainHandler::ProcessVendorCaseImpl(&subscriptionsInfoProvider, &fabricTable));
 }
 
