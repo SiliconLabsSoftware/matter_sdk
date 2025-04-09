@@ -48,24 +48,19 @@ public:
 
         bool hasValidException = true; // Default to true if no VendorId::Apple fabric is found
 
-        if (fabricTable->FabricCount() == 0)
+        // This condition should never happen in practice. We shouldn't be calling an excepting handler if there are no fabrics.
+        // But if it does, we can assume that the device is in a state where it cannot go to LI based sleep.
+        VerifyOrReturnValue(fabricTable->FabricCount() > 0, false);
+
+        for (auto it = fabricTable->begin(); it != fabricTable->end(); ++it)
         {
-            // This condition should never happen in practice. We shouldn't be calling an excepting handler if there are no fabrics.
-            // But if it does, we can assume that the device is in a state where it cannot go to LI based sleep.
-            hasValidException = false;
-        }
-        else
-        {
-            for (auto it = fabricTable->begin(); it != fabricTable->end(); ++it)
+            if (it->GetVendorId() == chip::VendorId::Apple)
             {
-                if (it->GetVendorId() == chip::VendorId::Apple)
+                if (!subscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
                 {
-                    if (!subscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
-                    {
-                        hasValidException = false; // Found an Apple fabric, but no active subscription
-                    }
-                    break;
+                    hasValidException = false; // Found an Apple fabric, but no active subscription
                 }
+                break;
             }
         }
 
