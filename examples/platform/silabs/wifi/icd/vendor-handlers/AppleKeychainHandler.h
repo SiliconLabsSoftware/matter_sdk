@@ -35,6 +35,8 @@ namespace Silabs {
  * This method checks if there is any fabric with the Apple Home vendor ID that
  * has at least one active subscription. If such a fabric is found, it allows
  * the device to go to LI based sleep.
+ * If the device has an Apple Keychain fabric but no Apple fabric, the device can go to LI based
+ * sleep.
  */
 class AppleKeychainHandler : public VendorHandler<AppleKeychainHandler>
 {
@@ -44,14 +46,20 @@ public:
     {
         VerifyOrReturnValue(subscriptionsInfoProvider != nullptr && fabricTable != nullptr, false);
 
-        bool hasValidException = false;
+        bool hasValidException = true; // Default to true if no VendorId::Apple fabric is found
+
+        // This condition should never happen in practice. We shouldn't be calling an excepting handler if there are no fabrics.
+        // But if it does, we can assume that the device is in a state where it cannot go to LI based sleep.
+        VerifyOrReturnValue(fabricTable->FabricCount() > 0, false);
 
         for (auto it = fabricTable->begin(); it != fabricTable->end(); ++it)
         {
-            if ((it->GetVendorId() == chip::VendorId::Apple) &&
-                subscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
+            if (it->GetVendorId() == chip::VendorId::Apple)
             {
-                hasValidException = true;
+                if (!subscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
+                {
+                    hasValidException = false; // Found an Apple fabric, but no active subscription
+                }
                 break;
             }
         }
