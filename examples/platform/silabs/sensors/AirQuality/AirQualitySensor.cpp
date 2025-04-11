@@ -24,7 +24,7 @@
 #ifdef USE_SPARKFUN_AIR_QUALITY_SENSOR
 #include <sparkfun_sgp40.h>
 
-#if (defined(SLI_SI917))
+#ifdef SLI_SI91X_MCU_INTERFACE
 #include "sl_i2c_instances.h"
 #include "rsi_debug.h"
 
@@ -32,7 +32,7 @@
 static sl_i2c_instance_t i2c_instance = I2C_INSTANCE_USED;
 #else
 #include "sl_i2cspm_instances.h"
-#endif //(defined(SLI_SI917))
+#endif // SLI_SI91X_MCU_INTERFACE
 static mikroe_i2c_handle_t app_i2c_instance = NULL;
 #endif // USE_SPARKFUN_AIR_QUALITY_SENSOR
 
@@ -60,11 +60,11 @@ namespace AirQualitySensor {
 sl_status_t Init()
 {
     sl_status_t status = SL_STATUS_FAIL;
-#if (defined(SLI_SI917))
+#ifdef SLI_SI91X_MCU_INTERFACE
   app_i2c_instance = &i2c_instance;
 #else
   app_i2c_instance = sl_i2cspm_qwiic;
-#endif
+# endif // SLI_SI91X_MCU_INTERFACE
 
 #ifdef USE_SPARKFUN_AIR_QUALITY_SENSOR
     status = sparkfun_sgp40_init(app_i2c_instance);
