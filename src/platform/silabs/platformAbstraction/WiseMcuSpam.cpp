@@ -32,11 +32,9 @@
 
 // TODO add includes ?
 extern "C" {
-#include "em_core.h"
 #if defined(SL_SI91X_BOARD_INIT)
 #include "rsi_board.h"
 #endif // SL_SI91X_BOARD_INIT
-#include "sl_event_handler.h"
 
 #include "sl_si91x_hal_soc_soft_reset.h"
 
