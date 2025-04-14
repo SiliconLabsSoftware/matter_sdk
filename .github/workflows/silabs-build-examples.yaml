@@ -114,6 +114,13 @@ jobs:
             example-app: "onoff-plug-app"
             output-directory: "./out/onoff-plug-app"
 
+    build-closure-app:
+        name: Build Closure-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "closure-app"
+            output-directory: "./out/closure-app"
+
     build-tempalte-app:
         name: Build Template-App variations
         uses: ./.github/workflows/silabs-common-build.yaml
