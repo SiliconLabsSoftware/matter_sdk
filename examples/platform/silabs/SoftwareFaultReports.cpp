@@ -83,6 +83,16 @@ void OnSoftwareFaultEventHandler(const char * faultRecordString)
 } // namespace DeviceLayer
 } // namespace chip
 
+extern "C" void halInternalAssertFailed(const char * filename, int linenumber)
+{
+    char faultMessage[kMaxFaultStringLen] = { 0 };
+    snprintf(faultMessage, sizeof faultMessage, "Assert failed: %s:%d", filename, linenumber);
+#if SILABS_LOG_ENABLED
+    ChipLogError(NotSpecified, "%s", faultMessage);
+#endif
+    configASSERT((volatile void *) NULL);
+}
+
 #if HARD_FAULT_LOG_ENABLE
 /**
  * Log register contents to UART when a hard fault occurs.
