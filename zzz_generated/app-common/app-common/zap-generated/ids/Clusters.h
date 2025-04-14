@@ -202,6 +202,9 @@ static constexpr ClusterId Id = 0x00000061;
 namespace ScenesManagement {
 static constexpr ClusterId Id = 0x00000062;
 } // namespace ScenesManagement
+namespace Multicast {
+static constexpr ClusterId Id = 0x00000064;
+} // namespace Multicast
 namespace HepaFilterMonitoring {
 static constexpr ClusterId Id = 0x00000071;
 } // namespace HepaFilterMonitoring
