@@ -93,7 +93,7 @@ CHIP_ERROR ReadConfigValueHelper(SilabsConfig::Key key, T & val)
     // Verify the key is valid
     VerifyOrReturnError(SilabsConfig::ValidConfigKey(key), CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND);
 
-    // Get token size
+    // Get object size
     ReturnErrorOnFailure(MapNvm3Error(nvm3_getObjectInfo(nvm3_defaultHandle, key, &objectType, &dataLen)));
 
     // Ensure the data size matches the expected size

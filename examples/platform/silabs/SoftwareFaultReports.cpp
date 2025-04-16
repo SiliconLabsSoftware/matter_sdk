@@ -83,6 +83,8 @@ void OnSoftwareFaultEventHandler(const char * faultRecordString)
 } // namespace DeviceLayer
 } // namespace chip
 
+// This method is already implemented in the Zigbee stack and is required by the Zigbee
+#ifndef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 extern "C" void halInternalAssertFailed(const char * filename, int linenumber)
 {
     char faultMessage[kMaxFaultStringLen] = { 0 };
@@ -92,6 +94,7 @@ extern "C" void halInternalAssertFailed(const char * filename, int linenumber)
 #endif
     configASSERT((volatile void *) NULL);
 }
+#endif
 
 #if HARD_FAULT_LOG_ENABLE
 /**
