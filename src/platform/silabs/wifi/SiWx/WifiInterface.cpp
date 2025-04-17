@@ -57,7 +57,7 @@ extern "C" {
 
 #include <sl_net.h>
 #include <sl_net_constants.h>
-#include <sl_net_for_lwip.h>
+// #include <sl_net_for_lwip.h>
 #include <sl_net_wifi_types.h>
 }
 
@@ -107,7 +107,7 @@ osSemaphoreId_t sScanCompleteSemaphore;
 osSemaphoreId_t sScanInProgressSemaphore;
 osMessageQueueId_t sWifiEventQueue = nullptr;
 
-sl_net_wifi_lwip_context_t wifi_client_context;
+// sl_net_wifi_lwip_context_t wifi_client_context;
 sl_wifi_security_t security = SL_WIFI_SECURITY_UNKNOWN;
 
 // TODO : Temporary work-around for wifi-init failure in 917NCP ACX module board(BRD4357A). Can be removed after
@@ -476,7 +476,8 @@ sl_status_t sl_matter_wifi_platform_init(void)
 {
     sl_status_t status = SL_STATUS_OK;
 
-    status = sl_net_init((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, &config, &wifi_client_context, nullptr);
+    status = sl_net_init((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, &config, nullptr, nullptr);
+    // status = sl_net_init((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, &config, &wifi_client_context, nullptr);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_init failed: %lx", status));
 
     // Create Sempaphore for scan completion
@@ -645,13 +646,13 @@ void NotifyConnectivity(void)
 /// @brief Processing function responsible for notifying the upper layers of a succesful connection attempt.
 void NotifySuccessfulConnection(void)
 {
-    struct netif * sta_netif = &wifi_client_context.netif;
-    VerifyOrReturn(sta_netif != nullptr, ChipLogError(DeviceLayer, "HandleDHCPPolling: failed to get STA netif"));
+    // struct netif * sta_netif = &wifi_client_context.netif;
+    // VerifyOrReturn(sta_netif != nullptr, ChipLogError(DeviceLayer, "HandleDHCPPolling: failed to get STA netif"));
 #if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
     wfx_dhcp_got_ipv4((uint32_t) sta_netif->ip_addr.u_addr.ip4.addr);
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
     char addrStr[chip::Inet::IPAddress::kMaxStringLength] = { 0 };
-    VerifyOrReturn(ip6addr_ntoa_r(netif_ip6_addr(sta_netif, 0), addrStr, sizeof(addrStr)) != nullptr);
+    // VerifyOrReturn(ip6addr_ntoa_r(netif_ip6_addr(sta_netif, 0), addrStr, sizeof(addrStr)) != nullptr);
     ChipLogProgress(DeviceLayer, "SLAAC OK: linklocal addr: %s", addrStr);
     wfx_ipv6_notify(GET_IPV6_SUCCESS);
     NotifyConnectivity();

@@ -95,6 +95,11 @@ public:
     static constexpr size_t kMaxIfNameLength = Z_DEVICE_MAX_NAME_LEN;
 #endif
 
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+    using PlatformType                       = int;
+    static constexpr size_t kMaxIfNameLength = 13;
+#endif
+
 #if CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
     using PlatformType                       = unsigned int;
     static constexpr size_t kMaxIfNameLength = 6;
@@ -204,6 +209,11 @@ private:
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
     static constexpr PlatformType kPlatformNull = 0;
 #endif
+
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+    static constexpr PlatformType kPlatformNull = 0;
+#endif
+
 
 #if CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
     static constexpr PlatformType kPlatformNull = 0;
@@ -371,6 +381,11 @@ protected:
 #if CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
     struct otIp6AddressInfo * mCurNetif;
 #endif
+size_t mCurIntf;
+short mIntfFlags;
+bool mIntfFlagsCached;
+
+short GetFlags();
 };
 
 /**
@@ -561,6 +576,9 @@ private:
     const otNetifAddress * mNetifAddrList;
     const otNetifAddress * mCurAddr;
 #endif // #if CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
+struct netif * mNetifAddrList; // Declare mNetifAddrList here
+struct netif * mCurAddr;      // Pointer to the current address in the list
+int mCurAddrIndex;
 };
 
 #if CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
@@ -605,6 +623,9 @@ inline InterfaceAddressIterator::~InterfaceAddressIterator(void) {}
 inline InterfaceIterator::~InterfaceIterator()               = default;
 inline InterfaceAddressIterator::~InterfaceAddressIterator() = default;
 #endif // CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
+
+inline InterfaceIterator::~InterfaceIterator()               = default;
+inline InterfaceAddressIterator::~InterfaceAddressIterator() = default;
 
 } // namespace Inet
 } // namespace chip
