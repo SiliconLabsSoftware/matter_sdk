@@ -23,6 +23,7 @@
 
 #include <system/SystemConfig.h>
 
+#if 0
 #if CHIP_SYSTEM_CONFIG_USE_SOCKETS && !CHIP_SYSTEM_CONFIG_USE_LIBEV
 
 #include <system/WakeEvent.h>
@@ -208,3 +209,5 @@ CHIP_ERROR WakeEvent::Notify() const
 } // namespace chip
 
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS && !CHIP_SYSTEM_CONFIG_USE_LIBEV
+
+#endif

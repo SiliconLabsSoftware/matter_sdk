@@ -66,6 +66,178 @@
 namespace chip {
 namespace Inet {
 
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+CHIP_ERROR InterfaceId::GetInterfaceName(char * nameBuf, size_t nameBufSize) const
+{
+    // Simulate interface name retrieval without POSIX APIs
+    if (mPlatformInterface && nameBufSize >= kMaxIfNameLength)
+    {
+        snprintf(nameBuf, nameBufSize, "interface%d", mPlatformInterface);
+    }
+    else
+    {
+        nameBuf[0] = 0; // Null-terminate the string
+    }
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR InterfaceId::InterfaceNameToId(const char * intfName, InterfaceId & interface)
+{
+    // Simulate parsing interface name to ID
+    if (strncmp(intfName, "interface", 9) == 0)
+    {
+        unsigned long intfNum = strtoul(intfName + 9, nullptr, 10);
+        if (intfNum > 0 && intfNum < UINT8_MAX)
+        {
+            interface = InterfaceId(static_cast<InterfaceId::PlatformType>(intfNum));
+            return CHIP_NO_ERROR;
+        }
+    }
+    return INET_ERROR_UNKNOWN_INTERFACE;
+}
+
+InterfaceIterator::InterfaceIterator()
+{
+    mCurIntf = 0; // Start with the first simulated interface
+}
+
+bool InterfaceIterator::HasCurrent()
+{
+    // Simulate having a fixed number of interfaces
+    return mCurIntf < 5; // Assume 5 interfaces for simulation
+}
+
+bool InterfaceIterator::Next()
+{
+    if (HasCurrent())
+    {
+        mCurIntf++;
+        return HasCurrent();
+    }
+    return false;
+}
+
+InterfaceId InterfaceIterator::GetInterfaceId()
+{
+    return HasCurrent() ? InterfaceId(mCurIntf + 1) : InterfaceId::Null();
+}
+
+CHIP_ERROR InterfaceIterator::GetInterfaceName(char * nameBuf, size_t nameBufSize)
+{
+    VerifyOrReturnError(HasCurrent(), CHIP_ERROR_INCORRECT_STATE);
+    snprintf(nameBuf, nameBufSize, "interface%d", mCurIntf + 1);
+    return CHIP_NO_ERROR;
+}
+
+bool InterfaceIterator::IsUp()
+{
+    // Simulate all interfaces being up
+    return true;
+}
+
+bool InterfaceIterator::IsLoopback()
+{
+    // Simulate the first interface as loopback
+    return mCurIntf == 0;
+}
+
+bool InterfaceIterator::SupportsMulticast()
+{
+    // Simulate all interfaces supporting multicast
+    return true;
+}
+
+bool InterfaceIterator::HasBroadcastAddress()
+{
+    // Simulate all interfaces having broadcast addresses
+    return true;
+}
+
+InterfaceAddressIterator::InterfaceAddressIterator()
+{
+    mCurAddrIndex = -1; // Start before the first address
+}
+
+bool InterfaceAddressIterator::HasCurrent()
+{
+    // Simulate having 3 addresses per interface
+    return mCurAddrIndex >= 0 && mCurAddrIndex < 3;
+}
+
+bool InterfaceAddressIterator::Next()
+{
+    if (mCurAddrIndex < 2)
+    {
+        mCurAddrIndex++;
+        return true;
+    }
+    return false;
+}
+
+CHIP_ERROR InterfaceAddressIterator::GetAddress(IPAddress & outIPAddress)
+{
+    VerifyOrReturnError(HasCurrent(), CHIP_ERROR_SENTINEL);
+
+    // Simulate returning a unique IPv6 address for each index
+    struct in6_addr addr;
+    addr.__u6_addr.__u6_addr8[0] = 0xfe;
+    addr.__u6_addr.__u6_addr8[1] = 0x80;
+    addr.__u6_addr.__u6_addr8[15] = static_cast<uint8_t>(mCurAddrIndex + 1); // Unique
+
+    // Use a simulated method to create an IPAddress object
+    outIPAddress = IPAddress(addr);
+    return CHIP_NO_ERROR;
+}
+
+uint8_t InterfaceAddressIterator::GetPrefixLength()
+{
+    // Simulate a fixed prefix length
+    return 64;
+}
+
+InterfaceId InterfaceAddressIterator::GetInterfaceId()
+{
+    return InterfaceId(mCurAddrIndex + 1);
+}
+
+CHIP_ERROR InterfaceAddressIterator::GetInterfaceName(char * nameBuf, size_t nameBufSize)
+{
+    snprintf(nameBuf, nameBufSize, "interface%d", mCurAddrIndex + 1);
+    return CHIP_NO_ERROR;
+}
+
+bool InterfaceAddressIterator::IsUp()
+{
+    return true; // Simulate all interfaces being up
+}
+
+bool InterfaceAddressIterator::SupportsMulticast()
+{
+    return true; // Simulate all interfaces supporting multicast
+}
+
+bool InterfaceAddressIterator::HasBroadcastAddress()
+{
+    return true; // Simulate all interfaces having broadcast addresses
+}
+
+CHIP_ERROR InterfaceId::GetLinkLocalAddr(IPAddress * llAddr) const
+{
+    VerifyOrReturnError(llAddr != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    // Simulate returning a link-local address
+    struct in6_addr addr;
+    addr.__u6_addr.__u6_addr8[0] = 0xfe;
+    addr.__u6_addr.__u6_addr8[1] = 0x80;
+    addr.__u6_addr.__u6_addr8[15] = static_cast<uint8_t>(mPlatformInterface); // Unique
+
+    // addr[15] = static_cast<uint8_t>(mPlatformInterface); // Unique address based on interface
+    *llAddr = IPAddress(addr);
+    return CHIP_NO_ERROR;
+}
+
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+
 #if CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
 CHIP_ERROR InterfaceId::GetInterfaceName(char * nameBuf, size_t nameBufSize) const
 {

@@ -45,7 +45,7 @@ chip::System::Layer & SystemLayer()
     return SystemLayerImpl();
 }
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS && !defined(CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM)
 chip::System::LayerSockets & SystemLayerSockets()
 {
     return SystemLayerImpl();

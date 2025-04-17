@@ -28,10 +28,10 @@
 #include <stdbool.h>
 
 /* LwIP includes. */
-#include "lwip/ip_addr.h"
-#include "lwip/netif.h"
-#include "lwip/netifapi.h"
-#include "lwip/tcpip.h"
+// #include "lwip/ip_addr.h"
+// #include "lwip/netif.h"
+// #include "lwip/netifapi.h"
+// #include "lwip/tcpip.h"
 
 #if (SLI_SI91X_MCU_INTERFACE | EXP_BOARD)
 #include "rsi_common_apis.h"

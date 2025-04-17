@@ -35,6 +35,9 @@
 #include <arpa/inet.h>
 #endif
 
+#include "PlatformInterface.h"
+#include "netinet_in.h"
+
 namespace chip {
 namespace Inet {
 

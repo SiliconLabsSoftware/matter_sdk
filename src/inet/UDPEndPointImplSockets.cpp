@@ -44,7 +44,7 @@
 #endif // CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKETS
 
 #include <cerrno>
-#include <unistd.h>
+// #include <unistd.h>
 #include <utility>
 
 // SOCK_CLOEXEC not defined on all platforms, e.g. iOS/macOS:
@@ -57,6 +57,10 @@
 #define INADDR_ANY 0
 #endif
 
+extern "C" {
+#include "PlatformInterface.h"
+#include "socket_silabs.h"
+}
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKET_EXTENSIONS
 #include "ZephyrSocket.h"
 #endif // CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKET_EXTENSIONS
@@ -108,7 +112,7 @@ CHIP_ERROR IPv6Bind(int socket, const IPAddress & address, uint16_t port, Interf
     CHIP_ERROR status = CHIP_NO_ERROR;
 
     // NOLINTNEXTLINE(clang-analyzer-unix.StdCLibraryFunctions): Function called only with valid socket after GetSocket
-    if (bind(socket, reinterpret_cast<const sockaddr *>(&sa), static_cast<unsigned>(sizeof(sa))) != 0)
+    if (sl_bind(socket, reinterpret_cast<const sockaddr *>(&sa), static_cast<unsigned>(sizeof(sa))) != 0)
     {
         status = CHIP_ERROR_POSIX(errno);
     }
@@ -143,7 +147,7 @@ CHIP_ERROR IPv4Bind(int socket, const IPAddress & address, uint16_t port)
     CHIP_ERROR status = CHIP_NO_ERROR;
 
     // NOLINTNEXTLINE(clang-analyzer-unix.StdCLibraryFunctions): Function called only with valid socket after GetSocket
-    if (bind(socket, reinterpret_cast<const sockaddr *>(&sa), static_cast<unsigned>(sizeof(sa))) != 0)
+    if (sl_bind(socket, reinterpret_cast<const sockaddr *>(&sa), static_cast<unsigned>(sizeof(sa))) != 0)
     {
         status = CHIP_ERROR_POSIX(errno);
     }
@@ -435,7 +439,7 @@ void UDPEndPointImplSockets::CloseImpl()
     if (mSocket != kInvalidSocketFd)
     {
         static_cast<System::LayerSockets *>(&GetSystemLayer())->StopWatchingSocket(&mWatch);
-        close(mSocket);
+        sl_close(mSocket);
         mSocket = kInvalidSocketFd;
     }
 }
