@@ -87,9 +87,9 @@ void OnSoftwareFaultEventHandler(const char * faultRecordString)
 #ifndef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 extern "C" void halInternalAssertFailed(const char * filename, int linenumber)
 {
+#if SILABS_LOG_ENABLED
     char faultMessage[kMaxFaultStringLen] = { 0 };
     snprintf(faultMessage, sizeof faultMessage, "Assert failed: %s:%d", filename, linenumber);
-#if SILABS_LOG_ENABLED
     ChipLogError(NotSpecified, "%s", faultMessage);
 #endif
     configASSERT((volatile void *) NULL);
