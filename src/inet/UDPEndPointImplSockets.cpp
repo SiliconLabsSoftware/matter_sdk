@@ -59,7 +59,7 @@
 
 extern "C" {
 #include "PlatformInterface.h"
-#include "socket_silabs.h"
+#include "socket.h"
 }
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKET_EXTENSIONS
 #include "ZephyrSocket.h"

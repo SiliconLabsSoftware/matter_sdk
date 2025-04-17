@@ -1,6 +1,6 @@
 extern "C" {
 #include "sl_utility.h"
-#include "socket_silabs.h"
+#include "socket.h"
 #include "errno.h"
 }
 
