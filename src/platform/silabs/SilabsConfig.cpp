@@ -63,16 +63,16 @@ namespace DeviceLayer {
 namespace Internal {
 
 namespace {
-CHIP_ERROR MapNvm3Error(Ecode_t nvm3Res)
+CHIP_ERROR MapNvm3Error(sl_status_t nvm3Res)
 {
     CHIP_ERROR err;
 
     switch (nvm3Res)
     {
-    case ECODE_NVM3_OK:
+    case SL_STATUS_OK:
         err = CHIP_NO_ERROR;
         break;
-    case ECODE_NVM3_ERR_KEY_NOT_FOUND:
+    case SL_STATUS_NOT_FOUND:
         err = CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND;
         break;
     default:
@@ -395,7 +395,7 @@ CHIP_ERROR SilabsConfig::ForEachRecord(Key firstNvm3Key, Key lastNvm3Key, bool a
 
     for (Key nvm3Key = firstNvm3Key; nvm3Key <= lastNvm3Key; ++nvm3Key)
     {
-        Ecode_t nvm3Res;
+        sl_status_t nvm3Res;
         uint32_t objectType;
         size_t dataLen;
 
@@ -403,7 +403,7 @@ CHIP_ERROR SilabsConfig::ForEachRecord(Key firstNvm3Key, Key lastNvm3Key, bool a
         nvm3Res = nvm3_getObjectInfo(nvm3_defaultHandle, nvm3Key, &objectType, &dataLen);
         switch (nvm3Res)
         {
-        case ECODE_NVM3_OK:
+        case SL_STATUS_OK:
             if (!addNewRecord)
             {
                 // Invoke the caller's function
@@ -411,7 +411,7 @@ CHIP_ERROR SilabsConfig::ForEachRecord(Key firstNvm3Key, Key lastNvm3Key, bool a
                 err = funct(nvm3Key, dataLen);
             }
             break;
-        case ECODE_NVM3_ERR_KEY_NOT_FOUND:
+        case SL_STATUS_NOT_FOUND:
             if (addNewRecord)
             {
                 // Invoke caller's function
