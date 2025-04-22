@@ -32,6 +32,7 @@
 #include "gatt_db.h"
 #include "sl_bgapi.h"
 #include "sl_bt_api.h"
+#include <BLEChannel.h>
 #endif // (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
 
 namespace chip {
@@ -72,6 +73,17 @@ public:
 #endif // RSI_BLE_ENABLEHandleConnectEvent
     CHIP_ERROR StartAdvertising(void);
     CHIP_ERROR StopAdvertising(void);
+
+#if defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
+    // Side Channel
+    CHIP_ERROR InjectSideChannel(BLEChannel * channel);
+    CHIP_ERROR ConfigureSideChannelAdvertisingDefaultData(void);
+    CHIP_ERROR ConfigureSideChannelAdvertising(ByteSpan advData, ByteSpan responseData, uint32_t intervalMin, uint32_t intervalMax,
+                                               uint16_t duration, uint8_t maxEvents);
+    CHIP_ERROR StartSideChannelAdvertising(void);
+    CHIP_ERROR StopSideChannelAdvertising(void);
+    void HandleReadEvent(volatile sl_bt_msg_t * evt);
+#endif // defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
 #if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
@@ -148,7 +160,8 @@ private:
 
     enum
     {
-        kMaxConnections      = BLE_LAYER_NUM_BLE_ENDPOINTS,
+        kMaxConnections = BLE_LAYER_NUM_BLE_ENDPOINTS, // TODO confirm if we would need to use an endpoint for side channel
+                                                       // (currently works without)
         kMaxDeviceNameLength = 21,
         kUnusedIndex         = 0xFF,
     };
@@ -157,7 +170,7 @@ private:
     static constexpr uint8_t kUUIDTlvSize       = 4; // 1 byte for length, 1b for type and 2b for the UUID value
     static constexpr uint8_t kDeviceNameTlvSize = (2 + kMaxDeviceNameLength); // 1 byte for length, 1b for type and + device name
 
-    struct CHIPoBLEConState
+    struct BLEConState
     {
 #if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
         bd_addr address;
@@ -170,16 +183,20 @@ private:
         uint8_t bondingHandle;
     };
 
-    CHIPoBLEConState mBleConnections[kMaxConnections];
+    BLEConState mBleConnections[kMaxConnections];
     uint8_t mIndConfId[kMaxConnections];
     CHIPoBLEServiceMode mServiceMode;
     BitFlags<Flags> mFlags;
     char mDeviceName[kMaxDeviceNameLength + 1];
     // The advertising set handle allocated from Bluetooth stack.
-    uint8_t advertising_set_handle = 0xff;
+    uint8_t mAdvertisingSetHandle = 0xff;
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     PacketBufferHandle c3AdditionalDataBufferHandle;
 #endif
+
+#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
+    BLEChannel * mBleSideChannel = nullptr;
+#endif // !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
 
     CHIP_ERROR MapBLEError(int bleErr);
     void DriveBLEState(void);
@@ -197,7 +214,7 @@ private:
     void AddConnection(uint8_t connectionHandle, uint8_t bondingHandle);
     void StartBleAdvTimeoutTimer(uint32_t aTimeoutInMs);
     void CancelBleAdvTimeoutTimer(void);
-    CHIPoBLEConState * GetConnectionState(uint8_t conId, bool allocate = false);
+    BLEConState * GetConnectionState(uint8_t conId, bool allocate = false);
     static void DriveBLEState(intptr_t arg);
     static void BleAdvTimeoutHandler(void * arg);
     uint8_t GetTimerHandle(uint8_t connectionHandle, bool allocate);
@@ -238,6 +255,11 @@ inline BleLayer * BLEManagerImpl::_GetBleLayer()
 inline bool BLEManagerImpl::_IsAdvertisingEnabled(void)
 {
     return mFlags.Has(Flags::kAdvertisingEnabled);
+}
+
+inline bool BLEManagerImpl::_IsAdvertising(void)
+{
+    return mFlags.Has(Flags::kAdvertising);
 }
 
 } // namespace Internal
