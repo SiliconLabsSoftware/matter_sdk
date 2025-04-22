@@ -45,6 +45,15 @@
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #include <app/server/OnboardingCodesUtil.h>
+
+#if SILABS_USE_BLE_SIDE_CHANNEL
+#include <platform/internal/BLEManager.h>
+#include <platform/silabs/efr32/BLEChannel.h>
+#ifdef ENABLE_CHIP_SHELL
+#include <BLEShellCommands.h>
+#endif // ENABLE_CHIP_SHELL
+#endif // SILABS_USE_BLE_SID
+
 #include <app/util/attribute-storage.h>
 #include <assert.h>
 #include <headers/ProvisionManager.h>
@@ -125,6 +134,9 @@ using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
+#if defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
+using BLEChannel = chip::DeviceLayer::Internal::BLEChannel;
+#endif // defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
 namespace {
 
 /**********************************************************
@@ -187,6 +199,10 @@ Identify gIdentify = {
 };
 
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
+
+#if defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
+BLEChannel sBleSideChannel;
+#endif // defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
 
 } // namespace
 
@@ -390,6 +406,9 @@ CHIP_ERROR BaseApplication::BaseInit()
 #if MATTER_TRACING_ENABLED
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
+#if defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
+    BLEShellCommands::RegisterCommands();
+#endif // defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -402,6 +421,10 @@ CHIP_ERROR BaseApplication::BaseInit()
 #endif /* SL_WIFI */
 #if CHIP_ENABLE_OPENTHREAD
     BaseApplication::sIsProvisioned = ConnectivityMgr().IsThreadProvisioned();
+#endif
+#if defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
+    ReturnErrorOnFailure(sBleSideChannel.Init());
+    DeviceLayer::Internal::BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
 #endif
 
     err = chip::Server::GetInstance().GetFabricTable().AddFabricDelegate(&sAppDelegate);
