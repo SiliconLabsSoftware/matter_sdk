@@ -331,7 +331,7 @@ features can easily be toggled on or off. Here is a short list of options :
 `chip_progress_logging, chip_detail_logging, chip_automation_logging`
 
     ```
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4164A "chip_detail_logging=false chip_automation_logging=false chip_progress_logging=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4187C "chip_detail_logging=false chip_automation_logging=false chip_progress_logging=false"
     ```
 
 ### Debug build / release build
@@ -339,7 +339,7 @@ features can easily be toggled on or off. Here is a short list of options :
 `is_debug`
 
     ```
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4164A "is_debug=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4187C "is_debug=false"
     ```
 
 ### Disabling LCD
@@ -347,7 +347,7 @@ features can easily be toggled on or off. Here is a short list of options :
 `show_qr_code`
 
     ```
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4164A "show_qr_code=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4187C "show_qr_code=false"
     ```
 
 ### KVS maximum entry count
@@ -358,7 +358,7 @@ features can easily be toggled on or off. Here is a short list of options :
     Set the maximum Kvs entries that can be stored in NVM (Default 75)
     Thresholds: 30 <= kvs_max_entries <= 255
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4164A kvs_max_entries=50
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4187C kvs_max_entries=50
     ```
 
 ### Enabling test event trigger
@@ -368,5 +368,5 @@ features can easily be toggled on or off. Here is a short list of options :
     ```
     The enable the test event trigger, `sl_enable_test_event_trigger` must be true.
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4164A sl_enable_test_event_trigger=true
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/smoke-co-alarm-app/silabs ./out/smoke-co-alarm-app BRD4187C sl_enable_test_event_trigger=true
     ```
