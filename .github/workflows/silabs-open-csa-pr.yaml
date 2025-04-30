@@ -16,9 +16,18 @@ jobs:
         if: ${{ github.event.workflow_run.conclusion == 'success' }}
         runs-on: ubuntu-latest
         steps:
+            - name: Generate token for the workflow
+              id: generate_token
+              uses: actions/create-github-app-token@v2
+              with:
+                  app-id: ${{ vars.SILABSSW_MATTER_CI_BOT_APP_ID }}
+                  private-key:
+                      ${{ secrets.SILABSSW_MATTER_CI_BOT_APP_PRIVATE_KEY }}
+
             - uses: actions/checkout@v4
               with:
                   ref: main
+                  persist-credentials: false
 
             - name: Checkout csa
               run: |
@@ -35,24 +44,6 @@ jobs:
                       This PR syncs the csa branch with the main branch.
 
                       **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
-                  token: ${{secrets.GITHUB_TOKEN}}
+                  token: ${{ steps.generate_token.outputs.token }}
                   labels:
                       changing-submodules-on-purpose, sl-require-admin-action
-
-            # The next step is necessary to force the CI to be executed when a PR is opened by the github-bot.
-            # The PR event isn't triggered when the bot opens the PR and as such doesn't trigger the workflows that use the event as their trigger.
-            # By closing and opening the PR, it forces the PR event to be triggered.
-            - name: Check if PR is already closed and reopen if necessary
-              run: |
-                  PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --head automation/update_main --json number --jq '.[0].number')
-                  if [ -z "$PR_NUMBER" ]; then
-                      echo "PR not found."
-                      exit 1
-                  fi
-                  LABELS=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json labels --jq '.labels[].name')
-                  if ! echo "$LABELS" | grep -q "sl-automation-triggered"; then
-                      gh pr close $PR_NUMBER --repo ${{ github.repository }}
-                      gh pr reopen $PR_NUMBER --repo ${{ github.repository }}
-                  fi
-              env:
-                  GITHUB_TOKEN: ${{secrets.WORKFLOW_TOKEN}}
