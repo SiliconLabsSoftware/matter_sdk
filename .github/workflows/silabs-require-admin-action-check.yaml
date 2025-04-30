@@ -47,7 +47,7 @@ jobs:
             - name: Trigger CI failure
               run: |
                   echo "The sl-require-admin-action label is present. Failing the job."
-                  process.exit(1);
+                  exit 1
               env:
                   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -94,6 +94,6 @@ jobs:
             - name: Trigger CI failure
               run: |
                   echo "The sl-require-admin-action label cannot be removed. Failing the job."
-                  process.exit(1);
+                  exit 1
               env:
                   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
