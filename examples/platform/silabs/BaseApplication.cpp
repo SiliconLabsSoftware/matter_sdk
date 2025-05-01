@@ -735,6 +735,12 @@ void BaseApplication::StopStatusLEDTimer()
 #ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
 void BaseApplication::OnIdentifyStart(Identify * identify)
 {
+    if (identify == nullptr) // Check if the pointer is null
+    {
+        ChipLogError(Zcl, "Identify pointer is null");
+        return;
+    }
+
     latest_active_endpoint = identify->mEndpoint;
     ChipLogProgress(Zcl, "onIdentifyStart");
 
@@ -745,6 +751,11 @@ void BaseApplication::OnIdentifyStart(Identify * identify)
 
 void BaseApplication::OnIdentifyStop(Identify * identify)
 {
+    if (identify == nullptr) // Check if the pointer is null
+    {
+        ChipLogError(Zcl, "Identify pointer is null");
+        return;
+    }
     latest_active_endpoint = identify->mEndpoint;
     ChipLogProgress(Zcl, "onIdentifyStop");
 
@@ -765,6 +776,11 @@ void BaseApplication::OnTriggerIdentifyEffectCompleted(chip::System::Layer * sys
 
 void BaseApplication::OnTriggerIdentifyEffect(Identify * identify)
 {
+    if (identify == nullptr) // Check if the pointer is null
+    {
+        ChipLogError(Zcl, "Identify pointer is null");
+        return;
+    }
     sIdentifyEffect = identify->mCurrentEffectIdentifier;
 
     if (identify->mEffectVariant != Clusters::Identify::EffectVariantEnum::kDefault)
