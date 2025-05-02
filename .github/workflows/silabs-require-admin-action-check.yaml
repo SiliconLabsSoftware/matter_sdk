@@ -19,6 +19,8 @@ jobs:
     check-label:
         name: Fail CI if sl-require-admin-action label is present
         runs-on: ubuntu-latest
+        concurrency:
+            group: sl-require-admin-action-check
         if:
             ${{ contains(github.event.pull_request.labels.*.name,
             'sl-require-admin-action') }}
@@ -54,6 +56,8 @@ jobs:
     prevent-label-removal:
         name: Prevent sl-require-admin-action label from being removed
         runs-on: ubuntu-latest
+        concurrency:
+            group: sl-require-admin-action-check
         if:
             github.event.action == 'unlabeled' && github.event.label.name ==
             'sl-require-admin-action'
