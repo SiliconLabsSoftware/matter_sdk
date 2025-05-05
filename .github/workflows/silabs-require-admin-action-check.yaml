@@ -30,14 +30,16 @@ jobs:
               with:
                   script: |
                       const prNumber = context.payload.pull_request.number;
+
                       const comment = "The check for `sl-require-admin-action` label CI failure for this job is normal. An admin must do the merge.";
                       const { data: comments } = await github.rest.issues.listComments({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
                         issue_number: prNumber,
                       });
-                      const existingComment = comments.find(c => c.body.includes(comment));
-                      if (!existingComment) {
+
+                      const commentExists = comments.some(c => c.body.trim() === comment.trim());
+                      if (!commentExists) {
                         await github.rest.issues.createComment({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
@@ -67,14 +69,16 @@ jobs:
               with:
                   script: |
                       const prNumber = context.payload.pull_request.number;
+
                       const comment = "The `sl-require-admin-action` label cannot be removed once it has been added.";
                       const { data: comments } = await github.rest.issues.listComments({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
                         issue_number: prNumber,
                       });
-                      const existingComment = comments.find(c => c.body.includes(comment));
-                      if (!existingComment) {
+
+                      const commentExists = comments.some(c => c.body.trim() === comment.trim());
+                      if (!commentExists) {
                         await github.rest.issues.createComment({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
@@ -88,6 +92,7 @@ jobs:
               with:
                   script: |
                       const prNumber = context.payload.pull_request.number;
+
                       await github.rest.issues.addLabels({
                         owner: context.repo.owner,
                         repo: context.repo.repo,

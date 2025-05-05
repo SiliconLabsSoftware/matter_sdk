@@ -1,9 +1,5 @@
 name: Open PR from csa to main
 
-permissions:
-    contents: write
-    pull-requests: write
-
 on:
     workflow_run:
         workflows: ["Daily Sync of the csa branch"]
