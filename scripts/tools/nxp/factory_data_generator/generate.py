@@ -167,8 +167,11 @@ class KlvGenerator:
                 size = len(fullContent)
                 logging.info("(After padding) Size of generated binary is: {} bytes".format(size))
                 from Crypto.Cipher import AES
-                cipher = AES.new(bytes.fromhex(aes_key), AES.MODE_ECB)
+                from Crypto.Random import get_random_bytes
+                iv = get_random_bytes(16)  # Generate a random 16-byte IV
+                cipher = AES.new(bytes.fromhex(aes_key), AES.MODE_CBC, iv)
                 fullContentCipher = cipher.encrypt(fullContent)
+                fullContentCipher = iv + fullContentCipher  # Prepend IV to the ciphertext
 
                 # Add 4 bytes of hashing to generated binary to check for integrity
                 hashing = hashlib.sha256(fullContent).hexdigest()
