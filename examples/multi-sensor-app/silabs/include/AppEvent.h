@@ -19,38 +19,21 @@
 
 #pragma once
 
-#include <stdint.h>
+#include "BaseAppEvent.h"
 
-struct AppEvent;
-typedef void (*EventHandler)(AppEvent *);
-
-struct AppEvent
+struct AppEvent : public BaseAppEvent
 {
     enum AppEventTypes
     {
-        kEventType_Button = 0,
-        kEventType_Timer,
-        kEventType_SensorAttributeUpdate,
+        kEventType_SensorAttributeUpdate = BaseAppEvent::kEventType_Max + 1,
         kEventType_OccupancyAttributeUpdate,
     };
-
-    uint16_t Type;
 
     union
     {
         struct
         {
-            uint8_t Action;
-        } ButtonEvent;
-        struct
-        {
-            void * Context;
-        } TimerEvent;
-        struct
-        {
             bool occupancyDetected;
         } OccupancyEvent;
     };
-
-    EventHandler Handler;
 };
