@@ -65,8 +65,8 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
                        attributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id);
 
         AppEvent event = {};
-        event.Type    = AppEvent::kEventType_SensorAttributeUpdate;
-        event.Handler = AppTask::SensorAttributeUpdateEvent;
+        event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
+        event.Handler  = AppTask::SensorAttributeUpdateEvent;
         AppTask().PostEvent(&event);
     }
     break;
