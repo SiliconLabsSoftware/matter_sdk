@@ -21,17 +21,18 @@
 #include <lib/support/PersistentData.h>
 #include <string> // Include the necessary header for std::string
 
-#if !defined(SL_WIFI)
+#if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
 #include "rail.h"
 // RAIL_GetTime() returns time in usec
 #define SILABS_GET_TIME() System::Clock::Milliseconds32(RAIL_GetTime() / 1000)
-#define SILABS_GET_DURATION() (tracker.mEndTime < tracker.mStartTime) ? (tracker.mEndTime + \
-    System::Clock::Milliseconds32((UINT32_MAX / 1000)) - tracker.mStartTime) : tracker.mEndTime - tracker.mStartTime
+#define SILABS_GET_DURATION(tracker)                                                   \
+    (tracker.mEndTime < tracker.mStartTime) ? (tracker.mEndTime +               \
+    System::Clock::Milliseconds32((UINT32_MAX / 1000)) - tracker.mStartTime)    \
+    : tracker.mEndTime - tracker.mStartTime
 #else
 #define SILABS_GET_TIME() System::SystemClock().GetMonotonicTimestamp()
-#define SILABS_GET_DURATION() tracker.mEndTime - tracker.mStartTime
+#define SILABS_GET_DURATION(tracker) tracker.mEndTime - tracker.mStartTime
 #endif
-
 
 #if defined(SILABS_LOG_OUT_UART) && SILABS_LOG_OUT_UART
 #include "uart.h"
@@ -270,7 +271,7 @@ CHIP_ERROR SilabsTracer::StartWatermarksStorage(PersistentStorageDelegate * stor
 CHIP_ERROR SilabsTracer::TimeTraceBegin(TimeTraceOperation aOperation)
 {
     // Log the start time of the operation
-    auto & tracker     = mLatestTimeTrackers[to_underlying(aOperation)];
+    auto & tracker = mLatestTimeTrackers[to_underlying(aOperation)];
     // Corner case since no hardware clock is available at this point
     if (aOperation == TimeTraceOperation::kBootup || aOperation == TimeTraceOperation::kSilabsInit)
     {
@@ -300,7 +301,7 @@ CHIP_ERROR SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR 
     if (error == CHIP_NO_ERROR)
     {
         // Calculate the duration and update the time tracker
-        auto duration = SILABS_GET_DURATION();
+        auto duration = SILABS_GET_DURATION(tracker);
 
         auto & watermark = mWatermarks[to_underlying(aOperation)];
         watermark.mSuccessfullCount++;
