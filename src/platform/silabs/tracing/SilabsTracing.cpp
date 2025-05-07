@@ -22,13 +22,13 @@
 #include <string> // Include the necessary header for std::string
 
 #if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
-#include "rail.h"
+#include <rail.h>
 // RAIL_GetTime() returns time in usec
 #define SILABS_GET_TIME() System::Clock::Milliseconds32(RAIL_GetTime() / 1000)
-#define SILABS_GET_DURATION(tracker)                                                   \
-    (tracker.mEndTime < tracker.mStartTime) ? (tracker.mEndTime +               \
-    System::Clock::Milliseconds32((UINT32_MAX / 1000)) - tracker.mStartTime)    \
-    : tracker.mEndTime - tracker.mStartTime
+#define SILABS_GET_DURATION(tracker)                                                                                               \
+    (tracker.mEndTime < tracker.mStartTime)                                                                                        \
+        ? (tracker.mEndTime + System::Clock::Milliseconds32((UINT32_MAX / 1000)) - tracker.mStartTime)                             \
+        : tracker.mEndTime - tracker.mStartTime
 #else
 #define SILABS_GET_TIME() System::SystemClock().GetMonotonicTimestamp()
 #define SILABS_GET_DURATION(tracker) tracker.mEndTime - tracker.mStartTime
