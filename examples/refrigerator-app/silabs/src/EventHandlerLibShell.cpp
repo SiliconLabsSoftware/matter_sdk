@@ -113,7 +113,7 @@ CHIP_ERROR RefrigeratorDoorEventHandler(int argc, char ** argv)
     int value = std::stoi(argv[0]); // Safe to use now, as we validated the input earlier
 
     RefrigeratorAlarmEventData * data = Platform::New<RefrigeratorAlarmEventData>();
-    data->eventId                     = Events::Notify::Id;
+    data->eventId                     = chip::app::Clusters::RefrigeratorAlarm::Events::Notify::Id;
     data->doorState                   = static_cast<AlarmBitmap>(value);
 
     DeviceLayer::PlatformMgr().ScheduleWork(EventWorkerFunction, reinterpret_cast<intptr_t>(data));
@@ -163,7 +163,7 @@ void EventWorkerFunction(intptr_t context)
 
     switch (data->eventId)
     {
-    case Events::Notify::Id: {
+    case chip::app::Clusters::RefrigeratorAlarm::Events::Notify::Id: {
         RefrigeratorAlarmEventData * alarmData = reinterpret_cast<RefrigeratorAlarmEventData *>(context);
         RefrigeratorAlarmServer::Instance().SetStateValue(kRefEndpointId, alarmData->doorState);
         break;
