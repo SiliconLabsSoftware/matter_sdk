@@ -66,7 +66,7 @@ inline bool isMultiProtocolMappedMatterCluster(chip::ClusterId clusterId)
 void sli_matter_af_write_to_zb_attribute(chip::EndpointId endpointId, chip::ClusterId clusterId, chip::AttributeId attributeId,
                                          uint8_t * attributeValue, EmberAfAttributeType dataType)
 {
-    for (uint8_t i = 0; i < mpMappedAttributeCount; i++)
+    for (size_t i = 0; i < mpMappedAttributeCount; i++)
     {
         if (mpAttributeMap[i].matterClusterId == (clusterId & 0xFFFF) &&
             mpAttributeMap[i].matterMfgClusterId == (clusterId >> 16) &&
