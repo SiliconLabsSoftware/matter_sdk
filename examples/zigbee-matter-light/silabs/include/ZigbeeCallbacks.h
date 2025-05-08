@@ -15,12 +15,14 @@
  *
  ******************************************************************************/
 
+
 #pragma once
 
 // Small wrapper for Zigbee critical api
 namespace Zigbee {
-void RequestStart(uint8_t channel = 0);
-void RequestLeave(void);
-uint8_t GetZigbeeChannel(void);
-void ZLLNotFactoryNew(void);
-}; // namespace Zigbee
+    void RequestStart(uint8_t channel=0);
+    void RequestLeave(void);
+    uint8_t GetZigbeeChannel(void);
+    void ZLLNotFactoryNew(void);
+    void TokenFactoryReset(void);
+};
