@@ -103,10 +103,6 @@ CHIP_ERROR AppTask::AppInit()
     CharSpan rebootLighOnSpan(rebootLightOnKey);
     SILABS_TRACE_REGISTER(rebootLighOnSpan);
 
-#ifdef DISPLAY_ENABLED
-    GetLCD().Init((uint8_t *) "CMP-Lighting-App");
-#endif
-
 #ifdef SL_MATTER_ZIGBEE_CMP
     ChipLogProgress(AppServer, "Concurrent CMP app");
 #else
