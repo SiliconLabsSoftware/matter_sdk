@@ -643,7 +643,7 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
 }
 #if defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
 
-CHIP_ERROR BLEManagerImpl::ConfigureSideChannelAdvertisingDefaultData(void)
+CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertisingDefaultData(void)
 {
 
     VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
@@ -686,20 +686,20 @@ CHIP_ERROR BLEManagerImpl::InjectSideChannel(BLEChannel * channel)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR BLEManagerImpl::ConfigureSideChannelAdvertising(ByteSpan advData, ByteSpan responseData, uint32_t intervalMin,
+CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertising(ByteSpan advData, ByteSpan responseData, uint32_t intervalMin,
                                                            uint32_t intervalMax, uint16_t duration, uint8_t maxEvents)
 {
     VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
     return mBleSideChannel->ConfigureAdvertising(advData, responseData, intervalMin, intervalMax, duration, maxEvents);
 }
 
-CHIP_ERROR BLEManagerImpl::StartSideChannelAdvertising(void)
+CHIP_ERROR BLEManagerImpl::SideChannelStartAdvertising(void)
 {
     VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
     return mBleSideChannel->StartAdvertising();
 }
 
-CHIP_ERROR BLEManagerImpl::StopSideChannelAdvertising(void)
+CHIP_ERROR BLEManagerImpl::SideChannelStopAdvertising(void)
 {
     VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
     return mBleSideChannel->StopAdvertising();
@@ -1060,7 +1060,7 @@ void BLEManagerImpl::AddConnection(uint8_t connectionHandle, uint8_t bondingHand
     }
 }
 
-BLEManagerImpl::BLEConState * BLEManagerImpl::GetConnectionState(uint8_t connectionHandle, bool allocate)
+BLEConState * BLEManagerImpl::GetConnectionState(uint8_t connectionHandle, bool allocate)
 {
     uint8_t freeIndex = kMaxConnections;
 

@@ -3,7 +3,7 @@
  * @brief Instrumenting to call BLE shell commands for the Silicon Labs platform.
  *******************************************************************************
  * # License
- * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
+ * <b>Copyright 2025 Silicon Laboratories Inc. www.silabs.com</b>
  *******************************************************************************
  *
  * The licensor of this software is Silicon Laboratories Inc. Your use of this
@@ -20,7 +20,6 @@
 #include <lib/shell/Engine.h>
 #include <lib/shell/commands/Help.h>
 #include <lib/support/CodeUtils.h>
-#include <lib/support/Span.h>
 
 #include <platform/ConfigurationManager.h>
 #include <platform/internal/BLEManager.h>
@@ -58,8 +57,8 @@ CHIP_ERROR BLECommandHandler(int argc, char ** argv)
 CHIP_ERROR StartBLESideChannelAdvertising(int argc, char ** argv)
 {
     // TODO : Configure first
-    CHIP_ERROR err = DeviceLayer::Internal::BLEMgrImpl().ConfigureSideChannelAdvertisingDefaultData();
-    err            = DeviceLayer::Internal::BLEMgrImpl().StartSideChannelAdvertising();
+    CHIP_ERROR err = DeviceLayer::Internal::BLEMgrImpl().SideChannelConfigureAdvertisingDefaultData();
+    err            = DeviceLayer::Internal::BLEMgrImpl().SideChannelStartAdvertising();
     if (err != CHIP_NO_ERROR)
     {
         streamer_printf(streamer_get(), "Failed to start BLE side channel advertising: %s\n", ErrorStr(err));
@@ -71,7 +70,7 @@ CHIP_ERROR StartBLESideChannelAdvertising(int argc, char ** argv)
 
 CHIP_ERROR StopBLESideChannelAvertising(int argc, char ** argv)
 {
-    DeviceLayer::Internal::BLEMgrImpl().StopSideChannelAdvertising();
+    DeviceLayer::Internal::BLEMgrImpl().SideChannelStopAdvertising();
     return CHIP_NO_ERROR;
 }
 

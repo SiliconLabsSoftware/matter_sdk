@@ -155,10 +155,6 @@ CHIP_ERROR BLEChannel::ConfigureAdvertising(ByteSpan advData, ByteSpan responseD
     return CHIP_NO_ERROR;
 }
 
-/** @brief StartAdvertising
- *  Start the advertising process for the BLE channel using configured parameters. ConfiureAdvertising must be called before this
- * function.
- */
 CHIP_ERROR BLEChannel::StartAdvertising(void)
 {
     // TODO: Check for handling max connection per handle vs globally
@@ -178,7 +174,7 @@ CHIP_ERROR BLEChannel::StartAdvertising(void)
     VerifyOrReturnLogError(ret == SL_STATUS_OK, MapBLEError(ret));
 
     // Start advertising
-    ret = sl_bt_legacy_advertiser_start(mAdvHandle, sl_bt_advertiser_connectable_scannable);
+    ret = sl_bt_legacy_advertiser_start(mAdvHandle, mAdvConnectableMode);
     VerifyOrReturnLogError(ret == SL_STATUS_OK, MapBLEError(ret));
 
     mFlags.Set(Flags::kAdvertising);
@@ -209,6 +205,13 @@ CHIP_ERROR BLEChannel::StopAdvertising(void)
 
 void BLEChannel::AddConnection(uint8_t connectionHandle, uint8_t bondingHandle)
 {
+    // TODO: Verify if we want to allow multiple connections at once, this is tied to the Endpoint usage as well
+    // We currently only support one connection at a time on our side channel
+    if (mConnectionState.allocated)
+    {
+        ChipLogError(DeviceLayer, "Connection already allocated");
+        return;
+    }
     mConnectionState.connectionHandle = connectionHandle;
     mConnectionState.bondingHandle    = bondingHandle;
     mConnectionState.allocated        = 1;
@@ -312,6 +315,140 @@ void BLEChannel::UpdateMtu(volatile sl_bt_msg_t * evt)
 {
     mConnectionState.mtu = evt->data.evt_gatt_mtu_exchanged.mtu;
     ChipLogProgress(DeviceLayer, "MTU exchanged: %d", evt->data.evt_gatt_mtu_exchanged.mtu);
+}
+
+CHIP_ERROR BLEChannel::GeneratAdvertisingData(uint8_t discoverMove, uint8_t connectMode, const Optional<uint16_t> & maxEvents)
+{
+    sl_status_t ret = sl_bt_legacy_advertiser_generate_data(mAdvHandle, discoverMove);
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+
+    if (maxEvents.HasValue())
+    {
+        mAdvMaxEvents = maxEvents.Value();
+        // TODO: Revisit a set timing function for the advertising handle
+        ret = sl_bt_advertiser_set_timing(mAdvHandle, 160, 160, 0, mAdvMaxEvents);
+        VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    }
+    mAdvConnectableMode = connectMode;
+
+    ret = sl_bt_legacy_advertiser_start(mAdvHandle, mAdvConnectableMode);
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR BLEChannel::OpenConnection(bd_addr address, uint8_t addrType)
+{
+    VerifyOrReturnError(addrType <= sl_bt_gap_random_nonresolvable_address, CHIP_ERROR_INVALID_ARGUMENT);
+    if (mConnectionState.allocated)
+    {
+        // We only support one connection at a time for now
+        ChipLogError(DeviceLayer, "Connection already allocated");
+        return CHIP_ERROR_INCORRECT_STATE;
+    }
+
+    sl_status_t ret = sl_bt_connection_open(address, addrType, sl_bt_gap_1m_phy, &mConnectionState.connectionHandle);
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+
+    // TODO: Confirm this generates a connection event and the AddConnection gets called so that the connection state is updated
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR BLEChannel::SetConnectionParams(const Optional<uint8_t> & connectionHandle, uint32_t intervalMin, uint32_t intervalMax,
+                                           uint16_t latency, uint16_t timeout)
+{
+    sl_status_t ret;
+    if (connectionHandle.HasValue())
+    {
+        ret = sl_bt_connection_set_parameters(connectionHandle.Value(), intervalMin, intervalMax, latency, timeout, 0, 0xFFFF);
+        VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    }
+    else
+    {
+        ret = sl_bt_connection_set_default_parameters(intervalMin, intervalMax, latency, timeout, 0, 0xFFFF);
+        VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    }
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR BLEChannel::SetAdvertisingParams(uint32_t intervalMin, uint32_t intervalMax, uint16_t duration,
+                                            const Optional<uint16_t> & maxEvents, const Optional<uint8_t> & channelMap)
+{
+    sl_status_t ret;
+
+    mAdvIntervalMin = intervalMin;
+    mAdvIntervalMax = intervalMax;
+    mAdvDuration    = duration;
+    mAdvMaxEvents   = maxEvents.ValueOr(0);
+
+    if (channelMap.HasValue())
+    {
+        ret = sl_bt_advertiser_set_channel_map(mAdvHandle, channelMap.Value());
+        VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    }
+
+    ret = sl_bt_advertiser_set_timing(mAdvHandle, mAdvIntervalMin, mAdvIntervalMax, mAdvDuration, mAdvMaxEvents);
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR BLEChannel::CloseConnection()
+{
+    sl_status_t ret = sl_bt_connection_close(mConnectionState.connectionHandle);
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    // Todo: Confirm this generates a disconnect event and the RemoveConnection gets called
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR BLEChannel::SetAdvHandle(uint8_t handle)
+{
+    sl_status_t ret;
+    if (mAdvHandle == 0xff)
+    {
+        mAdvHandle = handle;
+        ret        = sl_bt_advertiser_create_set(&mAdvHandle);
+    }
+    else if (handle == mAdvHandle)
+    {
+        return CHIP_NO_ERROR;
+    }
+    else
+    {
+        ret = sl_bt_advertiser_delete_set(mAdvHandle);
+        VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+
+        mAdvHandle = handle;
+        ret        = sl_bt_advertiser_create_set(&mAdvHandle);
+    }
+    return MapBLEError(ret);
+}
+
+CHIP_ERROR BLEChannel::DiscoverServices()
+{
+    sl_status_t ret = sl_bt_gatt_discover_primary_services(mConnectionState.connectionHandle);
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR BLEChannel::DiscoverCharacteristics(uint32_t serviceHandle)
+{
+    sl_status_t ret = sl_bt_gatt_discover_characteristics(mConnectionState.connectionHandle, serviceHandle);
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR BLEChannel::SetCharacteristicNotification(uint8_t characteristicHandle, uint8_t flags)
+{
+    sl_status_t ret = sl_bt_gatt_set_characteristic_notification(mConnectionState.connectionHandle, characteristicHandle, flags);
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR BLEChannel::SetCharacteristicValue(uint8_t characteristicHandle, const ByteSpan & value)
+{
+    sl_status_t ret =
+        sl_bt_gatt_write_characteristic_value(mConnectionState.connectionHandle, characteristicHandle, value.size(), value.data());
+    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+    return CHIP_NO_ERROR;
 }
 
 } // namespace Internal
