@@ -71,11 +71,13 @@ public:
     void HandleTxConfirmationEvent(BLE_CONNECTION_OBJECT conId);
     void HandleTXCharCCCDWrite(volatile sl_bt_msg_t * evt);
     void HandleSoftTimerEvent(volatile sl_bt_msg_t * evt);
+    bool CanHandleEvent(uint32_t event);
+    void ParseEvent(volatile sl_bt_msg_t * evt);
 #endif // RSI_BLE_ENABLEHandleConnectEvent
     CHIP_ERROR StartAdvertising(void);
     CHIP_ERROR StopAdvertising(void);
 
-#if defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
+#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
     void HandleReadEvent(volatile sl_bt_msg_t * evt);
 
     // Side Channel
@@ -130,15 +132,13 @@ public:
     uint8_t SideChannelGetAdvHandle(void) { return mBleSideChannel->GetAdvHandle(); }
     uint8_t SideChannelGetConnHandle(void) { return mBleSideChannel->GetConnectionHandle(); }
     // CLI methods END
-#endif // defined(SILABS_USE_BLE_SIDE_CHANNEL) && SILABS_USE_BLE_SIDE_CHANNEL
+#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
 #if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
     static void HandleC3ReadRequest(const SilabsBleWrapper::sl_wfx_msg_t & rsi_ble_read_req);
 #else
-#if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     static void HandleC3ReadRequest(volatile sl_bt_msg_t * evt);
-#endif
 #endif
 #endif
 

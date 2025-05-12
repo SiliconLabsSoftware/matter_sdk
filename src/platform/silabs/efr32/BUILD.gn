@@ -78,8 +78,9 @@ static_library("efr32") {
     ]
   } else {
     sources += [
-      "BLEChannel.cpp",
       "BLEChannel.h",
+      "BLEChannelImpl.cpp",
+      "BLEChannelImpl.h",
       "BLEManagerImpl.cpp",
     ]
   }
