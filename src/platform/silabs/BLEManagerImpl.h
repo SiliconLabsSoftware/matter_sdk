@@ -32,7 +32,7 @@
 #include "gatt_db.h"
 #include "sl_bgapi.h"
 #include "sl_bt_api.h"
-#include <BLEChannel.h>
+#include <platform/silabs/.../BLEChannel.h>
 #include <lib/core/Optional.h>
 #endif // (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
 
@@ -92,7 +92,7 @@ public:
     // GAP
     CHIP_ERROR SideChannelGenerateAdvertisingData(uint8_t discoverMove, uint8_t connectMode, const Optional<uint16_t> & maxEvents)
     {
-        return mBleSideChannel->GeneratAdvertisingData(discoverMove, connectMode, maxEvents);
+        return mBleSideChannel->GenerateAdvertisingData(discoverMove, connectMode, maxEvents);
     }
     CHIP_ERROR SideChannelOpenConnection(bd_addr address, uint8_t addrType)
     {

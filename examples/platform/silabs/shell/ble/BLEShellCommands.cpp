@@ -85,8 +85,8 @@ void RegisterCommands()
         { &StartBLESideChannelAdvertising, "AdvStart", "Start BLE Side Channel advertising with default parameters" },
         { &StopBLESideChannelAvertising, "AdvStop", "Stop BLE Side Channel advertising" },
     };
-    static const Shell::Command cmds_silabs_ble = { &BLECommandHandler, "ble-side",
-                                                    "Dispatch Silicon Labs BLE Side Channel command" };
+    static const Shell::Command sBleCmds= { &BLECommandHandler, "ble-side",
+                                                    "Dispatch Silicon Labs BLE Side Channel commands" };
 
     sShellBLESubCommands.RegisterCommands(sBLESubCommands, ArraySize(sBLESubCommands));
     Engine::Root().RegisterCommands(&cmds_silabs_ble, 1);

@@ -722,9 +722,8 @@ void BLEManagerImpl::HandleReadEvent(volatile sl_bt_msg_t * evt)
                                                   evt->data.evt_gatt_server_user_read_request.characteristic, 0x01, 0, 0, nullptr);
         return;
     }
-    else
+    else if (mBleSideChannel != nullptr)
     {
-        VerifyOrReturn(mBleSideChannel != nullptr);
         // Side channel read request
         uint16_t attribute = evt->data.evt_gatt_server_user_read_request.characteristic;
         ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", attribute);
@@ -756,9 +755,8 @@ void BLEManagerImpl::UpdateMtu(volatile sl_bt_msg_t * evt)
 #pragma GCC diagnostic pop
         ;
     }
-    else
+    else if (mBleSideChannel != nullptr)
     {
-        VerifyOrReturn(mBleSideChannel != nullptr);
         mBleSideChannel->UpdateMtu(evt);
     }
 }
@@ -781,11 +779,10 @@ void BLEManagerImpl::HandleConnectEvent(volatile sl_bt_msg_t * evt)
         AddConnection(conn_evt->connection, conn_evt->bonding);
         PlatformMgr().ScheduleWork(DriveBLEState, 0);
     }
-    else
+    else if (mBleSideChannel != nullptr)
     {
         // We assumed we are using the side channel from the moment we
         // are not using the CHIPoBLE service.
-        VerifyOrReturn(mBleSideChannel != nullptr);
         ChipLogProgress(DeviceLayer, "Connect Event for SideChannel on handle : %d", conn_evt->connection);
         mBleSideChannel->AddConnection(conn_evt->connection, conn_evt->bonding);
         return;
@@ -815,7 +812,7 @@ void BLEManagerImpl::HandleConnectParams(volatile sl_bt_msg_t * evt)
                                         BLE_CONFIG_LATENCY, desiredTimeout, BLE_CONFIG_MIN_CE_LENGTH, BLE_CONFIG_MAX_CE_LENGTH);
     }
 
-    if (NULL != GetConnectionState(con_param_evt->connection, false))
+    if (nullptr != GetConnectionState(con_param_evt->connection, false))
     {
         PlatformMgr().ScheduleWork(DriveBLEState, 0);
     }
@@ -825,7 +822,7 @@ void BLEManagerImpl::HandleConnectionCloseEvent(volatile sl_bt_msg_t * evt)
 {
     sl_bt_evt_connection_closed_t * conn_evt = (sl_bt_evt_connection_closed_t *) &(evt->data);
 
-    if (NULL != GetConnectionState(conn_evt->connection, false))
+    if (nullptr != GetConnectionState(conn_evt->connection, false))
     {
         ChipLogProgress(DeviceLayer, "Disconnect Event for CHIPoBLE on handle : %d", conn_evt->connection);
         if (RemoveConnection(conn_evt->connection))
