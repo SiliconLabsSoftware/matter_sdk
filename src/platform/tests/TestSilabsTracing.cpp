@@ -572,6 +572,7 @@ TEST_F(TestSilabsTracing, TestOTA)
     EXPECT_EQ(watermark.mCountAboveAvg, uint32_t(0));
 
     // Simulate Bootup steps after OTA failure
+    gMockClock.SetMonotonic(0_ms64); // Resetting to 0 since reboot should reset the monotonic clock
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
     gMockClock.AdvanceMonotonic(200_ms64);
     SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kBootup);
@@ -626,6 +627,7 @@ TEST_F(TestSilabsTracing, TestLogs)
     SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kOTA);
 
     // Simulate Bootup steps
+    gMockClock.SetMonotonic(0_ms64); // Resetting to 0 since reboot should reset the monotonic clock
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
     gMockClock.AdvanceMonotonic(200_ms64);
     SilabsTracer::Instance().TimeTraceEnd(TimeTraceOperation::kBootup);
