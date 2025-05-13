@@ -252,6 +252,7 @@ template("siwx917_sdk") {
       "UDMA_ROMDRIVER_PRESENT=1",
       "PLL_ROMDRIVER_PRESENT=1",
       "SL_MATTER_GN_BUILD=1",
+      "SUPPORT_CPLUSCPLUS=1",
     ]
 
     if (silabs_log_enabled && chip_logging) {

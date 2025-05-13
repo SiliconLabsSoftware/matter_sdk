@@ -410,7 +410,7 @@ CHIP_ERROR AdvertiserMinMdns::RemoveServices()
 
     return CHIP_NO_ERROR;
 }
-
+#include "silabs_utils.h"
 void AdvertiserMinMdns::ClearServices()
 {
     while (mOperationalResponders.begin() != mOperationalResponders.end())

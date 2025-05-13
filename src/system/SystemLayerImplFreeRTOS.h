@@ -29,7 +29,7 @@
 namespace chip {
 namespace System {
 
-class LayerImplFreeRTOS : public LayerFreeRTOS
+class LayerImplFreeRTOS : public LayerSockets
 {
 public:
     LayerImplFreeRTOS();
@@ -46,9 +46,26 @@ public:
     void CancelTimer(TimerCompleteCallback onComplete, void * appState) override;
     CHIP_ERROR ScheduleWork(TimerCompleteCallback onComplete, void * appState) override;
 
+
+    // LayerSocket overrides.
+    CHIP_ERROR StartWatchingSocket(int fd, SocketWatchToken * tokenOut) override;
+    CHIP_ERROR SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data) override;
+    CHIP_ERROR RequestCallbackOnPendingRead(SocketWatchToken token) override;
+    CHIP_ERROR RequestCallbackOnPendingWrite(SocketWatchToken token) override;
+    CHIP_ERROR ClearCallbackOnPendingRead(SocketWatchToken token) override;
+    CHIP_ERROR ClearCallbackOnPendingWrite(SocketWatchToken token) override;
+    CHIP_ERROR StopWatchingSocket(SocketWatchToken * tokenInOut) override;
+    SocketWatchToken InvalidSocketWatchToken() override { return reinterpret_cast<SocketWatchToken>(nullptr); }
+
+    void PrepareEvents() override;
+    void WaitForEvents() override;
+    void HandleEvents() override;
+    bool IsSocketReady(int fd);
+
 public:
     // Platform implementation.
     CHIP_ERROR HandlePlatformTimer(void);
+    bool IsSelectResultValid() const { return mSelectResult >= 0; }
 
 private:
     friend class PlatformEventing;
@@ -59,7 +76,51 @@ private:
     TimerList mTimerList;
     bool mHandlingTimerComplete; // true while handling any timer completion
     ObjectLifeCycle mLayerState;
+
+protected:
+
+static SocketEvents SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds, const fd_set & exceptfds);
+
+
+static constexpr int kSocketWatchMax = (INET_CONFIG_ENABLE_TCP_ENDPOINT ? INET_CONFIG_NUM_TCP_ENDPOINTS : 0) +
+        (INET_CONFIG_ENABLE_UDP_ENDPOINT ? INET_CONFIG_NUM_UDP_ENDPOINTS : 0);
+struct SocketWatch
+{
+    void Clear();
+    int mFD;
+    SocketEvents mPendingIO;
+    SocketWatchCallback mCallback;
+#if CHIP_SYSTEM_CONFIG_USE_DISPATCH
+    dispatch_source_t mRdSource;
+    dispatch_source_t mWrSource;
+    void DisableAndClear();
+#endif
+#if CHIP_SYSTEM_CONFIG_USE_LIBEV
+    struct ev_io mIoWatcher;
+    LayerImplSelect * mLayerImplSelectP;
+    void DisableAndClear();
+#endif
+
+    intptr_t mCallbackData;
 };
+SocketWatch mSocketWatchPool[kSocketWatchMax];
+
+struct SelectSets
+{
+    fd_set mReadSet;
+    fd_set mWriteSet;
+    fd_set mErrorSet;
+};
+SelectSets mSelected;
+int mMaxFd;
+
+// Return value from select(), carried between WaitForEvents() and HandleEvents().
+int mSelectResult;
+
+timeval mNextTimeout;
+
+};
+
 
 using LayerImpl = LayerImplFreeRTOS;
 

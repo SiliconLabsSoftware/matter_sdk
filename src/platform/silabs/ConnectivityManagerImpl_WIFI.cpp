@@ -18,17 +18,21 @@
 /* this file behaves like a config.h, comes first */
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 
+#include <inet/UDPEndPointImplSockets.h>
+
+#include "sl_net.h"
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/ConnectivityManager.h>
 #include <platform/internal/BLEManager.h>
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
-
+#include "silabs_utils.h"
 // #include <lwip/dns.h>
 // #include <lwip/ip_addr.h>
 // #include <lwip/nd6.h>
 // #include <lwip/netif.h>
 
+#include "silabs_utils.h"
 #include <platform/internal/GenericConnectivityManagerImpl_UDP.ipp>
 
 #if INET_CONFIG_ENABLE_TCP_ENDPOINT
@@ -41,6 +45,9 @@
 
 #include "CHIPDevicePlatformConfig.h"
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
+
+#include "silabs_utils.h"
+#include "sl_utility.h"
 
 using namespace ::chip;
 using namespace ::chip::Inet;
@@ -66,6 +73,51 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
 
     // Ensure that station mode is enabled.
     wfx_enable_sta_mode();
+
+    UDPEndPointImplSockets::SetMulticastGroupHandler(
+        [](InterfaceId interfaceId, const IPAddress & address, UDPEndPointImplSockets::MulticastOperation operation) {
+            if (interfaceId.IsPresent())
+            {
+                sl_ip_address_t ip_address = { 0 };
+                sl_ip_address_t ip_address_1 = { 0 };
+
+                ip_address.type = SL_IPV6;
+                ip_address_1.type = SL_IPV6;
+
+
+                memcpy(ip_address.ip.v6.value, address.Addr, sizeof(address.Addr));
+                ip_address_1.ip.v6.value[0] = 0xff020000;
+                ip_address_1.ip.v6.value[1] = 0;
+                ip_address_1.ip.v6.value[2] = 0;
+                ip_address_1.ip.v6.value[3] = 0xfb;
+
+                // 02ff::
+                // 00 00:02 ff : 00 00:00 00 : 00 00:00 00 : fb 00:00 00        little
+
+
+
+
+
+                // 0000:02ff:0000:0000:0000:0000:fb00:0000 -> print
+
+                // 0000:fb00:0000:0000:0000:0000:02ff:0000
+
+                //// 0000:02ff:0000:0000:0000:0000:fb00:0000 -> matter send
+                // 02ff:0000:0000:fb00:0000:0000:0000:0000 -> matter send
+                // 0:2ff::
+                // ff02::fb
+
+                // 0000:02ff:0000:0000:0000:0000:fb00:0000
+                print_sl_ip_address(&ip_address);
+                SILABS_LOG("-------------------------");
+                print_sl_ip_address(&ip_address_1);
+
+                SILABS_LOG("%x:%x:%x:%x", ip_address.ip.v6.value[0],ip_address.ip.v6.value[1],ip_address.ip.v6.value[2],ip_address.ip.v6.value[3]);
+                sl_status_t status = sl_net_join_multicast_address(SL_NET_WIFI_CLIENT_1_INTERFACE, &ip_address_1);
+                return (status == SL_STATUS_OK) ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
+            }
+            return CHIP_NO_ERROR;
+        });
 
     err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
 
@@ -270,6 +322,7 @@ void ConnectivityManagerImpl::DriveStationState()
         // If the WiFi station interface is no longer enabled, or no longer provisioned,
         // disconnect the station from the AP, unless the WiFi station mode is currently
         // under application control.
+#if 0
 #ifndef SL_ONNETWORK_PAIRING
         // Incase of station interface disabled & provisioned, wifi_station should not be disconnected.
         // Device will try to reconnect.
@@ -286,6 +339,7 @@ void ConnectivityManagerImpl::DriveStationState()
 
             ChangeWiFiStationState(kWiFiStationState_Disconnecting);
         }
+#endif
 #endif
     }
     // Otherwise the station interface is NOT connected to an AP, so...
@@ -425,7 +479,7 @@ void ConnectivityManagerImpl::UpdateInternetConnectivityState(void)
         event.InternetConnectivityChange.IPv4      = GetConnectivityChange(hadIPv4Conn, haveIPv4Conn);
         event.InternetConnectivityChange.IPv6      = GetConnectivityChange(hadIPv6Conn, haveIPv6Conn);
         event.InternetConnectivityChange.ipAddress = addr;
-
+        SILABS_LOG("111111111111111111111111111111111111");
         if (haveIPv4Conn != hadIPv4Conn)
         {
             ChipLogProgress(DeviceLayer, "%s Internet connectivity %s", "IPv4", (haveIPv4Conn) ? "ESTABLISHED" : "LOST");
@@ -433,6 +487,7 @@ void ConnectivityManagerImpl::UpdateInternetConnectivityState(void)
 
         if (haveIPv6Conn != hadIPv6Conn)
         {
+            SILABS_LOG("111111111111111111111111111111111111");
             ChipLogProgress(DeviceLayer, "%s Internet connectivity %s", "IPv6", (haveIPv6Conn) ? "ESTABLISHED" : "LOST");
         }
         (void) PlatformMgr().PostEvent(&event);

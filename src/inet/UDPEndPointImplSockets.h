@@ -61,7 +61,7 @@ private:
     InterfaceId mBoundIntfId;
     uint16_t mBoundPort;
 
-#if CHIP_SYSTEM_CONFIG_USE_PLATFORM_MULTICAST_API
+#if 1
 public:
     enum class MulticastOperation
     {
