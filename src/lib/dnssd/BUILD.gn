@@ -76,7 +76,7 @@ static_library("dnssd") {
     "ResolverProxy.cpp",
     "ResolverProxy.h",
     "TxtFields.cpp",
-    "TxtFields.h",
+    "TxtFields.h",MinimalMdnsServer
   ]
 
   assert(
@@ -98,7 +98,7 @@ static_library("dnssd") {
       "Advertiser_ImplMinimalMdnsAllocator.h",
       "IncrementalResolve.cpp",
       "IncrementalResolve.h",
-      "MinimalMdnsServer.cpp",
+      ".cpp",
       "MinimalMdnsServer.h",
       "Resolver_ImplMinimalMdns.cpp",
     ]

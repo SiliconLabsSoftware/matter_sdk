@@ -1,8 +1,14 @@
+
+#ifdef __cplusplus
 extern "C" {
+#endif
 #include "sl_utility.h"
+// #include "sl_si91x_socket_utility.h"
 #include "socket.h"
 #include "errno.h"
+#ifdef __cplusplus
 }
+#endif
 
 struct msghdr {
     void         *msg_name;
@@ -79,11 +85,56 @@ static inline const char *inet_ntop(int af, const void *src, char *dst, socklen_
     return NULL; // Return NULL for unsupported address families
 }
 
+static inline int
+inet_pton4 (const char *src, const char *end, unsigned char *dst)
+{
+  int saw_digit, octets, ch;
+  unsigned char tmp[4], *tp;
+  saw_digit = 0;
+  octets = 0;
+  *(tp = tmp) = 0;
+  while (src < end)
+    {
+      ch = *src++;
+      if (ch >= '0' && ch <= '9')
+        {
+          unsigned int new_val = *tp * 10 + (ch - '0');
+          if (saw_digit && *tp == 0)
+            return 0;
+          if (new_val > 255)
+            return 0;
+          *tp = new_val;
+          if (! saw_digit)
+            {
+              if (++octets > 4)
+                return 0;
+              saw_digit = 1;
+            }
+        }
+      else if (ch == '.' && saw_digit)
+        {
+          if (octets == 4)
+            return 0;
+          *++tp = 0;
+          saw_digit = 0;
+        }
+      else
+        return 0;
+    }
+  if (octets < 4)
+    return 0;
+  memcpy (dst, tmp, 4);
+  return 1;
+}
+
 static inline int inet_pton(int af, const char *src, void *dst) {
     if (af == AF_INET6) {
         unsigned int result[4]; // Buffer to store the converted IPv6 address in big-endian format
         const char *src_endp = src + strlen(src); // Calculate the end pointer of the source string
         return sl_inet_pton6(src, src_endp, (unsigned char *)dst, result);
+    } else if (af == AF_INET) {
+        const char *src_endp = src + strlen(src); // Calculate the end pointer of the source string
+        return inet_pton4(src, src_endp, (unsigned char *)dst);
     }
     // Add support for AF_INET (IPv4) if needed
     return -1; // Return -1 for unsupported address families
@@ -109,7 +160,7 @@ static inline ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags) {
     }
 
     // Use recvfrom to receive the data
-    return recvfrom(sockfd, msg->msg_iov[0].iov_base, msg->msg_iov[0].iov_len, flags,
+    return recvfrom(sockfd, msg->msg_iov[0].iov_base, msg->msg_iov[0].iov_len + 1, flags,
                     (struct sockaddr *)msg->msg_name, &msg->msg_namelen);
 }
 

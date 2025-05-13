@@ -59,7 +59,8 @@
 
 extern "C" {
 #include "PlatformInterface.h"
-#include "socket.h"
+#include "cmsis_os2.h"
+// #include "socket.h"
 }
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKET_EXTENSIONS
 #include "ZephyrSocket.h"
@@ -90,6 +91,7 @@ extern "C" {
     "Neither IPV6_DROP_MEMBERSHIP nor IPV6_LEAVE_GROUP are defined which are required for generalized IPv6 multicast group support."
 #endif // IPV6_DROP_MEMBERSHIP
 
+#include "silabs_utils.h"
 namespace chip {
 namespace Inet {
 
@@ -109,15 +111,26 @@ CHIP_ERROR IPv6Bind(int socket, const IPAddress & address, uint16_t port, Interf
     }
     sa.sin6_scope_id = static_cast<decltype(sa.sin6_scope_id)>(interfaceId);
 
+    char strAddr[INET6_ADDRSTRLEN];
     CHIP_ERROR status = CHIP_NO_ERROR;
 
+    // if (inet_ntop(AF_INET6, &sa.sin6_addr, strAddr, sizeof(strAddr)) != nullptr)
+    // {
+    //     SILABS_LOG("%s", strAddr);
+    // }
+
+    SILABS_LOG("PORT: %d", port);
+    SILABS_LOG("ADDR: %s", strAddr);
+    SILABS_LOG("IFACE: %d", interfaceId);
+    // int test = sl_bind(socket, reinterpret_cast<const sockaddr *>(&sa), static_cast<unsigned>(sizeof(sa)));
+    // SILABS_LOG("sTATUS = %d", test);
     // NOLINTNEXTLINE(clang-analyzer-unix.StdCLibraryFunctions): Function called only with valid socket after GetSocket
     if (sl_bind(socket, reinterpret_cast<const sockaddr *>(&sa), static_cast<unsigned>(sizeof(sa))) != 0)
     {
-        status = CHIP_ERROR_POSIX(errno);
-    }
-    else
-    {
+        SILABS_LOG("SL BIND");
+
+        status = CHIP_ERROR_INTERNAL;
+    } else {
 #ifdef IPV6_MULTICAST_IF
         // Instruct the kernel that any messages to multicast destinations should be
         // sent down the interface specified by the caller.
@@ -132,6 +145,7 @@ CHIP_ERROR IPv6Bind(int socket, const IPAddress & address, uint16_t port, Interf
     setsockopt(socket, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &hops, sizeof(hops));
 #endif // defined(IPV6_MULTICAST_HOPS)
 
+    SILABS_LOG("sTATUS: %d", status);
     return status;
 }
 
@@ -149,10 +163,12 @@ CHIP_ERROR IPv4Bind(int socket, const IPAddress & address, uint16_t port)
     // NOLINTNEXTLINE(clang-analyzer-unix.StdCLibraryFunctions): Function called only with valid socket after GetSocket
     if (sl_bind(socket, reinterpret_cast<const sockaddr *>(&sa), static_cast<unsigned>(sizeof(sa))) != 0)
     {
+        SILABS_LOG("111111");
         status = CHIP_ERROR_POSIX(errno);
     }
     else
     {
+        SILABS_LOG("222222222");
         // Allow socket transmitting broadcast packets.
         constexpr int enable = 1;
         setsockopt(socket, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable));
@@ -163,7 +179,7 @@ CHIP_ERROR IPv4Bind(int socket, const IPAddress & address, uint16_t port)
         setsockopt(socket, IPPROTO_IP, IP_MULTICAST_IF, &sa, sizeof(sa));
 #endif // defined(IP_MULTICAST_IF)
     }
-
+    SILABS_LOG("`123456Y");
 #ifdef IP_MULTICAST_TTL
     // Instruct the kernel that any messages to multicast destinations should be
     // set with the configured hop limit value.
@@ -189,9 +205,11 @@ CHIP_ERROR UDPEndPointImplSockets::BindImpl(IPAddressType addressType, const IPA
     if (addressType == IPAddressType::kIPv6)
     {
         ReturnErrorOnFailure(IPv6Bind(mSocket, addr, port, interface));
+        SILABS_LOG("ipv6 bind passed");
     }
 #if INET_CONFIG_ENABLE_IPV4
     else if (addressType == IPAddressType::kIPv4)
+    // if (addressType == IPAddressType::kIPv4)
     {
         ReturnErrorOnFailure(IPv4Bind(mSocket, addr, port));
     }
@@ -284,7 +302,70 @@ CHIP_ERROR UDPEndPointImplSockets::ListenImpl()
     ReturnErrorOnFailure(layer->SetCallback(mWatch, HandlePendingIO, reinterpret_cast<intptr_t>(this)));
     return layer->RequestCallbackOnPendingRead(mWatch);
 }
+#if 0
+CHIP_ERROR UDPEndPointImplSockets::SendMsgImpl(const IPPacketInfo * aPktInfo, System::PacketBufferHandle && msg)
+{
+    // Ensure packet buffer is not null
+    VerifyOrReturnError(!msg.IsNull(), CHIP_ERROR_INVALID_ARGUMENT);
 
+    // Make sure we have the appropriate type of socket based on the destination address.
+    ReturnErrorOnFailure(GetSocket(aPktInfo->DestAddress.Type()));
+
+    // Ensure the destination address type is compatible with the endpoint address type.
+    VerifyOrReturnError(mAddrType == aPktInfo->DestAddress.Type(), CHIP_ERROR_INVALID_ARGUMENT);
+
+    // For now the entire message must fit within a single buffer.
+    VerifyOrReturnError(!msg->HasChainedBuffer(), CHIP_ERROR_MESSAGE_TOO_LONG);
+
+    // Construct a sockaddr_in/sockaddr_in6 structure containing the destination information.
+    SockAddr peerSockAddr;
+    memset(&peerSockAddr, 0, sizeof(peerSockAddr));
+
+    if (mAddrType == IPAddressType::kIPv6)
+    {
+        peerSockAddr.in6.sin6_family     = AF_INET6;
+        peerSockAddr.in6.sin6_port       = htons(aPktInfo->DestPort);
+        peerSockAddr.in6.sin6_addr       = aPktInfo->DestAddress.ToIPv6();
+        InterfaceId::PlatformType intfId = aPktInfo->Interface.GetPlatformInterface();
+        VerifyOrReturnError(CanCastTo<decltype(peerSockAddr.in6.sin6_scope_id)>(intfId), CHIP_ERROR_INCORRECT_STATE);
+        peerSockAddr.in6.sin6_scope_id = static_cast<decltype(peerSockAddr.in6.sin6_scope_id)>(intfId);
+    }
+#if INET_CONFIG_ENABLE_IPV4
+    else
+    {
+        peerSockAddr.in.sin_family = AF_INET;
+        peerSockAddr.in.sin_port   = htons(aPktInfo->DestPort);
+        peerSockAddr.in.sin_addr   = aPktInfo->DestAddress.ToIPv4();
+    }
+#endif // INET_CONFIG_ENABLE_IPV4
+
+    SILABS_LOG("%x:%x:%x:%x", peerSockAddr.in6.sin6_addr.__u6_addr.__u6_addr32[0], peerSockAddr.in6.sin6_addr.__u6_addr.__u6_addr32[1], peerSockAddr.in6.sin6_addr.__u6_addr.__u6_addr32[2], peerSockAddr.in6.sin6_addr.__u6_addr.__u6_addr32[3]);
+    // peerSockAddr.in6.sin6_addr.__u6_addr.__u6_addr32[0] = 0xff020000;
+    // peerSockAddr.in6.sin6_addr.__u6_addr.__u6_addr32[1] = 0;
+    // peerSockAddr.in6.sin6_addr.__u6_addr.__u6_addr32[2] = 0;
+    // peerSockAddr.in6.sin6_addr.__u6_addr.__u6_addr32[3] = 0xfb;
+
+    char addrStr[INET6_ADDRSTRLEN];
+    inet_ntop(AF_INET6, &peerSockAddr.in6.sin6_addr, addrStr, sizeof(addrStr));
+    SILABS_LOG("Sending to %s:%d\n", addrStr, ntohs(peerSockAddr.in6.sin6_port));
+    // Send the packet using sendto.
+    const ssize_t lenSent = sendto(mSocket, msg->Start(), msg->DataLength(), 0,
+                                   reinterpret_cast<const sockaddr *>(&peerSockAddr),
+                                   (mAddrType == IPAddressType::kIPv6) ? sizeof(sockaddr_in6) : sizeof(sockaddr_in));
+    if (lenSent == -1)
+    {
+        return CHIP_ERROR_POSIX(errno);
+    }
+
+    size_t len = static_cast<size_t>(lenSent);
+
+    if (len != msg->DataLength())
+    {
+        return CHIP_ERROR_OUTBOUND_MESSAGE_TOO_BIG;
+    }
+    return CHIP_NO_ERROR;
+}
+#endif
 CHIP_ERROR UDPEndPointImplSockets::SendMsgImpl(const IPPacketInfo * aPktInfo, System::PacketBufferHandle && msg)
 {
     // Ensure packet buffer is not null
@@ -436,9 +517,13 @@ CHIP_ERROR UDPEndPointImplSockets::SendMsgImpl(const IPPacketInfo * aPktInfo, Sy
 
 void UDPEndPointImplSockets::CloseImpl()
 {
+    // TODO: Chirag never close the socket, just stop watching it.
+    // return;
     if (mSocket != kInvalidSocketFd)
     {
         static_cast<System::LayerSockets *>(&GetSystemLayer())->StopWatchingSocket(&mWatch);
+        SILABS_LOG("Closing the socket            %d", mSocket);
+        SILABS_LOG("------------------------------------------------------");
         sl_close(mSocket);
         mSocket = kInvalidSocketFd;
     }
@@ -475,11 +560,13 @@ CHIP_ERROR UDPEndPointImplSockets::GetSocket(IPAddressType addressType)
             return INET_ERROR_WRONG_ADDRESS_TYPE;
         }
 
+        SILABS_LOG("Creating the sockets             %d",family);
         mSocket = ::socket(family, type, protocol);
         if (mSocket == -1)
         {
-            return CHIP_ERROR_POSIX(errno);
+            return CHIP_ERROR_INTERNAL;
         }
+        // TODO: chirag
         CHIP_ERROR err = static_cast<System::LayerSockets *>(&GetSystemLayer())->StartWatchingSocket(mSocket, &mWatch);
         if (err != CHIP_NO_ERROR)
         {
@@ -621,7 +708,7 @@ void UDPEndPointImplSockets::HandlePendingIO(System::SocketEvents events)
 
         if (rcvLen == -1)
         {
-            lStatus = CHIP_ERROR_POSIX(errno);
+            lStatus = CHIP_ERROR_INTERNAL;
         }
         else if (lBuffer->AvailableDataLength() < static_cast<size_t>(rcvLen))
         {
@@ -713,7 +800,7 @@ static CHIP_ERROR SocketsSetMulticastLoopback(int aSocket, bool aLoopback, int a
     const unsigned int lValue = static_cast<unsigned int>(aLoopback);
     if (setsockopt(aSocket, aProtocol, aOption, &lValue, sizeof(lValue)) != 0)
     {
-        return CHIP_ERROR_POSIX(errno);
+        return CHIP_ERROR_INTERNAL;
     }
 
     return CHIP_NO_ERROR;
@@ -813,6 +900,7 @@ CHIP_ERROR UDPEndPointImplSockets::IPv4JoinLeaveMulticastGroupImpl(InterfaceId a
     const int command = join ? IP_ADD_MEMBERSHIP : IP_DROP_MEMBERSHIP;
     if (setsockopt(mSocket, IPPROTO_IP, command, &lMulticastRequest, sizeof(lMulticastRequest)) != 0)
     {
+        SILABS_LOG("SET SOCK OPT FAILED           %d", errno);
         return CHIP_ERROR_POSIX(errno);
     }
     return CHIP_NO_ERROR;

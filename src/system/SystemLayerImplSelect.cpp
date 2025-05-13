@@ -383,12 +383,6 @@ CHIP_ERROR LayerImplSelect::StartWatchingSocket(int fd, SocketWatchToken * token
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_ENDPOINT_POOL_FULL);
 
     watch->mFD = fd;
-#if CHIP_SYSTEM_CONFIG_USE_LIBEV
-    ev_io_init(&watch->mIoWatcher, &LayerImplSelect::HandleLibEvIoWatcher, 0, 0);
-    watch->mIoWatcher.data   = watch;
-    watch->mLayerImplSelectP = this;
-#endif
-
     *tokenOut = reinterpret_cast<SocketWatchToken>(watch);
     return CHIP_NO_ERROR;
 }

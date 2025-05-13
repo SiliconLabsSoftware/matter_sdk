@@ -19,7 +19,7 @@
 
 #include <system/SystemConfig.h>
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+// #if CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 #include <net/if.h>
 
 namespace chip {
@@ -31,4 +31,4 @@ struct if_nameindex * if_nameindexImpl();
 void if_freenameindexImpl(struct if_nameindex * inArray);
 } // namespace Inet
 } // namespace chip
-#endif
+// #endif

@@ -58,7 +58,9 @@ extern "C" {
 #include <sl_net.h>
 #include <sl_net_constants.h>
 // #include <sl_net_for_lwip.h>
+#include "socket.h"
 #include <sl_net_wifi_types.h>
+#include "sl_mdns.h"
 }
 
 #if SLI_SI91X_MCU_INTERFACE
@@ -118,6 +120,139 @@ sl_wifi_security_t security = SL_WIFI_SECURITY_UNKNOWN;
 #define REGION_CODE US
 #endif // ACX_MODULE_BOARD
 
+#ifndef TX_POOL_RATIO
+#define TX_POOL_RATIO 1
+#endif
+
+#ifndef RX_POOL_RATIO
+#define RX_POOL_RATIO 1
+#endif
+
+#ifndef GLOBAL_POOL_RATIO
+#define GLOBAL_POOL_RATIO 1
+#endif
+
+// static const sl_wifi_device_configuration_t config = {
+//     .boot_option = LOAD_NWP_FW,
+//     .mac_address = NULL,
+//     .band        = SL_SI91X_WIFI_BAND_2_4GHZ,
+//     .region_code = US,
+//     .boot_config = { .oper_mode       = SL_SI91X_CLIENT_MODE,
+//                      .coex_mode       = SL_SI91X_WLAN_ONLY_MODE,
+//                      .feature_bit_map = (SL_SI91X_FEAT_SECURITY_PSK | SL_SI91X_FEAT_AGGREGATION),
+//                      .tcp_ip_feature_bit_map =
+//                        (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT
+//                         | SL_SI91X_TCP_IP_FEAT_IPV6 | SL_SI91X_TCP_IP_FEAT_SSL | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
+//                      .custom_feature_bit_map =
+//                        (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID | SL_SI91X_CUSTOM_FEAT_SOC_CLK_CONFIG_160MHZ),
+//                      .ext_custom_feature_bit_map = (MEMORY_CONFIG
+//   #if defined(SLI_SI917) || defined(SLI_SI915)
+//                                                     | SL_SI91X_EXT_FEAT_FRONT_END_SWITCH_PINS_ULP_GPIO_4_5_0
+//   #endif
+//                                                     ),
+//                      .bt_feature_bit_map = 0,
+//                      .ext_tcp_ip_feature_bit_map =
+//                        (SL_SI91X_EXT_TCP_IP_WINDOW_DIV | SL_SI91X_CONFIG_FEAT_EXTENTION_VALID),
+//                      .ble_feature_bit_map     = 0,
+//                      .ble_ext_feature_bit_map = 0,
+//                      .config_feature_bit_map  = 0 },
+//     .ta_pool = { .tx_ratio_in_buffer_pool     = TX_POOL_RATIO,
+//                  .rx_ratio_in_buffer_pool     = RX_POOL_RATIO,
+//                  .global_ratio_in_buffer_pool = GLOBAL_POOL_RATIO }
+//   };
+
+static const sl_wifi_device_configuration_t config = {
+    .boot_option = LOAD_NWP_FW,
+    .mac_address = NULL,
+    .band        = SL_SI91X_WIFI_BAND_2_4GHZ,
+    .region_code = US,
+    .boot_config = { .oper_mode       = SL_SI91X_CLIENT_MODE,
+                     .coex_mode       = SL_SI91X_WLAN_BLE_MODE,
+                     .feature_bit_map = (SL_SI91X_FEAT_SECURITY_OPEN | SL_SI91X_FEAT_AGGREGATION |
+                                         SL_SI91X_FEAT_ULP_GPIO_BASED_HANDSHAKE | SL_SI91X_FEAT_DEV_TO_HOST_ULP_GPIO_1),
+                     .tcp_ip_feature_bit_map =
+                         (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6 |
+                          SL_SI91X_TCP_IP_FEAT_SSL | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID | SL_SI91X_TCP_IP_FEAT_MDNSD),
+                     .custom_feature_bit_map = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID | SL_SI91X_CUSTOM_FEAT_SOC_CLK_CONFIG_120MHZ),
+                     .ext_custom_feature_bit_map = (SL_SI91X_EXT_FEAT_XTAL_CLK | MEMORY_CONFIG | BIT(27)
+#if defined(SLI_SI917) || defined(SLI_SI915)
+                                                    | SL_SI91X_EXT_FEAT_FRONT_END_SWITCH_PINS_ULP_GPIO_4_5_0
+#endif
+                                                    | SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE),
+                     .bt_feature_bit_map = (SL_SI91X_BT_RF_TYPE | SL_SI91X_ENABLE_BLE_PROTOCOL),
+#ifdef RSI_PROCESS_MAX_RX_DATA
+#error
+                     .ext_tcp_ip_feature_bit_map = (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID | SL_SI91X_EXT_TCP_MAX_RECV_LENGTH),
+#else
+                     .ext_tcp_ip_feature_bit_map = (SL_SI91X_EXT_TCP_IP_WINDOW_DIV | SL_SI91X_CONFIG_FEAT_EXTENTION_VALID | SL_SI91X_EXT_TCP_IP_TOTAL_SELECTS(10)),
+#endif
+                     //! ENABLE_BLE_PROTOCOL in bt_feature_bit_map
+                     .ble_feature_bit_map =
+                         ((SL_SI91X_BLE_MAX_NBR_PERIPHERALS(RSI_BLE_MAX_NBR_PERIPHERALS) |
+                           SL_SI91X_BLE_MAX_NBR_CENTRALS(RSI_BLE_MAX_NBR_CENTRALS) |
+                           SL_SI91X_BLE_MAX_NBR_ATT_SERV(RSI_BLE_MAX_NBR_ATT_SERV) |
+                           SL_SI91X_BLE_MAX_NBR_ATT_REC(RSI_BLE_MAX_NBR_ATT_REC)) |
+                          SL_SI91X_FEAT_BLE_CUSTOM_FEAT_EXTENTION_VALID | SL_SI91X_BLE_PWR_INX(RSI_BLE_PWR_INX) |
+                          SL_SI91X_BLE_PWR_SAVE_OPTIONS(RSI_BLE_PWR_SAVE_OPTIONS) | SL_SI91X_916_BLE_COMPATIBLE_FEAT_ENABLE
+#if RSI_BLE_GATT_ASYNC_ENABLE
+                          | SL_SI91X_BLE_GATT_ASYNC_ENABLE
+#endif
+                          ),
+                     .ble_ext_feature_bit_map = ((SL_SI91X_BLE_NUM_CONN_EVENTS(RSI_BLE_NUM_CONN_EVENTS) |
+                                                  SL_SI91X_BLE_NUM_REC_BYTES(RSI_BLE_NUM_REC_BYTES))
+#if RSI_BLE_INDICATE_CONFIRMATION_FROM_HOST
+                                                 | SL_SI91X_BLE_INDICATE_CONFIRMATION_FROM_HOST // indication response from app
+#endif
+#if RSI_BLE_MTU_EXCHANGE_FROM_HOST
+                                                 | SL_SI91X_BLE_MTU_EXCHANGE_FROM_HOST // MTU Exchange request initiation from app
+#endif
+#if RSI_BLE_SET_SCAN_RESP_DATA_FROM_HOST
+                                                 | (SL_SI91X_BLE_SET_SCAN_RESP_DATA_FROM_HOST) // Set SCAN Resp Data from app
+#endif
+#if RSI_BLE_DISABLE_CODED_PHY_FROM_HOST
+                                                 | (SL_SI91X_BLE_DISABLE_CODED_PHY_FROM_HOST) // Disable Coded PHY from app
+#endif
+#if BLE_SIMPLE_GATT
+                                                 | SL_SI91X_BLE_GATT_INIT
+#endif
+                                                 ),
+                     .config_feature_bit_map = SL_SI91X_FEAT_SLEEP_GPIO_SEL_BITMAP },
+    .ta_pool = { .tx_ratio_in_buffer_pool     = TX_POOL_RATIO,
+                 .rx_ratio_in_buffer_pool     = RX_POOL_RATIO,
+                 .global_ratio_in_buffer_pool = GLOBAL_POOL_RATIO }
+};
+
+#if 0
+static const sl_wifi_device_configuration_t config = {
+  .boot_option = LOAD_NWP_FW,
+  .mac_address = NULL,
+  .band        = SL_SI91X_WIFI_BAND_2_4GHZ,
+  .region_code = US,
+  .boot_config = { .oper_mode = SL_SI91X_CLIENT_MODE,
+                   .coex_mode = SL_SI91X_WLAN_ONLY_MODE,
+                   .feature_bit_map =
+                     (SL_SI91X_FEAT_SECURITY_OPEN | SL_SI91X_FEAT_AGGREGATION | SL_SI91X_FEAT_WPS_DISABLE),
+                   .tcp_ip_feature_bit_map = (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_SSL
+                                              | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
+                   .custom_feature_bit_map =
+                     (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID | SL_SI91X_CUSTOM_FEAT_SOC_CLK_CONFIG_160MHZ),
+                   .ext_custom_feature_bit_map = (MEMORY_CONFIG
+#if defined(SLI_SI917) || defined(SLI_SI915)
+                                                  | SL_SI91X_EXT_FEAT_FRONT_END_SWITCH_PINS_ULP_GPIO_4_5_0
+#endif
+                                                  ),
+                   .bt_feature_bit_map = 0,
+                   .ext_tcp_ip_feature_bit_map =
+                     (SL_SI91X_EXT_TCP_IP_WINDOW_DIV | SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
+                      | SL_SI91X_EXT_TCP_IP_FEAT_SSL_THREE_SOCKETS | SL_SI91X_EXT_TCP_IP_WAIT_FOR_SOCKET_CLOSE),
+                   .ble_feature_bit_map     = 0,
+                   .ble_ext_feature_bit_map = 0,
+                   .config_feature_bit_map  = SL_SI91X_FEAT_SLEEP_GPIO_SEL_BITMAP },
+  .ta_pool = { .tx_ratio_in_buffer_pool     = TX_POOL_RATIO,
+               .rx_ratio_in_buffer_pool     = RX_POOL_RATIO,
+               .global_ratio_in_buffer_pool = GLOBAL_POOL_RATIO }
+};
+
 const sl_wifi_device_configuration_t config = {
     .boot_option = LOAD_NWP_FW,
     .mac_address = NULL,
@@ -133,7 +268,7 @@ const sl_wifi_device_configuration_t config = {
                           SL_SI91X_FEAT_DEV_TO_HOST_ULP_GPIO_1),
 #endif
                      .tcp_ip_feature_bit_map = (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_DNS_CLIENT |
-                                                SL_SI91X_TCP_IP_FEAT_SSL | SL_SI91X_TCP_IP_FEAT_BYPASS
+                                                SL_SI91X_TCP_IP_FEAT_SSL
 #ifdef ipv6_FEATURE_REQUIRED
                                                 | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6
 #endif
@@ -150,10 +285,12 @@ const sl_wifi_device_configuration_t config = {
 #endif
                                             ),
 #ifdef RSI_PROCESS_MAX_RX_DATA
+#error
                      .ext_tcp_ip_feature_bit_map =
                          (RSI_EXT_TCPIP_FEATURE_BITMAP | SL_SI91X_CONFIG_FEAT_EXTENTION_VALID | SL_SI91X_EXT_TCP_MAX_RECV_LENGTH),
 #else
-                     .ext_tcp_ip_feature_bit_map = (RSI_EXT_TCPIP_FEATURE_BITMAP | SL_SI91X_CONFIG_FEAT_EXTENTION_VALID),
+                     .ext_tcp_ip_feature_bit_map = (SL_SI91X_EXT_TCP_IP_WINDOW_DIV | SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
+                        | SL_SI91X_EXT_TCP_IP_FEAT_SSL_THREE_SOCKETS | SL_SI91X_EXT_TCP_IP_WAIT_FOR_SOCKET_CLOSE),
 #endif
                      //! ENABLE_BLE_PROTOCOL in bt_feature_bit_map
                      .ble_feature_bit_map =
@@ -188,6 +325,7 @@ const sl_wifi_device_configuration_t config = {
                                                  ),
                      .config_feature_bit_map = (SL_SI91X_FEAT_SLEEP_GPIO_SEL_BITMAP | RSI_CONFIG_FEATURE_BITMAP) }
 };
+#endif
 
 constexpr int8_t kAdvScanThreshold           = -40;
 constexpr uint8_t kAdvRssiToleranceThreshold = 5;
@@ -323,7 +461,11 @@ sl_status_t SetWifiConfigurations()
 {
     sl_status_t status = SL_STATUS_OK;
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    // sl_wifi_advanced_client_configuration_t client_config = { .max_retry_attempts = 1 };
+    // status = sl_wifi_set_advanced_client_configuration(SL_WIFI_CLIENT_INTERFACE, &client_config);
+    // VerifyOrReturnError(status == SL_STATUS_OK, status,
+    //                     ChipLogError(DeviceLayer, "sl_wifi_set_advanced_client_configuration failed: 0x%lx", status));
+#if 0
     // [sl-only] Set the listen interval to the slow polling interval during association
     sl_wifi_listen_interval_v2_t sleep_interval = {
         .listen_interval = chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()
@@ -346,6 +488,13 @@ sl_status_t SetWifiConfigurations()
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
+    // strncpy((char *) wfx_rsi.sec.ssid, "Bansal", sizeof(wfx_rsi.sec.ssid) - 1);
+    // wfx_rsi.sec.ssid[sizeof(wfx_rsi.sec.ssid) - 1] = '\0'; // Ensure null termination
+    // wfx_rsi.sec.ssid_length                        = strlen((char *) wfx_rsi.sec.ssid);
+    // strncpy((char *) wfx_rsi.sec.passkey, "renu1014", sizeof(wfx_rsi.sec.passkey) - 1);
+    // wfx_rsi.sec.ssid[sizeof(wfx_rsi.sec.passkey) - 1] = '\0'; // Ensure null terminationwfx_rsi.sec.passkey
+    // wfx_rsi.sec.passkey_length                        = strlen((char *) wfx_rsi.sec.passkey);
+    // wfx_rsi.sec.security = SL_WIFI_WPA2;
     if (wfx_rsi.sec.passkey_length != 0)
     {
         status = sl_net_set_credential(SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID, SL_NET_WIFI_PSK, &wfx_rsi.sec.passkey[0],
@@ -353,7 +502,6 @@ sl_status_t SetWifiConfigurations()
         VerifyOrReturnError(status == SL_STATUS_OK, status,
                             ChipLogError(DeviceLayer, "sl_net_set_credential failed: 0x%lx", status));
     }
-
     sl_net_wifi_client_profile_t profile = {
         .config = {
             .ssid = {
@@ -367,18 +515,37 @@ sl_status_t SetWifiConfigurations()
             },
             .bssid = {{0}},
             .bss_type = SL_WIFI_BSS_TYPE_INFRASTRUCTURE,
-            .security = security,
+            .security = SL_WIFI_WPA2,
             .encryption = SL_WIFI_DEFAULT_ENCRYPTION,
             .client_options = SL_WIFI_JOIN_WITH_SCAN,
             .credential_id = SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID,
         },
         .ip = {
-            .mode = SL_IP_MANAGEMENT_DHCP,
+            .mode = SL_IP_MANAGEMENT_STATIC_IP,
             .type = SL_IPV6,
             .host_name = NULL,
-            .ip = {{{0}}},
+            // .ip = {
+            //     .v6 = {
+            //         .global_address = {
+            //             .value[0] = 0xffffffff,
+            //             .value[1] = 0xffffffff,
+            //             .value[2] = 0xffffffff,
+            //             .value[3] = 0xffffffff
+            //         }
+            //     }
+            // }
         }
     };
+
+    // Assign IPv6 global address explicitly
+profile.ip.ip.v6.global_address.value[0] = 0xffffffff;
+profile.ip.ip.v6.global_address.value[1] = 0xffffffff;
+profile.ip.ip.v6.global_address.value[2] = 0xffffffff;
+profile.ip.ip.v6.global_address.value[3] = 0xffffffff;
+profile.ip.ip.v6.gateway.value[0] = 0xFFFFFFFF;
+profile.ip.ip.v6.gateway.value[1] = 0xFFFFFFFF;
+profile.ip.ip.v6.gateway.value[2] = 0xFFFFFFFF;
+profile.ip.ip.v6.gateway.value[3] = 0xFFFFFFFF;
     // TODO: memcpy for now since the types dont match
     memcpy((char *) &profile.config.ssid.value, wfx_rsi.sec.ssid, wfx_rsi.sec.ssid_length);
 
@@ -427,10 +594,41 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
     wfx_rsi.join_retries = 0;
     return status;
 }
+#include "silabs_utils.h"
+
+#define MDNSV6_ENABLE 1
+
+#if MDNSV6_ENABLE
+#define SERVER_IP  "2401:4901:1290:10de::1004"
+#define DEVICE_IP  "2401:4901:1290:10de::1014"
+#define IP_VERSION SL_IPV6_VERSION
+#else
+#define SERVER_IP  "192.168.0.194"
+#define DEVICE_IP  "192.168.1.1"
+#define IP_VERSION SL_IPV4_VERSION
+#endif
+
+#define SERVER_PORT 5001
+#define DEVICE_PORT 4000
+
+#define CLIENT_MESSAGE "WIFISDK"
+
+#define MDNS_HOST_NAME       "wiseconnect.local."
+#define MDNS_SERVICE_TYPE    "_http._tcp.local."
+#define MDNS_SERVICE_NAME    "wiseconnect._http._tcp.local"
+#define MDNS_SERVICE_MESSAGE "VP=65521+32773 SII=500 SAI=2000 SAT=4000 D=3840 CM=1 PH=33 PI="
+#define MDNS_SERVICE_PORT    80
+#define MDNS_SERVICE_TTL     300
+
 sl_status_t JoinWifiNetwork(void)
 {
-    VerifyOrReturnError(!wfx_rsi.dev_state.HasAny(WifiState::kStationConnecting, WifiState::kStationConnected),
-                        SL_STATUS_IN_PROGRESS);
+    if (wfx_rsi.dev_state.HasAny(WifiState::kStationConnecting, WifiState::kStationConnected))
+    {
+        return SL_STATUS_OK;
+    }
+    wfx_rsi.dev_state.Clear(WifiState::kStationConnected);
+    // VerifyOrReturnError(!wfx_rsi.dev_state.HasAny(WifiState::kStationConnecting, WifiState::kStationConnected),
+    //                     SL_STATUS_IN_PROGRESS);
     sl_status_t status = SL_STATUS_OK;
 
     // Start Join Network
@@ -442,6 +640,7 @@ sl_status_t JoinWifiNetwork(void)
     status = sl_wifi_set_join_callback(JoinCallback, nullptr);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
+    SILABS_LOG("%s", wfx_rsi.sec.ssid);
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
 
     if (status == SL_STATUS_OK)
@@ -450,6 +649,36 @@ sl_status_t JoinWifiNetwork(void)
         // Remove High performance request that might have been added during the connect/retry process
         chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+
+        sl_net_wifi_client_profile_t profile = { 0 };
+        status = sl_net_get_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID, &profile);
+        if (status != SL_STATUS_OK)
+        {
+            SILABS_LOG("Failed to get client profile: 0x%lx\r\n", status);
+        }
+        SILABS_LOG("\r\nClient profile is fetched successfully\r\n");
+        
+        if (profile.ip.type == SL_IPV6)
+        {
+            sl_ip_address_t link_local_address = { 0 };
+            memcpy(&link_local_address.ip.v6, &profile.ip.ip.v6.link_local_address, SL_IPV6_ADDRESS_LENGTH);
+            link_local_address.type = SL_IPV6;
+            SILABS_LOG("Link Local Address: ");
+            print_sl_ip_address(&link_local_address);
+
+            sl_ip_address_t global_address = { 0 };
+            memcpy(&global_address.ip.v6, &profile.ip.ip.v6.global_address, SL_IPV6_ADDRESS_LENGTH);
+            global_address.type = SL_IPV6;
+            SILABS_LOG("Global Address: ");
+            print_sl_ip_address(&global_address);
+
+            sl_ip_address_t gateway = { 0 };
+            memcpy(&gateway.ip.v6, &profile.ip.ip.v6.gateway, SL_IPV6_ADDRESS_LENGTH);
+            gateway.type = SL_IPV6;
+            SILABS_LOG("Gateway Address: ");
+            print_sl_ip_address(&gateway);
+        }
+        wfx_rsi.dev_state.Set(WifiState::kStationConnected);
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
         return status;
@@ -477,6 +706,7 @@ sl_status_t sl_matter_wifi_platform_init(void)
 {
     sl_status_t status = SL_STATUS_OK;
 
+    // status = sl_net_init((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, nullptr , nullptr, nullptr);
     status = sl_net_init((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, &config, nullptr, nullptr);
     // status = sl_net_init((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, &config, &wifi_client_context, nullptr);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_init failed: %lx", status));
@@ -493,6 +723,7 @@ sl_status_t sl_matter_wifi_platform_init(void)
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, SL_STATUS_ALLOCATION_FAILED);
 
+    // JoinWifiNetwork();
     return status;
 }
 
@@ -643,6 +874,13 @@ void NotifyConnectivity(void)
     hasNotifiedWifiConnectivity = true;
 }
 
+
+// #include <inet/UDPEndPoint.h>
+// #include <inet/IPAddress.h>
+// #include <transport/TransportMgr.h>
+// #include <transport/TransportMgrBase.h>
+// #include <transport/raw/UDP.h>
+
 /// NotifySuccessfulConnection
 /// @brief Processing function responsible for notifying the upper layers of a succesful connection attempt.
 void NotifySuccessfulConnection(void)
@@ -655,6 +893,24 @@ void NotifySuccessfulConnection(void)
     char addrStr[chip::Inet::IPAddress::kMaxStringLength] = { 0 };
     // VerifyOrReturn(ip6addr_ntoa_r(netif_ip6_addr(sta_netif, 0), addrStr, sizeof(addrStr)) != nullptr);
     ChipLogProgress(DeviceLayer, "SLAAC OK: linklocal addr: %s", addrStr);
+
+//     chip::Transport::UdpListenParameters udpParams(DeviceLayer::UDPEndPointManager());
+//     chip::Transport::UdpListenParameters::NativeParams initParams = {};
+//     CHIP_ERROR err = chip::TransportMgr<chip::Transport::UDP>::Init(
+//         udpParams.SetAddressType(IPAddressType::kIPv6)
+//         udpParams.SetListenPort(5540)
+//         udpParams.SetNativeParams(initParams.endpointNativeParams));
+//     struct sockaddr_in6 socket_address = { 0 };
+//     socklen_t socket_length           = sizeof(struct sockaddr_in6);
+  
+//     sl_status_t status = getsockname(0, (struct sockaddr *)&socket_address, &socket_length);
+  
+//     if (socket_length == sizeof(struct sockaddr_in6)) {
+//       uint8_t *ip_address = (uint8_t *)&socket_address.sin6_addr.__u6_addr;
+  
+//       SILABS_LOG("\n\rIP address %u:%u:%u:%u", ip_address[0], ip_address[1], ip_address[2], ip_address[3]);
+//       SILABS_LOG("\n\rPort %d", socket_address.sin6_port);
+//     }
     wfx_ipv6_notify(GET_IPV6_SUCCESS);
     NotifyConnectivity();
 }
@@ -774,8 +1030,9 @@ void ProcessEvent(WifiEvent event)
 // TODO: Remove this once the IOP issue related to power save mode switching is fixed in the Wi-Fi SDK.
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
         chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
+        // reinit lwip timer
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-        InitiateScan();
+       InitiateScan();
         JoinWifiNetwork();
         break;
 

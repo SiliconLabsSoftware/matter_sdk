@@ -227,7 +227,7 @@ private:
     Layer & operator=(const Layer &) = delete;
 };
 
-#if CHIP_SYSTEM_CONFIG_USE_LWIP || CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_LWIP || CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
 
 class LayerFreeRTOS : public Layer
 {
@@ -288,6 +288,9 @@ public:
      * Return a SocketWatchToken that is guaranteed not to be valid. Clients may use this to initialize variables.
      */
     virtual SocketWatchToken InvalidSocketWatchToken() = 0;
+    virtual void PrepareEvents()   = 0;
+    virtual void WaitForEvents()   = 0;
+    virtual void HandleEvents()    = 0;
 };
 
 class LayerSocketsLoop;

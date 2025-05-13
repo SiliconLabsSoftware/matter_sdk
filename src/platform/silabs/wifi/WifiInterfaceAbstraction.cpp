@@ -184,7 +184,7 @@ void wfx_retry_connection(uint16_t retryAttempt)
     {
         retryInterval = kWlanMaxRetryIntervalsInSec;
     }
-
+ // deinit
     if (osTimerStart(sRetryTimer, pdMS_TO_TICKS(CONVERT_SEC_TO_MS(retryInterval))) != osOK)
     {
         ChipLogProgress(DeviceLayer, "Failed to start retry timer");

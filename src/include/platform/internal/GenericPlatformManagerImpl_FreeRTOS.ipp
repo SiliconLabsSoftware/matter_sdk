@@ -39,6 +39,11 @@ namespace chip {
 namespace DeviceLayer {
 namespace Internal {
 
+System::LayerSocketsLoop & SystemLayerSocketsLoop()
+{
+    return static_cast<System::LayerSocketsLoop &>(DeviceLayer::SystemLayer());
+}
+
 template <class ImplClass>
 CHIP_ERROR GenericPlatformManagerImpl_FreeRTOS<ImplClass>::_InitChipStack(void)
 {
@@ -242,6 +247,8 @@ void GenericPlatformManagerImpl_FreeRTOS<ImplClass>::_RunEventLoop(void)
         {
             waitTime = portMAX_DELAY;
         }
+
+        SystemLayerSocketsLoop().PrepareEvents();
 
         BaseType_t eventReceived = pdFALSE;
         {
