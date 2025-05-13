@@ -676,7 +676,7 @@ TEST_F(TestSilabsTracing, TestLogs)
     span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBootup), span), CHIP_NO_ERROR);
     const char * expectedBootupLogFormat =
-        "TimeTracker - Type: End, Operation: Bootup, Status: 0x0, Start: 00:00:00.100, End: 00:00:00.300, Duration: 00:00:00.200";
+        "TimeTracker - Type: End, Operation: Bootup, Status: 0x0, Start: 00:00:00.000, End: 00:00:00.200, Duration: 00:00:00.200";
     EXPECT_STREQ(span.data(), expectedBootupLogFormat);
 
     // Test buffer too small behavior
