@@ -29,7 +29,7 @@
 
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
 
-// This is a User definable functionin sl_main context, called by sl_main_init before the kernel is started
+// This is a User definable function in sl_main context, called by sl_main_init before the kernel is started
 void app_init_early(void)
 {
     SILABS_TRACE_BEGIN(chip::Tracing::Silabs::TimeTraceOperation::kBootup);
