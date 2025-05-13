@@ -261,7 +261,7 @@ TEST_F(TestSilabsTracing, TestBootupSequence)
     // Simulate Silabs Init
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kSilabsInit);
     gMockClock.AdvanceMonotonic(150_ms64);
-    gMockClock.SetMonotonic(0_ms64); // Resetting to 0 since reboot should reset the monotonic clock 
+    gMockClock.SetMonotonic(0_ms64); // Resetting to 0 since reboot should reset the monotonic clock
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kBootup);
     // Simulate Silabs Init
     SilabsTracer::Instance().TimeTraceBegin(TimeTraceOperation::kSilabsInit);
