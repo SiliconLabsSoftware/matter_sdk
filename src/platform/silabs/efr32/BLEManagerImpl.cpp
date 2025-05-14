@@ -26,6 +26,10 @@
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 
+#if defined(SL_COMPONENT_CATALOG_PRESENT)
+#include "sl_component_catalog.h"
+#endif
+
 #include "sl_component_catalog.h"
 
 #include <platform/internal/BLEManager.h>
@@ -680,7 +684,13 @@ CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertisingDefaultData(void)
     index += sideChannelNameLen;
     ByteSpan responseDataSpan(responseData, index);
 
-    AdvConfigStruct config = { advDataSpan, responseDataSpan, BLE_CONFIG_MIN_INTERVAL_SC, BLE_CONFIG_MAX_INTERVAL_SC, 0, 0 };
+    AdvConfigStruct config = { advDataSpan,
+                               responseDataSpan,
+                               BLE_CONFIG_MIN_INTERVAL_SC,
+                               BLE_CONFIG_MAX_INTERVAL_SC,
+                               sl_bt_advertiser_connectable_scannable,
+                               0,
+                               0 };
     return mBleSideChannel->ConfigureAdvertising(config);
 }
 
@@ -695,7 +705,8 @@ CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertising(ByteSpan advData, Byt
                                                            uint32_t intervalMax, uint16_t duration, uint8_t maxEvents)
 {
     VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
-    AdvConfigStruct config = { advData, responseData, intervalMin, intervalMax, duration, maxEvents };
+    AdvConfigStruct config = { advData,  responseData, intervalMin, intervalMax, sl_bt_advertiser_connectable_scannable,
+                               duration, maxEvents };
     return mBleSideChannel->ConfigureAdvertising(config);
 }
 
@@ -1354,18 +1365,20 @@ void BLEManagerImpl::ParseEvent(volatile sl_bt_msg_t * evt)
 } // namespace Internal
 } // namespace DeviceLayer
 } // namespace chip
-
+#ifdef SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
 extern "C" void zigbe_bt_on_event(volatile sl_bt_msg_t * evt);
+#endif // SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
 
+// TODO: Move this to matter_bl_event.cpp and update gn and slc build files
 extern "C" void sl_bt_on_event(sl_bt_msg_t * evt)
 {
     if (chip::DeviceLayer::Internal::BLEMgrImpl().CanHandleEvent(SL_BT_MSG_ID(evt->header)))
     {
         chip::DeviceLayer::Internal::BLEMgrImpl().ParseEvent(evt);
     }
-#ifdef SL_TEST_MATTER_ZIGBEE_DMP
+#ifdef SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
     zigbe_bt_on_event(evt);
-#endif
+#endif // SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
 }
 
 #endif // CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE

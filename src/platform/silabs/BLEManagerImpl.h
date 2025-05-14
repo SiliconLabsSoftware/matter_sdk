@@ -32,7 +32,7 @@
 #include "gatt_db.h"
 #include "sl_bgapi.h"
 #include "sl_bt_api.h"
-#include <platform/silabs/.../BLEChannel.h>
+#include <BLEChannel.h>
 #include <lib/core/Optional.h>
 #endif // (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
 
@@ -88,24 +88,27 @@ public:
     CHIP_ERROR SideChannelStartAdvertising(void);
     CHIP_ERROR SideChannelStopAdvertising(void);
 
-    // CLI methods BEGIN
     // GAP
-    CHIP_ERROR SideChannelGenerateAdvertisingData(uint8_t discoverMove, uint8_t connectMode, const Optional<uint16_t> & maxEvents)
+    CHIP_ERROR SideChannelGeneratAdvertisingData(uint8_t discoverMove, uint8_t connectMode, const Optional<uint16_t> & maxEvents)
     {
-        return mBleSideChannel->GenerateAdvertisingData(discoverMove, connectMode, maxEvents);
+        VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
+        return mBleSideChannel->GeneratAdvertisingData(discoverMove, connectMode, maxEvents);
     }
     CHIP_ERROR SideChannelOpenConnection(bd_addr address, uint8_t addrType)
     {
+        VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->OpenConnection(address, addrType);
     }
     CHIP_ERROR SideChannelSetConnectionParams(const Optional<uint8_t> & connectionHandle, uint32_t intervalMin,
                                               uint32_t intervalMax, uint16_t latency, uint16_t timeout)
     {
+        VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->SetConnectionParams(connectionHandle, intervalMin, intervalMax, latency, timeout);
     }
     CHIP_ERROR SideChannelSetAdvertisingParams(uint32_t intervalMin, uint32_t intervalMax, uint16_t duration,
                                                const Optional<uint16_t> & maxEvents, const Optional<uint8_t> & channelMap)
     {
+        VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->SetAdvertisingParams(intervalMin, intervalMax, duration, maxEvents, channelMap);
     }
     CHIP_ERROR SideChannelSetAdvertisingHandle(uint8_t handle) { return mBleSideChannel->SetAdvHandle(handle); }
@@ -115,23 +118,23 @@ public:
     CHIP_ERROR SideChannelDiscoverServices(void) { return mBleSideChannel->DiscoverServices(); }
     CHIP_ERROR SideChannelDiscoverCharacteristics(uint32_t serviceHandle)
     {
+        VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->DiscoverCharacteristics(serviceHandle);
     }
     CHIP_ERROR SideChannelSetCharacteristicNotification(uint8_t characteristicHandle, uint8_t flags)
     {
+        VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->SetCharacteristicNotification(characteristicHandle, flags);
     }
     CHIP_ERROR SideChannelSetCharacteristicValue(uint8_t characteristicHandle, const ByteSpan & value)
     {
+        VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->SetCharacteristicValue(characteristicHandle, value);
     }
-
-    // Getters for the cli test
     bd_addr SideChannelGetAddr(void) { return mBleSideChannel->GetRandomizedAddr(); }
     BLEConState SideChannelGetConnectionState(void) { return mBleSideChannel->GetConnectionState(); }
     uint8_t SideChannelGetAdvHandle(void) { return mBleSideChannel->GetAdvHandle(); }
     uint8_t SideChannelGetConnHandle(void) { return mBleSideChannel->GetConnectionHandle(); }
-    // CLI methods END
 #endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
@@ -207,8 +210,7 @@ private:
 
     enum
     {
-        kMaxConnections = BLE_LAYER_NUM_BLE_ENDPOINTS - 1, // We keep one slot for the BLE side channel
-                                                           // (currently works without)
+        kMaxConnections      = BLE_LAYER_NUM_BLE_ENDPOINTS,
         kMaxDeviceNameLength = 21,
         kUnusedIndex         = 0xFF,
     };
@@ -221,7 +223,12 @@ private:
     // Declared in BLEChannel.h now.
     struct BLEConState
     {
-        bd_addr address;
+        uint16_t mtu : 10;
+        uint16_t allocated : 1;
+        uint16_t subscribed : 1;
+        uint16_t unused : 4;
+        uint8_t connectionHandle;
+        uint8_t bondingHandle;
     };
 #endif
 

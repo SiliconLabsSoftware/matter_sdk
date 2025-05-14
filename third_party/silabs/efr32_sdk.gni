@@ -671,7 +671,7 @@ template("efr32_sdk") {
 
     if (sl_enable_ble_side_channel) {
       defines += [
-        "SILABS_USE_BLE_SIDE_CHANNEL=1",
+        "SL_BLE_SIDE_CHANNEL_ENABLED=1",
         "SL_BT_ADVERTISER_CONFIG_H",
         "SL_BT_CONFIG_USER_ADVERTISERS=2",
       ]

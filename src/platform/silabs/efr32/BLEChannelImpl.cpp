@@ -1,3 +1,20 @@
+/***************************************************************************
+ * @file SilabsTracing.h
+ * @brief Instrumenting for matter operation tracing for the Silicon Labs platform.
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
+
 #include "BLEChannelImpl.h"
 #include <crypto/RandUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -101,17 +118,18 @@ CHIP_ERROR BLEChannelImpl::ConfigureAdvertising(const AdvConfigStruct & config)
 
         // TODO: Check if we need to randomize the address
         uint64_t random = Crypto::GetRandU64();
-        memcpy(&mRandomizedAddr, &random, sizeof(mRandomizedAddr));
+        memcpy(&mConnectionState.address, &random, sizeof(mConnectionState.address));
 
         // Set two MSBs to 11 to properly the address - BLE Static Device Address requirement
-        mRandomizedAddr.addr[5] |= 0xC0;
+        mConnectionState.address.addr[5] |= 0xC0;
 
-        ret = sl_bt_advertiser_set_random_address(mAdvHandle, sl_bt_gap_static_address, mRandomizedAddr, &mRandomizedAddr);
+        ret = sl_bt_advertiser_set_random_address(mAdvHandle, sl_bt_gap_static_address, mConnectionState.address,
+                                                  &mConnectionState.address);
         VerifyOrReturnLogError(ret == SL_STATUS_OK, MapBLEError(ret));
 
-        ChipLogDetail(DeviceLayer, "BLE Static Device Address %02X:%02X:%02X:%02X:%02X:%02X", mRandomizedAddr.addr[5],
-                      mRandomizedAddr.addr[4], mRandomizedAddr.addr[3], mRandomizedAddr.addr[2], mRandomizedAddr.addr[1],
-                      mRandomizedAddr.addr[0]);
+        ChipLogDetail(DeviceLayer, "BLE Static Device Address %02X:%02X:%02X:%02X:%02X:%02X", mConnectionState.address.addr[5],
+                      mConnectionState.address.addr[4], mConnectionState.address.addr[3], mConnectionState.address.addr[2],
+                      mConnectionState.address.addr[1], mConnectionState.address.addr[0]);
     }
 
     ret = sl_bt_legacy_advertiser_set_data(mAdvHandle, sl_bt_advertiser_advertising_data_packet, config.advData.size(),
@@ -122,10 +140,11 @@ CHIP_ERROR BLEChannelImpl::ConfigureAdvertising(const AdvConfigStruct & config)
                                            config.responseData.data());
     VerifyOrReturnLogError(ret == SL_STATUS_OK, MapBLEError(ret));
 
-    mAdvIntervalMin = config.intervalMin;
-    mAdvIntervalMax = config.intervalMax;
-    mAdvDuration    = config.duration;
-    mAdvMaxEvents   = config.maxEvents;
+    mAdvIntervalMin     = config.intervalMin;
+    mAdvIntervalMax     = config.intervalMax;
+    mAdvDuration        = config.duration;
+    mAdvMaxEvents       = config.maxEvents;
+    mAdvConnectableMode = config.advConnectableMode;
 
     return CHIP_NO_ERROR;
 }
@@ -182,11 +201,8 @@ void BLEChannelImpl::AddConnection(uint8_t connectionHandle, uint8_t bondingHand
 {
     // TODO: Verify if we want to allow multiple connections at once, this is tied to the Endpoint usage as well
     // We currently only support one connection at a time on our side channel
-    if (mConnectionState.allocated)
-    {
-        ChipLogError(DeviceLayer, "Connection already allocated");
-        return;
-    }
+    VerifyOrReturn(!mConnectionState.allocated, ChipLogError(DeviceLayer, "Connection already exists"));
+
     mConnectionState.connectionHandle = connectionHandle;
     mConnectionState.bondingHandle    = bondingHandle;
     mConnectionState.allocated        = 1;

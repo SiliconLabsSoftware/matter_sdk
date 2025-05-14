@@ -96,43 +96,4 @@
     </characteristic>
 
   </service>
-  
-    <!--Silabs DMP Light-->
-  <service advertise="false" name="Silabs DMP Light" requirement="mandatory" sourceId="" type="primary" uuid="bae55b96-7d19-458d-970c-50613d801bc9">
-    <informativeText/>
-    
-    <!--Light-->
-    <characteristic const="false" id="light_state" name="Light" sourceId="custom.type" uuid="76e137ac-b15f-49d7-9c4c-e278e6492ad9">
-      <description>null</description>
-      <informativeText/>
-      <value length="0" type="user" variable_length="false"/>
-      <properties>
-        <read authenticated="false" bonded="false" encrypted="false"/>
-        <write authenticated="false" bonded="false" encrypted="false"/>
-        <indicate authenticated="false" bonded="false" encrypted="false"/>
-      </properties>
-    </characteristic>
-    
-    <!--Trigger Source-->
-    <characteristic const="false" id="trigger_source" name="Trigger Source" sourceId="custom.type" uuid="2f16ee52-0bfd-4597-85d4-a5141fdbae15">
-      <description>null</description>
-      <informativeText/>
-      <value length="0" type="user" variable_length="false"/>
-      <properties>
-        <read authenticated="false" bonded="false" encrypted="false"/>
-        <indicate authenticated="false" bonded="false" encrypted="false"/>
-      </properties>
-    </characteristic>
-    
-    <!--Source Address-->
-    <characteristic const="false" id="source_address" name="Source Address" sourceId="custom.type" uuid="82a1cb54-3921-4c9c-ba34-34f78bab9a1b">
-      <description>null</description>
-      <informativeText/>
-      <value length="0" type="user" variable_length="false"/>
-      <properties>
-        <read authenticated="false" bonded="false" encrypted="false"/>
-        <indicate authenticated="false" bonded="false" encrypted="false"/>
-      </properties>
-    </characteristic>
-  </service>
 </gatt>
