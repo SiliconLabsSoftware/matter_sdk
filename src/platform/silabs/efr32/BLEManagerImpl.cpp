@@ -1366,7 +1366,7 @@ void BLEManagerImpl::ParseEvent(volatile sl_bt_msg_t * evt)
 } // namespace DeviceLayer
 } // namespace chip
 #ifdef SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
-extern "C" void zigbe_bt_on_event(volatile sl_bt_msg_t * evt);
+extern "C" void zigbee_bt_on_event(volatile sl_bt_msg_t * evt);
 #endif // SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
 
 // TODO: Move this to matter_bl_event.cpp and update gn and slc build files
@@ -1377,7 +1377,7 @@ extern "C" void sl_bt_on_event(sl_bt_msg_t * evt)
         chip::DeviceLayer::Internal::BLEMgrImpl().ParseEvent(evt);
     }
 #ifdef SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
-    zigbe_bt_on_event(evt);
+    zigbee_bt_on_event(evt);
 #endif // SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
 }
 
