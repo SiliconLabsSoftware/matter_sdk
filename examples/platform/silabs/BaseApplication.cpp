@@ -46,13 +46,13 @@
 
 #include <app/server/OnboardingCodesUtil.h>
 
-#if SL_BLE_SIDE_CHANNEL_ENABLED
+#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 #include <platform/internal/BLEManager.h>
 #include <platform/silabs/efr32/BLEChannelImpl.h>
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
 #endif // ENABLE_CHIP_SHELL
-#endif // SILABS_USE_BLE_SID
+#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 
 #include <app/util/attribute-storage.h>
 #include <assert.h>

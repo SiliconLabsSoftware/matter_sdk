@@ -70,8 +70,7 @@ CHIP_ERROR StartBLESideChannelAdvertising(int argc, char ** argv)
 
 CHIP_ERROR StopBLESideChannelAvertising(int argc, char ** argv)
 {
-    DeviceLayer::Internal::BLEMgrImpl().SideChannelStopAdvertising();
-    return CHIP_NO_ERROR;
+    return DeviceLayer::Internal::BLEMgrImpl().SideChannelStopAdvertising();
 }
 
 } // namespace

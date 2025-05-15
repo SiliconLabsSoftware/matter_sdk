@@ -487,7 +487,7 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
     ReturnErrorOnFailure(EncodeAdditionalDataTlv());
 #endif
 
-    if (mAdvertisingSetHandle == 0xff)
+    if (mAdvertisingSetHandle == kInvalidAdvertisingHandle)
     {
         ret = sl_bt_advertiser_create_set(&mAdvertisingSetHandle);
         VerifyOrExit(ret == SL_STATUS_OK, {
@@ -636,7 +636,7 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
         sl_bt_advertiser_clear_random_address(mAdvertisingSetHandle);
 
         sl_bt_advertiser_delete_set(mAdvertisingSetHandle);
-        mAdvertisingSetHandle = 0xff;
+        mAdvertisingSetHandle = kInvalidAdvertisingHandle;
         err                   = MapBLEError(ret);
         VerifyOrReturnError(err == CHIP_NO_ERROR, err);
 

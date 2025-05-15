@@ -94,23 +94,27 @@ public:
         VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->GeneratAdvertisingData(discoverMove, connectMode, maxEvents);
     }
+
     CHIP_ERROR SideChannelOpenConnection(bd_addr address, uint8_t addrType)
     {
         VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->OpenConnection(address, addrType);
     }
+
     CHIP_ERROR SideChannelSetConnectionParams(const Optional<uint8_t> & connectionHandle, uint32_t intervalMin,
                                               uint32_t intervalMax, uint16_t latency, uint16_t timeout)
     {
         VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->SetConnectionParams(connectionHandle, intervalMin, intervalMax, latency, timeout);
     }
+
     CHIP_ERROR SideChannelSetAdvertisingParams(uint32_t intervalMin, uint32_t intervalMax, uint16_t duration,
                                                const Optional<uint16_t> & maxEvents, const Optional<uint8_t> & channelMap)
     {
         VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
         return mBleSideChannel->SetAdvertisingParams(intervalMin, intervalMax, duration, maxEvents, channelMap);
     }
+
     CHIP_ERROR SideChannelSetAdvertisingHandle(uint8_t handle) { return mBleSideChannel->SetAdvHandle(handle); }
     CHIP_ERROR SideChannelCloseConnection(void) { return mBleSideChannel->CloseConnection(); }
 

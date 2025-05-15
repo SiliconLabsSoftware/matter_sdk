@@ -51,6 +51,9 @@ struct AdvConfigStruct
     uint8_t maxEvents;
 };
 
+inline constexpr uint8_t kInvalidAdvertisingHandle      = 0xff;
+inline constexpr uint16_t kDefaultConnectionEventLenght = 0xffff;
+
 class BLEChannel
 {
 public:

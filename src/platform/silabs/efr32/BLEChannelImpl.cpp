@@ -111,7 +111,7 @@ CHIP_ERROR BLEChannelImpl::ConfigureAdvertising(const AdvConfigStruct & config)
 
     sl_status_t ret;
 
-    if (mAdvHandle == 0xff)
+    if (mAdvHandle == kInvalidAdvertisingHandle)
     {
         ret = sl_bt_advertiser_create_set(&mAdvHandle);
         VerifyOrReturnLogError(ret == SL_STATUS_OK, MapBLEError(ret));
@@ -190,7 +190,7 @@ CHIP_ERROR BLEChannelImpl::StopAdvertising(void)
         ret = sl_bt_advertiser_stop(mAdvHandle);
         sl_bt_advertiser_clear_random_address(mAdvHandle);
         sl_bt_advertiser_delete_set(mAdvHandle);
-        mAdvHandle = 0xff;
+        mAdvHandle = kInvalidAdvertisingHandle;
         VerifyOrReturnLogError(CHIP_NO_ERROR == MapBLEError(ret), MapBLEError(ret));
     }
 
@@ -323,9 +323,8 @@ CHIP_ERROR BLEChannelImpl::GeneratAdvertisingData(uint8_t discoverMove, uint8_t 
     mAdvConnectableMode = connectMode;
 
     ret = sl_bt_legacy_advertiser_start(mAdvHandle, mAdvConnectableMode);
-    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
 
-    return CHIP_NO_ERROR;
+    return MapBLEError(ret);
 }
 
 CHIP_ERROR BLEChannelImpl::OpenConnection(bd_addr address, uint8_t addrType)
@@ -339,10 +338,9 @@ CHIP_ERROR BLEChannelImpl::OpenConnection(bd_addr address, uint8_t addrType)
     }
 
     sl_status_t ret = sl_bt_connection_open(address, addrType, sl_bt_gap_1m_phy, &mConnectionState.connectionHandle);
-    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
 
     // TODO: Confirm this generates a connection event and the AddConnection gets called so that the connection state is updated
-    return CHIP_NO_ERROR;
+    return MapBLEError(ret);
 }
 CHIP_ERROR BLEChannelImpl::SetConnectionParams(const Optional<uint8_t> & connectionHandle, uint32_t intervalMin,
                                                uint32_t intervalMax, uint16_t latency, uint16_t timeout)
@@ -350,15 +348,14 @@ CHIP_ERROR BLEChannelImpl::SetConnectionParams(const Optional<uint8_t> & connect
     sl_status_t ret;
     if (connectionHandle.HasValue())
     {
-        ret = sl_bt_connection_set_parameters(connectionHandle.Value(), intervalMin, intervalMax, latency, timeout, 0, 0xFFFF);
-        VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+        ret = sl_bt_connection_set_parameters(connectionHandle.Value(), intervalMin, intervalMax, latency, timeout, 0,
+                                              kDefaultConnectionEventLenght);
     }
     else
     {
-        ret = sl_bt_connection_set_default_parameters(intervalMin, intervalMax, latency, timeout, 0, 0xFFFF);
-        VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
+        ret = sl_bt_connection_set_default_parameters(intervalMin, intervalMax, latency, timeout, 0, kDefaultConnectionEventLenght);
     }
-    return CHIP_NO_ERROR;
+    return MapBLEError(ret);
 }
 
 CHIP_ERROR BLEChannelImpl::SetAdvertisingParams(uint32_t intervalMin, uint32_t intervalMax, uint16_t duration,
@@ -378,23 +375,20 @@ CHIP_ERROR BLEChannelImpl::SetAdvertisingParams(uint32_t intervalMin, uint32_t i
     }
 
     ret = sl_bt_advertiser_set_timing(mAdvHandle, mAdvIntervalMin, mAdvIntervalMax, mAdvDuration, mAdvMaxEvents);
-    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
-
-    return CHIP_NO_ERROR;
+    return MapBLEError(ret);
 }
 
 CHIP_ERROR BLEChannelImpl::CloseConnection()
 {
     sl_status_t ret = sl_bt_connection_close(mConnectionState.connectionHandle);
-    VerifyOrReturnError(ret == SL_STATUS_OK, MapBLEError(ret));
     // Todo: Confirm this generates a disconnect event and the RemoveConnection gets called
-    return CHIP_NO_ERROR;
+    return MapBLEError(ret);
 }
 
 CHIP_ERROR BLEChannelImpl::SetAdvHandle(uint8_t handle)
 {
     sl_status_t ret;
-    if (mAdvHandle == 0xff)
+    if (mAdvHandle == kInvalidAdvertisingHandle)
     {
         mAdvHandle = handle;
         ret        = sl_bt_advertiser_create_set(&mAdvHandle);
