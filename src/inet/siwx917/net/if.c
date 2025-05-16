@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <ioctl.h>
+// #include <ioctl.h>
 #include <net/if.h>
 
 // Convert an interface name to an index

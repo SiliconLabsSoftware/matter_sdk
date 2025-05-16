@@ -102,7 +102,7 @@ CHIP_ERROR IPv6Bind(int socket, const IPAddress & address, uint16_t port, Interf
     struct sockaddr_in6 sa;
     memset(&sa, 0, sizeof(sa));
     sa.sin6_family                        = AF_INET6;
-    sa.sin6_port                          = htons(port);
+    sa.sin6_port                          = port;
     sa.sin6_addr                          = address.ToIPv6();
     InterfaceId::PlatformType interfaceId = interface.GetPlatformInterface();
     if (!CanCastTo<decltype(sa.sin6_scope_id)>(interfaceId))
@@ -118,8 +118,10 @@ CHIP_ERROR IPv6Bind(int socket, const IPAddress & address, uint16_t port, Interf
     // {
     //     SILABS_LOG("%s", strAddr);
     // }
+    SILABS_LOG("SOCKET: %d", socket);
 
-    SILABS_LOG("PORT: %d", port);
+    SILABS_LOG("ADDR: %s", strAddr);
+    SILABS_LOG("PORT: %d", sa.sin6_port);
     SILABS_LOG("ADDR: %s", strAddr);
     SILABS_LOG("IFACE: %d", interfaceId);
     // int test = sl_bind(socket, reinterpret_cast<const sockaddr *>(&sa), static_cast<unsigned>(sizeof(sa)));
@@ -302,6 +304,7 @@ CHIP_ERROR UDPEndPointImplSockets::ListenImpl()
     ReturnErrorOnFailure(layer->SetCallback(mWatch, HandlePendingIO, reinterpret_cast<intptr_t>(this)));
     return layer->RequestCallbackOnPendingRead(mWatch);
 }
+
 #if 0
 CHIP_ERROR UDPEndPointImplSockets::SendMsgImpl(const IPPacketInfo * aPktInfo, System::PacketBufferHandle && msg)
 {

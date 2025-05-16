@@ -49,7 +49,7 @@
  #include "InetInterfaceImpl.h"
  #include <ifaddrs.h>
  #include <net/if.h>
- #include <ioctl.h>
+//  #include <ioctl.h>
 //  #endif // (CHIP_SYSTEM_CONFIG_USE_SOCKETS || CHIP_SYSTEM_CONFIG_USE_NETWORK_FRAMEWORK) && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
  
  #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF

@@ -56,6 +56,8 @@ private:
 
     CHIP_ERROR GetSocket(IPAddressType addressType);
     void HandlePendingIO(System::SocketEvents events);
+    static void SelectPoll(void * pvParameter);
+    
     static void HandlePendingIO(System::SocketEvents events, intptr_t data);
 
     InterfaceId mBoundIntfId;

@@ -589,6 +589,7 @@ void BaseApplication::LightEventHandler()
     }
 #endif // ENABLE_WSTK_LEDS
 }
+#include "lib/dnssd/platform/Dnssd.h"
 
 void BaseApplication::ButtonHandler(AppEvent * aEvent)
 {
@@ -605,6 +606,7 @@ void BaseApplication::ButtonHandler(AppEvent * aEvent)
     }
     else
     {
+        chip::Dnssd::ChipDnssdPublishService(NULL, NULL,NULL);
         if (sIsFactoryResetTriggered)
         {
             CancelFactoryResetSequence();
