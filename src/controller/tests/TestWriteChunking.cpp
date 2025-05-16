@@ -31,6 +31,7 @@
 #include <app/CommandHandlerInterface.h>
 #include <app/InteractionModelEngine.h>
 #include <app/WriteClient.h>
+#include <app/codegen-data-model-provider/Instance.h>
 #include <app/data-model/Decode.h>
 #include <app/tests/AppTestContext.h>
 #include <app/util/DataModelHandler.h>
@@ -347,14 +348,14 @@ TEST_F(TestWriteChunking, TestListChunking)
 
 /*
  * A Variant of TestListChunking above, that tests the Code Path where we encode a Non-Replace All List in WriteRequests, this
- * happens with the ACL Cluster (this would be generalised to all relevant Attributes after issue #38270 is resolved)
+ * happens with the ACL Cluster (this would be generalised to all relevant Attributes after issue #38270 is resolved)ß
  */
 TEST_F(TestWriteChunking, TestListChunking_NonEmptyReplaceAllList)
 {
     auto sessionHandle = GetSessionBobToAlice();
 
     // Initialize the ember side server logic
-    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance(nullptr /* delegate */));
+    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance());
     InitDataModelHandler();
 
     // Register our fake dynamic endpoint.
@@ -524,7 +525,7 @@ TEST_F(TestWriteChunking, TestBadChunking_NonEmptyReplaceAllList)
     bool atLeastOneRequestFailed = false;
 
     // Initialize the ember side server logic
-    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance(nullptr /* delegate */));
+    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance());
     InitDataModelHandler();
 
     // Register our fake dynamic endpoint.
@@ -683,7 +684,7 @@ TEST_F(TestWriteChunking, TestConflictWrite_NonEmptyReplaceAllList)
     auto sessionHandle = GetSessionBobToAlice();
 
     // Initialize the ember side server logic
-    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance(nullptr /* delegate */));
+    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance());
     InitDataModelHandler();
 
     // Register our fake dynamic endpoint.
@@ -830,7 +831,7 @@ TEST_F(TestWriteChunking, TestNonConflictWrite_NonEmptyReplaceAllList)
     auto sessionHandle = GetSessionBobToAlice();
 
     // Initialize the ember side server logic
-    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance(nullptr /* delegate */));
+    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance());
     InitDataModelHandler();
 
     // Register our fake dynamic endpoint.
@@ -1186,7 +1187,7 @@ void TestWriteChunking::RunTest_NonEmptyReplaceAll(Instructions instructions)
 TEST_F(TestWriteChunking, TestTransactionalList_NonEmptyReplaceAllList)
 {
     // Initialize the ember side server logic.
-    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance(nullptr /* delegate */));
+    app::InteractionModelEngine::GetInstance()->SetDataModelProvider(CodegenDataModelProviderInstance());
     InitDataModelHandler();
 
     // Register our fake dynamic endpoint.
