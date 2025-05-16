@@ -19,8 +19,6 @@
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 
 #include <inet/UDPEndPointImplSockets.h>
-
-#include "sl_net.h"
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/ConnectivityManager.h>
@@ -47,7 +45,14 @@
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 
 #include "silabs_utils.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "sl_net.h"
 #include "sl_utility.h"
+#ifdef __cplusplus
+}
+#endif
 
 using namespace ::chip;
 using namespace ::chip::Inet;

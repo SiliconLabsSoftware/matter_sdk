@@ -73,6 +73,10 @@ const char * GetProtocolString(DnssdServiceProtocol protocol)
     return protocol == DnssdServiceProtocol::kDnssdProtocolTcp ? "_tcp" : "_udp";
 }
 
+sl_mdns_service_t mdnsService = {};
+std::string serviceMessage;
+
+
 CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCallback callback, void * context)
 {
     sl_mdns_t mdns;
@@ -93,7 +97,18 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
 
 // osDelay(10000);
 #if 1
-    sl_mdns_service_t mdnsService = {};
+    // sl_mdns_service_t mdnsService = {};
+    if(service == NULL){
+        SILABS_LOG("Publishing the service again");
+        ChipDnssdRemoveServices();
+        sl_status_t status = sl_mdns_register_service(&gMdnsInstance, SL_NET_WIFI_CLIENT_INTERFACE, &mdnsService);
+        if (status != SL_STATUS_OK)
+        {
+            ChipLogError(DeviceLayer, "Failed to publish service: %x", status);
+            return CHIP_ERROR_INTERNAL;
+        }
+        return CHIP_NO_ERROR;
+    }
     char service_type[256]; // Allocate enough memory for the concatenated string
     snprintf(service_type, sizeof(service_type), "%s.%s.local", service->mType, GetProtocolString(service->mProtocol));
 
@@ -108,7 +123,7 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
     // VerifyOrExit(service->mTextEntrySize <= UINT8_MAX, error = CHIP_ERROR_INVALID_ARGUMENT);
     if (service->mTextEntries && service->mTextEntrySize > 0)
     {
-        std::string serviceMessage;
+        // std::string serviceMessage;
         for (size_t i = 0; i < service->mTextEntrySize; i++)
         {
             if(service->mTextEntries[i].mKey == nullptr || service->mTextEntries[i].mData == nullptr)

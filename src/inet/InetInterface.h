@@ -85,10 +85,15 @@
      static constexpr size_t kMaxIfNameLength = 13; // Names are formatted as %c%c%d
  #endif                                             // CHIP_SYSTEM_CONFIG_USE_LWIP
  
-//  #if (CHIP_SYSTEM_CONFIG_USE_SOCKETS || CHIP_SYSTEM_CONFIG_USE_NETWORK_FRAMEWORK) && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
      using PlatformType                       = unsigned int;
      static constexpr size_t kMaxIfNameLength = 16;
-//  #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+	using PlatformType = unsigned int;
+	static constexpr size_t kMaxIfNameLength = 16;
+#endif
  
  #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
      using PlatformType                       = int;
@@ -197,9 +202,9 @@
      static constexpr PlatformType kPlatformNull = nullptr;
  #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
  
-//  #if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS
      static constexpr PlatformType kPlatformNull = 0;
-//  #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
  
  #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
      static constexpr PlatformType kPlatformNull = 0;
@@ -355,14 +360,14 @@
      struct netif * mCurNetif;
  #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
  
-//  #if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+// #if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
      struct if_nameindex * mIntfArray;
      size_t mCurIntf;
      short mIntfFlags;
      bool mIntfFlagsCached;
  
      short GetFlags();
-//  #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+// #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
  
  #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
      InterfaceId::PlatformType mCurrentId = 1;
@@ -547,10 +552,10 @@
      int mCurAddrIndex;
  #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
  
-//  #if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+// #if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
      struct ifaddrs * mAddrsList;
      struct ifaddrs * mCurAddr;
-//  #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+// #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
  
  #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
      InterfaceIterator mIntfIter;
