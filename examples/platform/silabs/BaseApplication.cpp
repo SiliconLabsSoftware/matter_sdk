@@ -44,6 +44,16 @@
 #endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
+#include <app/server/OnboardingCodesUtil.h>
+
+#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+#include <platform/internal/BLEManager.h>
+#include <platform/silabs/efr32/BLEChannelImpl.h>
+#ifdef ENABLE_CHIP_SHELL
+#include <BLEShellCommands.h>
+#endif // ENABLE_CHIP_SHELL
+#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+
 #include <app/util/attribute-storage.h>
 #include <assert.h>
 #include <headers/ProvisionManager.h>
@@ -125,6 +135,9 @@ using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
+#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+using BLEChannelImpl = chip::DeviceLayer::Internal::BLEChannelImpl;
+#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 namespace {
 
 /**********************************************************
@@ -182,6 +195,10 @@ Identify gIdentify = {
 };
 
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
+
+#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+BLEChannelImpl sBleSideChannel;
+#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 
 } // namespace
 
@@ -373,6 +390,9 @@ CHIP_ERROR BaseApplication::BaseInit()
 #if MATTER_TRACING_ENABLED
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
+#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+    BLEShellCommands::RegisterCommands();
+#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -385,6 +405,10 @@ CHIP_ERROR BaseApplication::BaseInit()
 #endif /* SL_WIFI */
 #if CHIP_ENABLE_OPENTHREAD
     BaseApplication::sIsProvisioned = ConnectivityMgr().IsThreadProvisioned();
+#endif
+#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+    ReturnErrorOnFailure(sBleSideChannel.Init());
+    DeviceLayer::Internal::BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
 #endif
 
     err = chip::Server::GetInstance().GetFabricTable().AddFabricDelegate(&sAppDelegate);
