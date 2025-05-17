@@ -346,6 +346,8 @@ typedef NS_ENUM(NSUInteger, MTRDeviceWorkItemDuplicateTypeID) {
 // Keep track of the last time we received subscription related communication from the device
 @property (nonatomic, nullable) NSDate * lastSubscriptionActiveTime;
 
+@property (nonatomic, readwrite) BOOL diagnosticLogTransferInProgress;
+
 /**
  * If currentReadClient is non-null, that means that we successfully
  * called SendAutoResubscribeRequest on the ReadClient and have not yet gotten
@@ -465,6 +467,7 @@ typedef NS_ENUM(NSUInteger, MTRDeviceWorkItemDuplicateTypeID) {
 //@synthesize lock = _lock;
 //@synthesize persistedClusterData = _persistedClusterData;
 @synthesize lastSubscriptionIPAddress = _lastSubscriptionIPAddress;
+@synthesize diagnosticLogTransferInProgress = _diagnosticLogTransferInProgress;
 
 - (instancetype)initWithNodeID:(NSNumber *)nodeID controller:(MTRDeviceController_Concrete *)controller
 {
@@ -624,6 +627,7 @@ typedef NS_ENUM(NSUInteger, MTRDeviceWorkItemDuplicateTypeID) {
         MTR_OPTIONAL_ATTRIBUTE(kMTRDeviceInternalPropertyDeviceCachePrimed, @(_deviceCachePrimed), properties);
         MTR_OPTIONAL_ATTRIBUTE(kMTRDeviceInternalPropertyEstimatedStartTime, _estimatedStartTime, properties);
         MTR_OPTIONAL_ATTRIBUTE(kMTRDeviceInternalPropertyEstimatedSubscriptionLatency, _estimatedSubscriptionLatency, properties);
+        MTR_OPTIONAL_ATTRIBUTE(kMTRDeviceInternalPropertyDiagnosticLogTransferInProgress, @(_diagnosticLogTransferInProgress), properties);
     }
 
     return properties;
@@ -1068,6 +1072,8 @@ typedef NS_ENUM(NSUInteger, MTRDeviceWorkItemDuplicateTypeID) {
     }
     os_unfair_lock_unlock(&self->_lock);
 
+    BOOL resubscribeScheduled = NO;
+
     if (readClientToResubscribe) {
         if (nodeLikelyReachable) {
             // If we have reason to suspect the node is now reachable, reset the
@@ -1076,7 +1082,7 @@ typedef NS_ENUM(NSUInteger, MTRDeviceWorkItemDuplicateTypeID) {
             // here (e.g. still booting up), but should try again reasonably quickly.
             subscriptionCallback->ResetResubscriptionBackoff();
         }
-        readClientToResubscribe->TriggerResubscribeIfScheduled(reason.UTF8String);
+        resubscribeScheduled = readClientToResubscribe->TriggerResubscribeIfScheduled(reason.UTF8String);
     } else if (((_internalDeviceState == MTRInternalDeviceStateSubscribing && !self.doingCASEAttemptForDeviceMayBeReachable) || shouldReattemptSubscription) && nodeLikelyReachable) {
         // If we have reason to suspect that the node is now reachable and we haven't established a
         // CASE session yet, let's consider it to be stalled and invalidate the pairing session.
@@ -1101,7 +1107,13 @@ typedef NS_ENUM(NSUInteger, MTRDeviceWorkItemDuplicateTypeID) {
     // and should be called after the above ReleaseSession call, to avoid churn.
     if (shouldReattemptSubscription) {
         std::lock_guard lock(_lock);
-        [self _reattemptSubscriptionNowIfNeededWithReason:reason];
+        resubscribeScheduled = [self _reattemptSubscriptionNowIfNeededWithReason:reason];
+    }
+
+    // In the case no resubscribe was actually scheduled, remove this device from the subscription pool
+    if (!resubscribeScheduled) {
+        std::lock_guard lock(_lock);
+        [self _clearSubscriptionPoolWork];
     }
 }
 
@@ -1682,18 +1694,20 @@ typedef NS_ENUM(NSUInteger, MTRDeviceWorkItemDuplicateTypeID) {
     [self _notifyDelegateOfPrivateInternalPropertiesChanges];
 }
 
-- (void)_reattemptSubscriptionNowIfNeededWithReason:(NSString *)reason
+- (BOOL)_reattemptSubscriptionNowIfNeededWithReason:(NSString *)reason
 {
     assertChipStackLockedByCurrentThread();
 
     os_unfair_lock_assert_owner(&self->_lock);
     if (!self.reattemptingSubscription) {
         [self _clearSubscriptionPoolWork];
-        return;
+        return NO;
     }
 
     MTR_LOG("%@ reattempting subscription with reason %@", self, reason);
     [self _setupSubscriptionWithReason:reason];
+
+    return YES;
 }
 
 - (void)_handleUnsolicitedMessageFromPublisher
@@ -3907,12 +3921,27 @@ static BOOL AttributeHasChangesOmittedQuality(MTRAttributePath * attributePath)
 
     auto * baseDevice = [self newBaseDevice];
 
+    {
+        // assumption:  only one BDX transfer will be in progress at a time,
+        // so we can use just a BOOL for this status.  if more than one is possible,
+        // we should use a counter internally.
+        std::lock_guard lock(self->_lock);
+        self.diagnosticLogTransferInProgress = YES;
+        [self _notifyDelegateOfPrivateInternalPropertiesChanges];
+    }
+
     mtr_weakify(self);
+
     [baseDevice downloadLogOfType:type
                           timeout:timeout
                             queue:queue
                        completion:^(NSURL * _Nullable url, NSError * _Nullable error) {
                            mtr_strongify(self);
+                           {
+                               std::lock_guard lock(self->_lock);
+                               self.diagnosticLogTransferInProgress = NO;
+                               [self _notifyDelegateOfPrivateInternalPropertiesChanges];
+                           }
                            MTR_LOG("%@ downloadLogOfType %lu completed: %@", self, static_cast<unsigned long>(type), error);
                            completion(url, error);
                        }];
