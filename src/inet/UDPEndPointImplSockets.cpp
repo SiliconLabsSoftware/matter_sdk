@@ -99,8 +99,8 @@ CHIP_ERROR IPv6Bind(int socket, const IPAddress & address, uint16_t port, Interf
 {
     struct sockaddr_in6 sa;
     memset(&sa, 0, sizeof(sa));
-    sa.sin6_family = AF_INET6;
-    sa.sin6_port = htons(port);
+    sa.sin6_family                        = AF_INET6;
+    sa.sin6_port                          = htons(port);
     sa.sin6_addr                          = address.ToIPv6();
     InterfaceId::PlatformType interfaceId = interface.GetPlatformInterface();
     if (!CanCastTo<decltype(sa.sin6_scope_id)>(interfaceId))
