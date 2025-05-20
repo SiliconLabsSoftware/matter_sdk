@@ -481,29 +481,6 @@ sl_status_t JoinWifiNetwork(void)
         chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
-#if SLI_SI91X_OFFLOAD_NETWORK_STACK
-        sl_net_wifi_client_profile_t profile = { 0 };
-        status = sl_net_get_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID, &profile);
-
-        if (profile.ip.type == SL_IPV6)
-        {
-            sl_ip_address_t link_local_address = { 0 };
-            memcpy(&link_local_address.ip.v6, &profile.ip.ip.v6.link_local_address, SL_IPV6_ADDRESS_LENGTH);
-            link_local_address.type = SL_IPV6;
-            print_sl_ip_address(&link_local_address);
-
-            sl_ip_address_t global_address = { 0 };
-            memcpy(&global_address.ip.v6, &profile.ip.ip.v6.global_address, SL_IPV6_ADDRESS_LENGTH);
-            global_address.type = SL_IPV6;
-            print_sl_ip_address(&global_address);
-
-            sl_ip_address_t gateway = { 0 };
-            memcpy(&gateway.ip.v6, &profile.ip.ip.v6.gateway, SL_IPV6_ADDRESS_LENGTH);
-            gateway.type = SL_IPV6;
-            print_sl_ip_address(&gateway);
-        }
-#endif // SLI_SI91X_OFFLOAD_NETWORK_STACK
-
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
         return status;

@@ -66,6 +66,7 @@
 #endif // CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS
 
 #if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#include "PlatformInterface.h"
 #include "socket.h"
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 

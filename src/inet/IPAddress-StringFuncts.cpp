@@ -35,9 +35,6 @@
 #include <arpa/inet.h>
 #endif
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
-#include "PlatformInterface.h"
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 namespace chip {
 namespace Inet {
 
