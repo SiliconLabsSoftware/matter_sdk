@@ -27,14 +27,17 @@
 #include <system/SystemFaultInjection.h>
 #include <system/SystemLayer.h>
 #include <system/SystemLayerImplFreeRTOS.h>
-#include "silabs_utils.h"
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 #include "sl_si91x_socket.h"
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 namespace chip {
 namespace System {
 
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 // Define the static instance pointer
 LayerImplFreeRTOS * LayerImplFreeRTOS::sInstance = nullptr;
+#endif
 
 LayerImplFreeRTOS::LayerImplFreeRTOS() : mHandlingTimerComplete(false) {}
 
@@ -46,6 +49,7 @@ CHIP_ERROR LayerImplFreeRTOS::Init()
     RegisterLwIPErrorFormatter();
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
     // Initialize the static instance pointer
     sInstance = this;
 
@@ -53,6 +57,7 @@ CHIP_ERROR LayerImplFreeRTOS::Init()
     {
         w.Clear();
     }
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
     VerifyOrReturnError(mLayerState.SetInitialized(), CHIP_ERROR_INCORRECT_STATE);
     return CHIP_NO_ERROR;
@@ -345,7 +350,6 @@ SocketEvents LayerImplFreeRTOS::SocketEventsFromFDs(int socket, const fd_set & r
 
 void LayerImplFreeRTOS::HandleEvents(fd_set *readfds, fd_set *writefds, fd_set *errorfds, long int timeout)
 {
-    SILABS_LOG("Handling events on sockets, %d events", mSelectResult);
     if (!IsSelectResultValid())
     {
         ChipLogError(DeviceLayer, "Select failed: %" CHIP_ERROR_FORMAT, CHIP_ERROR_POSIX(errno).Format());
@@ -370,15 +374,12 @@ void LayerImplFreeRTOS::HandleEvents(fd_set *readfds, fd_set *writefds, fd_set *
 
 void LayerImplFreeRTOS::StaticHandleEvents(fd_set *readfds, fd_set *writefds, fd_set *errorfds, long int timeout)
 {
-    SILABS_LOG("HANDLE EVENT");
     if (sInstance != nullptr)
     {
-        SILABS_LOG("HANDLE EVENTS");
         sInstance->HandleEvents(readfds, writefds, errorfds, timeout);
     }
 }
 
-// TODO: chirag
 bool LayerImplFreeRTOS::IsSocketReady(int fd)
 {
     // Check if the socket has data available to read
@@ -393,93 +394,12 @@ bool LayerImplFreeRTOS::IsSocketReady(int fd)
             mMaxFd = fd;
         }
         FD_SET(fd, &mSelected.mReadSet);
-        // if (fd.Has(SocketEventFlags::kWrite))
-        // {
-        //     FD_SET(w.mFD, &mSelected.mWriteSet);
-        // }
     }
 
     int result = sl_si91x_select(fd + 1, &mSelected.mReadSet, &mSelected.mWriteSet, &mSelected.mErrorSet, nullptr, StaticHandleEvents);
     mSelectResult = 1;
-    SILABS_LOG("%d", result);
     return (result > 0);
 }
-
-#if 0
-void LayerImplFreeRTOS::PrepareEvents()
-{
-    vTaskDelay(1000);
-    SILABS_LOG("Preparing events on sockets");
-    mMaxFd = -1;
-
-    // NOLINTBEGIN(clang-analyzer-security.insecureAPI.bzero)
-    //
-    // NOTE: darwin uses bzero to clear out FD sets. This is not a security concern.
-    FD_ZERO(&mSelected.mReadSet);
-    FD_ZERO(&mSelected.mWriteSet);
-    FD_ZERO(&mSelected.mErrorSet);
-    // NOLINTEND(clang-analyzer-security.insecureAPI.bzero)
-    for (auto & w : mSocketWatchPool)
-    {
-        // SILABS_LOG("Adding FD %d to fd_set", w.mFD);
-        if (w.mFD != kInvalidFd)
-        {
-            if (mMaxFd < w.mFD)
-            {
-                mMaxFd = w.mFD;
-            }
-            if (w.mPendingIO.Has(SocketEventFlags::kRead))
-            {
-                FD_SET(w.mFD, &mSelected.mReadSet);
-            }
-            if (w.mPendingIO.Has(SocketEventFlags::kWrite))
-            {
-                FD_SET(w.mFD, &mSelected.mWriteSet);
-            }
-        }
-        SILABS_LOG("Checking FD %d: Pending Read: %d, Pending Write: %d",
-            w.mFD,
-            w.mPendingIO.Has(SocketEventFlags::kRead),
-            w.mPendingIO.Has(SocketEventFlags::kWrite));
-    }
-
-    WaitForEvents();
-    HandleEvents();
-}
-
-void LayerImplFreeRTOS::WaitForEvents()
-{
-    mNextTimeout.tv_sec  = 1;
-    mNextTimeout.tv_usec = 0;
-    SILABS_LOG("Waiting for events on sockets");
-    mSelectResult = select(mMaxFd + 1, &mSelected.mReadSet, &mSelected.mWriteSet, &mSelected.mErrorSet, &mNextTimeout);
-}
-
-void LayerImplFreeRTOS::HandleEvents()
-{
-    SILABS_LOG("Handling events on sockets, %d events", mSelectResult);
-    if (!IsSelectResultValid())
-    {
-        ChipLogError(DeviceLayer, "Select failed: %" CHIP_ERROR_FORMAT, CHIP_ERROR_POSIX(errno).Format());
-        return;
-    }
-    // Process socket events, if any
-    if (mSelectResult > 0)
-    {
-        for (auto & w : mSocketWatchPool)
-        {
-            if (w.mFD != kInvalidFd && w.mCallback != nullptr)
-            {
-                SocketEvents events = SocketEventsFromFDs(w.mFD, mSelected.mReadSet, mSelected.mWriteSet, mSelected.mErrorSet);
-                if (events.HasAny())
-                {
-                    w.mCallback(events, w.mCallbackData);
-                }
-            }
-        }
-    }
-}
-#endif
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 } // namespace System

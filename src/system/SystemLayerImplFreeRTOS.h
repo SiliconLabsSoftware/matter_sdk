@@ -126,9 +126,9 @@ int mMaxFd;
 int mSelectResult;
 
 timeval mNextTimeout;
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 };
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 using LayerImpl = LayerImplFreeRTOS;
 

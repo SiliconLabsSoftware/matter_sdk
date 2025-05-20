@@ -6,7 +6,6 @@ extern "C" {
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include "silabs_utils.h"
 
 using namespace ::chip::DeviceLayer;
 
@@ -20,7 +19,6 @@ CHIP_ERROR ChipDnssdInit(DnssdAsyncReturnCallback initCallback, DnssdAsyncReturn
 {
     sl_mdns_configuration_t config = {.protocol = SL_MDNS_PROTO_UDP, .type = SL_IPV6_VERSION, .host_name = "chip-device.local" };
 
-    SILABS_LOG("INIT MDNS");
     sl_status_t status = sl_mdns_init(&gMdnsInstance, &config, nullptr);
     if (status != SL_STATUS_OK)
     {
@@ -31,13 +29,10 @@ CHIP_ERROR ChipDnssdInit(DnssdAsyncReturnCallback initCallback, DnssdAsyncReturn
         }
         return CHIP_ERROR_INTERNAL;
     }
-    SILABS_LOG("INIT MDNS PASS");
     status = sl_mdns_add_interface(&gMdnsInstance, SL_NET_WIFI_CLIENT_INTERFACE);
     if (status != SL_STATUS_OK) {
-      SILABS_LOG("\r\nFailed to add interface to MDNS : 0x%lx\r\n", status);
       return CHIP_ERROR_INTERNAL;
     }
-    SILABS_LOG("\r\nInterface Added to MDNS\r\n");
 
     if (initCallback)
     {
@@ -49,15 +44,11 @@ CHIP_ERROR ChipDnssdInit(DnssdAsyncReturnCallback initCallback, DnssdAsyncReturn
 
 void ChipDnssdShutdown()
 {
-    SILABS_LOG("DEINIT MDNS");
-
     sl_status_t status = sl_mdns_deinit(&gMdnsInstance);
     if (status != SL_STATUS_OK)
     {
         ChipLogError(DeviceLayer, "Failed to deinitialize mDNS: %ld", status);
     }
-    SILABS_LOG("DEINIT MDNS");
-
 }
 
 const char * GetProtocolString(DnssdServiceProtocol protocol)
@@ -72,18 +63,6 @@ std::string serviceMessage;
 CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCallback callback, void * context)
 {
     sl_mdns_t mdns;
-
-    if(service == NULL){
-        SILABS_LOG("Publishing the service again");
-        ChipDnssdRemoveServices();
-        sl_status_t status = sl_mdns_register_service(&gMdnsInstance, SL_NET_WIFI_CLIENT_INTERFACE, &mdnsService);
-        if (status != SL_STATUS_OK)
-        {
-            ChipLogError(DeviceLayer, "Failed to publish service: 0x%lx", status);
-            return CHIP_ERROR_INTERNAL;
-        }
-        return CHIP_NO_ERROR;
-    }
     char service_type[256]; // Allocate enough memory for the concatenated string
     snprintf(service_type, sizeof(service_type), "%s.%s.local.", service->mType, GetProtocolString(service->mProtocol));
 
@@ -92,8 +71,6 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
     // snprintf(instance_name, sizeof(instance_name), "%s.%s", service->mName, service_type);
 
     mdnsService.instance_name = strdup(instance_name); // Duplicate the string to ensure memory safety
-    SILABS_LOG("%s", instance_name);
-    SILABS_LOG("%s", service_type);
     mdnsService.service_type = strdup(service_type);   // Duplicate the string to ensure memory safety
     mdnsService.port               = service->mPort;
     mdnsService.ttl                = 300; // Default TTL; adjust as needed
@@ -107,14 +84,11 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
             {
                 continue;
             }
-            SILABS_LOG("KEY = %s      :::::     Value = %s", service->mTextEntries[i].mKey, reinterpret_cast<const char *>(service->mTextEntries[i].mData));
             serviceMessage += std::string(service->mTextEntries[i].mKey) + "=" +
                           std::string(reinterpret_cast<const char *>(service->mTextEntries[i].mData)) + " ";
-            SILABS_LOG("Service Message = %s", serviceMessage.c_str());
         }
         mdnsService.service_message = strdup(serviceMessage.c_str()); // Duplicate the string to ensure memory safety
     }
-    SILABS_LOG("Port = %d", mdnsService.port);
     sl_status_t status = sl_mdns_register_service(&gMdnsInstance, SL_NET_WIFI_CLIENT_INTERFACE, &mdnsService);
     if (status != SL_STATUS_OK)
     {
@@ -141,10 +115,8 @@ CHIP_ERROR ChipDnssdRemoveServices()
 
     status = sl_mdns_add_interface(&gMdnsInstance, SL_NET_WIFI_CLIENT_INTERFACE);
     if (status != SL_STATUS_OK) {
-      SILABS_LOG("\r\nFailed to add interface to MDNS : 0x%lx\r\n", status);
       return CHIP_ERROR_INTERNAL;
     }
-    SILABS_LOG("\r\nInterface Added to MDNS\r\n");
 
     return CHIP_NO_ERROR;
 }
