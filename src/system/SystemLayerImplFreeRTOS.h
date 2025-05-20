@@ -59,15 +59,8 @@ public:
     CHIP_ERROR ClearCallbackOnPendingRead(SocketWatchToken token) override;
     CHIP_ERROR ClearCallbackOnPendingWrite(SocketWatchToken token) override;
     CHIP_ERROR StopWatchingSocket(SocketWatchToken * tokenInOut) override;
-    SocketWatchToken InvalidSocketWatchToken() override
-    {
-        return reinterpret_cast<SocketWatchToken>(nullptr);
-    }
-
-    bool IsSelectResultValid() const
-    {
-        return mSelectResult >= 0;
-    }
+    SocketWatchToken InvalidSocketWatchToken() override { return reinterpret_cast<SocketWatchToken>(nullptr); }
+    bool IsSelectResultValid() const { return mSelectResult >= 0; }
     bool IsSocketReady(int fd);
     static void StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);
     void HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);

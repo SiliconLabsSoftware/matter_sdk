@@ -72,7 +72,8 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     UDPEndPointImplSockets::SetMulticastGroupHandler(
         [](InterfaceId interfaceId, const IPAddress & address, UDPEndPointImplSockets::MulticastOperation operation) {
             // TODO: if this is actually being used
-            if (interfaceId.IsPresent()){
+            if (interfaceId.IsPresent())
+            {
                 return CHIP_NO_ERROR;
             }
 
