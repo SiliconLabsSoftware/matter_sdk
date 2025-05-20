@@ -176,6 +176,11 @@
 #include <lwip/opt.h>
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
+// TODO: should be passed as a gn argument
+#ifndef CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#define CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM 0
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+
 /* Configuration option variables defined below */
 
 /**

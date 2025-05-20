@@ -62,7 +62,8 @@ std::string serviceMessage;
 
 CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCallback callback, void * context)
 {
-    sl_mdns_t mdns;
+    sl_mdns_service_t mdnsService = {};
+    std::string serviceMessage;
 
     char service_type[256]; // Allocate enough memory for the concatenated string
     snprintf(service_type, sizeof(service_type), "%s.%s.local.", service->mType, GetProtocolString(service->mProtocol));
@@ -74,7 +75,7 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
     mdnsService.instance_name = strdup(instance_name); // Duplicate the string to ensure memory safety
     mdnsService.service_type  = strdup(service_type);  // Duplicate the string to ensure memory safety
     mdnsService.port          = service->mPort;
-    mdnsService.ttl           = 300; // Default TTL; adjust as needed
+    mdnsService.ttl           = 120; // Default TTL; adjust as needed
     if (service->mTextEntries && service->mTextEntrySize > 0)
     {
         for (size_t i = 0; i < service->mTextEntrySize; i++)
