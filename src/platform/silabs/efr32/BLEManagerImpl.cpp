@@ -734,8 +734,7 @@ void BLEManagerImpl::HandleReadEvent(volatile sl_bt_msg_t * evt)
     else if (mBleSideChannel != nullptr)
     {
         // Side channel read request
-        uint16_t attribute = evt->data.evt_gatt_server_user_read_request.characteristic;
-        ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", attribute);
+        ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", evt->data.evt_gatt_server_user_read_request.characteristic);
 
         char dataBuff[] = "You are reading the Si-Channel TX characteristic";
         ByteSpan dataSpan((const uint8_t *) dataBuff, sizeof(dataBuff));

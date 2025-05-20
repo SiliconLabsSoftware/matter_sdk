@@ -3,6 +3,10 @@
         {
             "boards": ["BRD4116A", "BRD4117A", "BRD4118A", "BRD2608A"],
             "arguments": ["--docker"]
+        },
+        {
+            "boards": ["BRD4116A"],
+            "arguments": ["--docker", "--release"]
         }
     ],
     "lighting-app":[
