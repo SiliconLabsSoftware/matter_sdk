@@ -1,8 +1,8 @@
 #include "if.h"
+#include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <net/if.h>
 
 #ifndef HAVE_STRDUP
 char * strdup(const char * s)

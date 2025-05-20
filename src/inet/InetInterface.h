@@ -117,35 +117,19 @@ public:
         return *this;
     }
 
-    static constexpr InterfaceId Null()
-    {
-        return InterfaceId();
-    }
-
-    constexpr bool operator==(const InterfaceId & other) const
-    {
-        return mPlatformInterface == other.mPlatformInterface;
-    }
-    constexpr bool operator!=(const InterfaceId & other) const
-    {
-        return mPlatformInterface != other.mPlatformInterface;
-    }
+    static constexpr InterfaceId Null() { return InterfaceId(); }
+    constexpr bool operator==(const InterfaceId & other) const { return mPlatformInterface == other.mPlatformInterface; }
+    constexpr bool operator!=(const InterfaceId & other) const { return mPlatformInterface != other.mPlatformInterface; }
 
     /**
      * Test for inequivalence with the null interface.
      */
-    bool IsPresent() const
-    {
-        return mPlatformInterface != kPlatformNull;
-    }
+    bool IsPresent() const { return mPlatformInterface != kPlatformNull; }
 
     /**
      * Get the underlying platform representation of the interface.
      */
-    PlatformType GetPlatformInterface() const
-    {
-        return mPlatformInterface;
-    }
+    PlatformType GetPlatformInterface() const { return mPlatformInterface; }
 
     /**
      * Get the name of the network interface

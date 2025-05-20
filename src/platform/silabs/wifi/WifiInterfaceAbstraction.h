@@ -28,7 +28,7 @@
 #include <stdbool.h>
 
 /* LwIP includes. */
-#if SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
+#ifndef SLI_SI91X_OFFLOAD_NETWORK_STACK
 #include "lwip/ip_addr.h"
 #include "lwip/netif.h"
 #include "lwip/netifapi.h"
