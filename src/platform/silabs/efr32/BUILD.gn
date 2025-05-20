@@ -77,7 +77,12 @@ static_library("efr32") {
       "../rs911x/wfx_sl_ble_init.h",
     ]
   } else {
-    sources += [ "BLEManagerImpl.cpp" ]
+    sources += [
+      "BLEChannel.h",
+      "BLEChannelImpl.cpp",
+      "BLEChannelImpl.h",
+      "BLEManagerImpl.cpp",
+    ]
   }
 
   if (chip_enable_multi_ota_requestor) {
