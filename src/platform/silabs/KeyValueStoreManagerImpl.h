@@ -43,6 +43,14 @@ public:
     static constexpr size_t kMaxEntries = KVS_MAX_ENTRIES;
 
     static void ForceKeyMapSave();
+
+    /**
+     * @brief Cleans up unused keys in the key-value store.
+     *
+     * This function iterates over the key map and removes shadow keys (keys that
+     * no longer have corresponding entries in NVM). It ensures that the key map
+     * remains consistent and frees up space for new entries.
+     */
     static void KvsMapMigration();
 
 private:
