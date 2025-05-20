@@ -24,10 +24,12 @@
 #include <platform/internal/BLEManager.h>
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
 
+#if CHIP_SYSTEM_CONFIG_USE_LWIP
 #include <lwip/dns.h>
 #include <lwip/ip_addr.h>
 #include <lwip/nd6.h>
 #include <lwip/netif.h>
+#endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
 #include <platform/internal/GenericConnectivityManagerImpl_UDP.ipp>
 
@@ -66,6 +68,17 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
 
     // Ensure that station mode is enabled.
     wfx_enable_sta_mode();
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+    UDPEndPointImplSockets::SetMulticastGroupHandler(
+        [](InterfaceId interfaceId, const IPAddress & address, UDPEndPointImplSockets::MulticastOperation operation) {
+            // TODO: if this is actually being used
+            if (interfaceId.IsPresent()){
+                return CHIP_NO_ERROR;
+            }
+
+            return CHIP_NO_ERROR;
+        });
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
     err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
 

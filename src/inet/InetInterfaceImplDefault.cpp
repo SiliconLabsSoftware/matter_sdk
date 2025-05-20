@@ -16,7 +16,7 @@
  */
 #include <inet/InetInterfaceImpl.h>
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS && (CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM)
 #include <net/if.h>
 namespace chip {
 namespace Inet {

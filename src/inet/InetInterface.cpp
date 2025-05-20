@@ -52,6 +52,19 @@
 #include <sys/ioctl.h>
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#include <errno.h>
+#include <fcntl.h>
+#include <socket.h>
+// #include <unistd.h>
+#ifdef HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif /* HAVE_SYS_SOCKIO_H */
+#include "InetInterfaceImpl.h"
+#include <ifaddrs.h>
+#include <net/if.h>
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
 #include <zephyr/net/net_if.h>
 #endif // CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
@@ -789,6 +802,160 @@ CHIP_ERROR InterfaceId::GetLinkLocalAddr(IPAddress * llAddr) const
 }
 
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+
+CHIP_ERROR InterfaceId::GetInterfaceName(char * nameBuf, size_t nameBufSize) const
+{
+    // Hardcoded interface name
+    const char * hardcodedInterfaceName = "st0";
+
+    size_t nameLength = strlen(hardcodedInterfaceName);
+    if (nameLength >= nameBufSize)
+    {
+        return CHIP_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    Platform::CopyString(nameBuf, nameBufSize, hardcodedInterfaceName);
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR InterfaceId::InterfaceNameToId(const char * intfName, InterfaceId & interface)
+{
+    // Hardcoded interface name and ID
+    const char * hardcodedInterfaceName     = "st0";
+    const unsigned int hardcodedInterfaceId = 1;
+
+    if (strcmp(intfName, hardcodedInterfaceName) == 0)
+    {
+        interface = InterfaceId(hardcodedInterfaceId);
+        return CHIP_NO_ERROR;
+    }
+
+    return INET_ERROR_UNKNOWN_INTERFACE;
+}
+
+InterfaceIterator::InterfaceIterator()
+{
+    // Hardcoded single interface
+    mCurIntf   = 0;                    // Start at the first (and only) interface
+    mIntfFlags = IFF_UP | IFF_RUNNING; // Example flags
+}
+
+InterfaceIterator::~InterfaceIterator()
+{
+    if (mIntfArray != nullptr)
+    {
+        mIntfArray = nullptr;
+    }
+}
+
+bool InterfaceIterator::HasCurrent()
+{
+    // Only one interface exists
+    return mCurIntf == 0;
+}
+
+bool InterfaceIterator::Next()
+{
+    // Move past the single interface
+    if (mCurIntf == 0)
+    {
+        mCurIntf++;
+        return false; // No more interfaces
+    }
+    return false;
+}
+
+InterfaceId InterfaceIterator::GetInterfaceId()
+{
+    // Return the hardcoded interface ID
+    return HasCurrent() ? InterfaceId(1) : InterfaceId::Null();
+}
+
+CHIP_ERROR InterfaceIterator::GetInterfaceName(char * nameBuf, size_t nameBufSize)
+{
+    // Return the hardcoded interface name
+    return HasCurrent() ? InterfaceId(1).GetInterfaceName(nameBuf, nameBufSize) : CHIP_ERROR_INCORRECT_STATE;
+}
+
+bool InterfaceIterator::IsUp()
+{
+    // Return the hardcoded "up" status
+    return HasCurrent() && (mIntfFlags & IFF_UP) != 0;
+}
+
+bool mHasAddress;
+
+InterfaceAddressIterator::InterfaceAddressIterator()
+{
+    // Hardcoded single address
+    mCurAddr    = nullptr;
+    mHasAddress = true; // Assume the single interface has an address
+}
+
+InterfaceAddressIterator::~InterfaceAddressIterator()
+{
+    // Free the address list if it was allocated
+    if (mAddrsList != nullptr)
+    {
+        mAddrsList = nullptr;
+        mCurAddr   = nullptr;
+    }
+}
+bool InterfaceAddressIterator::HasCurrent()
+{
+    // Only one address exists
+    return mHasAddress;
+}
+
+bool InterfaceAddressIterator::Next()
+{
+    // Move past the single address
+    if (mHasAddress)
+    {
+        mHasAddress = false;
+        return false;
+    }
+    return false;
+}
+
+CHIP_ERROR InterfaceAddressIterator::GetAddress(IPAddress & outIPAddress)
+{
+    if (!HasCurrent())
+    {
+        return CHIP_ERROR_SENTINEL;
+    }
+
+    // TODO: not used currently
+    return CHIP_NO_ERROR;
+}
+
+uint8_t InterfaceAddressIterator::GetPrefixLength()
+{
+    // Hardcoded prefix length
+    return HasCurrent() ? 64 : 0; // Example: 255.255.255.0
+}
+
+InterfaceId InterfaceAddressIterator::GetInterfaceId()
+{
+    // Return the hardcoded interface ID
+    return HasCurrent() ? InterfaceId(1) : InterfaceId::Null();
+}
+
+CHIP_ERROR InterfaceAddressIterator::GetInterfaceName(char * nameBuf, size_t nameBufSize)
+{
+    // Return the hardcoded interface name
+    return HasCurrent() ? InterfaceId(1).GetInterfaceName(nameBuf, nameBufSize) : CHIP_ERROR_INCORRECT_STATE;
+}
+
+bool InterfaceAddressIterator::IsUp()
+{
+    // Return the hardcoded "up" status
+    return HasCurrent();
+}
+
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
 

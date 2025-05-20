@@ -43,6 +43,10 @@
 #include <zephyr/net/socket.h>
 #endif // CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKETS
 
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#include "PlatformInterface.h"
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+
 #include <cerrno>
 #include <unistd.h>
 #include <utility>
@@ -96,7 +100,11 @@ CHIP_ERROR IPv6Bind(int socket, const IPAddress & address, uint16_t port, Interf
     struct sockaddr_in6 sa;
     memset(&sa, 0, sizeof(sa));
     sa.sin6_family                        = AF_INET6;
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+	sa.sin6_port                          = port;
+#else
     sa.sin6_port                          = htons(port);
+#endif
     sa.sin6_addr                          = address.ToIPv6();
     InterfaceId::PlatformType interfaceId = interface.GetPlatformInterface();
     if (!CanCastTo<decltype(sa.sin6_scope_id)>(interfaceId))
@@ -701,6 +709,11 @@ void UDPEndPointImplSockets::HandlePendingIO(System::SocketEvents events)
             OnReceiveError(this, lStatus, nullptr);
         }
     }
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+    // since we are using the async select model, we need to listen again
+    // after processing the current message
+    ListenImpl();
+#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 }
 
 #ifdef IPV6_MULTICAST_LOOP

@@ -36,10 +36,10 @@
 #include <lwip/netif.h>
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 struct if_nameindex;
 struct ifaddrs;
-#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
 #include <zephyr/device.h>
@@ -90,12 +90,17 @@ public:
     static constexpr size_t kMaxIfNameLength = IF_NAMESIZE;
 #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+    using PlatformType                       = unsigned int;
+    static constexpr size_t kMaxIfNameLength = 16;
+#endif 
+
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
     using PlatformType                       = int;
     static constexpr size_t kMaxIfNameLength = Z_DEVICE_MAX_NAME_LEN;
 #endif
 
-#if CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
+#if CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
     using PlatformType                       = unsigned int;
     static constexpr size_t kMaxIfNameLength = 6;
 #endif
@@ -112,20 +117,35 @@ public:
         return *this;
     }
 
-    static constexpr InterfaceId Null() { return InterfaceId(); }
+    static constexpr InterfaceId Null()
+    {
+        return InterfaceId();
+    }
 
-    constexpr bool operator==(const InterfaceId & other) const { return mPlatformInterface == other.mPlatformInterface; }
-    constexpr bool operator!=(const InterfaceId & other) const { return mPlatformInterface != other.mPlatformInterface; }
+    constexpr bool operator==(const InterfaceId & other) const
+    {
+        return mPlatformInterface == other.mPlatformInterface;
+    }
+    constexpr bool operator!=(const InterfaceId & other) const
+    {
+        return mPlatformInterface != other.mPlatformInterface;
+    }
 
     /**
      * Test for inequivalence with the null interface.
      */
-    bool IsPresent() const { return mPlatformInterface != kPlatformNull; }
+    bool IsPresent() const
+    {
+        return mPlatformInterface != kPlatformNull;
+    }
 
     /**
      * Get the underlying platform representation of the interface.
      */
-    PlatformType GetPlatformInterface() const { return mPlatformInterface; }
+    PlatformType GetPlatformInterface() const
+    {
+        return mPlatformInterface;
+    }
 
     /**
      * Get the name of the network interface
@@ -193,11 +213,11 @@ public:
     CHIP_ERROR GetLinkLocalAddr(IPAddress * llAddr) const;
 
 private:
-#if CHIP_SYSTEM_CONFIG_USE_LWIP && !CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
+#if CHIP_SYSTEM_CONFIG_USE_LWIP && !CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
     static constexpr PlatformType kPlatformNull = nullptr;
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS
     static constexpr PlatformType kPlatformNull = 0;
 #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
@@ -355,14 +375,14 @@ protected:
     struct netif * mCurNetif;
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
     struct if_nameindex * mIntfArray;
     size_t mCurIntf;
     short mIntfFlags;
     bool mIntfFlagsCached;
 
     short GetFlags();
-#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
     InterfaceId::PlatformType mCurrentId = 1;
@@ -547,10 +567,10 @@ private:
     int mCurAddrIndex;
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
     struct ifaddrs * mAddrsList;
     struct ifaddrs * mCurAddr;
-#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
     InterfaceIterator mIntfIter;
