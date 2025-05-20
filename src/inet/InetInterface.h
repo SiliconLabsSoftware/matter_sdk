@@ -93,7 +93,7 @@ public:
 #if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
     using PlatformType                       = unsigned int;
     static constexpr size_t kMaxIfNameLength = 16;
-#endif 
+#endif
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
     using PlatformType                       = int;

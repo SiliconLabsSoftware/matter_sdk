@@ -253,9 +253,9 @@ CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tok
         }
     }
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_ENDPOINT_POOL_FULL);
-    
+
     watch->mFD = fd;
-    *tokenOut = reinterpret_cast<SocketWatchToken>(watch);
+    *tokenOut  = reinterpret_cast<SocketWatchToken>(watch);
     return CHIP_NO_ERROR;
 }
 CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data)
@@ -263,7 +263,7 @@ CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCal
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    watch->mCallback = callback;
+    watch->mCallback     = callback;
     watch->mCallbackData = data;
     return CHIP_NO_ERROR;
 }
@@ -312,7 +312,7 @@ CHIP_ERROR LayerImplFreeRTOS::ClearCallbackOnPendingWrite(SocketWatchToken token
 CHIP_ERROR LayerImplFreeRTOS::StopWatchingSocket(SocketWatchToken * tokenInOut)
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(*tokenInOut);
-    *tokenInOut = InvalidSocketWatchToken();
+    *tokenInOut         = InvalidSocketWatchToken();
 
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -330,25 +330,25 @@ void LayerImplFreeRTOS::SocketWatch::Clear()
 }
 
 SocketEvents LayerImplFreeRTOS::SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds,
-    const fd_set & exceptfds)
+                                                    const fd_set & exceptfds)
 {
     SocketEvents res;
 
     if (socket >= 0)
     {
-    // POSIX does not define the fd_set parameter of FD_ISSET() as const, even though it isn't modified.
-    if (FD_ISSET(socket, const_cast<fd_set *>(&readfds)))
-        res.Set(SocketEventFlags::kRead);
-    if (FD_ISSET(socket, const_cast<fd_set *>(&writefds)))
-        res.Set(SocketEventFlags::kWrite);
-    if (FD_ISSET(socket, const_cast<fd_set *>(&exceptfds)))
-        res.Set(SocketEventFlags::kExcept);
+        // POSIX does not define the fd_set parameter of FD_ISSET() as const, even though it isn't modified.
+        if (FD_ISSET(socket, const_cast<fd_set *>(&readfds)))
+            res.Set(SocketEventFlags::kRead);
+        if (FD_ISSET(socket, const_cast<fd_set *>(&writefds)))
+            res.Set(SocketEventFlags::kWrite);
+        if (FD_ISSET(socket, const_cast<fd_set *>(&exceptfds)))
+            res.Set(SocketEventFlags::kExcept);
     }
 
     return res;
 }
 
-void LayerImplFreeRTOS::HandleEvents(fd_set *readfds, fd_set *writefds, fd_set *errorfds, long int timeout)
+void LayerImplFreeRTOS::HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
 {
     if (!IsSelectResultValid())
     {
@@ -372,7 +372,7 @@ void LayerImplFreeRTOS::HandleEvents(fd_set *readfds, fd_set *writefds, fd_set *
     }
 }
 
-void LayerImplFreeRTOS::StaticHandleEvents(fd_set *readfds, fd_set *writefds, fd_set *errorfds, long int timeout)
+void LayerImplFreeRTOS::StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
 {
     if (sInstance != nullptr)
     {
@@ -396,7 +396,8 @@ bool LayerImplFreeRTOS::IsSocketReady(int fd)
         FD_SET(fd, &mSelected.mReadSet);
     }
 
-    int result = sl_si91x_select(fd + 1, &mSelected.mReadSet, &mSelected.mWriteSet, &mSelected.mErrorSet, nullptr, StaticHandleEvents);
+    int result =
+        sl_si91x_select(fd + 1, &mSelected.mReadSet, &mSelected.mWriteSet, &mSelected.mErrorSet, nullptr, StaticHandleEvents);
     mSelectResult = 1;
     return (result > 0);
 }

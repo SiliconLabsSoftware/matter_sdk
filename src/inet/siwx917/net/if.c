@@ -1,20 +1,18 @@
 #include "if.h"
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
-// #include <unistd.h>
-// #include <ioctl.h>
+#include <stdlib.h>
+#include <string.h>
 #include <net/if.h>
 
 #ifndef HAVE_STRDUP
-char *strdup(const char *s)
+char * strdup(const char * s)
 {
     if (s == NULL)
     {
         return NULL;
     }
-    size_t len = strlen(s) + 1;
-    char *copy = (char *)malloc(len);
+    size_t len  = strlen(s) + 1;
+    char * copy = (char *) malloc(len);
     if (copy != NULL)
     {
         memcpy(copy, s, len);
@@ -24,34 +22,13 @@ char *strdup(const char *s)
 #endif
 
 // Convert an interface name to an index
-unsigned int if_nametoindex(const char *ifname)
+unsigned int if_nametoindex(const char * ifname)
 {
-#if 0
-    struct ifaddrs *ifaddr, *ifa;
-    unsigned int index = 0;
-
-    if (getifaddrs(&ifaddr) == -1)
-    {
-        return 0; // Failed to retrieve interfaces
-    }
-
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
-    {
-        if (ifa->ifa_name != NULL && strcmp(ifa->ifa_name, ifname) == 0)
-        {
-            index = if_nametoindex(ifa->ifa_name);
-            break;
-        }
-    }
-
-    freeifaddrs(ifaddr);
-#endif
-    // return index;
     return 0;
 }
 
 // Convert an interface index to a name
-char *if_indextoname(unsigned int ifindex, char *ifname)
+char * if_indextoname(unsigned int ifindex, char * ifname)
 {
     if (ifname == NULL)
     {
@@ -65,9 +42,6 @@ char *if_indextoname(unsigned int ifindex, char *ifname)
     }
 
     struct ifreq ifr;
-    // ifr.ifr_ifindex = ifindex;
-
-    // if (ioctl(sock, SIOCGIFNAME, &ifr) < 0)
     {
         close(sock);
         return NULL; // Failed to retrieve name
@@ -80,7 +54,7 @@ char *if_indextoname(unsigned int ifindex, char *ifname)
 }
 
 // Return a list of all interfaces and their indices
-struct if_nameindex *if_nameindex(void)
+struct if_nameindex * if_nameindex(void)
 {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0)
@@ -100,10 +74,10 @@ struct if_nameindex *if_nameindex(void)
         return NULL; // Failed to retrieve interface list
     }
 
-    struct ifreq *ifr = ifc.ifc_req;
-    int numInterfaces = ifc.ifc_len / sizeof(struct ifreq);
+    struct ifreq * ifr = ifc.ifc_req;
+    int numInterfaces  = ifc.ifc_len / sizeof(struct ifreq);
 
-    struct if_nameindex *list = (struct if_nameindex *)malloc((numInterfaces + 1) * sizeof(struct if_nameindex));
+    struct if_nameindex * list = (struct if_nameindex *) malloc((numInterfaces + 1) * sizeof(struct if_nameindex));
     if (list == NULL)
     {
         close(sock);
@@ -113,7 +87,7 @@ struct if_nameindex *if_nameindex(void)
     for (int i = 0; i < numInterfaces; i++)
     {
         list[i].if_index = if_nametoindex(ifr[i].ifr_name);
-        list[i].if_name = strdup(ifr[i].ifr_name);
+        list[i].if_name  = strdup(ifr[i].ifr_name);
         if (list[i].if_name == NULL)
         {
             // Free previously allocated memory on failure
@@ -129,21 +103,21 @@ struct if_nameindex *if_nameindex(void)
 
     // Null-terminate the list
     list[numInterfaces].if_index = 0;
-    list[numInterfaces].if_name = NULL;
+    list[numInterfaces].if_name  = NULL;
 
     close(sock);
     return list;
 }
 
 // Free the data returned from if_nameindex
-void if_freenameindex(struct if_nameindex *ptr)
+void if_freenameindex(struct if_nameindex * ptr)
 {
     if (ptr == NULL)
     {
         return;
     }
 
-    for (struct if_nameindex *entry = ptr; entry->if_name != NULL; entry++)
+    for (struct if_nameindex * entry = ptr; entry->if_name != NULL; entry++)
     {
         free(entry->if_name);
     }

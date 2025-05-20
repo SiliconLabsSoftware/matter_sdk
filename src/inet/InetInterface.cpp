@@ -56,7 +56,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <socket.h>
-// #include <unistd.h>
 #ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
 #endif /* HAVE_SYS_SOCKIO_H */

@@ -59,14 +59,20 @@ public:
     CHIP_ERROR ClearCallbackOnPendingRead(SocketWatchToken token) override;
     CHIP_ERROR ClearCallbackOnPendingWrite(SocketWatchToken token) override;
     CHIP_ERROR StopWatchingSocket(SocketWatchToken * tokenInOut) override;
-    SocketWatchToken InvalidSocketWatchToken() override { return reinterpret_cast<SocketWatchToken>(nullptr); }
+    SocketWatchToken InvalidSocketWatchToken() override
+    {
+        return reinterpret_cast<SocketWatchToken>(nullptr);
+    }
 
-    bool IsSelectResultValid() const { return mSelectResult >= 0; }
+    bool IsSelectResultValid() const
+    {
+        return mSelectResult >= 0;
+    }
     bool IsSocketReady(int fd);
-    static void StaticHandleEvents(fd_set *readfds, fd_set *writefds, fd_set *errorfds, long int timeout);
-    void HandleEvents(fd_set *readfds, fd_set *writefds, fd_set *errorfds, long int timeout);
+    static void StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);
+    void HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);
     static LayerImplFreeRTOS * sInstance;
-    
+
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 public:
@@ -86,48 +92,45 @@ private:
 #if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 protected:
+    static SocketEvents SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds, const fd_set & exceptfds);
 
-static SocketEvents SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds, const fd_set & exceptfds);
-
-
-static constexpr int kSocketWatchMax = (INET_CONFIG_ENABLE_TCP_ENDPOINT ? INET_CONFIG_NUM_TCP_ENDPOINTS : 0) +
+    static constexpr int kSocketWatchMax = (INET_CONFIG_ENABLE_TCP_ENDPOINT ? INET_CONFIG_NUM_TCP_ENDPOINTS : 0) +
         (INET_CONFIG_ENABLE_UDP_ENDPOINT ? INET_CONFIG_NUM_UDP_ENDPOINTS : 0);
-struct SocketWatch
-{
-    void Clear();
-    int mFD;
-    SocketEvents mPendingIO;
-    SocketWatchCallback mCallback;
+    struct SocketWatch
+    {
+        void Clear();
+        int mFD;
+        SocketEvents mPendingIO;
+        SocketWatchCallback mCallback;
 #if CHIP_SYSTEM_CONFIG_USE_DISPATCH
-    dispatch_source_t mRdSource;
-    dispatch_source_t mWrSource;
-    void DisableAndClear();
+        dispatch_source_t mRdSource;
+        dispatch_source_t mWrSource;
+        void DisableAndClear();
 #endif
 #if CHIP_SYSTEM_CONFIG_USE_LIBEV
-    struct ev_io mIoWatcher;
-    LayerImplSelect * mLayerImplSelectP;
-    void DisableAndClear();
+        struct ev_io mIoWatcher;
+        LayerImplSelect * mLayerImplSelectP;
+        void DisableAndClear();
 #endif
 
-    intptr_t mCallbackData;
-};
-SocketWatch mSocketWatchPool[kSocketWatchMax];
+        intptr_t mCallbackData;
+    };
+    SocketWatch mSocketWatchPool[kSocketWatchMax];
 
-struct SelectSets
-{
-    fd_set mReadSet;
-    fd_set mWriteSet;
-    fd_set mErrorSet;
-};
-SelectSets mSelected;
-int mMaxFd;
+    struct SelectSets
+    {
+        fd_set mReadSet;
+        fd_set mWriteSet;
+        fd_set mErrorSet;
+    };
+    SelectSets mSelected;
+    int mMaxFd;
 
-// Return value from select(), carried between WaitForEvents() and HandleEvents().
-int mSelectResult;
+    // Return value from select(), carried between WaitForEvents() and HandleEvents().
+    int mSelectResult;
 
-timeval mNextTimeout;
+    timeval mNextTimeout;
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
-
 };
 
 using LayerImpl = LayerImplFreeRTOS;
