@@ -5,7 +5,7 @@
             "arguments": ["--docker"]
         },
         {
-            "boards": ["BRD4187C"],
+            "boards": ["BRD4116A"],
             "arguments": ["--docker", "--release"]
         }
     ],
