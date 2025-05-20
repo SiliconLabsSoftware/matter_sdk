@@ -100,7 +100,7 @@ public:
     static constexpr size_t kMaxIfNameLength = Z_DEVICE_MAX_NAME_LEN;
 #endif
 
-#if CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
+#if CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
     using PlatformType                       = unsigned int;
     static constexpr size_t kMaxIfNameLength = 6;
 #endif
@@ -213,7 +213,7 @@ public:
     CHIP_ERROR GetLinkLocalAddr(IPAddress * llAddr) const;
 
 private:
-#if CHIP_SYSTEM_CONFIG_USE_LWIP && !CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
+#if CHIP_SYSTEM_CONFIG_USE_LWIP && !CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
     static constexpr PlatformType kPlatformNull = nullptr;
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
