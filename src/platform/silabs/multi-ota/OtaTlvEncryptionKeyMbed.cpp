@@ -15,7 +15,7 @@ using SilabsConfig = chip::DeviceLayer::Internal::SilabsConfig;
 CHIP_ERROR OtaTlvEncryptionKey::Import(ByteSpan keySpan)
 {
     VerifyOrReturnError(keySpan.size() == kOTAEncryptionKeyLength, CHIP_ERROR_INVALID_ARGUMENT,
-    ChipLogError(DeviceLayer, "Invalid key length: %lu", (unsigned long) keySpan.size()));
+                        ChipLogError(DeviceLayer, "Invalid key length: %lu", (unsigned long) keySpan.size()));
 
     // Store the key in a member variable for later use
     memcpy(mKey, keySpan.data(), keySpan.size());

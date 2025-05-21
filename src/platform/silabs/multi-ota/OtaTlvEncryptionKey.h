@@ -12,7 +12,7 @@ namespace DeviceLayer {
 namespace Silabs {
 namespace OtaTlvEncryptionKey {
 
-static constexpr uint32_t kAES_KeyId_Default = (PSA_KEY_ID_USER_MIN + 2);
+static constexpr uint32_t kAES_KeyId_Default    = (PSA_KEY_ID_USER_MIN + 2);
 static constexpr size_t kOTAEncryptionKeyLength = 128u / 8u; // 128 bits KeyLength expressed in bytes.
 
 static constexpr uint8_t au8Iv[] = {
