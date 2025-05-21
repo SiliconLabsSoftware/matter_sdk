@@ -14,7 +14,6 @@
 
 import("//build_overrides/chip.gni")
 
-
 import("${chip_root}/build/chip/buildconfig_header.gni")
 import("${chip_root}/src/crypto/crypto.gni")
 import("${chip_root}/src/platform/device.gni")
@@ -85,7 +84,30 @@ static_library("SiWx917") {
   ]
 
   if (chip_enable_multi_ota_requestor) {
-    public_deps += [ "${silabs_platform_dir}/multi-ota:multi-ota" ]
+    if (chip_enable_multi_ota_encryption) {
+      sources += [
+        "${silabs_platform_dir}/multi-ota/OtaTlvEncryptionKey.cpp",
+        "${silabs_platform_dir}/multi-ota/OtaTlvEncryptionKey.h",
+      ]
+    }
+
+    if (chip_enable_ota_custom_tlv_testing) {
+      sources += [
+        "${silabs_platform_dir}/multi-ota/OTACustomProcessor.cpp",
+        "${silabs_platform_dir}/multi-ota/OTACustomProcessor.h",
+      ]
+    }
+    sources += [
+      "${silabs_platform_dir}/multi-ota/OTAFactoryDataProcessor.cpp",
+      "${silabs_platform_dir}/multi-ota/OTAFactoryDataProcessor.h",
+      "${silabs_platform_dir}/multi-ota/OTAHooks.cpp",
+      "${silabs_platform_dir}/multi-ota/OTAMultiImageProcessorImpl.cpp",
+      "${silabs_platform_dir}/multi-ota/OTAMultiImageProcessorImpl.h",
+      "${silabs_platform_dir}/multi-ota/OTATlvProcessor.cpp",
+      "${silabs_platform_dir}/multi-ota/OTATlvProcessor.h",
+      "${silabs_platform_dir}/multi-ota/SiWx917/OTAWiFiFirmwareProcessor.cpp",
+      "${silabs_platform_dir}/multi-ota/SiWx917/OTAWiFiFirmwareProcessor.h",
+    ]
   } else if (chip_enable_ota_requestor) {
     sources += [
       "${silabs_platform_dir}/OTAImageProcessorImpl.h",

@@ -82,12 +82,43 @@ static_library("efr32") {
     ]
   }
 
-
   public_deps = [
     "${chip_root}/src/platform:platform_base",
     "${chip_root}/src/platform/logging:headers",
     "${silabs_platform_dir}/platformAbstraction:gsdk",
   ]
+
+  if (chip_enable_multi_ota_requestor) {
+    if (chip_enable_multi_ota_encryption) {
+      sources += [
+        "${silabs_platform_dir}/multi-ota/OtaTlvEncryptionKey.cpp",
+        "${silabs_platform_dir}/multi-ota/OtaTlvEncryptionKey.h",
+      ]
+    }
+
+    if (chip_enable_ota_custom_tlv_testing) {
+      sources += [
+        "${silabs_platform_dir}/multi-ota/OTACustomProcessor.cpp",
+        "${silabs_platform_dir}/multi-ota/OTACustomProcessor.h",
+      ]
+    }
+    sources += [
+      "${silabs_platform_dir}/multi-ota/OTAFactoryDataProcessor.cpp",
+      "${silabs_platform_dir}/multi-ota/OTAFactoryDataProcessor.h",
+      "${silabs_platform_dir}/multi-ota/OTAFirmwareProcessor.cpp",
+      "${silabs_platform_dir}/multi-ota/OTAFirmwareProcessor.h",
+      "${silabs_platform_dir}/multi-ota/OTAHooks.cpp",
+      "${silabs_platform_dir}/multi-ota/OTAMultiImageProcessorImpl.cpp",
+      "${silabs_platform_dir}/multi-ota/OTAMultiImageProcessorImpl.h",
+      "${silabs_platform_dir}/multi-ota/OTATlvProcessor.cpp",
+      "${silabs_platform_dir}/multi-ota/OTATlvProcessor.h",
+    ]
+  } else if (chip_enable_ota_requestor) {
+    sources += [
+      "${silabs_platform_dir}/OTAImageProcessorImpl.h",
+      "OTAImageProcessorImpl.cpp",
+    ]
+  }
 
   deps = [
     "${chip_root}/src/tracing/silabs:silabs_tracing",
@@ -149,14 +180,5 @@ static_library("efr32") {
     ]
 
     public_deps += [ "${silabs_platform_dir}/wifi:wifi-platform" ]
-  }
-
-  if (chip_enable_multi_ota_requestor) {
-    public_deps += [ "${silabs_platform_dir}/multi-ota:multi-ota" ]
-  } else if (chip_enable_ota_requestor) {
-    sources += [
-      "${silabs_platform_dir}/OTAImageProcessorImpl.h",
-      "OTAImageProcessorImpl.cpp",
-    ]
   }
 }

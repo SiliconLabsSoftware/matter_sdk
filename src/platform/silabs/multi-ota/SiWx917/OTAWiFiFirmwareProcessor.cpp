@@ -16,7 +16,7 @@
  *    limitations under the License.
  */
 
-#include "OTAMultiImageProcessorImpl.h"
+#include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
 #include <platform/silabs/multi-ota/SiWx917/OTAWiFiFirmwareProcessor.h>
 
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
