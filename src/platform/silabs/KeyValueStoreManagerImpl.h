@@ -43,6 +43,12 @@ public:
     static constexpr size_t kMaxEntries = KVS_MAX_ENTRIES;
 
     static void ForceKeyMapSave();
+    static void KvsMapMigration();
+
+private:
+    static KeyValueStoreManagerImpl sInstance;
+
+    static void OnScheduledKeyMapSave(System::Layer * systemLayer, void * appState);
 
     /**
      * @brief Cleans up unused keys in the key-value store.
@@ -51,12 +57,6 @@ public:
      * no longer have corresponding entries in NVM). It ensures that the key map
      * remains consistent and frees up space for new entries.
      */
-    static void KvsMapMigration();
-
-private:
-    static KeyValueStoreManagerImpl sInstance;
-
-    static void OnScheduledKeyMapSave(System::Layer * systemLayer, void * appState);
     static void KvsKeyMapCleanup(void * argument);
 
     void ScheduleKeyMapSave(void);
