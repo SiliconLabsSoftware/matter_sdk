@@ -26,8 +26,6 @@ CHIP_ERROR OtaTlvEncryptionKey::Import(ByteSpan keySpan)
 
 CHIP_ERROR OtaTlvEncryptionKey::Decrypt(MutableByteSpan & block, uint32_t & mIVOffset)
 {
-    constexpr uint8_t au8Iv[] = { 0x00, 0x00, 0x00, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x00, 0x00, 0x00, 0x00 };
-
     uint8_t iv[16];
     uint8_t stream_block[16] = { 0 };
     size_t nc_off            = 0;
