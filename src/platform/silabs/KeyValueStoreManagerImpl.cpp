@@ -344,6 +344,7 @@ void KeyValueStoreManagerImpl::KvsKeyMapCleanup(void * argument)
         PlatformMgr().UnlockChipStack();
     }
 
+    // Single shot task at boot - delete the task when the clean up is complete
     osThreadExit();
 }
 
