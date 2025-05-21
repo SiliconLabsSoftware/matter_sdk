@@ -119,13 +119,13 @@ CHIP_ERROR OTATlvProcessor::vOtaProcessInternalEncryption(MutableByteSpan & bloc
     // Decrypt the block
     chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::OtaTlvEncryptionKey key;
     key.Import(keyBuffer, keySpan.size());
-    key.Decrypt(block, mIVOffset);
 #else  // MBEDTLS_USE_PSA_CRYPTO
     uint32_t keyId;
     Provision::Manager::GetInstance().GetStorage().GetOtaTlvEncryptionKey(keyId);
     chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::OtaTlvEncryptionKey key(keyId);
-    key.Decrypt(block, mIVOffset);
 #endif // SL_MBEDTLS_USE_TINYCRYPT
+
+    key.Decrypt(block, mIVOffset);
     return CHIP_NO_ERROR;
 }
 #endif // OTA_ENCRYPTION_ENABLE
