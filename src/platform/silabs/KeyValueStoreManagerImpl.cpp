@@ -323,17 +323,14 @@ void KeyValueStoreManagerImpl::KvsKeyMapCleanup(void * argument)
 
     for (uint16_t key = 0; key < KeyValueStoreManagerImpl::kMaxEntries; key++)
     {
-        // Only check the keys that should have a NVM entry
-        if (mKvsKeyMap[key] != 0)
+        // Only check the keys that should have a NVM entry and
+        // we don't need to take a mutex - protection is done by the underlying nvm3 APIs called in ConfigValueExists
+        if (mKvsKeyMap[key] != 0 && !SilabsConfig::ConfigValueExists(CONVERT_KEYMAP_INDEX_TO_NVM3KEY(key)))
         {
-            // We don't need to take a mutex - protection is done by the underlying nvm3 APIs
-            if (!SilabsConfig::ConfigValueExists(CONVERT_KEYMAP_INDEX_TO_NVM3KEY(key)))
-            {
-                // We have found a shadow key (key with no NVM entry)
-                // Delete unused key to free up space
-                mKvsKeyMap[key]      = 0;
-                requireKvsKeyMapSave = true;
-            }
+            // We have found a shadow key (key with no NVM entry)
+            // Delete unused key to free up space
+            mKvsKeyMap[key]      = 0;
+            requireKvsKeyMapSave = true;
         }
     }
 
