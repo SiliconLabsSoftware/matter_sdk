@@ -26,15 +26,6 @@ namespace chip {
 class OTAFirmwareProcessor : public OTATlvProcessor
 {
 public:
-    struct Descriptor
-    {
-        uint32_t version;
-        char versionString[kVersionStringSize];
-        char buildDate[kBuildDateSize];
-    };
-
-    CHIP_ERROR Init() override;
-    CHIP_ERROR Clear() override;
     CHIP_ERROR ApplyAction() override;
     CHIP_ERROR FinalizeAction() override;
 
@@ -42,7 +33,6 @@ private:
     CHIP_ERROR ProcessInternal(ByteSpan & block) override;
     CHIP_ERROR ProcessDescriptor(ByteSpan & block);
 
-    OTADataAccumulator mAccumulator;
     bool mDescriptorProcessed = false;
 #if OTA_ENCRYPTION_ENABLE
     uint32_t mUnalignmentNum;

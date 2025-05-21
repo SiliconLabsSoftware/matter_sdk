@@ -16,7 +16,6 @@
  *    limitations under the License.
  */
 
-#include <platform/internal/CHIPDeviceLayerInternal.h>
 #include <platform/silabs/multi-ota/OTAFirmwareProcessor.h>
 #include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
 
@@ -42,29 +41,6 @@ uint32_t OTAFirmwareProcessor::mWriteOffset                                     
 uint16_t OTAFirmwareProcessor::writeBufOffset                                          = 0;
 uint8_t OTAFirmwareProcessor::writeBuffer[kAlignmentBytes] __attribute__((aligned(4))) = { 0 };
 
-CHIP_ERROR OTAFirmwareProcessor::Init()
-{
-    ReturnErrorCodeIf(mCallbackProcessDescriptor == nullptr, CHIP_OTA_PROCESSOR_CB_NOT_REGISTERED);
-    mAccumulator.Init(sizeof(Descriptor));
-#if OTA_ENCRYPTION_ENABLE
-    mUnalignmentNum = 0;
-#endif
-
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR OTAFirmwareProcessor::Clear()
-{
-    OTATlvProcessor::ClearInternal();
-    mAccumulator.Clear();
-    mDescriptorProcessed = false;
-#if OTA_ENCRYPTION_ENABLE
-    mUnalignmentNum = 0;
-#endif
-
-    return CHIP_NO_ERROR;
-}
-
 CHIP_ERROR OTAFirmwareProcessor::ProcessInternal(ByteSpan & block)
 {
     uint32_t err = SL_BOOTLOADER_OK;
@@ -77,7 +53,7 @@ CHIP_ERROR OTAFirmwareProcessor::ProcessInternal(ByteSpan & block)
 #endif
     }
 #if OTA_ENCRYPTION_ENABLE
-    MutableByteSpan mBlock = MutableByteSpan(mAccumulator.data(), mAccumulator.GetThreshold());
+    MutableByteSpan mBlock = MutableByteSpan(mAccumulator.GetData(), mAccumulator.GetThreshold());
     memcpy(&mBlock[0], &mBlock[requestedOtaMaxBlockSize], mUnalignmentNum);
     memcpy(&mBlock[mUnalignmentNum], block.data(), block.size());
 
@@ -140,7 +116,7 @@ CHIP_ERROR OTAFirmwareProcessor::ProcessInternal(ByteSpan & block)
 CHIP_ERROR OTAFirmwareProcessor::ProcessDescriptor(ByteSpan & block)
 {
     ReturnErrorOnFailure(mAccumulator.Accumulate(block));
-    ReturnErrorOnFailure(mCallbackProcessDescriptor(static_cast<void *>(mAccumulator.data())));
+    ReturnErrorOnFailure(mCallbackProcessDescriptor(static_cast<void *>(mAccumulator.GetData())));
 
     mDescriptorProcessed = true;
     mAccumulator.Clear();

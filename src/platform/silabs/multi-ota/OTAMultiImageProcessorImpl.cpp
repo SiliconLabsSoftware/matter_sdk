@@ -20,9 +20,6 @@
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 #include <lib/support/BufferReader.h>
 #include <platform/DiagnosticDataProvider.h>
-#include <platform/internal/CHIPDeviceLayerInternal.h>
-#include <platform/internal/GenericConfigurationManagerImpl.h>
-
 #include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
 
 using namespace chip::DeviceLayer;
@@ -35,8 +32,14 @@ static chip::OTAMultiImageProcessorImpl gImageProcessor;
 #endif // SL_WIFI
 
 extern "C" {
+#ifdef SLI_SI91X_MCU_INTERFACE
+#include "sl_si91x_driver.h"
+#include "sl_si91x_hal_soc_soft_reset.h"
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+#else // This is not needed for the 917 SoC; it is required for EFR host applications
 #include "btl_interface.h"
-#include "sl_core.h"
+#include "em_bus.h" // For CORE_CRITICAL_SECTION
+#endif              // SLI_SI91X_MCU_INTERFACE
 }
 
 namespace chip {
@@ -115,7 +118,9 @@ void OTAMultiImageProcessorImpl::HandlePrepareDownload(intptr_t context)
 
     ChipLogProgress(SoftwareUpdate, "HandlePrepareDownload: started");
 
+#ifndef SLI_SI91X_MCU_INTERFACE // This is not needed for the 917 SoC; it is required for EFR host applications
     CORE_CRITICAL_SECTION(bootloader_init();)
+#endif
 
     imageProcessor->mParams.downloadedBytes = 0;
 
@@ -145,7 +150,7 @@ CHIP_ERROR OTAMultiImageProcessorImpl::ProcessPayload(ByteSpan & block)
         if (!mCurrentProcessor)
         {
             ReturnErrorOnFailure(mAccumulator.Accumulate(block));
-            ByteSpan tlvHeader{ mAccumulator.data(), sizeof(OTATlvHeader) };
+            ByteSpan tlvHeader{ mAccumulator.GetData(), sizeof(OTATlvHeader) };
             ReturnErrorOnFailure(SelectProcessor(tlvHeader));
             ReturnErrorOnFailure(mCurrentProcessor->Init());
         }
@@ -202,6 +207,11 @@ CHIP_ERROR OTAMultiImageProcessorImpl::SelectProcessor(ByteSpan & block)
 
 CHIP_ERROR OTAMultiImageProcessorImpl::RegisterProcessor(uint32_t tag, OTATlvProcessor * processor)
 {
+    if (!processor->IsValidTag(static_cast<OTAProcessorTag>(tag)))
+    {
+        ChipLogError(SoftwareUpdate, "Invalid processor tag: %lu", tag);
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
     auto pair = mProcessorMap.find(tag);
     if (pair != mProcessorMap.end())
     {
@@ -419,10 +429,14 @@ void OTAMultiImageProcessorImpl::HandleApply(intptr_t context)
 
     imageProcessor->mAccumulator.Clear();
 
-    ChipLogProgress(SoftwareUpdate, "HandleApply: Finished");
+    ChipLogProgress(SoftwareUpdate, "HandleApply: Finished and Soft Reset initiated");
 
     // This reboots the device
+#ifdef SLI_SI91X_MCU_INTERFACE // 917 SoC reboot
+    chip::DeviceLayer::Silabs::GetPlatform().SoftwareReset();
+#else // EFR reboot
     CORE_CRITICAL_SECTION(bootloader_rebootAndInstall();)
+#endif
 }
 
 CHIP_ERROR OTAMultiImageProcessorImpl::ReleaseBlock()
