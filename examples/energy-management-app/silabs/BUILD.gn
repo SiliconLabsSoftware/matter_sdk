@@ -204,7 +204,6 @@ silabs_executable("energy-management-app") {
     deps += [ "${examples_plat_dir}:efr32-common" ]
   }
 
-
   if (chip_enable_pw_rpc) {
     defines += [
       "PW_RPC_ENABLED",
