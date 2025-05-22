@@ -17,7 +17,7 @@ static sl_mdns_t gMdnsInstance;
 
 CHIP_ERROR ChipDnssdInit(DnssdAsyncReturnCallback initCallback, DnssdAsyncReturnCallback errorCallback, void * context)
 {
-    sl_mdns_configuration_t config = { .protocol = SL_MDNS_PROTO_UDP, .type = SL_IPV6_VERSION, .host_name = "chip-device.local" };
+    sl_mdns_configuration_t config = { .protocol = SL_MDNS_PROTO_UDP, .type = SL_IPV6_VERSION, .host_name = "chip-device.local." };
 
     sl_status_t status = sl_mdns_init(&gMdnsInstance, &config, nullptr);
     if (status != SL_STATUS_OK)
@@ -75,7 +75,7 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
     mdnsService.instance_name = strdup(instance_name); // Duplicate the string to ensure memory safety
     mdnsService.service_type  = strdup(service_type);  // Duplicate the string to ensure memory safety
     mdnsService.port          = service->mPort;
-    mdnsService.ttl           = 120; // Default TTL; adjust as needed
+    mdnsService.ttl           = 300; // Default TTL; adjust as needed
     if (service->mTextEntries && service->mTextEntrySize > 0)
     {
         for (size_t i = 0; i < service->mTextEntrySize; i++)
@@ -104,7 +104,7 @@ CHIP_ERROR ChipDnssdRemoveServices()
     // As a workaround, we can deinitialize and reinitialize the mDNS instance to remove all services.
     sl_mdns_deinit(&gMdnsInstance);
 
-    sl_mdns_configuration_t config = { .protocol = SL_MDNS_PROTO_UDP, .type = SL_IPV6_VERSION, .host_name = "chip-device.local" };
+    sl_mdns_configuration_t config = { .protocol = SL_MDNS_PROTO_UDP, .type = SL_IPV6_VERSION, .host_name = "chip-device.local." };
 
     sl_status_t status = sl_mdns_init(&gMdnsInstance, &config, nullptr);
     if (status != SL_STATUS_OK)

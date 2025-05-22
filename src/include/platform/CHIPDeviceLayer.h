@@ -46,7 +46,7 @@ void SetSystemLayerForTesting(System::Layer * layer);
 // These functions are defined in src/platform/Globals.cpp
 chip::System::Layer & SystemLayer();
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS && !defined(CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM)
+#if CHIP_SYSTEM_CONFIG_USE_SOCKETS
 chip::System::LayerSockets & SystemLayerSockets();
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS
 

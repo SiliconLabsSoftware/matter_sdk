@@ -29,11 +29,11 @@
 namespace chip {
 namespace System {
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 class LayerImplFreeRTOS : public LayerSockets
 #else
 class LayerImplFreeRTOS : public LayerFreeRTOS
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 {
 public:
     LayerImplFreeRTOS();
@@ -50,7 +50,7 @@ public:
     void CancelTimer(TimerCompleteCallback onComplete, void * appState) override;
     CHIP_ERROR ScheduleWork(TimerCompleteCallback onComplete, void * appState) override;
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
     // LayerSocket overrides.
     CHIP_ERROR StartWatchingSocket(int fd, SocketWatchToken * tokenOut) override;
     CHIP_ERROR SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data) override;
@@ -66,7 +66,7 @@ public:
     void HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);
     static LayerImplFreeRTOS * sInstance;
 
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 public:
     // Platform implementation.
@@ -82,7 +82,7 @@ private:
     bool mHandlingTimerComplete; // true while handling any timer completion
     ObjectLifeCycle mLayerState;
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 protected:
     static SocketEvents SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds, const fd_set & exceptfds);
@@ -123,7 +123,7 @@ protected:
     int mSelectResult;
 
     timeval mNextTimeout;
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 };
 
 using LayerImpl = LayerImplFreeRTOS;
