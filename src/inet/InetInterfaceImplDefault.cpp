@@ -16,7 +16,6 @@
  */
 #include <inet/InetInterfaceImpl.h>
 
-// TODO: Chirag the BSD should work in this file
 #if CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 #include <net/if.h>
 namespace chip {

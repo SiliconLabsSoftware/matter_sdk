@@ -113,6 +113,7 @@ public:
     }
 
     static constexpr InterfaceId Null() { return InterfaceId(); }
+
     constexpr bool operator==(const InterfaceId & other) const { return mPlatformInterface == other.mPlatformInterface; }
     constexpr bool operator!=(const InterfaceId & other) const { return mPlatformInterface != other.mPlatformInterface; }
 
@@ -196,7 +197,7 @@ private:
     static constexpr PlatformType kPlatformNull = nullptr;
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS
+#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
     static constexpr PlatformType kPlatformNull = 0;
 #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
