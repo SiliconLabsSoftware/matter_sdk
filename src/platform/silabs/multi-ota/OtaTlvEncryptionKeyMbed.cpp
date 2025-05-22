@@ -12,27 +12,13 @@ namespace OtaTlvEncryptionKey {
 
 using SilabsConfig = chip::DeviceLayer::Internal::SilabsConfig;
 
-CHIP_ERROR OtaTlvEncryptionKey::Import(ByteSpan keySpan)
+CHIP_ERROR OtaTlvEncryptionKey::Decrypt(const ByteSpan & key, MutableByteSpan & block, uint32_t & mIVOffset)
 {
-    VerifyOrReturnError(keySpan.size() == kOTAEncryptionKeyLength, CHIP_ERROR_INVALID_ARGUMENT,
-                        ChipLogError(DeviceLayer, "Invalid key length: %lu", (unsigned long) keySpan.size()));
-
-    // Store the key in a member variable for later use
-    memcpy(mKey, keySpan.data(), keySpan.size());
-    mKeyLen = keySpan.size();
-
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR OtaTlvEncryptionKey::Decrypt(MutableByteSpan & block, uint32_t & mIVOffset)
-{
-    uint8_t iv[16];
+    uint8_t iv[16]           = { AU8IV_INIT_VALUE };
     uint8_t stream_block[16] = { 0 };
     size_t nc_off            = 0;
     uint32_t offset          = 0;
     size_t remaining         = block.size();
-
-    memcpy(iv, au8Iv, sizeof(au8Iv));
 
     // Set IV based on mIVOffset
     uint32_t counter = ((uint32_t) iv[12] << 24) | ((uint32_t) iv[13] << 16) | ((uint32_t) iv[14] << 8) | (uint32_t) iv[15];
@@ -46,7 +32,7 @@ CHIP_ERROR OtaTlvEncryptionKey::Decrypt(MutableByteSpan & block, uint32_t & mIVO
     mbedtls_aes_context aes_ctx;
     mbedtls_aes_init(&aes_ctx);
 
-    if (mbedtls_aes_setkey_enc(&aes_ctx, mKey, mKeyLen * 8) != 0)
+    if (mbedtls_aes_setkey_enc(&aes_ctx, key.data(), (key.size() * 8)) != 0)
     {
         ChipLogError(DeviceLayer, "Failed to set AES key");
         mbedtls_aes_free(&aes_ctx);
