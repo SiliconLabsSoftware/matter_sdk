@@ -87,7 +87,7 @@ public:
 
 #if CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
     using PlatformType                       = unsigned int;
-    static constexpr size_t kMaxIfNameLength = 16;
+    static constexpr size_t kMaxIfNameLength = IF_NAMESIZE;
 #endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF

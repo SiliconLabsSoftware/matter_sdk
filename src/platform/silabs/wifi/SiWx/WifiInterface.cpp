@@ -144,10 +144,9 @@ const sl_wifi_device_configuration_t config = {
 #if SLI_SI91X_OFFLOAD_NETWORK_STACK
                          SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6 |
                          SL_SI91X_TCP_IP_FEAT_MDNSD
-#endif // SLI_SI91X_OFFLOAD_NETWORK_STACK
-#if SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
+#elif SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
                              SL_SI91X_TCP_IP_FEAT_BYPASS
-#endif // SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
+#endif
                          | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
                      .custom_feature_bit_map     = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID),
                      .ext_custom_feature_bit_map = (RSI_EXT_CUSTOM_FEATURE_BIT_MAP | BIT(27) |(SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE)
@@ -390,7 +389,7 @@ sl_status_t SetWifiConfigurations()
             .mode = SL_IP_MANAGEMENT_DHCP,
 #else
             .mode = SL_IP_MANAGEMENT_STATIC_IP,
-#endif
+#endif // SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
             .type = SL_IPV6,
             .host_name = NULL,
             .ip = {{{0}}},
@@ -511,7 +510,7 @@ sl_status_t sl_matter_wifi_platform_init(void)
     status = sl_net_init((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, &config, &wifi_client_context, nullptr);
 #else
     status = sl_net_init((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, &config, nullptr, nullptr);
-#endif
+#endif // SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_init failed: %lx", status));
 
     // Create Sempaphore for scan completion

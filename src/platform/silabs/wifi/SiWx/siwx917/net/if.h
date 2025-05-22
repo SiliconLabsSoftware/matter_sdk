@@ -1,8 +1,8 @@
 #ifndef NET_IF_H
 #define NET_IF_H
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define IF_NAMESIZE 16
 #define IFF_UP 0x1
@@ -15,24 +15,11 @@
 struct if_nameindex
 {
     unsigned int if_index; // Interface index
-    char *if_name;         // Interface name
+    char * if_name;        // Interface name
 };
 
-#ifndef HAVE_STRDUP
-static inline char * custom_strdup(const char * s)
-{
-    size_t len  = strlen(s) + 1;
-    char * copy = (char *) malloc(len);
-    if (copy != NULL)
-    {
-        memcpy(copy, s, len);
-    }
-    return copy;
-}
-#endif
-
 // Hardcoded function to get the interface name from an index
-static inline char *if_indextoname(unsigned int ifindex, char *ifname)
+static inline char * if_indextoname(unsigned int ifindex, char * ifname)
 {
     if (ifindex == 1)
     {
@@ -43,7 +30,7 @@ static inline char *if_indextoname(unsigned int ifindex, char *ifname)
 }
 
 // Hardcoded function to get the interface index from a name
-static inline unsigned int if_nametoindex(const char *ifname)
+static inline unsigned int if_nametoindex(const char * ifname)
 {
     if (strcmp(ifname, "st0") == 0)
     {
@@ -53,9 +40,9 @@ static inline unsigned int if_nametoindex(const char *ifname)
 }
 
 // Hardcoded function to return a list of interfaces
-static inline struct if_nameindex *if_nameindex(void)
+static inline struct if_nameindex * if_nameindex(void)
 {
-    struct if_nameindex *list = (struct if_nameindex *)malloc(2 * sizeof(struct if_nameindex));
+    struct if_nameindex * list = (struct if_nameindex *) malloc(2 * sizeof(struct if_nameindex));
     if (list == NULL)
     {
         return NULL;
@@ -63,19 +50,19 @@ static inline struct if_nameindex *if_nameindex(void)
 
     // Hardcoded single interface
     list[0].if_index = 1;
-    list[0].if_name = custom_strdup("eth0"); // Allocate memory for the name
+    list[0].if_name  = strdup("st0"); // Allocate memory for the name
     list[1].if_index = 0;             // End of list
-    list[1].if_name = NULL;
+    list[1].if_name  = NULL;
 
     return list;
 }
 
 // Free the memory allocated by if_nameindex
-static inline void if_freenameindex(struct if_nameindex *list)
+static inline void if_freenameindex(struct if_nameindex * list)
 {
     if (list != NULL)
     {
-        for (struct if_nameindex *entry = list; entry->if_name != NULL; ++entry)
+        for (struct if_nameindex * entry = list; entry->if_name != NULL; ++entry)
         {
             free(entry->if_name); // Free the allocated name
         }

@@ -27,17 +27,9 @@
 #include <system/SystemFaultInjection.h>
 #include <system/SystemLayer.h>
 #include <system/SystemLayerImplFreeRTOS.h>
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-#include "sl_si91x_socket.h"
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 namespace chip {
 namespace System {
-
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-// Define the static instance pointer
-LayerImplFreeRTOS * LayerImplFreeRTOS::sInstance = nullptr;
-#endif
 
 LayerImplFreeRTOS::LayerImplFreeRTOS() : mHandlingTimerComplete(false) {}
 
@@ -48,16 +40,6 @@ CHIP_ERROR LayerImplFreeRTOS::Init()
 #if CHIP_SYSTEM_CONFIG_USE_LWIP
     RegisterLwIPErrorFormatter();
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
-
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-    // Initialize the static instance pointer
-    sInstance = this;
-
-    for (auto & w : mSocketWatchPool)
-    {
-        w.Clear();
-    }
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
     VerifyOrReturnError(mLayerState.SetInitialized(), CHIP_ERROR_INCORRECT_STATE);
     return CHIP_NO_ERROR;
@@ -232,177 +214,6 @@ CHIP_ERROR LayerImplFreeRTOS::HandlePlatformTimer()
 
     return CHIP_NO_ERROR;
 }
-
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tokenOut)
-{
-    // Implementation for FreeRTOS to start watching a socket
-    // Allocate a SocketWatch structure and initialize it
-    SocketWatch * watch = nullptr;
-    for (auto & w : mSocketWatchPool)
-    {
-        if (w.mFD == fd)
-        {
-            // Already registered, return the existing token
-            *tokenOut = reinterpret_cast<SocketWatchToken>(&w);
-            return CHIP_NO_ERROR;
-        }
-        if ((w.mFD == kInvalidFd) && (watch == nullptr))
-        {
-            watch = &w;
-        }
-    }
-    VerifyOrReturnError(watch != nullptr, CHIP_ERROR_ENDPOINT_POOL_FULL);
-
-    watch->mFD = fd;
-    *tokenOut  = reinterpret_cast<SocketWatchToken>(watch);
-    return CHIP_NO_ERROR;
-}
-CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data)
-{
-    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
-    VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    watch->mCallback     = callback;
-    watch->mCallbackData = data;
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingRead(SocketWatchToken token)
-{
-    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
-    VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    // Set the read flag for the socket
-    watch->mPendingIO.Set(SocketEventFlags::kRead);
-    IsSocketReady(watch->mFD);
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingWrite(SocketWatchToken token)
-{
-    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
-    VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    // Set the write flag for the socket
-    watch->mPendingIO.Set(SocketEventFlags::kWrite);
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR LayerImplFreeRTOS::ClearCallbackOnPendingRead(SocketWatchToken token)
-{
-    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
-    VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    // Clear the read flag for the socket
-    watch->mPendingIO.Clear(SocketEventFlags::kRead);
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR LayerImplFreeRTOS::ClearCallbackOnPendingWrite(SocketWatchToken token)
-{
-    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
-    VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    // Clear the write flag for the socket
-    watch->mPendingIO.Clear(SocketEventFlags::kWrite);
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR LayerImplFreeRTOS::StopWatchingSocket(SocketWatchToken * tokenInOut)
-{
-    SocketWatch * watch = reinterpret_cast<SocketWatch *>(*tokenInOut);
-    *tokenInOut         = InvalidSocketWatchToken();
-
-    VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    // Free the SocketWatch structure
-    delete watch;
-    return CHIP_NO_ERROR;
-}
-
-void LayerImplFreeRTOS::SocketWatch::Clear()
-{
-    mFD = kInvalidFd;
-    mPendingIO.ClearAll();
-    mCallback     = nullptr;
-    mCallbackData = 0;
-}
-
-SocketEvents LayerImplFreeRTOS::SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds,
-                                                    const fd_set & exceptfds)
-{
-    SocketEvents res;
-
-    if (socket >= 0)
-    {
-        // POSIX does not define the fd_set parameter of FD_ISSET() as const, even though it isn't modified.
-        if (FD_ISSET(socket, const_cast<fd_set *>(&readfds)))
-            res.Set(SocketEventFlags::kRead);
-        if (FD_ISSET(socket, const_cast<fd_set *>(&writefds)))
-            res.Set(SocketEventFlags::kWrite);
-        if (FD_ISSET(socket, const_cast<fd_set *>(&exceptfds)))
-            res.Set(SocketEventFlags::kExcept);
-    }
-
-    return res;
-}
-
-void LayerImplFreeRTOS::HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
-{
-    if (!IsSelectResultValid())
-    {
-        ChipLogError(DeviceLayer, "Select failed: %" CHIP_ERROR_FORMAT, CHIP_ERROR_POSIX(errno).Format());
-        return;
-    }
-    // Process socket events, if any
-    if (mSelectResult > 0)
-    {
-        for (auto & w : mSocketWatchPool)
-        {
-            if (w.mFD != kInvalidFd && w.mCallback != nullptr)
-            {
-                SocketEvents events = SocketEventsFromFDs(w.mFD, mSelected.mReadSet, mSelected.mWriteSet, mSelected.mErrorSet);
-                if (events.HasAny())
-                {
-                    w.mCallback(events, w.mCallbackData);
-                    IsSocketReady(w.mFD);
-                }
-            }
-        }
-    }
-}
-
-void LayerImplFreeRTOS::StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
-{
-    if (sInstance != nullptr)
-    {
-        sInstance->HandleEvents(readfds, writefds, errorfds, timeout);
-    }
-}
-
-bool LayerImplFreeRTOS::IsSocketReady(int fd)
-{
-    // Check if the socket has data available to read
-    FD_ZERO(&mSelected.mReadSet);
-    FD_ZERO(&mSelected.mWriteSet);
-    FD_ZERO(&mSelected.mErrorSet);
-
-    if (fd != kInvalidFd)
-    {
-        if (mMaxFd < fd)
-        {
-            mMaxFd = fd;
-        }
-        FD_SET(fd, &mSelected.mReadSet);
-    }
-
-    int result =
-        sl_si91x_select(fd + 1, &mSelected.mReadSet, &mSelected.mWriteSet, &mSelected.mErrorSet, nullptr, StaticHandleEvents);
-    mSelectResult = 1;
-    return (result > 0);
-}
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 } // namespace System
 } // namespace chip

@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2020-2021 Project CHIP Authors
+ *    Copyright (c) 2025 Project CHIP Authors
  *    Copyright (c) 2014-2017 Nest Labs, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,15 +26,15 @@
 #include <system/PlatformEventSupport.h>
 #include <system/SystemFaultInjection.h>
 #include <system/SystemLayer.h>
-#include <system/SystemLayerImplFreeRTOS.h>
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#include <system/SystemLayerImplFreeRTOSSockets.h>
+#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 #include "sl_si91x_socket.h"
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 namespace chip {
 namespace System {
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 // Define the static instance pointer
 LayerImplFreeRTOS * LayerImplFreeRTOS::sInstance = nullptr;
 #endif
@@ -49,7 +49,7 @@ CHIP_ERROR LayerImplFreeRTOS::Init()
     RegisterLwIPErrorFormatter();
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
     // Initialize the static instance pointer
     sInstance = this;
 
@@ -57,7 +57,7 @@ CHIP_ERROR LayerImplFreeRTOS::Init()
     {
         w.Clear();
     }
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
     VerifyOrReturnError(mLayerState.SetInitialized(), CHIP_ERROR_INCORRECT_STATE);
     return CHIP_NO_ERROR;
@@ -233,8 +233,8 @@ CHIP_ERROR LayerImplFreeRTOS::HandlePlatformTimer()
     return CHIP_NO_ERROR;
 }
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
-CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tokenOut) // invoked for bind to socket
+#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
+CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tokenOut)
 {
     // Implementation for FreeRTOS to start watching a socket
     // Allocate a SocketWatch structure and initialize it
@@ -247,7 +247,7 @@ CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tok
             *tokenOut = reinterpret_cast<SocketWatchToken>(&w);
             return CHIP_NO_ERROR;
         }
-        if ((w.mFD == kInvalidFd) && (watch == nullptr)) // tail of the FD
+        if ((w.mFD == kInvalidFd) && (watch == nullptr))
         {
             watch = &w;
         }
@@ -256,29 +256,26 @@ CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tok
 
     watch->mFD = fd;
     *tokenOut  = reinterpret_cast<SocketWatchToken>(watch);
-
-    // TODO: create task for sockets and queue
     return CHIP_NO_ERROR;
 }
-CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data) // UDPEndpointImpl -> ListenImpl()
+CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data)
 {
-    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token); // set of fds
+    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    watch->mCallback     = callback; // handleIO from UDPEndpointImpl
+    watch->mCallback     = callback;
     watch->mCallbackData = data;
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingRead(SocketWatchToken token) // ListenImpl()
+CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingRead(SocketWatchToken token)
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
     // Set the read flag for the socket
     watch->mPendingIO.Set(SocketEventFlags::kRead);
-    // TODO: prepare event to start selecting 
-    // IsSocketReady(watch->mFD);
+    IsSocketReady(watch->mFD);
     return CHIP_NO_ERROR;
 }
 
@@ -405,7 +402,7 @@ bool LayerImplFreeRTOS::IsSocketReady(int fd)
     mSelectResult = 1;
     return (result > 0);
 }
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 } // namespace System
 } // namespace chip
