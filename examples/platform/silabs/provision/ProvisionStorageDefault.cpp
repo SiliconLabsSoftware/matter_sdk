@@ -668,7 +668,6 @@ CHIP_ERROR Storage::SetOtaTlvEncryptionKey(const ByteSpan & value)
     return SilabsConfig::WriteConfigValue(SilabsConfig::kOtaTlvEncryption_KeyId, key.GetId());
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 }
-#endif // OTA_ENCRYPTION_ENABLE
 
 CHIP_ERROR Storage::GetOtaTlvEncryptionKeyId(uint32_t & keyId)
 {
@@ -700,6 +699,7 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 }
+#endif // OTA_ENCRYPTION_ENABLE
 
 #ifdef SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
 CHIP_ERROR Storage::GetTestEventTriggerKey(MutableByteSpan & keySpan)
