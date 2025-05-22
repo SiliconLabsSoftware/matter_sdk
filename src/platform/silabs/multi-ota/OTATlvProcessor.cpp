@@ -112,7 +112,7 @@ CHIP_ERROR OTATlvProcessor::vOtaProcessInternalEncryption(MutableByteSpan & bloc
     Provision::Manager::GetInstance().GetStorage().DecryptUsingOtaTlvEncryptionKey(block, mIVOffset);
 #else  // MBEDTLS_USE_PSA_CRYPTO
     uint32_t keyId;
-    Provision::Manager::GetInstance().GetStorage().GetOtaTlvEncryptionKey(keyId);
+    Provision::Manager::GetInstance().GetStorage().GetOtaTlvEncryptionKeyId(keyId);
     chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::OtaTlvEncryptionKey key(keyId);
 
     key.Decrypt(block, mIVOffset);
