@@ -37,13 +37,13 @@ CHIP_ERROR OTAWiFiFirmwareProcessor::ProcessInternal(ByteSpan & block)
     if (!mDescriptorProcessed)
     {
         ReturnErrorOnFailure(ProcessDescriptor(block));
-#if SL_MATTER_ENABLE_OTA_ENCRYPTION
+#if OTA_ENCRYPTION_ENABLE
         /* 16 bytes to used to store undecrypted data because of unalignment */
         mAccumulator.Init(requestedOtaMaxBlockSize + 16);
-#endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
+#endif // OTA_ENCRYPTION_ENABLE
     }
 
-#if SL_MATTER_ENABLE_OTA_ENCRYPTION
+#if OTA_ENCRYPTION_ENABLE
     MutableByteSpan byteblock = MutableByteSpan(mAccumulator.GetData(), mAccumulator.GetThreshold());
     memcpy(&byteblock[0], &byteblock[requestedOtaMaxBlockSize], mUnalignmentNum);
     memcpy(&byteblock[mUnalignmentNum], block.data(), block.size());
@@ -64,7 +64,7 @@ CHIP_ERROR OTAWiFiFirmwareProcessor::ProcessInternal(ByteSpan & block)
 
     OTATlvProcessor::vOtaProcessInternalEncryption(byteblock);
     block = byteblock;
-#endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
+#endif // OTA_ENCRYPTION_ENABLE
 
     if (mFWchunktype == SL_FWUP_RPS_HEADER)
     {
