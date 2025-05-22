@@ -743,7 +743,7 @@ CHIP_ERROR Storage::GetOtaTlvEncryptionKeyId(uint32_t & keyId)
     // Tinycrypt doesn't support the key ID
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 #else  // MBEDTLS_USE_PSA_CRYPTO
-    return Flash::Get(SilabsConfig::kOtaTlvEncryptionKey, keyId);
+    return Flash::Get(Parameters::ID::kOtaTlvEncryptionKey, keyId);
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 }
 

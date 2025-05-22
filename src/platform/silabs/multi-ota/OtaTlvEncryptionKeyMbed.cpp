@@ -14,7 +14,6 @@ static CHIP_ERROR OtaTlvEncryptionKey::Decrypt(const ByteSpan & key, MutableByte
     uint8_t iv[16]           = { AU8IV_INIT_VALUE };
     uint8_t stream_block[16] = { 0 };
     size_t nc_off            = 0;
-    uint32_t offset          = 0;
     size_t remaining         = block.size();
 
     // Set IV based on mIVOffset
