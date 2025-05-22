@@ -684,7 +684,7 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
 {
 #if defined(SL_MBEDTLS_USE_TINYCRYPT)
     uint8_t keyBuffer[kOTAEncryptionKeyLength] = { 0 };
-    size_t keyLen = 0;
+    size_t keyLen                              = 0;
 
     // Read the key from the provisioning storage
     MutableByteSpan keySpan = MutableByteSpan(keyBuffer);
