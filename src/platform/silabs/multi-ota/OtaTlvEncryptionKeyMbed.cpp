@@ -1,5 +1,4 @@
 #include "OtaTlvEncryptionKey.h"
-#include <platform/silabs/SilabsConfig.h>
 
 #include "mbedtls/aes.h"
 
