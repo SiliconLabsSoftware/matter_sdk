@@ -142,18 +142,18 @@ const sl_wifi_device_configuration_t config = {
                                          ),
                      .tcp_ip_feature_bit_map = (
 #if SLI_SI91X_OFFLOAD_NETWORK_STACK
-                         SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6 |
-                         SL_SI91X_TCP_IP_FEAT_MDNSD
+                         SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6 | SL_SI91X_TCP_IP_FEAT_MDNSD
 #elif SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
-                             SL_SI91X_TCP_IP_FEAT_BYPASS
+                         SL_SI91X_TCP_IP_FEAT_BYPASS
 #endif
                          | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
-                     .custom_feature_bit_map     = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID),
-                     .ext_custom_feature_bit_map = (RSI_EXT_CUSTOM_FEATURE_BIT_MAP | BIT(27) |(SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE)
+                     .custom_feature_bit_map = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID),
+                     .ext_custom_feature_bit_map =
+                         (RSI_EXT_CUSTOM_FEATURE_BIT_MAP | BIT(27) | (SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE)
 #if (defined A2DP_POWER_SAVE_ENABLE)
-                                                    | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2)
+                          | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2)
 #endif
-                                                        ),
+                              ),
                      .bt_feature_bit_map = (RSI_BT_FEATURE_BITMAP
 #if (RSI_BT_GATT_ON_CLASSIC)
                                             | SL_SI91X_BT_ATT_OVER_CLASSIC_ACL /* to support att over classic acl link */

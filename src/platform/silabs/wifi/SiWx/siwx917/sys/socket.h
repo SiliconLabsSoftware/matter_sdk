@@ -3,9 +3,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <inc/socket.h> // include from wifi sdk
-#include "sl_utility.h"
 #include "errno.h"
+#include "sl_utility.h"
+#include <inc/socket.h> // include from wifi sdk
 #ifdef __cplusplus
 }
 #endif
