@@ -44,9 +44,9 @@ private:
     static constexpr size_t kAlignmentBytes = 64;
     static constexpr size_t kBlockSize      = 1024;
 
-#if SL_MATTER_ENABLE_OTA_ENCRYPTION
-    uint32_t mUnalignmentNum;
-#endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
+#if OTA_ENCRYPTION_ENABLE
+    uint32_t mUnalignmentNum = 0;
+#endif // OTA_ENCRYPTION_ENABLE
 
     CHIP_ERROR ProcessInternal(ByteSpan & block) override;
 

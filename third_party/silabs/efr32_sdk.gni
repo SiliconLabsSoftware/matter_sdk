@@ -563,7 +563,7 @@ template("efr32_sdk") {
 
     if (chip_enable_multi_ota_requestor) {
       if (chip_enable_multi_ota_encryption) {
-        defines += [ "SL_MATTER_ENABLE_OTA_ENCRYPTION=1" ]
+        defines += [ "OTA_ENCRYPTION_ENABLE=1" ]
       }
 
       if (chip_enable_ota_custom_tlv_testing) {

@@ -35,7 +35,7 @@ private:
 
     bool mDescriptorProcessed = false;
 #if OTA_ENCRYPTION_ENABLE
-    uint32_t mUnalignmentNum;
+    uint32_t mUnalignmentNum = 0;
 #endif
     static constexpr size_t kAlignmentBytes = 64;
     static uint32_t mWriteOffset; // End of last written block

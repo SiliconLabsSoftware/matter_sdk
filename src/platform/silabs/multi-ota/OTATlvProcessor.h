@@ -191,7 +191,7 @@ protected:
     bool IsError(CHIP_ERROR & status);
     virtual uint32_t GetAccumulatorSize() const { return sizeof(Descriptor); }
 
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
+#ifdef OTA_ENCRYPTION_ENABLE
     /*ota decryption*/
     uint32_t mIVOffset = 0;
     /* Expected byte size of the OTAEncryptionKeyLength */
