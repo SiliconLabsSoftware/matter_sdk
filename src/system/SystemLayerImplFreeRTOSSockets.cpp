@@ -22,22 +22,16 @@
  */
 
 #include <lib/support/CodeUtils.h>
+#include <platform/CHIPDeviceEvent.h>
 #include <platform/LockTracker.h>
+#include <platform/PlatformManager.h>
 #include <system/PlatformEventSupport.h>
 #include <system/SystemFaultInjection.h>
 #include <system/SystemLayer.h>
 #include <system/SystemLayerImplFreeRTOSSockets.h>
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-#include "sl_si91x_socket.h"
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 namespace chip {
 namespace System {
-
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-// Define the static instance pointer
-LayerImplFreeRTOSSockets * LayerImplFreeRTOSSockets::sInstance = nullptr;
-#endif
 
 LayerImplFreeRTOSSockets::LayerImplFreeRTOSSockets() : mHandlingTimerComplete(false) {}
 
@@ -45,19 +39,10 @@ CHIP_ERROR LayerImplFreeRTOSSockets::Init()
 {
     VerifyOrReturnError(mLayerState.SetInitializing(), CHIP_ERROR_INCORRECT_STATE);
 
-#if CHIP_SYSTEM_CONFIG_USE_LWIP
-    RegisterLwIPErrorFormatter();
-#endif // CHIP_SYSTEM_CONFIG_USE_LWIP
-
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-    // Initialize the static instance pointer
-    sInstance = this;
-
     for (auto & w : mSocketWatchPool)
     {
         w.Clear();
     }
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
     VerifyOrReturnError(mLayerState.SetInitialized(), CHIP_ERROR_INCORRECT_STATE);
     return CHIP_NO_ERROR;
@@ -233,7 +218,6 @@ CHIP_ERROR LayerImplFreeRTOSSockets::HandlePlatformTimer()
     return CHIP_NO_ERROR;
 }
 
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 CHIP_ERROR LayerImplFreeRTOSSockets::StartWatchingSocket(int fd, SocketWatchToken * tokenOut)
 {
     // Implementation for FreeRTOS to start watching a socket
@@ -275,7 +259,9 @@ CHIP_ERROR LayerImplFreeRTOSSockets::RequestCallbackOnPendingRead(SocketWatchTok
 
     // Set the read flag for the socket
     watch->mPendingIO.Set(SocketEventFlags::kRead);
-    IsSocketReady(watch->mFD);
+
+    // Prepare the event and start waiting on the select
+    PrepareEvents();
     return CHIP_NO_ERROR;
 }
 
@@ -286,6 +272,9 @@ CHIP_ERROR LayerImplFreeRTOSSockets::RequestCallbackOnPendingWrite(SocketWatchTo
 
     // Set the write flag for the socket
     watch->mPendingIO.Set(SocketEventFlags::kWrite);
+
+    // Prepare the event and start waiting on the select
+    PrepareEvents();
     return CHIP_NO_ERROR;
 }
 
@@ -330,7 +319,7 @@ void LayerImplFreeRTOSSockets::SocketWatch::Clear()
 }
 
 SocketEvents LayerImplFreeRTOSSockets::SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds,
-                                                    const fd_set & exceptfds)
+                                                           const fd_set & exceptfds)
 {
     SocketEvents res;
 
@@ -348,7 +337,58 @@ SocketEvents LayerImplFreeRTOSSockets::SocketEventsFromFDs(int socket, const fd_
     return res;
 }
 
-void LayerImplFreeRTOSSockets::HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
+void LayerImplFreeRTOSSockets::PrepareEvents()
+{
+    mMaxFd = -1;
+
+    FD_ZERO(&mSelected.mReadSet);
+    FD_ZERO(&mSelected.mWriteSet);
+    FD_ZERO(&mSelected.mErrorSet);
+
+    for (auto & w : mSocketWatchPool)
+    {
+        if (w.mFD != kInvalidFd)
+        {
+            if (mMaxFd < w.mFD)
+            {
+                mMaxFd = w.mFD;
+            }
+            if (w.mPendingIO.Has(SocketEventFlags::kRead))
+            {
+                FD_SET(w.mFD, &mSelected.mReadSet);
+            }
+            if (w.mPendingIO.Has(SocketEventFlags::kWrite))
+            {
+                FD_SET(w.mFD, &mSelected.mWriteSet);
+            }
+        }
+    }
+
+    // Start waiting on the events
+    WaitForEvents();
+}
+
+void LayerImplFreeRTOSSockets::WaitForEvents()
+{
+    // Creating the DeviceEvent for the socket select to start
+    // when sync select should be called in a loop till we got some data
+    chip::DeviceLayer::ChipDeviceEvent event;
+    event.Type                       = chip::DeviceLayer::DeviceEventType::kSocketSelectStart;
+    event.SocketSelectStart.FD       = mMaxFd + 1;
+    event.SocketSelectStart.ReadSet  = mSelected.mReadSet;
+    event.SocketSelectStart.WriteSet = mSelected.mWriteSet;
+    event.SocketSelectStart.ErrorSet = mSelected.mErrorSet;
+    // Since we are going with async select, setting mSelectResult to 1
+    // Handle event will be triggered once we get something on select
+    mSelectResult  = 1;
+    CHIP_ERROR err = chip::DeviceLayer::PlatformMgr().PostEvent(&event);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "Failed to post event: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+}
+
+void LayerImplFreeRTOSSockets::HandleEvents()
 {
     if (!IsSelectResultValid())
     {
@@ -366,43 +406,14 @@ void LayerImplFreeRTOSSockets::HandleEvents(fd_set * readfds, fd_set * writefds,
                 if (events.HasAny())
                 {
                     w.mCallback(events, w.mCallbackData);
-                    IsSocketReady(w.mFD);
                 }
             }
         }
     }
+
+    // Once the event handling is done, prepare event and wait again
+    PrepareEvents();
 }
-
-void LayerImplFreeRTOSSockets::StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
-{
-    if (sInstance != nullptr)
-    {
-        sInstance->HandleEvents(readfds, writefds, errorfds, timeout);
-    }
-}
-
-bool LayerImplFreeRTOSSockets::IsSocketReady(int fd)
-{
-    // Check if the socket has data available to read
-    FD_ZERO(&mSelected.mReadSet);
-    FD_ZERO(&mSelected.mWriteSet);
-    FD_ZERO(&mSelected.mErrorSet);
-
-    if (fd != kInvalidFd)
-    {
-        if (mMaxFd < fd)
-        {
-            mMaxFd = fd;
-        }
-        FD_SET(fd, &mSelected.mReadSet);
-    }
-
-    int result =
-        sl_si91x_select(fd + 1, &mSelected.mReadSet, &mSelected.mWriteSet, &mSelected.mErrorSet, nullptr, StaticHandleEvents);
-    mSelectResult = 1;
-    return (result > 0);
-}
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 } // namespace System
 } // namespace chip

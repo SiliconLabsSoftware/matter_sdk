@@ -255,6 +255,11 @@ enum PublicEventTypes
      * Signals that secure session is established.
      */
     kSecureSessionEstablished,
+
+    /**
+     * Signals that socket select operation to be started.
+     */
+    kSocketSelectStart,
 };
 
 /**
@@ -439,6 +444,13 @@ struct ChipDeviceEvent final
                 ConnectivityChange Result;
             } ViaThread;
         } ServiceConnectivityChange;
+        struct
+        {
+            int FD;
+            fd_set ReadSet;
+            fd_set WriteSet;
+            fd_set ErrorSet;
+        } SocketSelectStart;
         struct
         {
             ConnectivityChange Result;

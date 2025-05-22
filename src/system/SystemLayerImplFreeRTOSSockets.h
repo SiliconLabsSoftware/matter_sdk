@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2021 Project CHIP Authors
+ *    Copyright (c) 2025 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
 
 namespace chip {
 namespace System {
-class LayerImplFreeRTOSSockets : public LayerSockets
+class LayerImplFreeRTOSSockets : public LayerSocketsLoop
 {
 public:
     LayerImplFreeRTOSSockets();
@@ -45,7 +45,6 @@ public:
     void CancelTimer(TimerCompleteCallback onComplete, void * appState) override;
     CHIP_ERROR ScheduleWork(TimerCompleteCallback onComplete, void * appState) override;
 
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
     // LayerSocket overrides.
     CHIP_ERROR StartWatchingSocket(int fd, SocketWatchToken * tokenOut) override;
     CHIP_ERROR SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data) override;
@@ -56,12 +55,14 @@ public:
     CHIP_ERROR StopWatchingSocket(SocketWatchToken * tokenInOut) override;
     SocketWatchToken InvalidSocketWatchToken() override { return reinterpret_cast<SocketWatchToken>(nullptr); }
     bool IsSelectResultValid() const { return mSelectResult >= 0; }
-    bool IsSocketReady(int fd);
-    static void StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);
-    void HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);
-    static LayerImplFreeRTOSSockets * sInstance;
 
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
+    // LayerSocketLoop overrides
+    void Signal() override{};
+    void EventLoopBegins() override {}
+    void PrepareEvents() override;
+    void WaitForEvents() override;
+    void HandleEvents() override;
+    void EventLoopEnds() override {}
 
 public:
     // Platform implementation.
@@ -76,8 +77,6 @@ private:
     TimerList mTimerList;
     bool mHandlingTimerComplete; // true while handling any timer completion
     ObjectLifeCycle mLayerState;
-
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 protected:
     static SocketEvents SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds, const fd_set & exceptfds);
@@ -107,7 +106,6 @@ protected:
     int mSelectResult;
 
     timeval mNextTimeout;
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 };
 
 using LayerImpl = LayerImplFreeRTOSSockets;

@@ -5,7 +5,7 @@ extern "C" {
 #endif
 #include "errno.h"
 #include "sl_utility.h"
-#include <inc/socket.h> // include from wifi sdk
+#include <socket.h> // include from wifi sdk
 #ifdef __cplusplus
 }
 #endif
