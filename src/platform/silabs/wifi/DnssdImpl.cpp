@@ -16,9 +16,9 @@ namespace Dnssd {
 namespace {
 // Global mDNS instance
 sl_mdns_t sMdnsInstance;
-constexpr uint8_t sServiceNameSize  = 80;
-constexpr uint8_t sInstanceNameSize = 150;
-constexpr uint8_t sttlValue         = 120;
+constexpr size_t sServiceNameSize  = 80;
+constexpr size_t sInstanceNameSize = 150;
+constexpr size_t sttlValue         = 120;
 
 bool IsSupportedProtocol(DnssdServiceProtocol protocol)
 {
@@ -111,7 +111,7 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
 
 CHIP_ERROR ChipDnssdRemoveServices()
 {
-    // Currently, `sl_mdns_unregister_service` is not supported..
+    // Currently, `sl_mdns_unregister_service` is not supported.
     // As a workaround, we can deinitialize and reinitialize the mDNS instance to remove all services.
     sl_mdns_deinit(&sMdnsInstance);
 
@@ -133,7 +133,7 @@ CHIP_ERROR ChipDnssdBrowse(const char * type, DnssdServiceProtocol protocol, chi
 {
     // Currently, `sl_mdns_discover_service` is not supported.
     // Return an error indicating that browsing is not implemented.
-    ChipLogError(DeviceLayer, "Browsing services is not supported");
+    ChipLogError(DeviceLayer, "Browsing services is not implemented");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -141,7 +141,7 @@ CHIP_ERROR ChipDnssdStopBrowse(intptr_t browseIdentifier)
 {
     // Currently, stopping a browse operation is not supported.
     // Return an error indicating that stopping browse is not implemented.
-    ChipLogError(DeviceLayer, "Stopping browse is not supported");
+    ChipLogError(DeviceLayer, "Stopping browse is not implemented");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -150,7 +150,7 @@ CHIP_ERROR ChipDnssdResolve(DnssdService * service, chip::Inet::InterfaceId inte
 {
     // Currently, `sl_mdns_discover_service` is not supported.
     // Return an error indicating that resolving is not implemented.
-    ChipLogError(DeviceLayer, "Resolving services is not supported");
+    ChipLogError(DeviceLayer, "Resolving services is not implemented");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -163,7 +163,7 @@ CHIP_ERROR ChipDnssdReconfirmRecord(const char * hostname, chip::Inet::IPAddress
 {
     // Currently, `sl_mdns.c` does not support reconfirming records.
     // Return an error indicating that reconfirming is not implemented.
-    ChipLogError(DeviceLayer, "Reconfirming records is not supported");
+    ChipLogError(DeviceLayer, "Reconfirming records is not implemented");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 

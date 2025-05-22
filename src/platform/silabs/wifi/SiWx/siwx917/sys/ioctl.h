@@ -9,11 +9,11 @@
 struct ifreq
 {
     char ifr_name[IF_NAMESIZE]; // Interface name
-    short ifr_flags;           // Interface flags
+    short ifr_flags;            // Interface flags
 };
 
 // Hardcoded ioctl function to handle interface flags
-static inline int ioctl(int fd, unsigned long request, struct ifreq *ifr)
+static inline int ioctl(int fd, unsigned long request, struct ifreq * ifr)
 {
     if (request == SIOCGIFFLAGS && strcmp(ifr->ifr_name, "eth0") == 0)
     {
