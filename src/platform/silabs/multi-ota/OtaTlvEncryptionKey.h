@@ -24,7 +24,7 @@ public:
     ~OtaTlvEncryptionKey() = default;
 
 #if defined(SL_MBEDTLS_USE_TINYCRYPT)
-    CHIP_ERROR Decrypt(const ByteSpan & key, MutableByteSpan & block, uint32_t & mIVOffset);
+    static CHIP_ERROR Decrypt(const ByteSpan & key, MutableByteSpan & block, uint32_t & mIVOffset);
 #else  // SL_MBEDTLS_USE_PSA_CRYPTO
     uint32_t GetId() { return mId; }
     CHIP_ERROR Import(const uint8_t * key, size_t key_len);
