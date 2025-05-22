@@ -692,8 +692,7 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
     SilabsConfig::ReadConfigValueBin(SilabsConfig::kOtaTlvEncryption_KeyId, keySpan.data(), keySpan.size());
     VerifyOrReturnError(keySpan.size() == kOTAEncryptionKeyLength, CHIP_ERROR_INVALID_ARGUMENT);
 
-    chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::OtaTlvEncryptionKey key;
-    key.Decrypt((const ByteSpan) keySpan, block, ivOffset);
+    chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::OtaTlvEncryptionKey.Decrypt((const ByteSpan) keySpan, block, ivOffset);
     return CHIP_NO_ERROR;
 #else  // MBEDTLS_USE_PSA_CRYPTO
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
