@@ -36,10 +36,10 @@
 #include <lwip/netif.h>
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 struct if_nameindex;
 struct ifaddrs;
-#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
 #include <zephyr/device.h>
@@ -87,13 +87,8 @@ public:
 
 #if CHIP_SYSTEM_CONFIG_USE_SOCKETS && CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
     using PlatformType                       = unsigned int;
-    static constexpr size_t kMaxIfNameLength = IF_NAMESIZE;
-#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
-
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
-    using PlatformType                       = unsigned int;
     static constexpr size_t kMaxIfNameLength = 16;
-#endif
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
     using PlatformType                       = int;
@@ -359,14 +354,14 @@ protected:
     struct netif * mCurNetif;
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
     struct if_nameindex * mIntfArray;
     size_t mCurIntf;
     short mIntfFlags;
     bool mIntfFlagsCached;
 
     short GetFlags();
-#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
     InterfaceId::PlatformType mCurrentId = 1;
@@ -551,10 +546,10 @@ private:
     int mCurAddrIndex;
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#if CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
     struct ifaddrs * mAddrsList;
     struct ifaddrs * mCurAddr;
-#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
+#endif // CHIP_SYSTEM_CONFIG_USE_BSD_IFADDRS
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_NET_IF
     InterfaceIterator mIntfIter;

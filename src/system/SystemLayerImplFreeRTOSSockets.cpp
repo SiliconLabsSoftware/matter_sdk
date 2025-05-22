@@ -234,7 +234,7 @@ CHIP_ERROR LayerImplFreeRTOS::HandlePlatformTimer()
 }
 
 #if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
-CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tokenOut)
+CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tokenOut) // invoked for bind to socket
 {
     // Implementation for FreeRTOS to start watching a socket
     // Allocate a SocketWatch structure and initialize it
@@ -247,7 +247,7 @@ CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tok
             *tokenOut = reinterpret_cast<SocketWatchToken>(&w);
             return CHIP_NO_ERROR;
         }
-        if ((w.mFD == kInvalidFd) && (watch == nullptr))
+        if ((w.mFD == kInvalidFd) && (watch == nullptr)) // tail of the FD
         {
             watch = &w;
         }
@@ -256,26 +256,29 @@ CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tok
 
     watch->mFD = fd;
     *tokenOut  = reinterpret_cast<SocketWatchToken>(watch);
+
+    // TODO: create task for sockets and queue
     return CHIP_NO_ERROR;
 }
-CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data)
+CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data) // UDPEndpointImpl -> ListenImpl()
 {
-    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
+    SocketWatch * watch = reinterpret_cast<SocketWatch *>(token); // set of fds
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    watch->mCallback     = callback;
+    watch->mCallback     = callback; // handleIO from UDPEndpointImpl
     watch->mCallbackData = data;
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingRead(SocketWatchToken token)
+CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingRead(SocketWatchToken token) // ListenImpl()
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
     // Set the read flag for the socket
     watch->mPendingIO.Set(SocketEventFlags::kRead);
-    IsSocketReady(watch->mFD);
+    // TODO: prepare event to start selecting 
+    // IsSocketReady(watch->mFD);
     return CHIP_NO_ERROR;
 }
 

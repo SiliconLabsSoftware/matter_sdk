@@ -30,7 +30,7 @@
 #include <lib/support/SafeInt.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#if CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS
+#if CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS || CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif // HAVE_SYS_SOCKET_H
@@ -42,10 +42,6 @@
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKETS
 #include <zephyr/net/socket.h>
 #endif // CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKETS
-
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
-#include "PlatformInterface.h"
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 
 #include <cerrno>
 #include <unistd.h>
@@ -705,11 +701,6 @@ void UDPEndPointImplSockets::HandlePendingIO(System::SocketEvents events)
             OnReceiveError(this, lStatus, nullptr);
         }
     }
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
-    // since we are using the async select model, we need to listen again
-    // after processing the current message
-    ListenImpl();
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS_PLATFORM
 }
 
 #ifdef IPV6_MULTICAST_LOOP

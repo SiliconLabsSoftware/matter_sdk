@@ -1,33 +1,46 @@
-#ifndef _IFADDRS_H
-#define _IFADDRS_H
+#ifndef IFADDRS_H
+#define IFADDRS_H
 
-#include <netinet_in.h> // For sockaddr_in and sockaddr_in6
-#include <socket.h>     // For sockaddr
-#include <stdint.h>     // For standard integer types
+#include <socket.h>
+#include <netinet_in.h>
+#include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Structure describing a network interface address
 struct ifaddrs
 {
-    struct ifaddrs * ifa_next;       // Pointer to the next structure in the list
-    char * ifa_name;                 // Name of the interface
-    unsigned int ifa_flags;          // Interface flags (e.g., IFF_UP, IFF_LOOPBACK)
-    struct sockaddr * ifa_addr;      // Address of the interface
-    struct sockaddr * ifa_netmask;   // Netmask of the interface
-    struct sockaddr * ifa_broadaddr; // Broadcast address (if applicable)
-    struct sockaddr * ifa_dstaddr;   // Destination address (for point-to-point interfaces)
-    void * ifa_data;                 // Address-specific data
+    struct ifaddrs *ifa_next;       // Pointer to the next interface
+    char *ifa_name;                // Interface name
+    unsigned int ifa_flags;        // Interface flags
+    struct sockaddr *ifa_addr;     // Address of the interface
+    struct sockaddr *ifa_netmask;  // Netmask of the interface
 };
 
-// Function prototypes
-int getifaddrs(struct ifaddrs ** ifap);
-void freeifaddrs(struct ifaddrs * ifa);
+// Hardcoded function to return a single interface
+static inline int getifaddrs(struct ifaddrs **ifap)
+{
+    static struct sockaddr_in addr;
+    static struct sockaddr_in netmask;
+    static struct ifaddrs ifa;
 
-#ifdef __cplusplus
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(0xC0A80001); // 192.168.0.1
+
+    netmask.sin_family = AF_INET;
+    netmask.sin_addr.s_addr = htonl(0xFFFFFF00); // 255.255.255.0
+
+    ifa.ifa_next = NULL;
+    ifa.ifa_name = (char *)"eth0";
+    ifa.ifa_flags = 0;
+    ifa.ifa_addr = (struct sockaddr *)&addr;
+    ifa.ifa_netmask = (struct sockaddr *)&netmask;
+
+    *ifap = &ifa;
+    return 0;
 }
-#endif
 
-#endif // _IFADDRS_H
+// Hardcoded function to free the interface list
+static inline void freeifaddrs(struct ifaddrs *ifa)
+{
+    // No-op for hardcoded implementation
+}
+
+#endif // IFADDRS_H

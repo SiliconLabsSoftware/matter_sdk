@@ -1,71 +1,86 @@
+#ifndef NET_IF_H
+#define NET_IF_H
 
-#ifndef _NET_IF_H
-#define _NET_IF_H 1
+#include <string.h>
+#include <stdlib.h>
 
-#include "socket.h"    // For sockaddr
-#include <sys/types.h> // For basic types
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Length of interface name
 #define IF_NAMESIZE 16
+#define IFF_UP 0x1
+#define IFF_BROADCAST 0x2
+#define IFF_RUNNING 0x40
+#define IFF_LOOPBACK 0x8
+#define IFF_MULTICAST 0x1000
 
-// Interface flags
-#define IFF_UP 0x1           // Interface is up
-#define IFF_BROADCAST 0x2    // Broadcast address valid
-#define IFF_LOOPBACK 0x8     // Is a loopback net
-#define IFF_POINTOPOINT 0x10 // Interface is point-to-point link
-#define IFF_RUNNING 0x40     // Resources allocated
-#define IFF_MULTICAST 0x1000 // Supports multicast
-
-// Interface request structure used for socket ioctl's
-struct ifreq
-{
-    char ifr_name[IF_NAMESIZE]; // Interface name, e.g., "eth0"
-    union
-    {
-        struct sockaddr ifr_addr;      // Address
-        struct sockaddr ifr_dstaddr;   // Other end of point-to-point link
-        struct sockaddr ifr_broadaddr; // Broadcast address
-        struct sockaddr ifr_netmask;   // Netmask
-        short ifr_flags;               // Flags
-        int ifr_metric;                // Metric
-        int ifr_mtu;                   // MTU
-        char ifr_slave[IF_NAMESIZE];   // Slave device
-        char ifr_newname[IF_NAMESIZE]; // New name
-        void * ifr_data;               // Data
-    };
-};
-
-// Structure used in SIOCGIFCONF request
-struct ifconf
-{
-    int ifc_len; // Size of buffer
-    union
-    {
-        char * ifc_buf;         // Buffer address
-        struct ifreq * ifc_req; // Array of structures
-    };
-};
-
-// Interface name and index mapping
+// Structure for if_nameindex
 struct if_nameindex
 {
     unsigned int if_index; // Interface index
-    char * if_name;        // Interface name
+    char *if_name;         // Interface name
 };
 
-// Function prototypes
-char * strdup(const char * s);
-unsigned int if_nametoindex(const char * ifname);
-char * if_indextoname(unsigned int ifindex, char * ifname);
-struct if_nameindex * if_nameindex(void);
-void if_freenameindex(struct if_nameindex * ptr);
-
-#ifdef __cplusplus
+#ifndef HAVE_STRDUP
+static inline char * custom_strdup(const char * s)
+{
+    size_t len  = strlen(s) + 1;
+    char * copy = (char *) malloc(len);
+    if (copy != NULL)
+    {
+        memcpy(copy, s, len);
+    }
+    return copy;
 }
 #endif
 
-#endif // _NET_IF_H
+// Hardcoded function to get the interface name from an index
+static inline char *if_indextoname(unsigned int ifindex, char *ifname)
+{
+    if (ifindex == 1)
+    {
+        strncpy(ifname, "st0", IF_NAMESIZE);
+        return ifname;
+    }
+    return NULL;
+}
+
+// Hardcoded function to get the interface index from a name
+static inline unsigned int if_nametoindex(const char *ifname)
+{
+    if (strcmp(ifname, "st0") == 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+// Hardcoded function to return a list of interfaces
+static inline struct if_nameindex *if_nameindex(void)
+{
+    struct if_nameindex *list = (struct if_nameindex *)malloc(2 * sizeof(struct if_nameindex));
+    if (list == NULL)
+    {
+        return NULL;
+    }
+
+    // Hardcoded single interface
+    list[0].if_index = 1;
+    list[0].if_name = custom_strdup("eth0"); // Allocate memory for the name
+    list[1].if_index = 0;             // End of list
+    list[1].if_name = NULL;
+
+    return list;
+}
+
+// Free the memory allocated by if_nameindex
+static inline void if_freenameindex(struct if_nameindex *list)
+{
+    if (list != NULL)
+    {
+        for (struct if_nameindex *entry = list; entry->if_name != NULL; ++entry)
+        {
+            free(entry->if_name); // Free the allocated name
+        }
+        free(list); // Free the list itself
+    }
+}
+
+#endif // NET_IF_H

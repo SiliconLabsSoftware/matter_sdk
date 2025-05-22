@@ -1,13 +1,11 @@
 #pragma once
 
-#if 0
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <inc/socket.h> // include from wifi sdk
 #include "sl_utility.h"
 #include "errno.h"
-#include "socket.h"
 #ifdef __cplusplus
 }
 #endif
@@ -130,5 +128,3 @@ static inline ssize_t recvmsg(int sockfd, struct msghdr * msg, int flags)
     return recvfrom(sockfd, msg->msg_iov[0].iov_base, msg->msg_iov[0].iov_len + 1, flags, (struct sockaddr *) msg->msg_name,
                     &msg->msg_namelen);
 }
-
-#endif

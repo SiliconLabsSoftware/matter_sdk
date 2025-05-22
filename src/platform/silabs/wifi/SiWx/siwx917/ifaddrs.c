@@ -1,4 +1,5 @@
 #include "ifaddrs.h"
+#if 0
 #include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,3 +130,5 @@ void freeifaddrs(struct ifaddrs * ifa)
         ifa = next;
     }
 }
+
+#endif

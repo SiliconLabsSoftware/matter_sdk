@@ -1,4 +1,5 @@
 #include "if.h"
+#if 0
 #include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -124,3 +125,4 @@ void if_freenameindex(struct if_nameindex * ptr)
 
     free(ptr);
 }
+#endif
