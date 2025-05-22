@@ -17,7 +17,7 @@
 
 /**
  *    @file
- *      This file declares an implementation of LayerImplFreeRTOS using LwIP.
+ *      This file declares an implementation of LayerImplFreeRTOSSocketsSockets using Sockets.
  */
 
 #pragma once
@@ -28,11 +28,11 @@
 
 namespace chip {
 namespace System {
-class LayerImplFreeRTOS : public LayerSockets
+class LayerImplFreeRTOSSockets : public LayerSockets
 {
 public:
-    LayerImplFreeRTOS();
-    ~LayerImplFreeRTOS() { VerifyOrDie(mLayerState.Destroy()); }
+    LayerImplFreeRTOSSockets();
+    ~LayerImplFreeRTOSSockets() { VerifyOrDie(mLayerState.Destroy()); }
 
     // Layer overrides.
     CHIP_ERROR Init() override;
@@ -59,7 +59,7 @@ public:
     bool IsSocketReady(int fd);
     static void StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);
     void HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout);
-    static LayerImplFreeRTOS * sInstance;
+    static LayerImplFreeRTOSSockets * sInstance;
 
 #endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
@@ -110,7 +110,7 @@ protected:
 #endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 };
 
-using LayerImpl = LayerImplFreeRTOS;
+using LayerImpl = LayerImplFreeRTOSSockets;
 
 } // namespace System
 } // namespace chip

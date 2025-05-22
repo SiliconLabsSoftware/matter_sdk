@@ -18,7 +18,7 @@
 
 /**
  *    @file
- *      This file implements LayerImplFreeRTOS. Used by LwIP implementation and OpenThread
+ *      This file implements LayerImplFreeRTOSSockets. Used by LwIP implementation and OpenThread
  */
 
 #include <lib/support/CodeUtils.h>
@@ -36,12 +36,12 @@ namespace System {
 
 #if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 // Define the static instance pointer
-LayerImplFreeRTOS * LayerImplFreeRTOS::sInstance = nullptr;
+LayerImplFreeRTOSSockets * LayerImplFreeRTOSSockets::sInstance = nullptr;
 #endif
 
-LayerImplFreeRTOS::LayerImplFreeRTOS() : mHandlingTimerComplete(false) {}
+LayerImplFreeRTOSSockets::LayerImplFreeRTOSSockets() : mHandlingTimerComplete(false) {}
 
-CHIP_ERROR LayerImplFreeRTOS::Init()
+CHIP_ERROR LayerImplFreeRTOSSockets::Init()
 {
     VerifyOrReturnError(mLayerState.SetInitializing(), CHIP_ERROR_INCORRECT_STATE);
 
@@ -63,12 +63,12 @@ CHIP_ERROR LayerImplFreeRTOS::Init()
     return CHIP_NO_ERROR;
 }
 
-void LayerImplFreeRTOS::Shutdown()
+void LayerImplFreeRTOSSockets::Shutdown()
 {
     mLayerState.ResetFromInitialized();
 }
 
-CHIP_ERROR LayerImplFreeRTOS::StartTimer(Clock::Timeout delay, TimerCompleteCallback onComplete, void * appState)
+CHIP_ERROR LayerImplFreeRTOSSockets::StartTimer(Clock::Timeout delay, TimerCompleteCallback onComplete, void * appState)
 {
     assertChipStackLockedByCurrentThread();
 
@@ -94,7 +94,7 @@ CHIP_ERROR LayerImplFreeRTOS::StartTimer(Clock::Timeout delay, TimerCompleteCall
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LayerImplFreeRTOS::ExtendTimerTo(Clock::Timeout delay, TimerCompleteCallback onComplete, void * appState)
+CHIP_ERROR LayerImplFreeRTOSSockets::ExtendTimerTo(Clock::Timeout delay, TimerCompleteCallback onComplete, void * appState)
 {
     VerifyOrReturnError(delay.count() > 0, CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -109,17 +109,17 @@ CHIP_ERROR LayerImplFreeRTOS::ExtendTimerTo(Clock::Timeout delay, TimerCompleteC
     return CHIP_NO_ERROR;
 }
 
-bool LayerImplFreeRTOS::IsTimerActive(TimerCompleteCallback onComplete, void * appState)
+bool LayerImplFreeRTOSSockets::IsTimerActive(TimerCompleteCallback onComplete, void * appState)
 {
     return (mTimerList.GetRemainingTime(onComplete, appState) > Clock::kZero);
 }
 
-Clock::Timeout LayerImplFreeRTOS::GetRemainingTime(TimerCompleteCallback onComplete, void * appState)
+Clock::Timeout LayerImplFreeRTOSSockets::GetRemainingTime(TimerCompleteCallback onComplete, void * appState)
 {
     return mTimerList.GetRemainingTime(onComplete, appState);
 }
 
-void LayerImplFreeRTOS::CancelTimer(TimerCompleteCallback onComplete, void * appState)
+void LayerImplFreeRTOSSockets::CancelTimer(TimerCompleteCallback onComplete, void * appState)
 {
     assertChipStackLockedByCurrentThread();
 
@@ -132,7 +132,7 @@ void LayerImplFreeRTOS::CancelTimer(TimerCompleteCallback onComplete, void * app
     }
 }
 
-CHIP_ERROR LayerImplFreeRTOS::ScheduleWork(TimerCompleteCallback onComplete, void * appState)
+CHIP_ERROR LayerImplFreeRTOSSockets::ScheduleWork(TimerCompleteCallback onComplete, void * appState)
 {
     assertChipStackLockedByCurrentThread();
 
@@ -169,7 +169,7 @@ CHIP_ERROR LayerImplFreeRTOS::ScheduleWork(TimerCompleteCallback onComplete, voi
 /**
  * Start the platform timer with specified millsecond duration.
  */
-CHIP_ERROR LayerImplFreeRTOS::StartPlatformTimer(System::Clock::Timeout aDelay)
+CHIP_ERROR LayerImplFreeRTOSSockets::StartPlatformTimer(System::Clock::Timeout aDelay)
 {
     VerifyOrReturnError(IsInitialized(), CHIP_ERROR_INCORRECT_STATE);
     CHIP_ERROR status = PlatformEventing::StartTimer(*this, aDelay);
@@ -191,7 +191,7 @@ CHIP_ERROR LayerImplFreeRTOS::StartPlatformTimer(System::Clock::Timeout aDelay)
  *  @return CHIP_NO_ERROR on success, error code otherwise.
  *
  */
-CHIP_ERROR LayerImplFreeRTOS::HandlePlatformTimer()
+CHIP_ERROR LayerImplFreeRTOSSockets::HandlePlatformTimer()
 {
     VerifyOrReturnError(IsInitialized(), CHIP_ERROR_INCORRECT_STATE);
 
@@ -234,7 +234,7 @@ CHIP_ERROR LayerImplFreeRTOS::HandlePlatformTimer()
 }
 
 #if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tokenOut)
+CHIP_ERROR LayerImplFreeRTOSSockets::StartWatchingSocket(int fd, SocketWatchToken * tokenOut)
 {
     // Implementation for FreeRTOS to start watching a socket
     // Allocate a SocketWatch structure and initialize it
@@ -258,7 +258,7 @@ CHIP_ERROR LayerImplFreeRTOS::StartWatchingSocket(int fd, SocketWatchToken * tok
     *tokenOut  = reinterpret_cast<SocketWatchToken>(watch);
     return CHIP_NO_ERROR;
 }
-CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data)
+CHIP_ERROR LayerImplFreeRTOSSockets::SetCallback(SocketWatchToken token, SocketWatchCallback callback, intptr_t data)
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
@@ -268,7 +268,7 @@ CHIP_ERROR LayerImplFreeRTOS::SetCallback(SocketWatchToken token, SocketWatchCal
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingRead(SocketWatchToken token)
+CHIP_ERROR LayerImplFreeRTOSSockets::RequestCallbackOnPendingRead(SocketWatchToken token)
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
@@ -279,7 +279,7 @@ CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingRead(SocketWatchToken toke
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingWrite(SocketWatchToken token)
+CHIP_ERROR LayerImplFreeRTOSSockets::RequestCallbackOnPendingWrite(SocketWatchToken token)
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
@@ -289,7 +289,7 @@ CHIP_ERROR LayerImplFreeRTOS::RequestCallbackOnPendingWrite(SocketWatchToken tok
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LayerImplFreeRTOS::ClearCallbackOnPendingRead(SocketWatchToken token)
+CHIP_ERROR LayerImplFreeRTOSSockets::ClearCallbackOnPendingRead(SocketWatchToken token)
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
@@ -299,7 +299,7 @@ CHIP_ERROR LayerImplFreeRTOS::ClearCallbackOnPendingRead(SocketWatchToken token)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LayerImplFreeRTOS::ClearCallbackOnPendingWrite(SocketWatchToken token)
+CHIP_ERROR LayerImplFreeRTOSSockets::ClearCallbackOnPendingWrite(SocketWatchToken token)
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(token);
     VerifyOrReturnError(watch != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
@@ -309,7 +309,7 @@ CHIP_ERROR LayerImplFreeRTOS::ClearCallbackOnPendingWrite(SocketWatchToken token
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LayerImplFreeRTOS::StopWatchingSocket(SocketWatchToken * tokenInOut)
+CHIP_ERROR LayerImplFreeRTOSSockets::StopWatchingSocket(SocketWatchToken * tokenInOut)
 {
     SocketWatch * watch = reinterpret_cast<SocketWatch *>(*tokenInOut);
     *tokenInOut         = InvalidSocketWatchToken();
@@ -321,7 +321,7 @@ CHIP_ERROR LayerImplFreeRTOS::StopWatchingSocket(SocketWatchToken * tokenInOut)
     return CHIP_NO_ERROR;
 }
 
-void LayerImplFreeRTOS::SocketWatch::Clear()
+void LayerImplFreeRTOSSockets::SocketWatch::Clear()
 {
     mFD = kInvalidFd;
     mPendingIO.ClearAll();
@@ -329,7 +329,7 @@ void LayerImplFreeRTOS::SocketWatch::Clear()
     mCallbackData = 0;
 }
 
-SocketEvents LayerImplFreeRTOS::SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds,
+SocketEvents LayerImplFreeRTOSSockets::SocketEventsFromFDs(int socket, const fd_set & readfds, const fd_set & writefds,
                                                     const fd_set & exceptfds)
 {
     SocketEvents res;
@@ -348,7 +348,7 @@ SocketEvents LayerImplFreeRTOS::SocketEventsFromFDs(int socket, const fd_set & r
     return res;
 }
 
-void LayerImplFreeRTOS::HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
+void LayerImplFreeRTOSSockets::HandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
 {
     if (!IsSelectResultValid())
     {
@@ -373,7 +373,7 @@ void LayerImplFreeRTOS::HandleEvents(fd_set * readfds, fd_set * writefds, fd_set
     }
 }
 
-void LayerImplFreeRTOS::StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
+void LayerImplFreeRTOSSockets::StaticHandleEvents(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
 {
     if (sInstance != nullptr)
     {
@@ -381,7 +381,7 @@ void LayerImplFreeRTOS::StaticHandleEvents(fd_set * readfds, fd_set * writefds, 
     }
 }
 
-bool LayerImplFreeRTOS::IsSocketReady(int fd)
+bool LayerImplFreeRTOSSockets::IsSocketReady(int fd)
 {
     // Check if the socket has data available to read
     FD_ZERO(&mSelected.mReadSet);
