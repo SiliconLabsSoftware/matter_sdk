@@ -670,7 +670,7 @@ CHIP_ERROR Storage::SetOtaTlvEncryptionKey(const ByteSpan & value)
 }
 #endif // OTA_ENCRYPTION_ENABLE
 
-CHIP_ERROR Storage::GetOtaTlvEncryptionKey(uint32_t & keyId)
+CHIP_ERROR Storage::GetOtaTlvEncryptionKeyId(uint32_t & keyId)
 {
 #if defined(SL_MBEDTLS_USE_TINYCRYPT)
     // Tinycrypt doesn't support the key ID
@@ -681,13 +681,23 @@ CHIP_ERROR Storage::GetOtaTlvEncryptionKey(uint32_t & keyId)
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 }
 
-CHIP_ERROR Storage::GetOtaTlvEncryptionKey(MutableByteSpan & keySpan)
+CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uint32_t & ivOffset)
 {
 #if defined(SL_MBEDTLS_USE_TINYCRYPT)
-    // Tinycrypt doesn't support the key ID
-    return SilabsConfig::ReadConfigValueBin(SilabsConfig::kOtaTlvEncryption_KeyId, keySpan.data(), keySpan.size());
+    uint8_t keyBuffer[kOTAEncryptionKeyLength] = { 0 };
+    size_t keyLen = 0;
+
+    // Read the key from the provisioning storage
+    MutableByteSpan keySpan = MutableByteSpan(keyBuffer);
+
+    SilabsConfig::ReadConfigValueBin(SilabsConfig::kOtaTlvEncryption_KeyId, keySpan.data(), keySpan.size());
+    VerifyOrReturnError(keySpan.size() == kOTAEncryptionKeyLength, CHIP_ERROR_INVALID_ARGUMENT);
+
+    chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::OtaTlvEncryptionKey key;
+    key.Decrypt((const ByteSpan) keySpan, block, ivOffset);
+    return CHIP_NO_ERROR;
 #else  // MBEDTLS_USE_PSA_CRYPTO
-    return CHIP_ERROR_NOT_IMPLEMENTED;
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 }
 
