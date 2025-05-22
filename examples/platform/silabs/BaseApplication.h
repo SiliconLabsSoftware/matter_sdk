@@ -75,6 +75,7 @@ private:
     void OnCommissioningSessionStopped() override;
     void OnCommissioningSessionEstablishmentError(CHIP_ERROR err) override;
     void OnCommissioningWindowClosed() override;
+    void OnCommissioningWindowOpened() override;
 
     // FabricTable::Delegate
     void OnFabricCommitted(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
@@ -123,6 +124,7 @@ public:
      *
      * @param event AppEvent to post
      */
+
     static void PostEvent(const AppEvent * event);
 
 #ifdef DISPLAY_ENABLED
@@ -196,6 +198,14 @@ protected:
      *              Function is called after the BaseApplication::Init function.
      */
     virtual CHIP_ERROR AppInit() = 0;
+
+    /** @brief
+     * Function to be called at the end of Init to indicate that the application has completed its initialization.
+     * Currently only used for tracing, might want to move logging here as well in the future
+     * @param err CHIP_NO_ERROR on success, corresponding error code on Init failure, note that Init failure leads to an app error
+     * so this is purely to have a trace logged with the error code
+     */
+    void InitCompleteCallback(CHIP_ERROR err);
 
     /**
      * @brief Function called to start the function timer
