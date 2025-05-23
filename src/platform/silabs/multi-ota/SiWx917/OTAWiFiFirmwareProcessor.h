@@ -38,7 +38,7 @@ public:
     CHIP_ERROR FinalizeAction() override;
 
 private:
-    uint8_t mFWchunktype                    = SL_FWUP_RPS_HEADER;
+    uint8_t mFWchunkType                    = SL_FWUP_RPS_HEADER;
     bool mReset                             = false;
     bool mDescriptorProcessed               = false;
     static constexpr size_t kAlignmentBytes = 64;
