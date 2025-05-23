@@ -104,8 +104,8 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
     mdnsService.service_message = strdup(serviceMessage.c_str()); // Duplicate the string to ensure memory safety
 
     sl_status_t status = sl_mdns_register_service(&sMdnsInstance, SL_NET_WIFI_CLIENT_INTERFACE, &mdnsService);
-    if(status != SL_STATUS_OK) {
-
+    if (status != SL_STATUS_OK)
+    {
         // free allocated memory
         free(const_cast<char *>(mdnsService.instance_name));
         free(const_cast<char *>(mdnsService.service_type));

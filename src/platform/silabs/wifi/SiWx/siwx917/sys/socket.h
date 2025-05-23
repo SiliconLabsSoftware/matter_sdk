@@ -37,7 +37,7 @@ struct msghdr
 #define MSG_DONTWAIT 0x08 /* Nonblocking i/o for this operation only */
 #define MSG_MORE 0x10     /* Sender will send more */
 #define MSG_NOSIGNAL                                                                                                               \
-    0x20 /* Unimplemented: Requests not to send the SIGPIPE signal if an attempt to send is made on a stream-oriented socket that \
+    0x20 /* Unimplemented: Requests not to send the SIGPIPE signal if an attempt to send is made on a stream-oriented socket that  \
             is no longer connected. */
 
 #ifndef CMSGHDR_DEFINED
