@@ -15,7 +15,7 @@ struct ifreq
 // Hardcoded ioctl function to handle interface flags
 static inline int ioctl(int fd, unsigned long request, struct ifreq * ifr)
 {
-    if (request == SIOCGIFFLAGS && strcmp(ifr->ifr_name, "eth0") == 0)
+    if (request == SIOCGIFFLAGS && strcmp(ifr->ifr_name, DEFAULT_INTERFACE_NAME) == 0)
     {
         ifr->ifr_flags = IFF_UP | IFF_RUNNING | IFF_MULTICAST;
         return 0;

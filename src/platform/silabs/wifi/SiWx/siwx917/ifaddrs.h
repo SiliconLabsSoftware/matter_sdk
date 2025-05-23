@@ -22,7 +22,7 @@ static inline int getifaddrs(struct ifaddrs ** ifap)
     static struct ifaddrs ifa;
 
     ifa.ifa_next  = NULL;
-    ifa.ifa_name  = (char *) "st0";
+    ifa.ifa_name  = (char *) DEFAULT_INTERFACE_NAME;
     ifa.ifa_flags = 0;
 
     *ifap = &ifa;

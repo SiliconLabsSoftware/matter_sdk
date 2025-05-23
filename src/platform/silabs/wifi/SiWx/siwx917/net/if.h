@@ -11,6 +11,7 @@
 #define IFF_LOOPBACK 0x8
 #define IFF_MULTICAST 0x1000
 
+#define DEFAULT_INTERFACE_NAME "st0"
 // Structure for if_nameindex
 struct if_nameindex
 {
@@ -23,7 +24,7 @@ static inline char * if_indextoname(unsigned int ifindex, char * ifname)
 {
     if (ifindex == 1)
     {
-        strncpy(ifname, "st0", IF_NAMESIZE);
+        strncpy(ifname, DEFAULT_INTERFACE_NAME, IF_NAMESIZE);
         return ifname;
     }
     return NULL;
@@ -32,7 +33,7 @@ static inline char * if_indextoname(unsigned int ifindex, char * ifname)
 // Hardcoded function to get the interface index from a name
 static inline unsigned int if_nametoindex(const char * ifname)
 {
-    if (strcmp(ifname, "st0") == 0)
+    if (strcmp(ifname, DEFAULT_INTERFACE_NAME) == 0)
     {
         return 1;
     }
@@ -50,8 +51,8 @@ static inline struct if_nameindex * if_nameindex(void)
 
     // Hardcoded single interface
     list[0].if_index = 1;
-    list[0].if_name  = strdup("st0"); // Allocate memory for the name
-    list[1].if_index = 0;             // End of list
+    list[0].if_name  = strdup(DEFAULT_INTERFACE_NAME); // Allocate memory for the name
+    list[1].if_index = 0;                              // End of list
     list[1].if_name  = NULL;
 
     return list;

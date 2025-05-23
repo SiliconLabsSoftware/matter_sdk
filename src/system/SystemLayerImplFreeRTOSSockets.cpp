@@ -18,7 +18,7 @@
 
 /**
  *    @file
- *      This file implements LayerImplFreeRTOSSockets. Used by LwIP implementation and OpenThread
+ *      This file implements LayerImplFreeRTOSSockets. Used by device using FreeRTOS and Sockets
  */
 
 #include <lib/support/CodeUtils.h>

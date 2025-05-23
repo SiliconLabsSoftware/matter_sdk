@@ -103,6 +103,11 @@ bool ps_requirement_added = false;
 
 bool hasNotifiedWifiConnectivity = false;
 
+#if SLI_SI91X_OFFLOAD_NETWORK_STACK
+// Placeholder for IPv6 global address and gateway
+constexpr uint32_t kIPv6GlobalAddressPlaceholder = 0xffffffff;
+#endif // SLI_SI91X_OFFLOAD_NETWORK_STACK
+
 wfx_wifi_scan_ext_t temp_reset;
 
 osSemaphoreId_t sScanCompleteSemaphore;
@@ -399,14 +404,14 @@ sl_status_t SetWifiConfigurations()
 #if SLI_SI91X_OFFLOAD_NETWORK_STACK
     // Assign IPv6 global address explicitly
     // TODO: remove this once getting link local only is fixed from wifi sdk
-    profile.ip.ip.v6.global_address.value[0] = 0xffffffff;
-    profile.ip.ip.v6.global_address.value[1] = 0xffffffff;
-    profile.ip.ip.v6.global_address.value[2] = 0xffffffff;
-    profile.ip.ip.v6.global_address.value[3] = 0xffffffff;
-    profile.ip.ip.v6.gateway.value[0]        = 0xFFFFFFFF;
-    profile.ip.ip.v6.gateway.value[1]        = 0xFFFFFFFF;
-    profile.ip.ip.v6.gateway.value[2]        = 0xFFFFFFFF;
-    profile.ip.ip.v6.gateway.value[3]        = 0xFFFFFFFF;
+    profile.ip.ip.v6.global_address.value[0] = kIPv6GlobalAddressPlaceholder;
+    profile.ip.ip.v6.global_address.value[1] = kIPv6GlobalAddressPlaceholder;
+    profile.ip.ip.v6.global_address.value[2] = kIPv6GlobalAddressPlaceholder;
+    profile.ip.ip.v6.global_address.value[3] = kIPv6GlobalAddressPlaceholder;
+    profile.ip.ip.v6.gateway.value[0]        = kIPv6GlobalAddressPlaceholder;
+    profile.ip.ip.v6.gateway.value[1]        = kIPv6GlobalAddressPlaceholder;
+    profile.ip.ip.v6.gateway.value[2]        = kIPv6GlobalAddressPlaceholder;
+    profile.ip.ip.v6.gateway.value[3]        = kIPv6GlobalAddressPlaceholder;
 #endif
     // TODO: memcpy for now since the types dont match
     memcpy((char *) &profile.config.ssid.value, wfx_rsi.sec.ssid, wfx_rsi.sec.ssid_length);
