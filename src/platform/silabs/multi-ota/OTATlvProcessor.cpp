@@ -33,10 +33,6 @@ using namespace ::chip::DeviceLayer::Silabs;
 
 namespace chip {
 
-#if OTA_ENCRYPTION_ENABLE
-constexpr uint8_t au8Iv[] = { 0x00, 0x00, 0x00, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x00, 0x00, 0x00, 0x00 };
-#endif
-
 CHIP_ERROR OTATlvProcessor::Init()
 {
     VerifyOrReturnError(mCallbackProcessDescriptor != nullptr, CHIP_OTA_PROCESSOR_CB_NOT_REGISTERED);
