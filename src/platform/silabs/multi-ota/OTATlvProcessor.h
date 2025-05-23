@@ -186,7 +186,7 @@ protected:
     void ClearInternal();
 
     bool IsError(CHIP_ERROR & status);
-    virtual uint32_t GetAccumulatorSize() const { return sizeof(Descriptor); }
+    virtual uint32_t GetAccumulatorLength() const { return sizeof(Descriptor); }
 
 #ifdef OTA_ENCRYPTION_ENABLE
     /*ota decryption*/

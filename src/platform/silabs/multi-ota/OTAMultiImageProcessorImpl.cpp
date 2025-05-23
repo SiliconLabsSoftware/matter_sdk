@@ -38,8 +38,8 @@ extern "C" {
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #else // This is not needed for the 917 SoC; it is required for EFR host applications
 #include "btl_interface.h"
-#include "em_bus.h" // For CORE_CRITICAL_SECTION
-#endif              // SLI_SI91X_MCU_INTERFACE
+#include "sl_core.h" // For CORE_CRITICAL_SECTION
+#endif               // SLI_SI91X_MCU_INTERFACE
 }
 
 namespace chip {
@@ -432,6 +432,9 @@ void OTAMultiImageProcessorImpl::HandleApply(intptr_t context)
 #ifdef SLI_SI91X_MCU_INTERFACE // 917 SoC reboot
     chip::DeviceLayer::Silabs::GetPlatform().SoftwareReset();
 #else // EFR reboot
+#if defined(_SILICON_LABS_32B_SERIES_3) && CHIP_PROGRESS_LOGGING
+    osDelay(100); // sl-temp: delay for uart print before reboot
+#endif
     CORE_CRITICAL_SECTION(bootloader_rebootAndInstall();)
 #endif
 }
