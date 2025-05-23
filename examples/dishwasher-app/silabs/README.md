@@ -87,7 +87,7 @@ Silicon Labs platform.
           cd ~/connectedhomeip
           ./scripts/examples/gn_silabs_example.sh ./silabs_examples/dishwasher-app/silabs/ ./out/dishwasher-app BRD4187C
 
-*   To delete generated executable, libraries and object files use:
+-   To delete generated executable, libraries and object files use:
 
           $ cd ~/connectedhomeip
           $ rm -rf ./out/
@@ -101,7 +101,7 @@ Silicon Labs platform.
           $ gn gen out/dishwasher-app
           $ ninja -C out/dishwasher-app
 
-*   To delete generated executable, libraries and object files use:
+-   To delete generated executable, libraries and object files use:
 
           $ cd ~/connectedhomeip/silabs_examples/dishwasher-app/silabs
           $ rm -rf out/
@@ -232,14 +232,14 @@ combination with JLinkRTTClient as follows:
 ### Commissioning
 
 You can provision and control the Matter device using the python controller,
-`chip-tool` standalone, Android, or iOS app.
+`mattertool` standalone, Android, or iOS app.
 
-Silabs provides `chip-tool` as a wrapper function and more user-friendly method
-of using [chip-tool](../../chip-tool/README.md) within the pre-built Raspberry
-Pi image. For more info on using `chip-tool`, see
-[Chiptool](../../../docs/development_controllers/chip-tool/chip_tool_guide.md).
+Silabs provides `mattertool` as a wrapper function and more user-friendly method
+of using [chip-tool](../../../../examples/chip-tool/README.md) within the
+pre-built Raspberry Pi image. For more info on using `mattertool`, see
+[Mattertool](../../../docs/silabs/thread/CHIP_TOOL.md).
 
-Here is an example using `chip-tool`:
+Here is an example using `mattertool`:
 
     $ chip-tool pairing ble-thread 1 hex:0e080000000000010000000300001335060004001fffe002084fe76e9a8b5edaf50708fde46f999f0698e20510d47f5027a414ffeebaefa92285cc84fa030f4f70656e5468726561642d653439630102e49c0410b92f8c7fbb4f9f3e08492ee3915fbd2f0c0402a0fff8 20202021 3840 --ble-controller 0
     $ chip-tool operationalstate start 1 1
