@@ -85,7 +85,7 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
     snprintf(service_type, sizeof(service_type), "%s.%s.local.", service->mType, GetProtocolString(service->mProtocol));
 
     char instance_name[sInstanceNameSize];
-    snprintf(instance_name, sizeof(instance_name), "%s.%s.%s.local", service->mName, service->mType,
+    snprintf(instance_name, sizeof(instance_name), "%s.%s.%s.local.", service->mName, service->mType,
              GetProtocolString(service->mProtocol));
 
     mdnsService.instance_name = strdup(instance_name); // Duplicate the string to ensure memory safety
@@ -94,30 +94,21 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
     mdnsService.ttl           = sttlValue; // Default TTL; adjust as needed
     for (size_t i = 0; i < service->mTextEntrySize; i++)
     {
-        if (service->mTextEntries[i].mKey == nullptr || service->mTextEntries[i].mData == nullptr)
+        if (service->mTextEntries[i].mKey && service->mTextEntries[i].mData)
         {
-            continue;
+            serviceMessage += std::string(service->mTextEntries[i].mKey) + "=" +
+                std::string(reinterpret_cast<const char *>(service->mTextEntries[i].mData)) + " ";
         }
-        serviceMessage += std::string(service->mTextEntries[i].mKey) + "=" +
-            std::string(reinterpret_cast<const char *>(service->mTextEntries[i].mData)) + " ";
     }
     mdnsService.service_message = strdup(serviceMessage.c_str()); // Duplicate the string to ensure memory safety
 
     sl_status_t status = sl_mdns_register_service(&sMdnsInstance, SL_NET_WIFI_CLIENT_INTERFACE, &mdnsService);
-    if (status != SL_STATUS_OK)
-    {
-        // free allocated memory
-        free(const_cast<char *>(mdnsService.instance_name));
-        free(const_cast<char *>(mdnsService.service_type));
-        free(const_cast<char *>(mdnsService.service_message));
-        return CHIP_ERROR_INTERNAL;
-    }
 
     // free allocated memory
     free(const_cast<char *>(mdnsService.instance_name));
     free(const_cast<char *>(mdnsService.service_type));
     free(const_cast<char *>(mdnsService.service_message));
-    return CHIP_NO_ERROR;
+    return ((status == SL_STATUS_OK) ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL);
 }
 
 CHIP_ERROR ChipDnssdRemoveServices()

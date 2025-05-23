@@ -97,8 +97,7 @@ enum class WifiEvent : uint8_t
     kStationStartJoin   = 5,
     kConnectionComplete = 6,
     kStationDhcpDone    = 7,
-    kStationDhcpPoll    = 8,
-    kSocketRead         = 9,
+    kStationDhcpPoll    = 8
 };
 
 typedef enum
