@@ -265,7 +265,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetNetworkInterfaces(NetworkInterface ** 
     ifp->IPv6Addresses = app::DataModel::List<ByteSpan>(ifp->Ipv6AddressSpans, ipv6AddressesCount);
 
     *netifpp = ifp;
-#else
+#elif CHIP_SYSTEM_CONFIG_USE_LWIP
     NetworkInterface * head = NULL;
     for (Inet::InterfaceIterator interfaceIterator; interfaceIterator.HasCurrent(); interfaceIterator.Next())
     {
@@ -340,6 +340,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetNetworkInterfaces(NetworkInterface ** 
     *netifpp = head;
 #endif
 
+    // TODO: Add for the sockets internal stack
     return CHIP_NO_ERROR;
 }
 
