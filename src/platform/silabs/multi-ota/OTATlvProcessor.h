@@ -193,7 +193,7 @@ protected:
     uint32_t mIVOffset = 0;
     /* Expected byte size of the OTAEncryptionKeyLength */
     static constexpr size_t kOTAEncryptionKeyLength = 16;
-    uint32_t mUnalignmentNum = 0;
+    uint32_t mUnalignmentNum                        = 0;
 #endif
     uint32_t mLength                             = 0;
     uint32_t mProcessedLength                    = 0;

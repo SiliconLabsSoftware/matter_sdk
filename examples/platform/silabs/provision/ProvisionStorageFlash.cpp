@@ -751,7 +751,7 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
 {
 #if defined(SL_MBEDTLS_USE_TINYCRYPT)
     uint8_t keyBuffer[chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::kOTAEncryptionKeyLength] = { 0 };
-    size_t keyLen                              = 0;
+    size_t keyLen                                                                              = 0;
 
     // Read the key from the provisioning storage
     MutableByteSpan keySpan = MutableByteSpan(keyBuffer);
@@ -759,7 +759,8 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
     ReturnErrorOnFailure(Flash::Get(Parameters::ID::kOtaTlvEncryptionKey, keySpan.data(), keySpan.size(), keyLen));
     keySpan.reduce_size(keyLen);
 
-    VerifyOrReturnError(keySpan.size() == chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::kOTAEncryptionKeyLength, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(keySpan.size() == chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::kOTAEncryptionKeyLength,
+                        CHIP_ERROR_INVALID_ARGUMENT);
 
     chip::DeviceLayer::Silabs::OtaTlvEncryptionKey::Decrypt((const ByteSpan) keySpan, block, ivOffset);
     return CHIP_NO_ERROR;
