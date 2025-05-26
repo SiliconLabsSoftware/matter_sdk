@@ -9,7 +9,7 @@ namespace DeviceLayer {
 namespace Silabs {
 namespace OtaTlvEncryptionKey {
 
-static CHIP_ERROR OtaTlvEncryptionKey::Decrypt(const ByteSpan & key, MutableByteSpan & block, uint32_t & mIVOffset)
+CHIP_ERROR OtaTlvEncryptionKey::Decrypt(const ByteSpan & key, MutableByteSpan & block, uint32_t & mIVOffset)
 {
     uint8_t iv[16]           = { AU8IV_INIT_VALUE };
     uint8_t stream_block[16] = { 0 };
