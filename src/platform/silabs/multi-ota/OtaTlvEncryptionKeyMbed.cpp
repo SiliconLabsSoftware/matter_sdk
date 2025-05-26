@@ -7,7 +7,6 @@
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
-namespace OtaTlvEncryptionKey {
 
 CHIP_ERROR OtaTlvEncryptionKey::Decrypt(const ByteSpan & key, MutableByteSpan & block, uint32_t & mIVOffset)
 {
@@ -49,7 +48,6 @@ CHIP_ERROR OtaTlvEncryptionKey::Decrypt(const ByteSpan & key, MutableByteSpan & 
     mbedtls_aes_free(&aes_ctx);
     return CHIP_NO_ERROR;
 }
-} // namespace OtaTlvEncryptionKey
 } // namespace Silabs
 } // namespace DeviceLayer
 } // namespace chip

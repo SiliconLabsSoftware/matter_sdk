@@ -12,14 +12,12 @@
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
-namespace OtaTlvEncryptionKey {
-
-static constexpr uint32_t kAES_KeyId_Default    = (PSA_KEY_ID_USER_MIN + 2);
-static constexpr size_t kOTAEncryptionKeyLength = 128u / 8u; // 128 bits KeyLength expressed in bytes.
-
 class OtaTlvEncryptionKey
 {
 public:
+    static constexpr uint32_t kAES_KeyId_Default    = (PSA_KEY_ID_USER_MIN + 2);
+    static constexpr size_t kOTAEncryptionKeyLength = 128u / 8u; // 128 bits KeyLength expressed in bytes.
+    
     OtaTlvEncryptionKey(uint32_t id = 0) { mId = (id > 0) ? id : kAES_KeyId_Default; }
     ~OtaTlvEncryptionKey() = default;
 
@@ -35,7 +33,6 @@ protected:
     uint32_t mId = 0;
 };
 
-} // namespace OtaTlvEncryptionKey
 } // namespace Silabs
 } // namespace DeviceLayer
 } // namespace chip
