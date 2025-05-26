@@ -82,6 +82,8 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
     std::string serviceMessage;
 
     char service_type[sServiceNameSize];
+    // last . is needed as suggested from the network stack team
+    // for the mdns discovery instead of avahi only
     snprintf(service_type, sizeof(service_type), "%s.%s.local.", service->mType, GetProtocolString(service->mProtocol));
 
     char instance_name[sInstanceNameSize];

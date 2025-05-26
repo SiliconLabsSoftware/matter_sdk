@@ -288,25 +288,22 @@ extern "C" {
 #endif
 
 #ifdef SLI_SI917
-#if WIFI_ENABLE_SECURITY_WPA3_TRANSITION // Adding Support for WPA3 transition
+// Define common feature bits
+#define SL_COMMON_FEATURE_BITS (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_CLK | FRONT_END_SWITCH_CTRL)
+// Define WPA3-specific feature bits
+#define SL_WPA3_FEATURE_BITS (SL_COMMON_FEATURE_BITS | SL_SI91X_EXT_FEAT_IEEE_80211W)
+// Define RAM level based on the MCU interface
 #if SLI_SI91X_MCU_INTERFACE
-#define RSI_EXT_CUSTOM_FEATURE_BIT_MAP                                                                                             \
-    (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_CLK | SL_SI91X_RAM_LEVEL_NWP_BASIC_MCU_ADV | FRONT_END_SWITCH_CTRL |              \
-     SL_SI91X_EXT_FEAT_IEEE_80211W)
+#define SL_RAM_LEVEL SL_SI91X_RAM_LEVEL_NWP_BASIC_MCU_ADV
+#else // for NCP
+#define SL_RAM_LEVEL SL_SI91X_RAM_LEVEL_NWP_ALL_MCU_ZERO
+#endif // SLI_SI91X_MCU_INTERFACE
+// Define the custom feature bit map
+#if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
+#define RSI_EXT_CUSTOM_FEATURE_BIT_MAP (SL_WPA3_FEATURE_BITS | SL_RAM_LEVEL)
 #else
-#define RSI_EXT_CUSTOM_FEATURE_BIT_MAP                                                                                             \
-    (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_CLK | SL_SI91X_RAM_LEVEL_NWP_ALL_MCU_ZERO | FRONT_END_SWITCH_CTRL |               \
-     SL_SI91X_EXT_FEAT_IEEE_80211W)
-#endif /* SLI_SI91X_MCU_INTERFACE */
-#else
-#if SLI_SI91X_MCU_INTERFACE
-#define RSI_EXT_CUSTOM_FEATURE_BIT_MAP                                                                                             \
-    (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_CLK | SL_SI91X_RAM_LEVEL_NWP_BASIC_MCU_ADV | FRONT_END_SWITCH_CTRL)
-#else
-#define RSI_EXT_CUSTOM_FEATURE_BIT_MAP                                                                                             \
-    (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_CLK | SL_SI91X_RAM_LEVEL_NWP_ALL_MCU_ZERO | FRONT_END_SWITCH_CTRL)
-#endif /* SLI_SI91X_MCU_INTERFACE */
-#endif /* WIFI_ENABLE_SECURITY_WPA3_TRANSITION */
+#define RSI_EXT_CUSTOM_FEATURE_BIT_MAP (SL_COMMON_FEATURE_BITS | SL_RAM_LEVEL)
+#endif // WIFI_ENABLE_SECURITY_WPA3_TRANSITION
 #else  // EXP_BOARD
 #define RSI_EXT_CUSTOM_FEATURE_BIT_MAP (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2))
 #endif /* SLI_SI917 */
