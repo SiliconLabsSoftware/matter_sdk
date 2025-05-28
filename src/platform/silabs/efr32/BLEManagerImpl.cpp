@@ -104,7 +104,7 @@ namespace {
 #define BLE_CONFIG_MIN_CE_LENGTH (0)      // Leave to min value
 #define BLE_CONFIG_MAX_CE_LENGTH (0xFFFF) // Leave to max value
 
-// SL-TEMP Using ZIGBEE HDR Phy can cause delays in BLE exchange when there is 15.4 traffic,
+// SL-TEMP Using Zigbee HDR PHY can cause delays in BLE exchange when there is 15.4 traffic,
 // so we need to increase the timeout to avoid the connection timeout.
 #ifdef SL_CATALOG_HIGH_DATARATE_PHY_PRESENT
 #define BLE_CONFIG_TIMEOUT (300) // Time = Value x 10 ms = 2.5s
