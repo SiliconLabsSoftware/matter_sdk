@@ -134,15 +134,16 @@ const sl_wifi_device_configuration_t config = {
     .region_code = REGION_CODE,
     .boot_config = { .oper_mode       = SL_SI91X_CLIENT_MODE,
                      .coex_mode       = SL_SI91X_WLAN_BLE_MODE,
-                     .feature_bit_map = (SL_SI91X_FEAT_SECURITY_OPEN |
-                                         SL_SI91X_FEAT_AGGREGATION
+                     .feature_bit_map = (SL_SI91X_FEAT_SECURITY_OPEN
 #if SLI_SI91X_OFFLOAD_NETWORK_STACK
                                          // matter only enabled bit to bind before connection
                                          // TODO: remove this once it is enabled in the firmware
                                          | BIT(18)
 #endif // SLI_SI91X_OFFLOAD_NETWORK_STACK
 #ifndef SLI_SI91X_MCU_INTERFACE
-                                         | SL_SI91X_FEAT_ULP_GPIO_BASED_HANDSHAKE | SL_SI91X_FEAT_DEV_TO_HOST_ULP_GPIO_1
+                                         // configurations for the NCP mode only
+                                         | SL_SI91X_FEAT_ULP_GPIO_BASED_HANDSHAKE | SL_SI91X_FEAT_DEV_TO_HOST_ULP_GPIO_1 |
+                                         SL_SI91X_FEAT_AGGREGATION
 #endif
                                          ),
                      .tcp_ip_feature_bit_map = (
