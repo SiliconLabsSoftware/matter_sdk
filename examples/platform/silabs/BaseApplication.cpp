@@ -431,7 +431,7 @@ CHIP_ERROR BaseApplication::BaseInit()
     return err;
 }
 
-void BaseApplication::InitCompleteCallback(CHIP_ERROR err)
+void BaseApplication::InitCompleteCallback([[maybe_unused]] CHIP_ERROR err)
 {
     // A stub for backward compatibility
 }
