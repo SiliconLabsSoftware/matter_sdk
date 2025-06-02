@@ -1,20 +1,19 @@
 /*****************************************************************************
- * @file MultiProtocolDataModelHelper.cpp
+ * @file MultiProtocolDataModelHelper.h
  * @brief Helpers to Link Matter and Zigbee data models.
  *******************************************************************************
  * # License
- * <b>Copyright 2024 Silicon Laboratories Inc.
- *www.silabs.com</b>
+ * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
  *******************************************************************************
  *
  * The licensor of this software is Silicon
- *Laboratories Inc. Your use of this software is
- *governed by the terms of Silicon Labs Master
- *Software License Agreement (MSLA) available at
+ * Laboratories Inc. Your use of this software is
+ * governed by the terms of Silicon Labs Master
+ * Software License Agreement (MSLA) available at
  * www.silabs.com/about-us/legal/master-software-license-agreement.
- *This software is distributed to you in Source Code
- *format and is governed by the sections of the MSLA
- *applicable to Source Code.
+ * This software is distributed to you in Source Code
+ * format and is governed by the sections of the MSLA
+ * applicable to Source Code.
  *
  ******************************************************************************/
 #pragma once
@@ -41,7 +40,7 @@ typedef sl_zigbee_matter_af_multi_protocol_attribute_metadata_t MpAttributeMetad
  * @param matterClusterId The Matter cluster ID (may include manufacturer bits).
  * @return Pointer to the cluster metadata if found, otherwise nullptr.
  */
-const MpClusterMetadata * GetMpCusterMetadata(chip::ClusterId matterClusterId);
+const MpClusterMetadata * GetMpClusterMetadata(chip::ClusterId matterClusterId);
 
 /**
  * @brief Find the attribute metadata mapping for a given Matter attribute ID within a cluster.

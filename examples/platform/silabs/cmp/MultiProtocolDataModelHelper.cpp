@@ -3,18 +3,17 @@
  * @brief Helpers to Link Matter and Zigbee data models.
  *******************************************************************************
  * # License
- * <b>Copyright 2024 Silicon Laboratories Inc.
- *www.silabs.com</b>
+ * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
  *******************************************************************************
  *
  * The licensor of this software is Silicon
- *Laboratories Inc. Your use of this software is
- *governed by the terms of Silicon Labs Master
- *Software License Agreement (MSLA) available at
+ * Laboratories Inc. Your use of this software is
+ * governed by the terms of Silicon Labs Master
+ * Software License Agreement (MSLA) available at
  * www.silabs.com/about-us/legal/master-software-license-agreement.
- *This software is distributed to you in Source Code
- *format and is governed by the sections of the MSLA
- *applicable to Source Code.
+ * This software is distributed to you in Source Code
+ * format and is governed by the sections of the MSLA
+ * applicable to Source Code.
  *
  ******************************************************************************/
 
@@ -36,7 +35,7 @@ namespace MultiProtocolDataModel {
 const MpClusterMetadata mpClusterMap[] = GENERATED_MULTI_PROTOCOL_CLUSTER_MAPPING;
 const uint8_t mappedMpClusterCount     = (sizeof(mpClusterMap) / sizeof(sl_zigbee_matter_af_multi_protocol_cluster_metadata_t));
 
-const MpClusterMetadata * GetMpCusterMetadata(chip::ClusterId matterClusterId)
+const MpClusterMetadata * GetMpClusterMetadata(chip::ClusterId matterClusterId)
 {
     for (uint8_t i = 0; i < mappedMpClusterCount; i++)
     {
@@ -66,7 +65,7 @@ const MpAttributeMetadata * GetMpAttributeMetadata(const MpClusterMetadata * mpC
 void WriteMatterAttributeValueToZigbee(chip::EndpointId endpointId, chip::ClusterId clusterId, chip::AttributeId attributeId,
                                        uint8_t * attributeValue, EmberAfAttributeType dataType)
 {
-    const MpClusterMetadata * mpClusterMetadata = GetMpCusterMetadata(clusterId);
+    const MpClusterMetadata * mpClusterMetadata = GetMpClusterMetadata(clusterId);
     VerifyOrReturn(mpClusterMetadata != nullptr);
 
     const MpAttributeMetadata * mpAttributeMetadata = GetMpAttributeMetadata(mpClusterMetadata, attributeId);
