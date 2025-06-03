@@ -120,7 +120,6 @@ public:
         return static_cast<ChipError>(MakeField(kRangeStart, to_underlying(range)) | MakeField(kValueStart, code));
     }
 
-#define CHIP_PLATFORM_ERROR(part, code) (::chip::ChipError(::chip::ChipError::MapPlatformError(part, code)))
     // Helper for declaring constructors without too much repetition.
 #if CHIP_CONFIG_ERROR_SOURCE
 #if __cplusplus >= 202002L
@@ -179,6 +178,8 @@ public:
 #else // CHIP_CONFIG_ERROR_SOURCE
 #define CHIP_SDK_ERROR(part, code) (::chip::ChipError(::chip::ChipError::SdkErrorConstant<(part), (code)>::value))
 #endif // CHIP_CONFIG_ERROR_SOURCE
+
+#define CHIP_PLATFORM_ERROR(part, code) (::chip::ChipError(::chip::ChipError::MapPlatformError(part, code)))
 
     /**
      * Construct a CHIP_ERROR from the underlying storage type.
@@ -425,6 +426,11 @@ public:
         static constexpr StorageType value = MakeInteger(PART, SCODE);
     };
 
+    /**
+     * Helper for constructing error constants for platform errors.
+     *
+     * This template ensures that the numeric value is constant and well-formed.
+     */
     template <Range PART, uint32_t PlatformCode>
     struct PlatformErrorConstant
     {
