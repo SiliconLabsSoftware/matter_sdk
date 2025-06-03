@@ -91,8 +91,8 @@ CHIP_ERROR ConfigurationManagerImpl::GetBootReason(uint32_t & bootReason)
 {
     // rebootCause is obtained at bootup.
     BootReasonType matterBootCause;
+    [[maybe_unused]] uint32_t rebootCause = Silabs::GetPlatform().GetRebootCause();
 #if defined(_RMU_RSTCAUSE_MASK)
-    uint32_t rebootCause = Silabs::GetPlatform().GetRebootCause();
     if (rebootCause & RMU_RSTCAUSE_PORST || rebootCause & RMU_RSTCAUSE_EXTRST) // PowerOn or External pin reset
     {
         matterBootCause = BootReasonType::kPowerOnReboot;
@@ -115,7 +115,6 @@ CHIP_ERROR ConfigurationManagerImpl::GetBootReason(uint32_t & bootReason)
     }
     // Not tracked HARDWARE_WATCHDOG_RESET && SOFTWARE_UPDATE_COMPLETED
 #elif defined(_EMU_RSTCAUSE_MASK)
-    uint32_t rebootCause = Silabs::GetPlatform().GetRebootCause();
     if (rebootCause & EMU_RSTCAUSE_POR || rebootCause & EMU_RSTCAUSE_PIN) // PowerOn or External pin reset
     {
         matterBootCause = BootReasonType::kPowerOnReboot;
