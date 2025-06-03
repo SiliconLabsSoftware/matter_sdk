@@ -145,7 +145,7 @@ CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
         status = sl_matter_wifi_disconnect();
         if (status != SL_STATUS_OK)
         {
-            return CHIP_ERROR_INTERNAL;
+            return PLATFORM_TO_CHIP_ERROR(status);
         }
     }
     ReturnErrorOnFailure(ConnectivityMgr().SetWiFiStationMode(ConnectivityManager::kWiFiStationMode_Disabled));

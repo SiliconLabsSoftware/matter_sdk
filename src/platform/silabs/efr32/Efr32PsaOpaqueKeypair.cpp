@@ -153,7 +153,7 @@ CHIP_ERROR EFR32OpaqueKeypair::Load(EFR32OpaqueKeyId opaque_id)
 
     VerifyOrExit(status == PSA_SUCCESS, {
         _log_PSA_error(status);
-        error = CHIP_ERROR_INTERNAL;
+        error = PLATFORM_TO_CHIP_ERROR(status);
     });
 
     // Store the key ID and mark the key as valid
@@ -228,7 +228,7 @@ CHIP_ERROR EFR32OpaqueKeypair::Create(EFR32OpaqueKeyId opaque_id, EFR32OpaqueKey
     status = psa_generate_key(&attr, &key_id);
     VerifyOrExit(status == PSA_SUCCESS, {
         _log_PSA_error(status);
-        error = CHIP_ERROR_INTERNAL;
+        error = PLATFORM_TO_CHIP_ERROR(status);
     });
 
     // Export the public key
@@ -239,7 +239,7 @@ CHIP_ERROR EFR32OpaqueKeypair::Create(EFR32OpaqueKeyId opaque_id, EFR32OpaqueKey
         // Key generation succeeded, but pubkey export did not. To avoid
         // memory leaks, delete the generated key before returning the error
         psa_destroy_key(key_id);
-        error = CHIP_ERROR_INTERNAL;
+        error = PLATFORM_TO_CHIP_ERROR(status);
         goto exit;
     }
 
@@ -310,7 +310,7 @@ CHIP_ERROR EFR32OpaqueKeypair::Sign(const uint8_t * msg, size_t msg_len, uint8_t
 
     VerifyOrExit(status == PSA_SUCCESS, {
         _log_PSA_error(status);
-        error = CHIP_ERROR_INTERNAL;
+        error = PLATFORM_TO_CHIP_ERROR(status);
     });
 
 exit:
@@ -330,7 +330,7 @@ CHIP_ERROR EFR32OpaqueKeypair::Derive(const uint8_t * their_key, size_t their_ke
 
     VerifyOrExit(status == PSA_SUCCESS, {
         _log_PSA_error(status);
-        error = CHIP_ERROR_INTERNAL;
+        error = PLATFORM_TO_CHIP_ERROR(status);
     });
 
 exit:
@@ -347,7 +347,7 @@ CHIP_ERROR EFR32OpaqueKeypair::DestroyKey()
     status = psa_destroy_key(*(mbedtls_svc_key_id_t *) mContext);
     VerifyOrExit(status == PSA_SUCCESS, {
         _log_PSA_error(status);
-        error = CHIP_ERROR_INTERNAL;
+        error = PLATFORM_TO_CHIP_ERROR(status);
     });
 
 exit:

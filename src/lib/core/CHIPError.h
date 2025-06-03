@@ -30,6 +30,7 @@
 
 #include <lib/core/CHIPConfig.h>
 #include <lib/support/TypeTraits.h>
+#include "sl_status.h"
 
 #include <inttypes.h>
 #include <limits>
@@ -114,6 +115,12 @@ public:
 
     ChipError() = default;
 
+    static constexpr ::chip::ChipError MapPlatformError(::chip::ChipError::Range range, uint32_t code)
+    {
+        return static_cast<ChipError>(MakeField(kRangeStart, to_underlying(range)) | MakeField(kValueStart, code));
+    }
+
+#define CHIP_PLATFORM_ERROR(part, code) (::chip::ChipError(::chip::ChipError::MapPlatformError(part, code)))
     // Helper for declaring constructors without too much repetition.
 #if CHIP_CONFIG_ERROR_SOURCE
 #if __cplusplus >= 202002L
@@ -417,6 +424,13 @@ public:
         static_assert(MakeInteger(PART, SCODE) != 0, "value is zero");
         static constexpr StorageType value = MakeInteger(PART, SCODE);
     };
+
+    template <Range PART, uint32_t PlatformCode>
+    struct PlatformErrorConstant
+    {
+        static_assert(MakeInteger(PART, PlatformCode) != 0, "value is zero");
+        static constexpr uint32_t value = MakeInteger(PART, PlatformCode);
+    };
 };
 
 } // namespace chip
@@ -432,6 +446,8 @@ using CHIP_ERROR = ::chip::ChipError;
  * larger values, use a custom Range offset from Range::kLastRange.
  */
 #define CHIP_APPLICATION_ERROR(e) CHIP_SDK_ERROR(::chip::ChipError::SdkPart::kApplication, (e))
+
+#define PLATFORM_TO_CHIP_ERROR(e) CHIP_PLATFORM_ERROR(::chip::ChipError::Range::kPlatform, (e))
 
 #define CHIP_CORE_ERROR(e) CHIP_SDK_ERROR(::chip::ChipError::SdkPart::kCore, (e))
 

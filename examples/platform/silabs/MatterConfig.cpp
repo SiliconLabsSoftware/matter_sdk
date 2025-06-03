@@ -222,8 +222,8 @@ void SilabsMatterConfig::AppInit()
 
     // Should never get here.
     chip::Platform::MemoryShutdown();
-    ChipLogProgress(DeviceLayer, "Start Scheduler Failed");
-    appError(CHIP_ERROR_INTERNAL);
+    ChipLogError(DeviceLayer, "Start Scheduler Failed, Not enough RAM");
+    appError(CHIP_ERROR_NO_MEMORY);
 #endif
 }
 
