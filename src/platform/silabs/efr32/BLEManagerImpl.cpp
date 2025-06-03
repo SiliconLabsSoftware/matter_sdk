@@ -101,9 +101,16 @@ namespace {
 #define BLE_CONFIG_MIN_INTERVAL (16) // Time = Value x 1.25 ms = 30ms
 #define BLE_CONFIG_MAX_INTERVAL (80) // Time = Value x 1.25 ms = 100ms
 #define BLE_CONFIG_LATENCY (0)
-#define BLE_CONFIG_TIMEOUT (100)          // Time = Value x 10 ms = 1s
 #define BLE_CONFIG_MIN_CE_LENGTH (0)      // Leave to min value
 #define BLE_CONFIG_MAX_CE_LENGTH (0xFFFF) // Leave to max value
+
+// SL-TEMP Using Zigbee HDR PHY can cause delays in BLE exchange when there is 15.4 traffic,
+// so we need to increase the timeout to avoid the connection timeout.
+#ifdef SL_CATALOG_HIGH_DATARATE_PHY_PRESENT
+#define BLE_CONFIG_TIMEOUT (300) // Time = Value x 10 ms = 2.5s
+#else
+#define BLE_CONFIG_TIMEOUT (100) // Time = Value x 10 ms = 1s
+#endif
 
 // Side Channel default intervals: between 20ms to 5s, API does Value * 0.625ms, so we should check where the default above comes
 // from

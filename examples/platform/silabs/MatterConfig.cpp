@@ -210,7 +210,8 @@ void SilabsMatterConfig::AppInit()
 
 // SL-TEMP: GN cannot use sl_main until it supports sisdk 2025.6
 // sl_system_init is always used for 917 soc
-#if (SL_MATTER_GN_BUILD == 1 || SLI_SI91X_MCU_INTERFACE)
+// Also use sl_system for projects upgraded to 2025.6, identified by the presence of SL_CATALOG_CUSTOM_MAIN_PRESENT
+#if (SL_MATTER_GN_BUILD == 1 || SLI_SI91X_MCU_INTERFACE) || defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
     GetPlatform().StartScheduler();
 
     // Should never get here.
