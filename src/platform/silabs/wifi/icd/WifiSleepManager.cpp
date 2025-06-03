@@ -28,7 +28,7 @@ namespace {
  * @brief Configures the Wi-Fi Chip to go to LI based sleep.
  *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
  *
- * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise PLATFORM_TO_CHIP_ERROR 
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise PLATFORM_TO_CHIP_ERROR
  *         with the sl_status error code from the Wi-Fi driver.
  */
 CHIP_ERROR ConfigureLIBasedSleep()
@@ -50,7 +50,7 @@ CHIP_ERROR ConfigureLIBasedSleep()
  * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
  *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
  *
- * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise PLATFORM_TO_CHIP_ERROR 
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise PLATFORM_TO_CHIP_ERROR
  *         with the sl_status error code from the Wi-Fi driver.
  */
 CHIP_ERROR ConfigureDTIMBasedSleep()
