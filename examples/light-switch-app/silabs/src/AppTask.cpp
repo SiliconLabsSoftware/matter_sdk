@@ -93,7 +93,7 @@ CHIP_ERROR AppTask::AppInit()
 void AppTask::Timer::Start()
 {
     // Starts or restarts the function timer
-    sl_status status = osTimerStart(mHandler, pdMS_TO_TICKS(LONG_PRESS_TIMEOUT_MS));
+    sl_status_t status = osTimerStart(mHandler, pdMS_TO_TICKS(LONG_PRESS_TIMEOUT_MS));
     if (status != osOK)
     {
         SILABS_LOG("Timer start() failed with error code : %lx", status);
