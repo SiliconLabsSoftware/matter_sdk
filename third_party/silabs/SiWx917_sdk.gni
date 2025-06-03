@@ -361,11 +361,7 @@ template("siwx917_sdk") {
       }
     }
 
-    cflags += [
-      "-Wno-shadow",
-      "-Wno-unknown-warning-option",
-      "-Wno-unused-variable",
-    ]
+    cflags += [ "-Wno-shadow" ]
 
     foreach(include_dir, _include_dirs) {
       cflags += [ "-isystem" + rebase_path(include_dir, root_build_dir) ]
