@@ -33,9 +33,9 @@ namespace {
  */
 CHIP_ERROR ConfigureLIBasedSleep()
 {
-    sl_status_t status =
-        ConfigureBroadcastFilter(true) VerifyOrReturnError(status == SL_STATUS_OK, PLATFORM_TO_CHIP_ERROR(status),
-                                                           ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
+    sl_status_t status = ConfigureBroadcastFilter(true);
+    VerifyOrReturnError(status == SL_STATUS_OK, PLATFORM_TO_CHIP_ERROR(status),
+                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
 
     // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
     status = ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
