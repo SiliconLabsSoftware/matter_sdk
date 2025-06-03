@@ -28,9 +28,9 @@
 
 #pragma once
 
+#include "sl_status.h"
 #include <lib/core/CHIPConfig.h>
 #include <lib/support/TypeTraits.h>
-#include "sl_status.h"
 
 #include <inttypes.h>
 #include <limits>

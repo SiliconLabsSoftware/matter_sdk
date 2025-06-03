@@ -82,7 +82,8 @@ CHIP_ERROR DecodeTotal(Encoding::Buffer & reader, uint16_t & total)
     ReturnErrorOnFailure(reader.Get(sz));
     total     = (0xffff == sz) ? sizeof(uint16_t) : sz;
     reader.in = reader.begin + total;
-    VerifyOrReturnError(reader.in <= reader.end, CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Invalid page, buffer reader is not valid"));
+    VerifyOrReturnError(reader.in <= reader.end, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Invalid page, buffer reader is not valid"));
     return CHIP_NO_ERROR;
 }
 
