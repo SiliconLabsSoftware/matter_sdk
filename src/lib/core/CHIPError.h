@@ -452,7 +452,7 @@ using CHIP_ERROR = ::chip::ChipError;
  */
 #define CHIP_APPLICATION_ERROR(e) CHIP_SDK_ERROR(::chip::ChipError::SdkPart::kApplication, (e))
 
-#define PLATFORM_TO_CHIP_ERROR(e) CHIP_PLATFORM_ERROR(::chip::ChipError::Range::kPlatform, (e))
+#define MATTER_PLATFORM_ERROR(e) CHIP_PLATFORM_ERROR(::chip::ChipError::Range::kPlatform, (e))
 
 #define CHIP_CORE_ERROR(e) CHIP_SDK_ERROR(::chip::ChipError::SdkPart::kCore, (e))
 

@@ -118,7 +118,7 @@ CHIP_ERROR SensorManager::Init()
     if (status != SL_STATUS_OK)
     {
         ChipLogError(AppServer, "Failed to Init Sensor with error code: %lx", status);
-        return PLATFORM_TO_CHIP_ERROR(status);
+        return MATTER_PLATFORM_ERROR(status);
     }
 #endif
     // Update Air Quality immediatly at bootup

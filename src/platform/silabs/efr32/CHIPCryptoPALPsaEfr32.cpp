@@ -118,15 +118,15 @@ CHIP_ERROR AES_CCM_encrypt(const uint8_t * plaintext, size_t plaintext_length, c
     size_t tag_out_length           = 0;
 
     status = psa_aead_encrypt_setup(&operation, key.As<psa_key_id_t>(), algorithm);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_aead_encrypt_setup failed: %ld", status));
 
     status = psa_aead_set_lengths(&operation, aad_length, plaintext_length);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_aead_set_lengths failed: %ld", status));
 
     status = psa_aead_set_nonce(&operation, nonce, nonce_length);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_aead_set_nonce failed: %ld", status));
 
     if (0 == aad_length)
@@ -136,7 +136,7 @@ CHIP_ERROR AES_CCM_encrypt(const uint8_t * plaintext, size_t plaintext_length, c
     else
     {
         status = psa_aead_update_ad(&operation, aad, aad_length);
-        VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+        VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "psa_aead_update_ad failed: %ld", status));
     }
 
@@ -165,7 +165,7 @@ CHIP_ERROR AES_CCM_encrypt(const uint8_t * plaintext, size_t plaintext_length, c
 
         // Add the aligned part of the plaintext
         status = psa_aead_update(&operation, plaintext, block_aligned_length, ciphertext, block_aligned_length, &out_length);
-        VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+        VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "psa_aead_update failed: %ld", status));
         VerifyOrReturnError(
             out_length <= block_aligned_length, CHIP_ERROR_INTERNAL,
@@ -182,7 +182,7 @@ CHIP_ERROR AES_CCM_encrypt(const uint8_t * plaintext, size_t plaintext_length, c
             // Add the non-aligned end of the plaintext
             status =
                 psa_aead_update(&operation, &plaintext[block_aligned_length], partial_block_length, temp, max_output, &out_length);
-            VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+            VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                                 ChipLogError(Crypto, "psa_aead_update failed: %ld", status));
             VerifyOrReturnError(
                 ciphertext_length + out_length <= plaintext_length, CHIP_ERROR_INTERNAL,
@@ -198,10 +198,10 @@ CHIP_ERROR AES_CCM_encrypt(const uint8_t * plaintext, size_t plaintext_length, c
 
         // The finish may return the last part of the ciphertext
         status = psa_aead_finish(&operation, temp, max_finish, &out_length, tag, tag_length, &tag_out_length);
-        VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+        VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "psa_aead_finish failed: %ld", status));
         VerifyOrReturnError(
-            ciphertext_length + out_length <= plaintext_length, PLATFORM_TO_CHIP_ERROR(status),
+            ciphertext_length + out_length <= plaintext_length, CHIP_ERROR_INTERNAL,
             ChipLogError(Crypto, "psa_aead_finish out_length is not compliant with PSA's output size requirements"));
         // Add the encrypted output, if any
         memcpy(&ciphertext[ciphertext_length], temp, out_length);
@@ -209,7 +209,7 @@ CHIP_ERROR AES_CCM_encrypt(const uint8_t * plaintext, size_t plaintext_length, c
         VerifyOrReturnError(ciphertext_length == plaintext_length, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "Encrypted ciphertext length does not match plaintext length"));
     }
-    VerifyOrReturnError(status == PSA_SUCCESS && tag_length == tag_out_length, PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrReturnError(status == PSA_SUCCESS && tag_length == tag_out_length, CHIP_ERROR_INTERNAL);
 
     return CHIP_NO_ERROR;
 }
@@ -229,15 +229,15 @@ CHIP_ERROR AES_CCM_decrypt(const uint8_t * ciphertext, size_t ciphertext_length,
     size_t out_length               = 0;
 
     status = psa_aead_decrypt_setup(&operation, key.As<psa_key_id_t>(), algorithm);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_aead_decrypt_setup failed: %ld", status));
 
     status = psa_aead_set_lengths(&operation, aad_length, ciphertext_length);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_aead_set_lengths failed: %ld", status));
 
     status = psa_aead_set_nonce(&operation, nonce, nonce_length);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_aead_set_nonce failed: %ld", status));
 
     if (0 == aad_length)
@@ -247,7 +247,7 @@ CHIP_ERROR AES_CCM_decrypt(const uint8_t * ciphertext, size_t ciphertext_length,
     else
     {
         status = psa_aead_update_ad(&operation, aad, aad_length);
-        VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+        VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "psa_aead_update_ad failed: %ld", status));
     }
 
@@ -275,7 +275,7 @@ CHIP_ERROR AES_CCM_decrypt(const uint8_t * ciphertext, size_t ciphertext_length,
 
         // Add the aligned part of the ciphertext
         status = psa_aead_update(&operation, ciphertext, block_aligned_length, plaintext, block_aligned_length, &out_length);
-        VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+        VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "psa_aead_update failed: %ld", status));
         VerifyOrReturnError(
             out_length <= block_aligned_length, CHIP_ERROR_INTERNAL,
@@ -292,7 +292,7 @@ CHIP_ERROR AES_CCM_decrypt(const uint8_t * ciphertext, size_t ciphertext_length,
             // Add the non-aligned end of the ciphertext
             status =
                 psa_aead_update(&operation, &ciphertext[block_aligned_length], partial_block_length, temp, max_output, &out_length);
-            VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+            VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                                 ChipLogError(Crypto, "psa_aead_update failed: %ld", status));
             VerifyOrReturnError(
                 plaintext_length + out_length <= ciphertext_length, CHIP_ERROR_INTERNAL,
@@ -308,7 +308,7 @@ CHIP_ERROR AES_CCM_decrypt(const uint8_t * ciphertext, size_t ciphertext_length,
 
         // Complete verification
         status = psa_aead_verify(&operation, temp, max_verify, &out_length, tag, tag_length);
-        VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+        VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "psa_aead_verify failed: %ld", status));
         VerifyOrReturnError(
             plaintext_length + out_length <= ciphertext_length, CHIP_ERROR_INTERNAL,
@@ -319,7 +319,7 @@ CHIP_ERROR AES_CCM_decrypt(const uint8_t * ciphertext, size_t ciphertext_length,
         VerifyOrReturnError(ciphertext_length == plaintext_length, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "Decrypted plaintext length does not match ciphertext length"));
     }
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL);
 
     return CHIP_NO_ERROR;
 }
@@ -331,7 +331,7 @@ CHIP_ERROR Hash_SHA256(const uint8_t * data, const size_t data_length, uint8_t *
     const psa_status_t status =
         psa_hash_compute(PSA_ALG_SHA_256, data, data_length, out_buffer, PSA_HASH_LENGTH(PSA_ALG_SHA_256), &outLength);
 
-    return status == PSA_SUCCESS ? CHIP_NO_ERROR : PLATFORM_TO_CHIP_ERROR(status);
+    return status == PSA_SUCCESS ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
 
 CHIP_ERROR Hash_SHA1(const uint8_t * data, const size_t data_length, uint8_t * out_buffer)
@@ -341,7 +341,7 @@ CHIP_ERROR Hash_SHA1(const uint8_t * data, const size_t data_length, uint8_t * o
     const psa_status_t status =
         psa_hash_compute(PSA_ALG_SHA_1, data, data_length, out_buffer, PSA_HASH_LENGTH(PSA_ALG_SHA_1), &outLength);
 
-    return status == PSA_SUCCESS ? CHIP_NO_ERROR : PLATFORM_TO_CHIP_ERROR(status);
+    return status == PSA_SUCCESS ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
 
 static inline psa_hash_operation_t * toHashOperation(HashSHA256OpaqueContext * context)
@@ -369,14 +369,14 @@ CHIP_ERROR Hash_SHA256_stream::Begin()
     toHashOperation(mContext) = PSA_HASH_OPERATION_INIT;
     const psa_status_t status = psa_hash_setup(toHashOperation(&mContext), PSA_ALG_SHA_256);
 
-    return status == PSA_SUCCESS ? CHIP_NO_ERROR : PLATFORM_TO_CHIP_ERROR(status);
+    return status == PSA_SUCCESS ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
 
 CHIP_ERROR Hash_SHA256_stream::AddData(const ByteSpan data)
 {
     const psa_status_t status = psa_hash_update(toHashOperation(&mContext), data.data(), data.size());
 
-    return status == PSA_SUCCESS ? CHIP_NO_ERROR : PLATFORM_TO_CHIP_ERROR(status);
+    return status == PSA_SUCCESS ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
 
 CHIP_ERROR Hash_SHA256_stream::GetDigest(MutableByteSpan & out_buffer)
@@ -389,10 +389,10 @@ CHIP_ERROR Hash_SHA256_stream::GetDigest(MutableByteSpan & out_buffer)
     size_t outLength;
 
     status = psa_hash_clone(toHashOperation(&mContext), &operation);
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
 
     status = psa_hash_finish(&operation, out_buffer.data(), out_buffer.size(), &outLength);
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
     out_buffer.reduce_size(outLength);
 
 exit:
@@ -408,7 +408,7 @@ CHIP_ERROR Hash_SHA256_stream::Finish(MutableByteSpan & out_buffer)
     size_t outLength;
 
     const psa_status_t status = psa_hash_finish(toHashOperation(&mContext), out_buffer.data(), out_buffer.size(), &outLength);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_hash_finish failed: %ld", status));
     out_buffer.reduce_size(outLength);
 
@@ -437,7 +437,7 @@ CHIP_ERROR FindFreeKeySlotInRange(psa_key_id_t & keyId, psa_key_id_t start, uint
         else if (status != PSA_SUCCESS)
         {
             ChipLogError(Crypto, "psa_get_key_attributes failed: %ld", status);
-            return PLATFORM_TO_CHIP_ERROR(status);
+            return CHIP_ERROR_INTERNAL;
         }
     }
     return CHIP_ERROR_NOT_FOUND;
@@ -455,7 +455,7 @@ CHIP_ERROR PsaKdf::Init(const ByteSpan & secret, const ByteSpan & salt, const By
     status = psa_import_key(&attrs, secret.data(), secret.size(), &mSecretKeyId);
     LogPsaError(status);
     psa_reset_key_attributes(&attrs);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_import_key failed: %ld", status));
 
     return InitOperation(mSecretKeyId, salt, info);
@@ -469,22 +469,22 @@ CHIP_ERROR PsaKdf::Init(const HkdfKeyHandle & hkdfKey, const ByteSpan & salt, co
 CHIP_ERROR PsaKdf::InitOperation(psa_key_id_t hkdfKey, const ByteSpan & salt, const ByteSpan & info)
 {
     psa_status_t status = psa_key_derivation_setup(&mOperation, PSA_ALG_HKDF(PSA_ALG_SHA_256));
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_key_derivation_setup failed: %ld", status));
 
     if (salt.size() > 0)
     {
         status = psa_key_derivation_input_bytes(&mOperation, PSA_KEY_DERIVATION_INPUT_SALT, salt.data(), salt.size());
-        VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+        VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                             ChipLogError(Crypto, "psa_key_derivation_input_bytes failed: %ld", status));
     }
 
     status = psa_key_derivation_input_key(&mOperation, PSA_KEY_DERIVATION_INPUT_SECRET, hkdfKey);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_key_derivation_input_key failed: %ld", status));
 
     status = psa_key_derivation_input_bytes(&mOperation, PSA_KEY_DERIVATION_INPUT_INFO, info.data(), info.size());
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_key_derivation_input_bytes failed: %ld", status));
 
     return CHIP_NO_ERROR;
@@ -502,7 +502,7 @@ CHIP_ERROR PsaKdf::DeriveBytes(const MutableByteSpan & output)
 {
     psa_status_t status = psa_key_derivation_output_bytes(&mOperation, output.data(), output.size());
     LogPsaError(status);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL);
 
     return CHIP_NO_ERROR;
 }
@@ -511,7 +511,7 @@ CHIP_ERROR PsaKdf::DeriveKey(const psa_key_attributes_t & attributes, psa_key_id
 {
     psa_status_t status = psa_key_derivation_output_key(&attributes, &mOperation, &keyId);
     LogPsaError(status);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL);
 
     return CHIP_NO_ERROR;
 }
@@ -549,10 +549,10 @@ CHIP_ERROR HMAC_sha::HMAC_SHA256(const uint8_t * key, size_t key_length, const u
     psa_set_key_usage_flags(&attrs, PSA_KEY_USAGE_SIGN_HASH);
 
     status = psa_import_key(&attrs, key, key_length, &keyId);
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
 
     status = psa_mac_compute(keyId, algorithm, message, message_length, out_buffer, out_length, &out_length);
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
 
 exit:
     LogPsaError(status);
@@ -572,7 +572,7 @@ CHIP_ERROR HMAC_sha::HMAC_SHA256(const Hmac128KeyHandle & key, const uint8_t * m
     psa_status_t status             = PSA_SUCCESS;
 
     status = psa_mac_compute(key.As<psa_key_id_t>(), algorithm, message, message_length, out_buffer, out_length, &out_length);
-    VerifyOrReturnError(status == PSA_SUCCESS, PLATFORM_TO_CHIP_ERROR(status),
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(Crypto, "psa_mac_compute failed: %ld", status));
 
     return CHIP_NO_ERROR;
@@ -591,19 +591,19 @@ CHIP_ERROR PBKDF2_sha256::pbkdf2_sha256(const uint8_t * pass, size_t pass_length
     psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
 
     status = psa_key_derivation_setup(&operation, PSA_ALG_PBKDF2_HMAC(PSA_ALG_SHA_256));
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
 
     status = psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, salt, salt_length);
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
 
     status = psa_key_derivation_input_integer(&operation, PSA_KEY_DERIVATION_INPUT_COST, iteration_count);
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
 
     status = psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_PASSWORD, pass, pass_length);
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
 
     status = psa_key_derivation_output_bytes(&operation, key, key_length);
-    VerifyOrExit(status == PSA_SUCCESS, error = PLATFORM_TO_CHIP_ERROR(status));
+    VerifyOrExit(status == PSA_SUCCESS, error = CHIP_ERROR_INTERNAL);
 
 exit:
     psa_key_derivation_abort(&operation);
@@ -622,7 +622,7 @@ CHIP_ERROR DRBG_get_bytes(uint8_t * out_buffer, const size_t out_length)
 
     const psa_status_t status = psa_generate_random(out_buffer, out_length);
 
-    return status == PSA_SUCCESS ? CHIP_NO_ERROR : PLATFORM_TO_CHIP_ERROR(status);
+    return status == PSA_SUCCESS ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
 
 static int CryptoRNG(void * ctxt, uint8_t * out_buffer, size_t out_length)

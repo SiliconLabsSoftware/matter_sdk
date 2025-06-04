@@ -63,11 +63,11 @@ CHIP_ERROR SensorManager::Init()
     }
 
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
-    sl_status status = Si70xxSensor::Init();
+    sl_status_t status = Si70xxSensor::Init();
     if (status != SL_STATUS_OK)
     {
         SILABS_LOG("Failed to Init Sensor with error code: %lx", status);
-        return PLATFORM_TO_CHIP_ERROR(status);
+        return MATTER_PLATFORM_ERROR(status);
     }
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 
