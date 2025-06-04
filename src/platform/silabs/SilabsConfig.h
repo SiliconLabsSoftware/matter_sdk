@@ -27,7 +27,7 @@
 #include <functional>
 #include <platform/CHIPDeviceError.h>
 
-#ifndef SL_TOKEN_MANAGER_CONFIG_H
+#ifndef SL_COMMON_TOKEN_MANAGER_ENABLE_DYNAMIC_TOKENS
 #include "nvm3.h"
 #include "nvm3_hal_flash.h"
 #else
@@ -61,7 +61,7 @@ namespace Internal {
  * the template class (e.g. the ReadConfigValue() method).
  */
 
-#ifndef SL_TOKEN_MANAGER_CONFIG_H
+#ifndef SL_COMMON_TOKEN_MANAGER_ENABLE_DYNAMIC_TOKENS
 // Silabs NVM3 objects use a 20-bit number,
 // NVM3 Key 19:16 Stack region
 // NVM3 Key 15:0 Available NVM3 keys 0x0000 -> 0xFFFF.
