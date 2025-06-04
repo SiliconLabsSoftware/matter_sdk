@@ -528,7 +528,7 @@ WindowManager::Timer::~Timer()
 
 void WindowManager::Timer::Stop()
 {
-    mIsActive = false;
+    mIsActive         = false;
     osStatus_t status = osTimerStop(mHandler);
     if (status != osOK)
     {
