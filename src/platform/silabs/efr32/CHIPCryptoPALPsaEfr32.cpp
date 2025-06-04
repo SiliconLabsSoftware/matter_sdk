@@ -126,8 +126,7 @@ CHIP_ERROR AES_CCM_encrypt(const uint8_t * plaintext, size_t plaintext_length, c
                         ChipLogError(Crypto, "psa_aead_set_lengths failed: %ld", status));
 
     status = psa_aead_set_nonce(&operation, nonce, nonce_length);
-    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
-                        ChipLogError(Crypto, "psa_aead_set_nonce failed: %ld", status));
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL, ChipLogError(Crypto, "psa_aead_set_nonce failed: %ld", status));
 
     if (0 == aad_length)
     {
@@ -237,8 +236,7 @@ CHIP_ERROR AES_CCM_decrypt(const uint8_t * ciphertext, size_t ciphertext_length,
                         ChipLogError(Crypto, "psa_aead_set_lengths failed: %ld", status));
 
     status = psa_aead_set_nonce(&operation, nonce, nonce_length);
-    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
-                        ChipLogError(Crypto, "psa_aead_set_nonce failed: %ld", status));
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL, ChipLogError(Crypto, "psa_aead_set_nonce failed: %ld", status));
 
     if (0 == aad_length)
     {
@@ -408,8 +406,7 @@ CHIP_ERROR Hash_SHA256_stream::Finish(MutableByteSpan & out_buffer)
     size_t outLength;
 
     const psa_status_t status = psa_hash_finish(toHashOperation(&mContext), out_buffer.data(), out_buffer.size(), &outLength);
-    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
-                        ChipLogError(Crypto, "psa_hash_finish failed: %ld", status));
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL, ChipLogError(Crypto, "psa_hash_finish failed: %ld", status));
     out_buffer.reduce_size(outLength);
 
     return CHIP_NO_ERROR;
@@ -455,8 +452,7 @@ CHIP_ERROR PsaKdf::Init(const ByteSpan & secret, const ByteSpan & salt, const By
     status = psa_import_key(&attrs, secret.data(), secret.size(), &mSecretKeyId);
     LogPsaError(status);
     psa_reset_key_attributes(&attrs);
-    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
-                        ChipLogError(Crypto, "psa_import_key failed: %ld", status));
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL, ChipLogError(Crypto, "psa_import_key failed: %ld", status));
 
     return InitOperation(mSecretKeyId, salt, info);
 }
@@ -572,8 +568,7 @@ CHIP_ERROR HMAC_sha::HMAC_SHA256(const Hmac128KeyHandle & key, const uint8_t * m
     psa_status_t status             = PSA_SUCCESS;
 
     status = psa_mac_compute(key.As<psa_key_id_t>(), algorithm, message, message_length, out_buffer, out_length, &out_length);
-    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
-                        ChipLogError(Crypto, "psa_mac_compute failed: %ld", status));
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL, ChipLogError(Crypto, "psa_mac_compute failed: %ld", status));
 
     return CHIP_NO_ERROR;
 }
