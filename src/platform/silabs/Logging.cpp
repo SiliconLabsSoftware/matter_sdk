@@ -1,10 +1,8 @@
 /* See Project CHIP LICENSE file for licensing information. */
-#include <cstdint>
 #include <platform/logging/LogV.h>
 #include <platform/silabs/Logging.h>
 
 #include <lib/core/CHIPConfig.h>
-#include <lib/core/ChipError.h>
 #include <platform/CHIPDeviceConfig.h>
 
 #include <lib/support/SafeString.h>
@@ -69,7 +67,7 @@ using namespace chip;
 #if CHIP_SYSTEM_CONFIG_USE_LWIP
 #define LOG_LWIP "[lwip  ]"
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
-#define LOG_SILABS "[silabs]"
+#define LOG_SILABS "[silabs ]"
 // If a new category string LOG_* is created, add it in the MaxStringLength arguments below
 #if CHIP_SYSTEM_CONFIG_USE_LWIP
 static constexpr size_t kMaxCategoryStrLen = chip::MaxStringLength(LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DETAIL, LOG_LWIP, LOG_SILABS);
@@ -86,18 +84,6 @@ static bool sLogInitialized = false;
 static uint8_t sLogBuffer[LOG_RTT_BUFFER_SIZE];
 static uint8_t sCmdLineBuffer[LOG_RTT_BUFFER_SIZE];
 #endif
-
-static constexpr uint32_t MakeField(unsigned int start, uint32_t value) 
-{ 
-    return value << start; 
-}
-
-static constexpr CHIP_ERROR MapPlatformError(chip::ChipError::Range range, uint32_t code)
-{
-    return static_cast<CHIP_ERROR>(MakeField(kRangeStart, to_underlying(range)) | MakeField(kValueStart, code));
-}
-
-#define CHIP_PLATFORM_ERROR(part, code) (MapPlatformError(part, code))
 
 #if SILABS_LOG_ENABLED
 
