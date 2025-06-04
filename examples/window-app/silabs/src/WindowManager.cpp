@@ -79,10 +79,10 @@ AppEvent CreateNewEvent(AppEvent::AppEventTypes type)
 void WindowManager::Timer::Start()
 {
     // Starts or restarts the function timer
-    sl_status_t status = osTimerStart(mHandler, pdMS_TO_TICKS(100));
+    osStatus_t status = osTimerStart(mHandler, pdMS_TO_TICKS(100));
     if (status != osOK)
     {
-        SILABS_LOG("Timer start() failed with error %lx", status);
+        SILABS_LOG("Timer start() failed with error %ld", status);
         appError(APP_ERROR_START_TIMER_FAILED);
     }
 
@@ -529,9 +529,10 @@ WindowManager::Timer::~Timer()
 void WindowManager::Timer::Stop()
 {
     mIsActive = false;
-    if (osTimerStop(mHandler) == osError)
+    osStatus_t status = osTimerStop(mHandler);
+    if (status != osOK)
     {
-        SILABS_LOG("Timer stop() failed");
+        SILABS_LOG("Timer stop() failed with error: %ld", status);
         appError(APP_ERROR_STOP_TIMER_FAILED);
     }
 }
