@@ -531,7 +531,7 @@ void WindowManager::Timer::Stop()
     mIsActive = false;
     if (osTimerStop(mHandler) == osError)
     {
-        SILABS_LOG("Timer stop() failed with error code : %lx", osError);
+        SILABS_LOG("Timer stop() failed");
         appError(APP_ERROR_STOP_TIMER_FAILED);
     }
 }

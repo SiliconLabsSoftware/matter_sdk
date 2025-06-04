@@ -163,7 +163,7 @@ void AppTask::Timer::Stop()
 {
     if (osTimerStop(mHandler) == osError)
     {
-        SILABS_LOG("Timer stop() failed with error code : %lx", osError);
+        SILABS_LOG("Timer stop() failed");
         appError(APP_ERROR_STOP_TIMER_FAILED);
     }
     mIsActive = false;
