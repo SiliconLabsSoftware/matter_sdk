@@ -164,18 +164,19 @@ namespace {
 
 constexpr uint32_t kMainTaskStackSize = (1024 * 5);
 // Task is dynamically allocated with max priority. This task gets deleted once the inits are completed.
-constexpr osThreadAttr_t kMainTaskAttr = { .name       = "main",
-                                           .attr_bits  = osThreadDetached,
-                                           .cb_mem     = NULL,
-                                           .cb_size    = 0U,
-                                           .stack_mem  = NULL,
-                                           .stack_size = kMainTaskStackSize,
+constexpr osThreadAttr_t kMainTaskAttr = {
+    .name       = "main",
+    .attr_bits  = osThreadDetached,
+    .cb_mem     = NULL,
+    .cb_size    = 0U,
+    .stack_mem  = NULL,
+    .stack_size = kMainTaskStackSize,
 #ifdef SLI_SI91X_MCU_INTERFACE
-                                           .priority   = osPriorityRealtime4,
+    .priority = osPriorityRealtime4,
 #else
-                                           .priority   = osPriorityRealtime7
+    .priority = osPriorityRealtime7
 #endif // SLI_SI91X_MCU_INTERFACE
-                                        };
+};
 osThreadId_t sMainTaskHandle;
 static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 
