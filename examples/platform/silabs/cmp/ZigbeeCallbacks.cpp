@@ -252,8 +252,8 @@ extern "C" void sl_zigbee_af_stack_status_cb(sl_status_t status)
             sl_zigbee_af_event_set_active(&start_zigbee_event);
         }
 #ifdef SL_MATTER_ZIGBEE_SEQUENTIAL
-        // When we close the network, Zigbee stack clear all its tokens.
-        // In sequential mode, when matter is provision do not concider ZB as factory new either.
+        // When we close the network, Zigbee stack clears all its tokens.
+        // In sequential mode, when Matter is provisioned, do not consider ZB as factory new either.
         // This makes sure zll init/touch link isn't done on reboot which causes thread srp issues.
         if (BaseApplication::GetProvisionStatus())
         {
