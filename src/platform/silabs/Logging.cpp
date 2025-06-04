@@ -20,8 +20,6 @@
 #include "PigweedLogger.h"
 #endif
 
-using namespace chip;
-
 // RTT Buffer size and name
 #ifndef LOG_RTT_BUFFER_INDEX
 #define LOG_RTT_BUFFER_INDEX 0
