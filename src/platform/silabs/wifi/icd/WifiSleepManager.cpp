@@ -19,7 +19,89 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
+<<<<<<< HEAD
 using namespace chip::DeviceLayer::Silabs;
+=======
+namespace {
+
+#if SLI_SI917 // 917 SoC & NCP
+
+/**
+ * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+ *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise MATTER_PLATFORM_ERROR
+ *         with the sl_status_t error code from the Wi-Fi driver.
+ */
+CHIP_ERROR ConfigureLIBasedSleep()
+{
+    sl_status_t status = ConfigureBroadcastFilter(true);
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status),
+                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    status = ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE,
+                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count());
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status),
+                        ChipLogError(DeviceLayer, "Failed to enable LI based sleep."));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
+ *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise MATTER_PLATFORM_ERROR
+ *         with the sl_status_t error code from the Wi-Fi driver.
+ */
+CHIP_ERROR ConfigureDTIMBasedSleep()
+{
+    sl_status_t status = ConfigureBroadcastFilter(false);
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status),
+                        ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    status = ConfigurePowerSave(RSI_SLEEP_MODE_2, ASSOCIATED_POWER_SAVE, 0);
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status),
+                        ChipLogError(DeviceLayer, "Failed to enable DTIM based sleep."));
+
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi chip to go Deep Sleep.
+ *        Function doesn't change the state of the broadcast filter.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise MATTER_PLATFORM_ERROR
+ *         with the sl_status_t error code from the Wi-Fi driver.
+ */
+CHIP_ERROR ConfigureDeepSleep()
+{
+    sl_status_t status = ConfigurePowerSave(RSI_SLEEP_MODE_2, DEEP_SLEEP_WITH_RAM_RETENTION, 0);
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status),
+                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to DeepSleep."));
+    return CHIP_NO_ERROR;
+}
+
+/**
+ * @brief Configures the Wi-Fi chip to go to High Performance.
+ *        Function doesn't change the broad cast filter configuration.
+ *
+ * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise MATTER_PLATFORM_ERROR
+ *         with the sl_status_t error code from the Wi-Fi driver.
+ */
+CHIP_ERROR ConfigureHighPerformance()
+{
+    sl_status_t status = ConfigurePowerSave(RSI_ACTIVE, HIGH_PERFORMANCE, 0);
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status),
+                        ChipLogError(DeviceLayer, "Failed to set Wi-FI configuration to HighPerformance."));
+    return CHIP_NO_ERROR;
+}
+#endif // SLI_SI917
+
+} // namespace
+>>>>>>> afa58fe414 ([SL-UP] Replace CHIP_ERROR_INTERNAL with meaningful platform error code (#486))
 
 namespace chip {
 namespace DeviceLayer {
@@ -135,6 +217,12 @@ CHIP_ERROR WifiSleepManager::ConfigureDTIMBasedSleep()
     ReturnLogErrorOnFailure(
         mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kConnectedSleep, 0));
 
+<<<<<<< HEAD
+=======
+#elif RS911X_WIFI // rs9116
+    sl_status_t status = ConfigurePowerSave();
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status));
+>>>>>>> afa58fe414 ([SL-UP] Replace CHIP_ERROR_INTERNAL with meaningful platform error code (#486))
     return CHIP_NO_ERROR;
 }
 
