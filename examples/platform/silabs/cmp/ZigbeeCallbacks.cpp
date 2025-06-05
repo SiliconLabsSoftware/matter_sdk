@@ -40,10 +40,9 @@
 #include "stack/include/zigbee-security-manager.h" // Install code
 #include "zll-commissioning.h"
 
-#include "LightingManager.h"
-
 #include "AppConfig.h"
-
+#include "BaseApplication.h"
+#include "LightingManager.h"
 #include "ZigbeeCallbacks.h"
 
 static sl_zigbee_af_event_t start_zigbee_event;
@@ -252,6 +251,15 @@ extern "C" void sl_zigbee_af_stack_status_cb(sl_status_t status)
             pendingRestart = false;
             sl_zigbee_af_event_set_active(&start_zigbee_event);
         }
+#ifdef SL_MATTER_ZIGBEE_SEQUENTIAL
+        // When we close the network, Zigbee stack clears all its tokens.
+        // In sequential mode, when Matter is provisioned, do not consider ZB as factory new either.
+        // This makes sure zll init/touch link isn't done on reboot which causes thread srp issues.
+        if (BaseApplication::GetProvisionStatus())
+        {
+            sl_zigbee_af_zll_unset_factory_new();
+        }
+#endif
     }
 }
 

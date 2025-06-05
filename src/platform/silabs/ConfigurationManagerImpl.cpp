@@ -33,6 +33,11 @@
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 #endif
 
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+#include "ZigbeeCallbacks.h"
+#endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+
 namespace chip {
 namespace DeviceLayer {
 
@@ -284,6 +289,9 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
     }
 
     GetDefaultInstance().ClearThreadStack();
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+    Zigbee::TokenFactoryReset();
+#endif
 
     PersistedStorage::KeyValueStoreMgrImpl().ErasePartition();
 
