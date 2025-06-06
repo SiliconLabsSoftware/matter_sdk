@@ -83,6 +83,24 @@
 #include <performance_test_commands.h>
 #endif // PERFORMANCE_TEST_ENABLED
 
+// SL-Only
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+#include "ZigbeeCallbacks.h"
+#include "sl_cmp_config.h"
+#endif
+
+// Tracing
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
+#if MATTER_TRACING_ENABLED && defined(ENABLE_CHIP_SHELL)
+#include <TracingShellCommands.h>
+#endif // MATTER_TRACING_ENABLED
+
+// sl-only
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#include <ApplicationSleepManager.h>
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
 /**********************************************************
  * Defines and Constants
  *********************************************************/
@@ -107,6 +125,7 @@ using namespace chip::app;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 
+using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
 namespace {
 
 /**********************************************************
@@ -204,8 +223,19 @@ void BaseApplicationDelegate::OnCommissioningSessionEstablishmentError(CHIP_ERRO
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
+void BaseApplicationDelegate::OnCommissioningWindowOpened()
+{
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowOpened();
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+}
+
 void BaseApplicationDelegate::OnCommissioningWindowClosed()
 {
+#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowClosed();
+#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
     if (BaseApplication::GetProvisionStatus())
     {
         // After the device is provisioned and the commissioning passed
@@ -282,6 +312,8 @@ CHIP_ERROR BaseApplication::Init()
         return err;
     }
 
+    SILABS_TRACE_END_ERROR(TimeTraceOperation::kAppInit, err);
+    SILABS_TRACE_END_ERROR(TimeTraceOperation::kBootup, err);
     return err;
 }
 
@@ -350,6 +382,9 @@ CHIP_ERROR BaseApplication::BaseInit()
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     ICDCommands::RegisterCommands();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#if MATTER_TRACING_ENABLED
+    TracingCommands::RegisterCommands();
+#endif // MATTER_TRACING_ENABLED
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -875,6 +910,9 @@ void BaseApplication::ScheduleFactoryReset()
         PlatformMgr().HandleServerShuttingDown(); // HandleServerShuttingDown calls OnShutdown() which is only implemented for the
                                                   // basic information cluster it seems. And triggers and Event flush, which is not
                                                   // relevant when there are no fabrics left
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+        Zigbee::TokenFactoryReset();
+#endif
         ConfigurationMgr().InitiateFactoryReset();
     });
 }
@@ -938,6 +976,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
             PostUpdateDisplayEvent(SilabsLCD::Screen_e::StatusScreen);
         }
 #endif // DISPLAY_ENABLED
+
         if ((event->ThreadConnectivityChange.Result == kConnectivity_Established) ||
             (event->InternetConnectivityChange.IPv6 == kConnectivity_Established))
         {
@@ -971,6 +1010,17 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
         WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kCommissioningComplete);
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+
+// SL-Only
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+#if defined(SL_MATTER_ZIGBEE_CMP) && !defined(SL_CATALOG_RAIL_UTIL_IEEE802154_FAST_CHANNEL_SWITCHING_PRESENT)
+        uint8_t channel = otLinkGetChannel(DeviceLayer::ThreadStackMgrImpl().OTInstance());
+        Zigbee::RequestStart(channel);     // leave handle internally
+#elif defined(SL_MATTER_ZIGBEE_SEQUENTIAL) // Matter Zigbee sequential
+        Zigbee::RequestLeave();
+        Zigbee::ZLLNotFactoryNew();
+#endif                                     // SL_MATTER_ZIGBEE_CMP
+#endif                                     // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
     }
     break;
     default:
