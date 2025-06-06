@@ -405,8 +405,7 @@ CHIP_ERROR BaseApplication::BaseInit()
 
 void BaseApplication::InitCompleteCallback(CHIP_ERROR err)
 {
-    SILABS_TRACE_END(TimeTraceOperation::kAppInit);
-    SILABS_TRACE_END(TimeTraceOperation::kBootup);
+    // A stub for backward compatibility
 }
 
 void BaseApplication::FunctionTimerEventHandler(void * timerCbArg)
