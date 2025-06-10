@@ -528,7 +528,7 @@ WindowManager::Timer::~Timer()
 
 void WindowManager::Timer::Stop()
 {
-    mIsActive         = false;
+    mIsActive = false;
     if (osTimerStop(mHandler) == osError)
     {
         SILABS_LOG("Timer stop() failed");
