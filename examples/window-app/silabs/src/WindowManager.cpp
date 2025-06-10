@@ -529,10 +529,9 @@ WindowManager::Timer::~Timer()
 void WindowManager::Timer::Stop()
 {
     mIsActive         = false;
-    osStatus_t status = osTimerStop(mHandler);
-    if (status != osOK)
+    if (osTimerStop(mHandler) == osError)
     {
-        SILABS_LOG("Timer stop() failed with error: %ld", status);
+        SILABS_LOG("Timer stop() failed");
         appError(APP_ERROR_STOP_TIMER_FAILED);
     }
 }

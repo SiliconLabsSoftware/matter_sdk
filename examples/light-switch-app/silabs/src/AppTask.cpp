@@ -161,10 +161,9 @@ AppTask::Timer::~Timer()
 
 void AppTask::Timer::Stop()
 {
-    osStatus_t status = osTimerStop(mHandler);
-    if (status != osOK)
+    if (osTimerStop(mHandler) == osError)
     {
-        SILABS_LOG("Timer stop() failed with error : %ld", status);
+        SILABS_LOG("Timer stop() failed");
         appError(APP_ERROR_STOP_TIMER_FAILED);
     }
     mIsActive = false;
