@@ -528,12 +528,13 @@ WindowManager::Timer::~Timer()
 
 void WindowManager::Timer::Stop()
 {
-    mIsActive = false;
+    // Abort on osError (-1) as it indicates an unspecified failure with no clear recovery path.
     if (osTimerStop(mHandler) == osError)
     {
         SILABS_LOG("Timer stop() failed");
         appError(APP_ERROR_STOP_TIMER_FAILED);
     }
+    mIsActive = false;
 }
 
 void WindowManager::Timer::TimerCallback(void * timerCbArg)

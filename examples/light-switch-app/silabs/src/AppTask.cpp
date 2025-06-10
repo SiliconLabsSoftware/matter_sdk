@@ -161,6 +161,7 @@ AppTask::Timer::~Timer()
 
 void AppTask::Timer::Stop()
 {
+    // Abort on osError (-1) as it indicates an unspecified failure with no clear recovery path.
     if (osTimerStop(mHandler) == osError)
     {
         SILABS_LOG("Timer stop() failed");
