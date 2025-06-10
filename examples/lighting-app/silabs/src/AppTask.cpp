@@ -40,7 +40,9 @@
 
 #include <lib/support/CodeUtils.h>
 
+#include <lib/support/Span.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 
 #ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
 #define LIGHT_LED 1
@@ -73,6 +75,10 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
+    char rebootLightOnKey[] = "Reboot->LightOn";
+    CharSpan rebootLighOnSpan(rebootLightOnKey);
+    SILABS_TRACE_REGISTER(rebootLighOnSpan);
+
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
     {
@@ -84,6 +90,7 @@ CHIP_ERROR AppTask::AppInit()
 
     sLightLED.Init(LIGHT_LED);
     sLightLED.Set(LightMgr().IsLightOn());
+    SILABS_TRACE_INSTANT(rebootLighOnSpan);
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -100,6 +107,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
 
+    BaseApplication::InitCompleteCallback(err);
     return err;
 }
 
