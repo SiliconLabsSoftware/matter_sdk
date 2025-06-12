@@ -123,8 +123,8 @@ public:
     // GAP
     virtual CHIP_ERROR GeneratAdvertisingData(uint8_t discoverMove, uint8_t connectMode, const Optional<uint16_t> & maxEvents) = 0;
     virtual CHIP_ERROR SetAdvertisingParams(uint32_t intervalMin, uint32_t intervalMax, uint16_t duration,
-                                            const Optional<uint16_t> & maxEvents, const Optional<uint8_t> & channelMap);
-    virtual CHIP_ERROR OpenConnection(bd_addr address, uint8_t addrType) = 0;
+                                            const Optional<uint16_t> & maxEvents, const Optional<uint8_t> & channelMap)        = 0;
+    virtual CHIP_ERROR OpenConnection(bd_addr address, uint8_t addrType)                                                       = 0;
 
     /** @brief SetConnectionParams
      *
