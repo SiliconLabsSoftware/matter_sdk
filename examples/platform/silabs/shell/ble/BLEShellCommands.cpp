@@ -56,7 +56,6 @@ CHIP_ERROR BLECommandHandler(int argc, char ** argv)
 
 CHIP_ERROR StartBLESideChannelAdvertising(int argc, char ** argv)
 {
-    // TODO : Configure first
     CHIP_ERROR err = DeviceLayer::Internal::BLEMgrImpl().SideChannelConfigureAdvertisingDefaultData();
     VerifyOrReturnError(
         err == CHIP_NO_ERROR, err,
@@ -73,6 +72,24 @@ CHIP_ERROR StopBLESideChannelAvertising(int argc, char ** argv)
     return DeviceLayer::Internal::BLEMgrImpl().SideChannelStopAdvertising();
 }
 
+CHIP_ERROR NotifyBLESideChannel(int argc, char ** argv)
+{
+    CHIP_ERROR err = DeviceLayer::Internal::BLEMgrImpl().SideChannelNotify();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err,
+                        streamer_printf(streamer_get(), "Failed to notify BLE side channel: %s\n", ErrorStr(err)););
+    streamer_printf(streamer_get(), "Notified BLE side channel\n");
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR IndicateBLESideChannel(int argc, char ** argv)
+{
+    CHIP_ERROR err = DeviceLayer::Internal::BLEMgrImpl().SideChannelIndicate();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err,
+                        streamer_printf(streamer_get(), "Failed to indicate BLE side channel: %s\n", ErrorStr(err)););
+    streamer_printf(streamer_get(), "Indicated BLE side channel\n");
+    return CHIP_NO_ERROR;
+}
+
 } // namespace
 
 namespace BLEShellCommands {
@@ -83,6 +100,10 @@ void RegisterCommands()
         { &BLEHelpHandler, "help", "Output the BLE Commands help menu" },
         { &StartBLESideChannelAdvertising, "AdvStart", "Start BLE Side Channel advertising with default parameters" },
         { &StopBLESideChannelAvertising, "AdvStop", "Stop BLE Side Channel advertising" },
+        { &NotifyBLESideChannel, "Notify",
+          "Make the side channel send a notify event for its tx characteristic (if the CCCD is set)" },
+        { &IndicateBLESideChannel, "Indicate",
+          "Make the side channel send an indicate event for its tx characteristic (if the CCCD is set)" },
     };
     static const Shell::Command sBleCmds = { &BLECommandHandler, "ble-side", "Dispatch Silicon Labs BLE Side Channel commands" };
 
