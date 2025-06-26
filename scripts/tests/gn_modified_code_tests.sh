@@ -53,14 +53,16 @@ if [[ -n "$GITHUB_EVENT_NAME" && "$GITHUB_EVENT_NAME" == "pull_request" && -n "$
 
     TESTS_TO_RUN=()
 
-    # Try to map source files to tests
-    for f in "$CHANGED_FILES"; do
-        base=$(basename "$f")
-        test_bin="$BUILD_DIR/tests/test_${base%.*}"
+    for f in $CHANGED_FILES; do
+        base=$(basename "$f" .cpp)
 
-        if [[ -x "$test_bin" ]]; then
-            TESTS_TO_RUN+=("$test_bin")
-        fi
+        # Loop through test binaries and try to match with changed source file
+        for test in "$BUILD_DIR"/tests/Test*; do
+            test_name=$(basename "$test")
+            if [[ "$test_name" == *"$base"* && -x "$test" ]]; then
+                TESTS_TO_RUN+=("$test")
+            fi
+        done
     done
 
     if [ ${#TESTS_TO_RUN[@]} -eq 0 ]; then
