@@ -51,9 +51,9 @@ if [[ -n "$GITHUB_EVENT_NAME" && "$GITHUB_EVENT_NAME" == "pull_request" && -n "$
     TESTS_TO_RUN=()
 
     # Try to map source files to tests
-    for f in $CHANGED_FILES; do
+    for f in "$CHANGED_FILES"; do
         base=$(basename "$f")
-        test_bin="${BUILD_DIR}/tests/test_${base%.*}"
+        test_bin="$BUILD_DIR/tests/test_${base%.*}"
 
         if [[ -x "$test_bin" ]]; then
             TESTS_TO_RUN+=("$test_bin")
