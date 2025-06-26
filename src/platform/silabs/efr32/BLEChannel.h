@@ -203,6 +203,7 @@ protected:
     {
         kAdvertising = 0x0001, // Todo : Mode BLEManager flags here when converting ChipOBLE to BLEChannel
     };
+    
     struct Characteristic
     {
         uint16_t handle;
