@@ -34,7 +34,10 @@ case "$dmalloc" in
         export G_SLICE=always-malloc
         ;;
     "chip_config_memory_debug_dmalloc = false") ;;
-    *) echo >&2 "Invalid dmalloc output: \"$dmalloc\""; exit 1 ;;
+    *)
+        echo >&2 "Invalid dmalloc output: \"$dmalloc\""
+        exit 1
+        ;;
 esac
 
 echo "🔍 Detecting if this is a PR build with file diff support..."
