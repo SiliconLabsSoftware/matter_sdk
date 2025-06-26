@@ -44,8 +44,8 @@ constexpr uuid_128 kRxUUID = { .data = { 0x01, 0x00, 0x00, 0xEE, 0xFF, 0xC0, 0xA
 constexpr uuid_128 kTxUUID = { .data = { 0x02, 0x00, 0x00, 0xEE, 0xFF, 0xC0, 0xAD, 0xDE, 0xEF, 0xBE, 0xAD, 0xDE, 0x00, 0xEE, 0xFF,
                                          0xC0 } };
 
-uint8_t sRxValueBuffer[kCharacteristicBufferSize] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-uint8_t sTxValueBuffer[kCharacteristicBufferSize] = { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 };
+uint8_t sRxValueBuffer[kCharacteristicBufferSize] = {};
+uint8_t sTxValueBuffer[kCharacteristicBufferSize] = {};
 
 CHIP_ERROR MapBLEError(int bleErr)
 {
@@ -285,17 +285,18 @@ void BLEChannelImpl::HandleReadRequest(volatile sl_bt_msg_t * evt)
         ChipLogError(DeviceLayer, "Failed to get characteristic value, err: %s", ErrorStr(err));
         sl_bt_gatt_server_send_user_read_response(readReq->connection, readReq->characteristic, MapCHIPError(err), 0, nullptr,
                                                   &sent_length);
-        return;
     }
-
-    ChipLogProgress(DeviceLayer, "Handling Read Request for characteristic: %d", readReq->characteristic);
-    sl_status_t ret = sl_bt_gatt_server_send_user_read_response(readReq->connection, readReq->characteristic, kAttErrorCodeNoError,
-                                                                dataSpan.size(), dataSpan.data(), &sent_length);
-    ChipLogProgress(DeviceLayer, "Sent %d of the %d bytes requested", sent_length, dataSpan.size());
-
-    if (ret != SL_STATUS_OK)
+    else
     {
-        ChipLogDetail(DeviceLayer, "Failed to send read response, err:%ld", ret);
+        ChipLogProgress(DeviceLayer, "Handling Read Request for characteristic: %d", readReq->characteristic);
+        sl_status_t ret = sl_bt_gatt_server_send_user_read_response(
+            readReq->connection, readReq->characteristic, kAttErrorCodeNoError, dataSpan.size(), dataSpan.data(), &sent_length);
+        ChipLogProgress(DeviceLayer, "Sent %d of the %d bytes requested", sent_length, dataSpan.size());
+
+        if (ret != SL_STATUS_OK)
+        {
+            ChipLogDetail(DeviceLayer, "Failed to send read response, err:%ld", ret);
+        }
     }
 }
 
@@ -534,21 +535,16 @@ CHIP_ERROR BLEChannelImpl::SetCharacteristicValue(uint16_t charHandle, const Byt
 {
     if (charHandle == mSideRxChar.handle)
     {
-        if (value.size() > kCharacteristicBufferSize)
-        {
-            ChipLogError(DeviceLayer, "Value size exceeds RX characteristic buffer size");
-            return CHIP_ERROR_BUFFER_TOO_SMALL;
-        }
+        VerifyOrReturnError(value.size() <= kCharacteristicBufferSize, CHIP_ERROR_BUFFER_TOO_SMALL,
+                            ChipLogError(DeviceLayer, "Value size exceeds RX characteristic buffer size"));
+
         mSideRxChar.buffer = MutableByteSpan(sRxValueBuffer, sizeof(sRxValueBuffer));
         CopySpanToMutableSpan(value, mSideRxChar.buffer);
     }
     else if (charHandle == mSideTxChar.handle)
     {
-        if (value.size() > kCharacteristicBufferSize)
-        {
-            ChipLogError(DeviceLayer, "Value size exceeds TX characteristic buffer size");
-            return CHIP_ERROR_BUFFER_TOO_SMALL;
-        }
+        VerifyOrReturnError(value.size() <= kCharacteristicBufferSize, CHIP_ERROR_BUFFER_TOO_SMALL,
+                            ChipLogError(DeviceLayer, "Value size exceeds TX characteristic buffer size"));
         mSideTxChar.buffer = MutableByteSpan(sTxValueBuffer, sizeof(sTxValueBuffer));
         CopySpanToMutableSpan(value, mSideTxChar.buffer);
     }

@@ -54,6 +54,10 @@ CHIP_ERROR BLECommandHandler(int argc, char ** argv)
     return sShellBLESubCommands.ExecCommand(argc, argv);
 }
 
+} // namespace
+
+namespace BLEShellCommands {
+
 CHIP_ERROR StartBLESideChannelAdvertising(int argc, char ** argv)
 {
     CHIP_ERROR err = DeviceLayer::Internal::BLEMgrImpl().SideChannelConfigureAdvertisingDefaultData();
@@ -89,10 +93,6 @@ CHIP_ERROR IndicateBLESideChannel(int argc, char ** argv)
     streamer_printf(streamer_get(), "Indicated BLE side channel\n");
     return CHIP_NO_ERROR;
 }
-
-} // namespace
-
-namespace BLEShellCommands {
 
 void RegisterCommands()
 {
