@@ -53,7 +53,7 @@ if [[ -n "$GITHUB_EVENT_NAME" && "$GITHUB_EVENT_NAME" == "pull_request" && -n "$
 
     TESTS_TO_RUN=()
 
-    for f in $CHANGED_FILES; do
+    for f in "$CHANGED_FILES"; do
         base=$(basename "$f" .cpp)
 
         # Loop through test binaries and try to match with changed source file
