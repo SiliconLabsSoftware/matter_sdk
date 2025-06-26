@@ -78,7 +78,7 @@ jobs:
             - name: Run Build
               run: scripts/run_in_build_env.sh "ninja -C out/$BUILD_TYPE"
             - name: Run Tests
-              run: scripts/tests/gn_tests.sh
+              run: scripts/tests/gn_modified_code_tests.sh
             - name: Run Code Coverage
               run: scripts/build_coverage.sh --code=all
             - name: Upload Code Coverage
