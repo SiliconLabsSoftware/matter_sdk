@@ -1,0 +1,20 @@
+{
+    "default": [
+        {
+            "boards": ["BRD4186C", "BRD4187C", "BRD2601B", "BRD2703A"],
+            "arguments": ["--docker"]
+        },
+        {
+            "boards": ["BRD4187C"],
+            "arguments": ["--docker", "--wifi wf200"]
+        },
+        {
+            "boards": ["BRD4187C"],
+            "arguments": ["--docker", "--wifi rs9116"]
+        },
+        {
+            "boards": ["BRD4187C"],
+            "arguments": ["--docker", "--wifi SiWx917"]
+        }
+    ]
+}

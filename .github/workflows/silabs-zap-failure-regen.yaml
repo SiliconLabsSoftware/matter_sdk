@@ -1,0 +1,75 @@
+name: Handle ZAP Workflow Failure
+
+on:
+    workflow_run:
+        workflows:
+            - ZAP
+        types:
+            - completed
+
+jobs:
+    regenerate-silabs-apps-zap:
+        concurrency:
+            group: regenerate_silabs_apps_zap-${{ github.ref }}
+            cancel-in-progress: true
+
+        if:
+            ${{ github.event.workflow_run.conclusion == 'failure' &&
+            github.event.workflow_run.head_branch == 'automation/update_main' }}
+
+        runs-on: ubuntu-latest
+        container:
+            image: ghcr.io/project-chip/chip-build:129
+
+        steps:
+            - name: Generate token for the workflow
+              id: generate_token
+              uses: actions/create-github-app-token@v2
+              with:
+                  app-id: ${{ vars.SILABSSW_MATTER_CI_BOT_APP_ID }}
+                  private-key:
+                      ${{ secrets.SILABSSW_MATTER_CI_BOT_APP_PRIVATE_KEY }}
+            - name: Mask the generated token
+              run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
+
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  ref: automation/update_main
+                  fetch-depth: 0
+                  token: ${{ steps.generate_token.outputs.token }}
+
+            - name: Checkout submodules & Bootstrap
+              uses: ./.github/actions/checkout-submodules-and-bootstrap
+              with:
+                  platform: linux
+                  bootstrap-log-name: bootstrap-logs-zap-failure-regen
+
+            - name: Merge Fetch main branch
+              run: |
+                  git fetch --no-recurse-submodules origin main
+
+            - name: Set committer to GitHub App
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            - name: Merge main branch into automation/update_main
+              run: git merge --no-edit origin/main
+
+            - name: Generate Silabs examples zap files
+              run: |
+                  ./scripts/run_in_build_env.sh '
+                    ./scripts/tools/zap/generate.py examples/multi-sensor-app/silabs/data_model/multi-sensor-thread-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/fan-control-app/silabs/data_model/fan-control-thread-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/template/silabs/template_DataModel_config/sl_template.zap &&
+                    ./scripts/tools/zap/generate.py examples/onoff-plug-app/silabs/data_model/onoff-plug-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/fan-control-app/silabs/data_model/fan-control-wifi-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/multi-sensor-app/silabs/data_model/multi-sensor-wifi-app.zap
+                  '
+
+            - name: Commit ZAP regeneration
+              run: |
+                  git add -A
+                  git commit -m "[SL-ONLY] Regenerate ZAP files for Silabs apps"
+                  git push origin automation/update_main

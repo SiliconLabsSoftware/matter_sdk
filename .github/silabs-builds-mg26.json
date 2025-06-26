@@ -1,0 +1,14 @@
+{
+    "default": [
+        {
+            "boards": ["BRD4116A", "BRD4117A", "BRD4118A", "BRD2608A"],
+            "arguments": ["--docker"]
+        }
+    ],
+    "lighting-app":[
+        {
+            "boards": ["BRD2608A"],
+            "arguments": ["--docker", "chip_build_libshell=true", "matter_enable_tracing_support=true", "--clean"]
+        }
+    ]
+}

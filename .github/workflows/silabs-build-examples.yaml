@@ -1,0 +1,129 @@
+name: Build Silabs Examples apps
+
+on:
+    push:
+        branches:
+            - main
+            - "release_*"
+    pull_request:
+        branches:
+            - main
+            - "release_*"
+    workflow_dispatch:
+
+concurrency:
+    group: silabs-build-examples-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    build-lighting-app:
+        name: Build Lighting-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "lighting-app"
+            output-directory: "./out/lighting-app"
+
+    build-air-quality-sensor-app:
+        name: Build Air-Quality-Sensor-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "air-quality-sensor-app"
+            output-directory: "./out/air-quality-sensor-app"
+
+    build-dishwasher-app:
+        name: Build Dishwasher-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "dishwasher-app"
+            output-directory: "./out/dishwasher-app"
+
+    build-light-switch-app:
+        name: Build Light-Switch-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "light-switch-app"
+            output-directory: "./out/light-switch-app"
+
+    build-lock-app:
+        name: Build Lock-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "lock-app"
+            output-directory: "./out/lock-app"
+
+    build-thermostat:
+        name: Build Thermostat variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "thermostat"
+            output-directory: "./out/thermostat"
+
+    build-pump-app:
+        name: Build Pump-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "pump-app"
+            output-directory: "./out/pump-app"
+
+    build-window-app:
+        name: Build Window-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "window-app"
+            output-directory: "./out/window-app"
+
+    build-smoke-co-alarm:
+        name: Build Smoke-CO-Alarm variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "smoke-co-alarm-app"
+            output-directory: "./out/smoke-co-alarm-app"
+
+    build-lit-icd-app:
+        name: Build Lit-ICD-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "lit-icd-app"
+            output-directory: "./out/lit-icd-app"
+
+    build-refrigerator-app:
+        name: Build Refrigerator-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "refrigerator-app"
+            output-directory: "./out/refrigerator-app"
+
+    build-fan-control-app:
+        name: Build Fan-Control-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "fan-control-app"
+            output-directory: "./out/fan-control-app"
+
+    build-multi-sensor-app:
+        name: Build Multi-Sensor-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "multi-sensor-app"
+            output-directory: "./out/multi-sensor-app"
+
+    build-onoff-plug-app:
+        name: Build OnOff-Plug-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "onoff-plug-app"
+            output-directory: "./out/onoff-plug-app"
+
+    build-closure-app:
+        name: Build Closure-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "closure-app"
+            output-directory: "./out/closure-app"
+
+    build-tempalte-app:
+        name: Build Template-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "template"
+            output-directory: "./out/template-app"
