@@ -245,7 +245,7 @@ void BLEChannelImpl::HandleIndicationTimeout(volatile sl_bt_msg_t * evt)
 void BLEChannelImpl::HandleIndicationConfirmation(volatile sl_bt_msg_t * evt)
 {
     sl_bt_evt_gatt_server_characteristic_status_t * indicationConfirmation =
-        (sl_bt_evt_gatt_server_characteristic_status_t *) &(evt->data.evt_gatt_server_indication_timeout);
+        (sl_bt_evt_gatt_server_characteristic_status_t *) &(evt->data.evt_gatt_server_characteristic_status);
 
     VerifyOrReturn(indicationConfirmation->connection == mConnectionState.connectionHandle);
     ChipLogProgress(DeviceLayer, "Indication confirmation for connection: %d characteristic: %d",
