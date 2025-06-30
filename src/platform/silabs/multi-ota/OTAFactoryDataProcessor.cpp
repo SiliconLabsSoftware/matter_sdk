@@ -67,7 +67,8 @@ exit:
     else
     {
         error = Provision::Manager::GetInstance().GetStorage().Commit();
-        VerifyOrReturnError(error == CHIP_NO_ERROR, error, ChipLogError(SoftwareUpdate, "Failed to commit factory data. Error: %s",ErrorStr(error)));
+        VerifyOrReturnError(error == CHIP_NO_ERROR, error,
+                            ChipLogError(SoftwareUpdate, "Failed to commit factory data. Error: %s", ErrorStr(error)));
     }
     ChipLogProgress(SoftwareUpdate, "Factory data update finished.");
     return error;
