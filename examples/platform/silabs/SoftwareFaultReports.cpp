@@ -147,7 +147,7 @@ extern "C" __attribute__((used)) void debugHardfault(uint32_t * sp)
  * Log a fault to the debugHardfault function.
  * This function is called by the fault handlers to log the fault details.
  */
-extern "C" void LogFault_Handler(void)
+extern "C" __attribute__((naked)) void LogFault_Handler(void)
 {
     uint32_t * sp;
     __asm volatile("tst lr, #4 \n"
