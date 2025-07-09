@@ -18,6 +18,7 @@
 #include "MigrationManager.h"
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/SilabsConfig.h>
+#include <headers/ProvisionStorage.h>
 #include <stdio.h>
 
 using namespace ::chip::DeviceLayer::Internal;
@@ -41,6 +42,7 @@ static migrationData_t migrationTable[] = {
     { .migrationGroup = 2, .migrationFunc = MigrateDacProvider },
     { .migrationGroup = 3, .migrationFunc = MigrateCounterConfigs },
     { .migrationGroup = 4, .migrationFunc = MigrateHardwareVersion },
+    { .migrationGroup = 5, .migrationFunc = MigrateCTM },
     // add any additional migration neccesary. migrationGroup should stay equal if done in the same commit or increment by 1 for
     // each new entry.
 };
@@ -130,6 +132,15 @@ void MigrateHardwareVersion(void)
 {
     constexpr uint32_t kOldKey_HardwareVersion = SilabsConfigKey(SilabsConfig::kMatterConfig_KeyBase, 0x08);
     MigrationManager::MigrateUint16(kOldKey_HardwareVersion, SilabsConfig::kConfigKey_HardwareVersion);
+}
+
+void MigrateCTM(void)
+{
+    CHIP_ERROR err = Provision::Manager::GetInstance().GetStorage().MigrateAttestationCredentialAPI();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "Failed to migrate CTM: %s", ErrorString(err));
+    }
 }
 
 } // namespace Silabs
