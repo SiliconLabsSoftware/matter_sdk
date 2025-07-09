@@ -51,6 +51,8 @@ KeyValueStoreManagerImpl KeyValueStoreManagerImpl::sInstance;
 
 CHIP_ERROR KeyValueStoreManagerImpl::Init(void)
 {
+    // This call will initialize the NVM3 and the Flash token access, it must be called before any other
+    // NVM3 or Flash token access.
     ReturnErrorOnFailure(SilabsConfig::Init());
 
     Silabs::MigrationManager::GetMigrationInstance().applyMigrations();

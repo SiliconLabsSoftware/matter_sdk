@@ -817,6 +817,12 @@ CHIP_ERROR Storage::GetTestEventTriggerKey(MutableByteSpan & keySpan)
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 
+CHIP_ERROR Storage::MigrateAttestationCredentialAPI()
+{
+    // Not implemented for the ProvisionStorageFlash.
+    return CHIP_NO_ERROR;
+}
+
 } // namespace Provision
 } // namespace Silabs
 } // namespace DeviceLayer
