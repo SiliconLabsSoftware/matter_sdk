@@ -27,11 +27,11 @@
 #include <functional>
 #include <platform/CHIPDeviceError.h>
 
-#ifndef SL_COMMON_TOKEN_MANAGER_ENABLE_DYNAMIC_TOKENS
+#ifdef SL_TOKEN_MANAGER_DEFINES_H
+#include <sl_token_manager_defines.h>
+#else
 #include "nvm3.h"
 #include "nvm3_hal_flash.h"
-#else
-#include <sl_token_manager_defines.h>
 #endif
 
 #ifndef KVS_MAX_ENTRIES
@@ -61,7 +61,22 @@ namespace Internal {
  * the template class (e.g. the ReadConfigValue() method).
  */
 
-#ifndef SL_COMMON_TOKEN_MANAGER_ENABLE_DYNAMIC_TOKENS
+#ifdef SL_TOKEN_MANAGER_DEFINES_H
+inline constexpr uint32_t kUserNvm3KeyDomainLoLimit = SL_TOKEN_NVM3_REGION_USER;
+inline constexpr uint32_t kUserNvm3KeyDomainHiLimit = SL_TOKEN_NVM3_REGION_ZIGBEE - 1;
+
+// Only keep the MSBs of the Matter Region. The LSB of the region is determined by the keyBaseOffset.
+// with SilabsConfigKey Helper function.
+inline constexpr uint32_t kMatterNvm3KeyDomain = (SL_TOKEN_NVM3_REGION_MATTER & 0xFFFF000);
+// TODO: Determine what valuee to use for the static key domain to avoid collision between matter / Zigbee
+inline constexpr uint32_t kMatterStaticKeyDomain = (SL_TOKEN_NVM3_REGION_MATTER & 0xFFFF000);
+
+constexpr inline uint32_t SilabsConfigKey(uint8_t keyBaseOffset, uint8_t id)
+{
+    return SL_TOKEN_TYPE_NVM3 | kMatterNvm3KeyDomain | static_cast<uint32_t>(keyBaseOffset) << 8 | id;
+}
+
+#else
 // Silabs NVM3 objects use a 20-bit number,
 // NVM3 Key 19:16 Stack region
 // NVM3 Key 15:0 Available NVM3 keys 0x0000 -> 0xFFFF.
@@ -76,24 +91,6 @@ inline constexpr uint32_t kMatterNvm3KeyDomain      = 0x087000U; // Matter speci
 constexpr inline uint32_t SilabsConfigKey(uint8_t keyBaseOffset, uint8_t id)
 {
     return kMatterNvm3KeyDomain | static_cast<uint32_t>(keyBaseOffset) << 8 | id;
-}
-#else
-
-inline constexpr uint32_t kUserNvm3KeyDomainLoLimit = SL_TOKEN_NVM3_REGION_USER;
-inline constexpr uint32_t kUserNvm3KeyDomainHiLimit = SL_TOKEN_NVM3_REGION_ZIGBEE - 1;
-
-// Only keep the MSBs of the Matter Region. The LSB of the region is determined by the keyBaseOffset.
-// with SilabsConfigKey Helper function.
-inline constexpr uint32_t kMatterNvm3KeyDomain = (SL_TOKEN_NVM3_REGION_MATTER & 0xFFFF000);
-
-constexpr inline uint32_t SilabsConfigKey(uint8_t keyBaseOffset, uint8_t id)
-{
-    return SL_TOKEN_TYPE_NVM3 | kMatterNvm3KeyDomain | static_cast<uint32_t>(keyBaseOffset) << 8 | id;
-}
-
-constexpr inline uint32_t SilabsSecureTokenKey(uint8_t keyBaseOffset, uint8_t id)
-{
-    return SL_TOKEN_TYPE_STATIC_SECURE | static_cast<uint32_t>(keyBaseOffset) << 8 | id;
 }
 #endif
 
@@ -151,16 +148,23 @@ public:
     // SHALL NOT be the same as the UniqueID attribute exposed in the Basic Information cluster.
     static constexpr Key kConfigKey_PersistentUniqueId = SilabsConfigKey(kMatterFactory_KeyBase, 0x1F);
     static constexpr Key kConfigKey_Creds_KeyId        = SilabsConfigKey(kMatterFactory_KeyBase, 0x20);
-    static constexpr Key kConfigKey_Creds_Base_Addr    = SilabsConfigKey(kMatterFactory_KeyBase, 0x21);
-    static constexpr Key kConfigKey_Creds_DAC_Offset   = SilabsConfigKey(kMatterFactory_KeyBase, 0x22);
-    static constexpr Key kConfigKey_Creds_DAC_Size     = SilabsConfigKey(kMatterFactory_KeyBase, 0x23);
-    static constexpr Key kConfigKey_Creds_PAI_Offset   = SilabsConfigKey(kMatterFactory_KeyBase, 0x24);
-    static constexpr Key kConfigKey_Creds_PAI_Size     = SilabsConfigKey(kMatterFactory_KeyBase, 0x25);
-    static constexpr Key kConfigKey_Creds_CD_Offset    = SilabsConfigKey(kMatterFactory_KeyBase, 0x26);
-    static constexpr Key kConfigKey_Creds_CD_Size      = SilabsConfigKey(kMatterFactory_KeyBase, 0x27);
-    static constexpr Key kConfigKey_Provision_Request  = SilabsConfigKey(kMatterFactory_KeyBase, 0x28);
-    static constexpr Key kConfigKey_Provision_Version  = SilabsConfigKey(kMatterFactory_KeyBase, 0x29);
-    static constexpr Key kOtaTlvEncryption_KeyId       = SilabsConfigKey(kMatterFactory_KeyBase, 0x30);
+
+    // DEPRECATED KEYS : BEGIN
+    static constexpr Key kConfigKey_Creds_Base_Addr  = SilabsConfigKey(kMatterFactory_KeyBase, 0x21);
+    static constexpr Key kConfigKey_Creds_DAC_Offset = SilabsConfigKey(kMatterFactory_KeyBase, 0x22);
+    static constexpr Key kConfigKey_Creds_PAI_Offset = SilabsConfigKey(kMatterFactory_KeyBase, 0x24);
+    static constexpr Key kConfigKey_Creds_CD_Offset  = SilabsConfigKey(kMatterFactory_KeyBase, 0x26);
+    // DEPRECATED KEYS : END
+
+    static constexpr Key kConfigKey_Creds_DAC_Size    = SilabsConfigKey(kMatterFactory_KeyBase, 0x23);
+    static constexpr Key kConfigKey_Creds_PAI_Size    = SilabsConfigKey(kMatterFactory_KeyBase, 0x25);
+    static constexpr Key kConfigKey_Creds_CD_Size     = SilabsConfigKey(kMatterFactory_KeyBase, 0x27);
+    static constexpr Key kConfigKey_Provision_Request = SilabsConfigKey(kMatterFactory_KeyBase, 0x28);
+    static constexpr Key kConfigKey_Provision_Version = SilabsConfigKey(kMatterFactory_KeyBase, 0x29);
+    static constexpr Key kOtaTlvEncryption_KeyId      = SilabsConfigKey(kMatterFactory_KeyBase, 0x30);
+    static constexpr Key kConfigKey_Creds_Dac         = SilabsConfigKey(kMatterFactory_KeyBase, 0x31);
+    static constexpr Key kConfigKey_Creds_Pai         = SilabsConfigKey(kMatterFactory_KeyBase, 0x32);
+    static constexpr Key kConfigKey_Creds_CD          = SilabsConfigKey(kMatterFactory_KeyBase, 0x33);
 
     // Matter Config Keys
     static constexpr Key kConfigKey_ServiceConfig      = SilabsConfigKey(kMatterConfig_KeyBase, 0x01);
