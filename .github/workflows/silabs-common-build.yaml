@@ -1,0 +1,45 @@
+name: Common Build
+
+on:
+    workflow_call:
+        inputs:
+            example-app:
+                required: true
+                type: string
+            output-directory:
+                required: true
+                type: string
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        container:
+            image: ghcr.io/project-chip/chip-build-efr32:115
+
+        strategy:
+            fail-fast: false
+            matrix:
+                platform: [mg24, mgm24, mg26, siwx]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Checkout submodules & Bootstrap
+              uses: ./.github/actions/checkout-submodules-and-bootstrap
+              with:
+                  platform: silabs_docker
+                  bootstrap-log-name: bootstrap-logs-${{ inputs.example-app }}-${{ matrix.platform }}
+
+            - name: Build ${{ inputs.example-app }} configurations
+              uses: SiliconLabsSoftware/matter_build_action@v1.2.0
+              with:
+                  json-file-path: >
+                      ${{ matrix.platform == 'mg24' && './.github/silabs-builds-mg24.json' ||
+                          matrix.platform == 'mgm24' && './.github/silabs-builds-mgm24.json' ||
+                          matrix.platform == 'mg26' && './.github/silabs-builds-mg26.json' ||
+                          matrix.platform == 'siwx' && './.github/silabs-builds-siwx.json' }}
+                  example-app: ${{ inputs.example-app }}
+                  build-script: "./scripts/examples/gn_silabs_example.sh"
+                  output-directory: ${{ inputs.output-directory }}

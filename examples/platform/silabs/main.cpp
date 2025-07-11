@@ -25,6 +25,9 @@
 #include "sl_main_init.h"
 #endif
 #include <MatterConfig.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
+
+using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
 
 // This is a User definable function in sl_main context, called by sl_main_init before the kernel is started
 void app_init_early(void) {}
@@ -41,8 +44,16 @@ void app_init(void)
 #if defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
 int main(void)
 {
+    SILABS_TRACE_BEGIN(chip::Tracing::Silabs::TimeTraceOperation::kBootup);
+    SILABS_TRACE_BEGIN(chip::Tracing::Silabs::TimeTraceOperation::kSilabsInit);
     app_init_early();
     sl_system_init();
     app_init();
+    SILABS_TRACE_END(chip::Tracing::Silabs::TimeTraceOperation::kSilabsInit);
+    SILABS_TRACE_BEGIN(chip::Tracing::Silabs::TimeTraceOperation::kMatterInit);
+
+    // Initialize the application. For example, create periodic timer(s) or
+    // task(s) if the kernel is present.
+    SilabsMatterConfig::AppInit();
 }
 #endif
