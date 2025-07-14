@@ -59,7 +59,10 @@ CHIP_ERROR OTATlvProcessor::Process(ByteSpan & block)
     CHIP_ERROR status     = CHIP_NO_ERROR;
     uint32_t bytes        = chip::min(mLength - mProcessedLength, static_cast<uint32_t>(block.size()));
     ByteSpan relevantData = block.SubSpan(0, bytes);
-
+    if (mProcessedLength + bytes >= mLength)
+    {
+        mLastBlock = true;
+    }
     status = ProcessInternal(relevantData);
     if (!IsError(status))
     {
@@ -86,6 +89,7 @@ void OTATlvProcessor::ClearInternal()
     mLength          = 0;
     mProcessedLength = 0;
     mWasSelected     = false;
+    mLastBlock       = false;
 #if OTA_ENCRYPTION_ENABLE
     mIVOffset = 0;
 #endif

@@ -152,6 +152,7 @@ public:
     void SetWasSelected(bool selected) { mWasSelected = selected; }
     bool WasSelected() { return mWasSelected; }
     bool IsValidTag(OTAProcessorTag tag);
+    bool IsLastBlock() const { return mLastBlock; }
 
 #ifdef OTA_ENCRYPTION_ENABLE
     CHIP_ERROR vOtaProcessInternalEncryption(MutableByteSpan & block);
@@ -199,8 +200,9 @@ protected:
     uint32_t mProcessedLength                    = 0;
     bool mWasSelected                            = false;
     ProcessDescriptor mCallbackProcessDescriptor = nullptr;
+    bool mDescriptorProcessed                    = false;
+    bool mLastBlock                              = false;
     OTADataAccumulator mAccumulator;
-    bool mDescriptorProcessed = false;
 };
 
 } // namespace chip
