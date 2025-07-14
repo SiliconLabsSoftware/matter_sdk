@@ -159,7 +159,7 @@ public:
     /**
      * @brief Remove padding from the given block.
      * This is necessary to remove any padding that might have been added during encryption.
-     * 
+     *
      * @param block The block of data to remove padding from.
      * @return CHIP_NO_ERROR on success, or an error code if padding removal fails.
      * @note The method assumes the block is padded using PKCS7 padding.
