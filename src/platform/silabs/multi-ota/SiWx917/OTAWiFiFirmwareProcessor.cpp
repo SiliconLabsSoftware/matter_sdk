@@ -65,11 +65,9 @@ CHIP_ERROR OTAWiFiFirmwareProcessor::ProcessInternal(ByteSpan & block)
     OTATlvProcessor::vOtaProcessInternalEncryption(byteBlock);
     if (IsLastBlock() == true)
     {
-        // Unpad the file if it is the last block
-        // This is necessary to remove any padding that might have been added during encryption.
-        // The unpadding logic is specific to the encryption scheme used.
-        VerifyOrReturnError(OTATlvProcessor::UnpadFile(byteBlock) == CHIP_NO_ERROR, CHIP_ERROR_WRONG_ENCRYPTION_TYPE,
-                            ChipLogError(SoftwareUpdate, "UnpadFile failed"));
+        // Remove padding from the last block since if the file was padded, last block will contain padding bytes.
+        VerifyOrReturnError(OTATlvProcessor::RemovePadding(byteBlock) == CHIP_NO_ERROR, CHIP_ERROR_WRONG_ENCRYPTION_TYPE,
+                            ChipLogError(SoftwareUpdate, "Failed to remove padding"));
     }
     block = byteBlock;
 #endif // OTA_ENCRYPTION_ENABLE

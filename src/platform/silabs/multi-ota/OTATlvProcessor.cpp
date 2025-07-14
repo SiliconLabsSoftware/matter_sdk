@@ -153,7 +153,7 @@ CHIP_ERROR OTATlvProcessor::vOtaProcessInternalEncryption(MutableByteSpan & bloc
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR OTATlvProcessor::UnpadFile(MutableByteSpan & block)
+CHIP_ERROR OTATlvProcessor::RemovePadding(MutableByteSpan & block)
 {
     if (block.size() == 0)
     {
@@ -177,7 +177,7 @@ CHIP_ERROR OTATlvProcessor::UnpadFile(MutableByteSpan & block)
             return CHIP_ERROR_INVALID_ARGUMENT;
         }
     }
-    ChipLogProgress(DeviceLayer, "PKCS7 padding verified, removing %d bytes", padLength);
+
     block.reduce_size(block.size() - padLength);
     return CHIP_NO_ERROR;
 }
