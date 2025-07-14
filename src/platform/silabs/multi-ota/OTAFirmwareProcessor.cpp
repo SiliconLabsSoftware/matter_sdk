@@ -76,7 +76,7 @@ CHIP_ERROR OTAFirmwareProcessor::ProcessInternal(ByteSpan & block)
     {
         // Remove padding from the last block since if the file was padded, last block will contain padding bytes.
         VerifyOrReturnError(OTATlvProcessor::RemovePadding(byteBlock) == CHIP_NO_ERROR, CHIP_ERROR_WRONG_ENCRYPTION_TYPE,
-                            ChipLogError(SoftwareUpdate, "RemovePadding failed"));
+                            ChipLogError(SoftwareUpdate, "Failed to remove padding"));
     }
     block = byteBlock;
 #endif
