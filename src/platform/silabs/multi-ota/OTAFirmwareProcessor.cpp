@@ -72,6 +72,14 @@ CHIP_ERROR OTAFirmwareProcessor::ProcessInternal(ByteSpan & block)
     }
 
     OTATlvProcessor::vOtaProcessInternalEncryption(byteBlock);
+    if (IsLastBlock() == true)
+    {
+        // Unpad the file if it is the last block
+        // This is necessary to remove any padding that might have been added during encryption.
+        // The unpadding logic is specific to the encryption scheme used.
+        VerifyOrReturnError(OTATlvProcessor::UnpadFile(byteBlock) == CHIP_NO_ERROR, CHIP_ERROR_WRONG_ENCRYPTION_TYPE,
+                            ChipLogError(SoftwareUpdate, "UnpadFile failed"));
+    }
     block = byteBlock;
 #endif
 

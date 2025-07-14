@@ -152,5 +152,34 @@ CHIP_ERROR OTATlvProcessor::vOtaProcessInternalEncryption(MutableByteSpan & bloc
 
     return CHIP_NO_ERROR;
 }
+
+CHIP_ERROR OTATlvProcessor::UnpadFile(MutableByteSpan & block)
+{
+    if (block.size() == 0)
+    {
+        ChipLogError(DeviceLayer, "Block size is zero, cannot unpad");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+
+    uint8_t padLength = block.data()[block.size() - 1];
+    if (padLength == 0 || padLength > block.size())
+    {
+        ChipLogError(DeviceLayer, "Invalid PKCS7 padding");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Verify padding bytes
+    for (size_t i = 0; i < padLength; ++i)
+    {
+        if (block.data()[block.size() - 1 - i] != padLength)
+        {
+            ChipLogError(DeviceLayer, "PKCS7 padding verification failed");
+            return CHIP_ERROR_INVALID_ARGUMENT;
+        }
+    }
+    ChipLogProgress(DeviceLayer, "PKCS7 padding verified, removing %d bytes", padLength);
+    block.reduce_size(block.size() - padLength);
+    return CHIP_NO_ERROR;
+}
 #endif // OTA_ENCRYPTION_ENABLE
 } // namespace chip

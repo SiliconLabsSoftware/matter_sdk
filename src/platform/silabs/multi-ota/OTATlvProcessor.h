@@ -156,6 +156,7 @@ public:
 
 #ifdef OTA_ENCRYPTION_ENABLE
     CHIP_ERROR vOtaProcessInternalEncryption(MutableByteSpan & block);
+    CHIP_ERROR UnpadFile(MutableByteSpan & block);
 #endif
 
 protected:
