@@ -35,7 +35,6 @@
 #include "af-security.h" // Install code
 #include "find-and-bind-target.h"
 #include "network-creator-security.h"
-#include "network-creator-security.h" // Install code
 #include "network-creator.h"
 #include "stack/include/zigbee-security-manager.h" // Install code
 #include "zll-commissioning.h"
