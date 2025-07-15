@@ -92,13 +92,6 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 
 #include <app/clusters/network-commissioning/network-commissioning.h>
 
-#if CHIP_ENABLE_OPENTHREAD && (SL_MATTER_GN_BUILD == 0)
-// SLC-FIX
-// TODO: Remove the Power Manager include when OT does not add an EM1 req at init
-#define CURRENT_MODULE_NAME "OPENTHREAD"
-#include "sl_power_manager.h"
-#endif
-
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 #if MATTER_TRACING_ENABLED
 #include <platform/silabs/tracing/BackendImpl.h> // nogncheck
@@ -227,12 +220,6 @@ void ApplicationStart(void * unused)
 
 void SilabsMatterConfig::AppInit()
 {
-#if CHIP_ENABLE_OPENTHREAD && (SL_MATTER_GN_BUILD == 0)
-    // SLC-FIX
-    // TODO: Remove the Power Manager remove req when OT does not add an EM1 req at init
-    sl_power_manager_remove_em_requirement(SL_POWER_MANAGER_EM1);
-#endif
-
     GetPlatform().Init();
     sMainTaskHandle = osThreadNew(ApplicationStart, nullptr, &kMainTaskAttr);
     ChipLogProgress(DeviceLayer, "Starting scheduler");
