@@ -27,7 +27,7 @@
 #include <string.h>
 #if defined(SL_MATTER_ENABLE_OTA_ENCRYPTION) && SL_MATTER_ENABLE_OTA_ENCRYPTION
 #include <platform/silabs/multi-ota/OtaTlvEncryptionKey.h>
-#endif // OTA_ENCRYPTION_ENABLE
+#endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
 
 #if !(SL_MATTER_GN_BUILD || defined(SL_PROVISION_GENERATOR))
 #include <sl_matter_provision_config.h>
@@ -789,7 +789,7 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 }
-#endif // OTA_ENCRYPTION_ENABLE
+#endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
 
 CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
 {
