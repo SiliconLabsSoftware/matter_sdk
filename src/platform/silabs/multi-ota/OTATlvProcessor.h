@@ -154,7 +154,7 @@ public:
     bool IsValidTag(OTAProcessorTag tag);
     bool IsLastBlock() const { return mLastBlock; }
 
-#ifdef OTA_ENCRYPTION_ENABLE
+#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
     CHIP_ERROR vOtaProcessInternalEncryption(MutableByteSpan & block);
     /**
      * @brief Remove padding from the given block.
@@ -198,7 +198,7 @@ protected:
     bool IsError(CHIP_ERROR & status);
     virtual uint32_t GetAccumulatorLength() const { return sizeof(Descriptor); }
 
-#ifdef OTA_ENCRYPTION_ENABLE
+#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
     /*ota decryption*/
     uint32_t mIVOffset = 0;
     /* Expected byte size of the OTAEncryptionKeyLength */
