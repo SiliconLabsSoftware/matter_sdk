@@ -789,6 +789,21 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 }
+#else
+CHIP_ERROR Storage::SetOtaTlvEncryptionKey(const ByteSpan & value)
+{
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
+}
+
+CHIP_ERROR Storage::GetOtaTlvEncryptionKeyId(uint32_t & keyId)
+{
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
+}
+
+CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uint32_t & ivOffset)
+{
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
+}
 #endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
 
 CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
