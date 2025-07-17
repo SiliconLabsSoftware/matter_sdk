@@ -23,17 +23,10 @@
 
 #include "LEDWidget.h"
 
+#include <app/DeferredAttributePersistenceProvider.h>
 #include <app/clusters/on-off-server/on-off-server.h>
-#include <app/persistence/AttributePersistenceProviderInstance.h>
-#include <app/persistence/DefaultAttributePersistenceProvider.h>
-#include <app/persistence/DeferredAttributePersistenceProvider.h>
+#include <app/server/OnboardingCodesUtil.h>
 #include <app/server/Server.h>
-#include <app/util/attribute-storage.h>
-#include <setup_payload/OnboardingCodesUtil.h>
-
-#ifdef MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-#include <app/clusters/scenes-server/scenes-server.h>
-#endif
 
 #include <assert.h>
 
@@ -50,6 +43,7 @@
 #include "ZigbeeCallbacks.h"
 #include "sl_cmp_config.h"
 #include "sl_matter_config.h"
+#include <MultiProtocolDataModelHelper.h>
 
 #if (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT) || defined(SIWX_917))
 #define LIGHT_LED 1
@@ -98,7 +92,6 @@ AppTask AppTask::sAppTask;
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    app::SetAttributePersistenceProvider(&gDeferredAttributePersister);
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
     char rebootLightOnKey[] = "Reboot->LightOn";
     CharSpan rebootLighOnSpan(rebootLightOnKey);
@@ -109,6 +102,7 @@ CHIP_ERROR AppTask::AppInit()
 #else
     ChipLogProgress(AppServer, "Sequential CMP app");
 #endif
+    MultiProtocolDataModel::Initialize();
 
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
@@ -159,8 +153,6 @@ CHIP_ERROR AppTask::AppInit()
         Zigbee::RequestStart();
     }
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-
-    BaseApplication::InitCompleteCallback(err);
     return err;
 }
 
@@ -173,6 +165,10 @@ void AppTask::AppTaskMain(void * pvParameter)
 {
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
+
+    // Initialization that needs to happen before the BaseInit is called here as the BaseApplication::Init() will call
+    // the AppInit() after BaseInit.
+    app::SetAttributePersistenceProvider(&gDeferredAttributePersister);
 
     CHIP_ERROR err = sAppTask.Init();
     if (err != CHIP_NO_ERROR)
