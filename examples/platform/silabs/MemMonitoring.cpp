@@ -45,9 +45,9 @@ size_t largestBlockAllocated = 0;
 
 void DisplayMemoryUsage()
 {
-    uint32_t totalHeap     = (uint32_t) sl_memory_get_total_heap_size();
-    uint32_t usedHeap      = (uint32_t) sl_memory_get_used_heap_size();
-    uint32_t highWatermark = (uint32_t) sl_memory_get_heap_high_watermark();
+    uint32_t totalHeap     = static_cast<uint32_t>(sl_memory_get_total_heap_size());
+    uint32_t usedHeap      = static_cast<uint32_t>(sl_memory_get_used_heap_size());
+    uint32_t highWatermark = static_cast<uint32_t>(sl_memory_get_heap_high_watermark());
 
     SILABS_LOG("Total Heap Size           %lu B", totalHeap);
     SILABS_LOG("Used Heap Size            %lu B", usedHeap);
