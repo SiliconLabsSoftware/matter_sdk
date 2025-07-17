@@ -150,7 +150,7 @@ typedef struct
 } Fifo_t;
 
 // uart transmit
-#if SILABS_LOG_OUT_UART
+#if SILABS_LOG_OUT_UART && !defined(SIMG301M113WIH)
 #define UART_MAX_QUEUE_SIZE 125
 #else
 #if (_SILICON_LABS_32B_SERIES < 3)
