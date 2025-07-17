@@ -11,13 +11,15 @@
             "arguments": ["--docker"]
         }
     ],
-    "lighting-app": {
-        "boards": ["BRD4316A"],
-        "arguments": [
-            "--docker",
-            "chip_enable_multi_ota_requestor=true",
-            "chip_enable_multi_ota_encryption=true",
-            "--clean"
-        ]
-    }
+    "lighting-app": [
+        {
+            "boards": ["BRD4316A"],
+            "arguments": [
+                "--docker",
+                "chip_enable_multi_ota_requestor=true",
+                "chip_enable_multi_ota_encryption=false",
+                "--clean"
+            ]
+        }
+    ]
 }
