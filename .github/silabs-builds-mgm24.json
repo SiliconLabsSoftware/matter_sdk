@@ -1,8 +1,23 @@
 {
     "default": [
         {
-            "boards": ["BRD4316A", "BRD4317A", "BRD4318A", "BRD4319A", "BRD2704A"],
+            "boards": [
+                "BRD4316A",
+                "BRD4317A",
+                "BRD4318A",
+                "BRD4319A",
+                "BRD2704A"
+            ],
             "arguments": ["--docker"]
         }
-    ]
+    ],
+    "lighting-app": {
+        "boards": ["BRD4316A"],
+        "arguments": [
+            "--docker",
+            "chip_enable_multi_ota_requestor=true",
+            "chip_enable_multi_ota_encryption=true",
+            "--clean"
+        ]
+    }
 }
