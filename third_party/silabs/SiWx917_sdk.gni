@@ -256,7 +256,6 @@ template("siwx917_sdk") {
       "UDMA_ROMDRIVER_PRESENT=1",
       "PLL_ROMDRIVER_PRESENT=1",
       "SL_MATTER_GN_BUILD=1",
-      "SILABS_LOG_OUT_UART=${sl_uart_log_output}",
       "SUPPORT_CPLUSPLUS=1",
       "SLI_SI91X_LWIP_HOSTED_NETWORK_STACK=1",
       "__FREERTOS_OS_WISECONNECT=1",
@@ -294,6 +293,12 @@ template("siwx917_sdk") {
       defines += [ "LWIP_IPV6=1" ]
     } else {
       defines += [ "LWIP_IPV6=0" ]
+    }
+
+    if (sl_uart_log_output) {
+      defines += [ "SILABS_LOG_OUT_UART=1" ]
+    } else {
+      defines += [ "SILABS_LOG_OUT_UART=0" ]
     }
 
     if (chip_enable_wifi_ipv4) {
