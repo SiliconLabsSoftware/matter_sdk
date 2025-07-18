@@ -28,12 +28,7 @@
 #include <app/persistence/DefaultAttributePersistenceProvider.h>
 #include <app/persistence/DeferredAttributePersistenceProvider.h>
 #include <app/server/Server.h>
-#include <app/util/attribute-storage.h>
 #include <setup_payload/OnboardingCodesUtil.h>
-
-#ifdef MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-#include <app/clusters/scenes-server/scenes-server.h>
-#endif
 
 #include <assert.h>
 
@@ -50,6 +45,7 @@
 #include "ZigbeeCallbacks.h"
 #include "sl_cmp_config.h"
 #include "sl_matter_config.h"
+#include <MultiProtocolDataModelHelper.h>
 
 #if (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT) || defined(SIWX_917))
 #define LIGHT_LED 1
@@ -109,6 +105,7 @@ CHIP_ERROR AppTask::AppInit()
 #else
     ChipLogProgress(AppServer, "Sequential CMP app");
 #endif
+    MultiProtocolDataModel::Initialize();
 
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
