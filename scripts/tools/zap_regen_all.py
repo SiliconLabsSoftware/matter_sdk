@@ -398,7 +398,7 @@ def getGlobalTemplatesTargets():
         example_name = example_name[:example_name.index('/')]
 
         if example_name == "zigbee-matter-light":
-            # TODO silabs docker image doesn't have the zigbe zcl template need, as it was scrub for size reasons.
+            # TODO silabs docker image doesn't have the zigbee zcl template need, as it was scrub for size reasons.
             logging.info("-- Skipping zigbee-matter-light example regen --")
             continue
         if example_name == "chef":
