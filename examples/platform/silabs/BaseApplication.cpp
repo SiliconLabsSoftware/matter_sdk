@@ -44,8 +44,6 @@
 #endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
-#include <app/server/OnboardingCodesUtil.h>
-
 #if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 #include <platform/internal/BLEManager.h>
 #include <platform/silabs/efr32/BLEChannelImpl.h>

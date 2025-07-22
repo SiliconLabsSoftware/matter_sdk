@@ -1,6 +1,6 @@
 /***************************************************************************
- * @file SilabsTracing.h
- * @brief Instrumenting for matter operation tracing for the Silicon Labs platform.
+ * @file BLEChannelImpl.h
+ * @brief Implementation of BLE channel functionality for the Silicon Labs platform.
  *******************************************************************************
  * # License
  * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>

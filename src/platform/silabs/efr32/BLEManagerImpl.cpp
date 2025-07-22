@@ -105,8 +105,6 @@ namespace {
 #define BLE_CONFIG_MIN_CE_LENGTH (0)      // Leave to min value
 #define BLE_CONFIG_MAX_CE_LENGTH (0xFFFF) // Leave to max value
 
-// Side Channel default intervals: between 20ms to 5s, API does Value * 0.625ms, so we should check where the default above comes
-// from
 #define BLE_CONFIG_MIN_INTERVAL_SC (32)   // Time = Value * 0.625 ms = 20ms
 #define BLE_CONFIG_MAX_INTERVAL_SC (8000) // Time = Value * 0.625 ms = 5s
 

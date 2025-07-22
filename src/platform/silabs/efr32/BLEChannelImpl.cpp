@@ -1,6 +1,6 @@
 /***************************************************************************
- * @file SilabsTracing.h
- * @brief Instrumenting for matter operation tracing for the Silicon Labs platform.
+ * @file BLEChannelImpl.cpp
+ * @brief Implementation of BLE channel operations for the Silicon Labs platform.
  *******************************************************************************
  * # License
  * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
@@ -349,11 +349,11 @@ CHIP_ERROR BLEChannelImpl::SetConnectionParams(const Optional<uint8_t> & connect
     if (connectionHandle.HasValue())
     {
         ret = sl_bt_connection_set_parameters(connectionHandle.Value(), intervalMin, intervalMax, latency, timeout, 0,
-                                              kDefaultConnectionEventLenght);
+                                              kDefaultConnectionEventLength);
     }
     else
     {
-        ret = sl_bt_connection_set_default_parameters(intervalMin, intervalMax, latency, timeout, 0, kDefaultConnectionEventLenght);
+        ret = sl_bt_connection_set_default_parameters(intervalMin, intervalMax, latency, timeout, 0, kDefaultConnectionEventLength);
     }
     return MapBLEError(ret);
 }

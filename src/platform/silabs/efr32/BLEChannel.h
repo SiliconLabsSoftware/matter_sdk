@@ -1,6 +1,6 @@
 /***************************************************************************
- * @file SilabsTracing.h
- * @brief Instrumenting for matter operation tracing for the Silicon Labs platform.
+ * @file BLEChannel.h
+ * @brief Provides BLE channel abstraction for the Silicon Labs platform, including connection and advertising management.
  *******************************************************************************
  * # License
  * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
@@ -52,7 +52,7 @@ struct AdvConfigStruct
 };
 
 inline constexpr uint8_t kInvalidAdvertisingHandle      = 0xff;
-inline constexpr uint16_t kDefaultConnectionEventLenght = 0xffff;
+inline constexpr uint16_t kDefaultConnectionEventLength = 0xffff;
 
 class BLEChannel
 {
