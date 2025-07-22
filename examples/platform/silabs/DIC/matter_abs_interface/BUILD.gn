@@ -79,7 +79,6 @@ source_set("silabs-aws-sdk-ota") {
   public_deps = [
     "${chip_root}/src/inet",
     "${chip_root}/src/lwip",
-
   ]
   public_configs = [ ":silabs_aws_sdk_ota_config" ]
 }
