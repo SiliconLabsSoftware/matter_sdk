@@ -254,7 +254,7 @@ static bool mqttSessionEstablished = false;
  * @brief Mutex for synchronizing coreMQTT API calls.
  */
   StaticSemaphore_t mqttMutex;
-  
+
   SemaphoreHandle_t sem_mutex = NULL;
 
 /**
@@ -268,7 +268,7 @@ static bool mqttSessionEstablished = false;
  * @brief Semaphore for synchronizing wait for ack.
  */
   StaticSemaphore_t ackSemaphore;
-  
+
   SemaphoreHandle_t sem_ack;
 /**
  * @brief Enum for type of OTA job messages received.
@@ -564,7 +564,7 @@ jobMessageType_t getJobMessageType( const char * pTopicName,
     static const char * const pJobTopicFilters[ jobMessageTypeMax ] =
     {
         OTA_TOPIC_PREFIX OTA_TOPIC_JOBS "/$next/get/accepted",
-        OTA_TOPIC_PREFIX OTA_TOPIC_JOBS "/notify-next",        
+        OTA_TOPIC_PREFIX OTA_TOPIC_JOBS "/notify-next",
     };
     /* Match the input topic filter against the wild-card pattern of topics filters
     * relevant for the OTA Update service to determine the type of topic filter. */
@@ -691,7 +691,7 @@ static int establishConnection( void )
         returnStatus = EXIT_SUCCESS;
         SILABS_LOG("DIC Init is completed");
     }
-    
+
     return returnStatus;
 }
 
@@ -752,7 +752,7 @@ static OtaMqttStatus_t mqttSubscribe( const char * pTopicFilter,
     OtaMqttStatus_t otaRet = OtaMqttSuccess;
 
     int mqttStatus;
-    
+
     assert( pTopicFilter != NULL );
     assert( topicFilterLength > 0 );
 
@@ -971,7 +971,7 @@ static int startOTADemo( void )
             returnStatus = EXIT_FAILURE;
         }
         SILABS_LOG("OTA Init is Successfull");
-    } 
+    }
 
     /****************************** Create OTA Task. ******************************/
 
@@ -981,7 +981,7 @@ static int startOTADemo( void )
         {
             returnStatus = EXIT_FAILURE;
         }
-        SILABS_LOG("Task creation successfull for OTA thread");    
+        SILABS_LOG("Task creation successfull for OTA thread");
     }
 
     /****************************** OTA Demo loop. ******************************/
@@ -1149,7 +1149,7 @@ int aws_ota_init( void* parameters )
     dic_aws_ota_close();
 
     if( bufferSemInitialized == true )
-    {   
+    {
         /* Cleanup semaphore created for buffer operations. */
         vSemaphoreDelete( sem_buffer );
         if( sem_buffer != NULL )

@@ -3300,7 +3300,7 @@ OtaErr_t OTA_Init( const OtaAppBuffer_t * pOtaBuffer,
         /*
          * Initialize OTA event interface.
          */
-        
+
         if( otaAgent.isOtaInterfaceInited != 1U )
         {
             ( void ) otaAgent.pOtaInterface->os.event.init( NULL );
