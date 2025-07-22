@@ -116,7 +116,7 @@ int16_t otaPal_WriteBlock_efr32( OtaFileContext_t * const C,
     uint16_t writeBufOffset = 0;
 
     static uint64_t downloadedBytes;
-    
+
     uint32_t blockReadOffset = 0;
     uint8_t writeBuffer[64] = { 0 };
     if (!bl_init_done)
@@ -210,10 +210,10 @@ int16_t otaPal_WriteBlock_siwx917( OtaFileContext_t * const C,
     uint16_t writeBufOffset = 0;
 
     static uint64_t downloadedBytes;
-    
+
     uint32_t blockReadOffset = 0;
     uint8_t writeBuffer[64] = { 0 };
- 
+
     downloadedBytes = 0;
 
     while (blockReadOffset < ulBlockSize)
@@ -249,7 +249,7 @@ int16_t otaPal_WriteBlock_siwx917( OtaFileContext_t * const C,
                     SILABS_LOG("ERROR: In HandleProcessBlock for middle chunk sl_si91x_fwup_load error %ld", status);
                     return -1;
                 }
-            } 
+            }
             mWriteOffset += kAlignmentBytes;
             downloadedBytes += kAlignmentBytes;
             filerc = ( int32_t ) ulBlockSize;
@@ -261,7 +261,7 @@ int16_t otaPal_WriteBlock_siwx917( OtaFileContext_t * const C,
             {
                 // Account for last bytes of the image not yet written to storage
                 downloadedBytes += writeBufOffset;
-          
+
                 if(flag == SL_FWUP_RPS_CONTENT)
                 {
                     // Send RPS content

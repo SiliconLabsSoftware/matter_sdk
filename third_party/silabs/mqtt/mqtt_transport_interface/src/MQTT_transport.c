@@ -71,7 +71,7 @@ void dns_callback(const char *name, const ip_addr_t *ipaddr, void *callback_arg)
 }
 
 MQTT_Transport_t * MQTT_Transport_Init(mqtt_transport_intf_t *trans,mqtt_client_t* mqtt_client,EventGroupHandle_t dicEvents)
-{ 
+{
   if(trans == NULL && mqtt_client == NULL && dicEvents == NULL){
     SILABS_LOG("MQTT transport init failed");
     return NULL;

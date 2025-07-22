@@ -273,7 +273,7 @@ static void altcp_mbedtls_lower_recv_signal(struct altcp_pcb *conn)
 err_t
 altcp_mbedtls_lower_recv_process(struct altcp_pcb *conn)
  {
-  altcp_mbedtls_state_t *state; 
+  altcp_mbedtls_state_t *state;
   if (conn == NULL || conn->state == NULL) return ERR_ARG;
   state = (altcp_mbedtls_state_t *)conn->state;
 
@@ -673,7 +673,7 @@ altcp_tls_context(struct altcp_pcb *conn)
   return NULL;
 }
 
-#if ALTCP_MBEDTLS_DEBUG 
+#if ALTCP_MBEDTLS_DEBUG
 static void
 altcp_mbedtls_debug(void *ctx, int level, const char *file, int line, const char *str)
 {
@@ -785,7 +785,7 @@ altcp_tls_create_config(int is_server, int have_cert, int have_pkey, int have_ca
   mbedtls_ssl_conf_authmode(&conf->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
   mbedtls_ssl_conf_ciphersuites(&conf->conf, (const int *)&ciphers);
   mbedtls_ssl_conf_rng(&conf->conf, mbedtls_ctr_drbg_random, &conf->ctr_drbg);
-#if ALTCP_MBEDTLS_DEBUG 
+#if ALTCP_MBEDTLS_DEBUG
   mbedtls_ssl_conf_dbg(&conf->conf, altcp_mbedtls_debug, stdout);
   mbedtls_debug_set_threshold(1);
 #endif
