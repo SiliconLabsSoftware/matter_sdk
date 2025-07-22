@@ -351,3 +351,7 @@
 	url = https://github.com/rtkconnectivity/ot-realtek.git
 	branch = matter_support
 	platforms = realtek
+[submodule "third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk"]
+	path = third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk
+	url = https://github.com/aws/ota-for-aws-iot-embedded-sdk.git
+	platforms = silabs
