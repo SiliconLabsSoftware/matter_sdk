@@ -1677,7 +1677,7 @@ static DocParseErr_t extractAndStoreArray( const char * pKey,
     {
         if( *pParamSizeAdd < ( valueLength + 1U ) )
         {
-            err = DocParseErrUserBufferInsuffcient;
+            err = DocParseErrUserBufferInsufficient;
 
             SILABS_LOG("Insufficient user memory: "
                         "[key: valueLength]=[%s: %lu]",

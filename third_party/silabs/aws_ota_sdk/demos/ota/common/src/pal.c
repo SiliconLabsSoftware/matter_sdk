@@ -64,14 +64,14 @@ extern "C" {
  */
 #define OTA_PLATFORM_IMAGE_STATE_FILE    "PlatformImageState.txt"
 
-#ifdef SIWX_917
-#define SL_STATUS_FW_UPDATE_DONE ((sl_status_t)0x10003)
-#define SL_FWUP_RPS_HEADER  1
-#define SL_FWUP_RPS_CONTENT 2
+#ifndef EFR32MG24
+#define SL_917_STATUS_FW_UPDATE_DONE ((sl_status_t)0x10003)
+#define SL_917_FWUP_RPS_HEADER  1
+#define SL_917_FWUP_RPS_CONTENT 2
 
-static uint8_t flag = SL_FWUP_RPS_HEADER;
+static uint8_t flag = SL_917_FWUP_RPS_HEADER;
 bool reset_flag = false;
-#endif // Siwx917
+#endif // EFR32MG24
 
 /**
  * @brief Specify the OTA signature algorithm we support on this platform.
@@ -100,9 +100,9 @@ OtaPalStatus_t otaPal_CloseFile( OtaFileContext_t * const C )
     return OTA_PAL_COMBINE_ERR( mainErr, subErr );
 }
 
+#ifdef EFR32MG24
 static bool bl_init_done = false;
 
-#ifdef EFR32MG24
 int16_t otaPal_WriteBlock_efr32( OtaFileContext_t * const C,
                            uint32_t ulOffset,
                            uint8_t * const pcData,
@@ -206,7 +206,6 @@ int16_t otaPal_WriteBlock_siwx917( OtaFileContext_t * const C,
     int32_t status = 0;
     int32_t filerc = 0;
     uint32_t const kAlignmentBytes = 64;
-    uint8_t mSlotId;
     static uint32_t mWriteOffset;
     uint16_t writeBufOffset = 0;
 
@@ -215,7 +214,6 @@ int16_t otaPal_WriteBlock_siwx917( OtaFileContext_t * const C,
     uint32_t blockReadOffset = 0;
     uint8_t writeBuffer[64] = { 0 };
  
-    mSlotId = 0; // Single slot until we support multiple images
     downloadedBytes = 0;
 
     while (blockReadOffset < ulBlockSize)
@@ -227,7 +225,7 @@ int16_t otaPal_WriteBlock_siwx917( OtaFileContext_t * const C,
         {
             SILABS_LOG("packets mWriteOffset %d, blockReadOffset %d writeBufOffset %d", mWriteOffset, blockReadOffset, writeBufOffset);
             writeBufOffset = 0;
-            if(flag == SL_FWUP_RPS_HEADER)
+            if(flag == SL_917_FWUP_RPS_HEADER)
             {
                 // Send RPS header which is received as first chunk
                 status = sl_si91x_fwup_start(writeBuffer);
@@ -242,7 +240,7 @@ int16_t otaPal_WriteBlock_siwx917( OtaFileContext_t * const C,
                 // Send RPS content
                 status = sl_si91x_fwup_load(writeBuffer, kAlignmentBytes);
 	            if (status != SL_STATUS_OK) {
-                    if (status == SL_STATUS_FW_UPDATE_DONE) {
+                    if (status == SL_917_STATUS_FW_UPDATE_DONE) {
                         reset_flag = true;
                     }
                 }
@@ -270,7 +268,7 @@ int16_t otaPal_WriteBlock_siwx917( OtaFileContext_t * const C,
                     status = sl_si91x_fwup_load(writeBuffer, writeBufOffset);
                     SILABS_LOG("status: 0x%lX", status);
 	                if (status != SL_STATUS_OK) {
-                        if (status == SL_STATUS_FW_UPDATE_DONE) {
+                        if (status == SL_917_STATUS_FW_UPDATE_DONE) {
                             reset_flag = true;
                         }
                     }
@@ -343,7 +341,7 @@ OtaPalStatus_t otaPal_ActivateNewImage_siwx917( OtaFileContext_t * const C )
     ( void ) C;
     if(reset_flag){
         SILABS_LOG("M4/TA/combined image update completed - reset started");
-        sl_si91x_soc_soft_reset();
+        sl_si91x_soc_nvic_reset();
     }
     return OTA_PAL_COMBINE_ERR( OtaPalSuccess, 0 );
 }
