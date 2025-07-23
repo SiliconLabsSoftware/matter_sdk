@@ -291,9 +291,6 @@ template("efr32_sdk") {
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/hci/release/libble_host_hci.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/system/release/libble_host_system.a",
         ]
-        if (!sl_enable_ble_side_channel) {
-          libs += [ "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_stub_gatt_client.a" ]
-        }
       }
     }
 
@@ -656,6 +653,8 @@ template("efr32_sdk") {
       ]
 
       libs += [ "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_gatt_client.a" ]
+    } else if (!chip_enable_ble_rs911x) {
+      libs += [ "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_stub_gatt_client.a" ]
     }
     if (chip_build_libshell) {  # matter shell
       defines += [
