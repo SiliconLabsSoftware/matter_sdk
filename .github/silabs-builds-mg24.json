@@ -17,7 +17,7 @@
             "arguments": ["--docker", "--wifi SiWx917"]
         }
     ],
-    "ble-side-channel": [
+    "lighting-app": [
         {
             "boards": ["BRD4187C"],
             "arguments": ["--docker", "--sl_enable_ble_side_channel"]
