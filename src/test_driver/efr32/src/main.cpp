@@ -35,9 +35,16 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/KeyValueStoreManager.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-#include <sl_system_init.h>
-#include <sl_system_kernel.h>
 #include <task.h>
+
+#include "sl_component_catalog.h"
+// Use sl_system for projects upgraded to 2025.6, identified by the presence of SL_CATALOG_CUSTOM_MAIN_PRESENT
+#if defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
+#include "sl_system_init.h"
+#include <sl_system_kernel.h>
+#else
+#include "sl_main_init.h"
+#endif
 
 using namespace chip;
 using namespace chip::DeviceLayer;
@@ -90,9 +97,13 @@ void RunRpcService(void *)
 
 } // namespace
 
-int main(void)
+// This is a User definable function in sl_main context, called by sl_main_init before the kernel is started
+void app_init_early(void) {}
+
+// This is a User definable function, in sl_main context, called by start_task_handler once the silabs platform is fully
+// initialized.
+void app_init(void)
 {
-    sl_system_init();
     Silabs::GetPlatform().Init();
     PigweedLogger::init();
     mbedtls_platform_set_calloc_free(CHIPPlatformMemoryCalloc, CHIPPlatformMemoryFree);
@@ -111,10 +122,19 @@ int main(void)
     // Start RPC service which runs the tests.
     sTestTaskHandle = xTaskCreateStatic(RunRpcService, "RPC_TEST_TASK", ArraySize(sTestTaskStack), nullptr, TEST_TASK_PRIORITY,
                                         sTestTaskStack, &sTestTaskBuffer);
+}
+
+#if defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
+int main(void)
+{
+    app_init_early();
+    sl_system_init();
+    app_init();
+
     SILABS_LOG("Starting FreeRTOS scheduler");
     sl_system_kernel_start();
-
     // Should never get here.
     SILABS_LOG("vTaskStartScheduler() failed");
     return -1;
 }
+#endif

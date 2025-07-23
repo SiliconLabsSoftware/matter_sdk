@@ -152,11 +152,12 @@ CHIP_ERROR SilabsPlatform::ToggleLed(uint8_t led)
     return CHIP_NO_ERROR;
 }
 #endif // ENABLE_WSTK_LEDS
-
+#if defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
 void SilabsPlatform::StartScheduler()
 {
     vTaskStartScheduler();
 }
+#endif // SL_CATALOG_CUSTOM_MAIN_PRESENT
 
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
 extern "C" void sl_button_on_change(uint8_t btn, uint8_t btnAction)
