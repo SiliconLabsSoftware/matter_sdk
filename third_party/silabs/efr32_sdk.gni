@@ -284,7 +284,6 @@ template("efr32_sdk") {
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/bgstack/release/libble_host.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/bgstack/release/libbondingdb_stub.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi.a",
-          "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_stub_gatt_client.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_system/release/libble_system.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/connection_subrating/release/libble_host_connection_subrating_stub.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/core/release/libble_host_core.a",
@@ -652,6 +651,10 @@ template("efr32_sdk") {
         "SL_BT_ADVERTISER_CONFIG_H",
         "SL_BT_CONFIG_USER_ADVERTISERS=2",
       ]
+
+      libs += [ "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_gatt_client.a" ]
+    } else if (!chip_enable_ble_rs911x) {
+      libs += [ "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_stub_gatt_client.a" ]
     }
     if (chip_build_libshell) {  # matter shell
       defines += [
