@@ -15,6 +15,10 @@
         {
             "boards": ["BRD4187C"],
             "arguments": ["--docker", "--wifi SiWx917"]
+        },
+        {
+            "boards": ["BRD4187C"],
+            "arguments": ["--docker", "--release"]
         }
     ],
     "lighting-app": [
