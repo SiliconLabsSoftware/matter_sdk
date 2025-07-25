@@ -4,5 +4,17 @@
             "boards": ["BRD4338A", "BRD2605A", "BRD4343A"],
             "arguments": ["--docker", "use_rps_extension=false"]
         }
+    ],
+    "lighting-app": [
+        {
+            "boards": ["BRD4338A"],
+            "arguments": [
+                "--docker",
+                "use_rps_extension=false",
+                "chip_enable_multi_ota_requestor=true",
+                "chip_enable_multi_ota_encryption=false",
+                "--clean"
+            ]
+        }
     ]
 }
