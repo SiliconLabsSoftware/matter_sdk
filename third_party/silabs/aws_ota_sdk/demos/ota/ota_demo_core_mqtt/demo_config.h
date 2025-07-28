@@ -36,15 +36,15 @@
 /* Include header that defines log levels. */
 // #include "logging_levels.h"
 
-#define OTA_TASK_STACK_SIZE (3*1024)
-#define OTA_TASK_PRIORITY 8
+#define OTA_TASK_STACK_SIZE (3 * 1024)
+#define OTA_TASK_PRIORITY   8
 
 /* Logging configuration for the Demo. */
 #ifndef LIBRARY_LOG_NAME
-    #define LIBRARY_LOG_NAME     "DEMO"
+#define LIBRARY_LOG_NAME "DEMO"
 #endif
 #ifndef LIBRARY_LOG_LEVEL
-    #define LIBRARY_LOG_LEVEL    LOG_INFO
+#define LIBRARY_LOG_LEVEL LOG_INFO
 #endif
 
 // #include "logging_stack.h"
@@ -60,7 +60,7 @@
  * #define AWS_IOT_ENDPOINT               "...insert here..."
  */
 
-#define AWS_IOT_ENDPOINT               "a2m21kovu9tcsh-ats.iot.ap-southeast-1.amazonaws.com"
+#define AWS_IOT_ENDPOINT "a2m21kovu9tcsh-ats.iot.ap-southeast-1.amazonaws.com"
 
 /**
  * @brief AWS IoT MQTT broker port number.
@@ -70,46 +70,45 @@
  * @note Port 443 requires use of the ALPN TLS extension with the ALPN protocol
  * name. When using port 8883, ALPN is not required.
  */
-#define AWS_MQTT_PORT    ( 8883 )
-
+#define AWS_MQTT_PORT (8883)
 
 #ifndef CLIENT_IDENTIFIER
-    #define CLIENT_IDENTIFIER    RMC_CLIENT_ID
+#define CLIENT_IDENTIFIER RMC_CLIENT_ID
 #endif
 
 /**
  * @brief Configure application version.
  */
 
-#define APP_VERSION_MAJOR         0
-#define APP_VERSION_MINOR         9
-#define APP_VERSION_BUILD         2
+#define APP_VERSION_MAJOR 0
+#define APP_VERSION_MINOR 9
+#define APP_VERSION_BUILD 2
 
 /**
  * @brief The name of the operating system that the application is running on.
  * The current value is given as an example. Please update for your specific
  * operating system.
  */
-#define OS_NAME                   "FreeRTOS"
+#define OS_NAME "FreeRTOS"
 
 /**
  * @brief The version of the operating system that the application is running
  * on. The current value is given as an example. Please update for your specific
  * operating system version.
  */
-#define OS_VERSION                "microminum"
+#define OS_VERSION "microminum"
 
 /**
  * @brief The name of the hardware platform the application is running on. The
  * current value is given as an example. Please update for your specific
  * hardware platform.
  */
-#define HARDWARE_PLATFORM_NAME    "efr32"
+#define HARDWARE_PLATFORM_NAME "efr32"
 
 /**
  * @brief The name of the library used and its version, following an "@"
  * symbol.
  */
-#define OTA_LIB                   "otalib@1.0.0"
+#define OTA_LIB "otalib@1.0.0"
 
 #endif /* ifndef DEMO_CONFIG_H */
