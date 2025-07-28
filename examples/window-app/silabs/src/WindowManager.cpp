@@ -54,11 +54,11 @@ using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 #define APP_ACTION_LED 1
 
-#ifdef DIC_ENABLE
+#ifdef RMC_ENABLE
 #define DECIMAL 10
 #define MSG_SIZE 6
-#include "dic.h"
-#endif // DIC_ENABLE
+#include "rmc.h"
+#endif // RMC_ENABLE
 
 using namespace ::chip::Credentials;
 using namespace ::chip::DeviceLayer;
@@ -478,22 +478,22 @@ void WindowManager::Cover::PositionSet(chip::EndpointId endpointId, chip::Percen
     if (action == ControlAction::Tilt)
     {
         TiltPositionSet(endpointId, nullablePosition);
-#ifdef DIC_ENABLE
+#ifdef RMC_ENABLE
         uint16_t value = position;
         char buffer[MSG_SIZE];
         itoa(value, buffer, DECIMAL);
-        dic_sendmsg("tilt/position set", (const char *) (buffer));
-#endif // DIC_ENABLE
+        rmc_sendmsg("tilt/position set", (const char *) (buffer));
+#endif // RMC_ENABLE
     }
     else
     {
         LiftPositionSet(endpointId, nullablePosition);
-#ifdef DIC_ENABLE
+#ifdef RMC_ENABLE
         uint16_t value = position;
         char buffer[MSG_SIZE];
         itoa(value, buffer, DECIMAL);
-        dic_sendmsg("lift/position set", (const char *) (buffer));
-#endif // DIC_ENABLE
+        rmc_sendmsg("lift/position set", (const char *) (buffer));
+#endif // RMC_ENABLE
     }
 }
 

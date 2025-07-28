@@ -28,9 +28,9 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#ifdef DIC_ENABLE
-#include "dic_control.h"
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+#include "rmc_control.h"
+#endif // RMC_ENABLE
 
 using namespace ::chip;
 using namespace ::chip::app::Clusters;

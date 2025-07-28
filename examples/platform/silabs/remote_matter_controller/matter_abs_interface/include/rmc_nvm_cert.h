@@ -19,18 +19,18 @@
  *
  ******************************************************************************/
 
-#ifndef _DIC_NVM_CERT_H
+#ifndef _RMC_NVM_CERT_H
 
 #include <lib/core/CHIPError.h>
 
-CHIP_ERROR DICGetCACertificate(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR RMCGetCACertificate(char * buf, size_t buf_len, size_t * bufSize);
 
-CHIP_ERROR DICGetDeviceCertificate(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR RMCGetDeviceCertificate(char * buf, size_t buf_len, size_t * bufSize);
 
-CHIP_ERROR DICGetDevicePrivKey(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR RMCGetDevicePrivKey(char * buf, size_t buf_len, size_t * bufSize);
 
-CHIP_ERROR DICGetHostname(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR RMCGetHostname(char * buf, size_t buf_len, size_t * bufSize);
 
-CHIP_ERROR DICGetClientId(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR RMCGetClientId(char * buf, size_t buf_len, size_t * bufSize);
 
-#endif //_DIC_NVM_CERT_H
+#endif //_RMC_NVM_CERT_H

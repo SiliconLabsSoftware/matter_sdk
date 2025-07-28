@@ -27,9 +27,9 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#ifdef DIC_ENABLE
-#include "dic_control.h"
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+#include "rmc_control.h"
+#endif // RMC_ENABLE
 
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
@@ -49,15 +49,15 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         break;
     case app::Clusters::RefrigeratorAlarm::Id:
         RefrigeratorMgr().RefAlaramAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
-#ifdef DIC_ENABLE
-        dic::control::AttributeHandler(attributePath.mEndpointId, attributeId);
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+        rmc::control::AttributeHandler(attributePath.mEndpointId, attributeId);
+#endif // RMC_ENABLE
         break;
     case app::Clusters::TemperatureControl::Id:
         RefrigeratorMgr().TempCtrlAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
-#ifdef DIC_ENABLE
-        dic::control::AttributeHandler(attributePath.mEndpointId, attributeId);
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+        rmc::control::AttributeHandler(attributePath.mEndpointId, attributeId);
+#endif // RMC_ENABLE
         break;
     default:
         break;

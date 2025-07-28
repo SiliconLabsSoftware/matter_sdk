@@ -283,7 +283,7 @@ template("siwx917_sdk") {
     if (chip_enable_wifi_ipv4) {
       defines += [ "CHIP_DEVICE_CONFIG_ENABLE_IPV4=1" ]
     }
-    if (invoker.enable_dic) {
+    if (invoker.enable_rmc) {
       _include_dirs += [ "${chip_root}/third_party/silabs/mqtt/stack" ]
     }
 
@@ -345,8 +345,8 @@ template("siwx917_sdk") {
     if (chip_build_libshell || sl_uart_log_output) {
       defines += [ "SLI_SI91X_MCU_INTR_BASED_RX_ON_UART=1" ]
     }
-    if (enable_dic) {
-      defines += [ "DIC_ENABLE=1" ]
+    if (enable_rmc) {
+      defines += [ "RMC_ENABLE=1" ]
     }
 
     if (aws_sdk_ota) {
@@ -872,7 +872,7 @@ template("siwx917_sdk") {
     if (defined(invoker.sources)) {
       sources += invoker.sources
     }
-    if (invoker.enable_dic) {
+    if (invoker.enable_rmc) {
       sources += [
         "${_mbedtls_root}/library/ecjpake.c",
         "${_mbedtls_root}/library/rsa.c",

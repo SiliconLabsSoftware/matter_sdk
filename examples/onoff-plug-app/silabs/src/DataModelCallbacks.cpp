@@ -23,9 +23,9 @@
 #include "AppConfig.h"
 #include "OnOffPlugManager.h"
 
-#ifdef DIC_ENABLE
-#include "dic.h"
-#endif // DIC ENABLE
+#ifdef RMC_ENABLE
+#include "rmc.h"
+#endif // RMC ENABLE
 
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
@@ -45,9 +45,9 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
     {
 
-#ifdef DIC_ENABLE
-        dic_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
-#endif // DIC ENABLE
+#ifdef RMC_ENABLE
+        rmc_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
+#endif // RMC ENABLE
 
         PlugMgr().InitiateAction(AppEvent::kEventType_Plug, *value ? OnOffPlugManager::ON_ACTION : OnOffPlugManager::OFF_ACTION);
     }

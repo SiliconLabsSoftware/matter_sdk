@@ -15,19 +15,19 @@
 import("//build_overrides/chip.gni")
 import("${chip_root}/src/platform/silabs/wifi/args.gni")
 
-config("silabs_dic_config") {
+config("silabs_rmc_config") {
   include_dirs = [
     "${chip_root}/third_party/silabs/mqtt/stack",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/include",
-    "${chip_root}/examples/platform/silabs/DIC/matter_abs_interface/include",
+    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/include",
   ]
 }
 
-source_set("silabs-dic") {
+source_set("silabs-rmc") {
   sources = [
-    "${chip_root}/examples/platform/silabs/DIC/matter_abs_interface/src/dic.cpp",
-    "${chip_root}/examples/platform/silabs/DIC/matter_abs_interface/src/dic_control.cpp",
-    "${chip_root}/examples/platform/silabs/DIC/matter_abs_interface/src/dic_nvm_cert.cpp",
+    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/rmc.cpp",
+    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/rmc_control.cpp",
+    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/rmc_nvm_cert.cpp",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/src/MQTT_transport.c",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/src/altcp.c",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/src/altcp_alloc.c",
@@ -42,14 +42,14 @@ source_set("silabs-dic") {
     app_data_model,
   ]
 
-  public_configs = [ ":silabs_dic_config" ]
+  public_configs = [ ":silabs_rmc_config" ]
 }
 
 config("silabs_aws_sdk_ota_config") {
   include_dirs = [
     "${chip_root}/third_party/silabs/mqtt/stack",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/include",
-    "${chip_root}/examples/platform/silabs/DIC/matter_abs_interface/include",
+    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/include",
     "${chip_root}/third_party/silabs/aws_ota_sdk/demos/ota/ota_demo_core_mqtt",
     "${chip_root}/third_party/silabs/aws_ota_sdk/demos/ota/common/include",
     "${chip_root}/third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk/source/include",
@@ -79,6 +79,7 @@ source_set("silabs-aws-sdk-ota") {
   public_deps = [
     "${chip_root}/src/inet",
     "${chip_root}/src/lwip",
+    app_data_model,
   ]
   public_configs = [ ":silabs_aws_sdk_ota_config" ]
 }

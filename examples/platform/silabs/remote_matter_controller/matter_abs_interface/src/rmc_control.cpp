@@ -21,8 +21,8 @@
 #include "silabs_utils.h"
 #include <platform/CHIPDeviceLayer.h>
 
-#include "dic.h"
-#include "dic_control.h"
+#include "rmc.h"
+#include "rmc_control.h"
 
 #ifdef ENABLE_AWS_OTA_FEAT
 extern "C" {
@@ -163,10 +163,10 @@ uint8_t GetCommandStringIndex(const mqttControlCommand * ctrlCmd, uint8_t size, 
     return kStringNotFound; // string not found
 }
 
-namespace dic {
+namespace rmc {
 namespace control {
 /*
- * This function received data from dic mqtt. The data received is expected to be a
+ * This function received data from rmc mqtt. The data received is expected to be a
  * string matching exposed cluster commands.
  *
  * *** This function has no return for proof of concept sake,
@@ -181,7 +181,7 @@ void aws_ota_init_task(void * parameters)
 }
 #endif
 
-void dic_incoming_data_cb(void * arg, const char * topic, uint16_t topic_len, const uint8_t * data, uint16_t len, uint8_t flags)
+void rmc_incoming_data_cb(void * arg, const char * topic, uint16_t topic_len, const uint8_t * data, uint16_t len, uint8_t flags)
 {
     const struct mqtt_connect_client_info_t * client_info = (const struct mqtt_connect_client_info_t *) arg;
     (void) client_info;
@@ -203,7 +203,7 @@ void dic_incoming_data_cb(void * arg, const char * topic, uint16_t topic_len, co
     {
         _value = std::stoi(value);
     }
-    ChipLogDetail(AppServer, "[DIC] _value: %ld", _value);
+    ChipLogDetail(AppServer, "[RMC] _value: %ld", _value);
 
 #ifdef ENABLE_AWS_OTA_FEAT
     if (strcmp(cmd, "ota") == 0)
@@ -215,10 +215,10 @@ void dic_incoming_data_cb(void * arg, const char * topic, uint16_t topic_len, co
                  xTaskCreate(aws_ota_init_task, "AWS_OTA", AWS_OTA_TASK_STACK_SIZE, NULL, AWS_OTA_TASK_PRIORITY, &AWS_OTA)) ||
                 !AWS_OTA)
             {
-                ChipLogError(AppServer, "[DIC] failed to create AWS OTA task");
+                ChipLogError(AppServer, "[RMC] failed to create AWS OTA task");
                 return;
             }
-            ChipLogProgress(AppServer, "[DIC] Task creation successfull for AWS OTA thread");
+            ChipLogError(AppServer, "[RMC] Task creation successfull for AWS OTA thread");
         }
         return;
     }
@@ -277,13 +277,13 @@ void dic_incoming_data_cb(void * arg, const char * topic, uint16_t topic_len, co
 
     if (cmdIndex == kStringNotFound)
     {
-        ChipLogError(AppServer, "[DIC] command %s not found", cmd);
+        ChipLogError(AppServer, "[RMC] command %s not found", cmd);
     }
 }
 
 void SubscribeMQTT(intptr_t context)
 {
-    dic_mqtt_subscribe(NULL, NULL, dic_incoming_data_cb, MQTT_SUBSCRIBE_TOPIC, MQTT_QOS_0);
+    rmc_mqtt_subscribe(NULL, NULL, rmc_incoming_data_cb, MQTT_SUBSCRIBE_TOPIC, MQTT_QOS_0);
 }
 
 void subscribeCB(void)
@@ -300,7 +300,7 @@ void AttributeHandler(EndpointId endpointId, AttributeId attributeId)
         int8_t CurrentTemp = TempMgr().GetCurrentTemp();
         char buffer[MSG_SIZE];
         itoa(CurrentTemp, buffer, DECIMAL);
-        dic_sendmsg("LocalTemperature/Temp", (const char *) (buffer));
+        rmc_sendmsg("LocalTemperature/Temp", (const char *) (buffer));
     }
     break;
 
@@ -308,7 +308,7 @@ void AttributeHandler(EndpointId endpointId, AttributeId attributeId)
         int8_t coolingTemp = TempMgr().GetCoolingSetPoint();
         char buffer[MSG_SIZE];
         itoa(coolingTemp, buffer, DECIMAL);
-        dic_sendmsg("OccupiedCoolingSetpoint/coolingTemp", (const char *) (buffer));
+        rmc_sendmsg("OccupiedCoolingSetpoint/coolingTemp", (const char *) (buffer));
     }
     break;
 
@@ -316,7 +316,7 @@ void AttributeHandler(EndpointId endpointId, AttributeId attributeId)
         int8_t heatingTemp = TempMgr().GetHeatingSetPoint();
         char buffer[MSG_SIZE];
         itoa(heatingTemp, buffer, DECIMAL);
-        dic_sendmsg("OccupiedHeatingSetpoint/heatingTemp", (const char *) (buffer));
+        rmc_sendmsg("OccupiedHeatingSetpoint/heatingTemp", (const char *) (buffer));
     }
     break;
 
@@ -344,13 +344,13 @@ void AttributeHandler(EndpointId endpointId, AttributeId attributeId)
         }
         uint16_t current_temp = TempMgr().GetCurrentTemp();
         itoa(current_temp, buffer, DECIMAL);
-        dic_sendmsg("thermostat/systemMode", Mode);
-        dic_sendmsg("thermostat/currentTemp", (const char *) (buffer));
+        rmc_sendmsg("thermostat/systemMode", Mode);
+        rmc_sendmsg("thermostat/currentTemp", (const char *) (buffer));
     }
     break;
 
     default: {
-        ChipLogError(AppServer, "[DIC] unhandled thermostat attributeId: %x", attributeId);
+        ChipLogError(AppServer, "[RMC] unhandled thermostat attributeId: %x", attributeId);
         return;
     }
     break;
@@ -358,4 +358,4 @@ void AttributeHandler(EndpointId endpointId, AttributeId attributeId)
 }
 #endif // ZCL_USING_THERMOSTAT_CLUSTER_SERVER
 } // namespace control
-} // namespace dic
+} // namespace rmc

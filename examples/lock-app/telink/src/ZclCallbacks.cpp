@@ -32,9 +32,9 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#ifdef DIC_ENABLE
-#include "dic.h"
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+#include "rmc.h"
+#endif // RMC_ENABLE
 
 using namespace ::chip::app::Clusters;
 using namespace ::chip::DeviceLayer::Internal;
@@ -52,9 +52,9 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         DoorLock::DlLockState lockState = *(reinterpret_cast<DoorLock::DlLockState *>(value));
         ChipLogProgress(Zcl, "Door lock cluster: " ChipLogFormatMEI " state %d", ChipLogValueMEI(clusterId),
                         to_underlying(lockState));
-#ifdef DIC_ENABLE
-        dic_sendmsg("lock/state", (const char *) (lockState == DoorLock::DlLockState::kLocked ? "lock" : "unlock"));
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+        rmc_sendmsg("lock/state", (const char *) (lockState == DoorLock::DlLockState::kLocked ? "lock" : "unlock"));
+#endif // RMC_ENABLE
     }
 }
 
