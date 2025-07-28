@@ -972,10 +972,10 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #ifdef RMC_ENABLE
         // if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
         // {
-            if (RMC_OK != rmc_init(rmc::control::subscribeCB))
-            {
-                ChipLogError(AppServer, "dic_init failed");
-            }
+        if (RMC_OK != rmc_init(rmc::control::subscribeCB))
+        {
+            ChipLogError(AppServer, "dic_init failed");
+        }
         // }
 #endif // RMC_ENABLE
 #ifdef DISPLAY_ENABLED
