@@ -319,7 +319,7 @@ CHIP_ERROR BLEManagerImpl::CloseConnection(BLE_CONNECTION_OBJECT conId)
 
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "sl_bt_connection_close() failed: %s", ErrorStr(err));
+        ChipLogError(DeviceLayer, "sl_bt_connection_close() failed: %" CHIP_ERROR_FORMAT, err.Format());
     }
 
     return err;
@@ -414,7 +414,7 @@ void BLEManagerImpl::DriveBLEState(void)
 exit:
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "Disabling CHIPoBLE service due to error: %s", ErrorStr(err));
+        ChipLogError(DeviceLayer, "Disabling CHIPoBLE service due to error: %" CHIP_ERROR_FORMAT, err.Format());
         mServiceMode = ConnectivityManager::kCHIPoBLEServiceMode_Disabled;
     }
 }
@@ -490,13 +490,13 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
         ret = sl_bt_advertiser_create_set(&mAdvertisingSetHandle);
         VerifyOrExit(ret == SL_STATUS_OK, {
             err = MapBLEError(ret);
-            ChipLogError(DeviceLayer, "sl_bt_advertiser_create_set() failed: %s", ErrorStr(err));
+            ChipLogError(DeviceLayer, "sl_bt_advertiser_create_set() failed: %" CHIP_ERROR_FORMAT, err.Format());
         });
 
         ret = sl_bt_advertiser_set_random_address(mAdvertisingSetHandle, sl_bt_gap_static_address, randomizedAddr, &randomizedAddr);
         VerifyOrExit(ret == SL_STATUS_OK, {
             err = MapBLEError(ret);
-            ChipLogError(DeviceLayer, "sl_bt_advertiser_set_random_address() failed: %s", ErrorStr(err));
+            ChipLogError(DeviceLayer, "sl_bt_advertiser_set_random_address() failed: %" CHIP_ERROR_FORMAT, err.Format());
         });
         ChipLogDetail(DeviceLayer, "BLE Static Device Address %02X:%02X:%02X:%02X:%02X:%02X", randomizedAddr.addr[5],
                       randomizedAddr.addr[4], randomizedAddr.addr[3], randomizedAddr.addr[2], randomizedAddr.addr[1],
@@ -508,7 +508,8 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
 
     VerifyOrExit(ret == SL_STATUS_OK, {
         err = MapBLEError(ret);
-        ChipLogError(DeviceLayer, "sl_bt_legacy_advertiser_set_data() - Advertising Data failed: %s", ErrorStr(err));
+        ChipLogError(DeviceLayer, "sl_bt_legacy_advertiser_set_data() - Advertising Data failed: %" CHIP_ERROR_FORMAT,
+                     err.Format());
     });
 
     index = 0;
@@ -528,7 +529,7 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
 
     VerifyOrExit(ret == SL_STATUS_OK, {
         err = MapBLEError(ret);
-        ChipLogError(DeviceLayer, "sl_bt_legacy_advertiser_set_data() - Scan Response failed: %s", ErrorStr(err));
+        ChipLogError(DeviceLayer, "sl_bt_legacy_advertiser_set_data() - Scan Response failed: %" CHIP_ERROR_FORMAT, err.Format());
     });
 
     err = MapBLEError(ret);
@@ -1005,7 +1006,7 @@ void BLEManagerImpl::HandleRXCharWrite(volatile sl_bt_msg_t * evt)
 exit:
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "HandleRXCharWrite() failed: %s", ErrorStr(err));
+        ChipLogError(DeviceLayer, "HandleRXCharWrite() failed: %" CHIP_ERROR_FORMAT, err.Format());
     }
 }
 
