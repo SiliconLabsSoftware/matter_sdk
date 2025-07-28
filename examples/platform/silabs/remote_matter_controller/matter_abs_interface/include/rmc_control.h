@@ -17,22 +17,22 @@
  *applicable to Source Code.
  *
  ******************************************************************************/
-#ifndef __DIC_CONTROL_H
-#define __DIC_CONTROL_H
+#ifndef __RMC_CONTROL_H
+#define __RMC_CONTROL_H
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <zap-generated/gen_config.h>
 
-#include "dic_config.h"
+#include "rmc_config.h"
 
 using namespace chip;
 using namespace ::chip::DeviceLayer;
 
-namespace dic {
+namespace rmc {
 namespace control {
-void dic_incoming_data_cb(void * arg, const char * topic, const uint8_t * data, uint16_t len, uint8_t flags);
+void rmc_incoming_data_cb(void * arg, const char * topic, const uint8_t * data, uint16_t len, uint8_t flags);
 
 void SubscribeMQTT(intptr_t context);
 
@@ -43,5 +43,5 @@ void AttributeHandler(EndpointId endpointId, AttributeId attributeId);
 #endif // ZCL_USING_THERMOSTAT_CLUSTER_SERVER
 
 } // namespace control
-} // namespace dic
-#endif //__DIC_CONTROL_H
+} // namespace rmc
+#endif //__RMC_CONTROL_H

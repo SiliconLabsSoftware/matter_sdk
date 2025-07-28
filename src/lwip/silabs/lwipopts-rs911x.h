@@ -70,16 +70,18 @@
 
 #define LWIP_SOCKET 0
 
-#define TCPIP_THREAD_PRIO osPriorityAboveNormal
 
-#ifdef DIC_ENABLE
+
+#ifdef RMC_ENABLE
 #define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())
 #define TCP_MSS (4 * 1152)
+#define TCPIP_THREAD_PRIO osPriorityHigh
 #else
 #define LWIP_DNS 0
 #define TCP_MSS (1152)
-#endif /* DIC_ENABLE */
+#define TCPIP_THREAD_PRIO osPriorityAboveNormal
+#endif /* RMC_ENABLE */
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1
 

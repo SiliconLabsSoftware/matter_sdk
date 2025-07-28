@@ -18,12 +18,12 @@
  *
  ******************************************************************************/
 
-#ifndef __DIC_H
-#define __DIC_H
+#ifndef __RMC_H
+#define __RMC_H
 
 #include <stdint.h>
 
-#include "dic_config.h"
+#include "rmc_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,28 +31,28 @@ extern "C" {
 #include "mqtt.h"
 typedef enum
 {
-    DIC_OK = 0,
-    DIC_ERR_INVAL,
-    DIC_ERR_MEM,
-    DIC_ERR_FAIL,
-    DIC_ERR_CONN,
-    DIC_ERR_PUBLISH,
-} dic_err_t;
+    RMC_OK = 0,
+    RMC_ERR_INVAL,
+    RMC_ERR_MEM,
+    RMC_ERR_FAIL,
+    RMC_ERR_CONN,
+    RMC_ERR_PUBLISH,
+} rmc_err_t;
 
 typedef struct
 {
     uint8_t * dataP;
     uint16_t dataLen;
-} dic_buff_t;
+} rmc_buff_t;
 
-typedef void (*dic_subscribe_cb)(void);
+typedef void (*rmc_subscribe_cb)(void);
 
-dic_err_t dic_init(dic_subscribe_cb subs_cb);
+rmc_err_t rmc_init(rmc_subscribe_cb subs_cb);
 
-dic_err_t dic_mqtt_subscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb, mqtt_incoming_data_cb_t data_cb,
+rmc_err_t rmc_mqtt_subscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb, mqtt_incoming_data_cb_t data_cb,
                              const char * topic, uint8_t qos);
 
-dic_err_t dic_sendmsg(const char * subject, const char * content);
+rmc_err_t rmc_sendmsg(const char * subject, const char * content);
 
 #ifdef ENABLE_AWS_OTA_FEAT
 
@@ -63,20 +63,20 @@ struct sub_cb_info
     callback_t cb;
 };
 
-int dic_init_status(void);
+int rmc_init_status(void);
 
-dic_err_t dic_aws_ota_publish(const char * const topic, const char * message, uint32_t message_len, uint8_t qos);
+rmc_err_t rmc_aws_ota_publish(const char * const topic, const char * message, uint32_t message_len, uint8_t qos);
 
-dic_err_t dic_aws_ota_unsubscribe(const char * topic);
+rmc_err_t rmc_aws_ota_unsubscribe(const char * topic);
 
-dic_err_t dic_aws_ota_subscribe(const char * topic, uint8_t qos, callback_t subscribe_cb);
+rmc_err_t rmc_aws_ota_subscribe(const char * topic, uint8_t qos, callback_t subscribe_cb);
 
-dic_err_t dic_aws_ota_process();
+rmc_err_t rmc_aws_ota_process();
 
-dic_err_t dic_aws_ota_close();
+rmc_err_t rmc_aws_ota_close();
 #endif // ENABLE_AWS_OTA_FEAT
 
 #ifdef __cplusplus
 }
 #endif
-#endif //__DIC_H
+#endif //__RMC_H

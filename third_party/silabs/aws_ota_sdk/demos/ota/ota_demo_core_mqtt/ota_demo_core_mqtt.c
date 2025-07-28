@@ -33,7 +33,7 @@
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
-#include "dic.h"
+#include "rmc.h"
 #include "mqtt.h"
 #include "MQTT_transport.h"
 
@@ -685,7 +685,7 @@ static int establishConnection( void )
      * attempts are reached or maximum timeout value is reached. The function
      * returns EXIT_FAILURE if the TCP connection cannot be established to
      * broker after configured number of attempts. */
-    if(dic_init_status())
+    if(rmc_init_status())
     {
         mqttSessionEstablished = true;
         returnStatus = EXIT_SUCCESS;
@@ -760,7 +760,7 @@ static OtaMqttStatus_t mqttSubscribe( const char * pTopicFilter,
 
     if( xSemaphoreTake( sem_mutex, portMAX_DELAY ) == pdTRUE )
     {
-        mqttStatus = dic_aws_ota_subscribe(pTopicFilter, qos, mqttEventCallback);
+        mqttStatus = rmc_aws_ota_subscribe(pTopicFilter, qos, mqttEventCallback);
 
         xSemaphoreGive( sem_mutex );
     }
@@ -801,7 +801,7 @@ static OtaMqttStatus_t mqttPublish( const char * const pacTopic,
 
     if( xSemaphoreTake( sem_mutex, portMAX_DELAY ) == pdTRUE )
     {
-        mqttStatus = dic_aws_ota_publish(pacTopic, pMsg, msgSize, qos);
+        mqttStatus = rmc_aws_ota_publish(pacTopic, pMsg, msgSize, qos);
         if( mqttStatus != 0 )
         {
             otaRet = OtaMqttPublishFailed;
@@ -858,7 +858,7 @@ static OtaMqttStatus_t mqttUnsubscribe( const char * pTopicFilter,
 
     if( xSemaphoreTake( sem_mutex, portMAX_DELAY ) == pdTRUE )
     {
-        mqttStatus = dic_aws_ota_unsubscribe( pTopicFilter);
+        mqttStatus = rmc_aws_ota_unsubscribe( pTopicFilter);
         xSemaphoreGive( sem_mutex );
     }
     else
@@ -1146,7 +1146,7 @@ int aws_ota_init( void* parameters )
     }
 
     /* Disconnect from broker and close connection. */
-    dic_aws_ota_close();
+    rmc_aws_ota_close();
 
     if( bufferSemInitialized == true )
     {

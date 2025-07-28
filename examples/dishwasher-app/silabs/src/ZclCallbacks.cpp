@@ -28,9 +28,9 @@
 #include "DishwasherManager.h"
 #include "ElectricalSensorManager.h"
 
-#ifdef DIC_ENABLE
-#include "dic.h"
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+#include "rmc.h"
+#endif // RMC_ENABLE
 
 using namespace chip;
 using namespace chip::app::Clusters;

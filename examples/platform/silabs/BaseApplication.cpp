@@ -80,10 +80,10 @@
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
-#ifdef DIC_ENABLE
-#include "dic.h"
-#include "dic_control.h"
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+#include "rmc.h"
+#include "rmc_control.h"
+#endif // RMC_ENABLE
 
 #ifdef PERFORMANCE_TEST_ENABLED
 #include <performance_test_commands.h>
@@ -969,15 +969,15 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
-#ifdef DIC_ENABLE
-        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
-        {
-            if (DIC_OK != dic_init(dic::control::subscribeCB))
+#ifdef RMC_ENABLE
+        // if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
+        // {
+            if (RMC_OK != rmc_init(rmc::control::subscribeCB))
             {
                 ChipLogError(AppServer, "dic_init failed");
             }
-        }
-#endif // DIC_ENABLE
+        // }
+#endif // RMC_ENABLE
 #ifdef DISPLAY_ENABLED
         SilabsLCD::Screen_e screen;
         AppTask::GetLCD().GetScreen(screen);
