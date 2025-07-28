@@ -47,9 +47,9 @@ extern "C" {
 static TaskHandle_t rmcTask         = NULL;
 static EventGroupHandle_t rmcEvents = NULL;
 
-mqtt_client_t * mqtt_client        = nullptr;
-MQTT_Transport_t * transport       = nullptr;
-rmc_subscribe_cb gSubsCB           = NULL;
+mqtt_client_t * mqtt_client  = nullptr;
+MQTT_Transport_t * transport = nullptr;
+rmc_subscribe_cb gSubsCB     = NULL;
 static mqtt_transport_intf_t trans;
 
 static bool end_loop;
