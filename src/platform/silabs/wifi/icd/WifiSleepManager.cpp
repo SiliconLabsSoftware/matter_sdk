@@ -57,6 +57,9 @@ CHIP_ERROR WifiSleepManager::RequestHighPerformance(bool triggerTransition)
 
 CHIP_ERROR WifiSleepManager::RemoveHighPerformanceRequest()
 {
+    // TEMP: coverage marker
+    ChipLogProgress(DeviceLayer, ">>> RemoveHighPerformanceRequest called <<<");
+
     VerifyOrReturnError(mHighPerformanceRequestCounter > 0, CHIP_NO_ERROR,
                         ChipLogError(DeviceLayer, "Wi-Fi configuration already in low power mode"));
 
