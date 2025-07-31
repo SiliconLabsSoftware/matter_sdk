@@ -110,6 +110,10 @@ sl_net_wifi_lwip_context_t wifi_client_context;
 #endif // SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
 sl_wifi_security_t security = SL_WIFI_SECURITY_UNKNOWN;
 
+// The REGION_CODE macro defines the regulatory region for the Wi-Fi device.
+// The default value is 'US'. Users can override this macro to specify a different region code.
+// The region code must match one of the values defined in the 'sl_wifi_region_code_t' enum,
+// which is located in 'wifi-sdk/inc/sl_wifi_constants.h'. Example values include US, EU, JP, etc.
 #ifndef REGION_CODE
 #define REGION_CODE US
 #endif // !def REGION_CODE
