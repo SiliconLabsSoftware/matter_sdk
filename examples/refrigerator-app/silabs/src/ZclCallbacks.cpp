@@ -28,7 +28,7 @@
 #include <lib/support/logging/CHIPLogging.h>
 
 #ifdef RMC_ENABLE
-#include "rmc_control.h"
+#include "RmcControl.h"
 #endif // RMC_ENABLE
 
 using namespace ::chip;

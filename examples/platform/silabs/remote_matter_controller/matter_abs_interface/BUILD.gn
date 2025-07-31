@@ -25,9 +25,9 @@ config("silabs_rmc_config") {
 
 source_set("silabs-rmc") {
   sources = [
-    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/rmc.cpp",
-    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/rmc_control.cpp",
-    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/rmc_nvm_cert.cpp",
+    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/Rmc.cpp",
+    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/RmcControl.cpp",
+    "${chip_root}/examples/platform/silabs/remote_matter_controller/matter_abs_interface/src/RmcNvmCert.cpp",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/src/MQTT_transport.c",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/src/altcp.c",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/src/altcp_alloc.c",

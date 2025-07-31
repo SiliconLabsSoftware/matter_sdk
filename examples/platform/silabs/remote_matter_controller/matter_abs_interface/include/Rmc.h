@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 
-#include "rmc_config.h"
+#include "RmcConfig.h"
 
 #ifdef __cplusplus
 extern "C" {

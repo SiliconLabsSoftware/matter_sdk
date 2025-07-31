@@ -26,8 +26,8 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/SilabsConfig.h>
 
-#include "rmc_config.h"
-#include "rmc_nvm_cert.h"
+#include "RmcConfig.h"
+#include "RmcNvmCert.h"
 
 char ca_certificate[]     = "";
 char device_certificate[] = "";

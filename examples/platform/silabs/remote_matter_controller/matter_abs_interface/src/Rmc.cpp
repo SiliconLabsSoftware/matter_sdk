@@ -29,9 +29,9 @@
 #include <lib/core/CHIPError.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#include "rmc.h"
-#include "rmc_config.h"
-#include "rmc_nvm_cert.h"
+#include "Rmc.h"
+#include "RmcConfig.h"
+#include "RmcNvmCert.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -21,8 +21,8 @@
 #include "silabs_utils.h"
 #include <platform/CHIPDeviceLayer.h>
 
-#include "rmc.h"
-#include "rmc_control.h"
+#include "Rmc.h"
+#include "RmcControl.h"
 
 #ifdef ENABLE_AWS_OTA_FEAT
 extern "C" {

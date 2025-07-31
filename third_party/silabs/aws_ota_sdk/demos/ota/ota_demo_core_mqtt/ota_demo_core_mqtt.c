@@ -33,7 +33,7 @@
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
-#include "rmc.h"
+#include "Rmc.h"
 #include "mqtt.h"
 #include "MQTT_transport.h"
 
