@@ -449,9 +449,9 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
     ChipLogDetail(DeviceLayer, "JoinCallback: success");
     memset(&temp_reset, 0, sizeof(temp_reset));
 
+    wfx_rsi.join_retries = 0;
     WifiEvent wifievent = WifiEvent::kStationConnect;
     sl_matter_wifi_post_event(wifievent);
-    wfx_rsi.join_retries = 0;
     return status;
 }
 sl_status_t JoinWifiNetwork(void)
@@ -477,7 +477,7 @@ sl_status_t JoinWifiNetwork(void)
         // Remove High performance request that might have been added during the connect/retry process
         chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
+        wfx_rsi.join_retries = 0;
         WifiEvent event = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
         return status;
