@@ -80,7 +80,7 @@ jobs:
             - name: Run Tests
               run: scripts/tests/gn_tests.sh
             - name: Run Build Coverage
-              run: scripts/build_coverage.sh --code=all --yaml --xml --merge-mode-functions=first
+              run: scripts/build_coverage.sh --code=all --yaml --xml
             - name: Upload coverage reports to Codecov with GitHub Action
               uses: codecov/codecov-action@v5
               env:
