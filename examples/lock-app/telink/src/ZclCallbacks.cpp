@@ -33,7 +33,7 @@
 #include <lib/support/logging/CHIPLogging.h>
 
 #ifdef RMC_ENABLE
-#include "rmc.h"
+#include "Rmc.h"
 #endif // RMC_ENABLE
 
 using namespace ::chip::app::Clusters;

@@ -74,8 +74,8 @@
 #endif // SL_WIFI
 
 #ifdef RMC_ENABLE
-#include "rmc.h"
-#include "rmc_control.h"
+#include "Rmc.h"
+#include "RmcControl.h"
 #endif // RMC_ENABLE
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -953,13 +953,13 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
 #ifdef RMC_ENABLE
-        // if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
-        // {
-        if (RMC_OK != rmc_init(rmc::control::subscribeCB))
+        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
         {
-            ChipLogError(AppServer, "dic_init failed");
+            if (RMC_OK != rmc_init(rmc::control::subscribeCB))
+            {
+                ChipLogError(AppServer, "dic_init failed");
+            }
         }
-        // }
 #endif // RMC_ENABLE
 #ifdef DISPLAY_ENABLED
         SilabsLCD::Screen_e screen;

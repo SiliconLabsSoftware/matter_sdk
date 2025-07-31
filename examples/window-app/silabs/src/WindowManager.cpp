@@ -57,7 +57,7 @@ using namespace ::chip::DeviceLayer::Silabs;
 #ifdef RMC_ENABLE
 #define DECIMAL 10
 #define MSG_SIZE 6
-#include "rmc.h"
+#include "Rmc.h"
 #endif // RMC_ENABLE
 
 using namespace ::chip::Credentials;

@@ -24,7 +24,7 @@
 #include "OnOffPlugManager.h"
 
 #ifdef RMC_ENABLE
-#include "rmc.h"
+#include "Rmc.h"
 #endif // RMC ENABLE
 
 #include <app-common/zap-generated/ids/Attributes.h>

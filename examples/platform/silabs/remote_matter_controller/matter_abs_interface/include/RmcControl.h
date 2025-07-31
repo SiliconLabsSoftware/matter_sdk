@@ -25,7 +25,7 @@
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <zap-generated/gen_config.h>
 
-#include "rmc_config.h"
+#include "RmcConfig.h"
 
 using namespace chip;
 using namespace ::chip::DeviceLayer;
