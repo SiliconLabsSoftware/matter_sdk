@@ -36,6 +36,8 @@ jobs:
                 type: [icd]
         env:
             BUILD_TYPE: ${{ matrix.type }}
+            CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+            CC_SLUG: SiliconLabsSoftware/matter_sdk
 
         runs-on: ubuntu-latest
 
