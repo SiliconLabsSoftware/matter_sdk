@@ -28,7 +28,7 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-// TODO: Add support for DIC
+// TODO: Add support for RMC
 
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
