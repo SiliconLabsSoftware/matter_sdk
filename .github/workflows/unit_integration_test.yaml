@@ -82,12 +82,9 @@ jobs:
             - name: Upload coverage reports to Codecov with GitHub Action
               uses: codecov/codecov-action@v5
               with:
-                slug: SiliconLabsSoftware/matter_sdk
-                branch: ${{ github.head_ref || github.ref_name }}
-                commit: ${{ github.sha }}
-              env:
-                CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-                CC_SLUG: SiliconLabsSoftware/matter_sdk
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  slug: senthilku/matter_sdk
+                  verbose: true
             # TODO Log Upload https://github.com/project-chip/connectedhomeip/issues/2227
             # TODO https://github.com/project-chip/connectedhomeip/issues/1512
             # - name: Run Code Coverage
