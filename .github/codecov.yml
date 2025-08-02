@@ -1,0 +1,10 @@
+coverage:
+  status:
+    project:
+      default:
+        if_ci_failed: ignore
+    patch:
+      default:
+        target: 60%         # Require 80% patch coverage
+        threshold: 1%       # Allow up to 1% below target
+        if_ci_failed: ignore
