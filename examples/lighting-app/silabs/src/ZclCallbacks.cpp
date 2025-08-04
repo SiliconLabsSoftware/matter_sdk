@@ -32,9 +32,9 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#ifdef DIC_ENABLE
-#include "dic.h"
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+#include "Rmc.h"
+#endif // RMC_ENABLE
 
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
@@ -48,9 +48,10 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
 
     if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
     {
-#ifdef DIC_ENABLE
-        dic_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
-#endif // DIC_ENABLE
+#ifdef RMC_ENABLE
+        ChipLogProgress(Zcl, "sending light state update");
+        rmc_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
+#endif // RMC_ENABLE
         LightMgr().InitiateAction(AppEvent::kEventType_Light, *value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION,
                                   value);
     }
