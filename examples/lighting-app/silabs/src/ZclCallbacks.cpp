@@ -49,7 +49,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
     {
 #ifdef RMC_ENABLE
-        ChipLogError(Zcl, "#############sending light state update ");
+        ChipLogProgress(Zcl, "sending light state update");
         rmc_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
 #endif // RMC_ENABLE
         LightMgr().InitiateAction(AppEvent::kEventType_Light, *value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION,
