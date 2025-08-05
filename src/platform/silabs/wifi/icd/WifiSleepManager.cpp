@@ -33,6 +33,9 @@ namespace {
  */
 CHIP_ERROR ConfigureLIBasedSleep()
 {
+    // TODO: revert this with actual fix https://jira.silabs.com/browse/MATTER-5341
+    return CHIP_ERROR_INTERNAL;
+
     sl_status_t status = ConfigureBroadcastFilter(true);
     VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status),
                         ChipLogError(DeviceLayer, "Failed to configure broadcasts filter."));
