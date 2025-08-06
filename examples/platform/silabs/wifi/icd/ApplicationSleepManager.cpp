@@ -152,7 +152,7 @@ bool ApplicationSleepManager::ProcessKeychainEdgeCase()
 
     for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
     {
-        if ((it->GetVendorId() == chip::VendorId::Apple) &&
+        if ((it->GetVendorId() == chip::VendorId::Apple || it->GetVendorId() == chip::VendorId::Google) &&
             mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
         {
             hasValidException = true;
