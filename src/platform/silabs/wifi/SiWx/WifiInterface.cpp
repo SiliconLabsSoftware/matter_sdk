@@ -224,6 +224,7 @@ sl_status_t sl_wifi_siwx917_init(void)
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #ifdef ENABLE_CHIP_SHELL
+#ifdef RTE_UULP_GPIO_1_PIN
     // While using the matter shell with a Low Power Build, GPIO 1 is used to check the UULP PIN 1 status
     // since UART doesn't act as a wakeup source in the UULP mode.
 
@@ -235,6 +236,7 @@ sl_status_t sl_wifi_siwx917_init(void)
 
     // Enable the REN
     RSI_NPSSGPIO_InputBufferEn(RTE_UULP_GPIO_1_PIN, 1);
+#endif // RTE_UULP_GPIO_1_PIN
 #endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SLI_SI91X_MCU_INTERFACE
@@ -447,9 +449,9 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
     ChipLogDetail(DeviceLayer, "JoinCallback: success");
     memset(&temp_reset, 0, sizeof(temp_reset));
 
-    WifiEvent wifievent = WifiEvent::kStationConnect;
-    sl_matter_wifi_post_event(wifievent);
     wfx_rsi.join_retries = 0;
+    WifiEvent wifievent  = WifiEvent::kStationConnect;
+    sl_matter_wifi_post_event(wifievent);
     return status;
 }
 sl_status_t JoinWifiNetwork(void)
@@ -475,8 +477,8 @@ sl_status_t JoinWifiNetwork(void)
         // Remove High performance request that might have been added during the connect/retry process
         chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
-        WifiEvent event = WifiEvent::kStationConnect;
+        wfx_rsi.join_retries = 0;
+        WifiEvent event      = WifiEvent::kStationConnect;
         sl_matter_wifi_post_event(event);
         return status;
     }
