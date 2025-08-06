@@ -68,8 +68,6 @@ inline constexpr uint32_t kUserNvm3KeyDomainHiLimit = SL_TOKEN_NVM3_REGION_ZIGBE
 // Only keep the MSBs of the Matter Region. The LSB of the region is determined by the keyBaseOffset.
 // with SilabsConfigKey Helper function.
 inline constexpr uint32_t kMatterNvm3KeyDomain = (SL_TOKEN_NVM3_REGION_MATTER & 0xFFFF000);
-// TODO: Determine what valuee to use for the static key domain to avoid collision between matter / Zigbee
-inline constexpr uint32_t kMatterStaticKeyDomain = (SL_TOKEN_NVM3_REGION_MATTER & 0xFFFF000);
 
 constexpr inline uint32_t SilabsConfigKey(uint8_t keyBaseOffset, uint8_t id)
 {
