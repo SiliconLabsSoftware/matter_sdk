@@ -39,7 +39,6 @@ Git:
     <globalAttribute side="either" code="0xFFFD" value="1"/>
     <attribute side="server" code="0x0000" name="SupportedDeviceCategories" define="SUPPORTED_DEVICE_CATEGORIES" type="SupportedDeviceCategoryBitmap" default="0" min="0x00000000" max="0x00000001">
       <access op="read" privilege="manage"/>
-      <mandatoryConform/>
     </attribute>
     <command source="client" code="0x00" name="RequestCommissioningApproval">
       <description>This command is sent by a client to request approval for a future CommissionNode call.</description>
@@ -48,7 +47,6 @@ Git:
       <arg id="2" name="ProductID" type="int16u"/>
       <arg id="3" name="Label" type="char_string" optional="true" length="64"/>
       <access op="invoke" privilege="manage"/>
-      <mandatoryConform/>
     </command>
 
     <command source="client" code="0x01" name="CommissionNode" response="ReverseOpenCommissioningWindow">
@@ -56,7 +54,6 @@ Git:
       <arg id="0" name="RequestID" type="int64u"/>
       <arg id="1" name="ResponseTimeoutSeconds" type="int16u" min="30" max="120" default="30"/>
       <access op="invoke" privilege="manage"/>
-      <mandatoryConform/>
     </command>
 
     <command source="server" code="0x02" name="ReverseOpenCommissioningWindow" disableDefaultResponse="true">
@@ -66,7 +63,6 @@ Git:
       <arg id="2" name="Discriminator" type="int16u" max="4095"/>
       <arg id="3" name="Iterations" type="int32u" min="1000" max="100000"/>
       <arg id="4" name="Salt" type="octet_string" length="32" minLength="16"/>
-      <mandatoryConform/>
     </command>
 
     <event code="0x00" name="CommissioningRequestResult" priority="info" side="server" isFabricSensitive="true">
@@ -75,7 +71,6 @@ Git:
       <field id="1" name="ClientNodeID" type="node_id"/>
       <field id="2" name="StatusCode" type="status"/>
       <access op="read" privilege="manage"/>
-      <mandatoryConform/>
     </event>
 
   </cluster>

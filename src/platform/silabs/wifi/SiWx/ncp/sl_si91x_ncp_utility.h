@@ -27,17 +27,6 @@
 #include "em_usart.h"
 #include "semphr.h"
 #include "silabs_utils.h"
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/sl_si91x_ncp_utility.h
-#include "sl_status.h"
-
-// TODO: This is a WF200 specific include. It is not clear why we need this in the 917 NCP files.
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
-
-#if defined(CHIP_9117)
-#include "em_usart.h"
-#include "sl_board_configuration_SiWx917.h"
-========
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/SiWx/ncp/sl_si91x_ncp_utility.h
 #include "sl_spidrv_exp_config.h"
 #include "sl_status.h"
 #include <platform/silabs/wifi/SiWx/ncp/sl_board_configuration.h>
@@ -51,7 +40,3 @@ sl_status_t spi_board_init(void);
 
 extern uint32_t rx_ldma_channel;
 extern uint32_t tx_ldma_channel;
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/sl_si91x_ncp_utility.h
-#endif // SL_SI91X_NCP_UTILITY_H
-========
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/SiWx/ncp/sl_si91x_ncp_utility.h

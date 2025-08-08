@@ -17,38 +17,31 @@
 
 #pragma once
 
-<<<<<<< HEAD
 #ifdef DISPLAY_ENABLED
 #include "lcd.h"
 #endif
 
 struct AppEvent;
 typedef void (*EventHandler)(AppEvent *);
-=======
-#include "BaseAppEvent.h"
->>>>>>> csa/v1.4.2-branch
 
-struct AppEvent : public BaseAppEvent
+struct AppEvent
 {
     enum AppEventTypes
     {
-<<<<<<< HEAD
         kEventType_Button = 0,
         kEventType_LCD,
         kEventType_Timer,
         kEventType_Alarm,
-=======
-        kEventType_Alarm = BaseAppEvent::kEventType_Max + 1,
->>>>>>> csa/v1.4.2-branch
         kEventType_Install,
     };
+
+    uint16_t Type;
 
     union
     {
         struct
         {
             uint8_t Action;
-<<<<<<< HEAD
         } ButtonEvent;
 #ifdef DISPLAY_ENABLED
         struct
@@ -63,9 +56,9 @@ struct AppEvent : public BaseAppEvent
         struct
         {
             uint8_t Action;
-=======
->>>>>>> csa/v1.4.2-branch
             int32_t Actor;
         } AlarmEvent;
     };
+
+    EventHandler Handler;
 };

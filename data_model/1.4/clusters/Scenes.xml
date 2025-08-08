@@ -114,13 +114,9 @@ Davis, CA 95616, USA
       <field id="1" name="AttributeValueList" type="list">
         <entry type="AttributeValuePairStruct"/>
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="desc"/>
-=======
         <constraint>
           <desc/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
     </struct>
     <struct name="SceneInfoStruct">
@@ -397,11 +393,7 @@ Davis, CA 95616, USA
         <mandatoryConform>
           <equalTerm>
             <field name="Status"/>
-<<<<<<< HEAD
-            <condition name="Success"/>
-=======
             <status name="SUCCESS"/>
->>>>>>> csa/v1.4.2-branch
           </equalTerm>
         </mandatoryConform>
       </field>
@@ -420,26 +412,18 @@ Davis, CA 95616, USA
       </field>
       <field id="2" name="SceneIdentifierFrom" type="uint8">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="max" value="254"/>
-=======
         <constraint>
           <max value="254"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="3" name="GroupIdentifierTo" type="group-id">
         <mandatoryConform/>
       </field>
       <field id="4" name="SceneIdentifierTo" type="uint8">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="max" value="254"/>
-=======
         <constraint>
           <max value="254"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
     </command>
     <command id="0x40" name="CopySceneResponse" direction="responseFromServer">

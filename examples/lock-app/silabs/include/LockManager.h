@@ -264,9 +264,6 @@ private:
 
     SilabsDoorLock::LockInitParams::LockParam LockParams;
 
-<<<<<<< HEAD
-    EFR32DoorLock::LockInitParams::LockParam LockParams;
-=======
     // Stores LockUserInfo corresponding to a user index
     static StorageKeyName LockUserEndpoint(chip::EndpointId endpoint, uint16_t userIndex)
     {
@@ -298,7 +295,6 @@ private:
 
     // Pointer to the PeristentStorage
     PersistentStorageDelegate * mStorage = nullptr;
->>>>>>> csa/v1.4.2-branch
 };
 
 LockManager & LockMgr();

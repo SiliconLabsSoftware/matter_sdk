@@ -225,13 +225,9 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="admin"/>
       <quality persistence="nonVolatile"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="allowed" value="2"/>
-=======
       <constraint>
         <allowed value="2"/>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0007" name="HardwareVersion" type="uint16" default="0">
       <access read="true" readPrivilege="view"/>

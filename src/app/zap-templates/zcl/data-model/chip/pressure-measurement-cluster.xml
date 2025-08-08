@@ -36,24 +36,10 @@ Git: 0.7-summer-2025-ncr-98-gaad177cf2
         <optionalConform/>
       </feature>
     </features>
-<<<<<<< HEAD
-    
-    <attribute side="server" code="0x0000" name="MeasuredValue" define="PRESSURE_MEASURED_VALUE" type="int16s" reportable="true" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0001" name="MinMeasuredValue" define="PRESSURE_MIN_MEASURED_VALUE" type="int16s" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0002" name="MaxMeasuredValue" define="PRESSURE_MAX_MEASURED_VALUE" type="int16s" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0003" name="Tolerance" define="PRESSURE_TOLERANCE" type="int16u" min="0x0000" max="0x0800" optional="true" default="0">
-=======
     <attribute side="server" code="0x0000" name="MeasuredValue" define="PRESSURE_MEASURED_VALUE" type="int16s" isNullable="true"/>
     <attribute side="server" code="0x0001" name="MinMeasuredValue" define="PRESSURE_MIN_MEASURED_VALUE" type="int16s" isNullable="true" min="-32767" max="32766"/>
     <attribute side="server" code="0x0002" name="MaxMeasuredValue" define="PRESSURE_MAX_MEASURED_VALUE" type="int16s" isNullable="true" min="-32766"/>
     <attribute side="server" code="0x0003" name="Tolerance" define="PRESSURE_TOLERANCE" type="int16u" max="0x0800" optional="true" default="0">
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </attribute>
     <attribute side="server" code="0x0010" name="ScaledValue" define="PRESSURE_SCALED_VALUE" type="int16s" optional="true" default="0" isNullable="true">
@@ -61,38 +47,22 @@ Git: 0.7-summer-2025-ncr-98-gaad177cf2
         <feature name="EXT"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0011" name="MinScaledValue" define="PRESSURE_MIN_SCALED_VALUE" type="int16s" optional="true" default="0" isNullable="true">
-=======
     <attribute side="server" code="0x0011" name="MinScaledValue" define="PRESSURE_MIN_SCALED_VALUE" type="int16s" optional="true" default="0" isNullable="true" min="-32767" max="32766">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="EXT"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0012" name="MaxScaledValue" define="PRESSURE_MAX_SCALED_VALUE" type="int16s" optional="true" default="0" isNullable="true">
-=======
     <attribute side="server" code="0x0012" name="MaxScaledValue" define="PRESSURE_MAX_SCALED_VALUE" type="int16s" optional="true" default="0" isNullable="true" min="-32766">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="EXT"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0013" name="ScaledTolerance" define="PRESSURE_SCALED_TOLERANCE" type="int16u" min="0x0000" max="0x0800" optional="true" reportable="true" default="0">
-=======
     <attribute side="server" code="0x0013" name="ScaledTolerance" define="PRESSURE_SCALED_TOLERANCE" type="int16u" max="0x0800" optional="true" default="0">
->>>>>>> csa/v1.4.2-branch
       <optionalConform>
         <feature name="EXT"/>
       </optionalConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0014" name="Scale" define="PRESSURE_SCALE" type="int8s" optional="true" default="0">
-=======
     <attribute side="server" code="0x0014" name="Scale" define="PRESSURE_SCALE" type="int8s" optional="true" default="0" min="-127">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="EXT"/>
       </mandatoryConform>

@@ -109,16 +109,12 @@ Davis, CA 95616, USA
     <struct name="EnergyMeasurementStruct">
       <field id="0" name="Energy" type="energy-mWh">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="between" from="0" to="4611686018427387904"/>
-=======
         <constraint>
           <between>
             <from value="0"/>
             <to value="4611686018427387904"/>
           </between>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="1" name="StartTimestamp" type="epoch-s"/>
       <field id="2" name="EndTimestamp" type="epoch-s">

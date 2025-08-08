@@ -113,49 +113,16 @@ Git:
       Node&apos;s Access Control List (ACL), which codifies the rules used to manage
       and enforce Access Control for the Node&apos;s endpoints and their associated
       cluster instances.</description>
-<<<<<<< HEAD
-
-=======
->>>>>>> csa/v1.4.2-branch
     <attribute side="server" code="0x0000" name="ACL" define="ACL" type="array" entryType="AccessControlEntryStruct" writable="true">
       <access op="read" privilege="administer"/>
       <access op="write" privilege="administer"/>
-      <mandatoryConform/>
     </attribute>
-<<<<<<< HEAD
-
-=======
->>>>>>> csa/v1.4.2-branch
     <attribute side="server" code="0x0001" name="Extension" define="EXTENSION" type="array" entryType="AccessControlExtensionStruct" writable="true" optional="true">
       <access op="read" privilege="administer"/>
       <access op="write" privilege="administer"/>
       <mandatoryConform>
         <feature name="EXTS"/>
       </mandatoryConform>
-<<<<<<< HEAD
-    </attribute>
-
-    <attribute side="server" code="0x0002" name="SubjectsPerAccessControlEntry" define="SUBJECTS_PER_ACCESS_CONTROL_ENTRY" type="int16u" min="4" default="4">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0003" name="TargetsPerAccessControlEntry" define="TARGETS_PER_ACCESS_CONTROL_ENTRY" type="int16u" min="3" default="3">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0004" name="AccessControlEntriesPerFabric" define="ACCESS_CONTROL_ENTRIES_PER_FABRIC" type="int16u" min="4" default="4">
-      <mandatoryConform/>
-    </attribute>
-    <attribute code="0x0005" side="server" name="CommissioningARL" define="COMMISSIONING_ARL" type="array" entryType="CommissioningAccessRestrictionEntryStruct" optional="true">
-      <mandatoryConform>
-        <feature name="MNGD"/>
-      </mandatoryConform>
-    </attribute>
-    <attribute code="0x0006" side="server" name="ARL" define="ARL" type="array" entryType="AccessRestrictionEntryStruct" optional="true">
-      <mandatoryConform>
-        <feature name="MNGD"/>
-      </mandatoryConform>
-    </attribute>
-    
-=======
     </attribute>
     <attribute side="server" code="0x0002" name="SubjectsPerAccessControlEntry" define="SUBJECTS_PER_ACCESS_CONTROL_ENTRY" type="int16u" min="4" default="4"/>
     <attribute side="server" code="0x0003" name="TargetsPerAccessControlEntry" define="TARGETS_PER_ACCESS_CONTROL_ENTRY" type="int16u" min="3" default="3"/>
@@ -170,7 +137,6 @@ Git:
         <feature name="MNGD"/>
       </mandatoryConform>
     </attribute>
->>>>>>> csa/v1.4.2-branch
     <command code="0x00" source="client" name="ReviewFabricRestrictions" isFabricScoped="true" optional="true" response="ReviewFabricRestrictionsResponse">
       <description>This command signals to the service associated with the device vendor that the fabric administrator would like a review of the current restrictions on the accessing fabric.</description>
       <access op="invoke" privilege="administer"/>
@@ -195,7 +161,6 @@ Git:
       <field id="3" name="ChangeType" type="ChangeTypeEnum" min="0x00" max="0x02"/>
       <field id="4" name="LatestValue" type="AccessControlEntryStruct" isNullable="true"/>
       <access op="read" privilege="administer"/>
-      <mandatoryConform/>
     </event>
 
     <event side="server" code="0x0001" name="AccessControlExtensionChanged" priority="info" isFabricSensitive="true" optional="true">

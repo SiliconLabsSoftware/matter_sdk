@@ -32,12 +32,8 @@
 #include "sl_status.h"
 #include "sl_wifi_constants.h"
 #include "spidrv.h"
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/efx32_ncp_host.c
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
-========
 #include <platform/silabs/wifi/SiWx/ncp/sl_board_configuration.h>
 #include <platform/silabs/wifi/ncp/spi_multiplex.h>
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/SiWx/ncp/efx32_ncp_host.c
 #include <stdbool.h>
 #include <string.h>
 
@@ -53,7 +49,6 @@
 #define LDMA_DESCRIPTOR_ARRAY_LENGTH (LDMA_MAX_TRANSFER_LENGTH / 2048)
 #define SPI_HANDLE sl_spidrv_exp_handle
 #define MAX_DATA_PACKET_SIZE 1800
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/efx32_ncp_host.c
 #define SLI_SPI_HANDLE sl_spidrv_exp_handle
 #define SLI_SPI_BIT_RATE 12500000
 
@@ -61,19 +56,11 @@
 extern SPIDRV_Handle_t sl_spidrv_exp_handle;
 static uint8_t dummy_buffer[MAX_DATA_PACKET_SIZE]     = { 0 };
 static sl_si91x_host_init_configuration_t init_config = { 0 };
-========
-
-// use SPI handle for EXP header (configured in project settings)
-extern SPIDRV_Handle_t sl_spidrv_exp_handle;
-static uint8_t dummy_buffer[MAX_DATA_PACKET_SIZE]   = { 0 };
-static sl_si91x_host_init_configuration init_config = { 0 };
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/SiWx/ncp/efx32_ncp_host.c
 
 uint32_t rx_ldma_channel;
 uint32_t tx_ldma_channel;
 osMutexId_t ncp_transfer_mutex = 0;
 
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/efx32_ncp_host.c
 // LDMA descriptor and transfer configuration structures for USART TX channel
 LDMA_Descriptor_t ldmaTXDescriptor[LDMA_DESCRIPTOR_ARRAY_LENGTH];
 LDMA_TransferCfg_t ldmaTXConfig;
@@ -82,8 +69,6 @@ LDMA_TransferCfg_t ldmaTXConfig;
 LDMA_Descriptor_t ldmaRXDescriptor[LDMA_DESCRIPTOR_ARRAY_LENGTH];
 LDMA_TransferCfg_t ldmaRXConfig;
 
-========
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/SiWx/ncp/efx32_ncp_host.c
 static osSemaphoreId_t transfer_done_semaphore = NULL;
 
 static void gpio_interrupt([[maybe_unused]] uint8_t interrupt_number)
@@ -130,10 +115,6 @@ Ecode_t si91x_SPIDRV_MTransfer(SPIDRV_Handle_t handle, const void * txBuffer, vo
     uint8_t * tx          = (txBuffer != NULL) ? (uint8_t *) txBuffer : dummy_buffer;
     uint8_t * rx          = (rxBuffer != NULL) ? (uint8_t *) rxBuffer : dummy_buffer;
 
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/efx32_ncp_host.c
-========
-    // For transfers less than 16 bytes, directly interacting with USART buffers is faster than using DMA
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/SiWx/ncp/efx32_ncp_host.c
     if (count < 16)
     {
         while (count > 0)
@@ -181,11 +162,7 @@ uint32_t sl_si91x_host_get_wake_indicator(void)
     return GPIO_PinInGet(WAKE_INDICATOR_PIN.port, WAKE_INDICATOR_PIN.pin);
 }
 
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/efx32_ncp_host.c
 sl_status_t sl_si91x_host_init(const sl_si91x_host_init_configuration_t * config)
-========
-sl_status_t sl_si91x_host_init(const sl_si91x_host_init_configuration * config)
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/SiWx/ncp/efx32_ncp_host.c
 {
 #if SL_SPICTRL_MUX
     sl_status_t status = sl_board_disable_display();

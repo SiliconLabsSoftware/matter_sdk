@@ -84,13 +84,9 @@ enum CommissioningStage : uint8_t
     kRemoveWiFiNetworkConfig,         ///< Remove Wi-Fi network config.
     kRemoveThreadNetworkConfig,       ///< Remove Thread network config.
     kConfigureTCAcknowledgments,      ///< Send SetTCAcknowledgements (0x30:6) command to the device
-<<<<<<< HEAD
-    kCleanup,                         ///< Call delegates with status, free memory, clear timers and state
-=======
     kCleanup,                         ///< Call delegates with status, free memory, clear timers and state/
     kJFValidateNOC,                   ///< Verify Admin NOC contains an Administrator CAT
     kSendVIDVerificationRequest,      ///< Send SignVIDVerificationRequest command to the device
->>>>>>> csa/v1.4.2-branch
 };
 
 enum class ICDRegistrationStrategy : uint8_t

@@ -22,11 +22,7 @@
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 
 #if SL_WIFI
-<<<<<<< HEAD
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
-=======
 #include <platform/silabs/wifi/ncp/spi_multiplex.h>
->>>>>>> csa/v1.4.2-branch
 #endif // SL_WIFI
 
 extern "C" {
@@ -45,58 +41,21 @@ uint32_t OTAFirmwareProcessor::mWriteOffset                                     
 uint16_t OTAFirmwareProcessor::writeBufOffset                                          = 0;
 uint8_t OTAFirmwareProcessor::writeBuffer[kAlignmentBytes] __attribute__((aligned(4))) = { 0 };
 
-<<<<<<< HEAD
-=======
-CHIP_ERROR OTAFirmwareProcessor::Init()
-{
-    VerifyOrReturnError(mCallbackProcessDescriptor != nullptr, CHIP_OTA_PROCESSOR_CB_NOT_REGISTERED);
-    mAccumulator.Init(sizeof(Descriptor));
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
-    mUnalignmentNum = 0;
-#endif
-
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR OTAFirmwareProcessor::Clear()
-{
-    OTATlvProcessor::ClearInternal();
-    mAccumulator.Clear();
-    mDescriptorProcessed = false;
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
-    mUnalignmentNum = 0;
-#endif
-
-    return CHIP_NO_ERROR;
-}
-
->>>>>>> csa/v1.4.2-branch
 CHIP_ERROR OTAFirmwareProcessor::ProcessInternal(ByteSpan & block)
 {
     uint32_t err = SL_BOOTLOADER_OK;
     if (!mDescriptorProcessed)
     {
         ReturnErrorOnFailure(ProcessDescriptor(block));
-<<<<<<< HEAD
 #if SL_MATTER_ENABLE_OTA_ENCRYPTION
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
->>>>>>> csa/v1.4.2-branch
         /* 16 bytes to used to store undecrypted data because of unalignment */
         mAccumulator.Init(requestedOtaMaxBlockSize + 16);
 #endif
     }
-<<<<<<< HEAD
 #if SL_MATTER_ENABLE_OTA_ENCRYPTION
     MutableByteSpan byteBlock = MutableByteSpan(mAccumulator.data(), mAccumulator.GetThreshold());
     memcpy(&byteBlock[0], &byteBlock[requestedOtaMaxBlockSize], mUnalignmentNum);
     memcpy(&byteBlock[mUnalignmentNum], block.data(), block.size());
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
-    MutableByteSpan mBlock = MutableByteSpan(mAccumulator.data(), mAccumulator.GetThreshold());
-    memcpy(&mBlock[0], &mBlock[requestedOtaMaxBlockSize], mUnalignmentNum);
-    memcpy(&mBlock[mUnalignmentNum], block.data(), block.size());
->>>>>>> csa/v1.4.2-branch
 
     if (mUnalignmentNum + block.size() < requestedOtaMaxBlockSize)
     {

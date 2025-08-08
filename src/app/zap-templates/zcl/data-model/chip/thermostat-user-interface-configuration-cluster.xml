@@ -31,28 +31,11 @@ Git: 0.9.2-summer2025-124-g2b25c360b
     <client tick="false" init="false">true</client>
     <server tick="false" tickFrequency="half" init="false">true</server>
     <globalAttribute side="either" code="0xFFFD" value="2"/>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0000" name="TemperatureDisplayMode" define="TEMPERATURE_DISPLAY_MODE" type="TemperatureDisplayModeEnum" min="0x00" max="0x01" writable="true" default="0x00">
-      <mandatoryConform/>
-    </attribute>
-    
-    <attribute side="server" code="0x0001" name="KeypadLockout" define="KEYPAD_LOCKOUT" type="KeypadLockoutEnum" min="0x00" max="0x05" writable="true" default="0x00">
-      <access op="read" role="view"/>
-=======
     <attribute side="server" code="0x0000" name="TemperatureDisplayMode" define="TEMPERATURE_DISPLAY_MODE" type="TemperatureDisplayModeEnum" max="0x01" writable="true"/>
     <attribute side="server" code="0x0001" name="KeypadLockout" define="KEYPAD_LOCKOUT" type="KeypadLockoutEnum" max="0x05" writable="true">
->>>>>>> csa/v1.4.2-branch
       <access op="write" role="manage"/>
-      <mandatoryConform/>
     </attribute>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0002" name="ScheduleProgrammingVisibility" define="SCHEDULE_PROGRAMMING_VISIBILITY" type="ScheduleProgrammingVisibilityEnum" min="0x00" max="0x01" writable="true" optional="true" introducedIn="ha-1.2-05-3520-29">
-      <access op="read" role="view"/>
-=======
     <attribute side="server" code="0x0002" name="ScheduleProgrammingVisibility" define="SCHEDULE_PROGRAMMING_VISIBILITY" type="ScheduleProgrammingVisibilityEnum" max="0x01" writable="true" introducedIn="ha-1.2-05-3520-29" default="0x00">
->>>>>>> csa/v1.4.2-branch
       <access op="write" role="manage"/>
       <optionalConform/>
     </attribute>

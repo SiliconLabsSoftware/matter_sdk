@@ -1,9 +1,5 @@
 steps:
-<<<<<<< HEAD
-    - name: "ghcr.io/project-chip/chip-build-vscode:89"
-=======
     - name: "ghcr.io/project-chip/chip-build-vscode:140"
->>>>>>> csa/v1.4.2-branch
       entrypoint: "bash"
       args:
           - "-c"
@@ -11,11 +7,7 @@ steps:
               git config --global --add safe.directory "*"
               python scripts/checkout_submodules.py --shallow --recursive --platform esp32 nrfconnect silabs linux android 
       id: Submodules
-<<<<<<< HEAD
-    - name: "ghcr.io/project-chip/chip-build-vscode:89"
-=======
     - name: "ghcr.io/project-chip/chip-build-vscode:140"
->>>>>>> csa/v1.4.2-branch
       # NOTE: silabs boostrap is NOT done with the rest as it requests a conflicting
       #       jinja2 version (asks for 3.1.3 when constraints.txt asks for 3.0.3)
       env:
@@ -32,11 +24,7 @@ steps:
             path: /pwenv
       timeout: 900s
 
-<<<<<<< HEAD
-    - name: "ghcr.io/project-chip/chip-build-vscode:89"
-=======
     - name: "ghcr.io/project-chip/chip-build-vscode:140"
->>>>>>> csa/v1.4.2-branch
       id: ESP32
       env:
           - PW_ENVIRONMENT_ROOT=/pwenv
@@ -56,11 +44,7 @@ steps:
       volumes:
           - name: pwenv
             path: /pwenv
-<<<<<<< HEAD
-    - name: "ghcr.io/project-chip/chip-build-vscode:89"
-=======
     - name: "ghcr.io/project-chip/chip-build-vscode:140"
->>>>>>> csa/v1.4.2-branch
       id: NRFConnect
       env:
           - PW_ENVIRONMENT_ROOT=/pwenv
@@ -81,11 +65,7 @@ steps:
           - name: pwenv
             path: /pwenv
 
-<<<<<<< HEAD
-    - name: "ghcr.io/project-chip/chip-build-vscode:89"
-=======
     - name: "ghcr.io/project-chip/chip-build-vscode:140"
->>>>>>> csa/v1.4.2-branch
       id: EFR32
       env:
           - PW_ENVIRONMENT_ROOT=/pwenv
@@ -106,11 +86,7 @@ steps:
           - name: pwenv
             path: /pwenv
 
-<<<<<<< HEAD
-    - name: "ghcr.io/project-chip/chip-build-vscode:89"
-=======
     - name: "ghcr.io/project-chip/chip-build-vscode:140"
->>>>>>> csa/v1.4.2-branch
       id: Linux
       env:
           - PW_ENVIRONMENT_ROOT=/pwenv
@@ -163,11 +139,7 @@ steps:
           - name: pwenv
             path: /pwenv
 
-<<<<<<< HEAD
-    - name: "ghcr.io/project-chip/chip-build-vscode:89"
-=======
     - name: "ghcr.io/project-chip/chip-build-vscode:140"
->>>>>>> csa/v1.4.2-branch
       id: Android
       env:
           - PW_ENVIRONMENT_ROOT=/pwenv

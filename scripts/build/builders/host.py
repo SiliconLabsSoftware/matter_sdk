@@ -87,16 +87,12 @@ class HostApp(Enum):
     NETWORK_MANAGER = auto()
     ENERGY_GATEWAY = auto()
     ENERGY_MANAGEMENT = auto()
-<<<<<<< HEAD
-    TERMS_AND_CONDITIONS = auto()
-=======
     WATER_LEAK_DETECTOR = auto()
     TERMS_AND_CONDITIONS = auto()
     CAMERA = auto()
     CAMERA_CONTROLLER = auto()
     JF_CONTROL = auto()
     JF_ADMIN = auto()
->>>>>>> csa/v1.4.2-branch
 
     def ExamplePath(self):
         if self == HostApp.ALL_CLUSTERS:
@@ -171,10 +167,6 @@ class HostApp(Enum):
             return 'energy-gateway-app/linux'
         elif self == HostApp.ENERGY_MANAGEMENT:
             return 'energy-management-app/linux'
-<<<<<<< HEAD
-        elif self == HostApp.TERMS_AND_CONDITIONS:
-            return 'terms-and-conditions-app/linux'
-=======
         elif self == HostApp.WATER_LEAK_DETECTOR:
             return 'water-leak-detector-app/linux'
         elif self == HostApp.TERMS_AND_CONDITIONS:
@@ -187,7 +179,6 @@ class HostApp(Enum):
             return 'jf-control-app'
         elif self == HostApp.JF_ADMIN:
             return 'jf-admin-app/linux'
->>>>>>> csa/v1.4.2-branch
         else:
             raise Exception('Unknown app type: %r' % self)
 
@@ -306,11 +297,6 @@ class HostApp(Enum):
         elif self == HostApp.ENERGY_MANAGEMENT:
             yield 'chip-energy-management-app'
             yield 'chip-energy-management-app.map'
-<<<<<<< HEAD
-        elif self == HostApp.TERMS_AND_CONDITIONS:
-            yield 'chip-terms-and-conditions-app'
-            yield 'chip-terms-and-conditions-app.map'
-=======
         elif self == HostApp.WATER_LEAK_DETECTOR:
             yield 'water-leak-detector-app'
             yield 'water-leak-detector-app.map'
@@ -327,7 +313,6 @@ class HostApp(Enum):
             yield 'jfc-app'
         elif self == HostApp.JF_ADMIN:
             yield 'jfa-app'
->>>>>>> csa/v1.4.2-branch
         else:
             raise Exception('Unknown app type: %r' % self)
 
@@ -384,16 +369,9 @@ class HostBuilder(GnBuilder):
                  enable_test_event_triggers=None,
                  enable_dnssd_tests: Optional[bool] = None,
                  chip_casting_simplified: Optional[bool] = None,
-<<<<<<< HEAD
-                 data_model_interface: Optional[str] = None,
-                 chip_data_model_check_die_on_failure: Optional[bool] = None,
-                 disable_shell=False,
-                 terms_and_conditions_required: Optional[bool] = None,
-=======
                  disable_shell=False,
                  use_googletest=False,
                  terms_and_conditions_required: Optional[bool] = None, chip_enable_nfc_based_commissioning=None,
->>>>>>> csa/v1.4.2-branch
                  ):
         super(HostBuilder, self).__init__(
             root=os.path.join(root, 'examples', app.ExamplePath()),

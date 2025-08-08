@@ -129,19 +129,12 @@ enum
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFIPAF
     kDeviceOption_WiFi_PAF,
 #endif
-<<<<<<< HEAD
-=======
     kDeviceOption_DacProvider,
->>>>>>> csa/v1.4.2-branch
 #if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
     kDeviceOption_TermsAndConditions_Version,
     kDeviceOption_TermsAndConditions_Required,
 #endif
-<<<<<<< HEAD
-=======
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-    kDeviceOption_icdActiveModeDurationMs,
-    kDeviceOption_icdIdleModeDuration,
 #endif
 #if ENABLE_CAMERA_SERVER
     kDeviceOption_Camera_DeferredOffer,
@@ -152,10 +145,8 @@ enum
     kDeviceOption_HardwareVersionString,
     kDeviceOption_SoftwareVersionString,
     kDeviceOption_SerialNumber,
->>>>>>> csa/v1.4.2-branch
 };
 
-constexpr unsigned kAppUsageLength = 64;
 
 OptionDef sDeviceOptionDefs[] = {
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
@@ -234,16 +225,11 @@ OptionDef sDeviceOptionDefs[] = {
 #if CHIP_WITH_NLFAULTINJECTION
     { "faults", kArgumentRequired, kDeviceOption_FaultInjection },
 #endif
-<<<<<<< HEAD
-=======
     { "dac_provider", kArgumentRequired, kDeviceOption_DacProvider },
->>>>>>> csa/v1.4.2-branch
 #if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
     { "tc-version", kArgumentRequired, kDeviceOption_TermsAndConditions_Version },
     { "tc-required", kArgumentRequired, kDeviceOption_TermsAndConditions_Required },
 #endif
-<<<<<<< HEAD
-=======
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     { "icdActiveModeDurationMs", kArgumentRequired, kDeviceOption_icdActiveModeDurationMs },
     { "icdIdleModeDuration", kArgumentRequired, kDeviceOption_icdIdleModeDuration },
@@ -252,7 +238,6 @@ OptionDef sDeviceOptionDefs[] = {
     { "camera-deferred-offer", kNoArgument, kDeviceOption_Camera_DeferredOffer },
     { "camera-video-device", kArgumentRequired, kDeviceOption_Camera_VideoDevice },
 #endif
->>>>>>> csa/v1.4.2-branch
     {}
 };
 
@@ -865,8 +850,6 @@ bool HandleOption(const char * aProgram, OptionSet * aOptions, int aIdentifier, 
         break;
     }
 #endif
-<<<<<<< HEAD
-=======
     case kDeviceOption_DacProvider: {
         LinuxDeviceOptions::GetInstance().dacProviderFile.SetValue(aValue);
         static chip::Credentials::Examples::TestHarnessDACProvider testDacProvider;
@@ -875,7 +858,6 @@ bool HandleOption(const char * aProgram, OptionSet * aOptions, int aIdentifier, 
         LinuxDeviceOptions::GetInstance().dacProvider = &testDacProvider;
         break;
     }
->>>>>>> csa/v1.4.2-branch
 #if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
     case kDeviceOption_TermsAndConditions_Version: {
         LinuxDeviceOptions::GetInstance().tcVersion.SetValue(static_cast<uint16_t>(atoi(aValue)));
@@ -887,8 +869,6 @@ bool HandleOption(const char * aProgram, OptionSet * aOptions, int aIdentifier, 
         break;
     }
 #endif
-<<<<<<< HEAD
-=======
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     case kDeviceOption_icdActiveModeDurationMs: {
         uint32_t value = static_cast<uint32_t>(strtoul(aValue, nullptr, 0));
@@ -928,7 +908,6 @@ bool HandleOption(const char * aProgram, OptionSet * aOptions, int aIdentifier, 
         break;
     }
 #endif
->>>>>>> csa/v1.4.2-branch
     default:
         PrintArgError("%s: INTERNAL ERROR: Unhandled option: %s\n", aProgram, aName);
         retval = false;

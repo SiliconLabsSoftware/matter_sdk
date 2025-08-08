@@ -211,13 +211,9 @@ Davis, CA 95616, USA
     <attribute id="0x0003" name="CurrentArea" type="uint32" default="null">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
-<<<<<<< HEAD
-      <constraint type="desc"/>
-=======
       <constraint>
         <desc/>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0004" name="EstimatedEndTime" type="epoch-s" default="null">
       <access read="true" readPrivilege="view"/>

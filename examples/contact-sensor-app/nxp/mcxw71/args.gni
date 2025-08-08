@@ -31,10 +31,7 @@ chip_with_lwip = false
 
 chip_enable_icd_server = true
 chip_enable_icd_lit = false
-<<<<<<< HEAD
-=======
 chip_enable_icd_dsls = false
->>>>>>> csa/v1.4.2-branch
 chip_persist_subscriptions = true
 chip_subscription_timeout_resumption = true
 

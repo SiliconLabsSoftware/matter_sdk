@@ -222,9 +222,6 @@ Optional<AttributeId> emberAfGetServerAttributeIdByIndex(EndpointId endpoint, Cl
 
 uint8_t emberAfClusterIndex(EndpointId endpoint, ClusterId clusterId, EmberAfClusterMask mask)
 {
-<<<<<<< HEAD
-    if (endpoint == kSupportedEndpoint && clusterId == OtaSoftwareUpdateProvider::Id && (mask & MATTER_CLUSTER_FLAG_SERVER))
-=======
     if (endpoint == kOtaProviderDynamicEndpointId && clusterId == OtaSoftwareUpdateProvider::Id &&
         (mask & MATTER_CLUSTER_FLAG_SERVER))
     {
@@ -233,7 +230,6 @@ uint8_t emberAfClusterIndex(EndpointId endpoint, ClusterId clusterId, EmberAfClu
 
     if (endpoint == kWebRTCRequesterDynamicEndpointId && clusterId == WebRTCTransportRequestor::Id &&
         (mask & MATTER_CLUSTER_FLAG_SERVER))
->>>>>>> csa/v1.4.2-branch
     {
         return 0;
     }

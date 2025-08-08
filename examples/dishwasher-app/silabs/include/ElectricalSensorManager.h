@@ -17,32 +17,11 @@
 
 #pragma once
 
-<<<<<<<< HEAD:examples/refrigerator-app/silabs/include/EventHandlerLibShell.h
-#include <app-common/zap-generated/attributes/Accessors.h>
-#include <app/clusters/refrigerator-alarm-server/refrigerator-alarm-server.h>
-#include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
-
-class EventData
-========
 class ElectricalSensorManager
->>>>>>>> csa/v1.4.2-branch:examples/dishwasher-app/silabs/include/ElectricalSensorManager.h
 {
     using OperationalStateEnum = chip::app::Clusters::OperationalState::OperationalStateEnum;
 
 public:
-<<<<<<<< HEAD:examples/refrigerator-app/silabs/include/EventHandlerLibShell.h
-    chip::EventId eventId;
-};
-
-class RefrigeratorAlarmEventData : public EventData
-{
-public:
-    chip::app::Clusters::RefrigeratorAlarm::AlarmBitmap doorState;
-};
-
-CHIP_ERROR RegisterRefrigeratorEvents();
-void EventWorkerFunction(intptr_t context);
-========
     ~ElectricalSensorManager() { Shutdown(); }
 
     static ElectricalSensorManager & Instance(void) { return sElectricalSensor; }
@@ -55,4 +34,3 @@ void EventWorkerFunction(intptr_t context);
 private:
     static ElectricalSensorManager sElectricalSensor;
 };
->>>>>>>> csa/v1.4.2-branch:examples/dishwasher-app/silabs/include/ElectricalSensorManager.h

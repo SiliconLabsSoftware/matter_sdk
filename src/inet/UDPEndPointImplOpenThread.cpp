@@ -128,11 +128,7 @@ CHIP_ERROR UDPEndPointImplOT::IPv6Bind(otUdpSocket & socket, const IPAddress & a
     LockOpenThread();
     otUdpOpen(mOTInstance, &socket, handleUdpReceive, this);
 #if OPENTHREAD_API_VERSION >= 465
-<<<<<<< HEAD
-    otUdpBind(mOTInstance, &socket, &listenSockAddr, OT_NETIF_THREAD_HOST);
-=======
     otUdpBind(mOTInstance, &socket, &listenSockAddr, OT_NETIF_THREAD_INTERNAL);
->>>>>>> csa/v1.4.2-branch
 #else
     otUdpBind(mOTInstance, &socket, &listenSockAddr, OT_NETIF_THREAD);
 #endif

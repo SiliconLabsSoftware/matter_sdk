@@ -70,20 +70,13 @@ using namespace chip::TLV;
 using namespace ::chip::DeviceLayer;
 
 AppTask AppTask::sAppTask;
-<<<<<<< HEAD
-
-=======
->>>>>>> csa/v1.4.2-branch
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
-<<<<<<< HEAD
     char rebootLightOnKey[] = "Reboot->LightOn";
     CharSpan rebootLighOnSpan(rebootLightOnKey);
     SILABS_TRACE_REGISTER(rebootLighOnSpan);
-=======
->>>>>>> csa/v1.4.2-branch
 
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)

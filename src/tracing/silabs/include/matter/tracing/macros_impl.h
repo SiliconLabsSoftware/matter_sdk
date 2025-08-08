@@ -1,10 +1,6 @@
 /*
  *
-<<<<<<<< HEAD:src/tracing/silabs/include/matter/tracing/macros_impl.h
  *    Copyright (c) 2024 Project CHIP Authors
-========
- *    Copyright (c) 2020 Project CHIP Authors
->>>>>>>> csa/v1.4.2-branch:examples/chef/nrfconnect/include/CHIPProjectConfig.h
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +15,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-<<<<<<<< HEAD:src/tracing/silabs/include/matter/tracing/macros_impl.h
 #pragma once
 
 /* Ensure we do not have double tracing macros defined */
@@ -28,16 +23,3 @@
 #endif
 
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
-========
-
-/**
- *    @file
- *          Example project configuration file for CHIP.
- *
- *          This is a place to put application or project-specific overrides
- *          to the default configuration values for general CHIP features.
- *
- */
-
-#pragma once
->>>>>>>> csa/v1.4.2-branch:examples/chef/nrfconnect/include/CHIPProjectConfig.h

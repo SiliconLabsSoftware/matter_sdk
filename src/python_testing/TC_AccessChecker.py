@@ -64,13 +64,6 @@ from chip.testing.matter_testing import (AttributePathLocation, ClusterPathLocat
                                          async_test_body, default_matter_test_main)
 from chip.testing.spec_parsing import XmlCluster
 from chip.tlv import uint
-<<<<<<< HEAD
-from global_attribute_ids import GlobalAttributeIds
-from matter_testing_support import (AttributePathLocation, ClusterPathLocation, MatterBaseTest, TestStep, async_test_body,
-                                    default_matter_test_main)
-from spec_parsing_support import XmlCluster
-=======
->>>>>>> csa/v1.4.2-branch
 
 
 class AccessTestType(Enum):

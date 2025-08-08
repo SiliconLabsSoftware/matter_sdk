@@ -598,16 +598,10 @@ Davis, CA 95616, USA
       <field id="4" name="Transitions" type="list" default="empty">
         <entry type="ScheduleTransitionStruct"/>
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="countBetween">
-          <from value="1"/>
-          <to attribute="NumberOfScheduleTransitions"/>
-=======
         <constraint>
           <countBetween value="1">
             <attribute name="NumberOfScheduleTransitions"/>
           </countBetween>
->>>>>>> csa/v1.4.2-branch
         </constraint>
       </field>
       <field id="5" name="BuiltIn" type="bool" default="false">
@@ -668,15 +662,10 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="NumberOfSchedules" type="uint8" default="0">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="max">
-          <value attribute="NumberOfSchedules"/>
-=======
         <constraint>
           <max>
             <attribute name="NumberOfSchedules"/>
           </max>
->>>>>>> csa/v1.4.2-branch
         </constraint>
       </field>
       <field id="2" name="ScheduleTypeFeatures" type="ScheduleTypeFeaturesBitmap" default="0">
@@ -766,16 +755,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="COOL"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="0" to="100"/>
-=======
       <constraint>
         <between>
           <from value="0"/>
           <to value="100"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0008" name="PIHeatingDemand" type="uint8" default="">
       <access read="true" readPrivilege="view"/>
@@ -783,16 +768,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="HEAT"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="0" to="100"/>
-=======
       <constraint>
         <between>
           <from value="0"/>
           <to value="100"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0009" name="HVACSystemTypeConfiguration" type="HVACSystemTypeBitmap" default="0">
       <access read="true" write="optional" readPrivilege="view" writePrivilege="manage"/>
@@ -858,11 +839,7 @@ Davis, CA 95616, USA
       </constraint>
     </attribute>
     <attribute id="0x0015" name="MinHeatSetpointLimit" type="temperature">
-<<<<<<< HEAD
-      <default attribute="AbsMinHeatSetpointLimit"/>
-=======
       <attribute name="AbsMinHeatSetpointLimit"/>
->>>>>>> csa/v1.4.2-branch
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform>
@@ -873,11 +850,7 @@ Davis, CA 95616, USA
       </constraint>
     </attribute>
     <attribute id="0x0016" name="MaxHeatSetpointLimit" type="temperature">
-<<<<<<< HEAD
-      <default attribute="AbsMaxHeatSetpointLimit"/>
-=======
       <attribute name="AbsMaxHeatSetpointLimit"/>
->>>>>>> csa/v1.4.2-branch
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform>
@@ -888,11 +861,7 @@ Davis, CA 95616, USA
       </constraint>
     </attribute>
     <attribute id="0x0017" name="MinCoolSetpointLimit" type="temperature">
-<<<<<<< HEAD
-      <default attribute="AbsMinCoolSetpointLimit"/>
-=======
       <attribute name="AbsMinCoolSetpointLimit"/>
->>>>>>> csa/v1.4.2-branch
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform>
@@ -903,11 +872,7 @@ Davis, CA 95616, USA
       </constraint>
     </attribute>
     <attribute id="0x0018" name="MaxCoolSetpointLimit" type="temperature">
-<<<<<<< HEAD
-      <default attribute="AbsMaxCoolSetpointLimit"/>
-=======
       <attribute name="AbsMaxCoolSetpointLimit"/>
->>>>>>> csa/v1.4.2-branch
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform>
@@ -923,16 +888,12 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="AUTO"/>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="between" from="0" to="127"/>
-=======
       <constraint>
         <between>
           <from value="0"/>
           <to value="127"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x001A" name="RemoteSensing" type="RemoteSensingBitmap" default="0">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
@@ -951,13 +912,9 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="desc"/>
-=======
       <constraint>
         <desc/>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x001E" name="ThermostatRunningMode" type="ThermostatRunningModeEnum" default="0">
       <access read="true" readPrivilege="view"/>
@@ -1045,17 +1002,11 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SB"/>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="between">
-        <from attribute="OccupiedSetbackMin"/>
-        <to attribute="OccupiedSetbackMax"/>
-=======
       <constraint>
         <between>
           <attribute name="OccupiedSetbackMin"/>
           <attribute name="OccupiedSetbackMax"/>
         </between>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0035" name="OccupiedSetbackMin" type="uint8" default="null">
@@ -1064,15 +1015,10 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SB"/>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="max">
-        <value attribute="OccupiedSetbackMax"/>
-=======
       <constraint>
         <max>
           <attribute name="OccupiedSetbackMax"/>
         </max>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0036" name="OccupiedSetbackMax" type="uint8" default="null">
@@ -1081,16 +1027,10 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SB"/>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="between">
-        <from attribute="OccupiedSetbackMin"/>
-        <to value="254"/>
-=======
       <constraint>
         <between value="254">
           <attribute name="OccupiedSetbackMin"/>
         </between>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0037" name="UnoccupiedSetback" type="uint8" default="null">
@@ -1102,17 +1042,11 @@ Davis, CA 95616, USA
           <feature name="OCC"/>
         </andTerm>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="between">
-        <from attribute="UnoccupiedSetbackMin"/>
-        <to attribute="UnoccupiedSetbackMax"/>
-=======
       <constraint>
         <between>
           <attribute name="UnoccupiedSetbackMin"/>
           <attribute name="UnoccupiedSetbackMax"/>
         </between>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0038" name="UnoccupiedSetbackMin" type="uint8" default="null">
@@ -1124,15 +1058,10 @@ Davis, CA 95616, USA
           <feature name="OCC"/>
         </andTerm>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="max">
-        <value attribute="UnoccupiedSetbackMax"/>
-=======
       <constraint>
         <max>
           <attribute name="UnoccupiedSetbackMax"/>
         </max>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0039" name="UnoccupiedSetbackMax" type="uint8" default="null">
@@ -1144,16 +1073,10 @@ Davis, CA 95616, USA
           <feature name="OCC"/>
         </andTerm>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="between">
-        <from attribute="UnoccupiedSetbackMin"/>
-        <to value="254"/>
-=======
       <constraint>
         <between value="254">
           <attribute name="UnoccupiedSetbackMin"/>
         </between>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x003A" name="EmergencyHeatDelta" type="uint8" default="255">
@@ -1292,15 +1215,10 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="PRES"/>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="maxCount">
-        <value attribute="NumberOfPresets"/>
-=======
       <constraint>
         <maxCount>
           <attribute name="NumberOfPresets"/>
         </maxCount>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0051" name="Schedules" type="list" default="empty">
@@ -1384,13 +1302,9 @@ Davis, CA 95616, USA
       <field id="3" name="Transitions" type="list">
         <entry type="WeeklyScheduleTransitionStruct"/>
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="maxCount" value="10"/>
-=======
         <constraint>
           <maxCount value="10"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
     </command>
     <command id="0x02" name="GetWeeklySchedule" direction="commandToServer" response="GetWeeklyScheduleResponse">

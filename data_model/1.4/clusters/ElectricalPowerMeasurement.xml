@@ -110,16 +110,12 @@ Davis, CA 95616, USA
       <field id="1" name="Measurement" type="int64" default="null">
         <quality nullable="true"/>
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
         <constraint>
           <between>
             <from value="-4611686018427387904"/>
             <to value="4611686018427387904"/>
           </between>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
     </struct>
     <struct name="MeasurementRangeStruct">
@@ -128,13 +124,6 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="Min" type="int64">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-      </field>
-      <field id="2" name="Max" type="int64">
-        <mandatoryConform/>
-        <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
         <constraint>
           <between>
             <from value="-4611686018427387904"/>
@@ -150,7 +139,6 @@ Davis, CA 95616, USA
             <to value="4611686018427387904"/>
           </between>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="3" name="StartTimestamp" type="epoch-s">
         <mandatoryConform>
@@ -218,16 +206,10 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="countBetween">
-        <from value="1"/>
-        <to attribute="NumberOfMeasurementTypes"/>
-=======
       <constraint>
         <countBetween value="1">
           <attribute name="NumberOfMeasurementTypes"/>
         </countBetween>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0003" name="Ranges" type="list" default="empty">
@@ -235,47 +217,33 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality quieterReporting="true"/>
       <optionalConform/>
-<<<<<<< HEAD
-      <constraint type="countBetween">
-        <from value="0"/>
-        <to attribute="NumberOfMeasurementTypes"/>
-=======
       <constraint>
         <countBetween value="0">
           <attribute name="NumberOfMeasurementTypes"/>
         </countBetween>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0004" name="Voltage" type="voltage-mV" default="null">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true" quieterReporting="true"/>
       <optionalConform/>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0005" name="ActiveCurrent" type="amperage-mA" default="null">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true" quieterReporting="true"/>
       <optionalConform/>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0006" name="ReactiveCurrent" type="amperage-mA" default="null">
       <access read="true" readPrivilege="view"/>
@@ -283,16 +251,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0007" name="ApparentCurrent" type="amperage-mA" default="null">
       <access read="true" readPrivilege="view"/>
@@ -300,31 +264,23 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="0" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="0"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0008" name="ActivePower" type="power-mW" default="null">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true" quieterReporting="true"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0009" name="ReactivePower" type="power-mW" default="null">
       <access read="true" readPrivilege="view"/>
@@ -332,16 +288,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x000A" name="ApparentPower" type="power-mW" default="null">
       <access read="true" readPrivilege="view"/>
@@ -349,16 +301,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x000B" name="RMSVoltage" type="voltage-mV" default="null">
       <access read="true" readPrivilege="view"/>
@@ -366,16 +314,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x000C" name="RMSCurrent" type="amperage-mA" default="null">
       <access read="true" readPrivilege="view"/>
@@ -383,16 +327,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x000D" name="RMSPower" type="power-mW" default="null">
       <access read="true" readPrivilege="view"/>
@@ -400,16 +340,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x000E" name="Frequency" type="int64" default="null">
       <access read="true" readPrivilege="view"/>
@@ -465,16 +401,12 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="POLY"/>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between" from="-4611686018427387904" to="4611686018427387904"/>
-=======
       <constraint>
         <between>
           <from value="-4611686018427387904"/>
           <to value="4611686018427387904"/>
         </between>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
   </attributes>
   <events>

@@ -44,77 +44,46 @@ Git: 0.7-summer-2025-253-gd51479a48
         </optionalConform>
       </feature>
     </features>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0000" name="TemperatureSetpoint" define="TEMP_SETPOINT" type="temperature" optional="true">
-=======
     <attribute side="server" code="0x0000" name="TemperatureSetpoint" define="TEMP_SETPOINT" type="temperature" optional="true">
       <description>TemperatureSetpoint</description>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="TN"/>
       </mandatoryConform>
     </attribute>
     <attribute side="server" code="0x0001" name="MinTemperature" define="MIN_TEMP" type="temperature" optional="true">
-<<<<<<< HEAD
-=======
       <description>MinTemperature</description>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="TN"/>
       </mandatoryConform>
     </attribute>
     <attribute side="server" code="0x0002" name="MaxTemperature" define="MAX_TEMP" type="temperature" optional="true">
-<<<<<<< HEAD
-=======
       <description>MaxTemperature</description>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="TN"/>
       </mandatoryConform>
     </attribute>
     <attribute side="server" code="0x0003" name="Step" define="STEP" type="temperature" optional="true">
-<<<<<<< HEAD
-=======
       <description>Step</description>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="STEP"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0004" name="SelectedTemperatureLevel" define="SELECTED_TEMP_LEVEL" type="int8u" optional="true">
-=======
     <attribute side="server" code="0x0004" name="SelectedTemperatureLevel" define="SELECTED_TEMP_LEVEL" type="int8u" optional="true" max="31">
       <description>SelectedTemperatureLevel</description>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="TL"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0005" name="SupportedTemperatureLevels" define="SUPPORTED_TEMP_LEVELS" type="array" entryType="char_string" optional="true">
-=======
     <attribute side="server" code="0x0005" name="SupportedTemperatureLevels" define="SUPPORTED_TEMP_LEVELS" type="array" entryType="char_string" optional="true" length="32">
       <description>SupportedTemperatureLevels</description>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="TL"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-
-    <command source="client" code="0x00" name="SetTemperature" optional="false">
-      <description>Set Temperature</description>
-      <arg name="TargetTemperature" type="temperature" min="MIN_TEMP" max="MAX_TEMP" optional="true"/>
-      <arg name="TargetTemperatureLevel" type="int8u" optional="true"/>
-      <mandatoryConform/>
-=======
     <command source="client" code="0x00" name="SetTemperature" optional="false">
       <description>The SetTemperature command SHALL have the following data fields: </description>
       <arg id="0" name="TargetTemperature" type="temperature" optional="true"/>
       <arg id="1" name="TargetTemperatureLevel" type="int8u" optional="true"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
   </cluster>

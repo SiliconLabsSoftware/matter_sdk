@@ -31,23 +31,10 @@ Git: 0.9.2-summer2025-124-g2b25c360b
     <client tick="false" init="false">true</client>
     <server tick="false" tickFrequency="half" init="false">true</server>
     <globalAttribute side="either" code="0xFFFD" value="3"/>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0000" name="MeasuredValue" define="RELATIVE_HUMIDITY_MEASURED_VALUE" type="int16u" reportable="true" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0001" name="MinMeasuredValue" define="RELATIVE_HUMIDITY_MIN_MEASURED_VALUE" type="int16u" min="0x0000" max="0x270F" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0002" name="MaxMeasuredValue" define="RELATIVE_HUMIDITY_MAX_MEASURED_VALUE" type="int16u" min="0x0001" max="0x2710" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0003" name="Tolerance" define="RELATIVE_HUMIDITY_TOLERANCE" type="int16u" min="0x0000" max="0x0800" optional="true">
-=======
     <attribute side="server" code="0x0000" name="MeasuredValue" define="RELATIVE_HUMIDITY_MEASURED_VALUE" type="int16u" isNullable="true" max="10000"/>
     <attribute side="server" code="0x0001" name="MinMeasuredValue" define="RELATIVE_HUMIDITY_MIN_MEASURED_VALUE" type="int16u" max="0x270F" isNullable="true"/>
     <attribute side="server" code="0x0002" name="MaxMeasuredValue" define="RELATIVE_HUMIDITY_MAX_MEASURED_VALUE" type="int16u" min="0x0001" max="0x2710" isNullable="true"/>
     <attribute side="server" code="0x0003" name="Tolerance" define="RELATIVE_HUMIDITY_TOLERANCE" type="int16u" max="0x0800">
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </attribute>
   </cluster>

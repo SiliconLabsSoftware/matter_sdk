@@ -39,10 +39,7 @@
 /*=======================================================================*/
 //! To set wlan feature select bit map
 #define RSI_FEATURE_BIT_MAP (FEAT_SECURITY_OPEN | FEAT_SECURITY_PSK | FEAT_AGGREGATION | FEAT_ULP_GPIO_BASED_HANDSHAKE)
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/rsi_wlan_config.h
 
-========
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/rs911x/ncp/rsi_wlan_config.h
 //! TCP IP BYPASS feature check
 #define RSI_TCP_IP_BYPASS RSI_ENABLE
 #define RSI_TCP_IP_FEATURE_BIT_MAP (TCP_IP_FEAT_BYPASS | TCP_IP_FEAT_EXTENSION_VALID)
@@ -53,11 +50,7 @@
 #define RSI_EXT_CUSTOM_FEATURE_BIT_MAP (EXT_FEAT_384K_MODE | EXT_FEAT_IEEE_80211W)
 #else
 #define RSI_EXT_CUSTOM_FEATURE_BIT_MAP EXT_FEAT_384K_MODE
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/rsi_wlan_config.h
 #endif // WIFI_ENABLE_SECURITY_WPA3_TRANSITION
-========
-#endif /* WIFI_ENABLE_SECURITY_WPA3_TRANSITION */
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/rs911x/ncp/rsi_wlan_config.h
 
 //! To set Extended TCPIP feature select bit map
 #define RSI_EXT_TCPIP_FEATURE_BITMAP (EXT_TCP_IP_SSL_16K_RECORD | CONFIG_FEAT_EXTENTION_VALID)

@@ -58,10 +58,7 @@ static uint8_t gTCPIPMsgQueueStorage[SYS_MESG_QUEUE_LENGTH * sizeof(void *)];
 
 static inline u32_t TicksToMS(TickType_t ticks)
 {
-<<<<<<< HEAD
     // Cast to uint64_t to prevent integer overflow when multiplying ticks by 1000.
-=======
->>>>>>> csa/v1.4.2-branch
     return ((uint64_t) ticks * 1000) / configTICK_RATE_HZ;
 }
 

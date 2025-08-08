@@ -142,33 +142,15 @@ Status SlWiFiDriver::ReorderNetwork(ByteSpan networkId, uint8_t index, MutableCh
 
 CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, const char * key, uint8_t keyLen)
 {
-<<<<<<< HEAD
-    sl_status_t status = SL_STATUS_OK;
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
-    {
-        ChipLogProgress(DeviceLayer, "Disconecting for current wifi");
-        status = sl_matter_wifi_disconnect();
-        VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status));
-=======
     if (ConnectivityMgr().IsWiFiStationProvisioned())
     {
         ChipLogProgress(DeviceLayer, "Disconnecting for current wifi");
         ReturnErrorOnFailure(WifiInterface::GetInstance().TriggerDisconnection());
->>>>>>> csa/v1.4.2-branch
     }
     ReturnErrorOnFailure(ConnectivityMgr().SetWiFiStationMode(ConnectivityManager::kWiFiStationMode_Disabled));
 
     // Set the wifi configuration
-<<<<<<< HEAD
-    wfx_wifi_provision_t wifiConfig;
-    memset(wifiConfig.ssid, 0, WFX_MAX_SSID_LENGTH);
-    wifiConfig.ssid_length = 0;
-    memset(wifiConfig.passkey, 0, WFX_MAX_PASSKEY_LENGTH);
-    wifiConfig.passkey_length = 0;
-    wifiConfig.security       = WFX_SEC_UNSPECIFIED;
-=======
     WifiInterface::WifiCredentials wifiConfig;
->>>>>>> csa/v1.4.2-branch
 
     VerifyOrReturnError(ssidLen <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_BUFFER_TOO_SMALL);
     memcpy(wifiConfig.ssid, ssid, ssidLen);
@@ -281,12 +263,6 @@ chip::BitFlags<WiFiSecurity> SlWiFiDriver::ConvertSecuritytype(wfx_sec_t securit
     return securityType;
 }
 
-<<<<<<< HEAD
-CHIP_ERROR SlWiFiDriver::StartScanWiFiNetworks(ByteSpan ssid)
-{
-    ChipLogProgress(DeviceLayer, "Start Scan WiFi Networks");
-    return wfx_start_scan(ssid, OnScanWiFiNetworkDone);
-=======
 uint32_t SlWiFiDriver::GetSupportedWiFiBandsMask() const
 {
     return WifiInterface::GetInstance().GetSupportedWiFiBandsMask();
@@ -304,7 +280,6 @@ bool SlWiFiDriver::StartScanWiFiNetworks(ByteSpan ssid)
     }
 
     return true;
->>>>>>> csa/v1.4.2-branch
 }
 
 void SlWiFiDriver::OnScanWiFiNetworkDone(wfx_wifi_scan_result_t * aScanResult)
@@ -355,7 +330,7 @@ void SlWiFiDriver::ScanNetworks(ByteSpan ssid, WiFiDriver::ScanCallback * callba
     if (callback != nullptr)
     {
         mpScanCallback = callback;
-        if (StartScanWiFiNetworks(ssid) != CHIP_NO_ERROR)
+        if (!StartScanWiFiNetworks(ssid))
         {
             ChipLogError(DeviceLayer, "ScanWiFiNetworks failed to start");
             mpScanCallback = nullptr;
@@ -376,19 +351,12 @@ CHIP_ERROR GetConnectedNetwork(Network & network)
     VerifyOrReturnError(wifiConfig.ssidLength <= NetworkCommissioning::kMaxNetworkIDLen, CHIP_ERROR_BUFFER_TOO_SMALL);
 
     network.connected = true;
-<<<<<<< HEAD
-    uint8_t length    = strnlen(wifiConfig.ssid, DeviceLayer::Internal::kMaxWiFiSSIDLength);
-    VerifyOrReturnError(length <= sizeof(network.networkID), CHIP_ERROR_BUFFER_TOO_SMALL);
-    memcpy(network.networkID, wifiConfig.ssid, length);
-    network.networkIDLen = length;
-=======
 
     ByteSpan ssidSpan(wifiConfig.ssid, wifiConfig.ssidLength);
     MutableByteSpan networkIdSpan(network.networkID, NetworkCommissioning::kMaxNetworkIDLen);
 
     ReturnErrorOnFailure(CopySpanToMutableSpan(ssidSpan, networkIdSpan));
     network.networkIDLen = networkIdSpan.size();
->>>>>>> csa/v1.4.2-branch
 
     return CHIP_NO_ERROR;
 }

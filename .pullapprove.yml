@@ -34,14 +34,6 @@ overrides:
     explanation: "Review not required unless merging to master"
 
   ############################################################
-<<<<<<< HEAD
-  #  Required status checks
-  ############################################################
-  - if: "'*restyled*' not in statuses.successful"
-    status: failure
-    explanation: "Restyled workflow must be successful"
-
-  ############################################################
   #  Require Issues
   ############################################################
   # disabling until we have PRs up to date
@@ -50,16 +42,6 @@ overrides:
   #       explanation: "An issue is required for all PRs"
 
   ############################################################
-=======
-  #  Require Issues
-  ############################################################
-  # disabling until we have PRs up to date
-  #     - if: "'*issue*' not in statuses.successful"
-  #       status: failure
-  #       explanation: "An issue is required for all PRs"
-
-  ############################################################
->>>>>>> csa/v1.4.2-branch
   #  Fast tracking
   ############################################################
   - if: "'fast track' in labels"
@@ -144,8 +126,6 @@ groups:
       teams: [reviewers-google]
     reviews:
       request: 0 # Do not auto-add
-<<<<<<< HEAD
-=======
   shared-reviewers-geo:
     type: optional
     conditions:
@@ -154,7 +134,6 @@ groups:
       teams: [reviewers-geo]
     reviews:
       request: 0 # Do not auto-add
->>>>>>> csa/v1.4.2-branch
   shared-reviewers-grundfos:
     type: optional
     conditions:
@@ -267,9 +246,6 @@ groups:
       request: 0 # Do not auto-add
 
   ############################################################
-<<<<<<< HEAD
-  #  Base Required Reviewers
-=======
   #  Folder specific review requirements. A PR must meet all
   #  folder specific review requirements for all folders that
   #  it touches with specific requirements defined.
@@ -310,7 +286,6 @@ groups:
   ############################################################
   #  Base Required Reviewers. If PR touches a path not covered
   #  by any folder specific review requirements.
->>>>>>> csa/v1.4.2-branch
   ############################################################
   required-reviewers:
     description: >
@@ -319,8 +294,6 @@ groups:
       This is the main group of required reviews for general pull
       requests.
     type: required
-<<<<<<< HEAD
-=======
     conditions:
       # If PR touches a region not covered by any custom review paths, base condition is required.
       - "files\
@@ -329,7 +302,6 @@ groups:
               .exclude('src/darwin/*')\
               .exclude('src/platform/Darwin/*') or \
         files.include('src/darwin/Framework/CHIP/zap-generated/*')"
->>>>>>> csa/v1.4.2-branch
     requirements:
       - len(groups.approved.include('shared-reviewers-*')) >= 2
     reviews:

@@ -25,11 +25,7 @@
 #include <platform/CHIPDeviceConfig.h>
 #include <platform/silabs/SilabsConfig.h>
 #include <string.h>
-<<<<<<< HEAD
 #if defined(SL_MATTER_ENABLE_OTA_ENCRYPTION) && SL_MATTER_ENABLE_OTA_ENCRYPTION
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
->>>>>>> csa/v1.4.2-branch
 #include <platform/silabs/multi-ota/OtaTlvEncryptionKey.h>
 #endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
 
@@ -86,11 +82,7 @@ CHIP_ERROR DecodeTotal(Encoding::Buffer & reader, uint16_t & total)
     ReturnErrorOnFailure(reader.Get(sz));
     total     = (0xffff == sz) ? sizeof(uint16_t) : sz;
     reader.in = reader.begin + total;
-<<<<<<< HEAD
     VerifyOrReturnError(reader.in <= reader.end, CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Invalid page, or corrupted data"));
-=======
-    VerifyOrReturnError(reader.in <= reader.end, CHIP_ERROR_INTERNAL);
->>>>>>> csa/v1.4.2-branch
     return CHIP_NO_ERROR;
 }
 
@@ -694,11 +686,7 @@ CHIP_ERROR Storage::SignWithDeviceAttestationKey(const ByteSpan & message, Mutab
     }
 #endif // SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     ReturnErrorOnFailure(err);
-<<<<<<< HEAD
-#if (defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE)
-=======
 #ifdef SL_MBEDTLS_USE_TINYCRYPT
->>>>>>> csa/v1.4.2-branch
     uint8_t key_buffer[kDeviceAttestationKeySizeMax] = { 0 };
     MutableByteSpan private_key(key_buffer);
     AttestationKey::Unwrap(temp, size, private_key);
@@ -707,11 +695,7 @@ CHIP_ERROR Storage::SignWithDeviceAttestationKey(const ByteSpan & message, Mutab
     AttestationKey key;
     ReturnErrorOnFailure(key.Import(temp, size));
     return key.SignMessage(message, signature);
-<<<<<<< HEAD
-#endif // SLI_SI91X_MCU_INTERFACE
-=======
 #endif // SL_MBEDTLS_USE_TINYCRYPT
->>>>>>> csa/v1.4.2-branch
 }
 
 //
@@ -761,12 +745,8 @@ CHIP_ERROR Storage::GetProvisionRequest(bool & value)
     // return Flash::Set(Parameters::ID::kProvisionRequest, value);
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
-<<<<<<< HEAD
 
 #if defined(SL_MATTER_ENABLE_OTA_ENCRYPTION) && SL_MATTER_ENABLE_OTA_ENCRYPTION
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
->>>>>>> csa/v1.4.2-branch
 CHIP_ERROR Storage::SetOtaTlvEncryptionKey(const ByteSpan & value)
 {
 #if defined(SL_MBEDTLS_USE_TINYCRYPT)
@@ -825,16 +805,6 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
 #endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
-
-CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
-{
-    // TODO: Implement this function if needed.
-    return CHIP_ERROR_NOT_IMPLEMENTED;
-}
-<<<<<<< HEAD
-=======
-#endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
->>>>>>> csa/v1.4.2-branch
 
 CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
 {

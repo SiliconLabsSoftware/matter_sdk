@@ -50,11 +50,7 @@ inline constexpr uint16_t kDataModelRevision = 19;
  * See section 11.1.5.22. "SpecificationVersion Attribute" in "Service and
  * Device Management" chapter of the core Matter specification.
  */
-<<<<<<< HEAD
-inline constexpr uint32_t kSpecificationVersion = 0x01040100;
-=======
 inline constexpr uint32_t kSpecificationVersion = 0x01040200;
->>>>>>> csa/v1.4.2-branch
 
 } // namespace Revision
 } // namespace chip

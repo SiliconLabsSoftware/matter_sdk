@@ -443,17 +443,11 @@ Davis, CA 95616, USA
           <feature name="ABS"/>
         </andTerm>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between">
-        <from attribute="InstalledOpenLimitLift"/>
-        <to attribute="InstalledClosedLimitLift"/>
-=======
       <constraint>
         <between>
           <attribute name="InstalledOpenLimitLift"/>
           <attribute name="InstalledClosedLimitLift"/>
         </between>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0004" name="CurrentPositionTilt" type="uint16" default="null">
@@ -466,17 +460,11 @@ Davis, CA 95616, USA
           <feature name="ABS"/>
         </andTerm>
       </optionalConform>
-<<<<<<< HEAD
-      <constraint type="between">
-        <from attribute="InstalledOpenLimitTilt"/>
-        <to attribute="InstalledClosedLimitTilt"/>
-=======
       <constraint>
         <between>
           <attribute name="InstalledOpenLimitTilt"/>
           <attribute name="InstalledClosedLimitTilt"/>
         </between>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0005" name="NumberOfActuationsLift" type="uint16" default="0">

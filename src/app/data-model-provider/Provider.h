@@ -116,13 +116,8 @@ public:
     virtual std::optional<ActionReturnStatus> InvokeCommand(const InvokeRequest & request, chip::TLV::TLVReader & input_arguments,
                                                             CommandHandler * handler) = 0;
 
-<<<<<<< HEAD
-private:
-    InteractionModelContext mContext;
-=======
 protected:
     InteractionModelContext mContext = {};
->>>>>>> csa/v1.4.2-branch
 };
 
 } // namespace DataModel

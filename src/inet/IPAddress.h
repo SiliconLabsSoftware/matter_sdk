@@ -54,17 +54,6 @@
 #if CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
 #include <openthread/icmp6.h>
 #include <openthread/ip6.h>
-<<<<<<< HEAD
-#endif // CHIP_SYSTEM_CONFIG_USE_OPEN_THREAD_ENDPOINT
-
-#if CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS || CHIP_SYSTEM_CONFIG_USE_NETWORK_FRAMEWORK || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-#include <net/if.h>
-#include <netinet/in.h>
-#endif // CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS || CHIP_SYSTEM_CONFIG_USE_NETWORK_FRAMEWORK ||
-       // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-
-#if CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-=======
 #if CHIP_DEVICE_LAYER_TARGET_NRFCONNECT
 // Currently to use openthread endpoint in nRFConnect, we must fetch defines from zephyr's net
 // OpenThread header. It will be removed once the Zephyr version is updated to 4.2.0.
@@ -72,10 +61,9 @@
 #endif
 #endif // CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
 
-#if CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS
+#if CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 #include <net/if.h>
 #include <netinet/in.h>
->>>>>>> csa/v1.4.2-branch
 #include <sys/socket.h>
 #endif // CHIP_SYSTEM_CONFIG_USE_POSIX_SOCKETS || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 

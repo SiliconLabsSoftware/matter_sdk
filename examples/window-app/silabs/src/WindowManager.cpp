@@ -37,11 +37,7 @@
 #ifdef SL_WIFI
 #include <app/clusters/network-commissioning/network-commissioning.h>
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
-<<<<<<< HEAD
-#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-=======
 #include <platform/silabs/wifi/WifiInterface.h>
->>>>>>> csa/v1.4.2-branch
 #endif
 
 #ifdef DISPLAY_ENABLED

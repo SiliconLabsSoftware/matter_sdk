@@ -24,16 +24,11 @@
 #include <cstring>
 #include <lib/support/logging/CHIPLogging.h>
 
-<<<<<<< HEAD
-=======
 using chip::app::DataModel::MakeNullable;
->>>>>>> csa/v1.4.2-branch
 using namespace ::chip::DeviceLayer::Internal;
 using namespace SilabsDoorLock;
 using namespace SilabsDoorLock::LockInitParams;
 
-<<<<<<< HEAD
-=======
 static constexpr uint16_t LockUserInfoSize        = sizeof(LockUserInfo);
 static constexpr uint16_t LockCredentialInfoSize  = sizeof(LockCredentialInfo);
 static constexpr uint16_t CredentialStructSize    = sizeof(CredentialStruct);
@@ -41,7 +36,6 @@ static constexpr uint16_t WeekDayScheduleInfoSize = sizeof(WeekDayScheduleInfo);
 static constexpr uint16_t YearDayScheduleInfoSize = sizeof(YearDayScheduleInfo);
 static constexpr uint16_t HolidayScheduleInfoSize = sizeof(HolidayScheduleInfo);
 
->>>>>>> csa/v1.4.2-branch
 namespace {
 LockManager sLock;
 } // namespace
@@ -51,12 +45,8 @@ LockManager & LockMgr()
     return sLock;
 }
 
-<<<<<<< HEAD
-CHIP_ERROR LockManager::Init(chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state, LockParam lockParam)
-=======
 CHIP_ERROR LockManager::Init(chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state, LockParam lockParam,
                              PersistentStorageDelegate * storage)
->>>>>>> csa/v1.4.2-branch
 {
 
     LockParams = lockParam;

@@ -229,15 +229,10 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SPD"/>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="max">
-        <value attribute="SpeedMax"/>
-=======
       <constraint>
         <max>
           <attribute name="SpeedMax"/>
         </max>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0006" name="SpeedCurrent" type="uint8" default="desc">
@@ -246,15 +241,10 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SPD"/>
       </mandatoryConform>
-<<<<<<< HEAD
-      <constraint type="max">
-        <value attribute="SpeedMax"/>
-=======
       <constraint>
         <max>
           <attribute name="SpeedMax"/>
         </max>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0007" name="RockSupport" type="RockBitmap" default="0">

@@ -20,11 +20,6 @@ nxp_sdk_driver_target = get_label_info(":sdk_driver", "label_no_toolchain")
 
 # ICDM
 chip_enable_icd_server = true
-<<<<<<< HEAD:examples/contact-sensor-app/nxp/k32w1/args.gni
-chip_enable_icd_lit = false
-chip_enable_icd_dsls = false
-=======
->>>>>>> csa/v1.4.2-branch:examples/laundry-washer-app/nxp/rt/rt1170/args.gni
 chip_persist_subscriptions = true
 chip_subscription_timeout_resumption = true
 chip_enable_icd_checkin = true

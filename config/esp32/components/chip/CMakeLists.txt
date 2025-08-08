@@ -442,37 +442,12 @@ target_include_directories(${COMPONENT_LIB} INTERFACE
     "${CHIP_ROOT}/config/esp32/${CONFIG_CHIP_EXTERNAL_PLATFORM_DIR}/../../"
 )
 
-<<<<<<< HEAD
-idf_component_get_property(mbedtls_lib mbedtls COMPONENT_LIB)
-
-idf_build_get_property(idf_target IDF_TARGET)
-set(target_name "${idf_target}")
-
-if(CONFIG_BT_ENABLED)
-    idf_component_get_property(bt_lib bt COMPONENT_LIB)
-    if((target_name STREQUAL "esp32h2") OR (target_name STREQUAL "esp32c2") OR (target_name STREQUAL "esp32c6"))
-        idf_component_get_property(bt_dir bt COMPONENT_DIR)
-        list(APPEND chip_libraries $<TARGET_FILE:${bt_lib}>)
-        if (EXISTS ${bt_dir}/controller/lib_${target_name}/${target_name}-bt-lib/libble_app.a)
-            list(APPEND chip_libraries "${bt_dir}/controller/lib_${target_name}/${target_name}-bt-lib/libble_app.a")
-        elseif(EXISTS ${bt_dir}/controller/lib_${target_name}/${target_name}-bt-lib/${target_name}/libble_app.a)
-            list(APPEND chip_libraries "${bt_dir}/controller/lib_${target_name}/${target_name}-bt-lib/${target_name}/libble_app.a")
-	else()
-            message(WARNING "There is no libble_app.a in the given path")
-        endif()
-    elseif(target_name STREQUAL "esp32p4")
-        list(APPEND chip_libraries $<TARGET_FILE:${bt_lib}>)
-    else()
-        list(APPEND chip_libraries $<TARGET_FILE:${bt_lib}> -lbtdm_app)
-    endif()
-=======
 set(matter_requires lwip freertos console bt)
 idf_build_get_property(build_components BUILD_COMPONENTS)
 if("espressif__mdns" IN_LIST build_components)
     list(APPEND matter_requires espressif__mdns)
 elseif("mdns" IN_LIST build_components)
     list(APPEND matter_requires mdns)
->>>>>>> csa/v1.4.2-branch
 endif()
 
 if (CONFIG_OPENTHREAD_BORDER_ROUTER)
@@ -487,106 +462,8 @@ if (CONFIG_ENABLE_ENCRYPTED_OTA)
     list(APPEND matter_requires espressif__esp_encrypted_img)
 endif()
 
-<<<<<<< HEAD
-# Let user set EXECUTABLE_COMPONENT_NAME and defaults to main if not specified
-if (NOT EXECUTABLE_COMPONENT_NAME)
-  set(EXECUTABLE_COMPONENT_NAME "main")
-endif()
-
-if (CONFIG_ENABLE_DELTA_OTA)
-    idf_component_get_property(esp_delta_ota_lib espressif__esp_delta_ota COMPONENT_LIB)
-    list(APPEND chip_libraries $<TARGET_FILE:${esp_delta_ota_lib}>)
-endif()
-
-idf_component_get_property(main_lib ${EXECUTABLE_COMPONENT_NAME} COMPONENT_LIB)
-list(APPEND chip_libraries $<TARGET_FILE:${main_lib}>)
-
-if (CONFIG_SEC_CERT_DAC_PROVIDER)
-    idf_component_get_property(esp32_secure_cert_mgr_lib espressif__esp_secure_cert_mgr COMPONENT_LIB)
-    list(APPEND chip_libraries $<TARGET_FILE:${esp32_secure_cert_mgr_lib}>)
-endif()
-
-if (CONFIG_ENABLE_ESP_INSIGHTS_TRACE)
-    idf_build_get_property(build_components BUILD_COMPONENTS)
-    # esp_insights can be used as an independent component or through component manager so,
-    # We should check and add the right component.
-    if("espressif__esp_insights" IN_LIST build_components)
-        idf_component_get_property(esp_insights_lib espressif__esp_insights COMPONENT_LIB)
-    elseif("esp_insights" IN_LIST build_components)
-        idf_component_get_property(esp_insights_lib esp_insights COMPONENT_LIB)
-    endif()
-
-    list(APPEND chip_libraries $<TARGET_FILE:${esp_insights_lib}>)
-endif()
-
-idf_component_get_property(lwip_lib lwip COMPONENT_LIB)
-list(APPEND chip_libraries $<TARGET_FILE:${lwip_lib}>)
-
-if (CONFIG_ESP32_WIFI_ENABLED OR CONFIG_IDF_TARGET_ESP32P4)
-    idf_component_get_property(esp_wifi_lib esp_wifi COMPONENT_LIB)
-    list(APPEND chip_libraries $<TARGET_FILE:${esp_wifi_lib}>)
-endif()
-if (CONFIG_ESP32_WIFI_ENABLED)
-    idf_component_get_property(esp_wifi_dir esp_wifi COMPONENT_DIR)
-    if (CONFIG_IDF_TARGET_ESP32C2)
-        set(blobs core net80211 pp)
-    else()
-        set(blobs core mesh net80211 pp)
-    endif()
-
-    foreach(blob ${blobs})
-    list(APPEND chip_libraries "${esp_wifi_dir}/lib/${target_name}/lib${blob}.a")
-    endforeach()
-
-    idf_component_get_property(wpa_supplicant_lib wpa_supplicant COMPONENT_LIB)
-    list(APPEND chip_libraries $<TARGET_FILE:${wpa_supplicant_lib}>)
-endif()
-
-if (CONFIG_ETH_ENABLED)
-    idf_component_get_property(esp_eth_lib esp_eth COMPONENT_LIB)
-    list(APPEND chip_libraries $<TARGET_FILE:${esp_eth_lib}>)
-endif()
-
-idf_component_get_property(esp_netif_lib esp_netif COMPONENT_LIB)
-list(APPEND chip_libraries $<TARGET_FILE:${esp_netif_lib}>)
-
-idf_component_get_property(esp_hw_support_lib esp_hw_support COMPONENT_LIB)
-list(APPEND chip_libraries $<TARGET_FILE:${esp_hw_support_lib}>)
-
-if (NOT CONFIG_IDF_TARGET_ESP32P4)
-idf_component_get_property(esp_phy_lib esp_phy COMPONENT_LIB)
-idf_component_get_property(esp_phy_dir esp_phy COMPONENT_DIR)
-list(APPEND chip_libraries $<TARGET_FILE:${esp_phy_lib}>)
-
-if (CONFIG_IDF_TARGET_ESP32)
-    set(phy_blobs phy rtc)
-elseif (CONFIG_IDF_TARGET_ESP32S2)
-    set(phy_blobs phy)
-else()
-    set(phy_blobs phy btbb)
-endif()
-foreach(phy_blob ${phy_blobs})
-    list(APPEND chip_libraries "${esp_phy_dir}/lib/${target_name}/lib${phy_blob}.a")
-endforeach()
-endif()
-
-set(components_to_link esp_event hal esp_system soc efuse vfs driver freertos esp_timer)
-if (NOT CONFIG_IDF_TARGET_ESP32P4)
-list(APPEND components_to_link esp_coex)
-endif()
-idf_build_get_property(build_components BUILD_COMPONENTS)
-foreach(component ${components_to_link})
-    # Some of the components are not present in IDF v4.x
-    # So, Check if the component is in the list of build components
-    if("${component}" IN_LIST build_components)
-        idf_component_get_property(lib_name ${component} COMPONENT_LIB)
-        list(APPEND chip_libraries $<TARGET_FILE:${lib_name}>)
-    endif()
-endforeach()
-=======
 add_prebuilt_library(matterlib "${CMAKE_CURRENT_BINARY_DIR}/lib/libCHIP.a"
                      REQUIRES ${matter_requires})
->>>>>>> csa/v1.4.2-branch
 
 target_link_libraries(${COMPONENT_LIB} INTERFACE -Wl,--start-group
                                                 ${chip_libraries}

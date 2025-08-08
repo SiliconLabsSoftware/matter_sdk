@@ -85,21 +85,8 @@ Git: 1.4-1773-g2b8c413df
         <optionalConform/>
       </feature>
     </features>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0000" name="LastConfiguredBy" define="LAST_CONFIGURED_BY" type="node_id" isNullable="true" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="0x0001" name="SceneTableSize" define="SCENE_TABLE_SIZE" type="int16u" min="16" default="16">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0002" name="FabricSceneInfo" define="FABRIC_SCENE_INFO" type="array" entryType="SceneInfoStruct">
-      <mandatoryConform/>
-    </attribute>
-    
-=======
     <attribute side="server" code="0x0001" name="SceneTableSize" define="SCENE_TABLE_SIZE" type="int16u" default="16"></attribute>
     <attribute side="server" code="0x0002" name="FabricSceneInfo" define="FABRIC_SCENE_INFO" type="array" entryType="SceneInfoStruct"></attribute>
->>>>>>> csa/v1.4.2-branch
     <command source="client" code="0x00" name="AddScene" response="AddSceneResponse" isFabricScoped="true" optional="false" cli="chip scenes add">
       <description>Add a scene to the scene table. Extension field sets are input as '{"ClusterID": VALUE, "AttributeValueList":[{"AttributeID": VALUE, "Value*": VALUE}]}'.</description>
       <arg id="0" name="GroupID" type="group_id"/>
@@ -108,21 +95,14 @@ Git: 1.4-1773-g2b8c413df
       <arg id="3" name="SceneName" type="char_string" length="16"/>
       <arg id="4" name="ExtensionFieldSetStructs" type="ExtensionFieldSetStruct" array="true"/>
       <access op="invoke" role="manage"/>
-      <mandatoryConform/>
     </command>
 
     <command source="client" code="0x01" name="ViewScene" response="ViewSceneResponse" isFabricScoped="true" optional="false" cli="chip scenes view">
       <description>
         Retrieves the requested scene entry from its Scene table.
       </description>
-<<<<<<< HEAD
-      <arg name="GroupID" type="group_id"/>
-      <arg name="SceneID" type="int8u"/>
-      <mandatoryConform/>
-=======
       <arg id="0" name="GroupID" type="group_id"/>
       <arg id="1" name="SceneID" type="int8u" max="254"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="client" code="0x02" name="RemoveScene" response="RemoveSceneResponse" isFabricScoped="true" optional="false" cli="chip scenes remove">
@@ -132,7 +112,6 @@ Git: 1.4-1773-g2b8c413df
       <arg id="0" name="GroupID" type="group_id"/>
       <arg id="1" name="SceneID" type="int8u" max="254"/>
       <access op="invoke" role="manage"/>
-      <mandatoryConform/>
     </command>
 
     <command source="client" code="0x03" name="RemoveAllScenes" response="RemoveAllScenesResponse" isFabricScoped="true" optional="false" cli="chip scenes rmall">
@@ -141,7 +120,6 @@ Git: 1.4-1773-g2b8c413df
       </description>
       <arg id="0" name="GroupID" type="group_id"/>
       <access op="invoke" role="manage"/>
-      <mandatoryConform/>
     </command>
 
     <command source="client" code="0x04" name="StoreScene" response="StoreSceneResponse" isFabricScoped="true" optional="false" cli="chip scenes store">
@@ -151,44 +129,18 @@ Git: 1.4-1773-g2b8c413df
       <arg id="0" name="GroupID" type="group_id"/>
       <arg id="1" name="SceneID" type="int8u" max="254"/>
       <access op="invoke" role="manage"/>
-      <mandatoryConform/>
     </command>
 
     <command source="client" code="0x05" name="RecallScene" isFabricScoped="true" optional="false" cli="chip scenes recall">
       <description>
         Set the attributes and corresponding state for each other cluster implemented on the endpoint accordingly to the resquested scene entry in the Scene Table
       </description>
-<<<<<<< HEAD
-      <arg name="GroupID" type="group_id"/>
-      <arg name="SceneID" type="int8u"/>
-      <arg name="TransitionTime" type="int32u" optional="true" isNullable="true"/>
-      <mandatoryConform/>
-=======
       <arg id="0" name="GroupID" type="group_id"/>
       <arg id="1" name="SceneID" type="int8u" max="254"/>
       <arg id="2" name="TransitionTime" type="int32u" optional="true" isNullable="true" max="60000000"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="client" code="0x06" name="GetSceneMembership" response="GetSceneMembershipResponse" isFabricScoped="true" optional="false" cli="chip scenes get">
-<<<<<<< HEAD
-      <description>
-        Get an unused scene identifier when no commissioning tool is in the network, or for a commissioning tool to get the used scene identifiers within a certain group 
-      </description>
-      <arg name="GroupID" type="group_id"/>
-      <mandatoryConform/>
-    </command>
-
-    <command source="client" code="0x40" name="CopyScene" response="CopySceneResponse" isFabricScoped="true" optional="true" cli="chip scenes copy">
-      <description>
-        Allows a client to efficiently copy scenes from one group/scene identifier pair to another group/scene identifier pair.
-      </description>
-      <arg name="Mode" type="CopyModeBitmap"/>
-      <arg name="GroupIdentifierFrom" type="group_id"/>
-      <arg name="SceneIdentifierFrom" type="int8u"/>
-      <arg name="GroupIdentifierTo" type="group_id"/>
-      <arg name="SceneIdentifierTo" type="int8u"/>
-=======
       <description>This command can be used to get the used scene identifiers within a certain group, for the endpoint that implements this cluster.</description>
       <arg id="0" name="GroupID" type="group_id"/>
     </command>
@@ -201,7 +153,6 @@ Git: 1.4-1773-g2b8c413df
       <arg id="3" name="GroupIdentifierTo" type="group_id"/>
       <arg id="4" name="SceneIdentifierTo" type="int8u" max="254"/>
       <access op="invoke" role="manage"/>
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </command>
 
@@ -209,117 +160,66 @@ Git: 1.4-1773-g2b8c413df
       <description>
         The command is generated in response to a received unicast AddScene command,
       </description>
-<<<<<<< HEAD
-      <arg name="Status" type="status"/>
-      <arg name="GroupID" type="group_id"/>
-      <arg name="SceneID" type="int8u"/>
-      <mandatoryConform/>
-=======
       <arg id="0" name="Status" type="status"/>
       <arg id="1" name="GroupID" type="group_id"/>
       <arg id="2" name="SceneID" type="int8u" max="254"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="server" code="0x01" name="ViewSceneResponse" optional="false" disableDefaultResponse="true">
       <description>
         The command is generated in response to a received unicast ViewScene command 
       </description>
-<<<<<<< HEAD
-      <arg name="Status" type="status"/>
-      <arg name="GroupID" type="group_id"/>
-      <arg name="SceneID" type="int8u"/>
-      <arg name="TransitionTime" type="int32u" optional="true"/>
-      <arg name="SceneName" type="char_string" optional="true"/>
-      <arg name="ExtensionFieldSets" type="ExtensionFieldSet" array="true" optional="true"/>
-      <mandatoryConform/>
-=======
       <arg id="0" name="Status" type="status"/>
       <arg id="1" name="GroupID" type="group_id"/>
       <arg id="2" name="SceneID" type="int8u" max="254"/>
       <arg id="3" name="TransitionTime" type="int32u" optional="true" max="60000000"/>
       <arg id="4" name="SceneName" type="char_string" optional="true" length="16"/>
       <arg id="5" name="ExtensionFieldSetStructs" type="ExtensionFieldSetStruct" array="true" optional="true"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="server" code="0x02" name="RemoveSceneResponse" optional="false" disableDefaultResponse="true">
       <description>
         The command is generated in response to a received unicast RemoveScene command
       </description>
-<<<<<<< HEAD
-      <arg name="Status" type="status"/>
-      <arg name="GroupID" type="group_id"/>
-      <arg name="SceneID" type="int8u"/>
-      <mandatoryConform/>
-=======
       <arg id="0" name="Status" type="status"/>
       <arg id="1" name="GroupID" type="group_id"/>
       <arg id="2" name="SceneID" type="int8u" max="254"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="server" code="0x03" name="RemoveAllScenesResponse" optional="false" disableDefaultResponse="true">
       <description>
         The command is generated in response to a received unicast RemoveAllScenes command
       </description>
-<<<<<<< HEAD
-      <arg name="Status" type="status"/>
-      <arg name="GroupID" type="group_id"/>
-      <mandatoryConform/>
-=======
       <arg id="0" name="Status" type="status"/>
       <arg id="1" name="GroupID" type="group_id"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="server" code="0x04" name="StoreSceneResponse" optional="false" disableDefaultResponse="true">
       <description>
         The command is generated in response to a received unicast StoreScene command
       </description>
-<<<<<<< HEAD
-      <arg name="Status" type="status"/>
-      <arg name="GroupID" type="group_id"/>
-      <arg name="SceneID" type="int8u"/>
-      <mandatoryConform/>
-=======
       <arg id="0" name="Status" type="status"/>
       <arg id="1" name="GroupID" type="group_id"/>
       <arg id="2" name="SceneID" type="int8u" max="254"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="server" code="0x06" name="GetSceneMembershipResponse" optional="false" disableDefaultResponse="true">
       <description>
         The command is generated in response to a received unicast GetSceneMembership command
       </description>
-<<<<<<< HEAD
-      <arg name="Status" type="status"/>
-      <arg name="Capacity" type="int8u" isNullable="true"/>
-      <arg name="GroupID" type="group_id"/>
-      <arg name="SceneList" type="int8u" array="true" optional="true"/>
-      <mandatoryConform/>
-=======
       <arg id="0" name="Status" type="status"/>
       <arg id="1" name="Capacity" type="int8u" isNullable="true"/>
       <arg id="2" name="GroupID" type="group_id"/>
       <arg id="3" name="SceneList" type="int8u" array="true" optional="true"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="server" code="0x40" name="CopySceneResponse" optional="true" disableDefaultResponse="true">
       <description>
         The command is generated in response to a received unicast CopyScene command
       </description>
-<<<<<<< HEAD
-      <arg name="Status" type="status"/>
-      <arg name="GroupIdentifierFrom" type="group_id"/>
-      <arg name="SceneIdentifierFrom" type="int8u"/>
-=======
       <arg id="0" name="Status" type="status"/>
       <arg id="1" name="GroupIdentifierFrom" type="group_id"/>
       <arg id="2" name="SceneIdentifierFrom" type="int8u" max="254"/>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <command name="CopyScene"/>
       </mandatoryConform>

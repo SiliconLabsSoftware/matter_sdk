@@ -169,8 +169,6 @@ class TC_MCORE_FS_1_3(MatterBaseTest):
             endpoint=0,
         ))
 
-<<<<<<< HEAD
-=======
         aggregator_endpoint = 0
 
         # Iterate through the endpoints on the DUT_FSA_BRIDGE
@@ -191,7 +189,6 @@ class TC_MCORE_FS_1_3(MatterBaseTest):
 
         asserts.assert_not_equal(aggregator_endpoint, 0, "Invalid aggregator endpoint. Cannot proceed with commissioning.")
 
->>>>>>> csa/v1.4.2-branch
         # Open commissioning window on TH_SERVER_NO_UID.
         discriminator = random.randint(0, 4095)
         params = await self.default_controller.OpenCommissioningWindow(
@@ -213,15 +210,10 @@ class TC_MCORE_FS_1_3(MatterBaseTest):
                 f"If using FabricSync Admin, you may type:\n"
                 f">>> pairing onnetwork <desired_node_id> {params.setupPinCode}")
         else:
-<<<<<<< HEAD
-            self.dut_fsa_stdin.write(
-                f"pairing onnetwork 10 {params.setupPinCode}\n")
-=======
             if self.user_params.get("unified_fabric_sync_app"):
                 self.dut_fsa_stdin.write(f"app pair-device 10 {params.setupQRCode}\n")
             else:
                 self.dut_fsa_stdin.write(f"pairing onnetwork 10 {params.setupPinCode}\n")
->>>>>>> csa/v1.4.2-branch
             self.dut_fsa_stdin.flush()
             # Wait for the commissioning to complete.
             await asyncio.sleep(5)

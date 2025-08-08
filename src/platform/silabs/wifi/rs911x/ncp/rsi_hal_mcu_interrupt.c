@@ -25,20 +25,7 @@
 #include "em_ldma.h"
 #include "em_usart.h"
 #include "event_groups.h"
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/rsi_hal_mcu_interrupt.c
-#include "task.h"
-
-#if (SLI_SI91X_MCU_INTERFACE | EXP_BOARD)
-#include "sl_board_configuration.h"
-
-#include "sl_rsi_utility.h"
-#include "sl_si91x_host_interface.h"
-
-void gpio_interrupt(uint8_t interrupt_number);
-#else
-========
 #include "gpiointerrupt.h"
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/rs911x/ncp/rsi_hal_mcu_interrupt.c
 #include "rsi_board_configuration.h"
 #include "rsi_driver.h"
 #include "sl_device_init_clocks.h"

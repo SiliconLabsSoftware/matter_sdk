@@ -805,30 +805,6 @@ def python_tests(
         return _maybe_with_runner(os.path.basename(path), path, runner)
 
     # create an env file
-<<<<<<< HEAD
-    target_prefix = _get_native_machine_target()
-    with open("out/test_env.yaml", "wt") as f:
-        f.write(
-            textwrap.dedent(
-                f"""\
-            ALL_CLUSTERS_APP: {as_runner(f'out/{target_prefix}-all-clusters-no-ble-clang-boringssl/chip-all-clusters-app')}
-            CHIP_LOCK_APP: {as_runner(f'out/{target_prefix}-lock-no-ble-clang-boringssl/chip-lock-app')}
-            ENERGY_MANAGEMENT_APP: {
-                as_runner(f'out/{target_prefix}-energy-management-no-ble-clang-boringssl/chip-energy-management-app')}
-            LIT_ICD_APP: {as_runner(f'out/{target_prefix}-lit-icd-no-ble-clang-boringssl/lit-icd-app')}
-            CHIP_MICROWAVE_OVEN_APP: {
-                as_runner(f'out/{target_prefix}-microwave-oven-no-ble-clang-boringssl/chip-microwave-oven-app')}
-            CHIP_RVC_APP: {as_runner(f'out/{target_prefix}-rvc-no-ble-clang-boringssl/chip-rvc-app')}
-            NETWORK_MANAGEMENT_APP: {
-                as_runner(f'out/{target_prefix}-network-manager-ipv6only-no-ble-clang-boringssl/matter-network-manager-app')}
-            TERMS_AND_CONDITIONS_APP: {as_runner(f'out/{target_prefix}-terms-and-conditions/chip-terms-and-conditions-app')}
-            TRACE_APP: out/trace_data/app-{{SCRIPT_BASE_NAME}}
-            TRACE_TEST_JSON: out/trace_data/test-{{SCRIPT_BASE_NAME}}
-            TRACE_TEST_PERFETTO: out/trace_data/test-{{SCRIPT_BASE_NAME}}
-            """
-            )
-        )
-=======
     with open("./out/test_env.yaml", "wt") as f:
         for target in _get_targets(coverage):
             run_path = as_runner(f"out/{target.target}/{target.binary}")
@@ -836,7 +812,6 @@ def python_tests(
         f.write("TRACE_APP: out/trace_data/app-{SCRIPT_BASE_NAME}\n")
         f.write("TRACE_TEST_JSON: out/trace_data/test-{SCRIPT_BASE_NAME}\n")
         f.write("TRACE_TEST_PERFETTO: out/trace_data/test-{SCRIPT_BASE_NAME}\n")
->>>>>>> csa/v1.4.2-branch
 
     if not test_filter:
         test_filter = "*"
@@ -862,61 +837,6 @@ def python_tests(
     if not os.path.exists("out/trace_data"):
         os.mkdir("out/trace_data")
 
-<<<<<<< HEAD
-    # IGNORES are taken out of `src/python_testing/execute_python_tests.py` in the SDK
-    excluded_patterns = {
-        "MinimalRepresentation.py",
-        "TC_CNET_4_4.py",
-        "TC_CCTRL_2_1.py",
-        "TC_CCTRL_2_2.py",
-        "TC_CCTRL_2_3.py",
-        "TC_DGGEN_3_2.py",
-        "TC_EEVSE_Utils.py",
-        "TC_ECOINFO_2_1.py",
-        "TC_ECOINFO_2_2.py",
-        "TC_EWATERHTRBase.py",
-        "TC_EWATERHTR_2_1.py",
-        "TC_EWATERHTR_2_2.py",
-        "TC_EWATERHTR_2_3.py",
-        "TC_EnergyReporting_Utils.py",
-        "TC_OpstateCommon.py",
-        "TC_pics_checker.py",
-        "TC_TMP_2_1.py",
-        "TC_MCORE_FS_1_1.py",
-        "TC_MCORE_FS_1_2.py",
-        "TC_MCORE_FS_1_3.py",
-        "TC_MCORE_FS_1_4.py",
-        "TC_MCORE_FS_1_5.py",
-        "TC_OCC_3_1.py",
-        "TC_OCC_3_2.py",
-        "TC_BRBINFO_4_1.py",
-        "TestCommissioningTimeSync.py",
-        "TestConformanceSupport.py",
-        "TestChoiceConformanceSupport.py",
-        "TC_DEMTestBase.py",
-        "choice_conformance_support.py",
-        "TestConformanceTest.py",  # Unit test of the conformance test (TC_DeviceConformance) - does not run against an app.
-        "TestIdChecks.py",
-        "TestSpecParsingDeviceType.py",
-        "TestSpecParsingSelection.py",
-        "TestMatterTestingSupport.py",
-        "TestSpecParsingSupport.py",
-        "TestTimeSyncTrustedTimeSource.py",
-        "basic_composition_support.py",
-        "conformance_support.py",
-        "drlk_2_x_common.py",
-        "execute_python_tests.py",
-        "global_attribute_ids.py",
-        "hello_external_runner.py",
-        "hello_test.py",
-        "matter_testing_support.py",
-        "pics_support.py",
-        "spec_parsing_support.py",
-        "taglist_and_topology_test_support.py",
-        "test_plan_support.py",
-        "test_plan_table_generator.py",
-    }
-=======
     if fail_log_dir and not os.path.exists(fail_log_dir):
         os.mkdir(fail_log_dir)
 
@@ -927,7 +847,6 @@ def python_tests(
     slow_test_duration = dict(
         [(item["name"], item["duration"]) for item in metadata["slow_tests"]]
     )
->>>>>>> csa/v1.4.2-branch
 
     if not os.path.isdir("src/python_testing"):
         raise Exception(

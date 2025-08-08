@@ -34,11 +34,7 @@
 #endif // SL_USE_COAP_CONFIG
 
 // Multi-chip OTA encryption processing
-<<<<<<< HEAD
 #if SL_MATTER_ENABLE_OTA_ENCRYPTION
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
->>>>>>> csa/v1.4.2-branch
 #define PSA_WANT_ALG_CTR
 #endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
 

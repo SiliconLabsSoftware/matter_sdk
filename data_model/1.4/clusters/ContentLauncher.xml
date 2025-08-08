@@ -273,17 +273,12 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="Color" type="string" default="MS">
         <optionalConform/>
-<<<<<<< HEAD
-        <constraint type="allowed" value="7"/>
-        <constraint type="allowed" value="9"/>
-=======
         <constraint>
           <allowed value="7"/>
         </constraint>
         <constraint>
           <allowed value="9"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="2" name="Size" type="DimensionStruct" default="MS">
         <optionalConform/>

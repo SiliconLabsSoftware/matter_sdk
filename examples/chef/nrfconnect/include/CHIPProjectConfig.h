@@ -1,10 +1,6 @@
 /*
  *
-<<<<<<<< HEAD:src/tracing/silabs/include/matter/tracing/macros_impl.h
- *    Copyright (c) 2024 Project CHIP Authors
-========
  *    Copyright (c) 2020 Project CHIP Authors
->>>>>>>> csa/v1.4.2-branch:examples/chef/nrfconnect/include/CHIPProjectConfig.h
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,16 +15,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-<<<<<<<< HEAD:src/tracing/silabs/include/matter/tracing/macros_impl.h
-#pragma once
-
-/* Ensure we do not have double tracing macros defined */
-#if defined(MATTER_TRACE_BEGIN)
-#error "Tracing macros seem to be double defined"
-#endif
-
-#include <platform/silabs/tracing/SilabsTracingMacros.h>
-========
 
 /**
  *    @file
@@ -40,4 +26,3 @@
  */
 
 #pragma once
->>>>>>>> csa/v1.4.2-branch:examples/chef/nrfconnect/include/CHIPProjectConfig.h

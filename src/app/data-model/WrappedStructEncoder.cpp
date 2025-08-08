@@ -14,16 +14,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-<<<<<<< HEAD:examples/platform/silabs/SilabsTestEventTriggerDelegate.cpp
-
-#include "SilabsTestEventTriggerDelegate.h"
-#include <headers/ProvisionManager.h>
-#include <lib/core/ErrorStr.h>
-
-using namespace ::chip::DeviceLayer;
-=======
 #include <app/data-model/WrappedStructEncoder.h>
->>>>>>> csa/v1.4.2-branch:src/app/data-model/WrappedStructEncoder.cpp
 
 namespace chip {
 namespace app {
@@ -31,23 +22,7 @@ namespace DataModel {
 
 WrappedStructEncoder::WrappedStructEncoder(TLV::TLVWriter & writer, TLV::Tag outerTag) : mWriter(writer)
 {
-<<<<<<< HEAD:examples/platform/silabs/SilabsTestEventTriggerDelegate.cpp
-    uint8_t storedEnableKey[TestEventTriggerDelegate::kEnableKeyLength] = { 0 };
-    MutableByteSpan storedEnableKeySpan(storedEnableKey);
-
-    CHIP_ERROR error = Silabs::Provision::Manager::GetInstance().GetStorage().GetTestEventTriggerKey(storedEnableKeySpan);
-    if (error != CHIP_NO_ERROR)
-    {
-        // If we fail to read the enableKey from storage, the MutableByteSpan is not modified by the getter which leaves the span
-        // equal to a zero bytepsan (size = 0). This guarantees that we will be able to inform the stack that the test event trigger
-        // is not enabled when the stack tries to match the zero bytespan to our enableKey.
-        ChipLogError(DeviceLayer, "Failed to get test event trigger key: %s", ErrorStr(error));
-    }
-
-    return storedEnableKeySpan.data_equal(enableKey);
-=======
     mLastError = mWriter.StartContainer(outerTag, TLV::kTLVType_Structure, mOuter);
->>>>>>> csa/v1.4.2-branch:src/app/data-model/WrappedStructEncoder.cpp
 }
 
 CHIP_ERROR WrappedStructEncoder::Finalize()

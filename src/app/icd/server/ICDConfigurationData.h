@@ -17,10 +17,7 @@
 
 #pragma once
 
-<<<<<<< HEAD
-=======
 #include <app-common/zap-generated/cluster-enums.h>
->>>>>>> csa/v1.4.2-branch
 #include <app/icd/server/ICDServerConfig.h>
 #include <lib/core/Optional.h>
 #include <lib/support/BitFlags.h>
@@ -215,10 +212,6 @@ private:
     static_assert((CHIP_DEVICE_CONFIG_ICD_SLOW_POLL_INTERVAL <= kSitIcdSlowPollMaximum),
                   "LIT support is required for slow polling intervals superior to 15 seconds");
 #endif
-<<<<<<< HEAD
-    System::Clock::Milliseconds32 mSlowPollingInterval = CHIP_DEVICE_CONFIG_ICD_SLOW_POLL_INTERVAL;
-    System::Clock::Milliseconds32 mFastPollingInterval = CHIP_DEVICE_CONFIG_ICD_FAST_POLL_INTERVAL;
-=======
     // The Polling interval used in Idle mode
     System::Clock::Milliseconds32 mLITPollingInterval = CHIP_DEVICE_CONFIG_ICD_SLOW_POLL_INTERVAL;
     // The Polling interval used in Active mode
@@ -231,7 +224,6 @@ private:
     System::Clock::Milliseconds32 mSITPollingInterval = CHIP_DEVICE_CONFIG_ICD_SIT_POLLING_INTERVAL;
 
     BitFlags<app::Clusters::IcdManagement::Feature> mFeatureMap;
->>>>>>> csa/v1.4.2-branch
 
     ICDMode mICDMode = ICDMode::SIT;
 };

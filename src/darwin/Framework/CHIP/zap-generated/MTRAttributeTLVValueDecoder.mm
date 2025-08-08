@@ -2341,8 +2341,6 @@ static id _Nullable DecodeAttributeValueForGeneralCommissioningCluster(Attribute
         }
         return value;
     }
-<<<<<<< HEAD
-=======
     case Attributes::RecoveryIdentifier::Id: {
         using TypeInfo = Attributes::RecoveryIdentifier::TypeInfo;
         TypeInfo::DecodableType cppValue;
@@ -2369,7 +2367,6 @@ static id _Nullable DecodeAttributeValueForGeneralCommissioningCluster(Attribute
         }
         return value;
     }
->>>>>>> csa/v1.4.2-branch
     default: {
         // Not a known GeneralCommissioning attribute.
         break;

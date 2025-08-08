@@ -147,16 +147,12 @@ def BuildHostTarget():
         TargetPart('network-manager', app=HostApp.NETWORK_MANAGER),
         TargetPart('energy-gateway', app=HostApp.ENERGY_GATEWAY),
         TargetPart('energy-management', app=HostApp.ENERGY_MANAGEMENT),
-<<<<<<< HEAD
-        TargetPart('terms-and-conditions', app=HostApp.TERMS_AND_CONDITIONS),
-=======
         TargetPart('water-leak-detector', app=HostApp.WATER_LEAK_DETECTOR),
         TargetPart('terms-and-conditions', app=HostApp.TERMS_AND_CONDITIONS),
         TargetPart('camera', app=HostApp.CAMERA),
         TargetPart('camera-controller', app=HostApp.CAMERA_CONTROLLER),
         TargetPart('jf-control-app', app=HostApp.JF_CONTROL),
         TargetPart('jf-admin-app', app=HostApp.JF_ADMIN),
->>>>>>> csa/v1.4.2-branch
     ]
 
     if (HostBoard.NATIVE.PlatformName() == 'darwin'):
@@ -206,14 +202,7 @@ def BuildHostTarget():
     target.AppendModifier('enable-dnssd-tests', enable_dnssd_tests=True).OnlyIfRe('-tests')
     target.AppendModifier('disable-dnssd-tests', enable_dnssd_tests=False).OnlyIfRe('-tests')
     target.AppendModifier('chip-casting-simplified', chip_casting_simplified=True).OnlyIfRe('-tv-casting-app')
-<<<<<<< HEAD
-    target.AppendModifier('data-model-check', data_model_interface="check").ExceptIfRe('-data-model-(enabled|disabled)')
-    target.AppendModifier('data-model-disabled', data_model_interface="disabled").ExceptIfRe('-data-model-(check|enabled)')
-    target.AppendModifier('data-model-enabled', data_model_interface="enabled").ExceptIfRe('-data-model-(check|disabled)')
-    target.AppendModifier('check-failure-die', chip_data_model_check_die_on_failure=True).OnlyIfRe('-data-model-check')
-=======
     target.AppendModifier('googletest', use_googletest=True).OnlyIfRe('-tests')
->>>>>>> csa/v1.4.2-branch
     target.AppendModifier('terms-and-conditions', terms_and_conditions_required=True)
 
     return target
@@ -274,10 +263,7 @@ def BuildEfr32Target():
         TargetPart('brd4338a', board=Efr32Board.BRD4338A, enable_wifi=True, enable_917_soc=True),
         TargetPart('brd2605a', board=Efr32Board.BRD2605A, enable_wifi=True, enable_917_soc=True),
         TargetPart('brd4343a', board=Efr32Board.BRD4343A, enable_wifi=True, enable_917_soc=True),
-<<<<<<< HEAD
-=======
         TargetPart('brd4342a', board=Efr32Board.BRD4342A, enable_wifi=True, enable_917_soc=True),
->>>>>>> csa/v1.4.2-branch
     ])
 
     # apps

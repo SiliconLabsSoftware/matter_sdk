@@ -6529,11 +6529,8 @@ class GeneralCommissioning(Cluster):
                 ClusterObjectFieldDescriptor(Label="TCAcknowledgements", Tag=0x00000007, Type=typing.Optional[uint]),
                 ClusterObjectFieldDescriptor(Label="TCAcknowledgementsRequired", Tag=0x00000008, Type=typing.Optional[bool]),
                 ClusterObjectFieldDescriptor(Label="TCUpdateDeadline", Tag=0x00000009, Type=typing.Union[None, Nullable, uint]),
-<<<<<<< HEAD
-=======
                 ClusterObjectFieldDescriptor(Label="recoveryIdentifier", Tag=0x0000000A, Type=typing.Optional[bytes]),
                 ClusterObjectFieldDescriptor(Label="networkRecoveryReason", Tag=0x0000000B, Type=typing.Union[None, Nullable, GeneralCommissioning.Enums.NetworkRecoveryReasonEnum]),
->>>>>>> csa/v1.4.2-branch
                 ClusterObjectFieldDescriptor(Label="generatedCommandList", Tag=0x0000FFF8, Type=typing.List[uint]),
                 ClusterObjectFieldDescriptor(Label="acceptedCommandList", Tag=0x0000FFF9, Type=typing.List[uint]),
                 ClusterObjectFieldDescriptor(Label="attributeList", Tag=0x0000FFFB, Type=typing.List[uint]),
@@ -6541,24 +6538,6 @@ class GeneralCommissioning(Cluster):
                 ClusterObjectFieldDescriptor(Label="clusterRevision", Tag=0x0000FFFD, Type=uint),
             ])
 
-<<<<<<< HEAD
-    breadcrumb: 'uint' = None
-    basicCommissioningInfo: 'GeneralCommissioning.Structs.BasicCommissioningInfo' = None
-    regulatoryConfig: 'GeneralCommissioning.Enums.RegulatoryLocationTypeEnum' = None
-    locationCapability: 'GeneralCommissioning.Enums.RegulatoryLocationTypeEnum' = None
-    supportsConcurrentConnection: 'bool' = None
-    TCAcceptedVersion: 'typing.Optional[uint]' = None
-    TCMinRequiredVersion: 'typing.Optional[uint]' = None
-    TCAcknowledgements: 'typing.Optional[uint]' = None
-    TCAcknowledgementsRequired: 'typing.Optional[bool]' = None
-    TCUpdateDeadline: 'typing.Union[None, Nullable, uint]' = None
-    generatedCommandList: 'typing.List[uint]' = None
-    acceptedCommandList: 'typing.List[uint]' = None
-    eventList: 'typing.List[uint]' = None
-    attributeList: 'typing.List[uint]' = None
-    featureMap: 'uint' = None
-    clusterRevision: 'uint' = None
-=======
     breadcrumb: uint = 0
     basicCommissioningInfo: GeneralCommissioning.Structs.BasicCommissioningInfo = field(default_factory=lambda: GeneralCommissioning.Structs.BasicCommissioningInfo())
     regulatoryConfig: GeneralCommissioning.Enums.RegulatoryLocationTypeEnum = 0
@@ -6576,7 +6555,6 @@ class GeneralCommissioning(Cluster):
     attributeList: typing.List[uint] = field(default_factory=lambda: [])
     featureMap: uint = 0
     clusterRevision: uint = 0
->>>>>>> csa/v1.4.2-branch
 
     class Enums:
         class CommissioningErrorEnum(MatterIntEnum):
@@ -6965,22 +6943,6 @@ class GeneralCommissioning(Cluster):
                 return ClusterObjectFieldDescriptor(Type=typing.Union[None, Nullable, GeneralCommissioning.Enums.NetworkRecoveryReasonEnum])
 
             value: typing.Union[None, Nullable, GeneralCommissioning.Enums.NetworkRecoveryReasonEnum] = None
-
-        @dataclass
-        class TCUpdateDeadline(ClusterAttributeDescriptor):
-            @ChipUtility.classproperty
-            def cluster_id(cls) -> int:
-                return 0x00000030
-
-            @ChipUtility.classproperty
-            def attribute_id(cls) -> int:
-                return 0x00000009
-
-            @ChipUtility.classproperty
-            def attribute_type(cls) -> ClusterObjectFieldDescriptor:
-                return ClusterObjectFieldDescriptor(Type=typing.Union[None, Nullable, uint])
-
-            value: 'typing.Union[None, Nullable, uint]' = None
 
         @dataclass
         class GeneratedCommandList(ClusterAttributeDescriptor):

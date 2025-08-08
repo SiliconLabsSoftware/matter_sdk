@@ -2401,12 +2401,9 @@ class ChipDeviceControllerBase():
             self._dmLib.pychip_DeviceController_SetTermsAcknowledgements.restype = PyChipError
             self._dmLib.pychip_DeviceController_SetTermsAcknowledgements.argtypes = [c_uint16, c_uint16]
 
-<<<<<<< HEAD
-=======
             self._dmLib.pychip_DeviceController_SetDACRevocationSetPath.restype = PyChipError
             self._dmLib.pychip_DeviceController_SetDACRevocationSetPath.argtypes = [c_char_p]
 
->>>>>>> csa/v1.4.2-branch
 
 class ChipDeviceController(ChipDeviceControllerBase):
     ''' 
@@ -2606,9 +2603,6 @@ class ChipDeviceController(ChipDeviceControllerBase):
         ).raise_on_error()
 
     def SetTCAcknowledgements(self, tcAcceptedVersion: int, tcUserResponse: int):
-<<<<<<< HEAD
-        ''' Set the TC acknowledgements to set during commissioning'''
-=======
         '''
         Set the TC acknowledgements to set during commissioning.
 
@@ -2619,16 +2613,12 @@ class ChipDeviceController(ChipDeviceControllerBase):
         Raises:
             ChipStackError: On failure.
         '''
->>>>>>> csa/v1.4.2-branch
         self.CheckIsActive()
         self._ChipStack.Call(
             lambda: self._dmLib.pychip_DeviceController_SetTermsAcknowledgements(tcAcceptedVersion, tcUserResponse)
         ).raise_on_error()
 
     def SetSkipCommissioningComplete(self, skipCommissioningComplete: bool):
-<<<<<<< HEAD
-        ''' Set whether to skip the commissioning complete callback'''
-=======
         '''
         Set whether to skip the commissioning complete callback.
 
@@ -2638,7 +2628,6 @@ class ChipDeviceController(ChipDeviceControllerBase):
         Raises:
             ChipStackError: On failure.
         '''
->>>>>>> csa/v1.4.2-branch
         self.CheckIsActive()
         self._ChipStack.Call(
             lambda: self._dmLib.pychip_DeviceController_SetSkipCommissioningComplete(skipCommissioningComplete)

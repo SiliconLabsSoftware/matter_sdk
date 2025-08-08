@@ -81,13 +81,9 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
       <quality persistence="fixed"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="allowed" value=""/>
-=======
       <constraint>
         <allowed value=""/>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
   </attributes>
   <commands>

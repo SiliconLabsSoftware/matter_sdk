@@ -19,14 +19,6 @@
 # for details about the block below.
 
 # === BEGIN CI TEST ARGUMENTS ===
-<<<<<<< HEAD
-# test-runner-runs: run1
-# test-runner-run/run1/app: ${LIT_ICD_APP}
-# test-runner-run/run1/factoryreset: True
-# test-runner-run/run1/quiet: True
-# test-runner-run/run1/app-args: --discriminator 1234 --KVS kvs1 --trace-to json:${TRACE_APP}.json
-# test-runner-run/run1/script-args: --storage-path admin_storage.json --commissioning-method on-network --discriminator 1234 --passcode 20202021 --trace-to json:${TRACE_TEST_JSON}.json --trace-to perfetto:${TRACE_TEST_PERFETTO}.perfetto
-=======
 # test-runner-runs:
 #   run1:
 #     app: ${LIT_ICD_APP}
@@ -52,7 +44,6 @@
 #       --passcode 20202021
 #       --trace-to json:${TRACE_TEST_JSON}.json
 #       --trace-to perfetto:${TRACE_TEST_PERFETTO}.perfetto
->>>>>>> csa/v1.4.2-branch
 # === END CI TEST ARGUMENTS ===
 
 import ipaddress
@@ -60,11 +51,7 @@ import logging
 import re
 
 import chip.clusters as Clusters
-<<<<<<< HEAD
-from matter_testing_support import MatterBaseTest, TestStep, async_test_body, default_matter_test_main
-=======
 from chip.testing.matter_testing import MatterBaseTest, TestStep, async_test_body, default_matter_test_main
->>>>>>> csa/v1.4.2-branch
 from mdns_discovery.mdns_discovery import DNSRecordType, MdnsDiscovery, MdnsServiceType
 from mobly import asserts
 from zeroconf.const import _TYPE_AAAA, _TYPES
@@ -78,20 +65,13 @@ Test Plan
 https://github.com/CHIP-Specifications/chip-test-plans/blob/master/src/securechannel.adoc#343-tc-sc-43-discovery-dut_commissionee
 '''
 
-<<<<<<< HEAD
-=======
 TCP_PICS_STR = "MCORE.SC.TCP"
 
->>>>>>> csa/v1.4.2-branch
 
 class TC_SC_4_3(MatterBaseTest):
 
     def steps_TC_SC_4_3(self):
-<<<<<<< HEAD
-        return [TestStep(1, "DUT is commissioned on the same fabric as TH."),
-=======
         return [TestStep(1, "DUT is commissioned on the same fabric as TH.", is_commissioning=True),
->>>>>>> csa/v1.4.2-branch
                 TestStep(2, "TH reads ServerList attribute from the Descriptor cluster on EP0. ",
                          "If the ICD Management cluster ID (70,0x46) is present in the list, set supports_icd to true, otherwise set supports_icd to false."),
                 TestStep(3,
@@ -101,11 +81,7 @@ class TC_SC_4_3(MatterBaseTest):
                 TestStep(6, "TH performs a query for the SRV record against the qname instance_qname.",
                          "Verify SRV record is returned"),
                 TestStep(7, "TH performs a query for the TXT record against the qname instance_qname.",
-<<<<<<< HEAD
-                         "Verify TXT record is returned"),
-=======
                          "Verify TXT record is returned if the device supports ICD or TCP. The TXT record MAY be returned if these are not supported, but it is not required."),
->>>>>>> csa/v1.4.2-branch
                 TestStep(8, "TH performs a query for the AAAA record against the target listed in the SRV record",
                          "Verify AAAA record is returned"),
                 TestStep(9, "TH verifies the following from the returned records:",
@@ -174,9 +150,6 @@ class TC_SC_4_3(MatterBaseTest):
         except ValueError:
             return (False, f"Input ({input_value}) is not a valid decimal number.")
 
-<<<<<<< HEAD
-    def verify_t_value(self, t_value):
-=======
     def verify_t_value(self, operational_record):
         has_t = operational_record and operational_record.txt_record and 'T' in operational_record.txt_record
         if not has_t:
@@ -186,7 +159,6 @@ class TC_SC_4_3(MatterBaseTest):
 
         t_value = operational_record.txt_record['T']
         logging.info("T key is present in TXT record, verify if that it is a decimal value with no leading zeros and is less than or equal to 6. Convert the value to a bitmap and verify bit 0 is clear.")
->>>>>>> csa/v1.4.2-branch
         # Verify t_value is a decimal number without leading zeros and less than or equal to 6
         try:
             T_int = int(t_value)
@@ -205,11 +177,7 @@ class TC_SC_4_3(MatterBaseTest):
 
             # Check that the value can be either 2, 4 or 6 depending on whether
             # DUT is a TCPClient, TCPServer or both.
-<<<<<<< HEAD
-            if self.check_pics("MCORE.SC.TCP"):
-=======
             if self.check_pics(TCP_PICS_STR):
->>>>>>> csa/v1.4.2-branch
                 if (T_int & 0x04 != 0):
                     return True, f"T value ({t_value}) represents valid TCP support info."
                 else:
@@ -315,24 +283,14 @@ class TC_SC_4_3(MatterBaseTest):
             log_output=True
         )
 
-<<<<<<< HEAD
-        # Will be used in Step 8 and 11
-        # This is the hostname
-        hostname = operational_record.server
-
-=======
->>>>>>> csa/v1.4.2-branch
         # Verify SRV record is returned
         srv_record_returned = operational_record is not None and operational_record.service_name == instance_qname
         asserts.assert_true(srv_record_returned, "SRV record was not returned")
 
-<<<<<<< HEAD
-=======
         # Will be used in Step 8 and 11
         # This is the hostname
         hostname = operational_record.server
 
->>>>>>> csa/v1.4.2-branch
         # *** STEP 7 ***
         # TH performs a query for the TXT record against the qname instance_qname.
         # Verify TXT record is returned
@@ -344,11 +302,6 @@ class TC_SC_4_3(MatterBaseTest):
             log_output=True
         )
 
-<<<<<<< HEAD
-        # Verify TXT record is returned and it contains values
-        txt_record_returned = operational_record.txt_record is not None and bool(operational_record.txt_record)
-        asserts.assert_true(txt_record_returned, "TXT record not returned or contains no values")
-=======
         # Request the TXT record. The device may opt not to return a TXT record if there are no mandatory TXT keys
         txt_record_returned = operational_record is not None and operational_record.txt_record is not None and bool(
             operational_record.txt_record)
@@ -356,7 +309,6 @@ class TC_SC_4_3(MatterBaseTest):
 
         if txt_record_required:
             asserts.assert_true(txt_record_returned, "TXT record is required and was not returned or contains no values")
->>>>>>> csa/v1.4.2-branch
 
         # *** STEP 8 ***
         # TH performs a query for the AAAA record against the target listed in the SRV record.
@@ -370,11 +322,8 @@ class TC_SC_4_3(MatterBaseTest):
             log_output=True
         )
 
-<<<<<<< HEAD
-=======
         asserts.assert_true(quada_record is not None, "Device did not return AAAA records when individual record request was sent")
 
->>>>>>> csa/v1.4.2-branch
         answer_record_type = quada_record.get_type(quada_record.type)
         quada_record_type = _TYPES[_TYPE_AAAA]
 
@@ -395,12 +344,9 @@ class TC_SC_4_3(MatterBaseTest):
         # zeros and is less than or equal to 3600000 (1h in ms)
         self.step(9)
 
-<<<<<<< HEAD
-=======
         def txt_has_key(key: str):
             return txt_record_returned and key in operational_record.txt_record.keys()
 
->>>>>>> csa/v1.4.2-branch
         # Verify hostname character length (12 or 16)
         asserts.assert_true(self.verify_hostname(hostname=hostname),
                             f"Hostname for '{hostname}' is not a 12 or 16 character uppercase hexadecimal string")
@@ -410,23 +356,15 @@ class TC_SC_4_3(MatterBaseTest):
             logging.info("supports_lit is true, verify the ICD key IS present in the TXT record, and it has the value of 0 or 1 (ASCII).")
 
             # Verify the ICD key IS present
-<<<<<<< HEAD
-            asserts.assert_in('ICD', operational_record.txt_record, "ICD key is NOT present in the TXT record.")
-=======
             asserts.assert_true(txt_has_key('ICD'), "ICD key is NOT present in the TXT record.")
->>>>>>> csa/v1.4.2-branch
 
             # Verify it has the value of 0 or 1 (ASCII)
             icd_value = int(operational_record.txt_record['ICD'])
             asserts.assert_true(icd_value == 0 or icd_value == 1, "ICD value is different than 0 or 1 (ASCII).")
         else:
             logging.info("supports_lit is false, verify that the ICD key is NOT present in the TXT record.")
-<<<<<<< HEAD
-            asserts.assert_not_in('ICD', operational_record.txt_record, "ICD key is present in the TXT record.")
-=======
             if txt_record_returned:
                 asserts.assert_not_in('ICD', operational_record.txt_record, "ICD key is present in the TXT record.")
->>>>>>> csa/v1.4.2-branch
 
         # SII TXT KEY
         if supports_icd and not supports_lit:
@@ -443,11 +381,7 @@ class TC_SC_4_3(MatterBaseTest):
 
         if sit_mode:
             logging.info("sit_mode is True, verify the SII key IS present.")
-<<<<<<< HEAD
-            asserts.assert_in('SII', operational_record.txt_record, "SII key is NOT present in the TXT record.")
-=======
             asserts.assert_true(txt_has_key('SII'), "SII key is NOT present in the TXT record.")
->>>>>>> csa/v1.4.2-branch
 
             logging.info("Verify SII value is a decimal with no leading zeros and is less than or equal to 3600000 (1h in ms).")
             sii_value = operational_record.txt_record['SII']
@@ -457,11 +391,7 @@ class TC_SC_4_3(MatterBaseTest):
         # SAI TXT KEY
         if supports_icd:
             logging.info("supports_icd is True, verify the SAI key IS present.")
-<<<<<<< HEAD
-            asserts.assert_in('SAI', operational_record.txt_record, "SAI key is NOT present in the TXT record.")
-=======
             asserts.assert_true(txt_has_key('SAI'), "SAI key is NOT present in the TXT record.")
->>>>>>> csa/v1.4.2-branch
 
             logging.info("Verify SAI value is a decimal with no leading zeros and is less than or equal to 3600000 (1h in ms).")
             sai_value = operational_record.txt_record['SAI']
@@ -469,11 +399,7 @@ class TC_SC_4_3(MatterBaseTest):
             asserts.assert_true(result, message)
 
         # SAT TXT KEY
-<<<<<<< HEAD
-        if 'SAT' in operational_record.txt_record:
-=======
         if txt_has_key('SAT'):
->>>>>>> csa/v1.4.2-branch
             logging.info(
                 "SAT key is present in TXT record, verify that it is a decimal value with no leading zeros and is less than or equal to 65535.")
             sat_value = operational_record.txt_record['SAT']
@@ -485,16 +411,8 @@ class TC_SC_4_3(MatterBaseTest):
                 asserts.assert_equal(int(sat_value), active_mode_threshold_ms)
 
         # T TXT KEY
-<<<<<<< HEAD
-        if 'T' in operational_record.txt_record:
-            logging.info("T key is present in TXT record, verify if that it is a decimal value with no leading zeros and is less than or equal to 6. Convert the value to a bitmap and verify bit 0 is clear.")
-            t_value = operational_record.txt_record['T']
-            result, message = self.verify_t_value(t_value)
-            asserts.assert_true(result, message)
-=======
         result, message = self.verify_t_value(operational_record)
         asserts.assert_true(result, message)
->>>>>>> csa/v1.4.2-branch
 
         # AAAA
         logging.info("Verify the AAAA record contains at least one IPv6 address")
@@ -509,12 +427,8 @@ class TC_SC_4_3(MatterBaseTest):
         self.step(10)
         service_types = await mdns.get_service_types(log_output=True)
         op_sub_type = self.get_operational_subtype()
-<<<<<<< HEAD
-        asserts.assert_in(op_sub_type, service_types, f"No PTR record with DNS-SD instance name '{op_sub_type}' wsa found.")
-=======
         logging.info(f"Received the following responses for {op_sub_type}")
         asserts.assert_in(op_sub_type, service_types, f"No PTR record with DNS-SD instance name '{op_sub_type}' was found.")
->>>>>>> csa/v1.4.2-branch
 
         # # *** STEP 11 ***
         # TH performs a DNS-SD browse for _matter._tcp.local

@@ -64,12 +64,6 @@ Git: 1.4-prerelease-ipr-69-ge15ff5700
     <attribute side="server" code="0x0001" name="CurrentMode" define="CURRENT_MODE" type="int8u">
       <mandatoryConform/>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0002" define="START_UP_MODE"    type="int8u"                              writable="true"  optional="true"  isNullable="true">StartUpMode</attribute>
-    <attribute side="server" code="0x0003" define="ON_MODE"          type="int8u"                              writable="true"  optional="true"  isNullable="true">OnMode</attribute>
-    
-=======
->>>>>>> csa/v1.4.2-branch
     <!-- Commands -->
     <command source="client" code="0x00" name="ChangeToMode" response="ChangeToModeResponse" optional="false">
       <description>This command is used to change device modes.</description>

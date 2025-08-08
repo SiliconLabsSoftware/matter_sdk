@@ -147,13 +147,9 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="allowed" value="6"/>
-=======
       <constraint>
         <allowed value="6"/>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0001" name="SecurityType" type="SecurityTypeEnum" default="null">
       <access read="true" readPrivilege="view"/>

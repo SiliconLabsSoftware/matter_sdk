@@ -2283,8 +2283,6 @@ public class ClusterReadMapping {
           readGeneralCommissioningTCUpdateDeadlineCommandParams
         );
         result.put("readTCUpdateDeadlineAttribute", readGeneralCommissioningTCUpdateDeadlineAttributeInteractionInfo);
-<<<<<<< HEAD
-=======
      Map<String, CommandParameterInfo> readGeneralCommissioningRecoveryIdentifierCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
         InteractionInfo readGeneralCommissioningRecoveryIdentifierAttributeInteractionInfo = new InteractionInfo(
           (cluster, callback, commandArguments) -> {
@@ -2307,7 +2305,6 @@ public class ClusterReadMapping {
           readGeneralCommissioningNetworkRecoveryReasonCommandParams
         );
         result.put("readNetworkRecoveryReasonAttribute", readGeneralCommissioningNetworkRecoveryReasonAttributeInteractionInfo);
->>>>>>> csa/v1.4.2-branch
      Map<String, CommandParameterInfo> readGeneralCommissioningGeneratedCommandListCommandParams = new LinkedHashMap<String, CommandParameterInfo>();
         InteractionInfo readGeneralCommissioningGeneratedCommandListAttributeInteractionInfo = new InteractionInfo(
           (cluster, callback, commandArguments) -> {

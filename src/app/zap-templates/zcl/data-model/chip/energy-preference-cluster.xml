@@ -38,19 +38,11 @@ Git:
       </feature>
     </features>
     <!--Conformance feature BALA - for now optional-->
-<<<<<<< HEAD
-    <attribute code="0x0000" side="server" name="EnergyBalances" type="array" entryType="BalanceStruct" define="ENERGY_PREFERENCE_ENERGY_BALANCES" min="2" max="10" optional="true">
-=======
     <attribute code="0x0000" side="server" name="EnergyBalances" type="array" entryType="BalanceStruct" define="ENERGY_PREFERENCE_ENERGY_BALANCES" optional="true" length="10" minLength="2">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="BALA"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    
-=======
->>>>>>> csa/v1.4.2-branch
     <!--Conformance feature BALA - for now optional-->
     <attribute code="0x0001" side="server" name="CurrentEnergyBalance" type="int8u" define="ENERGY_PREFERENCE_CURRENT_ENERGY_BALANCE" writable="true" optional="true">
       <access op="read" privilege="view"/>
@@ -60,40 +52,21 @@ Git:
       </mandatoryConform>
     </attribute>
     <!--Conformance feature BALA - for now optional-->
-<<<<<<< HEAD
-    <attribute code="0x0002" side="server" name="EnergyPriorities" type="array" entryType="EnergyPriorityEnum" define="ENERGY_PREFERENCE_ENERGY_PRIORITIES" max="2" optional="true">
-=======
     <attribute code="0x0002" side="server" name="EnergyPriorities" type="array" entryType="EnergyPriorityEnum" define="ENERGY_PREFERENCE_ENERGY_PRIORITIES" optional="true" length="2" minLength="2">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="BALA"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-
-    <!--Conformance feature LPMS - for now optional-->
-    <attribute code="0x0003" side="server" name="LowPowerModeSensitivities" type="array" entryType="BalanceStruct" define="ENERGY_PREFERENCE_LOW_POWER_MODE_SENSITIVITIES" min="2" max="10" optional="true">
-=======
     <!--Conformance feature LPMS - for now optional-->
     <attribute code="0x0003" side="server" name="LowPowerModeSensitivities" type="array" entryType="BalanceStruct" define="ENERGY_PREFERENCE_LOW_POWER_MODE_SENSITIVITIES" optional="true" length="10" minLength="2">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="LPMS"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-
-    <!--Conformance feature LPMS - for now optional-->
-    <attribute code="0x0004" side="server" type="int8u" define="ENERGY_PREFERENCE_CURRENT_LOW_POWER_MODE_SENSITIVITY" writable="true" optional="true">
-      <access op="read" privilege="view"/>
-      <access op="write" privilege="operate"/>
-      <description>CurrentLowPowerModeSensitivity</description>
-=======
     <!--Conformance feature LPMS - for now optional-->
     <attribute code="0x0004" side="server" name="CurrentLowPowerModeSensitivity" type="int8u" define="ENERGY_PREFERENCE_CURRENT_LOW_POWER_MODE_SENSITIVITY" writable="true" optional="true">
       <access op="read" privilege="view"/>
       <access op="write" privilege="operate"/>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="LPMS"/>
       </mandatoryConform>

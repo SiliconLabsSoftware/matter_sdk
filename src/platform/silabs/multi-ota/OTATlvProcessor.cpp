@@ -24,12 +24,7 @@
 #include <headers/ProvisionStorage.h>
 #include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
 #include <platform/silabs/multi-ota/OTATlvProcessor.h>
-<<<<<<< HEAD
 #if SL_MATTER_ENABLE_OTA_ENCRYPTION
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
-#include <platform/silabs/SilabsConfig.h>
->>>>>>> csa/v1.4.2-branch
 #include <platform/silabs/multi-ota/OtaTlvEncryptionKey.h>
 #endif
 
@@ -38,17 +33,12 @@ using namespace ::chip::DeviceLayer::Silabs;
 
 namespace chip {
 
-<<<<<<< HEAD
 CHIP_ERROR OTATlvProcessor::Init()
 {
     VerifyOrReturnError(mCallbackProcessDescriptor != nullptr, CHIP_OTA_PROCESSOR_CB_NOT_REGISTERED);
     mAccumulator.Init(GetAccumulatorLength());
 #ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
     mUnalignmentNum = 0;
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
-constexpr uint8_t au8Iv[] = { 0x00, 0x00, 0x00, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x00, 0x00, 0x00, 0x00 };
->>>>>>> csa/v1.4.2-branch
 #endif
     return CHIP_NO_ERROR;
 }
@@ -99,12 +89,8 @@ void OTATlvProcessor::ClearInternal()
     mLength          = 0;
     mProcessedLength = 0;
     mWasSelected     = false;
-<<<<<<< HEAD
     mLastBlock       = false;
 #if SL_MATTER_ENABLE_OTA_ENCRYPTION
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
->>>>>>> csa/v1.4.2-branch
     mIVOffset = 0;
 #endif
 }
@@ -151,11 +137,7 @@ CHIP_ERROR OTADataAccumulator::Accumulate(ByteSpan & block)
     return CHIP_NO_ERROR;
 }
 
-<<<<<<< HEAD
 #if SL_MATTER_ENABLE_OTA_ENCRYPTION
-=======
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
->>>>>>> csa/v1.4.2-branch
 CHIP_ERROR OTATlvProcessor::vOtaProcessInternalEncryption(MutableByteSpan & block)
 {
 #if defined(SL_MBEDTLS_USE_TINYCRYPT)

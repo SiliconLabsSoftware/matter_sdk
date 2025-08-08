@@ -17,14 +17,6 @@
 import math
 
 import chip.clusters as Clusters
-<<<<<<< HEAD
-from basic_composition_support import BasicCompositionTests
-from global_attribute_ids import GlobalAttributeIds
-from matter_testing_support import (AttributePathLocation, ClusterPathLocation, CommandPathLocation, FeaturePathLocation,
-                                    MatterBaseTest, TestStep, UnknownProblemLocation, async_test_body, default_matter_test_main)
-from mobly import asserts
-from pics_support import accepted_cmd_pics_str, attribute_pics_str, feature_pics_str, generated_cmd_pics_str
-=======
 from chip.testing.basic_composition import BasicCompositionTests
 from chip.testing.global_attribute_ids import GlobalAttributeIds
 from chip.testing.matter_testing import (AttributePathLocation, ClusterPathLocation, CommandPathLocation, FeaturePathLocation,
@@ -32,7 +24,6 @@ from chip.testing.matter_testing import (AttributePathLocation, ClusterPathLocat
                                          default_matter_test_main)
 from chip.testing.pics import accepted_cmd_pics_str, attribute_pics_str, feature_pics_str, generated_cmd_pics_str
 from mobly import asserts
->>>>>>> csa/v1.4.2-branch
 
 
 class TC_PICS_Checker(MatterBaseTest, BasicCompositionTests):

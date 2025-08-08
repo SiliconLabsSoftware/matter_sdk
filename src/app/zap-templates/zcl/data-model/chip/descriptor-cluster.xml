@@ -50,40 +50,20 @@ Git: 0.7-summer-2025-596-gf0e61cb16
         <describedConform/>
       </feature>
     </features>
-<<<<<<< HEAD
-    
-    <attribute side="server" code="0x0000" name="DeviceTypeList" define="DEVICE_LIST" type="array" entryType="DeviceTypeStruct">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0001" name="ServerList" define="SERVER_LIST" type="array" entryType="cluster_id">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0002" name="ClientList" define="CLIENT_LIST" type="array" entryType="cluster_id">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0003" name="PartsList" define="PARTS_LIST" type="array" entryType="endpoint_no">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0004" name="TagList" define="TAG_LIST" type="array" entryType="SemanticTagStruct" optional="true" length="6">
-=======
     <attribute side="server" code="0x0000" name="DeviceTypeList" define="DEVICE_LIST" type="array" entryType="DeviceTypeStruct" minLength="1"/>
     <attribute side="server" code="0x0001" name="ServerList" define="SERVER_LIST" type="array" entryType="cluster_id"/>
     <attribute side="server" code="0x0002" name="ClientList" define="CLIENT_LIST" type="array" entryType="cluster_id"/>
     <attribute side="server" code="0x0003" name="PartsList" define="PARTS_LIST" type="array" entryType="endpoint_no"/>
     <attribute side="server" code="0x0004" name="TagList" define="TAG_LIST" type="array" entryType="SemanticTagStruct" optional="true" length="6" minLength="1">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="TAGLIST"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-=======
     <attribute side="server" code="0x0005" name="EndpointUniqueID" define="END_POINT_UNIQUE_ID" type="char_string" optional="true" length="32">
       <otherwiseConform>
         <provisionalConform/>
         <optionalConform/>
       </otherwiseConform>
     </attribute>
->>>>>>> csa/v1.4.2-branch
   </cluster>
 </configurator>

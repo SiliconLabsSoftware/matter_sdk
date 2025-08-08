@@ -26,11 +26,7 @@
 
 #include <platform/CHIPDeviceEvent.h>
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-<<<<<<< HEAD
-#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-=======
 #include <platform/silabs/wifi/WifiInterface.h>
->>>>>>> csa/v1.4.2-branch
 #endif
 
 namespace chip {

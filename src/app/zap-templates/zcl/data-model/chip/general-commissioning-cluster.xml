@@ -71,36 +71,14 @@ Git: 0.7-summer-2025-ncr-444-g89b9baa9b-dirty
         <provisionalConform/>
       </feature>
     </features>
-<<<<<<< HEAD
-    <attribute side="server" code="0x00" name="Breadcrumb" define="BREADCRUMB" type="int64u" writable="true" default="0x0000000000000000" optional="false">
-      <access op="read" privilege="view"/>
-=======
     <attribute side="server" code="0x00" name="Breadcrumb" define="BREADCRUMB" type="int64u" writable="true" default="0x0000000000000000">
->>>>>>> csa/v1.4.2-branch
       <access op="write" privilege="administer"/>
-      <mandatoryConform/>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x01" name="BasicCommissioningInfo" define="BASIC_COMMISSIONING_INFO" type="BasicCommissioningInfo">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x02" name="RegulatoryConfig" define="REGULATORY_CONFIG" type="RegulatoryLocationTypeEnum">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x03" name="LocationCapability" define="LOCATION_CAPABILITY" type="RegulatoryLocationTypeEnum">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x04" name="SupportsConcurrentConnection" define="SUPPORTS_CONCURRENT_CONNECTION" type="boolean" default="1">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x05" name="TCAcceptedVersion" define="TC_ACCEPTED_VERSION" type="int16u" optional="true" apiMaturity="provisional">
-=======
     <attribute side="server" code="0x01" name="BasicCommissioningInfo" define="BASIC_COMMISSIONING_INFO" type="BasicCommissioningInfo"/>
     <attribute side="server" code="0x02" name="RegulatoryConfig" define="REGULATORY_CONFIG" type="RegulatoryLocationTypeEnum" min="0x00" max="0x02" default="0x02"/>
     <attribute side="server" code="0x03" name="LocationCapability" define="LOCATION_CAPABILITY" type="RegulatoryLocationTypeEnum" min="0x00" max="0x02" default="0x02"/>
     <attribute side="server" code="0x04" name="SupportsConcurrentConnection" define="SUPPORTS_CONCURRENT_CONNECTION" type="boolean" default="1"/>
     <attribute side="server" code="0x05" name="TCAcceptedVersion" define="TC_ACCEPTED_VERSION" type="int16u" apiMaturity="provisional">
->>>>>>> csa/v1.4.2-branch
       <access op="read" privilege="administer"/>
       <otherwiseConform>
         <provisionalConform/>
@@ -109,11 +87,7 @@ Git: 0.7-summer-2025-ncr-444-g89b9baa9b-dirty
         </mandatoryConform>
       </otherwiseConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x06" name="TCMinRequiredVersion" define="TC_MIN_REQUIRED_VERSION" type="int16u" writable="false" optional="true" apiMaturity="provisional">
-=======
     <attribute side="server" code="0x06" name="TCMinRequiredVersion" define="TC_MIN_REQUIRED_VERSION" type="int16u" apiMaturity="provisional">
->>>>>>> csa/v1.4.2-branch
       <access op="read" privilege="administer"/>
       <otherwiseConform>
         <provisionalConform/>
@@ -122,11 +96,7 @@ Git: 0.7-summer-2025-ncr-444-g89b9baa9b-dirty
         </mandatoryConform>
       </otherwiseConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x07" name="TCAcknowledgements" define="TC_ACKNOWLEDGEMENTS" type="bitmap16" writable="false" default="0x0000" optional="true" apiMaturity="provisional">
-=======
     <attribute side="server" code="0x07" name="TCAcknowledgements" define="TC_ACKNOWLEDGEMENTS" type="bitmap16" apiMaturity="provisional">
->>>>>>> csa/v1.4.2-branch
       <access op="read" privilege="administer"/>
       <otherwiseConform>
         <provisionalConform/>
@@ -135,21 +105,7 @@ Git: 0.7-summer-2025-ncr-444-g89b9baa9b-dirty
         </mandatoryConform>
       </otherwiseConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x08" name="TCAcknowledgementsRequired" define="TC_ACKNOWLEDGEMENTS_REQUIRED" type="boolean" writable="false" optional="true" apiMaturity="provisional">
-      <access op="read" privilege="administer"/>
-      <otherwiseConform>
-        <provisionalConform/>
-        <mandatoryConform>
-          <feature name="TC"/>
-        </mandatoryConform>
-      </otherwiseConform>
-    </attribute>
-    <attribute side="server" code="0x09" define="TC_UPDATE_DEADLINE" type="int32u" writable="false" optional="true" isNullable="true" apiMaturity="provisional">
-      <description>TCUpdateDeadline</description>
-=======
     <attribute side="server" code="0x08" name="TCAcknowledgementsRequired" define="TC_ACKNOWLEDGEMENTS_REQUIRED" type="boolean" apiMaturity="provisional" default="1">
->>>>>>> csa/v1.4.2-branch
       <access op="read" privilege="administer"/>
       <otherwiseConform>
         <provisionalConform/>
@@ -190,21 +146,12 @@ Git: 0.7-summer-2025-ncr-444-g89b9baa9b-dirty
       <arg id="0" name="ExpiryLengthSeconds" type="int16u" default="900"/>
       <arg id="1" name="Breadcrumb" type="int64u"/>
       <access op="invoke" privilege="administer"/>
-      <mandatoryConform/>
     </command>
-<<<<<<< HEAD
-    <command source="server" code="0x01" name="ArmFailSafeResponse" optional="false" cli="chip fabric_commissioning armfailsaferesponse">
-      <description>Success/failure response for ArmFailSafe command</description>
-      <arg name="ErrorCode" type="CommissioningErrorEnum"/>
-      <arg name="DebugText" type="char_string" length="128"/>
-      <mandatoryConform/>
-=======
 
     <command source="server" code="0x01" name="ArmFailSafeResponse" cli="chip fabric_commissioning armfailsaferesponse" disableDefaultResponse="true">
       <description>This command is used to report the result of the ArmFailSafe command.</description>
       <arg id="0" name="ErrorCode" type="CommissioningErrorEnum" default="0x00" min="0x00" max="0x07"/>
       <arg id="1" name="DebugText" type="char_string" length="128"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="client" code="0x02" name="SetRegulatoryConfig" response="SetRegulatoryConfigResponse" cli="chip fabric_commissioning setregulatoryconfig">
@@ -213,41 +160,23 @@ Git: 0.7-summer-2025-ncr-444-g89b9baa9b-dirty
       <arg id="1" name="CountryCode" type="char_string" length="2" minLength="2"/>
       <arg id="2" name="Breadcrumb" type="int64u"/>
       <access op="invoke" privilege="administer"/>
-      <mandatoryConform/>
     </command>
-<<<<<<< HEAD
-    <command source="server" code="0x03" name="SetRegulatoryConfigResponse" cli="chip fabric_commissioning setregulatoryconfigresponse">
-      <description>Success/failure response for SetRegulatoryConfig command</description>
-      <arg name="ErrorCode" type="CommissioningErrorEnum"/>
-      <arg name="DebugText" type="char_string"/>
-      <mandatoryConform/>
-=======
 
     <command source="server" code="0x03" name="SetRegulatoryConfigResponse" cli="chip fabric_commissioning setregulatoryconfigresponse" disableDefaultResponse="true">
       <description>This command is used to report the result of the SetRegulatoryConfig command.</description>
       <arg id="0" name="ErrorCode" type="CommissioningErrorEnum" default="0x00" min="0x00" max="0x07"/>
       <arg id="1" name="DebugText" type="char_string"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="client" code="0x04" name="CommissioningComplete" response="CommissioningCompleteResponse" isFabricScoped="true" cli="chip fabric_commissioning commissioningcomplete">
       <description>This command is used to indicate that the commissioning process is complete.</description>
       <access op="invoke" privilege="administer"/>
-      <mandatoryConform/>
     </command>
-<<<<<<< HEAD
-    <command source="server" code="0x05" name="CommissioningCompleteResponse" optional="false" cli="chip fabric_commissioning commissioningcompleteresponse">
-      <description>Indicates to client whether CommissioningComplete command succeeded</description>
-      <arg name="ErrorCode" type="CommissioningErrorEnum"/>
-      <arg name="DebugText" type="char_string"/>
-      <mandatoryConform/>
-=======
 
     <command source="server" code="0x05" name="CommissioningCompleteResponse" cli="chip fabric_commissioning commissioningcompleteresponse" disableDefaultResponse="true">
       <description>This command is used to report the result of the CommissioningComplete command.</description>
       <arg id="0" name="ErrorCode" type="CommissioningErrorEnum" default="0x00" min="0x00" max="0x07"/>
       <arg id="1" name="DebugText" type="char_string"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="client" code="0x06" name="SetTCAcknowledgements" response="SetTCAcknowledgementsResponse" cli="chip fabric_commissioning settcacknowledgements" apiMaturity="provisional">
@@ -262,16 +191,10 @@ Git: 0.7-summer-2025-ncr-444-g89b9baa9b-dirty
         </mandatoryConform>
       </otherwiseConform>
     </command>
-<<<<<<< HEAD
-    <command source="server" code="0x07" name="SetTCAcknowledgementsResponse" optional="true" cli="chip fabric_commissioning settcacknowledgementsresponse" apiMaturity="provisional">
-      <description>This command is used to convey the result from SetTCAcknowledgements.</description>
-      <arg name="ErrorCode" type="CommissioningErrorEnum"/>
-=======
 
     <command source="server" code="0x07" name="SetTCAcknowledgementsResponse" cli="chip fabric_commissioning settcacknowledgementsresponse" apiMaturity="provisional" disableDefaultResponse="true">
       <description>This command is used to report the result of the SetTCAcknowledgements command.</description>
       <arg id="0" name="ErrorCode" type="CommissioningErrorEnum" default="0x00" min="0x00" max="0x07" apiMaturity="provisional"/>
->>>>>>> csa/v1.4.2-branch
       <otherwiseConform>
         <provisionalConform/>
         <mandatoryConform>

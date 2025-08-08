@@ -55,23 +55,10 @@ Git: 0.7-summer-2025-ncr-295-geca1936d2
       </feature>
     </features>
     <!--Attributes-->
-<<<<<<< HEAD
-    <attribute code="0x0000" side="server" name="PowerMode" define="POWER_MODE" type="PowerModeEnum" min="0x00" max="0x02">
-      <mandatoryConform/>
-    </attribute>
-    <attribute code="0x0001" side="server" name="NumberOfMeasurementTypes" define="NUMBER_OF_MEASUREMENT_TYPES" type="int8u" min="1">
-      <mandatoryConform/>
-    </attribute>
-    <attribute code="0x0002" side="server" name="Accuracy" define="ACCURACY" type="array" entryType="MeasurementAccuracyStruct" minLength="1">
-      <mandatoryConform/>
-    </attribute>
-    <attribute code="0x0003" side="server" name="Ranges" define="RANGES" type="array" optional="true" entryType="MeasurementRangeStruct" minLength="0">
-=======
     <attribute code="0x0000" side="server" name="PowerMode" define="POWER_MODE" type="PowerModeEnum" min="0x00" max="0x02"/>
     <attribute code="0x0001" side="server" name="NumberOfMeasurementTypes" define="NUMBER_OF_MEASUREMENT_TYPES" type="int8u" min="1"/>
     <attribute code="0x0002" side="server" name="Accuracy" define="ACCURACY" type="array" entryType="MeasurementAccuracyStruct" minLength="1" length="255"/>
     <attribute code="0x0003" side="server" name="Ranges" define="RANGES" type="array" optional="true" entryType="MeasurementRangeStruct" length="255">
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </attribute>
     <attribute code="0x0004" side="server" name="Voltage" define="VOLTAGE" type="voltage_mv" isNullable="true" min="-4611686018427387904" max="4611686018427387904" optional="true">
@@ -87,37 +74,21 @@ Git: 0.7-summer-2025-ncr-295-geca1936d2
         <feature name="ALTC"/>
       </optionalConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute code="0x0007" side="server" name="ApparentCurrent" define="APPARENT_CURRENT" type="amperage_ma" isNullable="true" min="0" max="4611686018427387904" optional="true">
-=======
     <attribute code="0x0007" side="server" name="ApparentCurrent" define="APPARENT_CURRENT" type="amperage_ma" isNullable="true" min="-4611686018427387904" max="4611686018427387904" optional="true">
->>>>>>> csa/v1.4.2-branch
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
     </attribute>
     <!--Conformance feature [ALTC] - for now optional-->
-<<<<<<< HEAD
-    <attribute code="0x0008" side="server" name="ActivePower" define="ACTIVE_POWER" type="power_mw" isNullable="true" min="-4611686018427387904" max="4611686018427387904">
-      <mandatoryConform/>
-    </attribute>
-    <!--Conformance feature [ALTC] - for now optional-->
-    <attribute code="0x0009" side="server" name="ReactivePower" define="REACTIVE_POWER" type="power_mw" isNullable="true" min="-4611686018427387904" max="4611686018427387904" optional="true">
-=======
     <attribute code="0x0008" side="server" name="ActivePower" define="ACTIVE_POWER" type="power_mw" isNullable="true" min="-4611686018427387904" max="4611686018427387904"/>
     <!--Conformance feature [ALTC] - for now optional-->
     <attribute code="0x0009" side="server" name="ReactivePower" define="REACTIVE_POWER" type="power_mvar" isNullable="true" min="-4611686018427387904" max="4611686018427387904" optional="true">
->>>>>>> csa/v1.4.2-branch
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>
     </attribute>
     <!--Conformance feature [ALTC] - for now optional-->
-<<<<<<< HEAD
-    <attribute code="0x000A" side="server" name="ApparentPower" define="APPARENT_POWER" type="power_mw" isNullable="true" min="-4611686018427387904" max="4611686018427387904" optional="true">
-=======
     <attribute code="0x000A" side="server" name="ApparentPower" define="APPARENT_POWER" type="power_mva" isNullable="true" min="-4611686018427387904" max="4611686018427387904" optional="true">
->>>>>>> csa/v1.4.2-branch
       <optionalConform>
         <feature name="ALTC"/>
       </optionalConform>

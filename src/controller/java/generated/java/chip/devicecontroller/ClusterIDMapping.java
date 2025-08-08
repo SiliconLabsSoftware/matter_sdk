@@ -2907,11 +2907,8 @@ public class ClusterIDMapping {
             TCAcknowledgements(7L),
             TCAcknowledgementsRequired(8L),
             TCUpdateDeadline(9L),
-<<<<<<< HEAD
-=======
             RecoveryIdentifier(10L),
             NetworkRecoveryReason(11L),
->>>>>>> csa/v1.4.2-branch
             GeneratedCommandList(65528L),
             AcceptedCommandList(65529L),
             AttributeList(65531L),

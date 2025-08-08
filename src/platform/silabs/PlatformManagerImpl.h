@@ -26,20 +26,12 @@
 
 #include <platform/internal/GenericPlatformManagerImpl_CMSISOS.h>
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-<<<<<<< HEAD
-#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-=======
 #include <platform/silabs/wifi/WifiInterface.h>
->>>>>>> csa/v1.4.2-branch
 #endif
 #include <cmsis_os2.h>
 
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-<<<<<<< HEAD
-void HandleWFXSystemEvent(wfx_event_base_t eventBase, sl_wfx_generic_message_t * eventData);
-=======
 void HandleWFXSystemEvent(sl_wfx_generic_message_t * eventData);
->>>>>>> csa/v1.4.2-branch
 #endif
 
 namespace chip {

@@ -259,24 +259,18 @@ chip_test_suite("tests") {
     "TestBindingTable.cpp",
     "TestBuilderParser.cpp",
     "TestCheckInHandler.cpp",
-<<<<<<< HEAD
-=======
     "TestClosureControlClusterLogic.cpp",
     "TestClosureControlClusterObjects.cpp",
     "TestClosureControlConformance.cpp",
     "TestClosureDimensionCluster.cpp",
     "TestClosureDimensionClusterObjects.cpp",
->>>>>>> csa/v1.4.2-branch
     "TestCommandHandlerInterfaceRegistry.cpp",
     "TestCommandInteraction.cpp",
     "TestCommandPathParams.cpp",
     "TestConcreteAttributePath.cpp",
     "TestDataModelSerialization.cpp",
     "TestDefaultOTARequestorStorage.cpp",
-<<<<<<< HEAD
-=======
     "TestDefaultSafeAttributePersistenceProvider.cpp",
->>>>>>> csa/v1.4.2-branch
     "TestDefaultTermsAndConditionsProvider.cpp",
     "TestDefaultThreadNetworkDirectoryStorage.cpp",
     "TestEcosystemInformationCluster.cpp",
@@ -318,10 +312,7 @@ chip_test_suite("tests") {
     "${chip_root}/src/app",
     "${chip_root}/src/app:attribute-persistence",
     "${chip_root}/src/app/common:cluster-objects",
-<<<<<<< HEAD
-=======
     "${chip_root}/src/app/data-model-provider/tests:encode-decode",
->>>>>>> csa/v1.4.2-branch
     "${chip_root}/src/app/icd/client:handler",
     "${chip_root}/src/app/icd/client:manager",
     "${chip_root}/src/app/server",

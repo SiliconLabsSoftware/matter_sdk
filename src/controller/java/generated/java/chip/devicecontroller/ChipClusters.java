@@ -7546,11 +7546,8 @@ public class ChipClusters {
     private static final long TC_ACKNOWLEDGEMENTS_ATTRIBUTE_ID = 7L;
     private static final long TC_ACKNOWLEDGEMENTS_REQUIRED_ATTRIBUTE_ID = 8L;
     private static final long TC_UPDATE_DEADLINE_ATTRIBUTE_ID = 9L;
-<<<<<<< HEAD
-=======
     private static final long RECOVERY_IDENTIFIER_ATTRIBUTE_ID = 10L;
     private static final long NETWORK_RECOVERY_REASON_ATTRIBUTE_ID = 11L;
->>>>>>> csa/v1.4.2-branch
     private static final long GENERATED_COMMAND_LIST_ATTRIBUTE_ID = 65528L;
     private static final long ACCEPTED_COMMAND_LIST_ATTRIBUTE_ID = 65529L;
     private static final long ATTRIBUTE_LIST_ATTRIBUTE_ID = 65531L;
@@ -7744,13 +7741,10 @@ public class ChipClusters {
       void onSuccess(@Nullable Long value);
     }
 
-<<<<<<< HEAD
-=======
     public interface NetworkRecoveryReasonAttributeCallback extends BaseAttributeCallback {
       void onSuccess(@Nullable Integer value);
     }
 
->>>>>>> csa/v1.4.2-branch
     public interface GeneratedCommandListAttributeCallback extends BaseAttributeCallback {
       void onSuccess(List<Long> value);
     }
@@ -8032,8 +8026,6 @@ public class ChipClusters {
         }, TC_UPDATE_DEADLINE_ATTRIBUTE_ID, minInterval, maxInterval);
     }
 
-<<<<<<< HEAD
-=======
     public void readRecoveryIdentifierAttribute(
         OctetStringAttributeCallback callback) {
       ChipAttributePath path = ChipAttributePath.newInstance(endpointId, clusterId, RECOVERY_IDENTIFIER_ATTRIBUTE_ID);
@@ -8086,7 +8078,6 @@ public class ChipClusters {
         }, NETWORK_RECOVERY_REASON_ATTRIBUTE_ID, minInterval, maxInterval);
     }
 
->>>>>>> csa/v1.4.2-branch
     public void readGeneratedCommandListAttribute(
         GeneratedCommandListAttributeCallback callback) {
       ChipAttributePath path = ChipAttributePath.newInstance(endpointId, clusterId, GENERATED_COMMAND_LIST_ATTRIBUTE_ID);

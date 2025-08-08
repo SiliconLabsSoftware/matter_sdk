@@ -81,8 +81,6 @@ class GeneralCommissioningCluster(
     object SubscriptionEstablished : TCUpdateDeadlineAttributeSubscriptionState()
   }
 
-<<<<<<< HEAD
-=======
   class NetworkRecoveryReasonAttribute(val value: UByte?)
 
   sealed class NetworkRecoveryReasonAttributeSubscriptionState {
@@ -93,7 +91,6 @@ class GeneralCommissioningCluster(
     object SubscriptionEstablished : NetworkRecoveryReasonAttributeSubscriptionState()
   }
 
->>>>>>> csa/v1.4.2-branch
   class GeneratedCommandListAttribute(val value: List<UInt>)
 
   sealed class GeneratedCommandListAttributeSubscriptionState {
@@ -1287,8 +1284,6 @@ class GeneralCommissioningCluster(
     }
   }
 
-<<<<<<< HEAD
-=======
   suspend fun readRecoveryIdentifierAttribute(): ByteArray? {
     val ATTRIBUTE_ID: UInt = 10u
 
@@ -1485,7 +1480,6 @@ class GeneralCommissioningCluster(
     }
   }
 
->>>>>>> csa/v1.4.2-branch
   suspend fun readGeneratedCommandListAttribute(): GeneratedCommandListAttribute {
     val ATTRIBUTE_ID: UInt = 65528u
 

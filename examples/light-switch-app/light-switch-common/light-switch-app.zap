@@ -4389,24 +4389,16 @@
         "code": 260,
         "profileId": 259,
         "label": "MA-dimmerswitch",
-<<<<<<< HEAD
-        "name": "MA-dimmerswitch"
-=======
         "name": "MA-dimmerswitch",
         "deviceTypeOrder": 0
->>>>>>> csa/v1.4.2-branch
       },
       "deviceTypes": [
         {
           "code": 260,
           "profileId": 259,
           "label": "MA-dimmerswitch",
-<<<<<<< HEAD
-          "name": "MA-dimmerswitch"
-=======
           "name": "MA-dimmerswitch",
           "deviceTypeOrder": 0
->>>>>>> csa/v1.4.2-branch
         }
       ],
       "deviceVersions": [

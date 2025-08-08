@@ -34,11 +34,7 @@
 #include "sl_status.h"
 #include "spidrv.h"
 #include "task.h"
-<<<<<<<< HEAD:src/platform/silabs/wifi/rs911x/platform/efx_spi.c
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
-========
 #include <platform/silabs/wifi/ncp/spi_multiplex.h>
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/rs911x/ncp/efx_spi.c
 
 #ifdef SL_BOARD_NAME
 #include "sl_board_control.h"

@@ -1,10 +1,6 @@
 {
   "fileFormat": 2,
-<<<<<<< HEAD
-  "featureLevel": 104,
-=======
   "featureLevel": 106,
->>>>>>> csa/v1.4.2-branch
   "creator": "zap",
   "keyValuePairs": [
     {
@@ -58,11 +54,7 @@
         }
       ],
       "deviceVersions": [
-<<<<<<< HEAD
-        1
-=======
         3
->>>>>>> csa/v1.4.2-branch
       ],
       "deviceIdentifiers": [
         22
@@ -265,11 +257,7 @@
               "mfgCode": null,
               "side": "server",
               "type": "array",
-<<<<<<< HEAD
-              "included": 1,
-=======
               "included": 0,
->>>>>>> csa/v1.4.2-branch
               "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
@@ -350,11 +338,7 @@
               "side": "server",
               "type": "bitmap32",
               "included": 1,
-<<<<<<< HEAD
-              "storageOption": "RAM",
-=======
               "storageOption": "External",
->>>>>>> csa/v1.4.2-branch
               "singleton": 0,
               "bounded": 0,
               "defaultValue": "0",
@@ -742,8 +726,6 @@
               "reportableChange": 0
             },
             {
-<<<<<<< HEAD
-=======
               "name": "ConfigurationVersion",
               "code": 24,
               "mfgCode": null,
@@ -760,7 +742,6 @@
               "reportableChange": 0
             },
             {
->>>>>>> csa/v1.4.2-branch
               "name": "FeatureMap",
               "code": 65532,
               "mfgCode": null,
@@ -786,11 +767,7 @@
               "storageOption": "RAM",
               "singleton": 1,
               "bounded": 0,
-<<<<<<< HEAD
-              "defaultValue": "3",
-=======
               "defaultValue": "5",
->>>>>>> csa/v1.4.2-branch
               "reportable": 1,
               "minInterval": 0,
               "maxInterval": 65344,
@@ -1171,11 +1148,7 @@
               "side": "server",
               "type": "int16u",
               "included": 1,
-<<<<<<< HEAD
-              "storageOption": "RAM",
-=======
               "storageOption": "External",
->>>>>>> csa/v1.4.2-branch
               "singleton": 0,
               "bounded": 0,
               "defaultValue": "1",
@@ -1610,11 +1583,7 @@
               "mfgCode": null,
               "side": "server",
               "type": "array",
-<<<<<<< HEAD
-              "included": 1,
-=======
               "included": 0,
->>>>>>> csa/v1.4.2-branch
               "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
@@ -1630,11 +1599,7 @@
               "mfgCode": null,
               "side": "server",
               "type": "array",
-<<<<<<< HEAD
-              "included": 1,
-=======
               "included": 0,
->>>>>>> csa/v1.4.2-branch
               "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
@@ -1650,11 +1615,7 @@
               "mfgCode": null,
               "side": "server",
               "type": "array",
-<<<<<<< HEAD
-              "included": 1,
-=======
               "included": 0,
->>>>>>> csa/v1.4.2-branch
               "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
@@ -3958,8 +3919,6 @@
               "source": "client",
               "isIncoming": 1,
               "isEnabled": 1
-<<<<<<< HEAD
-=======
             },
             {
               "name": "SetVIDVerificationStatement",
@@ -3984,7 +3943,6 @@
               "source": "server",
               "isIncoming": 0,
               "isEnabled": 1
->>>>>>> csa/v1.4.2-branch
             }
           ],
           "attributes": [
@@ -4275,67 +4233,6 @@
           ]
         },
         {
-<<<<<<< HEAD
-          "name": "Fixed Label",
-          "code": 64,
-          "mfgCode": null,
-          "define": "FIXED_LABEL_CLUSTER",
-          "side": "server",
-          "enabled": 1,
-          "attributes": [
-            {
-              "name": "LabelList",
-              "code": 0,
-              "mfgCode": null,
-              "side": "server",
-              "type": "array",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "FeatureMap",
-              "code": 65532,
-              "mfgCode": null,
-              "side": "server",
-              "type": "bitmap32",
-              "included": 1,
-              "storageOption": "RAM",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": "0",
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "ClusterRevision",
-              "code": 65533,
-              "mfgCode": null,
-              "side": "server",
-              "type": "int16u",
-              "included": 1,
-              "storageOption": "RAM",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": "1",
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            }
-          ]
-        },
-        {
-=======
->>>>>>> csa/v1.4.2-branch
           "name": "User Label",
           "code": 65,
           "mfgCode": null,
@@ -4578,17 +4475,10 @@
               "side": "server",
               "type": "OperatingModeEnum",
               "included": 1,
-<<<<<<< HEAD
-              "storageOption": "RAM",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": "0",
-=======
               "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
               "defaultValue": null,
->>>>>>> csa/v1.4.2-branch
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -4617,17 +4507,10 @@
               "side": "server",
               "type": "bitmap32",
               "included": 1,
-<<<<<<< HEAD
-              "storageOption": "RAM",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": "15",
-=======
               "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
               "defaultValue": null,
->>>>>>> csa/v1.4.2-branch
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -4808,11 +4691,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-<<<<<<< HEAD
-              "defaultValue": "4",
-=======
               "defaultValue": "0x0005",
->>>>>>> csa/v1.4.2-branch
               "reportable": 1,
               "minInterval": 0,
               "maxInterval": 65344,
@@ -5590,11 +5469,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-<<<<<<< HEAD
-              "defaultValue": "2",
-=======
               "defaultValue": "0x0005",
->>>>>>> csa/v1.4.2-branch
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,

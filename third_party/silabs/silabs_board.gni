@@ -55,12 +55,9 @@ declare_args() {
   # Disable AWS SDK OTA by default
   aws_sdk_ota = false
 
-<<<<<<< HEAD
   # Self-provision enabled
   use_provision_channel = false
 
-=======
->>>>>>> csa/v1.4.2-branch
   # Temperature Sensor support
   sl_enable_si70xx_sensor = false
 
@@ -103,11 +100,7 @@ assert(silabs_board != "", "silabs_board must be specified")
 
 # Si917 WIFI board ----------
 if (silabs_board == "BRD4338A" || silabs_board == "BRD2605A" ||
-<<<<<<< HEAD
-    silabs_board == "BRD4343A") {
-=======
     silabs_board == "BRD4343A" || silabs_board == "BRD4342A") {
->>>>>>> csa/v1.4.2-branch
   if (silabs_board == "BRD2605A") {
     sl_enable_rgb_led = true
   }

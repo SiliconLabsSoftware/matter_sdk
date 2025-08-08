@@ -62,6 +62,9 @@ static_library("efr32") {
     "${silabs_platform_dir}/SilabsConfig.cpp",
     "${silabs_platform_dir}/SilabsConfig.h",
     "${silabs_platform_dir}/SystemPlatformConfig.h",
+    "${silabs_platform_dir}/platformAbstraction/GsdkSpam.cpp",
+    "${silabs_platform_dir}/platformAbstraction/SilabsPlatform.h",
+    "${silabs_platform_dir}/platformAbstraction/SilabsPlatformBase.h",
     "../../FreeRTOS/SystemTimeSupport.cpp",
     "../../SingletonConfigurationManager.cpp",
   ]
@@ -81,12 +84,6 @@ static_library("efr32") {
       "BLEManagerImpl.cpp",
     ]
   }
-
-  public_deps = [
-    "${chip_root}/src/platform:platform_base",
-    "${chip_root}/src/platform/logging:headers",
-    "${silabs_platform_dir}/platformAbstraction:gsdk",
-  ]
 
   if (chip_enable_multi_ota_requestor) {
     if (chip_enable_multi_ota_encryption) {
@@ -126,19 +123,15 @@ static_library("efr32") {
     ]
   }
 
+  public_deps = [
+    "${chip_root}/src/platform:platform_base",
+    "${chip_root}/src/platform/logging:headers",
+  ]
   deps = [
+    "${chip_root}/src/app/common:ids",
     "${chip_root}/src/tracing/silabs:silabs_tracing",
     "${sl_provision_root}:headers",
   ]
-<<<<<<< HEAD
-
-  public_configs = []
-=======
-  deps = [
-    "${chip_root}/src/app/common:ids",
-    "${sl_provision_root}:headers",
-  ]
->>>>>>> csa/v1.4.2-branch
 
   if (matter_enable_tracing_support) {
     public_deps += [

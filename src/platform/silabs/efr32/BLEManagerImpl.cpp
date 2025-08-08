@@ -832,26 +832,6 @@ void BLEManagerImpl::HandleConnectParams(volatile sl_bt_msg_t * evt)
     }
 }
 
-void BLEManagerImpl::HandleConnectParams(volatile sl_bt_msg_t * evt)
-{
-    sl_bt_evt_connection_parameters_t * con_param_evt = (sl_bt_evt_connection_parameters_t *) &(evt->data);
-
-    uint16_t desiredTimeout = con_param_evt->timeout < BLE_CONFIG_TIMEOUT ? BLE_CONFIG_TIMEOUT : con_param_evt->timeout;
-
-    // For better stability, renegotiate the connection parameters if the received ones from the central are outside
-    // of our defined constraints
-    if (desiredTimeout != con_param_evt->timeout || con_param_evt->interval < BLE_CONFIG_MIN_INTERVAL ||
-        con_param_evt->interval > BLE_CONFIG_MAX_INTERVAL)
-    {
-        ChipLogProgress(DeviceLayer, "Renegotiate BLE connection parameters to minInterval:%d, maxInterval:%d, timeout:%d",
-                        BLE_CONFIG_MIN_INTERVAL, BLE_CONFIG_MAX_INTERVAL, desiredTimeout);
-        sl_bt_connection_set_parameters(con_param_evt->connection, BLE_CONFIG_MIN_INTERVAL, BLE_CONFIG_MAX_INTERVAL,
-                                        BLE_CONFIG_LATENCY, desiredTimeout, BLE_CONFIG_MIN_CE_LENGTH, BLE_CONFIG_MAX_CE_LENGTH);
-    }
-
-    PlatformMgr().ScheduleWork(DriveBLEState, 0);
-}
-
 void BLEManagerImpl::HandleConnectionCloseEvent(volatile sl_bt_msg_t * evt)
 {
     sl_bt_evt_connection_closed_t * conn_evt = (sl_bt_evt_connection_closed_t *) &(evt->data);
@@ -1299,11 +1279,7 @@ void BLEManagerImpl::ParseEvent(volatile sl_bt_msg_t * evt)
         ChipLogProgress(DeviceLayer, "Connection parameter ID received - i:%d, l:%d, t:%d, sm:%d",
                         evt->data.evt_connection_parameters.interval, evt->data.evt_connection_parameters.latency,
                         evt->data.evt_connection_parameters.timeout, evt->data.evt_connection_parameters.security_mode);
-<<<<<<< HEAD
         HandleConnectParams(evt);
-=======
-        chip::DeviceLayer::Internal::BLEMgrImpl().HandleConnectParams(evt);
->>>>>>> csa/v1.4.2-branch
     }
     break;
     case sl_bt_evt_connection_phy_status_id: {

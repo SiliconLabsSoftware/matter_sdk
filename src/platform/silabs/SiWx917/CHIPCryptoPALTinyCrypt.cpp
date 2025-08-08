@@ -105,17 +105,11 @@ typedef struct
     uint8_t private_key[NUM_ECC_BYTES];
     uint8_t public_key[2 * NUM_ECC_BYTES];
 } mbedtls_uecc_keypair;
-<<<<<<< HEAD
 
 #if !(SLI_SI91X_MCU_INTERFACE)
 static EntropyContext gsEntropyContext;
 #endif // !(SLI_SI91X_MCU_INTERFACE)
 
-=======
-
-static EntropyContext gsEntropyContext;
-
->>>>>>> csa/v1.4.2-branch
 void _log_mbedTLS_error(int error_code)
 {
     if (error_code != 0 && error_code != UECC_SUCCESS)

@@ -60,11 +60,7 @@ extern "C" {
 #endif
 #include "sl_uartdrv_instances.h"
 #if SL_WIFI
-<<<<<<< HEAD
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
-=======
 #include <platform/silabs/wifi/ncp/spi_multiplex.h>
->>>>>>> csa/v1.4.2-branch
 #endif // SL_WIFI
 #ifdef SL_CATALOG_UARTDRV_EUSART_PRESENT
 #include "sl_uartdrv_eusart_vcom_config.h"
@@ -422,11 +418,7 @@ static void UART_rx_callback(UARTDRV_Handle_t handle, Ecode_t transferStatus, ui
 
 #ifdef ENABLE_CHIP_SHELL
     chip::NotifyShellProcess();
-<<<<<<< HEAD
-#elif !defined(PW_RPC_ENABLED) && !defined(SL_WIFI)
-=======
 #elif !defined(PW_RPC_ENABLED) && CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
->>>>>>> csa/v1.4.2-branch
     otSysEventSignalPending();
 #endif
 }
@@ -555,21 +547,13 @@ void uartSendBytes(UartTxStruct_t & bufferStruct)
 {
 #if SLI_SI91X_MCU_INTERFACE
     // ensuring null termination of buffer
-<<<<<<< HEAD
-    if (bufferStruct.length < ArraySize(bufferStruct.data) && bufferStruct.data[bufferStruct.length - 1] != '\0')
-=======
     if (bufferStruct.length < MATTER_ARRAY_SIZE(bufferStruct.data) && bufferStruct.data[bufferStruct.length - 1] != '\0')
->>>>>>> csa/v1.4.2-branch
     {
         bufferStruct.data[bufferStruct.length] = '\0';
     }
     else
     {
-<<<<<<< HEAD
-        bufferStruct.data[ArraySize(bufferStruct.data) - 1] = '\0';
-=======
         bufferStruct.data[MATTER_ARRAY_SIZE(bufferStruct.data) - 1] = '\0';
->>>>>>> csa/v1.4.2-branch
     }
     Board_UARTPutSTR(bufferStruct.data);
 #else
@@ -603,11 +587,8 @@ void uartSendBytes(UartTxStruct_t & bufferStruct)
 
 /**
  * @brief Flush the UART TX queue in a blocking manner.
-<<<<<<< HEAD
  *   UART logs are non blocking, so we need to flush the queue here otherwise the logs will not get logged in case of a hard
  *   fault as they rely on the UART task to send the logs.
-=======
->>>>>>> csa/v1.4.2-branch
  */
 void uartFlushTxQueue(void)
 {
@@ -617,21 +598,13 @@ void uartFlushTxQueue(void)
     {
 #if SLI_SI91X_MCU_INTERFACE
         // ensuring null termination of buffer
-<<<<<<< HEAD
-        if (workBuffer.length < ArraySize(workBuffer.data) && workBuffer.data[workBuffer.length - 1] != '\0')
-=======
         if (workBuffer.length < MATTER_ARRAY_SIZE(workBuffer.data) && workBuffer.data[workBuffer.length - 1] != '\0')
->>>>>>> csa/v1.4.2-branch
         {
             workBuffer.data[workBuffer.length] = '\0';
         }
         else
         {
-<<<<<<< HEAD
-            workBuffer.data[ArraySize(workBuffer.data) - 1] = '\0';
-=======
             workBuffer.data[MATTER_ARRAY_SIZE(workBuffer.data) - 1] = '\0';
->>>>>>> csa/v1.4.2-branch
         }
         Board_UARTPutSTR(workBuffer.data);
 #else

@@ -206,11 +206,7 @@ else
 
                 NCP_DIR_SUFFIX="/"$2
                 USE_WIFI=true
-<<<<<<< HEAD
-                optArgs+="chip_device_platform =\"efr32\" chip_crypto_keystore=\"psa\""
-=======
                 optArgs+="chip_device_platform =\"efr32\" chip_crypto_keystore=\"psa\" "
->>>>>>> csa/v1.4.2-branch
                 shift
                 shift
                 ;;
@@ -312,11 +308,7 @@ else
     fi
 
     # 917 exception. TODO find a more generic way
-<<<<<<< HEAD
-    if [ "$SILABS_BOARD" == "BRD4338A" ] || [ "$SILABS_BOARD" == "BRD2605A" ] || [ "$SILABS_BOARD" == "BRD4343A" ]; then
-=======
     if [ "$SILABS_BOARD" == "BRD4338A" ] || [ "$SILABS_BOARD" == "BRD2605A" ] || [ "$SILABS_BOARD" == "BRD4343A" ] || [ "$SILABS_BOARD" == "BRD4342A" ]; then
->>>>>>> csa/v1.4.2-branch
         echo "Compiling for 917 WiFi SOC"
         USE_WIFI=true
     fi

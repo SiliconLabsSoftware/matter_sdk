@@ -773,11 +773,8 @@ cluster GeneralCommissioning = 48 {
   provisional readonly attribute access(read: administer) optional bitmap16 TCAcknowledgements = 7;
   provisional readonly attribute access(read: administer) optional boolean TCAcknowledgementsRequired = 8;
   provisional readonly attribute access(read: administer) optional nullable int32u TCUpdateDeadline = 9;
-<<<<<<< HEAD
-=======
   provisional readonly attribute access(read: manage) optional octet_string<8> recoveryIdentifier = 10;
   provisional readonly attribute access(read: manage) optional nullable NetworkRecoveryReasonEnum networkRecoveryReason = 11;
->>>>>>> csa/v1.4.2-branch
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
   readonly attribute attrib_id attributeList[] = 65531;

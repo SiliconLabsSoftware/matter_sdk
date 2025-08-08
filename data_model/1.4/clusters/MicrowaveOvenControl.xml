@@ -85,16 +85,10 @@ Davis, CA 95616, USA
     <attribute id="0x0000" name="CookTime" type="elapsed-s" default="30">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="between">
-        <from value="1"/>
-        <to attribute="MaxCookTime"/>
-=======
       <constraint>
         <between value="1">
           <attribute name="MaxCookTime"/>
         </between>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0001" name="MaxCookTime" type="elapsed-s" default="MS">
@@ -194,15 +188,6 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="CookMode" type="uint8" default="desc">
         <optionalConform choice="b" more="true" min="1"/>
-<<<<<<< HEAD
-        <constraint type="desc"/>
-      </field>
-      <field id="1" name="CookTime" type="elapsed-s" default="30">
-        <optionalConform choice="b" more="true" min="1"/>
-        <constraint type="between">
-          <from value="1"/>
-          <to attribute="MaxCookTime"/>
-=======
         <constraint>
           <desc/>
         </constraint>
@@ -213,24 +198,17 @@ Davis, CA 95616, USA
           <between value="1">
             <attribute name="MaxCookTime"/>
           </between>
->>>>>>> csa/v1.4.2-branch
         </constraint>
       </field>
       <field id="2" name="PowerSetting" type="uint8" default="MaxPower">
         <optionalConform choice="b" more="true" min="1">
           <feature name="PWRNUM"/>
         </optionalConform>
-<<<<<<< HEAD
-        <constraint type="between">
-          <from attribute="MinPower"/>
-          <to attribute="MaxPower"/>
-=======
         <constraint>
           <between>
             <attribute name="MinPower"/>
             <attribute name="MaxPower"/>
           </between>
->>>>>>> csa/v1.4.2-branch
         </constraint>
       </field>
       <field id="3" name="WattSettingIndex" type="uint8" default="MS">
@@ -250,16 +228,10 @@ Davis, CA 95616, USA
       <optionalConform/>
       <field id="0" name="TimeToAdd" type="elapsed-s">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="between">
-          <from value="1"/>
-          <to attribute="MaxCookTime"/>
-=======
         <constraint>
           <between value="1">
             <attribute name="MaxCookTime"/>
           </between>
->>>>>>> csa/v1.4.2-branch
         </constraint>
       </field>
     </command>

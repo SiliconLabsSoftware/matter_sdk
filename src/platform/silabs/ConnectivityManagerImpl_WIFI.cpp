@@ -48,12 +48,8 @@ extern "C" {
 #endif
 
 #include "CHIPDevicePlatformConfig.h"
-<<<<<<< HEAD
-#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-=======
 #include <platform/silabs/wifi/WifiInterface.h>
 
->>>>>>> csa/v1.4.2-branch
 using namespace ::chip;
 using namespace ::chip::Inet;
 using namespace ::chip::System;
@@ -298,18 +294,9 @@ void ConnectivityManagerImpl::DriveStationState()
             (mWiFiStationMode != kWiFiStationMode_Enabled && !IsWiFiStationProvisioned()))
         {
             ChipLogProgress(DeviceLayer, "Disconnecting WiFi station interface");
-<<<<<<< HEAD
-            serr = sl_matter_wifi_disconnect();
-            if (serr != SL_STATUS_OK)
-            {
-                ChipLogError(DeviceLayer, "wfx_wifi_disconnect() failed: %lx", serr);
-            }
-            SuccessOrExit(serr);
-=======
 
             CHIP_ERROR error = WifiInterface::GetInstance().TriggerDisconnection();
             SuccessOrExitAction(error, ChipLogError(DeviceLayer, "TriggerDisconnection() failed: %s", ErrorStr(error)));
->>>>>>> csa/v1.4.2-branch
 
             ChangeWiFiStationState(kWiFiStationState_Disconnecting);
         }

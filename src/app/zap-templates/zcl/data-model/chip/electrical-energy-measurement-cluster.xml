@@ -58,13 +58,7 @@ Git: 0.7-summer-2025-ncr-295-geca1936d2
       </feature>
     </features>
     <!--Attributes-->
-<<<<<<< HEAD
-    <attribute code="0x0000" side="server" name="Accuracy" define="ACCURACY" type="MeasurementAccuracyStruct">
-      <mandatoryConform/>
-    </attribute>
-=======
     <attribute code="0x0000" side="server" name="Accuracy" define="ACCURACY" type="MeasurementAccuracyStruct"/>
->>>>>>> csa/v1.4.2-branch
     <attribute code="0x0001" side="server" name="CumulativeEnergyImported" define="CUMULATIVE_ENERGY_IMPORTED" type="EnergyMeasurementStruct" optional="true" isNullable="true">
       <mandatoryConform>
         <andTerm>

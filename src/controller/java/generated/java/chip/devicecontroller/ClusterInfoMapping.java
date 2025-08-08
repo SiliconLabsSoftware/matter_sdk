@@ -2420,8 +2420,6 @@ public class ClusterInfoMapping {
     }
   }
 
-<<<<<<< HEAD
-=======
   public static class DelegatedGeneralCommissioningClusterNetworkRecoveryReasonAttributeCallback implements ChipClusters.GeneralCommissioningCluster.NetworkRecoveryReasonAttributeCallback, DelegatedClusterCallback {
     private ClusterCommandCallback callback;
     @Override
@@ -2443,7 +2441,6 @@ public class ClusterInfoMapping {
     }
   }
 
->>>>>>> csa/v1.4.2-branch
   public static class DelegatedGeneralCommissioningClusterGeneratedCommandListAttributeCallback implements ChipClusters.GeneralCommissioningCluster.GeneratedCommandListAttributeCallback, DelegatedClusterCallback {
     private ClusterCommandCallback callback;
     @Override

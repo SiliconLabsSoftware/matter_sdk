@@ -50,16 +50,6 @@ from chip.testing.matter_testing import (AttributePathLocation, ClusterPathLocat
                                          default_matter_test_main)
 from chip.testing.spec_parsing import CommandType, XmlDeviceType
 from chip.tlv import uint
-<<<<<<< HEAD
-from choice_conformance_support import (evaluate_attribute_choice_conformance, evaluate_command_choice_conformance,
-                                        evaluate_feature_choice_conformance)
-from conformance_support import ConformanceDecision, conformance_allowed
-from global_attribute_ids import (ClusterIdType, DeviceTypeIdType, GlobalAttributeIds, cluster_id_type, device_type_id_type,
-                                  is_valid_device_type_id)
-from matter_testing_support import (AttributePathLocation, ClusterPathLocation, CommandPathLocation, DeviceTypePathLocation,
-                                    MatterBaseTest, ProblemNotice, ProblemSeverity, async_test_body, default_matter_test_main)
-from spec_parsing_support import CommandType
-=======
 
 
 def get_supersets(xml_device_types: dict[int, XmlDeviceType]) -> list[set[int]]:
@@ -100,7 +90,6 @@ def get_supersets(xml_device_types: dict[int, XmlDeviceType]) -> list[set[int]]:
             dt = xml_device_types[dt].superset_of_device_type_id
         supersets.append(line)
     return supersets
->>>>>>> csa/v1.4.2-branch
 
 
 class DeviceConformanceTests(BasicCompositionTests):

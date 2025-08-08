@@ -143,15 +143,10 @@ Davis, CA 95616, USA
         <access fabricSensitive="true"/>
         <quality nullable="true"/>
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="maxCount">
-          <value attribute="SubjectsPerAccessControlEntry"/>
-=======
         <constraint>
           <maxCount>
             <attribute name="SubjectsPerAccessControlEntry"/>
           </maxCount>
->>>>>>> csa/v1.4.2-branch
         </constraint>
       </field>
       <field id="4" name="Targets" type="list">
@@ -159,15 +154,10 @@ Davis, CA 95616, USA
         <access fabricSensitive="true"/>
         <quality nullable="true"/>
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="maxCount">
-          <value attribute="TargetsPerAccessControlEntry"/>
-=======
         <constraint>
           <maxCount>
             <attribute name="TargetsPerAccessControlEntry"/>
           </maxCount>
->>>>>>> csa/v1.4.2-branch
         </constraint>
       </field>
       <access fabricScoped="true"/>

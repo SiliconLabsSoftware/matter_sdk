@@ -22,15 +22,10 @@
 #include <platform/silabs/SilabsConfig.h>
 
 #if SL_WIFI
-<<<<<<< HEAD
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
+#include <platform/silabs/wifi/ncp/spi_multiplex.h>
 #endif // SL_WIFI
 
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
-=======
-#include <platform/silabs/wifi/ncp/spi_multiplex.h>
-#endif // SL_WIFI
->>>>>>> csa/v1.4.2-branch
 
 extern "C" {
 #include "btl_interface.h"
@@ -182,24 +177,17 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
 
     ChipLogProgress(SoftwareUpdate, "HandlePrepareDownload: started");
 
-<<<<<<< HEAD
     SILABS_TRACE_BEGIN(TimeTraceOperation::kImageUpload);
 
 #ifdef _SILICON_LABS_32B_SERIES_2
     // TODO sl-temp: bootloader_init is called previously sl_platform_init(). Recalling it for series3 causes a crash.
-=======
->>>>>>> csa/v1.4.2-branch
     WRAP_BL_DFU_CALL(err = bootloader_init())
     if (err != SL_BOOTLOADER_OK)
     {
         ChipLogProgress(SoftwareUpdate, "bootloader_init Failed error: %ld", err);
-<<<<<<< HEAD
         SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageUpload, CHIP_ERROR_INTERNAL);
     }
 #endif
-=======
-    }
->>>>>>> csa/v1.4.2-branch
 
     mSlotId                                 = 0; // Single slot until we support multiple images
     writeBufOffset                          = 0;
@@ -269,22 +257,6 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     SILABS_TRACE_END(TimeTraceOperation::kImageUpload);
 }
 
-// TODO: SE access is not thread safe. It assert if other tasks accesses it during bootloader_verifyImage or
-// bootloader_setImageToBootload steps - MATTER-4155 - PLATFORM_HYD-3235
-void OTAImageProcessorImpl::LockRadioProcessing()
-{
-#if !SL_WIFI
-    DeviceLayer::ThreadStackMgr().LockThreadStack();
-#endif // SL_WIFI
-}
-
-void OTAImageProcessorImpl::UnlockRadioProcessing()
-{
-#if !SL_WIFI
-    DeviceLayer::ThreadStackMgr().UnlockThreadStack();
-#endif // SL_WIFI
-}
-
 // TODO: SE access is not thread safe. It asserts if other tasks accesses it during bootloader_verifyImage or
 // bootloader_setImageToBootload steps - MATTER-4155 - PLATFORM_HYD-3235
 void OTAImageProcessorImpl::LockRadioProcessing()
@@ -306,10 +278,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     uint32_t err = SL_BOOTLOADER_OK;
 
     ChipLogProgress(SoftwareUpdate, "HandleApply: verifying image");
-<<<<<<< HEAD
     SILABS_TRACE_BEGIN(TimeTraceOperation::kImageVerification);
-=======
->>>>>>> csa/v1.4.2-branch
 
     // Force KVS to store pending keys such as data from StoreCurrentUpdateInfo()
     chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().ForceKeyMapSave();
@@ -379,15 +348,11 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     }
 #endif // SL_BTLCTRL_MUX
 
-<<<<<<< HEAD
     SILABS_TRACE_END(TimeTraceOperation::kImageVerification);
     SILABS_TRACE_INSTANT(TimeTraceOperation::kAppApplyTime);
     ChipLogProgress(SoftwareUpdate, "Reboot and install new image...");
     // Flush all traces before reboot since we do not store them in NVM currently
     SILABS_TRACE_FLUSH_ALL();
-=======
-    ChipLogProgress(SoftwareUpdate, "Reboot and install new image...");
->>>>>>> csa/v1.4.2-branch
 #if defined(_SILICON_LABS_32B_SERIES_3) && CHIP_PROGRESS_LOGGING
     osDelay(100); // sl-temp: delay for uart print before reboot
 #endif            // _SILICON_LABS_32B_SERIES_3 && CHIP_PROGRESS_LOGGING

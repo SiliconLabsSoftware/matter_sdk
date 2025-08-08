@@ -42,8 +42,6 @@ source_set("terms_and_conditions") {
   ]
 }
 
-<<<<<<< HEAD
-=======
 source_set("joint_fabric_datastore") {
   sources = [
     "JointFabricDatastore.cpp",
@@ -56,7 +54,6 @@ source_set("joint_fabric_datastore") {
   ]
 }
 
->>>>>>> csa/v1.4.2-branch
 static_library("server") {
   output_name = "libCHIPAppServer"
 
@@ -102,13 +99,10 @@ static_library("server") {
     public_deps += [ ":terms_and_conditions" ]
   }
 
-<<<<<<< HEAD
-=======
   if (chip_device_config_enable_joint_fabric) {
     public_deps += [ ":joint_fabric_datastore" ]
   }
 
->>>>>>> csa/v1.4.2-branch
   # TODO: Server.cpp uses TestGroupData.h. Unsure why test code would be in such a central place
   #       This dependency is split since it should probably be removed (or naming should
   #       be updated if this is not really "testing" even though headers are Test*.h)

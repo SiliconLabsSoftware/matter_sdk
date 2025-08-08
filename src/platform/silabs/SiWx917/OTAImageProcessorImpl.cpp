@@ -21,18 +21,11 @@
 #include <platform/silabs/OTAImageProcessorImpl.h>
 #include <platform/silabs/SilabsConfig.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-<<<<<<< HEAD
-
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-#include <platform/silabs/wifi/icd/WifiSleepManager.h>
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-=======
 #include <platform/silabs/wifi/WifiInterface.h>
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #include <platform/silabs/wifi/icd/WifiSleepManager.h> // nogncheck
 #endif                                                 // CHIP_CONFIG_ENABLE_ICD_SERVER
->>>>>>> csa/v1.4.2-branch
 
 #ifdef __cplusplus
 extern "C" {
@@ -171,13 +164,8 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
     imageProcessor->mHeaderParser.Init();
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-<<<<<<< HEAD
-    // Setting the device is in high performace - no-sleepy mode during OTA tranfer
-    DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
-=======
     // Setting the device in high performance - no-sleep mode during OTA tranfer
     DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
->>>>>>> csa/v1.4.2-branch
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER*/
 
     imageProcessor->mDownloader->OnPreparedForDownload(CHIP_NO_ERROR);
@@ -214,11 +202,7 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     }
     imageProcessor->ReleaseBlock();
 
-<<<<<<< HEAD
-#if (CHIP_CONFIG_ENABLE_ICD_SERVER)
-=======
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
->>>>>>> csa/v1.4.2-branch
     // Setting the device back to power save mode when transfer is completed successfully
     DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER*/
@@ -237,11 +221,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     // Setting the device is in high performace - no-sleepy mode before soft reset as soft reset is not happening in sleep mode
-<<<<<<< HEAD
-    DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformance();
-=======
     DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
->>>>>>> csa/v1.4.2-branch
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER*/
 
     if (mReset)

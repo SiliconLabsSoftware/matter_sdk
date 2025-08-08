@@ -131,13 +131,9 @@ Davis, CA 95616, USA
       </field>
       <field id="5" name="Location" type="string">
         <optionalConform/>
-<<<<<<< HEAD
-        <constraint type="allowed" value="2"/>
-=======
         <constraint>
           <allowed value="2"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="6" name="RequestorCanConsent" type="bool" default="false">
         <optionalConform/>

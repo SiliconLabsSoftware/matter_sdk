@@ -379,13 +379,10 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestSubjectHasActiveSubscription
     ReadHandler * readHandler1 = engine->GetReadHandlerPool().CreateObject(
         nullCallback, exchangeCtx1, ReadHandler::InteractionType::Subscribe, reporting::GetDefaultReportScheduler());
 
-<<<<<<< HEAD
-=======
     // Create and setup readHandler 2
     ReadHandler * readHandler2 = engine->GetReadHandlerPool().CreateObject(
         nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe, reporting::GetDefaultReportScheduler());
 
->>>>>>> csa/v1.4.2-branch
     // Verify that Bob still doesn't have an active subscription
     EXPECT_FALSE(engine->SubjectHasActiveSubscription(bobFabricIndex, bobNodeId));
 
@@ -397,11 +394,6 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestSubjectHasActiveSubscription
 
     // Verify that Alice still doesn't have an active subscription
     EXPECT_FALSE(engine->SubjectHasActiveSubscription(aliceFabricIndex, aliceNodeId));
-
-    // Create and setup readHandler 2
-    ReadHandler * readHandler2 =
-        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe,
-                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
 
     // Set readHandler2 to active
     readHandler2->SetStateFlag(ReadHandler::ReadHandlerFlags::ActiveSubscription, true);
@@ -746,14 +738,8 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestFabricHasAtLeastOneActiveSub
     EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex2));
 
     // Create and setup readHandler 1
-<<<<<<< HEAD
-    ReadHandler * readHandler1 =
-        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx1, ReadHandler::InteractionType::Subscribe,
-                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
-=======
     ReadHandler * readHandler1 = engine->GetReadHandlerPool().CreateObject(
         nullCallback, exchangeCtx1, ReadHandler::InteractionType::Subscribe, reporting::GetDefaultReportScheduler());
->>>>>>> csa/v1.4.2-branch
 
     // Verify that fabric 1 still doesn't have an active subscription
     EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex1));
@@ -768,14 +754,8 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestFabricHasAtLeastOneActiveSub
     EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex2));
 
     // Create and setup readHandler 2
-<<<<<<< HEAD
-    ReadHandler * readHandler2 =
-        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe,
-                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
-=======
     ReadHandler * readHandler2 = engine->GetReadHandlerPool().CreateObject(
         nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe, reporting::GetDefaultReportScheduler());
->>>>>>> csa/v1.4.2-branch
 
     // Set readHandler2 to active
     readHandler2->SetStateFlag(ReadHandler::ReadHandlerFlags::ActiveSubscription, true);
@@ -812,14 +792,8 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestFabricHasAtLeastOneActiveSub
     EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
 
     // Create and setup readHandler 1
-<<<<<<< HEAD
-    ReadHandler * readHandler1 =
-        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx1, ReadHandler::InteractionType::Subscribe,
-                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
-=======
     ReadHandler * readHandler1 = engine->GetReadHandlerPool().CreateObject(
         nullCallback, exchangeCtx1, ReadHandler::InteractionType::Subscribe, reporting::GetDefaultReportScheduler());
->>>>>>> csa/v1.4.2-branch
 
     // Verify that the fabric still doesn't have an active subscription
     EXPECT_FALSE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
@@ -831,14 +805,8 @@ TEST_F_FROM_FIXTURE(TestInteractionModelEngine, TestFabricHasAtLeastOneActiveSub
     EXPECT_TRUE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));
 
     // Create and setup readHandler 2
-<<<<<<< HEAD
-    ReadHandler * readHandler2 =
-        engine->GetReadHandlerPool().CreateObject(nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe,
-                                                  reporting::GetDefaultReportScheduler(), CodegenDataModelProviderInstance());
-=======
     ReadHandler * readHandler2 = engine->GetReadHandlerPool().CreateObject(
         nullCallback, exchangeCtx2, ReadHandler::InteractionType::Subscribe, reporting::GetDefaultReportScheduler());
->>>>>>> csa/v1.4.2-branch
 
     // Verify that the fabric still has an active subscription
     EXPECT_TRUE(engine->FabricHasAtLeastOneActiveSubscription(fabricIndex));

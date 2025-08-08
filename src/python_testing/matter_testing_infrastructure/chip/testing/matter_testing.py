@@ -145,175 +145,6 @@ def get_default_paa_trust_store(root_path: pathlib.Path) -> pathlib.Path:
         return pathlib.Path.cwd()
 
 
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-def type_matches(received_value, desired_type):
-    """ Checks if the value received matches the expected type.
-
-        Handles unpacking Nullable and Optional types and
-        compares list value types for non-empty lists.
-    """
-    if typing.get_origin(desired_type) == typing.Union:
-        return any(type_matches(received_value, t) for t in typing.get_args(desired_type))
-    elif typing.get_origin(desired_type) == list:
-        if isinstance(received_value, list):
-            # Assume an empty list is of the correct type
-            return True if received_value == [] else any(type_matches(received_value[0], t) for t in typing.get_args(desired_type))
-        else:
-            return False
-    elif desired_type == uint:
-        return isinstance(received_value, int) and received_value >= 0
-    elif desired_type == float32:
-        return isinstance(received_value, float)
-    else:
-        return isinstance(received_value, desired_type)
-
-# TODO(#31177): Need to add unit tests for all time conversion methods.
-
-
-def utc_time_in_matter_epoch(desired_datetime: Optional[datetime] = None):
-    """ Returns the time in matter epoch in us.
-
-        If desired_datetime is None, it will return the current time.
-    """
-    if desired_datetime is None:
-        utc_native = datetime.now(tz=timezone.utc)
-    else:
-        utc_native = desired_datetime
-    # Matter epoch is 0 hours, 0 minutes, 0 seconds on Jan 1, 2000 UTC
-    utc_th_delta = utc_native - datetime(2000, 1, 1, 0, 0, 0, 0, timezone.utc)
-    utc_th_us = int(utc_th_delta.total_seconds() * 1000000)
-    return utc_th_us
-
-
-matter_epoch_us_from_utc_datetime = utc_time_in_matter_epoch
-
-
-def utc_datetime_from_matter_epoch_us(matter_epoch_us: int) -> datetime:
-    """Returns the given Matter epoch time as a usable Python datetime in UTC."""
-    delta_from_epoch = timedelta(microseconds=matter_epoch_us)
-    matter_epoch = datetime(2000, 1, 1, 0, 0, 0, 0, timezone.utc)
-
-    return matter_epoch + delta_from_epoch
-
-
-def utc_datetime_from_posix_time_ms(posix_time_ms: int) -> datetime:
-    millis = posix_time_ms % 1000
-    seconds = posix_time_ms // 1000
-    return datetime.fromtimestamp(seconds, timezone.utc) + timedelta(milliseconds=millis)
-
-
-def compare_time(received: int, offset: timedelta = timedelta(), utc: int = None, tolerance: timedelta = timedelta(seconds=5)) -> None:
-    if utc is None:
-        utc = utc_time_in_matter_epoch()
-
-    # total seconds includes fractional for microseconds
-    expected = utc + offset.total_seconds() * 1000000
-    delta_us = abs(expected - received)
-    delta = timedelta(microseconds=delta_us)
-    asserts.assert_less_equal(delta, tolerance, "Received time is out of tolerance")
-
-
-def get_wait_seconds_from_set_time(set_time_matter_us: int, wait_seconds: int):
-    seconds_passed = (utc_time_in_matter_epoch() - set_time_matter_us) // 1000000
-    return wait_seconds - seconds_passed
-
-
-@dataclass
-class SetupPayloadInfo:
-    filter_type: discovery.FilterType = discovery.FilterType.LONG_DISCRIMINATOR
-    filter_value: int = 0
-    passcode: int = 0
-
-
-@dataclass
-class CommissioningInfo:
-    commissionee_ip_address_just_for_testing: Optional[str] = None
-    commissioning_method: Optional[str] = None
-    thread_operational_dataset: Optional[str] = None
-    wifi_passphrase: Optional[str] = None
-    wifi_ssid: Optional[str] = None
-    # Accepted Terms and Conditions if used
-    tc_version_to_simulate: int = None
-    tc_user_response_to_simulate: int = None
-
-
-async def commission_device(
-    dev_ctrl: ChipDeviceCtrl.ChipDeviceController, node_id: int, info: SetupPayloadInfo, commissioning_info: CommissioningInfo
-) -> bool:
-    if commissioning_info.tc_version_to_simulate is not None and commissioning_info.tc_user_response_to_simulate is not None:
-        logging.debug(
-            f"Setting TC Acknowledgements to version {commissioning_info.tc_version_to_simulate} with user response {commissioning_info.tc_user_response_to_simulate}."
-        )
-        dev_ctrl.SetTCAcknowledgements(commissioning_info.tc_version_to_simulate, commissioning_info.tc_user_response_to_simulate)
-
-    if commissioning_info.commissioning_method == "on-network":
-        try:
-            await dev_ctrl.CommissionOnNetwork(
-                nodeId=node_id, setupPinCode=info.passcode, filterType=info.filter_type, filter=info.filter_value
-            )
-            return True
-        except ChipStackError as e:
-            logging.error("Commissioning failed: %s" % e)
-            return False
-    elif commissioning_info.commissioning_method == "ble-wifi":
-        try:
-            await dev_ctrl.CommissionWiFi(
-                info.filter_value,
-                info.passcode,
-                node_id,
-                commissioning_info.wifi_ssid,
-                commissioning_info.wifi_passphrase,
-                isShortDiscriminator=(info.filter_type == DiscoveryFilterType.SHORT_DISCRIMINATOR),
-            )
-            return True
-        except ChipStackError as e:
-            logging.error("Commissioning failed: %s" % e)
-            return False
-    elif commissioning_info.commissioning_method == "ble-thread":
-        try:
-            await dev_ctrl.CommissionThread(
-                info.filter_value,
-                info.passcode,
-                node_id,
-                commissioning_info.thread_operational_dataset,
-                isShortDiscriminator=(info.filter_type == DiscoveryFilterType.SHORT_DISCRIMINATOR),
-            )
-            return True
-        except ChipStackError as e:
-            logging.error("Commissioning failed: %s" % e)
-            return False
-    elif commissioning_info.commissioning_method == "on-network-ip":
-        try:
-            logging.warning("==== USING A DIRECT IP COMMISSIONING METHOD NOT SUPPORTED IN THE LONG TERM ====")
-            await dev_ctrl.CommissionIP(
-                ipaddr=commissioning_info.commissionee_ip_address_just_for_testing,
-                setupPinCode=info.passcode,
-                nodeid=node_id,
-            )
-            return True
-        except ChipStackError as e:
-            logging.error("Commissioning failed: %s" % e)
-            return False
-    else:
-        raise ValueError("Invalid commissioning method %s!" % commissioning_info.commissioning_method)
-
-
-async def commission_devices(
-    dev_ctrl: ChipDeviceCtrl.ChipDeviceController,
-    dut_node_ids: List[int],
-    setup_payloads: List[SetupPayloadInfo],
-    commissioning_info: CommissioningInfo,
-) -> bool:
-    commissioned = []
-    for node_id, setup_payload in zip(dut_node_ids, setup_payloads):
-        logging.info(f"Commissioning method: {commissioning_info.commissioning_method}")
-        commissioned.append(await commission_device(dev_ctrl, node_id, setup_payload, commissioning_info))
-
-    return all(commissioned)
-
-
-=======
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
 class SimpleEventCallback:
     def __init__(self, name: str, expected_cluster_id: int, expected_event_id: int, output_queue: queue.SimpleQueue):
         self._name = name
@@ -769,54 +600,6 @@ class ClusterAttributeChangeAccumulator:
         return
 
 
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-class InternalTestRunnerHooks(TestRunnerHooks):
-
-    def start(self, count: int):
-        logging.info(f'Starting test set, running {count} tests')
-
-    def stop(self, duration: int):
-        logging.info(f'Finished test set, ran for {duration}ms')
-
-    def test_start(self, filename: str, name: str, count: int, steps: list[str] = []):
-        logging.info(f'Starting test from {filename}: {name} - {count} steps')
-
-    def test_stop(self, exception: Exception, duration: int):
-        logging.info(f'Finished test in {duration}ms')
-
-    def step_skipped(self, name: str, expression: str):
-        # TODO: Do we really need the expression as a string? We can evaluate this in code very easily
-        logging.info(f'\t\t**** Skipping: {name}')
-
-    def step_start(self, name: str):
-        # The way I'm calling this, the name is already includes the step number, but it seems like it might be good to separate these
-        logging.info(f'\t\t***** Test Step {name}')
-
-    def step_success(self, logger, logs, duration: int, request):
-        pass
-
-    def step_failure(self, logger, logs, duration: int, request, received):
-        # TODO: there's supposed to be some kind of error message here, but I have no idea where it's meant to come from in this API
-        logging.info('\t\t***** Test Failure : ')
-
-    def step_unknown(self):
-        """
-        This method is called when the result of running a step is unknown. For example during a dry-run.
-        """
-        pass
-
-    def show_prompt(self,
-                    msg: str,
-                    placeholder: Optional[str] = None,
-                    default_value: Optional[str] = None) -> None:
-        pass
-
-    def test_skipped(self, filename: str, name: str):
-        logging.info(f"Skipping test from {filename}: {name}")
-
-
-=======
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
 @dataclass
 class MatterTestConfig:
     storage_path: pathlib.Path = pathlib.Path(".")
@@ -881,13 +664,10 @@ class MatterTestConfig:
     # Accepted Terms and Conditions if used
     tc_version_to_simulate: int = None
     tc_user_response_to_simulate: int = None
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-=======
     # path to device attestation revocation set json file
     dac_revocation_set_path: Optional[pathlib.Path] = None
 
     legacy: bool = False
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
 
 
 class ClusterMapper:
@@ -1120,38 +900,6 @@ class MatterStackState:
         return builtins.chipStack
 
 
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-def bytes_from_hex(hex: str) -> bytes:
-    """Converts any `hex` string representation including `01:ab:cd` to bytes
-
-    Handles any whitespace including newlines, which are all stripped.
-    """
-    return unhexlify("".join(hex.replace(":", "").replace(" ", "").split()))
-
-
-def hex_from_bytes(b: bytes) -> str:
-    """Converts a bytes object `b` into a hex string (reverse of bytes_from_hex)"""
-    return hexlify(b).decode("utf-8")
-
-
-@dataclass
-class TestStep:
-    test_plan_number: typing.Union[int, str]
-    description: str
-    expectation: str = ""
-    is_commissioning: bool = False
-
-
-@dataclass
-class TestInfo:
-    function: str
-    desc: str
-    steps: list[TestStep]
-    pics: list[str]
-
-
-=======
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
 class MatterBaseTest(base_test.BaseTestClass):
     def __init__(self, *args):
         super().__init__(*args)
@@ -1369,8 +1117,6 @@ class MatterBaseTest(base_test.BaseTestClass):
     def is_pics_sdk_ci_only(self) -> bool:
         return self.check_pics('PICS_SDK_CI_ONLY')
 
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-=======
     def _update_legacy_test_event_triggers(self, eventTrigger: int) -> int:
         """ This function updates eventTriged if legacy flag is activated. """
         target_endpoint = 0
@@ -1392,7 +1138,6 @@ class MatterBaseTest(base_test.BaseTestClass):
 
         return eventTrigger
 
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
     async def commission_devices(self) -> bool:
         dev_ctrl: ChipDeviceCtrl.ChipDeviceController = self.default_controller
         dut_node_ids: List[int] = self.matter_test_config.dut_node_ids
@@ -1409,11 +1154,7 @@ class MatterBaseTest(base_test.BaseTestClass):
 
         return await commission_devices(dev_ctrl, dut_node_ids, setup_payloads, commissioning_info)
 
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-    async def openCommissioningWindow(self, dev_ctrl: ChipDeviceCtrl, node_id: int) -> CustomCommissioningParameters:
-=======
     async def open_commissioning_window(self, dev_ctrl: Optional[ChipDeviceCtrl.ChipDeviceController] = None, node_id: Optional[int] = None, timeout: int = 900) -> CustomCommissioningParameters:
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
         rnd_discriminator = random.randint(0, 4095)
         if dev_ctrl is None:
             dev_ctrl = self.default_controller
@@ -2252,10 +1993,7 @@ def convert_args_to_matter_config(args: argparse.Namespace) -> MatterTestConfig:
 
     config.tc_version_to_simulate = args.tc_version_to_simulate
     config.tc_user_response_to_simulate = args.tc_user_response_to_simulate
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-=======
     config.dac_revocation_set_path = args.dac_revocation_set_path
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
 
     # Accumulate all command-line-passed named args
     all_global_args = []
@@ -2319,11 +2057,7 @@ def parse_matter_test_args(argv: Optional[List[str]] = None) -> MatterTestConfig
                                   help='Name of commissioning method to use')
     commission_group.add_argument('--in-test-commissioning-method', type=str,
                                   metavar='METHOD_NAME',
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-                                  choices=["on-network", "ble-wifi", "ble-thread", "on-network-ip"],
-=======
                                   choices=["on-network", "ble-wifi", "ble-thread"],
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
                                   help='Name of commissioning method to use, for commissioning tests')
     commission_group.add_argument('-d', '--discriminator', type=int_decimal_or_hex,
                                   metavar='LONG_DISCRIMINATOR',
@@ -2454,13 +2188,8 @@ class CommissionDeviceTest(MatterBaseTest):
         self.is_commissioning = True
 
     def test_run_commissioning(self):
-<<<<<<< HEAD:src/python_testing/matter_testing_support.py
-        if not asyncio.run(self.commission_devices()):
-            raise signals.TestAbortAll("Failed to commission node")
-=======
         if not self.event_loop.run_until_complete(self.commission_devices()):
             raise signals.TestAbortAll("Failed to commission node(s)")
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/matter_testing.py
 
 
 # TODO(#37537): Remove these temporary aliases after transition period

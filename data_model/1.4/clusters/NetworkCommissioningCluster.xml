@@ -226,17 +226,12 @@ Davis, CA 95616, USA
         <mandatoryConform>
           <feature name="TH"/>
         </mandatoryConform>
-<<<<<<< HEAD
-        <constraint type="allowed" value="6"/>
-        <constraint type="allowed" value="8"/>
-=======
         <constraint>
           <allowed value="6"/>
         </constraint>
         <constraint>
           <allowed value="8"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="6" name="RSSI" type="int8">
         <mandatoryConform>
@@ -267,13 +262,9 @@ Davis, CA 95616, USA
         <mandatoryConform>
           <feature name="WI"/>
         </mandatoryConform>
-<<<<<<< HEAD
-        <constraint type="allowed" value="6"/>
-=======
         <constraint>
           <allowed value="6"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="3" name="Channel" type="uint16">
         <mandatoryConform>
@@ -305,15 +296,10 @@ Davis, CA 95616, USA
       <entry type="NetworkInfoStruct"/>
       <access read="true" readPrivilege="admin"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="maxCount">
-        <value attribute="MaxNetworks"/>
-=======
       <constraint>
         <maxCount>
           <attribute name="MaxNetworks"/>
         </maxCount>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0002" name="ScanMaxTimeSeconds" type="uint8">

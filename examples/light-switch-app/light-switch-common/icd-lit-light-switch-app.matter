@@ -42,10 +42,6 @@ enum AreaTypeTag : enum8 {
   kGardenDoor = 37;
   kGuestBathroom = 38;
   kGuestBedroom = 39;
-<<<<<<< HEAD
-  kGuestRestroom = 40;
-=======
->>>>>>> csa/v1.4.2-branch
   kGuestRoom = 41;
   kGym = 42;
   kHallway = 43;
@@ -53,20 +49,12 @@ enum AreaTypeTag : enum8 {
   kKidsRoom = 45;
   kKidsBedroom = 46;
   kKitchen = 47;
-<<<<<<< HEAD
-  kLarder = 48;
-=======
->>>>>>> csa/v1.4.2-branch
   kLaundryRoom = 49;
   kLawn = 50;
   kLibrary = 51;
   kLivingRoom = 52;
   kLounge = 53;
-<<<<<<< HEAD
-  kMediaTVRoom = 54;
-=======
   kMediaTVRoom = 54 [spec_name = "Media/TV Room"];
->>>>>>> csa/v1.4.2-branch
   kMudRoom = 55;
   kMusicRoom = 56;
   kNursery = 57;
@@ -85,10 +73,6 @@ enum AreaTypeTag : enum8 {
   kRamp = 70;
   kReceptionRoom = 71;
   kRecreationRoom = 72;
-<<<<<<< HEAD
-  kRestroom = 73;
-=======
->>>>>>> csa/v1.4.2-branch
   kRoof = 74;
   kSauna = 75;
   kScullery = 76;
@@ -110,10 +94,7 @@ enum AreaTypeTag : enum8 {
   kUtilityRoom = 92;
   kWard = 93;
   kWorkshop = 94;
-<<<<<<< HEAD
-=======
   kToilet = 95;
->>>>>>> csa/v1.4.2-branch
 }
 
 enum AtomicRequestTypeEnum : enum8 {
@@ -122,36 +103,6 @@ enum AtomicRequestTypeEnum : enum8 {
   kRollbackWrite = 2;
 }
 
-<<<<<<< HEAD
-enum FloorSurfaceTag : enum8 {
-  kCarpet = 0;
-  kCeramic = 1;
-  kConcrete = 2;
-  kCork = 3;
-  kDeepCarpet = 4;
-  kDirt = 5;
-  kEngineeredWood = 6;
-  kGlass = 7;
-  kGrass = 8;
-  kHardwood = 9;
-  kLaminate = 10;
-  kLinoleum = 11;
-  kMat = 12;
-  kMetal = 13;
-  kPlastic = 14;
-  kPolishedConcrete = 15;
-  kRubber = 16;
-  kRug = 17;
-  kSand = 18;
-  kStone = 19;
-  kTatami = 20;
-  kTerrazzo = 21;
-  kTile = 22;
-  kVinyl = 23;
-}
-
-=======
->>>>>>> csa/v1.4.2-branch
 enum LandmarkTag : enum8 {
   kAirConditioner = 0;
   kAirPurifier = 1;
@@ -206,8 +157,6 @@ enum LandmarkTag : enum8 {
   kWineCooler = 50;
 }
 
-<<<<<<< HEAD
-=======
 enum LocationTag : enum8 {
   kIndoor = 0;
   kOutdoor = 1;
@@ -236,7 +185,6 @@ enum MeasurementTypeEnum : enum16 {
   kSoilMoisture = 17;
 }
 
->>>>>>> csa/v1.4.2-branch
 enum PositionTag : enum8 {
   kLeft = 0;
   kRight = 1;
@@ -247,15 +195,12 @@ enum PositionTag : enum8 {
   kColumn = 6;
 }
 
-<<<<<<< HEAD
-=======
 enum PowerThresholdSourceEnum : enum8 {
   kContract = 0;
   kRegulator = 1;
   kEquipment = 2;
 }
 
->>>>>>> csa/v1.4.2-branch
 enum RelativePositionTag : enum8 {
   kUnder = 0;
   kNextTo = 1;
@@ -266,8 +211,6 @@ enum RelativePositionTag : enum8 {
   kBehind = 6;
 }
 
-<<<<<<< HEAD
-=======
 enum StreamUsageEnum : enum8 {
   kInternal = 0;
   kRecording = 1;
@@ -288,7 +231,6 @@ enum TariffUnitEnum : enum8 {
   kKVAh = 1;
 }
 
->>>>>>> csa/v1.4.2-branch
 enum TestGlobalEnum : enum8 {
   kSomeValue = 0;
   kSomeOtherValue = 1;
@@ -296,12 +238,6 @@ enum TestGlobalEnum : enum8 {
 }
 
 enum ThreeLevelAutoEnum : enum8 {
-<<<<<<< HEAD
-  kLow = 0;
-  kMedium = 1;
-  kHigh = 2;
-  kAutomatic = 3;
-=======
   kAuto = 0;
   kLow = 1;
   kMedium = 2;
@@ -321,7 +257,6 @@ enum WebRTCEndReasonEnum : enum8 {
   kMediaTimeout = 9;
   kLowPower = 10;
   kUnknownReason = 11;
->>>>>>> csa/v1.4.2-branch
 }
 
 bitmap TestGlobalBitmap : bitmap32 {
@@ -329,12 +264,6 @@ bitmap TestGlobalBitmap : bitmap32 {
   kSecondBit = 0x2;
 }
 
-<<<<<<< HEAD
-struct TestGlobalStruct {
-  char_string<128> name = 0;
-  nullable TestGlobalBitmap myBitmap = 1;
-  optional nullable TestGlobalEnum myEnum = 2;
-=======
 struct CurrencyStruct {
   int16u currency = 0;
   int8u decimalPoints = 1;
@@ -380,7 +309,6 @@ struct ICEServerStruct {
   optional long_char_string<508> username = 1;
   optional long_char_string<512> credential = 2;
   optional int16u caid = 3;
->>>>>>> csa/v1.4.2-branch
 }
 
 struct LocationDescriptorStruct {
@@ -389,11 +317,6 @@ struct LocationDescriptorStruct {
   nullable AreaTypeTag areaType = 2;
 }
 
-<<<<<<< HEAD
-struct AtomicAttributeStatusStruct {
-  attrib_id attributeID = 0;
-  status statusCode = 1;
-=======
 struct PowerThresholdStruct {
   optional power_mw powerThreshold = 0;
   optional power_mva apparentPowerThreshold = 1;
@@ -422,16 +345,11 @@ fabric_scoped struct WebRTCSessionStruct {
   nullable int16u audioStreamID = 5;
   optional boolean metadataEnabled = 6;
   fabric_idx fabricIndex = 254;
->>>>>>> csa/v1.4.2-branch
 }
 
 /** Attributes and commands for putting a device into Identification mode (e.g. flashing a light). */
 cluster Identify = 3 {
-<<<<<<< HEAD
-  revision 4;
-=======
   revision 5;
->>>>>>> csa/v1.4.2-branch
 
   enum EffectIdentifierEnum : enum8 {
     kBlink = 0;
@@ -459,10 +377,6 @@ cluster Identify = 3 {
   readonly attribute IdentifyTypeEnum identifyType = 1;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -476,25 +390,15 @@ cluster Identify = 3 {
     EffectVariantEnum effectVariant = 1;
   }
 
-<<<<<<< HEAD
-  /** Command description for Identify */
-  command access(invoke: manage) Identify(IdentifyRequest): DefaultSuccess = 0;
-  /** Command description for TriggerEffect */
-=======
   /** This command starts or stops the receiving device identifying itself. */
   command access(invoke: manage) Identify(IdentifyRequest): DefaultSuccess = 0;
   /** This command allows the support of feedback to the user, such as a certain light effect. */
->>>>>>> csa/v1.4.2-branch
   command access(invoke: manage) TriggerEffect(TriggerEffectRequest): DefaultSuccess = 64;
 }
 
 /** Attributes and commands for putting a device into Identification mode (e.g. flashing a light). */
 cluster Identify = 3 {
-<<<<<<< HEAD
-  revision 4;
-=======
   revision 5;
->>>>>>> csa/v1.4.2-branch
 
   enum EffectIdentifierEnum : enum8 {
     kBlink = 0;
@@ -522,10 +426,6 @@ cluster Identify = 3 {
   readonly attribute IdentifyTypeEnum identifyType = 1;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -539,15 +439,9 @@ cluster Identify = 3 {
     EffectVariantEnum effectVariant = 1;
   }
 
-<<<<<<< HEAD
-  /** Command description for Identify */
-  command access(invoke: manage) Identify(IdentifyRequest): DefaultSuccess = 0;
-  /** Command description for TriggerEffect */
-=======
   /** This command starts or stops the receiving device identifying itself. */
   command access(invoke: manage) Identify(IdentifyRequest): DefaultSuccess = 0;
   /** This command allows the support of feedback to the user, such as a certain light effect. */
->>>>>>> csa/v1.4.2-branch
   command access(invoke: manage) TriggerEffect(TriggerEffectRequest): DefaultSuccess = 64;
 }
 
@@ -566,10 +460,6 @@ cluster Groups = 4 {
   readonly attribute NameSupportBitmap nameSupport = 0;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -617,19 +507,6 @@ cluster Groups = 4 {
     char_string<16> groupName = 1;
   }
 
-<<<<<<< HEAD
-  /** Command description for AddGroup */
-  fabric command access(invoke: manage) AddGroup(AddGroupRequest): AddGroupResponse = 0;
-  /** Command description for ViewGroup */
-  fabric command ViewGroup(ViewGroupRequest): ViewGroupResponse = 1;
-  /** Command description for GetGroupMembership */
-  fabric command GetGroupMembership(GetGroupMembershipRequest): GetGroupMembershipResponse = 2;
-  /** Command description for RemoveGroup */
-  fabric command access(invoke: manage) RemoveGroup(RemoveGroupRequest): RemoveGroupResponse = 3;
-  /** Command description for RemoveAllGroups */
-  fabric command access(invoke: manage) RemoveAllGroups(): DefaultSuccess = 4;
-  /** Command description for AddGroupIfIdentifying */
-=======
   /** The AddGroup command allows a client to add group membership in a particular group for the server endpoint. */
   fabric command access(invoke: manage) AddGroup(AddGroupRequest): AddGroupResponse = 0;
   /** The ViewGroup command allows a client to request that the server responds with a ViewGroupResponse command containing the name string for a particular group. */
@@ -641,7 +518,6 @@ cluster Groups = 4 {
   /** The RemoveAllGroups command allows a client to direct the server to remove all group associations for the server endpoint. */
   fabric command access(invoke: manage) RemoveAllGroups(): DefaultSuccess = 4;
   /** The AddGroupIfIdentifying command allows a client to add group membership in a particular group for the server endpoint, on condition that the endpoint is identifying itself. */
->>>>>>> csa/v1.4.2-branch
   fabric command access(invoke: manage) AddGroupIfIdentifying(AddGroupIfIdentifyingRequest): DefaultSuccess = 5;
 }
 
@@ -687,10 +563,6 @@ cluster OnOff = 6 {
   attribute access(write: manage) optional nullable StartUpOnOffEnum startUpOnOff = 16387;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -722,11 +594,7 @@ cluster OnOff = 6 {
 
 /** The Descriptor Cluster is meant to replace the support from the Zigbee Device Object (ZDO) for describing a node, its endpoints and clusters. */
 cluster Descriptor = 29 {
-<<<<<<< HEAD
-  revision 2;
-=======
   revision 3;
->>>>>>> csa/v1.4.2-branch
 
   bitmap Feature : bitmap32 {
     kTagList = 0x1;
@@ -741,11 +609,7 @@ cluster Descriptor = 29 {
     nullable vendor_id mfgCode = 0;
     enum8 namespaceID = 1;
     enum8 tag = 2;
-<<<<<<< HEAD
-    optional nullable char_string label = 3;
-=======
     optional nullable char_string<64> label = 3;
->>>>>>> csa/v1.4.2-branch
   }
 
   readonly attribute DeviceTypeStruct deviceTypeList[] = 0;
@@ -753,15 +617,9 @@ cluster Descriptor = 29 {
   readonly attribute cluster_id clientList[] = 2;
   readonly attribute endpoint_no partsList[] = 3;
   readonly attribute optional SemanticTagStruct tagList[] = 4;
-<<<<<<< HEAD
-  readonly attribute command_id generatedCommandList[] = 65528;
-  readonly attribute command_id acceptedCommandList[] = 65529;
-  readonly attribute event_id eventList[] = 65530;
-=======
   readonly attribute optional char_string<32> endpointUniqueID = 5;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -769,11 +627,7 @@ cluster Descriptor = 29 {
 
 /** The Binding Cluster is meant to replace the support from the Zigbee Device Object (ZDO) for supporting the binding table. */
 cluster Binding = 30 {
-<<<<<<< HEAD
-  revision 1; // NOTE: Default/not specifically set
-=======
   revision 1;
->>>>>>> csa/v1.4.2-branch
 
   fabric_scoped struct TargetStruct {
     optional node_id node = 1;
@@ -786,10 +640,6 @@ cluster Binding = 30 {
   attribute access(write: manage) TargetStruct binding[] = 0;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -803,13 +653,8 @@ cluster AccessControl = 31 {
   revision 2;
 
   enum AccessControlEntryAuthModeEnum : enum8 {
-<<<<<<< HEAD
-    kPASE = 1;
-    kCASE = 2;
-=======
     kPASE = 1 [spec_name = "PASE"];
     kCASE = 2 [spec_name = "CASE"];
->>>>>>> csa/v1.4.2-branch
     kGroup = 3;
   }
 
@@ -908,10 +753,6 @@ cluster AccessControl = 31 {
   readonly attribute optional AccessRestrictionEntryStruct arl[] = 6;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -932,11 +773,7 @@ cluster AccessControl = 31 {
       Commissioning and operational determination of Node characteristics, such as Vendor ID, Product ID and serial number,
       which apply to the whole Node. Also allows setting user device information such as location. */
 cluster BasicInformation = 40 {
-<<<<<<< HEAD
-  revision 3;
-=======
   revision 5;
->>>>>>> csa/v1.4.2-branch
 
   enum ColorEnum : enum8 {
     kBlack = 0;
@@ -1019,15 +856,9 @@ cluster BasicInformation = 40 {
   readonly attribute optional ProductAppearanceStruct productAppearance = 20;
   readonly attribute int32u specificationVersion = 21;
   readonly attribute int16u maxPathsPerInvoke = 22;
-<<<<<<< HEAD
-  readonly attribute command_id generatedCommandList[] = 65528;
-  readonly attribute command_id acceptedCommandList[] = 65529;
-  readonly attribute event_id eventList[] = 65530;
-=======
   readonly attribute int32u configurationVersion = 24;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -1048,11 +879,7 @@ cluster OtaSoftwareUpdateProvider = 41 {
   enum DownloadProtocolEnum : enum8 {
     kBDXSynchronous = 0;
     kBDXAsynchronous = 1;
-<<<<<<< HEAD
-    kHTTPS = 2;
-=======
     kHTTPS = 2 [spec_name = "HTTPS"];
->>>>>>> csa/v1.4.2-branch
     kVendorSpecific = 3;
   }
 
@@ -1065,10 +892,6 @@ cluster OtaSoftwareUpdateProvider = 41 {
 
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -1179,10 +1002,6 @@ cluster OtaSoftwareUpdateRequestor = 42 {
   readonly attribute nullable int8u updateStateProgress = 3;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -1201,17 +1020,10 @@ cluster OtaSoftwareUpdateRequestor = 42 {
 
 /** This cluster is used to manage global aspects of the Commissioning flow. */
 cluster GeneralCommissioning = 48 {
-<<<<<<< HEAD
-  revision 1; // NOTE: Default/not specifically set
-
-  enum CommissioningErrorEnum : enum8 {
-    kOK = 0;
-=======
   revision 2;
 
   enum CommissioningErrorEnum : enum8 {
     kOK = 0 [spec_name = "OK"];
->>>>>>> csa/v1.4.2-branch
     kValueOutsideRange = 1;
     kInvalidAuthentication = 2;
     kNoFailSafe = 3;
@@ -1221,15 +1033,12 @@ cluster GeneralCommissioning = 48 {
     kTCMinVersionNotMet = 7;
   }
 
-<<<<<<< HEAD
-=======
   enum NetworkRecoveryReasonEnum : enum8 {
     kUnspecified = 0;
     kAuth = 1;
     kVisibility = 2;
   }
 
->>>>>>> csa/v1.4.2-branch
   enum RegulatoryLocationTypeEnum : enum8 {
     kIndoor = 0;
     kOutdoor = 1;
@@ -1238,10 +1047,7 @@ cluster GeneralCommissioning = 48 {
 
   bitmap Feature : bitmap32 {
     kTermsAndConditions = 0x1;
-<<<<<<< HEAD
-=======
     kNetworkRecovery = 0x2;
->>>>>>> csa/v1.4.2-branch
   }
 
   struct BasicCommissioningInfo {
@@ -1259,16 +1065,10 @@ cluster GeneralCommissioning = 48 {
   provisional readonly attribute access(read: administer) optional bitmap16 TCAcknowledgements = 7;
   provisional readonly attribute access(read: administer) optional boolean TCAcknowledgementsRequired = 8;
   provisional readonly attribute access(read: administer) optional nullable int32u TCUpdateDeadline = 9;
-<<<<<<< HEAD
-  readonly attribute command_id generatedCommandList[] = 65528;
-  readonly attribute command_id acceptedCommandList[] = 65529;
-  readonly attribute event_id eventList[] = 65530;
-=======
   provisional readonly attribute access(read: manage) optional octet_string<8> recoveryIdentifier = 10;
   provisional readonly attribute access(read: manage) optional nullable NetworkRecoveryReasonEnum networkRecoveryReason = 11;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -1308,15 +1108,6 @@ cluster GeneralCommissioning = 48 {
     CommissioningErrorEnum errorCode = 0;
   }
 
-<<<<<<< HEAD
-  /** Arm the persistent fail-safe timer with an expiry time of now + ExpiryLengthSeconds using device clock */
-  command access(invoke: administer) ArmFailSafe(ArmFailSafeRequest): ArmFailSafeResponse = 0;
-  /** Set the regulatory configuration to be used during commissioning */
-  command access(invoke: administer) SetRegulatoryConfig(SetRegulatoryConfigRequest): SetRegulatoryConfigResponse = 2;
-  /** Signals the Server that the Client has successfully completed all steps of Commissioning/Recofiguration needed during fail-safe period. */
-  fabric command access(invoke: administer) CommissioningComplete(): CommissioningCompleteResponse = 4;
-  /** This command sets the user acknowledgements received in the Enhanced Setup Flow Terms and Conditions into the node. */
-=======
   /** This command is used to arm or disarm the fail-safe timer. */
   command access(invoke: administer) ArmFailSafe(ArmFailSafeRequest): ArmFailSafeResponse = 0;
   /** This command is used to set the regulatory configuration for the device. */
@@ -1324,17 +1115,12 @@ cluster GeneralCommissioning = 48 {
   /** This command is used to indicate that the commissioning process is complete. */
   fabric command access(invoke: administer) CommissioningComplete(): CommissioningCompleteResponse = 4;
   /** This command is used to set the user acknowledgements received in the Enhanced Setup Flow Terms & Conditions into the node. */
->>>>>>> csa/v1.4.2-branch
   command access(invoke: administer) SetTCAcknowledgements(SetTCAcknowledgementsRequest): SetTCAcknowledgementsResponse = 6;
 }
 
 /** Functionality to configure, enable, disable network credentials and access on a Matter device. */
 cluster NetworkCommissioning = 49 {
-<<<<<<< HEAD
-  revision 1; // NOTE: Default/not specifically set
-=======
   revision 2;
->>>>>>> csa/v1.4.2-branch
 
   enum NetworkCommissioningStatusEnum : enum8 {
     kSuccess = 0;
@@ -1353,21 +1139,12 @@ cluster NetworkCommissioning = 49 {
   }
 
   enum WiFiBandEnum : enum8 {
-<<<<<<< HEAD
-    k2G4 = 0;
-    k3G65 = 1;
-    k5G = 2;
-    k6G = 3;
-    k60G = 4;
-    k1G = 5;
-=======
     k2G4 = 0 [spec_name = "2G4"];
     k3G65 = 1 [spec_name = "3G65"];
     k5G = 2 [spec_name = "5G"];
     k6G = 3 [spec_name = "6G"];
     k60G = 4 [spec_name = "60G"];
     k1G = 5 [spec_name = "1G"];
->>>>>>> csa/v1.4.2-branch
   }
 
   bitmap Feature : bitmap32 {
@@ -1387,19 +1164,11 @@ cluster NetworkCommissioning = 49 {
 
   bitmap WiFiSecurityBitmap : bitmap8 {
     kUnencrypted = 0x1;
-<<<<<<< HEAD
-    kWEP = 0x2;
-    kWPAPersonal = 0x4;
-    kWPA2Personal = 0x8;
-    kWPA3Personal = 0x10;
-    kWPA3MatterPDC = 0x20;
-=======
     kWEP = 0x2 [spec_name = "WEP"];
     kWPAPersonal = 0x4 [spec_name = "WPA-PERSONAL"];
     kWPA2Personal = 0x8 [spec_name = "WPA2-PERSONAL"];
     kWPA3Personal = 0x10 [spec_name = "WPA3-PERSONAL"];
     kWPA3MatterPDC = 0x20 [spec_name = "WPA3-Matter-PDC"];
->>>>>>> csa/v1.4.2-branch
   }
 
   struct NetworkInfoStruct {
@@ -1442,10 +1211,6 @@ cluster NetworkCommissioning = 49 {
   provisional readonly attribute optional int16u threadVersion = 10;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -1534,11 +1299,7 @@ cluster NetworkCommissioning = 49 {
 
 /** The cluster provides commands for retrieving unstructured diagnostic logs from a Node that may be used to aid in diagnostics. */
 cluster DiagnosticLogs = 50 {
-<<<<<<< HEAD
-  revision 1; // NOTE: Default/not specifically set
-=======
   revision 1;
->>>>>>> csa/v1.4.2-branch
 
   enum IntentEnum : enum8 {
     kEndUserSupport = 0;
@@ -1556,19 +1317,11 @@ cluster DiagnosticLogs = 50 {
 
   enum TransferProtocolEnum : enum8 {
     kResponsePayload = 0;
-<<<<<<< HEAD
-    kBDX = 1;
-=======
     kBDX = 1 [spec_name = "BDX"];
->>>>>>> csa/v1.4.2-branch
   }
 
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -1581,20 +1334,12 @@ cluster DiagnosticLogs = 50 {
 
   response struct RetrieveLogsResponse = 1 {
     StatusEnum status = 0;
-<<<<<<< HEAD
-    long_octet_string logContent = 1;
-=======
     long_octet_string<1024> logContent = 1;
->>>>>>> csa/v1.4.2-branch
     optional epoch_us UTCTimeStamp = 2;
     optional systime_us timeSinceBoot = 3;
   }
 
-<<<<<<< HEAD
-  /** Retrieving diagnostic logs from a Node */
-=======
   /** Reception of this command starts the process of retrieving diagnostic logs from a Node. */
->>>>>>> csa/v1.4.2-branch
   command RetrieveLogsRequest(RetrieveLogsRequestRequest): RetrieveLogsResponse = 0;
 }
 
@@ -1696,10 +1441,6 @@ cluster GeneralDiagnostics = 51 {
   readonly attribute boolean testEventTriggersEnabled = 8;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -1729,20 +1470,12 @@ cluster GeneralDiagnostics = 51 {
   /** Take a snapshot of system time and epoch time. */
   command TimeSnapshot(): TimeSnapshotResponse = 1;
   /** Request a variable length payload response. */
-<<<<<<< HEAD
-  command PayloadTestRequest(PayloadTestRequestRequest): PayloadTestResponse = 3;
-=======
   command access(invoke: manage) PayloadTestRequest(PayloadTestRequestRequest): PayloadTestResponse = 3;
->>>>>>> csa/v1.4.2-branch
 }
 
 /** The Software Diagnostics Cluster provides a means to acquire standardized diagnostics metrics that MAY be used by a Node to assist a user or Administrative Node in diagnosing potential problems. */
 cluster SoftwareDiagnostics = 52 {
-<<<<<<< HEAD
-  revision 1; // NOTE: Default/not specifically set
-=======
   revision 1;
->>>>>>> csa/v1.4.2-branch
 
   bitmap Feature : bitmap32 {
     kWatermarks = 0x1;
@@ -1759,11 +1492,7 @@ cluster SoftwareDiagnostics = 52 {
   info event SoftwareFault = 0 {
     int64u id = 0;
     optional char_string name = 1;
-<<<<<<< HEAD
-    optional octet_string faultRecording = 2;
-=======
     optional long_octet_string faultRecording = 2;
->>>>>>> csa/v1.4.2-branch
   }
 
   readonly attribute optional ThreadMetricsStruct threadMetrics[] = 0;
@@ -1772,29 +1501,17 @@ cluster SoftwareDiagnostics = 52 {
   readonly attribute optional int64u currentHeapHighWatermark = 3;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
 
-<<<<<<< HEAD
-  /** Reception of this command SHALL reset the values: The StackFreeMinimum field of the ThreadMetrics attribute, CurrentHeapHighWaterMark attribute. */
-=======
   /** This command is used to reset the high watermarks for heap and stack memory. */
->>>>>>> csa/v1.4.2-branch
   command access(invoke: manage) ResetWatermarks(): DefaultSuccess = 0;
 }
 
 /** The Thread Network Diagnostics Cluster provides a means to acquire standardized diagnostics metrics that MAY be used by a Node to assist a user or Administrative Node in diagnosing potential problems */
 cluster ThreadNetworkDiagnostics = 53 {
-<<<<<<< HEAD
-  revision 2;
-=======
   revision 3;
->>>>>>> csa/v1.4.2-branch
 
   enum ConnectionStatusEnum : enum8 {
     kConnected = 0;
@@ -1813,11 +1530,7 @@ cluster ThreadNetworkDiagnostics = 53 {
     kUnassigned = 1;
     kSleepyEndDevice = 2;
     kEndDevice = 3;
-<<<<<<< HEAD
-    kREED = 4;
-=======
     kREED = 4 [spec_name = "REED"];
->>>>>>> csa/v1.4.2-branch
     kRouter = 5;
     kLeader = 6;
   }
@@ -1951,35 +1664,21 @@ cluster ThreadNetworkDiagnostics = 53 {
   readonly attribute nullable octet_string<4> channelPage0Mask = 60;
   readonly attribute nullable OperationalDatasetComponents operationalDatasetComponents = 61;
   readonly attribute NetworkFaultEnum activeNetworkFaultsList[] = 62;
-<<<<<<< HEAD
-  readonly attribute command_id generatedCommandList[] = 65528;
-  readonly attribute command_id acceptedCommandList[] = 65529;
-  readonly attribute event_id eventList[] = 65530;
-=======
   provisional readonly attribute nullable int64u extAddress = 63;
   provisional readonly attribute nullable int16u rloc16 = 64;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
 
-<<<<<<< HEAD
-  /** Reception of this command SHALL reset the OverrunCount attributes to 0 */
-=======
   /** Reception of this command SHALL reset the following attributes to 0: */
->>>>>>> csa/v1.4.2-branch
   command access(invoke: manage) ResetCounts(): DefaultSuccess = 0;
 }
 
 /** The Wi-Fi Network Diagnostics Cluster provides a means to acquire standardized diagnostics metrics that MAY be used by a Node to assist a user or Administrative Node in diagnosing potential problems. */
 cluster WiFiNetworkDiagnostics = 54 {
-<<<<<<< HEAD
-  revision 1; // NOTE: Default/not specifically set
-=======
   revision 1;
->>>>>>> csa/v1.4.2-branch
 
   enum AssociationFailureCauseEnum : enum8 {
     kUnknown = 0;
@@ -1996,17 +1695,10 @@ cluster WiFiNetworkDiagnostics = 54 {
   enum SecurityTypeEnum : enum8 {
     kUnspecified = 0;
     kNone = 1;
-<<<<<<< HEAD
-    kWEP = 2;
-    kWPA = 3;
-    kWPA2 = 4;
-    kWPA3 = 5;
-=======
     kWEP = 2 [spec_name = "WEP"];
     kWPA = 3 [spec_name = "WPA"];
     kWPA2 = 4 [spec_name = "WPA2"];
     kWPA3 = 5 [spec_name = "WPA3"];
->>>>>>> csa/v1.4.2-branch
   }
 
   enum WiFiVersionEnum : enum8 {
@@ -2052,39 +1744,23 @@ cluster WiFiNetworkDiagnostics = 54 {
   readonly attribute optional nullable int64u overrunCount = 12;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
 
-<<<<<<< HEAD
-  /** Reception of this command SHALL reset the Breacon and Packet related count attributes to 0 */
-=======
   /** This command is used to reset the count attributes. */
->>>>>>> csa/v1.4.2-branch
   command ResetCounts(): DefaultSuccess = 0;
 }
 
 /** The Ethernet Network Diagnostics Cluster provides a means to acquire standardized diagnostics metrics that MAY be used by a Node to assist a user or Administrative Node in diagnosing potential problems. */
 cluster EthernetNetworkDiagnostics = 55 {
-<<<<<<< HEAD
-  revision 1; // NOTE: Default/not specifically set
-=======
   revision 1;
->>>>>>> csa/v1.4.2-branch
 
   enum PHYRateEnum : enum8 {
     kRate10M = 0;
     kRate100M = 1;
     kRate1G = 2;
-<<<<<<< HEAD
-    kRate25G = 3;
-=======
     kRate25G = 3 [spec_name = "Rate2_5G"];
->>>>>>> csa/v1.4.2-branch
     kRate5G = 4;
     kRate10G = 5;
     kRate40G = 6;
@@ -2109,19 +1785,11 @@ cluster EthernetNetworkDiagnostics = 55 {
   readonly attribute optional int64u timeSinceReset = 8;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
 
-<<<<<<< HEAD
-  /** Reception of this command SHALL reset the attributes: PacketRxCount, PacketTxCount, TxErrCount, CollisionCount, OverrunCount to 0 */
-=======
   /** This command is used to reset the count attributes. */
->>>>>>> csa/v1.4.2-branch
   command access(invoke: manage) ResetCounts(): DefaultSuccess = 0;
 }
 
@@ -2157,13 +1825,8 @@ cluster TimeSynchronization = 56 {
     kMatterNTPNTS = 12;
     kMixedNTPNTS = 13;
     kCloudSource = 14;
-<<<<<<< HEAD
-    kPTP = 15;
-    kGNSS = 16;
-=======
     kPTP = 15 [spec_name = "PTP"];
     kGNSS = 16 [spec_name = "GNSS"];
->>>>>>> csa/v1.4.2-branch
   }
 
   enum TimeZoneDatabaseEnum : enum8 {
@@ -2235,10 +1898,6 @@ cluster TimeSynchronization = 56 {
   readonly attribute optional boolean supportsDNSResolve = 12;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -2331,10 +1990,6 @@ cluster Switch = 59 {
   readonly attribute optional int8u multiPressMax = 2;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -2365,10 +2020,6 @@ cluster AdministratorCommissioning = 60 {
   readonly attribute nullable vendor_id adminVendorId = 2;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -2395,11 +2046,7 @@ cluster AdministratorCommissioning = 60 {
 
 /** This cluster is used to add or remove Operational Credentials on a Commissionee or Node, as well as manage the associated Fabrics. */
 cluster OperationalCredentials = 62 {
-<<<<<<< HEAD
-  revision 1; // NOTE: Default/not specifically set
-=======
   revision 2;
->>>>>>> csa/v1.4.2-branch
 
   enum CertificateChainTypeEnum : enum8 {
     kDACCertificate = 1;
@@ -2407,11 +2054,7 @@ cluster OperationalCredentials = 62 {
   }
 
   enum NodeOperationalCertStatusEnum : enum8 {
-<<<<<<< HEAD
-    kOK = 0;
-=======
     kOK = 0 [spec_name = "OK"];
->>>>>>> csa/v1.4.2-branch
     kInvalidPublicKey = 1;
     kInvalidNodeOpId = 2;
     kInvalidNOC = 3;
@@ -2429,22 +2072,14 @@ cluster OperationalCredentials = 62 {
     fabric_id fabricID = 3;
     node_id nodeID = 4;
     char_string<32> label = 5;
-<<<<<<< HEAD
-=======
     optional octet_string<85> VIDVerificationStatement = 6;
->>>>>>> csa/v1.4.2-branch
     fabric_idx fabricIndex = 254;
   }
 
   fabric_scoped struct NOCStruct {
-<<<<<<< HEAD
-    fabric_sensitive octet_string noc = 1;
-    nullable fabric_sensitive octet_string icac = 2;
-=======
     octet_string<400> noc = 1;
     nullable octet_string<400> icac = 2;
     optional octet_string<400> vvsc = 3;
->>>>>>> csa/v1.4.2-branch
     fabric_idx fabricIndex = 254;
   }
 
@@ -2456,10 +2091,6 @@ cluster OperationalCredentials = 62 {
   readonly attribute int8u currentFabricIndex = 5;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -2469,11 +2100,7 @@ cluster OperationalCredentials = 62 {
   }
 
   response struct AttestationResponse = 1 {
-<<<<<<< HEAD
-    octet_string<900> attestationElements = 0;
-=======
     octet_string attestationElements = 0;
->>>>>>> csa/v1.4.2-branch
     octet_string<64> attestationSignature = 1;
   }
 
@@ -2492,11 +2119,7 @@ cluster OperationalCredentials = 62 {
 
   response struct CSRResponse = 5 {
     octet_string NOCSRElements = 0;
-<<<<<<< HEAD
-    octet_string attestationSignature = 1;
-=======
     octet_string<64> attestationSignature = 1;
->>>>>>> csa/v1.4.2-branch
   }
 
   request struct AddNOCRequest {
@@ -2508,13 +2131,8 @@ cluster OperationalCredentials = 62 {
   }
 
   request struct UpdateNOCRequest {
-<<<<<<< HEAD
-    octet_string NOCValue = 0;
-    optional octet_string ICACValue = 1;
-=======
     octet_string<400> NOCValue = 0;
     optional octet_string<400> ICACValue = 1;
->>>>>>> csa/v1.4.2-branch
   }
 
   response struct NOCResponse = 8 {
@@ -2532,9 +2150,6 @@ cluster OperationalCredentials = 62 {
   }
 
   request struct AddTrustedRootCertificateRequest {
-<<<<<<< HEAD
-    octet_string rootCACertificate = 0;
-=======
     octet_string<400> rootCACertificate = 0;
   }
 
@@ -2553,7 +2168,6 @@ cluster OperationalCredentials = 62 {
     fabric_idx fabricIndex = 0;
     int8u fabricBindingVersion = 1;
     octet_string signature = 2;
->>>>>>> csa/v1.4.2-branch
   }
 
   /** Sender is requesting attestation information from the receiver. */
@@ -2564,11 +2178,7 @@ cluster OperationalCredentials = 62 {
   command access(invoke: administer) CSRRequest(CSRRequestRequest): CSRResponse = 4;
   /** Sender is requesting to add the new node operational certificates. */
   command access(invoke: administer) AddNOC(AddNOCRequest): NOCResponse = 6;
-<<<<<<< HEAD
-  /** Sender is requesting to update the node operational certificates. */
-=======
   /** This command SHALL replace the NOC and optional associated ICAC (if present) scoped under the accessing fabric upon successful validation of all arguments and preconditions. */
->>>>>>> csa/v1.4.2-branch
   fabric command access(invoke: administer) UpdateNOC(UpdateNOCRequest): NOCResponse = 7;
   /** This command SHALL be used by an Administrative Node to set the user-visible Label field for a given Fabric, as reflected by entries in the Fabrics attribute. */
   fabric command access(invoke: administer) UpdateFabricLabel(UpdateFabricLabelRequest): NOCResponse = 9;
@@ -2576,13 +2186,10 @@ cluster OperationalCredentials = 62 {
   command access(invoke: administer) RemoveFabric(RemoveFabricRequest): NOCResponse = 10;
   /** This command SHALL add a Trusted Root CA Certificate, provided as its CHIP Certificate representation. */
   command access(invoke: administer) AddTrustedRootCertificate(AddTrustedRootCertificateRequest): DefaultSuccess = 11;
-<<<<<<< HEAD
-=======
   /** This command SHALL be used to update any of the accessing fabric's associated VendorID, VidVerificatioNStatement or VVSC (Vendor Verification Signing Certificate). */
   fabric command access(invoke: administer) SetVIDVerificationStatement(SetVIDVerificationStatementRequest): DefaultSuccess = 12;
   /** This command SHALL be used to request that the server authenticate the fabric associated with the FabricIndex given. */
   command access(invoke: administer) SignVIDVerificationRequest(SignVIDVerificationRequestRequest): SignVIDVerificationResponse = 13;
->>>>>>> csa/v1.4.2-branch
 }
 
 /** The Group Key Management Cluster is the mechanism by which group keys are managed. */
@@ -2628,10 +2235,6 @@ cluster GroupKeyManagement = 63 {
   readonly attribute int16u maxGroupKeysPerFabric = 3;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -2666,37 +2269,11 @@ cluster GroupKeyManagement = 63 {
   fabric command access(invoke: administer) KeySetReadAllIndices(): KeySetReadAllIndicesResponse = 4;
 }
 
-<<<<<<< HEAD
-/** The Fixed Label Cluster provides a feature for the device to tag an endpoint with zero or more read only
-labels. */
-cluster FixedLabel = 64 {
-  revision 1; // NOTE: Default/not specifically set
-
-  struct LabelStruct {
-    char_string<16> label = 0;
-    char_string<16> value = 1;
-  }
-
-  readonly attribute LabelStruct labelList[] = 0;
-  readonly attribute command_id generatedCommandList[] = 65528;
-  readonly attribute command_id acceptedCommandList[] = 65529;
-  readonly attribute event_id eventList[] = 65530;
-  readonly attribute attrib_id attributeList[] = 65531;
-  readonly attribute bitmap32 featureMap = 65532;
-  readonly attribute int16u clusterRevision = 65533;
-}
-
-=======
->>>>>>> csa/v1.4.2-branch
 /** The User Label Cluster provides a feature to tag an endpoint with zero or more labels. */
 cluster UserLabel = 65 {
   revision 1; // NOTE: Default/not specifically set
 
-<<<<<<< HEAD
-  struct LabelStruct {
-=======
   shared struct LabelStruct {
->>>>>>> csa/v1.4.2-branch
     char_string<16> label = 0;
     char_string<16> value = 1;
   }
@@ -2704,10 +2281,6 @@ cluster UserLabel = 65 {
   attribute access(write: manage) LabelStruct labelList[] = 0;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -2723,13 +2296,8 @@ cluster IcdManagement = 70 {
   }
 
   enum OperatingModeEnum : enum8 {
-<<<<<<< HEAD
-    kSIT = 0;
-    kLIT = 1;
-=======
     kSIT = 0 [spec_name = "SIT"];
     kLIT = 1 [spec_name = "LIT"];
->>>>>>> csa/v1.4.2-branch
   }
 
   bitmap Feature : bitmap32 {
@@ -2772,22 +2340,12 @@ cluster IcdManagement = 70 {
   readonly attribute access(read: administer) optional MonitoringRegistrationStruct registeredClients[] = 3;
   readonly attribute access(read: administer) optional int32u ICDCounter = 4;
   readonly attribute optional int16u clientsSupportedPerFabric = 5;
-<<<<<<< HEAD
-  provisional readonly attribute optional UserActiveModeTriggerBitmap userActiveModeTriggerHint = 6;
-  provisional readonly attribute optional char_string<128> userActiveModeTriggerInstruction = 7;
-  provisional readonly attribute optional OperatingModeEnum operatingMode = 8;
-  provisional readonly attribute optional int32u maximumCheckInBackOff = 9;
-  readonly attribute command_id generatedCommandList[] = 65528;
-  readonly attribute command_id acceptedCommandList[] = 65529;
-  readonly attribute event_id eventList[] = 65530;
-=======
   readonly attribute optional UserActiveModeTriggerBitmap userActiveModeTriggerHint = 6;
   readonly attribute optional char_string<128> userActiveModeTriggerInstruction = 7;
   readonly attribute optional OperatingModeEnum operatingMode = 8;
   readonly attribute optional int32u maximumCheckInBackOff = 9;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -2849,11 +2407,7 @@ provisional cluster ScenesManagement = 98 {
     optional int64s valueSigned64 = 8;
   }
 
-<<<<<<< HEAD
-  struct ExtensionFieldSet {
-=======
   struct ExtensionFieldSetStruct {
->>>>>>> csa/v1.4.2-branch
     cluster_id clusterID = 0;
     AttributeValuePairStruct attributeValueList[] = 1;
   }
@@ -2867,18 +2421,10 @@ provisional cluster ScenesManagement = 98 {
     fabric_idx fabricIndex = 254;
   }
 
-<<<<<<< HEAD
-  readonly attribute optional nullable node_id lastConfiguredBy = 0;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute int16u sceneTableSize = 1;
   readonly attribute SceneInfoStruct fabricSceneInfo[] = 2;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -2887,13 +2433,8 @@ provisional cluster ScenesManagement = 98 {
     group_id groupID = 0;
     int8u sceneID = 1;
     int32u transitionTime = 2;
-<<<<<<< HEAD
-    char_string sceneName = 3;
-    ExtensionFieldSet extensionFieldSets[] = 4;
-=======
     char_string<16> sceneName = 3;
     ExtensionFieldSetStruct extensionFieldSetStructs[] = 4;
->>>>>>> csa/v1.4.2-branch
   }
 
   response struct AddSceneResponse = 0 {
@@ -2912,13 +2453,8 @@ provisional cluster ScenesManagement = 98 {
     group_id groupID = 1;
     int8u sceneID = 2;
     optional int32u transitionTime = 3;
-<<<<<<< HEAD
-    optional char_string sceneName = 4;
-    optional ExtensionFieldSet extensionFieldSets[] = 5;
-=======
     optional char_string<16> sceneName = 4;
     optional ExtensionFieldSetStruct extensionFieldSetStructs[] = 5;
->>>>>>> csa/v1.4.2-branch
   }
 
   request struct RemoveSceneRequest {
@@ -2983,11 +2519,7 @@ provisional cluster ScenesManagement = 98 {
     int8u sceneIdentifierFrom = 2;
   }
 
-<<<<<<< HEAD
-  /** Add a scene to the scene table. Extension field sets are supported, and are inputed as '{"ClusterID": VALUE, "AttributeValueList":[{"AttributeID": VALUE, "Value*": VALUE}]}' */
-=======
   /** Add a scene to the scene table. Extension field sets are input as '{"ClusterID": VALUE, "AttributeValueList":[{"AttributeID": VALUE, "Value*": VALUE}]}'. */
->>>>>>> csa/v1.4.2-branch
   fabric command access(invoke: manage) AddScene(AddSceneRequest): AddSceneResponse = 0;
   /** Retrieves the requested scene entry from its Scene table. */
   fabric command ViewScene(ViewSceneRequest): ViewSceneResponse = 1;
@@ -2999,17 +2531,10 @@ provisional cluster ScenesManagement = 98 {
   fabric command access(invoke: manage) StoreScene(StoreSceneRequest): StoreSceneResponse = 4;
   /** Set the attributes and corresponding state for each other cluster implemented on the endpoint accordingly to the resquested scene entry in the Scene Table */
   fabric command RecallScene(RecallSceneRequest): DefaultSuccess = 5;
-<<<<<<< HEAD
-  /** Get an unused scene identifier when no commissioning tool is in the network, or for a commissioning tool to get the used scene identifiers within a certain group */
-  fabric command GetSceneMembership(GetSceneMembershipRequest): GetSceneMembershipResponse = 6;
-  /** Allows a client to efficiently copy scenes from one group/scene identifier pair to another group/scene identifier pair. */
-  fabric command CopyScene(CopySceneRequest): CopySceneResponse = 64;
-=======
   /** This command can be used to get the used scene identifiers within a certain group, for the endpoint that implements this cluster. */
   fabric command GetSceneMembership(GetSceneMembershipRequest): GetSceneMembershipResponse = 6;
   /** This command allows a client to efficiently copy scenes from one group/scene identifier pair to another group/scene identifier pair. */
   fabric command access(invoke: manage) CopyScene(CopySceneRequest): CopySceneResponse = 64;
->>>>>>> csa/v1.4.2-branch
 }
 
 /** Attributes and commands for controlling the color properties of a color-capable light. */
@@ -3070,11 +2595,7 @@ cluster ColorControl = 768 {
     kHueSaturation = 0x1;
     kEnhancedHue = 0x2;
     kColorLoop = 0x4;
-<<<<<<< HEAD
-    kXY = 0x8;
-=======
     kXY = 0x8 [spec_name = "XY"];
->>>>>>> csa/v1.4.2-branch
     kColorTemperature = 0x10;
   }
 
@@ -3082,11 +2603,7 @@ cluster ColorControl = 768 {
     kHueAndSaturation = 0x1;
     kEnhancedHue = 0x2;
     kColorLoop = 0x4;
-<<<<<<< HEAD
-    kXY = 0x8;
-=======
     kXY = 0x8 [spec_name = "XY"];
->>>>>>> csa/v1.4.2-branch
     kColorTemperature = 0x10;
   }
 
@@ -3155,10 +2672,6 @@ cluster ColorControl = 768 {
   attribute access(write: manage) optional nullable int16u startUpColorTemperatureMireds = 16400;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
-<<<<<<< HEAD
-  readonly attribute event_id eventList[] = 65530;
-=======
->>>>>>> csa/v1.4.2-branch
   readonly attribute attrib_id attributeList[] = 65531;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -3352,11 +2865,7 @@ cluster ColorControl = 768 {
 }
 
 endpoint 0 {
-<<<<<<< HEAD
-  device type ma_rootdevice = 22, version 1;
-=======
   device type ma_rootdevice = 22, version 3;
->>>>>>> csa/v1.4.2-branch
 
   binding cluster OtaSoftwareUpdateProvider;
 
@@ -3379,19 +2888,11 @@ endpoint 0 {
     emits event AccessControlEntryChanged;
     emits event AccessControlExtensionChanged;
     callback attribute acl;
-<<<<<<< HEAD
-    callback attribute extension;
-=======
->>>>>>> csa/v1.4.2-branch
     callback attribute subjectsPerAccessControlEntry;
     callback attribute targetsPerAccessControlEntry;
     callback attribute accessControlEntriesPerFabric;
     callback attribute attributeList;
-<<<<<<< HEAD
-    ram      attribute featureMap default = 0;
-=======
     callback attribute featureMap;
->>>>>>> csa/v1.4.2-branch
     callback attribute clusterRevision;
   }
 
@@ -3420,14 +2921,9 @@ endpoint 0 {
     callback attribute capabilityMinima;
     callback attribute specificationVersion;
     callback attribute maxPathsPerInvoke;
-<<<<<<< HEAD
-    ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 3;
-=======
     callback attribute configurationVersion default = 1;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 5;
->>>>>>> csa/v1.4.2-branch
   }
 
   server cluster OtaSoftwareUpdateRequestor {
@@ -3451,11 +2947,7 @@ endpoint 0 {
     callback attribute locationCapability;
     callback attribute supportsConcurrentConnection;
     ram      attribute featureMap default = 0;
-<<<<<<< HEAD
-    ram      attribute clusterRevision default = 1;
-=======
     callback attribute clusterRevision default = 1;
->>>>>>> csa/v1.4.2-branch
 
     handle command ArmFailSafe;
     handle command ArmFailSafeResponse;
@@ -3466,18 +2958,6 @@ endpoint 0 {
   }
 
   server cluster NetworkCommissioning {
-<<<<<<< HEAD
-    ram      attribute maxNetworks;
-    callback attribute networks;
-    ram      attribute scanMaxTimeSeconds;
-    ram      attribute connectMaxTimeSeconds;
-    ram      attribute interfaceEnabled;
-    ram      attribute lastNetworkingStatus;
-    ram      attribute lastNetworkID;
-    ram      attribute lastConnectErrorValue;
-    ram      attribute featureMap default = 2;
-    ram      attribute clusterRevision default = 1;
-=======
     callback attribute maxNetworks;
     callback attribute networks;
     callback attribute scanMaxTimeSeconds;
@@ -3488,7 +2968,6 @@ endpoint 0 {
     callback attribute lastConnectErrorValue;
     callback attribute featureMap;
     callback attribute clusterRevision;
->>>>>>> csa/v1.4.2-branch
 
     handle command ScanNetworks;
     handle command ScanNetworksResponse;
@@ -3516,12 +2995,6 @@ endpoint 0 {
     callback attribute upTime;
     callback attribute totalOperationalHours;
     callback attribute bootReason;
-<<<<<<< HEAD
-    callback attribute activeHardwareFaults;
-    callback attribute activeRadioFaults;
-    callback attribute activeNetworkFaults;
-=======
->>>>>>> csa/v1.4.2-branch
     callback attribute testEventTriggersEnabled default = false;
     callback attribute featureMap;
     callback attribute clusterRevision;
@@ -3537,11 +3010,7 @@ endpoint 0 {
     callback attribute currentHeapUsed;
     callback attribute currentHeapHighWatermark;
     callback attribute featureMap;
-<<<<<<< HEAD
-    ram      attribute clusterRevision default = 1;
-=======
     callback attribute clusterRevision;
->>>>>>> csa/v1.4.2-branch
 
     handle command ResetWatermarks;
   }
@@ -3692,11 +3161,7 @@ endpoint 0 {
     callback attribute adminFabricIndex;
     callback attribute adminVendorId;
     ram      attribute featureMap default = 0;
-<<<<<<< HEAD
-    ram      attribute clusterRevision default = 1;
-=======
     callback attribute clusterRevision;
->>>>>>> csa/v1.4.2-branch
 
     handle command OpenCommissioningWindow;
     handle command RevokeCommissioning;
@@ -3724,12 +3189,9 @@ endpoint 0 {
     handle command UpdateFabricLabel;
     handle command RemoveFabric;
     handle command AddTrustedRootCertificate;
-<<<<<<< HEAD
-=======
     handle command SetVIDVerificationStatement;
     handle command SignVIDVerificationRequest;
     handle command SignVIDVerificationResponse;
->>>>>>> csa/v1.4.2-branch
   }
 
   server cluster GroupKeyManagement {
@@ -3748,15 +3210,6 @@ endpoint 0 {
     handle command KeySetReadAllIndicesResponse;
   }
 
-<<<<<<< HEAD
-  server cluster FixedLabel {
-    callback attribute labelList;
-    ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 1;
-  }
-
-=======
->>>>>>> csa/v1.4.2-branch
   server cluster UserLabel {
     callback attribute labelList;
     ram      attribute featureMap default = 0;
@@ -3772,15 +3225,9 @@ endpoint 0 {
     callback attribute clientsSupportedPerFabric;
     ram      attribute userActiveModeTriggerHint default = 0x1115;
     ram      attribute userActiveModeTriggerInstruction default = "Power Cycle";
-<<<<<<< HEAD
-    ram      attribute operatingMode default = 0;
-    callback attribute maximumCheckInBackOff;
-    ram      attribute featureMap default = 15;
-=======
     callback attribute operatingMode;
     callback attribute maximumCheckInBackOff;
     callback attribute featureMap;
->>>>>>> csa/v1.4.2-branch
     ram      attribute clusterRevision default = 3;
 
     handle command RegisterClient;
@@ -3803,11 +3250,7 @@ endpoint 1 {
     ram      attribute identifyType default = 0x0;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
-<<<<<<< HEAD
-    ram      attribute clusterRevision default = 4;
-=======
     ram      attribute clusterRevision default = 0x0005;
->>>>>>> csa/v1.4.2-branch
 
     handle command Identify;
     handle command TriggerEffect;
@@ -3857,11 +3300,7 @@ endpoint 2 {
     callback attribute acceptedCommandList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
-<<<<<<< HEAD
-    ram      attribute clusterRevision default = 2;
-=======
     ram      attribute clusterRevision default = 0x0005;
->>>>>>> csa/v1.4.2-branch
 
     handle command Identify;
     handle command TriggerEffect;

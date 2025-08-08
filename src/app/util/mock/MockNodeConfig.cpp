@@ -127,11 +127,6 @@ MockClusterConfig::MockClusterConfig(ClusterId aId, std::initializer_list<MockAt
         mEmberEventList.push_back(event.id);
     }
 
-<<<<<<< HEAD
-    mEmberCluster.clusterId      = id;
-    mEmberCluster.attributeCount = static_cast<uint16_t>(attributes.size());
-    mEmberCluster.mask           = MATTER_CLUSTER_FLAG_SERVER;
-=======
     if (side.Has(MockClusterSide::kServer))
     {
         mEmberCluster.mask |= MATTER_CLUSTER_FLAG_SERVER;
@@ -142,7 +137,6 @@ MockClusterConfig::MockClusterConfig(ClusterId aId, std::initializer_list<MockAt
     }
     mEmberCluster.clusterId      = id;
     mEmberCluster.attributeCount = static_cast<uint16_t>(attributes.size());
->>>>>>> csa/v1.4.2-branch
     mEmberCluster.eventCount     = static_cast<uint16_t>(mEmberEventList.size());
     mEmberCluster.eventList      = mEmberEventList.data();
 

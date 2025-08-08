@@ -515,64 +515,6 @@ Protocols::InteractionModel::Status DispatchServerCommand(CommandHandler * apCom
 
 } // namespace FaultInjection
 
-<<<<<<< HEAD
-namespace GeneralDiagnostics {
-
-void DispatchServerCommand(CommandHandler * apCommandObj, const ConcreteCommandPath & aCommandPath, TLV::TLVReader & aDataTlv)
-{
-    CHIP_ERROR TLVError = CHIP_NO_ERROR;
-    bool wasHandled     = false;
-    {
-        switch (aCommandPath.mCommandId)
-        {
-        case Commands::TestEventTrigger::Id: {
-            Commands::TestEventTrigger::DecodableType commandData;
-            TLVError = DataModel::Decode(aDataTlv, commandData);
-            if (TLVError == CHIP_NO_ERROR)
-            {
-                wasHandled = emberAfGeneralDiagnosticsClusterTestEventTriggerCallback(apCommandObj, aCommandPath, commandData);
-            }
-            break;
-        }
-        case Commands::TimeSnapshot::Id: {
-            Commands::TimeSnapshot::DecodableType commandData;
-            TLVError = DataModel::Decode(aDataTlv, commandData);
-            if (TLVError == CHIP_NO_ERROR)
-            {
-                wasHandled = emberAfGeneralDiagnosticsClusterTimeSnapshotCallback(apCommandObj, aCommandPath, commandData);
-            }
-            break;
-        }
-        case Commands::PayloadTestRequest::Id: {
-            Commands::PayloadTestRequest::DecodableType commandData;
-            TLVError = DataModel::Decode(aDataTlv, commandData);
-            if (TLVError == CHIP_NO_ERROR)
-            {
-                wasHandled = emberAfGeneralDiagnosticsClusterPayloadTestRequestCallback(apCommandObj, aCommandPath, commandData);
-            }
-            break;
-        }
-        default: {
-            // Unrecognized command ID, error status will apply.
-            apCommandObj->AddStatus(aCommandPath, Protocols::InteractionModel::Status::UnsupportedCommand);
-            ChipLogError(Zcl, "Unknown command " ChipLogFormatMEI " for cluster " ChipLogFormatMEI,
-                         ChipLogValueMEI(aCommandPath.mCommandId), ChipLogValueMEI(aCommandPath.mClusterId));
-            return;
-        }
-        }
-    }
-
-    if (CHIP_NO_ERROR != TLVError || !wasHandled)
-    {
-        apCommandObj->AddStatus(aCommandPath, Protocols::InteractionModel::Status::InvalidCommand);
-        ChipLogProgress(Zcl, "Failed to dispatch command, TLVError=%" CHIP_ERROR_FORMAT, TLVError.Format());
-    }
-}
-
-} // namespace GeneralDiagnostics
-
-=======
->>>>>>> csa/v1.4.2-branch
 namespace GroupKeyManagement {
 
 Protocols::InteractionModel::Status DispatchServerCommand(CommandHandler * apCommandObj, const ConcreteCommandPath & aCommandPath,
@@ -1866,14 +1808,7 @@ void DispatchSingleClusterCommand(const ConcreteCommandPath & aCommandPath, TLV:
         errorStatus = Clusters::FanControl::DispatchServerCommand(apCommandObj, aCommandPath, aReader);
         break;
     case Clusters::FaultInjection::Id:
-<<<<<<< HEAD
-        Clusters::FaultInjection::DispatchServerCommand(apCommandObj, aCommandPath, aReader);
-        break;
-    case Clusters::GeneralDiagnostics::Id:
-        Clusters::GeneralDiagnostics::DispatchServerCommand(apCommandObj, aCommandPath, aReader);
-=======
         errorStatus = Clusters::FaultInjection::DispatchServerCommand(apCommandObj, aCommandPath, aReader);
->>>>>>> csa/v1.4.2-branch
         break;
     case Clusters::GroupKeyManagement::Id:
         errorStatus = Clusters::GroupKeyManagement::DispatchServerCommand(apCommandObj, aCommandPath, aReader);

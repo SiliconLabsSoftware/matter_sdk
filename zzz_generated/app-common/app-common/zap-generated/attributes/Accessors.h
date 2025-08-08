@@ -843,8 +843,6 @@ Protocols::InteractionModel::Status Set(EndpointId endpoint, const chip::app::Da
                                         MarkAttributeDirty markDirty);
 } // namespace TCUpdateDeadline
 
-<<<<<<< HEAD
-=======
 namespace RecoveryIdentifier {
 Protocols::InteractionModel::Status Get(EndpointId endpoint, chip::MutableByteSpan & value); // octet_string
 Protocols::InteractionModel::Status Set(EndpointId endpoint, chip::ByteSpan value);
@@ -870,7 +868,6 @@ Set(EndpointId endpoint,
     MarkAttributeDirty markDirty);
 } // namespace NetworkRecoveryReason
 
->>>>>>> csa/v1.4.2-branch
 namespace FeatureMap {
 Protocols::InteractionModel::Status Get(EndpointId endpoint, uint32_t * value); // bitmap32
 Protocols::InteractionModel::Status Set(EndpointId endpoint, uint32_t value);
@@ -1348,23 +1345,6 @@ Protocols::InteractionModel::Status Set(EndpointId endpoint, chip::CharSpan valu
 Protocols::InteractionModel::Status Set(EndpointId endpoint, chip::CharSpan value, MarkAttributeDirty markDirty);
 } // namespace UserActiveModeTriggerInstruction
 
-<<<<<<< HEAD
-namespace OperatingMode {
-Protocols::InteractionModel::Status Get(EndpointId endpoint,
-                                        chip::app::Clusters::IcdManagement::OperatingModeEnum * value); // OperatingModeEnum
-Protocols::InteractionModel::Status Set(EndpointId endpoint, chip::app::Clusters::IcdManagement::OperatingModeEnum value);
-Protocols::InteractionModel::Status Set(EndpointId endpoint, chip::app::Clusters::IcdManagement::OperatingModeEnum value,
-                                        MarkAttributeDirty markDirty);
-} // namespace OperatingMode
-
-namespace FeatureMap {
-Protocols::InteractionModel::Status Get(EndpointId endpoint, uint32_t * value); // bitmap32
-Protocols::InteractionModel::Status Set(EndpointId endpoint, uint32_t value);
-Protocols::InteractionModel::Status Set(EndpointId endpoint, uint32_t value, MarkAttributeDirty markDirty);
-} // namespace FeatureMap
-
-=======
->>>>>>> csa/v1.4.2-branch
 namespace ClusterRevision {
 Protocols::InteractionModel::Status Get(EndpointId endpoint, uint16_t * value); // int16u
 Protocols::InteractionModel::Status Set(EndpointId endpoint, uint16_t value);

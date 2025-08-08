@@ -151,12 +151,9 @@ public:
     void SetLength(uint32_t length) { mLength = length; }
     void SetWasSelected(bool selected) { mWasSelected = selected; }
     bool WasSelected() { return mWasSelected; }
-<<<<<<< HEAD
     bool IsValidTag(OTAProcessorTag tag);
     bool IsLastBlock() const { return mLastBlock; }
 
-=======
->>>>>>> csa/v1.4.2-branch
 #ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
     CHIP_ERROR vOtaProcessInternalEncryption(MutableByteSpan & block);
     /**

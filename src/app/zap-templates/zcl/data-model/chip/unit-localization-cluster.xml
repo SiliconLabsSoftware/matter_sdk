@@ -47,17 +47,11 @@ Git: 0.9.2-summer2025-40-gf61484656
       </feature>
     </features>
     <!-- Base data types -->
-<<<<<<< HEAD
-    <attribute side="server" code="0x00" name="TemperatureUnit" define="TEMPERATURE_UNIT" type="TempUnitEnum" min="0" max="2" writable="true" optional="true">
-=======
     <attribute side="server" code="0x00" name="TemperatureUnit" define="TEMPERATURE_UNIT" type="TempUnitEnum" max="2" writable="true">
->>>>>>> csa/v1.4.2-branch
       <access op="write" role="manage"/>
       <mandatoryConform>
         <feature name="TEMP"/>
       </mandatoryConform>
-<<<<<<< HEAD
-=======
     </attribute>
     <attribute side="server" code="0x01" name="SupportedTemperatureUnits" define="SUPPORTED_TEMPERATURE_UNITS" type="array" entryType="TempUnitEnum" apiMaturity="provisional" length="3" minLength="2">
       <otherwiseConform>
@@ -66,7 +60,6 @@ Git: 0.9.2-summer2025-40-gf61484656
           <feature name="TEMP"/>
         </mandatoryConform>
       </otherwiseConform>
->>>>>>> csa/v1.4.2-branch
     </attribute>
   </cluster>
 </configurator>

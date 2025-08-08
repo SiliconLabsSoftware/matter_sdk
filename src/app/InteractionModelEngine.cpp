@@ -523,18 +523,11 @@ bool InteractionModelEngine::FabricHasAtLeastOneActiveSubscription(FabricIndex a
         Access::SubjectDescriptor subject = handler->GetSubjectDescriptor();
         VerifyOrReturnValue(subject.fabricIndex == aFabricIndex, Loop::Continue);
 
-<<<<<<< HEAD
-        if (subject.authMode == Access::AuthMode::kCase)
-        {
-            hasActiveSubscription = handler->IsActiveSubscription();
-            VerifyOrReturnValue(!hasActiveSubscription, Loop::Break);
-=======
         if ((subject.authMode == Access::AuthMode::kCase) && handler->IsActiveSubscription())
         {
             // On first subscription found for fabric, we can immediately stop checking.
             hasActiveSubscription = true;
             return Loop::Break;
->>>>>>> csa/v1.4.2-branch
         }
 
         return Loop::Continue;

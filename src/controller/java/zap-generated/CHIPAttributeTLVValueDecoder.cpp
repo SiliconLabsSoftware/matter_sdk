@@ -4967,8 +4967,6 @@ jobject DecodeAttributeValue(const app::ConcreteAttributePath & aPath, TLV::TLVR
             }
             return value;
         }
-<<<<<<< HEAD
-=======
         case Attributes::RecoveryIdentifier::Id: {
             using TypeInfo = Attributes::RecoveryIdentifier::TypeInfo;
             TypeInfo::DecodableType cppValue;
@@ -5007,7 +5005,6 @@ jobject DecodeAttributeValue(const app::ConcreteAttributePath & aPath, TLV::TLVR
             }
             return value;
         }
->>>>>>> csa/v1.4.2-branch
         case Attributes::GeneratedCommandList::Id: {
             using TypeInfo = Attributes::GeneratedCommandList::TypeInfo;
             TypeInfo::DecodableType cppValue;

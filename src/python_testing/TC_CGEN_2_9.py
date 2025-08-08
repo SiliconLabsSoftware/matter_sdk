@@ -16,20 +16,6 @@
 #
 
 # === BEGIN CI TEST ARGUMENTS ===
-<<<<<<< HEAD
-# test-runner-runs: run1
-# test-runner-run/run1/app: ${TERMS_AND_CONDITIONS_APP}
-# test-runner-run/run1/factoryreset: True
-# test-runner-run/run1/quiet: True
-# test-runner-run/run1/app-args: --tc-min-required-version 1 --tc-required-acknowledgements 1 --custom-flow 2 --capabilities 6
-# test-runner-run/run1/script-args: --PICS src/app/tests/suites/certification/ci-pics-values --in-test-commissioning-method on-network --int-arg PIXIT.CGEN.FailsafeExpiryLengthSeconds:900 PIXIT.CGEN.RequiredTCAcknowledgements:1 PIXIT.CGEN.TCRevision:1 --qr-code MT:-24J0AFN00KA0648G00 --trace-to json:log
-# === END CI TEST ARGUMENTS ===
-
-import chip.clusters as Clusters
-from chip import ChipDeviceCtrl
-from chip.commissioning import ROOT_ENDPOINT_ID
-from matter_testing_support import MatterBaseTest, TestStep, async_test_body, default_matter_test_main
-=======
 # test-runner-runs:
 #   run1:
 #       app: ${TERMS_AND_CONDITIONS_APP}
@@ -56,7 +42,6 @@ import chip.clusters as Clusters
 from chip import ChipDeviceCtrl
 from chip.commissioning import ROOT_ENDPOINT_ID
 from chip.testing.matter_testing import MatterBaseTest, TestStep, async_test_body, default_matter_test_main
->>>>>>> csa/v1.4.2-branch
 from mobly import asserts
 
 
@@ -65,8 +50,6 @@ class TC_CGEN_2_9(MatterBaseTest):
     async def remove_commissioner_fabric(self):
         commissioner: ChipDeviceCtrl.ChipDeviceController = self.default_controller
 
-<<<<<<< HEAD
-=======
         commissioner_fabric_index_on_dut = await self.read_single_attribute(
             dev_ctrl=commissioner,
             node_id=self.dut_node_id,
@@ -74,17 +57,10 @@ class TC_CGEN_2_9(MatterBaseTest):
             attribute=Clusters.OperationalCredentials.Attributes.CurrentFabricIndex)
         logging.info(f"Commissioner's fabricIndex on DUT: {commissioner_fabric_index_on_dut}")
 
->>>>>>> csa/v1.4.2-branch
         fabrics: list[Clusters.OperationalCredentials.Structs.FabricDescriptorStruct] = await self.read_single_attribute(
             dev_ctrl=commissioner,
             node_id=self.dut_node_id,
             endpoint=ROOT_ENDPOINT_ID,
-<<<<<<< HEAD
-            attribute=Clusters.OperationalCredentials.Attributes.Fabrics)
-
-        # Re-order the list of fabrics so that the test harness admin fabric is removed last
-        commissioner_fabric = next((fabric for fabric in fabrics if fabric.fabricIndex == commissioner.fabricId), None)
-=======
             attribute=Clusters.OperationalCredentials.Attributes.Fabrics,
             fabricFiltered=False)
 
@@ -92,15 +68,11 @@ class TC_CGEN_2_9(MatterBaseTest):
 
         # Re-order the list of fabrics so that the test harness admin fabric is removed last
         commissioner_fabric = next((fabric for fabric in fabrics if fabric.fabricIndex == commissioner_fabric_index_on_dut), None)
->>>>>>> csa/v1.4.2-branch
         fabrics.remove(commissioner_fabric)
         fabrics.append(commissioner_fabric)
 
         for fabric in fabrics:
-<<<<<<< HEAD
-=======
             logging.info(f"Removing fabric at fabricIndex {fabric.fabricIndex}")
->>>>>>> csa/v1.4.2-branch
             response: Clusters.OperationalCredentials.Commands.NOCResponse = await commissioner.SendCommand(
                 nodeid=self.dut_node_id,
                 endpoint=ROOT_ENDPOINT_ID,
@@ -117,12 +89,7 @@ class TC_CGEN_2_9(MatterBaseTest):
 
     def steps_TC_CGEN_2_9(self) -> list[TestStep]:
         return [
-<<<<<<< HEAD
-            TestStep(0, description="", expectation="", is_commissioning=False),
-            TestStep(1, "TH begins commissioning the DUT and performs the following steps in order:\n* Security setup using PASE\n* Setup fail-safe timer, with ExpiryLengthSeconds field set to PIXIT.CGEN.FailsafeExpiryLengthSeconds and the Breadcrumb value as 1\n* Configure information- UTC time, regulatory, etc."),
-=======
             TestStep(1, "TH begins commissioning the DUT and performs the following steps in order:\n* Security setup using PASE\n* Setup fail-safe timer, with ExpiryLengthSeconds field set to PIXIT.CGEN.FailsafeExpiryLengthSeconds and the Breadcrumb value as 1\n* Configure information- UTC time, regulatory, etc.", is_commissioning=False),
->>>>>>> csa/v1.4.2-branch
             TestStep(2, "TH sends SetTCAcknowledgements to DUT with the following values:\n* TCVersion: PIXIT.CGEN.TCRevision\n* TCUserResponse: PIXIT.CGEN.RequiredTCAcknowledgements"),
             TestStep(3, "TH continues commissioning with the DUT and performs the steps from 'Operation CSR exchange' through 'Security setup using CASE'"),
             TestStep(4, "TH sends CommissioningComplete to DUT."),
@@ -139,10 +106,6 @@ class TC_CGEN_2_9(MatterBaseTest):
         tc_version_to_simulate = self.matter_test_config.global_test_params['PIXIT.CGEN.TCRevision']
         tc_user_response_to_simulate = self.matter_test_config.global_test_params['PIXIT.CGEN.RequiredTCAcknowledgements']
 
-<<<<<<< HEAD
-        self.step(0)
-=======
->>>>>>> csa/v1.4.2-branch
         if not self.check_pics("CGEN.S.F00"):
             asserts.skip('Root endpoint does not support the [commissioning] feature under test')
             return
@@ -208,20 +171,12 @@ class TC_CGEN_2_9(MatterBaseTest):
         await self.remove_commissioner_fabric()
 
         # Close the commissioner session with the device to clean up resources
-<<<<<<< HEAD
-        commissioner.CloseSession(nodeid=self.dut_node_id)
-=======
         commissioner.MarkSessionDefunct(nodeid=self.dut_node_id)
->>>>>>> csa/v1.4.2-branch
 
         # Step 6: Put device in commissioning mode (requiring user input, so skip in CI)
         self.step(6)
         if not self.check_pics('PICS_USER_PROMPT'):
-<<<<<<< HEAD
-            self.skip_all_remaining_steps(7)
-=======
             self.mark_all_remaining_steps_skipped(7)
->>>>>>> csa/v1.4.2-branch
             return
 
         self.wait_for_user_input(prompt_msg="Set the DUT into commissioning mode")

@@ -16,11 +16,8 @@
  *
  */
 
-<<<<<<< HEAD
-=======
 #pragma once
 
->>>>>>> csa/v1.4.2-branch
 #include <lib/core/CHIPError.h>
 #include <lib/core/Optional.h>
 
@@ -31,15 +28,6 @@ namespace chip {
 namespace tool {
 namespace https {
 
-<<<<<<< HEAD
-CHIP_ERROR Request(std::string url, Json::Value & jsonResponse,
-                   const chip::Optional<uint32_t> & optionalExpectedSize       = chip::NullOptional,
-                   const chip::Optional<const char *> & optionalExpectedDigest = chip::NullOptional);
-
-CHIP_ERROR Request(std::string hostname, uint16_t port, std::string path, Json::Value & jsonResponse,
-                   const chip::Optional<uint32_t> & optionalExpectedSize       = chip::NullOptional,
-                   const chip::Optional<const char *> & optionalExpectedDigest = chip::NullOptional);
-=======
 enum class HttpsSecurityMode
 {
     kDefault           = 0,
@@ -56,7 +44,6 @@ CHIP_ERROR Request(std::string hostname, uint16_t port, std::string path, Json::
                    const chip::Optional<uint32_t> & optionalExpectedSize       = chip::NullOptional,
                    const chip::Optional<const char *> & optionalExpectedDigest = chip::NullOptional,
                    HttpsSecurityMode securityMode                              = HttpsSecurityMode::kDefault);
->>>>>>> csa/v1.4.2-branch
 
 } // namespace https
 } // namespace tool

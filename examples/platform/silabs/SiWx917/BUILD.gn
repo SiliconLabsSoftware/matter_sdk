@@ -16,10 +16,7 @@ import("//build_overrides/chip.gni")
 import("//build_overrides/efr32_sdk.gni")
 import("${chip_root}/examples/common/pigweed/pigweed_rpcs.gni")
 import("${chip_root}/examples/platform/silabs/args.gni")
-<<<<<<< HEAD
 import("${chip_root}/src/app/icd/icd.gni")
-=======
->>>>>>> csa/v1.4.2-branch
 import("${chip_root}/src/lib/lib.gni")
 import("${chip_root}/src/platform/device.gni")
 import("${chip_root}/src/platform/silabs/wifi/args.gni")
@@ -36,13 +33,6 @@ declare_args() {
 
   # OTA timeout in seconds
   ota_periodic_query_timeout_sec = 86400
-<<<<<<< HEAD
-
-  # The EnableKey in hex string format used by TestEventTrigger command in
-  # GeneralDiagnostics cluster. The length of the string should be 16 bytes.
-  sl_test_event_trigger_enable_key = "00112233445566778899AABBCCDDEEFF"
-=======
->>>>>>> csa/v1.4.2-branch
 }
 
 # Sanity check
@@ -74,11 +64,7 @@ source_set("matter-shell") {
     "${silabs_common_plat_dir}",
   ]
 
-<<<<<<< HEAD
   deps = [ "${sl_provision_root}:headers" ]
-  public_configs = [ ":test-event-trigger-config" ]
-=======
->>>>>>> csa/v1.4.2-branch
   public_deps = [
     "${chip_root}/examples/shell/shell_common:shell_common",
     "${chip_root}/src/lib/shell:shell",
@@ -86,25 +72,6 @@ source_set("matter-shell") {
   ]
 }
 
-<<<<<<< HEAD
-source_set("matter-shell") {
-  defines = [ "ENABLE_CHIP_SHELL" ]
-
-  sources = [ "${silabs_common_plat_dir}/MatterShell.cpp" ]
-  include_dirs = [
-    ".",
-    "${silabs_common_plat_dir}",
-  ]
-
-  public_deps = [
-    "${chip_root}/examples/shell/shell_common:shell_common",
-    "${chip_root}/src/lib/shell:shell",
-    "${chip_root}/src/lib/shell:shell_core",
-  ]
-}
-
-=======
->>>>>>> csa/v1.4.2-branch
 config("siwx917-common-config") {
   defines = [ "OTA_PERIODIC_TIMEOUT=${ota_periodic_query_timeout_sec}" ]
 

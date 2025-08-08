@@ -46,13 +46,7 @@ Git: 0.7-summer-2025-150-g878a2125f
       </feature>
     </features>
     <!-- Attributes -->
-<<<<<<< HEAD
-    <attribute side="server" code="0x0000" name="AirQuality" define="AIR_QUALITY" type="AirQualityEnum" min="0" max="6" default="0">
-      <mandatoryConform/>
-    </attribute>
-=======
     <attribute side="server" code="0x0000" name="AirQuality" define="AIR_QUALITY" type="AirQualityEnum" min="0" max="6" default="0">AirQuality</attribute>
->>>>>>> csa/v1.4.2-branch
   </cluster>
 
   <!-- Cluster Data Types -->

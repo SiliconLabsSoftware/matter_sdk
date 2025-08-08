@@ -32,15 +32,10 @@ import chip.clusters.ClusterObjects
 import chip.tlv
 from chip.ChipDeviceCtrl import ChipDeviceController
 from chip.clusters.Attribute import ValueDecodeFailure
-<<<<<<< HEAD:src/python_testing/basic_composition_support.py
-from conformance_support import ConformanceException
-=======
 from chip.testing.conformance import ConformanceException
 from chip.testing.matter_testing import MatterTestConfig, ProblemNotice
 from chip.testing.spec_parsing import PrebuiltDataModelDirectory, build_xml_clusters, build_xml_device_types, dm_from_spec_version
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/basic_composition.py
 from mobly import asserts
-from spec_parsing_support import PrebuiltDataModelDirectory, build_xml_clusters, build_xml_device_types, dm_from_spec_version
 
 
 @dataclass
@@ -237,38 +232,26 @@ class BasicCompositionTests:
         else:
             asserts.fail(msg)
 
-<<<<<<< HEAD:src/python_testing/basic_composition_support.py
-    def _get_dm(self) -> PrebuiltDataModelDirectory:
-=======
     def _get_dm(self) -> PrebuiltDataModelDirectory:  # type: ignore[return]
         # mypy doesn't understand that asserts.fail always raises a TestFailure
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/basic_composition.py
         try:
             spec_version = self.endpoints[0][Clusters.BasicInformation][Clusters.BasicInformation.Attributes.SpecificationVersion]
         except KeyError:
             asserts.fail(
                 "Specification Version not found on device - ensure device bas a basic information cluster on EP0 supporting Specification Version")
         try:
-<<<<<<< HEAD:src/python_testing/basic_composition_support.py
-            return dm_from_spec_version(spec_version)
-=======
             dm = dm_from_spec_version(spec_version)
             if dm is None:
                 # Handle case where dm_from_spec_version returns None, although the current implementation raises an exception.
                 asserts.fail("Could not determine data model from specification version.")
             return dm
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/basic_composition.py
         except ConformanceException as e:
             asserts.fail(f"Unable to identify specification version: {e}")
 
     def build_spec_xmls(self):
         dm = self._get_dm()
         logging.info("----------------------------------------------------------------------------------")
-<<<<<<< HEAD:src/python_testing/basic_composition_support.py
-        logging.info(f"-- Running tests against Specification version {dm}")
-=======
         logging.info(f"-- Running tests against Specification version {dm.dirname}")
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/basic_composition.py
         logging.info("----------------------------------------------------------------------------------")
         self.xml_clusters, self.problems = build_xml_clusters(dm)
         self.xml_device_types, problems = build_xml_device_types(dm)

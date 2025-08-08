@@ -20,17 +20,11 @@
 #include <app/icd/server/ICDServerConfig.h>
 
 namespace {
-<<<<<<< HEAD
 #if ENABLE_CHIP_SHELL && CHIP_CONFIG_ENABLE_ICD_SERVER
 #ifdef RTE_UULP_GPIO_1_PIN
 bool ps_requirement_added = false;
 #endif // RTE_UULP_GPIO_1_PIN
 #endif // ENABLE_CHIP_SHELL && CHIP_CONFIG_ENABLE_ICD_SERVER
-=======
-#ifdef ENABLE_CHIP_SHELL
-bool ps_requirement_added = false;
-#endif // ENABLE_CHIP_SHELL
->>>>>>> csa/v1.4.2-branch
 } // namespace
 
 #ifdef __cplusplus
@@ -67,8 +61,7 @@ void gpio_uulp_pin_interrupt_callback(uint32_t pin_intr)
     }
 }
 
-<<<<<<< HEAD
-=======
+#ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
 /**
  * @brief Processing function when a button is triggered
  *
@@ -78,8 +71,8 @@ void gpio_uulp_pin_interrupt_callback(uint32_t pin_intr)
  * @param btnAction the action that triggered the buttone vent
  */
 void sl_button_on_change(uint8_t btn, uint8_t btnAction);
+#endif // SL_CATALOG_SIMPLE_BUTTON_PRESENT
 
->>>>>>> csa/v1.4.2-branch
 #endif // SLI_SI91X_MCU_INTERFACE
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #ifdef __cplusplus
@@ -93,10 +86,7 @@ namespace SiWxPlatformInterface {
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #if SLI_SI91X_MCU_INTERFACE
-<<<<<<< HEAD
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
-=======
->>>>>>> csa/v1.4.2-branch
 /**
  * @brief      Required to invoke button press event during sleep as falling edge is not detected
  * @param[in]  none.
@@ -108,11 +98,8 @@ inline void sl_si91x_btn_event_handler()
     sl_button_on_change(SL_BUTTON_BTN0_NUMBER,
                         (sl_si91x_gpio_get_uulp_npss_pin(SL_BUTTON_BTN0_PIN) == LOW) ? BUTTON_PRESSED : BUTTON_RELEASED);
 }
-<<<<<<< HEAD
 #endif // SL_CATALOG_SIMPLE_BUTTON_PRESENT
-=======
 
->>>>>>> csa/v1.4.2-branch
 /**
  * @brief      Required to enable MATTER shell UART with ICD feature flag
  * @param[in]  none.
@@ -121,10 +108,7 @@ inline void sl_si91x_btn_event_handler()
 void sl_si91x_uart_power_requirement_handler()
 {
 #ifdef ENABLE_CHIP_SHELL
-<<<<<<< HEAD
 #ifdef RTE_UULP_GPIO_1_PIN
-=======
->>>>>>> csa/v1.4.2-branch
     // Checking the UULP PIN 1 status to reinit the UART and not allow the device to go to sleep
     if (sl_si91x_gpio_get_uulp_npss_pin(RTE_UULP_GPIO_1_PIN))
     {
@@ -142,10 +126,7 @@ void sl_si91x_uart_power_requirement_handler()
             ps_requirement_added = false;
         }
     }
-<<<<<<< HEAD
 #endif // RTE_UULP_GPIO_1_PIN
-=======
->>>>>>> csa/v1.4.2-branch
 #endif // ENABLE_CHIP_SHELL
 }
 

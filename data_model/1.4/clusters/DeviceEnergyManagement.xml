@@ -518,15 +518,10 @@ Davis, CA 95616, USA
     <attribute id="0x0004" name="AbsMaxPower" type="power-mW" default="0">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="min">
-        <value attribute="AbsMinPower"/>
-=======
       <constraint>
         <min>
           <attribute name="AbsMinPower"/>
         </min>
->>>>>>> csa/v1.4.2-branch
       </constraint>
     </attribute>
     <attribute id="0x0005" name="PowerAdjustmentCapability" type="PowerAdjustCapabilityStruct" default="null">

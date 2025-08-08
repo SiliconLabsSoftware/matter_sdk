@@ -24,14 +24,9 @@ ICDConfigurationData ICDConfigurationData::instance;
 
 System::Clock::Milliseconds32 ICDConfigurationData::GetSlowPollingInterval()
 {
-<<<<<<< HEAD
-#if CHIP_CONFIG_ENABLE_ICD_LIT
-    // When in SIT mode, the slow poll interval SHALL NOT be greater than the SIT mode polling threshold, per spec.
-=======
     // When LIT capable device operates in SIT mode, it shall transition to use the mSITPollingInterval
     // if this one is shorter than the configured mLITPollingInterval.
     // Either way, the slow poll interval used SHALL NOT be greater than the SIT mode polling threshold, per spec.
->>>>>>> csa/v1.4.2-branch
     // This is important for ICD device configured for LIT operation but currently operating as a SIT
     // due to a lack of client registration
     if (mFeatureMap.Has(app::Clusters::IcdManagement::Feature::kLongIdleTimeSupport) && mICDMode == ICDMode::SIT)
@@ -41,11 +36,6 @@ System::Clock::Milliseconds32 ICDConfigurationData::GetSlowPollingInterval()
         // value from mLITPollingInterval or mSITPollingInterval;
         return std::min(mLITPollingInterval, mSITPollingInterval);
     }
-<<<<<<< HEAD
-#endif // CHIP_CONFIG_ENABLE_ICD_LIT
-
-    return mSlowPollingInterval;
-=======
 
     return mLITPollingInterval;
 }
@@ -65,7 +55,6 @@ CHIP_ERROR ICDConfigurationData::SetSITPollingInterval(System::Clock::Millisecon
     VerifyOrReturnError(pollingInterval <= kSITPollingThreshold, CHIP_ERROR_INVALID_ARGUMENT);
     mSITPollingInterval = pollingInterval;
     return CHIP_NO_ERROR;
->>>>>>> csa/v1.4.2-branch
 }
 
 CHIP_ERROR ICDConfigurationData::SetModeDurations(Optional<System::Clock::Milliseconds32> activeModeDuration,

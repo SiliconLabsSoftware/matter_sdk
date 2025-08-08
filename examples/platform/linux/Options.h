@@ -102,8 +102,6 @@ struct LinuxDeviceOptions
     chip::Optional<uint16_t> tcVersion;
     chip::Optional<uint16_t> tcRequired;
 #endif
-<<<<<<< HEAD
-=======
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     chip::Optional<chip::System::Clock::Milliseconds32> icdActiveModeDurationMs;
     chip::Optional<chip::System::Clock::Milliseconds32> icdIdleModeDurationMs;
@@ -113,7 +111,6 @@ struct LinuxDeviceOptions
     chip::Optional<std::string> hardwareVersionString;
     chip::Optional<std::string> softwareVersionString;
     chip::Optional<std::string> serialNumber;
->>>>>>> csa/v1.4.2-branch
     static LinuxDeviceOptions & GetInstance();
 };
 

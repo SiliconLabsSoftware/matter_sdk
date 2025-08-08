@@ -169,22 +169,14 @@ Davis, CA 95616, USA
           <optionalConform>
             <equalTerm>
               <field name="Status"/>
-<<<<<<< HEAD
-              <condition name="Success"/>
-=======
               <status name="SUCCESS"/>
->>>>>>> csa/v1.4.2-branch
             </equalTerm>
           </optionalConform>
           <mandatoryConform/>
         </otherwiseConform>
-<<<<<<< HEAD
-        <constraint type="maxLength" value="64"/>
-=======
         <constraint>
           <maxLength value="64"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
     </command>
   </commands>

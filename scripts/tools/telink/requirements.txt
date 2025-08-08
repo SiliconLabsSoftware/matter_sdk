@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-cryptography==43.0.1
-=======
 cryptography==44.0.1
->>>>>>> csa/v1.4.2-branch
 cffi==1.15.0; python_version < "3.13"
 cffi==1.17.1; python_version >= "3.13"
 future==0.18.3

@@ -63,99 +63,49 @@ Git: 0.9.2-summer2025-124-g2b25c360b
     </features>
     <!-- min max definition for attribute size larger than 2 bytes is not allowed by zap codegen https://github.com/project-chip/zap/issues/1187 -->
     <!-- Therefore, this check needs to be done in code. -->
-<<<<<<< HEAD
-    <attribute side="server" code="0x0000" name="OpenDuration" define="OPEN_DURATION" type="elapsed_s" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <!-- min max definition for attribute size larger than 2 bytes is not allowed by zap codegen https://github.com/project-chip/zap/issues/1187 -->
-    <!-- Therefore, this check needs to be done in code. -->
-    <attribute side="server" code="0x0001" name="DefaultOpenDuration" define="DEFAULT_OPEN_DURATION" type="elapsed_s" isNullable="true" writable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0002" name="AutoCloseTime" define="AUTO_CLOSE_TIME" type="epoch_us" isNullable="true" optional="true">
-=======
     <attribute side="server" code="0x0000" name="OpenDuration" define="OPEN_DURATION" type="elapsed_s" isNullable="true" min="1"/>
     <!-- min max definition for attribute size larger than 2 bytes is not allowed by zap codegen https://github.com/project-chip/zap/issues/1187 -->
     <!-- Therefore, this check needs to be done in code. -->
     <attribute side="server" code="0x0001" name="DefaultOpenDuration" define="DEFAULT_OPEN_DURATION" type="elapsed_s" isNullable="true" writable="true"/>
     <attribute side="server" code="0x0002" name="AutoCloseTime" define="AUTO_CLOSE_TIME" type="epoch_us" isNullable="true">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="TS"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0003" name="RemainingDuration" define="REMAINING_DURATION" type="elapsed_s" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0004" name="CurrentState" define="CURRENT_STATE" type="ValveStateEnum" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0005" name="TargetState" define="TARGET_STATE" type="ValveStateEnum" isNullable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0006" name="CurrentLevel" define="CURRENT_LEVEL" type="percent" isNullable="true" optional="true">
-=======
     <attribute side="server" code="0x0003" name="RemainingDuration" define="REMAINING_DURATION" type="elapsed_s" isNullable="true"/>
     <attribute side="server" code="0x0004" name="CurrentState" define="CURRENT_STATE" type="ValveStateEnum" isNullable="true" max="0x02"/>
     <attribute side="server" code="0x0005" name="TargetState" define="TARGET_STATE" type="ValveStateEnum" isNullable="true" max="0x02"/>
     <attribute side="server" code="0x0006" name="CurrentLevel" define="CURRENT_LEVEL" type="percent" isNullable="true">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="LVL"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0007" name="TargetLevel" define="TARGET_LEVEL" type="percent" isNullable="true" optional="true">
-=======
     <attribute side="server" code="0x0007" name="TargetLevel" define="TARGET_LEVEL" type="percent" isNullable="true">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="LVL"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0008" name="DefaultOpenLevel" define="DEFAULT_OPEN_LEVEL" type="percent" min="1" max="100" writable="true" default="100" optional="true">
-=======
     <attribute side="server" code="0x0008" name="DefaultOpenLevel" define="DEFAULT_OPEN_LEVEL" type="percent" min="1" max="100" writable="true" default="100">
->>>>>>> csa/v1.4.2-branch
       <optionalConform>
         <feature name="LVL"/>
       </optionalConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0009" name="ValveFault" define="VALVE_FAULT" type="ValveFaultBitmap" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="0x000A" name="LevelStep" define="LEVEL_STEP" type="int8u" min="1" max="50" optional="true">
-=======
     <attribute side="server" code="0x0009" name="ValveFault" define="VALVE_FAULT" type="ValveFaultBitmap" max="0x003F" default="0x0000">
       <optionalConform/>
     </attribute>
     <attribute side="server" code="0x000A" name="LevelStep" define="LEVEL_STEP" type="int8u" min="1" max="50" default="1">
->>>>>>> csa/v1.4.2-branch
       <optionalConform>
         <feature name="LVL"/>
       </optionalConform>
     </attribute>
-<<<<<<< HEAD
-    
-    <command source="client" code="0x00" name="Open" optional="false">
-      <description>This command is used to set the valve to its open position.</description>
-      <arg name="OpenDuration" type="elapsed_s" optional="true" isNullable="true"/>
-      <arg name="TargetLevel" type="percent" optional="true"/>
-      <mandatoryConform/>
-=======
     <command source="client" code="0x00" name="Open">
       <description>This command is used to set the valve to its open position.</description>
       <arg id="0" name="OpenDuration" type="elapsed_s" optional="true" isNullable="true" min="1"/>
       <arg id="1" name="TargetLevel" type="percent" optional="true" min="1" max="100"/>
->>>>>>> csa/v1.4.2-branch
     </command>
 
     <command source="client" code="0x01" name="Close">
       <description>This command is used to set the valve to its closed position.</description>
-      <mandatoryConform/>
     </command>
 
     <event side="server" code="0x00" priority="info" name="ValveStateChanged">
@@ -165,15 +115,9 @@ Git: 0.9.2-summer2025-124-g2b25c360b
       <optionalConform/>
     </event>
 
-<<<<<<< HEAD
-    <event side="server" code="0x01" priority="info" name="ValveFault" optional="true">
-      <description>This event SHALL be generated when the valve registers or clears a fault.</description>
-      <field id="0" name="ValveFault" type="ValveFaultBitmap"/>
-=======
     <event side="server" code="0x01" priority="info" name="ValveFault">
       <description>This event SHALL be generated when the valve registers or clears a fault, e.g. not being able to transition to the requested target level or state.</description>
       <field id="0" name="ValveFault" type="ValveFaultBitmap" max="0x003F"/>
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </event>
 

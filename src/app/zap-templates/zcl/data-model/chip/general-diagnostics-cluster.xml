@@ -159,16 +159,10 @@ limitations under the License.
       <mandatoryConform>
         <feature name="DMTEST"/>
       </mandatoryConform>
-<<<<<<< HEAD
-    </command>
-
-   <command source="server" code="0x04" name="PayloadTestResponse" optional="true" apiMaturity="provisional">
-=======
       <access op="invoke" role="manage"/>
     </command>
 
    <command source="server" code="0x04" name="PayloadTestResponse" optional="true">
->>>>>>> csa/v1.4.2-branch
       <description>Response for the PayloadTestRequest command.</description>
       <arg name="Payload" type="octet_string" max="2048" optional="false"/>
       <mandatoryConform>

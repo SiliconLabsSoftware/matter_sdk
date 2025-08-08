@@ -337,12 +337,10 @@ public:
     virtual void HandleEvents()    = 0;
     virtual void EventLoopEnds()   = 0;
 
-<<<<<<< HEAD
-#if !(CHIP_SYSTEM_CONFIG_USE_DISPATCH || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS)
-=======
->>>>>>> csa/v1.4.2-branch
+#if !(CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS)
     virtual void AddLoopHandler(EventLoopHandler & handler)    = 0;
     virtual void RemoveLoopHandler(EventLoopHandler & handler) = 0;
+#endif // !(CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS)
 
 #if CHIP_SYSTEM_CONFIG_USE_LIBEV
     virtual void SetLibEvLoop(struct ev_loop * aLibEvLoopP) = 0;

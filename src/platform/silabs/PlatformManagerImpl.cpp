@@ -145,73 +145,6 @@ void PlatformManagerImpl::_Shutdown()
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
 // This function needs to be global so it can be used from the platform implementation without depending on the platfrom itself.
 // This is a workaround to avoid a circular dependency.
-<<<<<<< HEAD
-void HandleWFXSystemEvent(wfx_event_base_t eventBase, sl_wfx_generic_message_t * eventData)
-{
-    using namespace chip;
-    using namespace chip::DeviceLayer;
-
-    ChipDeviceEvent event;
-    memset(&event, 0, sizeof(event));
-    event.Type                              = DeviceEventType::kWFXSystemEvent;
-    event.Platform.WFXSystemEvent.eventBase = eventBase;
-
-    if (eventBase == WIFI_EVENT)
-    {
-        switch (eventData->header.id)
-        {
-        case SL_WFX_STARTUP_IND_ID:
-            memcpy(&event.Platform.WFXSystemEvent.data.startupEvent, eventData,
-                   sizeof(event.Platform.WFXSystemEvent.data.startupEvent));
-            break;
-        case SL_WFX_CONNECT_IND_ID:
-            memcpy(&event.Platform.WFXSystemEvent.data.connectEvent, eventData,
-                   sizeof(event.Platform.WFXSystemEvent.data.connectEvent));
-            break;
-        case SL_WFX_DISCONNECT_IND_ID:
-            memcpy(&event.Platform.WFXSystemEvent.data.disconnectEvent, eventData,
-                   sizeof(event.Platform.WFXSystemEvent.data.disconnectEvent));
-            break;
-        // case SL_WFX_RECEIVED_IND_ID:
-        //     memcpy(&event.Platform.WFXSystemEvent.data.receivedEvent, eventData,
-        //            sizeof(event.Platform.WFXSystemEvent.data.receivedEvent));
-        //     break;
-        // case SL_WFX_GENERIC_IND_ID:
-        //     memcpy(&event.Platform.WFXSystemEvent.data.genericEvent, eventData,
-        //            sizeof(event.Platform.WFXSystemEvent.data.genericEvent));
-        //     break;
-        // case SL_WFX_EXCEPTION_IND_ID:
-        //     memcpy(&event.Platform.WFXSystemEvent.data.exceptionEvent, eventData,
-        //            sizeof(event.Platform.WFXSystemEvent.data.exceptionEvent));
-        //     break;
-        // case SL_WFX_ERROR_IND_ID:
-        //     memcpy(&event.Platform.WFXSystemEvent.data.errorEvent, eventData,
-        //            sizeof(event.Platform.WFXSystemEvent.data.errorEvent));
-        //     break;
-        default:
-            break;
-        }
-    }
-    else if (eventBase == IP_EVENT)
-    {
-        switch (eventData->header.id)
-        {
-        case IP_EVENT_STA_GOT_IP:
-            memcpy(&event.Platform.WFXSystemEvent.data.genericMsgEvent, eventData,
-                   sizeof(event.Platform.WFXSystemEvent.data.genericMsgEvent));
-            break;
-        case IP_EVENT_GOT_IP6:
-            memcpy(&event.Platform.WFXSystemEvent.data.genericMsgEvent, eventData,
-                   sizeof(event.Platform.WFXSystemEvent.data.genericMsgEvent));
-            break;
-        case IP_EVENT_STA_LOST_IP:
-            memcpy(&event.Platform.WFXSystemEvent.data.genericMsgEvent, eventData,
-                   sizeof(event.Platform.WFXSystemEvent.data.genericMsgEvent));
-            break;
-        default:
-            break;
-        }
-=======
 void HandleWFXSystemEvent(sl_wfx_generic_message_t * eventData)
 {
     using namespace chip;
@@ -254,7 +187,6 @@ void HandleWFXSystemEvent(sl_wfx_generic_message_t * eventData)
 
     default:
         break;
->>>>>>> csa/v1.4.2-branch
     }
 
     // TODO: We should add error processing here

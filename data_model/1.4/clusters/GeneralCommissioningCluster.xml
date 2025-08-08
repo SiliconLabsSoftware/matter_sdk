@@ -141,11 +141,7 @@ Davis, CA 95616, USA
       </constraint>
     </attribute>
     <attribute id="0x0002" name="RegulatoryConfig" type="RegulatoryLocationTypeEnum">
-<<<<<<< HEAD
-      <default attribute="LocationCapability"/>
-=======
       <attribute name="LocationCapability"/>
->>>>>>> csa/v1.4.2-branch
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
     </attribute>
@@ -229,13 +225,9 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="DebugText" type="string" default="&quot;&quot;">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="maxLength" value="128"/>
-=======
         <constraint>
           <maxLength value="128"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
     </command>
     <command id="0x02" name="SetRegulatoryConfig" direction="commandToServer" response="SetRegulatoryConfigResponse">
@@ -246,13 +238,9 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="CountryCode" type="string">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="allowed" value="2"/>
-=======
         <constraint>
           <allowed value="2"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="2" name="Breadcrumb" type="uint64">
         <mandatoryConform/>

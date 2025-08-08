@@ -18,11 +18,7 @@
 #pragma once
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
 #include <platform/NetworkCommissioning.h>
-<<<<<<< HEAD
-#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-=======
 #include <platform/silabs/wifi/WifiInterface.h>
->>>>>>> csa/v1.4.2-branch
 
 namespace chip {
 namespace DeviceLayer {
@@ -135,7 +131,7 @@ public:
 
 private:
     bool NetworkMatch(const WiFiNetwork & network, ByteSpan networkId);
-    CHIP_ERROR StartScanWiFiNetworks(ByteSpan ssid);
+    bool StartScanWiFiNetworks(ByteSpan ssid);
     static void OnScanWiFiNetworkDone(wfx_wifi_scan_result_t * aScanResult);
 
     static SlWiFiDriver * mDriver;

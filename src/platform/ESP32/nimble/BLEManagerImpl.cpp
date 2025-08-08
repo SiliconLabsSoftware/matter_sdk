@@ -1053,8 +1053,6 @@ CHIP_ERROR BLEManagerImpl::DeinitBLE()
 extern "C" void ble_transport_ll_deinit(void) {}
 #endif
 
-<<<<<<< HEAD
-=======
 #ifdef CONFIG_BT_NIMBLE_EXT_ADV
 CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
 {
@@ -1257,7 +1255,6 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
     return err;
 }
 #else
->>>>>>> csa/v1.4.2-branch
 CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
 {
     CHIP_ERROR err;

@@ -36,27 +36,6 @@ Git:
         <optionalConform/>
       </feature>
     </features>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0000" name="OutputList" define="AUDIO_OUTPUT_LIST" type="array" entryType="OutputInfoStruct" length="254">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0001" name="CurrentOutput" define="AUDIO_OUTPUT_CURRENT_OUTPUT" type="int8u">
-      <mandatoryConform/>
-    </attribute>
-    
-    <command source="client" code="0x00" name="SelectOutput" optional="false">
-      <description>Upon receipt, this SHALL change the output on the media device to the output at a specific index in the Output List.</description>
-      <arg name="Index" type="int8u"/>
-      <mandatoryConform/>
-    </command>
-
-    <command source="client" code="0x01" name="RenameOutput" optional="true">
-      <description>Upon receipt, this SHALL rename the output at a specific index in the Output List. Updates to the output name SHALL appear in the TV settings menus.</description>
-      <access op="invoke" role="manage" />
-      <arg name="Index" type="int8u"/>
-      <arg name="Name" type="char_string"/>
-=======
     <attribute side="server" code="0x0000" name="OutputList" define="AUDIO_OUTPUT_LIST" type="array" entryType="OutputInfoStruct"/>
     <attribute side="server" code="0x0001" name="CurrentOutput" define="AUDIO_OUTPUT_CURRENT_OUTPUT" type="int8u"/>
     <command source="client" code="0x00" name="SelectOutput">
@@ -69,7 +48,6 @@ Git:
       <access op="invoke" role="manage"/>
       <arg id="0" name="Index" type="int8u"/>
       <arg id="1" name="Name" type="char_string"/>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="NU"/>
       </mandatoryConform>

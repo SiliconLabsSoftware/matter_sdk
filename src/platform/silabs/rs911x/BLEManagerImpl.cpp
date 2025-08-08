@@ -163,8 +163,6 @@ void rsi_ble_add_matter_service(void)
                                                    RSI_BLE_ATT_PROPERTY_READ | RSI_BLE_ATT_PROPERTY_NOTIFY |
                                                    RSI_BLE_ATT_PROPERTY_INDICATE, // Set read, write, write without response
                                                data, sizeof(data), ATT_REC_MAINTAIN_IN_HOST);
-<<<<<<< HEAD
-=======
 #ifdef CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     // C3 characteristic is of 128 bit UUID format structure - where val128 is of uuid128_t which is composed of uint32_t data1,
     // uint16_t data2, uint16_t data3, uint8_t data4[8];
@@ -187,7 +185,6 @@ void rsi_ble_add_matter_service(void)
         RSI_BLE_ATT_PROPERTY_READ, // Set read
         data, sizeof(data), ATT_REC_IN_HOST);
 #endif // CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
->>>>>>> csa/v1.4.2-branch
 }
 
 } // namespace
@@ -806,11 +803,7 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
 
 void BLEManagerImpl::UpdateMtu(const SilabsBleWrapper::sl_wfx_msg_t & evt)
 {
-<<<<<<< HEAD
     BLEConState * bleConnState = GetConnectionState(evt.connectionHandle);
-=======
-    CHIPoBLEConState * bleConnState = GetConnectionState(evt.connectionHandle);
->>>>>>> csa/v1.4.2-branch
     if (bleConnState != NULL)
     {
         // bleConnState->MTU is a 10-bit field inside a uint16_t.  We're

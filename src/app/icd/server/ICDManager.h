@@ -387,14 +387,6 @@ private:
     ICDCheckInBackOffStrategy * mICDCheckInBackOffStrategy = nullptr;
     ObjectPool<ICDCheckInSender, (CHIP_CONFIG_ICD_CLIENTS_SUPPORTED_PER_FABRIC * CHIP_CONFIG_MAX_FABRICS)> mICDSenderPool;
 #endif // CHIP_CONFIG_ENABLE_ICD_CIP
-<<<<<<< HEAD
-
-#if CONFIG_BUILD_FOR_HOST_UNIT_TEST
-    // feature map that can be changed at runtime for testing purposes
-    uint32_t mFeatureMap = 0;
-#endif // CONFIG_BUILD_FOR_HOST_UNIT_TEST
-=======
->>>>>>> csa/v1.4.2-branch
 };
 
 } // namespace app

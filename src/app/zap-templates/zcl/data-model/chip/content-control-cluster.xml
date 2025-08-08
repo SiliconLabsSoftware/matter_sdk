@@ -76,11 +76,7 @@ limitations under the License.
         <feature name="ST"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0007" name="BlockUnrated" define="ENABLED" type="boolean">
-=======
     <attribute side="server" code="0x0007" name="BlockUnrated" define="ENABLED" type="boolean" optional="true">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="BU"/>
       </mandatoryConform>

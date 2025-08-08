@@ -32,12 +32,8 @@
 #include "sl_wfx_host_api.h"
 #include "sl_wfx_task.h"
 #include "spidrv.h"
-<<<<<<<< HEAD:src/platform/silabs/wifi/wf200/platform/efr_spi.c
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
-========
 #include <platform/silabs/wifi/ncp/spi_multiplex.h>
 #include <platform/silabs/wifi/wf200/ncp/efr_spi.h>
->>>>>>>> csa/v1.4.2-branch:src/platform/silabs/wifi/wf200/ncp/efr_spi.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,8 +57,6 @@
 #define SL_SPIDRV_UART_CONSOLE_BITRATE SL_UARTDRV_USART_VCOM_BAUDRATE
 #define SL_SPIDRV_FRAME_LENGTH SL_SPIDRV_EXP_FRAME_LENGTH
 #define SL_SPIDRV_HANDLE sl_spidrv_exp_handle
-
-#define USART SL_WFX_HOST_PINOUT_SPI_PERIPHERAL
 
 #if SL_SPICTRL_MUX
 StaticSemaphore_t spi_sem_peripheral;

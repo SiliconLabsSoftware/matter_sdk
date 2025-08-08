@@ -33,15 +33,7 @@ private:
     CHIP_ERROR ProcessInternal(ByteSpan & block) override;
     CHIP_ERROR ProcessDescriptor(ByteSpan & block);
 
-<<<<<<< HEAD
     bool mDescriptorProcessed               = false;
-=======
-    OTADataAccumulator mAccumulator;
-    bool mDescriptorProcessed = false;
-#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
-    uint32_t mUnalignmentNum;
-#endif
->>>>>>> csa/v1.4.2-branch
     static constexpr size_t kAlignmentBytes = 64;
     static uint32_t mWriteOffset; // End of last written block
     static uint8_t mSlotId;       // Bootloader storage slot

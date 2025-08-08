@@ -49,38 +49,7 @@ using namespace TLV;
 
 AndroidDeviceControllerWrapper::~AndroidDeviceControllerWrapper()
 {
-<<<<<<< HEAD
-    getICDClientStorage()->Shutdown();
-    mController->Shutdown();
-
-#ifndef JAVA_MATTER_CONTROLLER_TEST
-    if (mKeypairBridge != nullptr)
-    {
-        chip::Platform::Delete(mKeypairBridge);
-        mKeypairBridge = nullptr;
-    }
-#endif // JAVA_MATTER_CONTROLLER_TEST
-
-    if (mDeviceAttestationDelegateBridge != nullptr)
-    {
-        delete mDeviceAttestationDelegateBridge;
-        mDeviceAttestationDelegateBridge = nullptr;
-    }
-
-    if (mDeviceAttestationVerifier != nullptr)
-    {
-        delete mDeviceAttestationVerifier;
-        mDeviceAttestationVerifier = nullptr;
-    }
-
-    if (mAttestationTrustStoreBridge != nullptr)
-    {
-        delete mAttestationTrustStoreBridge;
-        mAttestationTrustStoreBridge = nullptr;
-    }
-=======
     Shutdown();
->>>>>>> csa/v1.4.2-branch
 }
 
 void AndroidDeviceControllerWrapper::SetJavaObjectRef(JavaVM * vm, jobject obj)

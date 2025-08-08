@@ -14,15 +14,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-<<<<<<<< HEAD:examples/platform/silabs/shell/icd/ICDShellCommands.h
-#pragma once
-
-namespace ICDCommands {
-
-void RegisterCommands();
-
-} // namespace ICDCommands
-========
 
 #include <platform/CHIPDeviceLayer.h>
 
@@ -33,4 +24,3 @@ void RegisterCommands();
 
 } // namespace Shell
 } // namespace chip
->>>>>>>> csa/v1.4.2-branch:examples/fabric-sync/shell/ShellCommands.h

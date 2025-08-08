@@ -85,10 +85,5 @@ tests:
               ]
       response:
           # When the cluster runs out of capacity to store these entries,
-<<<<<<< HEAD
-          # we expect a FAILURE get returned.
-          error: FAILURE
-=======
           # we expect a RESOURCE_EXHAUSTED get returned.
           error: RESOURCE_EXHAUSTED
->>>>>>> csa/v1.4.2-branch

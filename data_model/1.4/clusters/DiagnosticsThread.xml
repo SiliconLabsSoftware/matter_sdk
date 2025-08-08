@@ -299,13 +299,9 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="maxLength" value="16"/>
-=======
       <constraint>
         <maxLength value="16"/>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0003" name="PanId" type="uint16">
       <access read="true" readPrivilege="view"/>
@@ -694,13 +690,9 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-<<<<<<< HEAD
-      <constraint type="allowed" value="4"/>
-=======
       <constraint>
         <allowed value="4"/>
       </constraint>
->>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x003D" name="OperationalDatasetComponents" type="OperationalDatasetComponents">
       <access read="true" readPrivilege="view"/>

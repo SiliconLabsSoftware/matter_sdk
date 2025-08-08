@@ -534,12 +534,6 @@ public:
     void TestReadChunkingInvalidSubscriptionId();
     void TestReadChunkingStatusReportTimeout();
     void TestReadClient();
-<<<<<<< HEAD
-    void TestReadUnexpectedSubscriptionId();
-    void TestReadHandler();
-    void TestReadHandlerSetMaxReportingInterval();
-=======
->>>>>>> csa/v1.4.2-branch
     void TestReadClientGenerateAttributePathList();
     void TestReadClientGenerateInvalidAttributePathList();
     void TestReadClientGenerateOneEventPaths();
@@ -790,13 +784,9 @@ void TestReadInteraction::TestReadHandler()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-<<<<<<< HEAD
-TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadHandlerSetMaxReportingInterval)
-=======
 TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadHandlerSetMaxReportingInterval)
 TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadHandlerSetMaxReportingInterval)
 void TestReadInteraction::TestReadHandlerSetMaxReportingInterval()
->>>>>>> csa/v1.4.2-branch
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle subscribeRequestbuf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -817,12 +807,7 @@ void TestReadInteraction::TestReadHandlerSetMaxReportingInterval()
         uint16_t maxInterval;
 
         // Configure ReadHandler
-<<<<<<< HEAD
-        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
-                                CodegenDataModelProviderInstance());
-=======
         ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
->>>>>>> csa/v1.4.2-branch
 
         writer.Init(std::move(subscribeRequestbuf));
         EXPECT_EQ(subscribeRequestBuilder.Init(&writer), CHIP_NO_ERROR);
@@ -909,13 +894,9 @@ void TestReadInteraction::TestReadHandlerSetMaxReportingInterval()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-<<<<<<< HEAD
-TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClientGenerateAttributePathList)
-=======
 TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClientGenerateAttributePathList)
 TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClientGenerateAttributePathList)
 void TestReadInteraction::TestReadClientGenerateAttributePathList()
->>>>>>> csa/v1.4.2-branch
 {
     MockInteractionModelApp delegate;
     System::PacketBufferHandle msgBuf;

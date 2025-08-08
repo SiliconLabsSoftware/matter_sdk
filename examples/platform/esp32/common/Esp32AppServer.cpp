@@ -45,15 +45,12 @@
 #if CONFIG_CHIP_DEVICE_CONFIG_ENABLE_DEVICE_ENERGY_MANAGEMENT_TRIGGER
 #include <app/clusters/device-energy-management-server/DeviceEnergyManagementTestEventTriggerHandler.h>
 #endif
-<<<<<<< HEAD
-=======
 #if CONFIG_CHIP_DEVICE_CONFIG_ENABLE_COMMODITY_PRICE_TRIGGER
 #include <app/clusters/commodity-price-server/CommodityPriceTestEventTriggerHandler.h>
 #endif
 #if CONFIG_CHIP_DEVICE_CONFIG_ENABLE_ELECTRICAL_GRID_CONDITIONS_TRIGGER
 #include <app/clusters/electrical-grid-conditions-server/ElectricalGridConditionsTestEventTriggerHandler.h>
 #endif
->>>>>>> csa/v1.4.2-branch
 
 #ifdef CONFIG_ENABLE_CHIP_SHELL
 #include <lib/shell/commands/WiFi.h>

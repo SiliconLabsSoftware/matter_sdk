@@ -110,11 +110,7 @@ private:
 #if CHIP_CONFIG_ENABLE_ACL_EXTENSIONS
     CHIP_ERROR ReadExtension(AttributeValueEncoder & aEncoder);
     CHIP_ERROR WriteExtension(const ConcreteDataAttributePath & aPath, AttributeValueDecoder & aDecoder);
-<<<<<<< HEAD
-    CHIP_ERROR IsValidAclEntryList(const DataModel::DecodableList<AclStorage::DecodableEntry> & list);
-=======
 #endif // CHIP_CONFIG_ENABLE_ACL_EXTENSIONS
->>>>>>> csa/v1.4.2-branch
 
 #if CHIP_CONFIG_USE_ACCESS_RESTRICTIONS
     CHIP_ERROR ReadCommissioningArl(AttributeValueEncoder & aEncoder);

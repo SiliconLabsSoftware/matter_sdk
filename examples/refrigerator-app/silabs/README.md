@@ -86,8 +86,6 @@ real products based on the Silicon Labs platform.
     -   BRD4338A / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@20dBm
     -   BRD4346A / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@20dBm
 
-<<<<<<< HEAD
-=======
 *   Region code Setting (917 WiFi projects)
 
     -   In Wifi configurations, the region code can be set in this
@@ -95,7 +93,6 @@ real products based on the Silicon Labs platform.
         The available region codes can be found
         [here](https://github.com/SiliconLabs/wiseconnect/blob/f675628eefa1ac4990e94146abb75dd08b522571/components/device/silabs/si91x/wireless/inc/sl_si91x_types.h#L71)
 
->>>>>>> csa/v1.4.2-branch
 *   Build the example application:
 
           cd ~/connectedhomeip
@@ -210,11 +207,7 @@ combination with JLinkRTTClient as follows:
 
 -   It is assumed here that you already have an OpenThread border router
     configured and running. If not see the following guide
-<<<<<<< HEAD
     [Openthread_border_router](https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/openthread_border_router_pi.md)
-=======
-    [Openthread_border_router](../../../docs/platforms/openthread/openthread_border_router_pi.md)
->>>>>>> csa/v1.4.2-branch
     for more information on how to setup a border router on a raspberryPi.
 
     Take note that the RCP code is available directly through
@@ -317,13 +310,8 @@ combination with JLinkRTTClient as follows:
 
     Enpoint for temperaturecontrol is 2 and 3
 
-<<<<<<< HEAD
-    Cold Cabinet Endpoint Id 2
-    Freeze Cabinet Endpoint Id 3
-=======
     Freeze Cabinet Endpoint Id 2
     Cold Cabinet Endpoint Id 3
->>>>>>> csa/v1.4.2-branch
 
     This enpoint support Temperature control cluster
     ```
@@ -333,10 +321,6 @@ combination with JLinkRTTClient as follows:
     ```
     chip-tool refrigeratorandtemperaturecontrolledcabinetmode
     chip-tool temperaturecontrol
-<<<<<<< HEAD
-    chip-tool refrigeratoralarm
-
-=======
     ```
 
     Subscribe refrigeratoralarm events
@@ -355,7 +339,6 @@ combination with JLinkRTTClient as follows:
     ```
     -> matterCli> refrigeratoralarm event door-state-change open
     -> Done
->>>>>>> csa/v1.4.2-branch
     ```
 
 ### Notes
@@ -378,11 +361,7 @@ combination with JLinkRTTClient as follows:
 
 For the description of Software Update process with EFR32 example applications
 see
-<<<<<<< HEAD
 [EFR32 OTA Software Update](../../../docs/guides/silabs_efr32_software_update.md)
-=======
-[EFR32 OTA Software Update](../../../docs/platforms/silabs/silabs_efr32_software_update.md)
->>>>>>> csa/v1.4.2-branch
 
 For the description of Software Update process with SiWx917 example applications
 see

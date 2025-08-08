@@ -25,11 +25,7 @@
 
 #include "dhcp_client.h"
 #include "lwip/dhcp.h"
-<<<<<<< HEAD
-#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-=======
 #include <platform/silabs/wifi/WifiInterface.h>
->>>>>>> csa/v1.4.2-branch
 
 #include <lib/support/logging/CHIPLogging.h>
 

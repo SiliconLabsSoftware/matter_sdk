@@ -85,40 +85,6 @@ Git:
     <client tick="false" init="false">true</client>
     <server tick="false" tickFrequency="half" init="false">true</server>
     <globalAttribute side="either" code="0xFFFD" value="5"/>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0000" name="Occupancy" define="OCCUPANCY" type="OccupancyBitmap" min="0x00" max="0x01" reportable="true">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x0001" name="OccupancySensorType" define="OCCUPANCY_SENSOR_TYPE" type="OccupancySensorTypeEnum" min="0x00" max="0xFE">
-      <otherwiseConform>
-        <mandatoryConform/>
-        <deprecateConform/>
-      </otherwiseConform>
-    </attribute>
-    <attribute side="server" code="0x0002" name="OccupancySensorTypeBitmap" define="OCCUPANCY_SENSOR_TYPE_BITMAP" type="OccupancySensorTypeBitmap" min="0x00" max="0x07">
-      <otherwiseConform>
-        <mandatoryConform/>
-        <deprecateConform/>
-      </otherwiseConform>
-    </attribute>
-
-    <attribute side="server" code="0x0003" name="HoldTime" define="HOLD_TIME" type="int16u" writable="true" optional="true">
-      <access op="write" privilege="manage"/>
-      <optionalConform/>
-    </attribute>
-
-    <attribute side="server" code="0x0004" name="HoldTimeLimits" define="HOLD_TIME_LIMITS" type="HoldTimeLimitsStruct" optional="true">
-      <mandatoryConform>
-        <attribute name="HoldTime"/>
-      </mandatoryConform>
-    </attribute>
-    
-    <attribute side="server" code="0x0010" name="PIROccupiedToUnoccupiedDelay" define="PIR_OCCUPIED_TO_UNOCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true">
-      <access op="read" role="view"/>
-      <access op="write" role="manage"/>
-      <otherwiseConform>
-=======
     <attribute side="server" code="0x0000" name="Occupancy" define="OCCUPANCY" type="OccupancyBitmap" min="0x00" max="0x01"/>
     <attribute side="server" code="0x0001" name="OccupancySensorType" define="OCCUPANCY_SENSOR_TYPE" type="OccupancySensorTypeEnum" min="0x00" max="0x03"/>
     <attribute side="server" code="0x0002" name="OccupancySensorTypeBitmap" define="OCCUPANCY_SENSOR_TYPE_BITMAP" type="OccupancySensorTypeBitmap" min="0x00" max="0x07"/>
@@ -181,7 +147,6 @@ Git:
             <attribute name="PIRUnoccupiedToOccupiedThreshold"/>
           </andTerm>
         </mandatoryConform>
->>>>>>> csa/v1.4.2-branch
         <optionalConform>
           <andTerm>
             <attribute name="HoldTime"/>
@@ -204,67 +169,7 @@ Git:
         <deprecateConform/>
       </otherwiseConform>
     </attribute>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0011" name="PIRUnoccupiedToOccupiedDelay" define="PIR_UNOCCUPIED_TO_OCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true">
-      <access op="read" role="view"/>
-=======
     <attribute side="server" code="0x0012" name="PIRUnoccupiedToOccupiedThreshold" define="PIR_UNOCCUPIED_TO_OCCUPIED_THRESHOLD" type="int8u" min="0x01" max="0xFE" writable="true" default="0x01" optional="true">
->>>>>>> csa/v1.4.2-branch
-      <access op="write" role="manage"/>
-      <otherwiseConform>
-        <mandatoryConform>
-          <andTerm>
-            <andTerm>
-              <attribute name="HoldTime"/>
-              <orTerm>
-                <feature name="PIR"/>
-                <andTerm>
-                  <notTerm>
-                    <feature name="PIR"/>
-                  </notTerm>
-                  <notTerm>
-                    <feature name="US"/>
-                  </notTerm>
-                  <notTerm>
-                    <feature name="PHY"/>
-                  </notTerm>
-                </andTerm>
-              </orTerm>
-            </andTerm>
-<<<<<<< HEAD
-            <attribute name="PIRUnoccupiedToOccupiedThreshold"/>
-=======
-            <attribute name="PIRUnoccupiedToOccupiedDelay"/>
->>>>>>> csa/v1.4.2-branch
-          </andTerm>
-        </mandatoryConform>
-        <optionalConform>
-          <andTerm>
-            <attribute name="HoldTime"/>
-            <orTerm>
-              <feature name="PIR"/>
-              <andTerm>
-                <notTerm>
-                  <feature name="PIR"/>
-                </notTerm>
-                <notTerm>
-                  <feature name="US"/>
-                </notTerm>
-                <notTerm>
-                  <feature name="PHY"/>
-                </notTerm>
-              </andTerm>
-            </orTerm>
-          </andTerm>
-        </optionalConform>
-        <deprecateConform/>
-      </otherwiseConform>
-    </attribute>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0012" name="PIRUnoccupiedToOccupiedThreshold" define="PIR_UNOCCUPIED_TO_OCCUPIED_THRESHOLD" type="int8u" min="0x01" max="0xFE" writable="true" default="0x01" optional="true">
-      <access op="read" role="view"/>
       <access op="write" role="manage"/>
       <otherwiseConform>
         <mandatoryConform>
@@ -306,7 +211,11 @@ Git:
                 </notTerm>
               </andTerm>
             </orTerm>
-=======
+          </andTerm>
+        </optionalConform>
+        <deprecateConform/>
+      </otherwiseConform>
+    </attribute>
     <attribute side="server" code="0x0020" name="UltrasonicOccupiedToUnoccupiedDelay" define="ULTRASONIC_OCCUPIED_TO_UNOCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true" min="0" max="65535">
       <access op="write" role="manage"/>
       <otherwiseConform>
@@ -314,19 +223,11 @@ Git:
           <andTerm>
             <attribute name="HoldTime"/>
             <feature name="US"/>
->>>>>>> csa/v1.4.2-branch
           </andTerm>
         </optionalConform>
         <deprecateConform/>
       </otherwiseConform>
     </attribute>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0020" name="UltrasonicOccupiedToUnoccupiedDelay" define="ULTRASONIC_OCCUPIED_TO_UNOCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true">
-      <access op="read" role="view"/>
-      <access op="write" role="manage"/>
-      <otherwiseConform>
-=======
     <attribute side="server" code="0x0021" name="UltrasonicUnoccupiedToOccupiedDelay" define="ULTRASONIC_UNOCCUPIED_TO_OCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true" min="0" max="65535">
       <access op="write" role="manage"/>
       <otherwiseConform>
@@ -337,7 +238,6 @@ Git:
             <attribute name="UltrasonicUnoccupiedToOccupiedThreshold"/>
           </andTerm>
         </mandatoryConform>
->>>>>>> csa/v1.4.2-branch
         <optionalConform>
           <andTerm>
             <attribute name="HoldTime"/>
@@ -347,39 +247,7 @@ Git:
         <deprecateConform/>
       </otherwiseConform>
     </attribute>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0021" name="UltrasonicUnoccupiedToOccupiedDelay" define="ULTRASONIC_UNOCCUPIED_TO_OCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true">
-      <access op="read" role="view"/>
-=======
     <attribute side="server" code="0x0022" name="UltrasonicUnoccupiedToOccupiedThreshold" define="ULTRASONIC_UNOCCUPIED_TO_OCCUPIED_THRESHOLD" type="int8u" min="0x01" max="0xFE" writable="true" default="0x01" optional="true">
->>>>>>> csa/v1.4.2-branch
-      <access op="write" role="manage"/>
-      <otherwiseConform>
-        <mandatoryConform>
-          <andTerm>
-            <attribute name="HoldTime"/>
-            <feature name="US"/>
-<<<<<<< HEAD
-            <attribute name="UltrasonicUnoccupiedToOccupiedThreshold"/>
-=======
-            <attribute name="UltrasonicUnoccupiedToOccupiedDelay"/>
->>>>>>> csa/v1.4.2-branch
-          </andTerm>
-        </mandatoryConform>
-        <optionalConform>
-          <andTerm>
-            <attribute name="HoldTime"/>
-            <feature name="US"/>
-          </andTerm>
-        </optionalConform>
-        <deprecateConform/>
-      </otherwiseConform>
-    </attribute>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0022" name="UltrasonicUnoccupiedToOccupiedThreshold" define="ULTRASONIC_UNOCCUPIED_TO_OCCUPIED_THRESHOLD" type="int8u" min="0x01" max="0xFE" writable="true" default="0x01" optional="true">
-      <access op="read" role="view"/>
       <access op="write" role="manage"/>
       <otherwiseConform>
         <mandatoryConform>
@@ -393,7 +261,11 @@ Git:
           <andTerm>
             <attribute name="HoldTime"/>
             <feature name="US"/>
-=======
+          </andTerm>
+        </optionalConform>
+        <deprecateConform/>
+      </otherwiseConform>
+    </attribute>
     <attribute side="server" code="0x0030" name="PhysicalContactOccupiedToUnoccupiedDelay" define="PHYSICAL_CONTACT_OCCUPIED_TO_UNOCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true" min="0" max="65535">
       <access op="write" role="manage"/>
       <otherwiseConform>
@@ -401,19 +273,11 @@ Git:
           <andTerm>
             <attribute name="HoldTime"/>
             <feature name="PHY"/>
->>>>>>> csa/v1.4.2-branch
           </andTerm>
         </optionalConform>
         <deprecateConform/>
       </otherwiseConform>
     </attribute>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0030" name="PhysicalContactOccupiedToUnoccupiedDelay" define="PHYSICAL_CONTACT_OCCUPIED_TO_UNOCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true">
-      <access op="read" role="view"/>
-      <access op="write" role="manage"/>
-      <otherwiseConform>
-=======
     <attribute side="server" code="0x0031" name="PhysicalContactUnoccupiedToOccupiedDelay" define="PHYSICAL_CONTACT_UNOCCUPIED_TO_OCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true" min="0" max="65535">
       <access op="write" role="manage"/>
       <otherwiseConform>
@@ -424,7 +288,6 @@ Git:
             <attribute name="PhysicalContactUnoccupiedToOccupiedThreshold"/>
           </andTerm>
         </mandatoryConform>
->>>>>>> csa/v1.4.2-branch
         <optionalConform>
           <andTerm>
             <attribute name="HoldTime"/>
@@ -434,43 +297,13 @@ Git:
         <deprecateConform/>
       </otherwiseConform>
     </attribute>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0031" name="PhysicalContactUnoccupiedToOccupiedDelay" define="PHYSICAL_CONTACT_UNOCCUPIED_TO_OCCUPIED_DELAY" type="int16u" writable="true" default="0x0000" optional="true">
-      <access op="read" role="view"/>
-=======
     <attribute side="server" code="0x0032" name="PhysicalContactUnoccupiedToOccupiedThreshold" define="PHYSICAL_CONTACT_UNOCCUPIED_TO_OCCUPIED_THRESHOLD" type="int8u" min="0x01" max="0xFE" writable="true" default="0x01" optional="true">
->>>>>>> csa/v1.4.2-branch
       <access op="write" role="manage"/>
       <otherwiseConform>
         <mandatoryConform>
           <andTerm>
             <attribute name="HoldTime"/>
             <feature name="PHY"/>
-<<<<<<< HEAD
-            <attribute name="PhysicalContactUnoccupiedToOccupiedThreshold"/>
-          </andTerm>
-        </mandatoryConform>
-        <optionalConform>
-          <andTerm>
-            <attribute name="HoldTime"/>
-            <feature name="PHY"/>
-          </andTerm>
-        </optionalConform>
-        <deprecateConform/>
-      </otherwiseConform>
-    </attribute>
-
-    <attribute side="server" code="0x0032" name="PhysicalContactUnoccupiedToOccupiedThreshold" define="PHYSICAL_CONTACT_UNOCCUPIED_TO_OCCUPIED_THRESHOLD" type="int8u" min="0x01" max="0xFE" writable="true" default="0x01" optional="true">
-      <access op="read" role="view"/>
-      <access op="write" role="manage"/>
-      <otherwiseConform>
-        <mandatoryConform>
-          <andTerm>
-            <attribute name="HoldTime"/>
-            <feature name="PHY"/>
-=======
->>>>>>> csa/v1.4.2-branch
             <attribute name="PhysicalContactUnoccupiedToOccupiedDelay"/>
           </andTerm>
         </mandatoryConform>
@@ -485,11 +318,7 @@ Git:
     </attribute>
     <event side="server" code="0x00" priority="info" name="OccupancyChanged" optional="true">
       <description>If this event is supported, it SHALL be generated when the Occupancy attribute changes.</description>
-<<<<<<< HEAD
-      <field id="0" name="Occupancy" type="OccupancyBitmap"/>
-=======
       <field id="0" name="Occupancy" type="OccupancyBitmap" min="0x00" max="0x01"/>
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </event>
 

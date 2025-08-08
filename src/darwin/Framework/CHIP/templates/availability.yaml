@@ -9117,13 +9117,6 @@
               - TCAcknowledgements
               - TCAcknowledgementsRequired
               - TCUpdateDeadline
-<<<<<<< HEAD
-          OccupancySensing:
-              # Targeting 1.4
-              - HoldTime
-              - HoldTimeLimits
-=======
->>>>>>> csa/v1.4.2-branch
           UnitTesting:
               # Ideally none of UnitTesting would be exposed as public API, but
               # for now just start doing that for new additions to it.

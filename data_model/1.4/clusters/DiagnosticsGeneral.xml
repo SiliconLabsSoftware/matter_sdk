@@ -202,17 +202,12 @@ Davis, CA 95616, USA
       </field>
       <field id="4" name="HardwareAddress" type="hwadr">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="allowed" value="6"/>
-        <constraint type="allowed" value="8"/>
-=======
         <constraint>
           <allowed value="6"/>
         </constraint>
         <constraint>
           <allowed value="8"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="5" name="IPv4Addresses" type="list">
         <entry type="ipv4adr"/>
@@ -299,13 +294,9 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="EnableKey" type="octstr">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="allowed" value="16"/>
-=======
         <constraint>
           <allowed value="16"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="1" name="EventTrigger" type="uint64">
         <mandatoryConform/>
@@ -332,13 +323,9 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="EnableKey" type="octstr">
         <mandatoryConform/>
-<<<<<<< HEAD
-        <constraint type="allowed" value="16"/>
-=======
         <constraint>
           <allowed value="16"/>
         </constraint>
->>>>>>> csa/v1.4.2-branch
       </field>
       <field id="1" name="Value" type="uint8">
         <mandatoryConform/>

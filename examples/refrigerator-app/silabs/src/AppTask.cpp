@@ -42,10 +42,6 @@
 #include <app-common/zap-generated/callback.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/ids/Attributes.h>
-<<<<<<< HEAD
-#include <app/server/OnboardingCodesUtil.h>
-=======
->>>>>>> csa/v1.4.2-branch
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
 #include <assert.h>
@@ -53,10 +49,7 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-<<<<<<< HEAD
-=======
 #include <setup_payload/OnboardingCodesUtil.h>
->>>>>>> csa/v1.4.2-branch
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
 

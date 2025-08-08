@@ -31,11 +31,7 @@
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-<<<<<<< HEAD
-#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-=======
 #include <platform/silabs/wifi/WifiInterface.h>
->>>>>>> csa/v1.4.2-branch
 #endif
 
 #include "sl_component_catalog.h"
@@ -302,17 +298,10 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
     PersistedStorage::KeyValueStoreMgrImpl().ErasePartition();
 
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-<<<<<<< HEAD
-    sl_status_t status = sl_matter_wifi_disconnect();
-    if (status != SL_STATUS_OK)
-    {
-        ChipLogError(DeviceLayer, "sl_matter_wifi_disconnect() failed: %lx", status);
-=======
     error = WifiInterface::GetInstance().TriggerDisconnection();
     if (error != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "TriggerDisconnection() failed: %s", chip::ErrorStr(error));
->>>>>>> csa/v1.4.2-branch
     }
 
     ChipLogProgress(DeviceLayer, "Clearing WiFi provision");

@@ -61,12 +61,7 @@ Git:
         <optionalConform/>
       </feature>
     </features>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x0000" name="CurrentSensitivityLevel" define="CURRENT_SENSITIVITY_LEVEL" type="int8u" writable="true" optional="true">
-=======
     <attribute side="server" code="0x0000" name="CurrentSensitivityLevel" define="CURRENT_SENSITIVITY_LEVEL" type="int8u" writable="true" optional="true" max="9">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="SENSLVL"/>
       </mandatoryConform>
@@ -76,20 +71,12 @@ Git:
         <feature name="SENSLVL"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0002" name="DefaultSensitivityLevel" define="DEFAULT_SENSITIVITY_LEVEL" type="int8u" optional="true">
-=======
     <attribute side="server" code="0x0002" name="DefaultSensitivityLevel" define="DEFAULT_SENSITIVITY_LEVEL" type="int8u" optional="true" max="9">
->>>>>>> csa/v1.4.2-branch
       <optionalConform>
         <feature name="SENSLVL"/>
       </optionalConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0003" name="AlarmsActive" define="ALARMS_ACTIVE" type="AlarmModeBitmap" optional="true">
-=======
     <attribute side="server" code="0x0003" name="AlarmsActive" define="ALARMS_ACTIVE" type="AlarmModeBitmap" optional="true" min="0x00" max="0x03" default="0x00">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <orTerm>
           <feature name="VIS"/>
@@ -97,20 +84,12 @@ Git:
         </orTerm>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0004" name="AlarmsSuppressed" define="ALARMS_SUPPRESSED" type="AlarmModeBitmap" optional="true">
-=======
     <attribute side="server" code="0x0004" name="AlarmsSuppressed" define="ALARMS_SUPPRESSED" type="AlarmModeBitmap" optional="true" min="0x00" max="0x03" default="0x00">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="SPRS"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0005" name="AlarmsEnabled" define="ALARMS_ENABLED" type="AlarmModeBitmap" optional="true">
-=======
     <attribute side="server" code="0x0005" name="AlarmsEnabled" define="ALARMS_ENABLED" type="AlarmModeBitmap" optional="true" min="0x00" max="0x03">
->>>>>>> csa/v1.4.2-branch
       <optionalConform>
         <orTerm>
           <feature name="VIS"/>
@@ -118,11 +97,7 @@ Git:
         </orTerm>
       </optionalConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0006" name="AlarmsSupported" define="ALARMS_SUPPORTED" type="AlarmModeBitmap" optional="true">
-=======
     <attribute side="server" code="0x0006" name="AlarmsSupported" define="ALARMS_SUPPORTED" type="AlarmModeBitmap" optional="true" min="0x00" max="0x03" default="0x00">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <orTerm>
           <feature name="VIS"/>
@@ -130,22 +105,12 @@ Git:
         </orTerm>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0007" name="SensorFault" define="SENSOR_FAULT" type="SensorFaultBitmap" default="0" optional="true">
-      <optionalConform/>
-    </attribute>
-    
-    <command source="client" code="0x00" name="SuppressAlarm" optional="true">
-      <description>This command is used to suppress the specified alarm mode.</description>
-      <arg name="AlarmsToSuppress" type="AlarmModeBitmap"/>
-=======
     <attribute side="server" code="0x0007" name="SensorFault" define="SENSOR_FAULT" type="SensorFaultBitmap" default="0" optional="true" min="0x0000" max="0x0001">
       <optionalConform/>
     </attribute>
     <command source="client" code="0x00" name="SuppressAlarm" optional="true">
       <description>This command is used to suppress the specified alarm mode.</description>
       <arg id="0" name="AlarmsToSuppress" type="AlarmModeBitmap" min="0x00" max="0x03"/>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="SPRS"/>
       </mandatoryConform>
@@ -153,11 +118,7 @@ Git:
 
     <command source="client" code="0x01" name="EnableDisableAlarm" optional="true">
       <description>This command is used to enable or disable the specified alarm mode.</description>
-<<<<<<< HEAD
-      <arg name="AlarmsToEnableDisable" type="AlarmModeBitmap"/>
-=======
       <arg id="0" name="AlarmsToEnableDisable" type="AlarmModeBitmap" min="0x00" max="0x03"/>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <orTerm>
           <feature name="VIS"/>
@@ -167,15 +128,9 @@ Git:
     </command>
 
     <event side="server" code="0x00" priority="info" name="AlarmsStateChanged" optional="true">
-<<<<<<< HEAD
-      <description>This event SHALL be generated when any bits in the AlarmsActive and/or AlarmsSuppressed attributes change.</description>
-      <field id="0" name="AlarmsActive" type="AlarmModeBitmap"/>
-      <field id="1" name="AlarmsSuppressed" type="AlarmModeBitmap" optional="true"/>
-=======
       <description>This event SHALL be generated after any bits in the AlarmsActive and/or AlarmsSuppressed attributes change.</description>
       <field id="0" name="AlarmsActive" type="AlarmModeBitmap" min="0x00" max="0x03"/>
       <field id="1" name="AlarmsSuppressed" type="AlarmModeBitmap" optional="true" min="0x00" max="0x03"/>
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <orTerm>
           <feature name="VIS"/>
@@ -186,11 +141,7 @@ Git:
 
     <event side="server" code="0x01" priority="info" name="SensorFault" optional="true">
       <description>This event SHALL be generated when the device registers or clears a fault.</description>
-<<<<<<< HEAD
-      <field id="0" name="SensorFault" type="SensorFaultBitmap"/>
-=======
       <field id="0" name="SensorFault" type="SensorFaultBitmap" min="0x0000" max="0x0001"/>
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </event>
 

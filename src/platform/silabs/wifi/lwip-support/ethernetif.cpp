@@ -21,39 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-<<<<<<< HEAD
-#ifndef WF200_WIFI
-#include "FreeRTOS.h"
-#include "event_groups.h"
-#include "task.h"
-#if (SLI_SI91X_MCU_INTERFACE | EXP_BOARD)
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "cmsis_os2.h"
-#include "sl_net.h"
-#include "sl_si91x_driver.h"
-#include "sl_si91x_host_interface.h"
-#include "sl_si91x_types.h"
-#include "sl_wifi.h"
-#include "sl_wifi_callback_framework.h"
-#include "sl_wifi_constants.h"
-#include "sl_wifi_types.h"
-#ifdef __cplusplus
-}
-#endif
-#endif // (SLI_SI91X_MCU_INTERFACE | EXP_BOARD)
-#endif // WF200_WIFI
-
-#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
-#ifdef WF200_WIFI
-#include "sl_wfx.h"
-#endif
-/* LwIP includes. */
-#include "ethernetif.h"
-=======
 // LwIP includes - Includes must be before the rsi headers due to redefination errors
->>>>>>> csa/v1.4.2-branch
 #include "lwip/ethip6.h"
 #include "lwip/timeouts.h"
 #include "netif/etharp.h"
@@ -448,12 +416,7 @@ static err_t low_level_output(struct netif * netif, struct pbuf * p)
     struct pbuf * q;
     uint16_t framelength = 0;
     uint16_t datalength  = 0;
-<<<<<<< HEAD
-    int32_t status       = 0;
-#ifdef WIFI_DEBUG_ENABLED
-=======
 #if WIFI_DEBUG_ENABLED
->>>>>>> csa/v1.4.2-branch
     ChipLogProgress(DeviceLayer, "LWIP : low_level_output");
 #endif
     if (xSemaphoreTake(ethout_sem, portMAX_DELAY) != pdTRUE)
@@ -509,17 +472,10 @@ static err_t low_level_output(struct netif * netif, struct pbuf * p)
     /* forward the generated packet to RSI to
      * send the data over wifi network
      */
-<<<<<<< HEAD
-    status = wfx_rsi_send_data(packet, datalength);
-    if (status != 0)
-    {
-        ChipLogError(DeviceLayer, "wfx_rsi_send_data failed: %ld", status);
-=======
     int32_t status = wfx_rsi_send_data(packet, datalength);
     if (status != 0)
     {
         ChipLogError(DeviceLayer, "*ERR*EN-RSI:Send fail: %ld", status);
->>>>>>> csa/v1.4.2-branch
         xSemaphoreGive(ethout_sem);
         return ERR_IF;
     }

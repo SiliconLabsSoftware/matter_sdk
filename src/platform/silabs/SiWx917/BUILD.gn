@@ -14,12 +14,10 @@
 
 import("//build_overrides/chip.gni")
 
+import("${chip_root}/src/platform/device.gni")
+
 import("${chip_root}/build/chip/buildconfig_header.gni")
 import("${chip_root}/src/crypto/crypto.gni")
-<<<<<<< HEAD
-import("${chip_root}/src/platform/device.gni")
-=======
->>>>>>> csa/v1.4.2-branch
 import("${chip_root}/src/platform/silabs/wifi/args.gni")
 import("${chip_root}/third_party/silabs/SiWx917_sdk.gni")
 import("${chip_root}/third_party/silabs/silabs_board.gni")
@@ -67,6 +65,9 @@ static_library("SiWx917") {
     "${silabs_platform_dir}/SilabsConfig.cpp",
     "${silabs_platform_dir}/SilabsConfig.h",
     "${silabs_platform_dir}/SystemPlatformConfig.h",
+    "${silabs_platform_dir}/platformAbstraction/SilabsPlatform.h",
+    "${silabs_platform_dir}/platformAbstraction/SilabsPlatformBase.h",
+    "${silabs_platform_dir}/platformAbstraction/WiseMcuSpam.cpp",
     "../../FreeRTOS/SystemTimeSupport.cpp",
     "../../SingletonConfigurationManager.cpp",
     "../rs911x/BLEManagerImpl.cpp",
@@ -74,16 +75,6 @@ static_library("SiWx917") {
     "../rs911x/wfx_sl_ble_init.cpp",
     "../rs911x/wfx_sl_ble_init.h",
     "SiWxPlatformInterface.h",
-  ]
-
-  public_deps = [
-    "${chip_root}/src/app/icd/server:icd-server-config",
-    "${chip_root}/src/platform:platform_base",
-    "${silabs_platform_dir}/platformAbstraction:wisemcu",
-  ]
-  deps = [
-    "${chip_root}/src/platform/logging:headers",
-    "${sl_provision_root}:headers",
   ]
 
   if (chip_enable_multi_ota_requestor) {
@@ -118,8 +109,6 @@ static_library("SiWx917") {
     ]
   }
 
-<<<<<<< HEAD
-=======
   public_deps = [
     "${chip_root}/src/app/icd/server:icd-server-config",
     "${chip_root}/src/platform:platform_base",
@@ -130,7 +119,6 @@ static_library("SiWx917") {
     "${sl_provision_root}:headers",
   ]
 
->>>>>>> csa/v1.4.2-branch
   # Add platform crypto implementation
   if (chip_crypto == "platform") {
     if (sl_si91x_crypto_flavor == "tinycrypt") {

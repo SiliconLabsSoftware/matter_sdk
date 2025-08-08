@@ -124,12 +124,8 @@ public:
      *
      * @param event AppEvent to post
      */
-
-<<<<<<< HEAD
     static void PostEvent(const AppEvent * event);
 
-=======
->>>>>>> csa/v1.4.2-branch
 #ifdef DISPLAY_ENABLED
     /**
      * @brief Return LCD object
@@ -157,11 +153,7 @@ public:
      * @param screen The screen to be displayed
      */
     static void PostUpdateDisplayEvent(SilabsLCD::Screen_e screen);
-<<<<<<< HEAD
-#endif
-=======
 #endif // DISPLAY_ENABLED
->>>>>>> csa/v1.4.2-branch
 
     /**
      * @brief Function called to start the LED light timer

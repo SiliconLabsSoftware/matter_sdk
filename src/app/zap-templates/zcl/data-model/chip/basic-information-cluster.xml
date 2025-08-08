@@ -77,27 +77,6 @@ Git: 0.7-summer-2025-ncr-23-g816a9defd
     <description>This cluster provides attributes and events for determining basic information about Nodes, which supports both
       Commissioning and operational determination of Node characteristics, such as Vendor ID, Product ID and serial number,
       which apply to the whole Node. Also allows setting user device information such as location.</description>
-<<<<<<< HEAD
-    <globalAttribute side="either" code="0xFFFD" value="3"/>
-
-    <attribute side="server" code="0" name="DataModelRevision" define="DATA_MODEL_REVISION" type="int16u">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="1" name="VendorName" define="VENDOR_NAME" type="char_string" length="32">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="2" name="VendorID" define="VENDOR_ID" type="vendor_id">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="3" name="ProductName" define="PRODUCT_NAME" type="char_string" length="32">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="4" name="ProductID" define="PRODUCT_ID" type="int16u">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="5" name="NodeLabel" define="NODE_LABEL" type="char_string" length="32" writable="true">
-      <access op="read" privilege="view"/>
-=======
     <client init="false" tick="false">true</client>
     <server init="false" tick="false">true</server>
     <globalAttribute side="either" code="0xFFFD" value="5"/>
@@ -107,74 +86,11 @@ Git: 0.7-summer-2025-ncr-23-g816a9defd
     <attribute side="server" code="3" name="ProductName" define="PRODUCT_NAME" type="char_string" length="32"/>
     <attribute side="server" code="4" name="ProductID" define="PRODUCT_ID" type="int16u"/>
     <attribute side="server" code="5" name="NodeLabel" define="NODE_LABEL" type="char_string" length="32" writable="true">
->>>>>>> csa/v1.4.2-branch
       <access op="write" privilege="manage"/>
-      <mandatoryConform/>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="6" name="Location"  define="LOCATION"                  type="char_string"               length="2"   default="XX" writable="true"                >
-      <access op="read" privilege="view"/>
-=======
     <attribute side="server" code="6" name="Location" define="LOCATION" type="char_string" length="2" writable="true" minLength="2">
->>>>>>> csa/v1.4.2-branch
       <access op="write" privilege="administer"/>
-      <mandatoryConform/>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="7" name="HardwareVersion" define="HARDWARE_VERSION" type="int16u" default="0">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="8" name="HardwareVersionString" define="HARDWARE_VERSION_STRING" type="char_string" minLength="1" length="64">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="9" name="SoftwareVersion" define="SOFTWARE_VERSION" type="int32u" default="0">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="10" name="SoftwareVersionString" define="SOFTWARE_VERSION_STRING" type="char_string" minLength="1" length="64">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="11" name="ManufacturingDate" define="MANUFACTURING_DATE" type="char_string" minLength="8" length="16" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="12" name="PartNumber" define="PART_NUMBER" type="char_string" length="32" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="13" name="ProductURL" define="PRODUCT_URL" type="long_char_string" length="256" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="14" name="ProductLabel" define="PRODUCT_LABEL" type="char_string" length="64" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="15" name="SerialNumber" define="SERIAL_NUMBER" type="char_string" length="32" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="16" name="LocalConfigDisabled" define="LOCAL_CONFIG_DISABLED" type="boolean" default="0" writable="true" optional="true">
-      <access op="read" privilege="view"/>
-      <access op="write" privilege="manage"/>
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="17" name="Reachable" define="REACHABLE" type="boolean" default="1" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="18" name="UniqueID" define="UNIQUE_ID" type="char_string" length="32">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="19" name="CapabilityMinima" define="CAPABILITY_MINIMA" type="CapabilityMinimaStruct">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="20" name="ProductAppearance" define="PRODUCT_APPEARANCE" type="ProductAppearanceStruct" optional="true">
-      <optionalConform/>
-    </attribute>
-    <attribute side="server" code="21" name="SpecificationVersion" define="SPECIFICATION_VERSION" type="int32u">
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="22" name="MaxPathsPerInvoke" define="MAX_PATHS_PER_INVOKE" type="int16u">
-      <mandatoryConform/>
-    </attribute>
-
-    <event side="server" code="0x00" name="StartUp" priority="critical" optional="false">
-      <description>The StartUp event SHALL be emitted by a Node as soon as reasonable after completing a boot or reboot process.</description>
-=======
     <attribute side="server" code="7" name="HardwareVersion" define="HARDWARE_VERSION" type="int16u" default="0"/>
     <attribute side="server" code="8" name="HardwareVersionString" define="HARDWARE_VERSION_STRING" type="char_string" minLength="1" length="64"/>
     <attribute side="server" code="9" name="SoftwareVersion" define="SOFTWARE_VERSION" type="int32u" default="0"/>
@@ -216,28 +132,17 @@ Git: 0.7-summer-2025-ncr-23-g816a9defd
     </attribute>
     <event side="server" code="0x00" name="StartUp" priority="critical">
       <description>The StartUp event SHALL be generated by a Node as soon as reasonable after completing a boot or reboot process.</description>
->>>>>>> csa/v1.4.2-branch
       <field id="0" name="SoftwareVersion" type="int32u"/>
-      <mandatoryConform/>
     </event>
 
     <event side="server" code="0x01" name="ShutDown" priority="critical" optional="true">
-<<<<<<< HEAD
-      <description>The ShutDown event SHOULD be emitted by a Node prior to any orderly shutdown sequence on a best-effort basis.</description>
-=======
       <description>The ShutDown event SHOULD be generated by a Node prior to any orderly shutdown sequence on a best-effort basis.</description>
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </event>
 
     <event side="server" code="0x02" name="Leave" priority="info" optional="true">
-<<<<<<< HEAD
-      <description>The Leave event SHOULD be emitted by a Node prior to permanently leaving the Fabric.</description>
-      <field id="0" name="FabricIndex" type="fabric_idx"/>
-=======
       <description>The Leave event SHOULD be generated by a Node prior to permanently leaving a given Fabric, such as when the RemoveFabric command is invoked for a given fabric, or triggered by factory reset or some other manufacturer specific action to disable or reset the operational data in the Node.</description>
       <field id="0" name="FabricIndex" type="fabric_idx" min="1" max="254"/>
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </event>
 

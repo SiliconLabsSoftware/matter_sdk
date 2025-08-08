@@ -257,15 +257,14 @@ enum PublicEventTypes
     kSecureSessionEstablished,
 
     /**
-<<<<<<< HEAD
      * Signals that socket select operation to be started.
      */
     kSocketSelectStart,
-=======
+
+	/**
      * Signals that factory reset has started.
      */
     kFactoryReset,
->>>>>>> csa/v1.4.2-branch
 };
 
 /**
@@ -569,10 +568,7 @@ struct ChipDeviceEvent final
             bool addNocCommandHasBeenInvoked;
             bool updateNocCommandHasBeenInvoked;
             bool updateTermsAndConditionsHasBeenInvoked;
-<<<<<<< HEAD
-=======
             bool setVidVerificationStatementHasBeenInvoked;
->>>>>>> csa/v1.4.2-branch
         } FailSafeTimerExpired;
 
         struct

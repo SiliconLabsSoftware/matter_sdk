@@ -13122,8 +13122,6 @@ CHIP_ERROR DataModelLogger::LogAttribute(const chip::app::ConcreteDataAttributeP
             ReturnErrorOnFailure(chip::app::DataModel::Decode(*data, value));
             return DataModelLogger::LogValue("TCUpdateDeadline", 1, value);
         }
-<<<<<<< HEAD
-=======
         case GeneralCommissioning::Attributes::RecoveryIdentifier::Id: {
             chip::ByteSpan value;
             ReturnErrorOnFailure(chip::app::DataModel::Decode(*data, value));
@@ -13134,7 +13132,6 @@ CHIP_ERROR DataModelLogger::LogAttribute(const chip::app::ConcreteDataAttributeP
             ReturnErrorOnFailure(chip::app::DataModel::Decode(*data, value));
             return DataModelLogger::LogValue("NetworkRecoveryReason", 1, value);
         }
->>>>>>> csa/v1.4.2-branch
         case GeneralCommissioning::Attributes::GeneratedCommandList::Id: {
             chip::app::DataModel::DecodableList<chip::CommandId> value;
             ReturnErrorOnFailure(chip::app::DataModel::Decode(*data, value));

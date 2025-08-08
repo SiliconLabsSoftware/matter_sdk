@@ -561,14 +561,6 @@ private:
     // engine, the "oldest" subscription is the subscription with the smallest generation.
     uint64_t mTransactionStartGeneration = 0;
 
-<<<<<<< HEAD
-    SubscriptionId mSubscriptionId           = 0;
-    uint16_t mMinIntervalFloorSeconds        = 0;
-    uint16_t mMaxInterval                    = 0;
-    uint16_t mSubscriberRequestedMaxInterval = 0;
-
-=======
->>>>>>> csa/v1.4.2-branch
     EventNumber mEventMin = 0;
 
     // The last schedule event number snapshoted in the beginning when preparing to fill new events to reports

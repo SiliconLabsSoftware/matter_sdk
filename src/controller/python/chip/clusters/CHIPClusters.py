@@ -1777,8 +1777,6 @@ class ChipClusters:
                 "type": "int",
                 "reportable": True,
             },
-<<<<<<< HEAD
-=======
             0x0000000A: {
                 "attributeName": "RecoveryIdentifier",
                 "attributeId": 0x0000000A,
@@ -1791,7 +1789,6 @@ class ChipClusters:
                 "type": "int",
                 "reportable": True,
             },
->>>>>>> csa/v1.4.2-branch
             0x0000FFF8: {
                 "attributeName": "GeneratedCommandList",
                 "attributeId": 0x0000FFF8,

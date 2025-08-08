@@ -18,10 +18,7 @@ import("${chip_root}/examples/common/pigweed/pigweed_rpcs.gni")
 import("${chip_root}/src/app/icd/icd.gni")
 import("${chip_root}/src/lib/lib.gni")
 import("${chip_root}/src/platform/device.gni")
-<<<<<<< HEAD
 import("${chip_root}/src/tracing/tracing_args.gni")
-=======
->>>>>>> csa/v1.4.2-branch
 import("${silabs_sdk_build_root}/efr32_sdk.gni")
 import("${silabs_sdk_build_root}/silabs_board.gni")
 
@@ -34,13 +31,6 @@ declare_args() {
 
   # OTA timeout in seconds
   ota_periodic_query_timeout_sec = 86400
-<<<<<<< HEAD
-
-  # The EnableKey in hex string format used by TestEventTrigger command in
-  # GeneralDiagnostics cluster. The length of the string should be 16 bytes.
-  sl_test_event_trigger_enable_key = "00112233445566778899AABBCCDDEEFF"
-=======
->>>>>>> csa/v1.4.2-branch
 }
 
 import("${silabs_common_plat_dir}/args.gni")
@@ -68,20 +58,11 @@ config("chip_examples_project_config") {
   ]
 }
 
-<<<<<<< HEAD
 config("test-event-trigger-config") {
   defines = [ "SL_MATTER_TEST_EVENT_TRIGGER_ENABLED" ]
-
-  if (is_debug) {
-    defines += [ "SL_MATTER_TEST_EVENT_TRIGGER_ENABLE_KEY=\"${sl_test_event_trigger_enable_key}\"" ]
-  }
 }
 
 source_set("test-event-trigger") {
-  sources = [
-    "${silabs_common_plat_dir}/SilabsTestEventTriggerDelegate.cpp",
-    "${silabs_common_plat_dir}/SilabsTestEventTriggerDelegate.h",
-  ]
 
   deps = [ "${sl_provision_root}:headers" ]
   public_configs = [ ":test-event-trigger-config" ]
@@ -92,8 +73,6 @@ source_set("test-event-trigger") {
   ]
 }
 
-=======
->>>>>>> csa/v1.4.2-branch
 source_set("openthread_core_config_efr32_chip_examples") {
   if (chip_enable_openthread) {
     sources = [ "project_include/OpenThreadConfig.h" ]
@@ -124,12 +103,9 @@ source_set("matter-shell") {
     "${chip_root}/src/lib/shell:shell",
     "${chip_root}/src/lib/shell:shell_core",
   ]
-<<<<<<< HEAD
   if (matter_enable_tracing_support) {
     public_deps += [ "${chip_root}/src/platform/silabs/tracing:SilabsTracing" ]
   }
-=======
->>>>>>> csa/v1.4.2-branch
 }
 
 config("efr32-common-config") {
@@ -232,29 +208,24 @@ source_set("efr32-common") {
     ]
   }
 
-<<<<<<< HEAD
-=======
   if (sl_enable_rgb_led) {
     sources += [ "${silabs_common_plat_dir}/led/RGBLEDWidget.cpp" ]
     include_dirs = [ "${silabs_common_plat_dir}/rgb_led" ]
   }
 
->>>>>>> csa/v1.4.2-branch
   if (chip_build_libshell) {
     deps += [ ":matter-shell" ]
 
     if (chip_enable_icd_server) {
       deps += [ "${silabs_common_plat_dir}/shell:icd" ]
     }
-<<<<<<< HEAD
+
     if (matter_enable_tracing_support) {
       public_deps += [ "${silabs_common_plat_dir}/shell:tracing" ]
     }
     if (sl_enable_ble_side_channel) {
       deps += [ "${silabs_common_plat_dir}/shell:ble" ]
     }
-=======
->>>>>>> csa/v1.4.2-branch
   }
 
   public_deps += [

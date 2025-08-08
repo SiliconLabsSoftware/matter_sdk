@@ -327,9 +327,6 @@
             "RegisteredClients",
             "ICDCounter",
             "ClientsSupportedPerFabric",
-<<<<<<< HEAD
-            "MaximumCheckInBackOff"
-=======
             "MaximumCheckInBackOff",
             "OperatingMode",
             "FeatureMap"
@@ -365,7 +362,6 @@
             "UltrasonicOccupiedToUnoccupiedDelay",
             "PhysicalContactOccupiedToUnoccupiedDelay",
             "FeatureMap"
->>>>>>> csa/v1.4.2-branch
         ],
         "Operational Credentials": [
             "SupportedFabrics",

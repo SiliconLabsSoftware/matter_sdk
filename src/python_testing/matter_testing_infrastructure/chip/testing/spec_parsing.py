@@ -550,9 +550,6 @@ class PrebuiltDataModelDirectory(Enum):
     k1_3 = auto()
     k1_4 = auto()
     k1_4_1 = auto()
-<<<<<<< HEAD:src/python_testing/spec_parsing_support.py
-    kMaster = auto()
-=======
     k1_4_2 = auto()
 
     @property
@@ -566,7 +563,6 @@ class PrebuiltDataModelDirectory(Enum):
         if self == PrebuiltDataModelDirectory.k1_4_2:
             return "1.4.2"
         raise KeyError("Invalid enum: %r" % self)
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/spec_parsing.py
 
 
 class DataModelLevel(Enum):
@@ -582,18 +578,6 @@ class DataModelLevel(Enum):
         raise KeyError("Invalid enum: %r" % self)
 
 
-<<<<<<< HEAD:src/python_testing/spec_parsing_support.py
-def _get_data_model_directory(data_model_directory: typing.Union[PrebuiltDataModelDirectory, str], data_model_level: DataModelLevel) -> str:
-    if data_model_directory == PrebuiltDataModelDirectory.k1_3:
-        return os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'data_model', '1.3', data_model_level)
-    elif data_model_directory == PrebuiltDataModelDirectory.k1_4:
-        return os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'data_model', '1.4', data_model_level)
-    elif data_model_directory == PrebuiltDataModelDirectory.k1_4_1:
-        return os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'data_model', '1.4.1', data_model_level)
-    elif data_model_directory == PrebuiltDataModelDirectory.kMaster:
-        return os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'data_model', 'master', data_model_level)
-    else:
-=======
 def get_data_model_directory(data_model_directory: Union[PrebuiltDataModelDirectory, Traversable], data_model_level: DataModelLevel = DataModelLevel.kCluster) -> Traversable:
     """
     Get the directory of the data model for a specific version and level from the installed package.
@@ -603,7 +587,6 @@ def get_data_model_directory(data_model_directory: Union[PrebuiltDataModelDirect
     """
     # Early return if data_model_directory is already a Traversable type
     if not isinstance(data_model_directory, PrebuiltDataModelDirectory):
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/spec_parsing.py
         return data_model_directory
 
     # If it's a prebuilt directory, build the path based on the version and data model level
@@ -611,12 +594,7 @@ def get_data_model_directory(data_model_directory: Union[PrebuiltDataModelDirect
         'data_model').joinpath(data_model_directory.dirname).joinpath('allfiles.zip')
     path = zipfile.Path(zip_path)
 
-<<<<<<< HEAD:src/python_testing/spec_parsing_support.py
-def build_xml_clusters(data_model_directory: typing.Union[PrebuiltDataModelDirectory, str]) -> tuple[dict[uint, XmlCluster], list[ProblemNotice]]:
-    dir = _get_data_model_directory(data_model_directory, DataModelLevel.kCluster)
-=======
     return path.joinpath(data_model_level.dirname)
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/spec_parsing.py
 
 
 def build_xml_clusters(data_model_directory: Union[PrebuiltDataModelDirectory, Traversable]) -> typing.Tuple[dict[uint, XmlCluster], list[ProblemNotice]]:
@@ -897,13 +875,8 @@ def parse_single_device_type(root: ElementTree.Element) -> tuple[dict[int, XmlDe
     return device_types, problems
 
 
-<<<<<<< HEAD:src/python_testing/spec_parsing_support.py
-def build_xml_device_types(data_model_directory: typing.Union[PrebuiltDataModelDirectory, str]) -> tuple[dict[int, XmlDeviceType], list[ProblemNotice]]:
-    dir = _get_data_model_directory(data_model_directory, DataModelLevel.kDeviceType)
-=======
 def build_xml_device_types(data_model_directory: typing.Union[PrebuiltDataModelDirectory, Traversable]) -> tuple[dict[int, XmlDeviceType], list[ProblemNotice]]:
     top = get_data_model_directory(data_model_directory, DataModelLevel.kDeviceType)
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/spec_parsing.py
     device_types: dict[int, XmlDeviceType] = {}
     problems: list[ProblemNotice] = []
 
@@ -963,16 +936,9 @@ def dm_from_spec_version(specification_version: uint) -> PrebuiltDataModelDirect
     version_to_dm = {0x01030000: PrebuiltDataModelDirectory.k1_3,
                      0x01040000: PrebuiltDataModelDirectory.k1_4,
                      0x01040100: PrebuiltDataModelDirectory.k1_4_1,
-<<<<<<< HEAD:src/python_testing/spec_parsing_support.py
-                     0x01050000: PrebuiltDataModelDirectory.kMaster}
-
-    if specification_version not in version_to_dm.keys():
-        raise ConformanceException(f"Unknown specification_version {specification_version:08X}")
-=======
                      0x01040200: PrebuiltDataModelDirectory.k1_4_2}
 
     if specification_version not in version_to_dm.keys():
         raise ConformanceException(f"Unknown specification_version 0x{specification_version:08X}")
->>>>>>> csa/v1.4.2-branch:src/python_testing/matter_testing_infrastructure/chip/testing/spec_parsing.py
 
     return version_to_dm[specification_version]

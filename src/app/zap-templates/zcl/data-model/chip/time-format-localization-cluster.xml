@@ -66,24 +66,14 @@ Git: 0.9.2-summer2025-40-gf61484656
     <!-- Base data types -->
     <attribute side="server" code="0x00" name="HourFormat" define="HOUR_FORMAT" type="HourFormatEnum" writable="true">
       <access op="write" role="manage"/>
-<<<<<<< HEAD
-      <mandatoryConform/>
-    </attribute>
-    <attribute side="server" code="0x01" name="ActiveCalendarType" define="ACTIVE_CALENDAR_TYPE" type="CalendarTypeEnum" writable="true" optional="true">
-=======
     </attribute>
     <attribute side="server" code="0x01" name="ActiveCalendarType" define="ACTIVE_CALENDAR_TYPE" type="CalendarTypeEnum" writable="true">
->>>>>>> csa/v1.4.2-branch
       <access op="write" role="manage"/>
       <mandatoryConform>
         <feature name="CALFMT"/>
       </mandatoryConform>
     </attribute>
-<<<<<<< HEAD
-    <attribute side="server" code="0x02" name="SupportedCalendarTypes" define="SUPPORTED_CALENDAR_TYPES" type="array" entryType="CalendarTypeEnum" optional="true">
-=======
     <attribute side="server" code="0x02" name="SupportedCalendarTypes" define="SUPPORTED_CALENDAR_TYPES" type="array" entryType="CalendarTypeEnum">
->>>>>>> csa/v1.4.2-branch
       <mandatoryConform>
         <feature name="CALFMT"/>
       </mandatoryConform>

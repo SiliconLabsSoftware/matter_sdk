@@ -277,7 +277,6 @@ extern "C" {
 // Enable front-end internal switch control for ACX module boards
 #if (SL_SI91X_ACX_MODULE == 1)
 #define FRONT_END_SWITCH_CTRL SL_SI91X_EXT_FEAT_FRONT_END_INTERNAL_SWITCH
-<<<<<<< HEAD
 #else
 #define FRONT_END_SWITCH_CTRL SL_SI91X_EXT_FEAT_FRONT_END_SWITCH_PINS_ULP_GPIO_4_5_0
 #endif
@@ -305,22 +304,6 @@ extern "C" {
 #else
 #define RSI_EXT_CUSTOM_FEATURE_BIT_MAP (SL_COMMON_FEATURE_BITS | SL_RAM_LEVEL)
 #endif // WIFI_ENABLE_SECURITY_WPA3_TRANSITION
-=======
-#else
-#define FRONT_END_SWITCH_CTRL SL_SI91X_EXT_FEAT_FRONT_END_SWITCH_PINS_ULP_GPIO_4_5_0
-#endif
-
-#ifdef SLI_SI917
-#if WIFI_ENABLE_SECURITY_WPA3_TRANSITION // Adding Support for WPA3 transition
-#define RSI_EXT_CUSTOM_FEATURE_BIT_MAP                                                                                             \
-    (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(1) | SL_SI91X_RAM_LEVEL_NWP_BASIC_MCU_ADV |              \
-     FRONT_END_SWITCH_CTRL | SL_SI91X_EXT_FEAT_IEEE_80211W)
-#else
-#define RSI_EXT_CUSTOM_FEATURE_BIT_MAP                                                                                             \
-    (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(1) | SL_SI91X_RAM_LEVEL_NWP_BASIC_MCU_ADV |              \
-     FRONT_END_SWITCH_CTRL)
-#endif /* WIFI_ENABLE_SECURITY_WPA3_TRANSITION */
->>>>>>> csa/v1.4.2-branch
 #else  // EXP_BOARD
 #define RSI_EXT_CUSTOM_FEATURE_BIT_MAP (SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2))
 #endif /* SLI_SI917 */

@@ -45,12 +45,7 @@ Git: 0.7-summer-2025-ncr-295-geca1936d2
         <optionalConform/>
       </feature>
     </features>
-<<<<<<< HEAD
-
-    <attribute side="server" code="0x00" name="ThreadMetrics" define="THREAD_METRICS" type="array" entryType="ThreadMetricsStruct" length="254" optional="true">
-=======
     <attribute side="server" code="0x00" name="ThreadMetrics" define="THREAD_METRICS" type="array" entryType="ThreadMetricsStruct" length="64" optional="true">
->>>>>>> csa/v1.4.2-branch
       <optionalConform/>
     </attribute>
     <attribute side="server" code="0x01" name="CurrentHeapFree" define="CURRENT_HEAP_FREE" type="int64u" optional="true">
@@ -71,17 +66,6 @@ Git: 0.7-summer-2025-ncr-295-geca1936d2
         <feature name="WTRMRK"/>
       </mandatoryConform>
     </command>
-<<<<<<< HEAD
-    <event side="server" code="0x00" name="SoftwareFault" priority="info" optional="true">
-      <description>Indicate the last software fault that has taken place on the Node.</description>
-      <field id="0" name="ID" type="int64u"/>
-      <field id="1" name="Name" type="char_string" length="8" optional="true"/>
-      <field id="2" name="FaultRecording" type="octet_string" length="1024" optional="true"/>
-      <optionalConform/>
-    </event>
-  </cluster>
-=======
->>>>>>> csa/v1.4.2-branch
 
     <event side="server" code="0x00" name="SoftwareFault" priority="info" optional="true">
       <description>This Event SHALL be generated when a software fault occurs on the Node.</description>

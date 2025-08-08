@@ -36,17 +36,11 @@ Git: 0.7-summer-2025-ncr-142-g4e6a1f080
     <code>0x001e</code>
     <define>BINDING_CLUSTER</define>
     <description>The Binding Cluster is meant to replace the support from the Zigbee Device Object (ZDO) for supporting the binding table.</description>
-<<<<<<< HEAD
-    <attribute side="server" code="0x0000" name="Binding" define="BINDING_LIST" type="array" entryType="TargetStruct" writable="true">
-      <access op="write" role="manage"/>
-      <mandatoryConform/>
-=======
     <client init="false" tick="false">true</client>
     <server init="false" tick="false">true</server>
     <globalAttribute code="0xFFFD" side="either" value="1"/>
     <attribute side="server" code="0x0000" name="Binding" define="BINDING_LIST" type="array" entryType="TargetStruct" writable="true">
       <access op="write" role="manage"/>
->>>>>>> csa/v1.4.2-branch
     </attribute>
   </cluster>
 </configurator>

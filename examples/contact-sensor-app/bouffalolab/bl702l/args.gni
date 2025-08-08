@@ -25,19 +25,5 @@ chip_progress_logging = true
 chip_error_logging = true
 
 chip_enable_icd_server = true
-<<<<<<< HEAD:examples/contact-sensor-app/nxp/k32w0/args.gni
-chip_enable_icd_lit = false
-chip_persist_subscriptions = true
-chip_subscription_timeout_resumption = true
-
-is_debug = false
-
-chip_crypto = "platform"
-chip_crypto_flavor = "NXP-Ultrafast-P256"
-chip_with_ot_cli = 0
-chip_with_OM15082 = 1
-chip_pw_tokenizer_logging = true
-=======
 chip_enable_icd_lit = true
 chip_enable_icd_dsls = true
->>>>>>> csa/v1.4.2-branch:examples/contact-sensor-app/bouffalolab/bl702l/args.gni

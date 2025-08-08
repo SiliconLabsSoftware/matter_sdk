@@ -93,18 +93,11 @@ CHIP_ERROR AppTask::AppInit()
 void AppTask::Timer::Start()
 {
     // Starts or restarts the function timer
-<<<<<<< HEAD
     osStatus_t status = osTimerStart(mHandler, pdMS_TO_TICKS(LONG_PRESS_TIMEOUT_MS));
     if (status != osOK)
     {
         SILABS_LOG("Timer start() failed with error code : %ld", status);
         appError(APP_ERROR_START_TIMER_FAILED);
-=======
-    if (osTimerStart(mHandler, pdMS_TO_TICKS(LONG_PRESS_TIMEOUT_MS)) != osOK)
-    {
-        SILABS_LOG("Timer start() failed");
-        appError(CHIP_ERROR_INTERNAL);
->>>>>>> csa/v1.4.2-branch
     }
 
     mIsActive = true;
@@ -153,11 +146,7 @@ AppTask::Timer::Timer(uint32_t timeoutInMs, Callback callback, void * context) :
     if (mHandler == NULL)
     {
         SILABS_LOG("Timer create failed");
-<<<<<<< HEAD
         appError(APP_ERROR_CREATE_TIMER_FAILED);
-=======
-        appError(CHIP_ERROR_INTERNAL);
->>>>>>> csa/v1.4.2-branch
     }
 }
 
@@ -172,18 +161,11 @@ AppTask::Timer::~Timer()
 
 void AppTask::Timer::Stop()
 {
-<<<<<<< HEAD
     // Abort on osError (-1) as it indicates an unspecified failure with no clear recovery path.
     if (osTimerStop(mHandler) == osError)
     {
         SILABS_LOG("Timer stop() failed");
         appError(APP_ERROR_STOP_TIMER_FAILED);
-=======
-    if (osTimerStop(mHandler) == osError)
-    {
-        SILABS_LOG("Timer stop() failed");
-        appError(CHIP_ERROR_INTERNAL);
->>>>>>> csa/v1.4.2-branch
     }
     mIsActive = false;
 }
