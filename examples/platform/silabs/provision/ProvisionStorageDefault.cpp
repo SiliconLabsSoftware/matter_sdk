@@ -757,9 +757,29 @@ CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
 
     return CHIP_NO_ERROR;
 }
+#endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
+
+CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
+{
+#ifdef SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
+    constexpr size_t kEnableKeyLength = 16; // Expected byte size of the EnableKey
+
+    // Verify that the provided key has the correct length
+    VerifyOrReturnError(value.size() == kEnableKeyLength, CHIP_ERROR_INVALID_ARGUMENT);
+
+    // Write the key to the configuration storage
+    ReturnErrorOnFailure(
+        SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Test_Event_Trigger_Key, value.data(), value.size()));
+
+    return CHIP_NO_ERROR;
+#else
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+#endif // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
+}
 
 CHIP_ERROR Storage::GetTestEventTriggerKey(MutableByteSpan & keySpan)
 {
+#ifdef SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
     constexpr size_t kEnableKeyLength = 16; // Expected byte size of the EnableKey
     CHIP_ERROR err                    = CHIP_NO_ERROR;
     size_t keyLength                  = 0;
@@ -788,20 +808,10 @@ CHIP_ERROR Storage::GetTestEventTriggerKey(MutableByteSpan & keySpan)
 
     keySpan.reduce_size(kEnableKeyLength);
     return err;
-}
-
-#else // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
-
-CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
-{
+#else
     return CHIP_ERROR_NOT_IMPLEMENTED;
-}
-CHIP_ERROR Storage::GetTestEventTriggerKey(MutableByteSpan & keySpan)
-{
-    return CHIP_ERROR_NOT_IMPLEMENTED;
-}
-
 #endif // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
+}
 
 } // namespace Provision
 } // namespace Silabs

@@ -55,7 +55,7 @@ template("siwx917_sdk") {
     # Treat these includes as system includes, so warnings in them are not fatal.
     _include_dirs = [
       "${chip_root}",
-      "${chip_root}/examples/platform/silabs/SiWx917/SiWx917",
+      "${chip_root}/examples/platform/silabs/",
       "${efr32_sdk_root}/platform/emdrv/nvm3/config",
       "${efr32_sdk_root}/platform/emdrv/nvm3/inc",
       "${efr32_sdk_root}/platform/emdrv/common/inc",
@@ -79,7 +79,7 @@ template("siwx917_sdk") {
       "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sl_net/inc",
 
       # siwx917_soc component
-      "${wifi_sdk_root}/components/board/silabs/config/brd4338a",
+      "${wifi_sdk_root}/components/board/silabs/config/${silabs_board}",
       "${wifi_sdk_root}/components/board/silabs/inc",
       "${wifi_sdk_root}/components/common/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/core/chip/inc",
@@ -254,6 +254,8 @@ template("siwx917_sdk") {
       "TIMER_ROMDRIVER_PRESENT=1",
       "UDMA_ROMDRIVER_PRESENT=1",
       "PLL_ROMDRIVER_PRESENT=1",
+      "SL_CODE_COMPONENT_FREERTOS_KERNEL=freertos_kernel",
+      "SLI_CODE_CLASSIFICATION_DISABLE=1",
       "SL_MATTER_GN_BUILD=1",
       "SILABS_LOG_OUT_UART=${sl_uart_log_output}",
       "SUPPORT_CPLUSPLUS=1",
@@ -268,29 +270,6 @@ template("siwx917_sdk") {
       defines += [ "SILABS_LOG_ENABLED=1" ]
     } else {
       defines += [ "SILABS_LOG_ENABLED=0" ]
-    }
-
-    defines += [ "LWIP_NETIF_API=1" ]
-    if (chip_enable_wifi_ipv4) {
-      defines += [
-        "LWIP_IPV4=1",
-
-        # adds following options to provide
-        # them to .cpp source files
-        # flags ported from lwipopts file
-        # TODO: move lwipopts to one location
-        "LWIP_ARP=1",
-        "LWIP_ICMP=1",
-        "LWIP_IGMP=1",
-        "LWIP_DHCP=1",
-      ]
-    } else {
-      defines += [ "LWIP_IPV4=0" ]
-    }
-    if (lwip_ipv6) {
-      defines += [ "LWIP_IPV6=1" ]
-    } else {
-      defines += [ "LWIP_IPV6=0" ]
     }
 
     if (chip_enable_wifi_ipv4) {
@@ -309,6 +288,7 @@ template("siwx917_sdk") {
 
     if (!disable_lcd) {
       defines += [
+        "SI917_MEMLCD=1",
         "SYSCALLS_WRITE",
         "SPI_MULTI_SLAVE",
         "SL_ULP_TIMER=1",
@@ -644,6 +624,7 @@ template("siwx917_sdk") {
       # si91x component
       "${efr32_sdk_root}/platform/CMSIS/RTOS2/Source/os_systick.c",
       "${efr32_sdk_root}/platform/common/src/sl_assert.c",
+      "${efr32_sdk_root}/platform/common/src/sl_cmsis_os2_common.c",
       "${efr32_sdk_root}/platform/common/src/sl_core_cortexm.c",
       "${efr32_sdk_root}/platform/common/src/sl_slist.c",
       "${efr32_sdk_root}/platform/common/src/sl_string.c",
@@ -711,6 +692,7 @@ template("siwx917_sdk") {
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/systemlevel/src/rsi_ipmu.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/systemlevel/src/rsi_pll.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/systemlevel/src/rsi_power_save.c",
+      "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/systemlevel/src/rsi_rtc.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/systemlevel/src/rsi_temp_sensor.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/systemlevel/src/rsi_ulpss_clk.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/unified_api/src/sl_si91x_adc.c",
@@ -766,6 +748,7 @@ template("siwx917_sdk") {
       "${efr32_sdk_root}/platform/service/memory_manager/src/sl_memory_manager_cpp.cpp",
       "${efr32_sdk_root}/platform/service/memory_manager/src/sl_memory_manager_dynamic_reservation.c",
       "${efr32_sdk_root}/platform/service/memory_manager/src/sl_memory_manager_pool.c",
+      "${efr32_sdk_root}/platform/service/memory_manager/src/sl_memory_manager_pool_common.c",
       "${efr32_sdk_root}/platform/service/memory_manager/src/sl_memory_manager_region.c",
       "${efr32_sdk_root}/platform/service/memory_manager/src/sl_memory_manager_retarget.c",
       "${efr32_sdk_root}/platform/service/memory_manager/src/sli_memory_manager_common.c",
