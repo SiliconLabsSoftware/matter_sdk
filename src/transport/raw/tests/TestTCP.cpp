@@ -53,6 +53,7 @@ namespace {
 constexpr size_t kMaxTcpActiveConnectionCount = 4;
 constexpr size_t kMaxTcpPendingPackets        = 4;
 constexpr size_t kPacketSizeBytes             = sizeof(uint32_t);
+uint16_t gChipTCPPort                         = static_cast<uint16_t>(CHIP_PORT + chip::Crypto::GetRandU16() % 100);
 chip::Transport::AppTCPConnectionCallbackCtxt gAppTCPConnCbCtxt;
 chip::Transport::ActiveTCPConnectionState * gActiveTCPConnState = nullptr;
 
@@ -65,11 +66,6 @@ constexpr uint32_t kMessageCounter  = 18;
 
 const char PAYLOAD[]          = "Hello!";
 const char messageSize_TEST[] = "\x00\x00\x00\x00";
-
-uint16_t GetRandomPort()
-{
-    return static_cast<uint16_t>(CHIP_PORT + chip::Crypto::GetRandU16() % 100);
-}
 
 class MockTransportMgrDelegate : public chip::TransportMgrDelegate
 {
@@ -139,10 +135,11 @@ public:
         }
     }
 
-    void InitializeMessageTest(TCPImpl & tcp, const IPAddress & addr, uint16_t port)
+    void InitializeMessageTest(TCPImpl & tcp, const IPAddress & addr)
     {
-        CHIP_ERROR err = tcp.Init(
-            Transport::TcpListenParameters(mIOContext->GetTCPEndPointManager()).SetAddressType(addr.Type()).SetListenPort(port));
+        CHIP_ERROR err = tcp.Init(Transport::TcpListenParameters(mIOContext->GetTCPEndPointManager())
+                                      .SetAddressType(addr.Type())
+                                      .SetListenPort(gChipTCPPort));
 
         // retry a few times in case the port is somehow in use.
         // this is a WORKAROUND for flaky testing if we run tests very fast after each other.
@@ -163,7 +160,7 @@ public:
             chip::test_utils::SleepMillis(100);
             err = tcp.Init(Transport::TcpListenParameters(mIOContext->GetTCPEndPointManager())
                                .SetAddressType(addr.Type())
-                               .SetListenPort(port));
+                               .SetListenPort(gChipTCPPort));
         }
 
         EXPECT_EQ(err, CHIP_NO_ERROR);
@@ -181,7 +178,7 @@ public:
         gAppTCPConnCbCtxt.connClosedCb   = nullptr;
     }
 
-    void SingleMessageTest(TCPImpl & tcp, const IPAddress & addr, uint16_t port)
+    void SingleMessageTest(TCPImpl & tcp, const IPAddress & addr)
     {
         chip::System::PacketBufferHandle buffer = chip::System::PacketBufferHandle::NewWithData(PAYLOAD, sizeof(PAYLOAD));
         ASSERT_FALSE(buffer.IsNull());
@@ -196,7 +193,7 @@ public:
         EXPECT_EQ(err, CHIP_NO_ERROR);
 
         // Should be able to send a message to itself by just calling send.
-        err = tcp.SendMessage(Transport::PeerAddress::TCP(addr, port), std::move(buffer));
+        err = tcp.SendMessage(Transport::PeerAddress::TCP(addr, gChipTCPPort), std::move(buffer));
         EXPECT_EQ(err, CHIP_NO_ERROR);
 
         mIOContext->DriveIOUntil(chip::System::Clock::Seconds16(5), [this]() { return mReceiveHandlerCallCount != 0; });
@@ -205,38 +202,38 @@ public:
         SetCallback(nullptr);
     }
 
-    void ConnectTest(TCPImpl & tcp, const IPAddress & addr, uint16_t port)
+    void ConnectTest(TCPImpl & tcp, const IPAddress & addr)
     {
         // Connect and wait for seeing active connection
-        CHIP_ERROR err = tcp.TCPConnect(Transport::PeerAddress::TCP(addr, port), &gAppTCPConnCbCtxt, &gActiveTCPConnState);
+        CHIP_ERROR err = tcp.TCPConnect(Transport::PeerAddress::TCP(addr, gChipTCPPort), &gAppTCPConnCbCtxt, &gActiveTCPConnState);
         EXPECT_EQ(err, CHIP_NO_ERROR);
 
         mIOContext->DriveIOUntil(chip::System::Clock::Seconds16(5), [&tcp]() { return tcp.HasActiveConnections(); });
         EXPECT_EQ(tcp.HasActiveConnections(), true);
     }
 
-    void HandleConnectCompleteCbCalledTest(TCPImpl & tcp, const IPAddress & addr, uint16_t port)
+    void HandleConnectCompleteCbCalledTest(TCPImpl & tcp, const IPAddress & addr)
     {
         // Connect and wait for seeing active connection and connection complete
         // handler being called.
-        CHIP_ERROR err = tcp.TCPConnect(Transport::PeerAddress::TCP(addr, port), &gAppTCPConnCbCtxt, &gActiveTCPConnState);
+        CHIP_ERROR err = tcp.TCPConnect(Transport::PeerAddress::TCP(addr, gChipTCPPort), &gAppTCPConnCbCtxt, &gActiveTCPConnState);
         EXPECT_EQ(err, CHIP_NO_ERROR);
 
         mIOContext->DriveIOUntil(chip::System::Clock::Seconds16(5), [this]() { return mHandleConnectionCompleteCalled; });
         EXPECT_EQ(mHandleConnectionCompleteCalled, true);
     }
 
-    void HandleConnectCloseCbCalledTest(TCPImpl & tcp, const IPAddress & addr, uint16_t port)
+    void HandleConnectCloseCbCalledTest(TCPImpl & tcp, const IPAddress & addr)
     {
         // Connect and wait for seeing active connection and connection complete
         // handler being called.
-        CHIP_ERROR err = tcp.TCPConnect(Transport::PeerAddress::TCP(addr, port), &gAppTCPConnCbCtxt, &gActiveTCPConnState);
+        CHIP_ERROR err = tcp.TCPConnect(Transport::PeerAddress::TCP(addr, gChipTCPPort), &gAppTCPConnCbCtxt, &gActiveTCPConnState);
         EXPECT_EQ(err, CHIP_NO_ERROR);
 
         mIOContext->DriveIOUntil(chip::System::Clock::Seconds16(5), [this]() { return mHandleConnectionCompleteCalled; });
         EXPECT_EQ(mHandleConnectionCompleteCalled, true);
 
-        tcp.TCPDisconnect(Transport::PeerAddress::TCP(addr, port));
+        tcp.TCPDisconnect(Transport::PeerAddress::TCP(addr, gChipTCPPort));
         mIOContext->DriveIOUntil(chip::System::Clock::Seconds16(5), [&tcp]() { return !tcp.HasActiveConnections(); });
         EXPECT_EQ(mHandleConnectionCloseCalled, true);
     }
@@ -249,10 +246,10 @@ public:
         EXPECT_EQ(tcp.HasActiveConnections(), false);
     }
 
-    void DisconnectTest(TCPImpl & tcp, const IPAddress & addr, uint16_t port)
+    void DisconnectTest(TCPImpl & tcp, const IPAddress & addr)
     {
         // Disconnect and wait for seeing peer close
-        tcp.TCPDisconnect(Transport::PeerAddress::TCP(addr, port));
+        tcp.TCPDisconnect(Transport::PeerAddress::TCP(addr, gChipTCPPort));
         mIOContext->DriveIOUntil(chip::System::Clock::Seconds16(5), [&tcp]() { return !tcp.HasActiveConnections(); });
         EXPECT_EQ(tcp.HasActiveConnections(), false);
     }
@@ -452,9 +449,8 @@ protected:
     {
         TCPImpl tcp;
 
-        uint16_t port = GetRandomPort();
-        CHIP_ERROR err =
-            tcp.Init(Transport::TcpListenParameters(mIOContext->GetTCPEndPointManager()).SetAddressType(type).SetListenPort(port));
+        CHIP_ERROR err = tcp.Init(
+            Transport::TcpListenParameters(mIOContext->GetTCPEndPointManager()).SetAddressType(type).SetListenPort(gChipTCPPort));
 
         EXPECT_EQ(err, CHIP_NO_ERROR);
     }
@@ -464,56 +460,51 @@ protected:
     {
         TCPImpl tcp;
 
-        uint16_t port = GetRandomPort();
         MockTransportMgrDelegate gMockTransportMgrDelegate(mIOContext);
-        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr, port);
-        gMockTransportMgrDelegate.SingleMessageTest(tcp, addr, port);
-        gMockTransportMgrDelegate.DisconnectTest(tcp, addr, port);
+        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr);
+        gMockTransportMgrDelegate.SingleMessageTest(tcp, addr);
+        gMockTransportMgrDelegate.DisconnectTest(tcp, addr);
     }
 
     void ConnectToSelfTest(const IPAddress & addr)
     {
         TCPImpl tcp;
 
-        uint16_t port = GetRandomPort();
         MockTransportMgrDelegate gMockTransportMgrDelegate(mIOContext);
-        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr, port);
-        gMockTransportMgrDelegate.ConnectTest(tcp, addr, port);
-        gMockTransportMgrDelegate.DisconnectTest(tcp, addr, port);
+        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr);
+        gMockTransportMgrDelegate.ConnectTest(tcp, addr);
+        gMockTransportMgrDelegate.DisconnectTest(tcp, addr);
     }
 
     void ConnectSendMessageThenCloseTest(const IPAddress & addr)
     {
         TCPImpl tcp;
 
-        uint16_t port = GetRandomPort();
         MockTransportMgrDelegate gMockTransportMgrDelegate(mIOContext);
-        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr, port);
-        gMockTransportMgrDelegate.ConnectTest(tcp, addr, port);
-        gMockTransportMgrDelegate.SingleMessageTest(tcp, addr, port);
-        gMockTransportMgrDelegate.DisconnectTest(tcp, addr, port);
+        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr);
+        gMockTransportMgrDelegate.ConnectTest(tcp, addr);
+        gMockTransportMgrDelegate.SingleMessageTest(tcp, addr);
+        gMockTransportMgrDelegate.DisconnectTest(tcp, addr);
     }
 
     void HandleConnCompleteTest(const IPAddress & addr)
     {
         TCPImpl tcp;
 
-        uint16_t port = GetRandomPort();
         MockTransportMgrDelegate gMockTransportMgrDelegate(mIOContext);
-        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr, port);
-        gMockTransportMgrDelegate.HandleConnectCompleteCbCalledTest(tcp, addr, port);
-        gMockTransportMgrDelegate.DisconnectTest(tcp, addr, port);
+        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr);
+        gMockTransportMgrDelegate.HandleConnectCompleteCbCalledTest(tcp, addr);
+        gMockTransportMgrDelegate.DisconnectTest(tcp, addr);
     }
 
     void HandleConnCloseTest(const IPAddress & addr)
     {
         TCPImpl tcp;
 
-        uint16_t port = GetRandomPort();
         MockTransportMgrDelegate gMockTransportMgrDelegate(mIOContext);
-        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr, port);
-        gMockTransportMgrDelegate.HandleConnectCloseCbCalledTest(tcp, addr, port);
-        gMockTransportMgrDelegate.DisconnectTest(tcp, addr, port);
+        gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr);
+        gMockTransportMgrDelegate.HandleConnectCloseCbCalledTest(tcp, addr);
+        gMockTransportMgrDelegate.DisconnectTest(tcp, addr);
     }
 
     // Callback used by CheckProcessReceivedBuffer.
@@ -619,30 +610,6 @@ TEST_F(TestTCP, HandleConnCloseCalledTest6)
     HandleConnCloseTest(addr);
 }
 
-TEST_F(TestTCP, CheckTCPEndpointAfterCloseTest)
-{
-    TCPImpl tcp;
-
-    IPAddress addr;
-    IPAddress::FromString("::1", addr);
-
-    uint16_t port = GetRandomPort();
-    MockTransportMgrDelegate gMockTransportMgrDelegate(mIOContext);
-    gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr, port);
-    gMockTransportMgrDelegate.ConnectTest(tcp, addr, port);
-
-    Transport::PeerAddress lPeerAddress = Transport::PeerAddress::TCP(addr, port);
-    void * state                        = TestAccess::FindActiveConnection(tcp, lPeerAddress);
-    ASSERT_NE(state, nullptr);
-    TCPEndPoint * lEndPoint = TestAccess::GetEndpoint(state);
-    ASSERT_NE(lEndPoint, nullptr);
-
-    // Call Close and check the TCPEndpoint
-    tcp.Close();
-    lEndPoint = TestAccess::GetEndpoint(state);
-    ASSERT_EQ(lEndPoint, nullptr);
-}
-
 TEST_F(TestTCP, CheckProcessReceivedBuffer)
 {
     TCPImpl tcp;
@@ -650,15 +617,14 @@ TEST_F(TestTCP, CheckProcessReceivedBuffer)
     IPAddress addr;
     IPAddress::FromString("::1", addr);
 
-    uint16_t port = GetRandomPort();
     MockTransportMgrDelegate gMockTransportMgrDelegate(mIOContext);
-    gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr, port);
+    gMockTransportMgrDelegate.InitializeMessageTest(tcp, addr);
 
     // Send a packet to get TCP going, so that we can find a TCPEndPoint to pass to ProcessReceivedBuffer.
     // (The current TCPEndPoint implementation is not effectively mockable.)
-    gMockTransportMgrDelegate.SingleMessageTest(tcp, addr, port);
+    gMockTransportMgrDelegate.SingleMessageTest(tcp, addr);
 
-    Transport::PeerAddress lPeerAddress = Transport::PeerAddress::TCP(addr, port);
+    Transport::PeerAddress lPeerAddress = Transport::PeerAddress::TCP(addr, gChipTCPPort);
     void * state                        = TestAccess::FindActiveConnection(tcp, lPeerAddress);
     ASSERT_NE(state, nullptr);
     TCPEndPoint * lEndPoint = TestAccess::GetEndpoint(state);

@@ -36,11 +36,6 @@ RefreshKeySender::RefreshKeySender(CheckInDelegate * checkInDelegate, const ICDC
     mOnConnectedCallback(HandleDeviceConnected, this), mOnConnectionFailureCallback(HandleDeviceConnectionFailure, this)
 {}
 
-const ICDClientInfo & RefreshKeySender::GetICDClientInfo()
-{
-    return mICDClientInfo;
-}
-
 CHIP_ERROR RefreshKeySender::RegisterClientWithNewKey(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle)
 {
     auto onSuccess = [&](const ConcreteCommandPath & commandPath, const StatusIB & status, const auto & dataResponse) {
@@ -69,7 +64,7 @@ CHIP_ERROR RefreshKeySender::RegisterClientWithNewKey(Messaging::ExchangeManager
 
         mpCheckInDelegate->OnCheckInComplete(mICDClientInfo);
 #if CHIP_CONFIG_ENABLE_READ_CLIENT
-        mpImEngine->OnActiveModeNotification(mICDClientInfo.peer_node, mICDClientInfo.monitored_subject);
+        mpImEngine->OnActiveModeNotification(mICDClientInfo.peer_node);
 #endif // CHIP_CONFIG_ENABLE_READ_CLIENT
         mpCheckInDelegate->OnKeyRefreshDone(this, CHIP_NO_ERROR);
     };
