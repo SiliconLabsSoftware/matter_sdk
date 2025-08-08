@@ -38,6 +38,11 @@
 #include "ZigbeeCallbacks.h"
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 
+extern "C" {
+#include "btl_interface.h"
+#include "btl_reset_info.h"
+}
+
 namespace chip {
 namespace DeviceLayer {
 
@@ -145,7 +150,12 @@ CHIP_ERROR ConfigurationManagerImpl::GetBootReason(uint32_t & bootReason)
 #else
     matterBootCause = BootReasonType::kUnspecified;
 #endif
-
+    BootloaderResetCause_t testBootReason = bootloader_getResetReason();
+    if (matterBootCause == BootReasonType::kSoftwareReset && testBootReason.reason == BOOTLOADER_RESET_REASON_BOOTLOAD &&
+        testBootReason.signature == BOOTLOADER_RESET_SIGNATURE_VALID)
+    {
+        matterBootCause = BootReasonType::kSoftwareUpdateCompleted;
+    }
     bootReason = to_underlying(matterBootCause);
     return CHIP_NO_ERROR;
 }
