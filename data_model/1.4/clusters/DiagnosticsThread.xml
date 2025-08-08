@@ -147,25 +147,50 @@ Davis, CA 95616, USA
       </field>
       <field id="5" name="LQI" type="uint8">
         <mandatoryConform/>
-        <constraint type="between" from="0" to="255"/>
+        <constraint>
+          <between>
+            <from value="0"/>
+            <to value="255"/>
+          </between>
+        </constraint>
       </field>
       <field id="6" name="AverageRssi" type="int8" default="null">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint type="between" from="-128" to="0"/>
+        <constraint>
+          <between>
+            <from value="-128"/>
+            <to value="0"/>
+          </between>
+        </constraint>
       </field>
       <field id="7" name="LastRssi" type="int8" default="null">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint type="between" from="-128" to="0"/>
+        <constraint>
+          <between>
+            <from value="-128"/>
+            <to value="0"/>
+          </between>
+        </constraint>
       </field>
       <field id="8" name="FrameErrorRate" type="uint8" default="0">
         <mandatoryConform/>
-        <constraint type="between" from="0" to="100"/>
+        <constraint>
+          <between>
+            <from value="0"/>
+            <to value="100"/>
+          </between>
+        </constraint>
       </field>
       <field id="9" name="MessageErrorRate" type="uint8" default="0">
         <mandatoryConform/>
-        <constraint type="between" from="0" to="100"/>
+        <constraint>
+          <between>
+            <from value="0"/>
+            <to value="100"/>
+          </between>
+        </constraint>
       </field>
       <field id="10" name="RxOnWhenIdle" type="bool">
         <mandatoryConform/>
@@ -274,7 +299,13 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
+<<<<<<< HEAD
       <constraint type="maxLength" value="16"/>
+=======
+      <constraint>
+        <maxLength value="16"/>
+      </constraint>
+>>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x0003" name="PanId" type="uint16">
       <access read="true" readPrivilege="view"/>
@@ -317,25 +348,33 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint type="max" value="255"/>
+      <constraint>
+        <max value="255"/>
+      </constraint>
     </attribute>
     <attribute id="0x000B" name="DataVersion" type="uint16">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint type="max" value="255"/>
+      <constraint>
+        <max value="255"/>
+      </constraint>
     </attribute>
     <attribute id="0x000C" name="StableDataVersion" type="uint16">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint type="max" value="255"/>
+      <constraint>
+        <max value="255"/>
+      </constraint>
     </attribute>
     <attribute id="0x000D" name="LeaderRouterId" type="uint8">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint type="max" value="62"/>
+      <constraint>
+        <max value="62"/>
+      </constraint>
     </attribute>
     <attribute id="0x000E" name="DetachedRoleCount" type="uint16" default="0">
       <access read="true" readPrivilege="view"/>
@@ -655,7 +694,13 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
+<<<<<<< HEAD
       <constraint type="allowed" value="4"/>
+=======
+      <constraint>
+        <allowed value="4"/>
+      </constraint>
+>>>>>>> csa/v1.4.2-branch
     </attribute>
     <attribute id="0x003D" name="OperationalDatasetComponents" type="OperationalDatasetComponents">
       <access read="true" readPrivilege="view"/>
@@ -666,7 +711,9 @@ Davis, CA 95616, USA
       <entry type="NetworkFaultEnum"/>
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint type="maxCount" value="4"/>
+      <constraint>
+        <maxCount value="4"/>
+      </constraint>
     </attribute>
     <attribute id="0x003F" name="ExtAddress" type="uint64">
       <access read="true" readPrivilege="view"/>
@@ -707,12 +754,16 @@ Davis, CA 95616, USA
       <field id="0" name="Current" type="list">
         <entry type="NetworkFaultEnum"/>
         <mandatoryConform/>
-        <constraint type="maxCount" value="4"/>
+        <constraint>
+          <maxCount value="4"/>
+        </constraint>
       </field>
       <field id="1" name="Previous" type="list">
         <entry type="NetworkFaultEnum"/>
         <mandatoryConform/>
-        <constraint type="maxCount" value="4"/>
+        <constraint>
+          <maxCount value="4"/>
+        </constraint>
       </field>
     </event>
   </events>

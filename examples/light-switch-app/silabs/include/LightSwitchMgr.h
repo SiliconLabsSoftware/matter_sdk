@@ -54,11 +54,14 @@ public:
 
     CHIP_ERROR Init(chip::EndpointId lightSwitchEndpoint, chip::EndpointId genericSwitchEndpoint);
 
+    static LightSwitchMgr & GetInstance() { return sSwitch; }
+
     void GenericSwitchOnInitialPress();
     void GenericSwitchOnShortRelease();
 
     void TriggerLightSwitchAction(LightSwitchAction action, bool isGroupCommand = false);
     void TriggerLevelControlAction(StepModeEnum stepMode, bool isGroupCommand = false);
+<<<<<<< HEAD
 
     StepModeEnum getStepMode();
     void changeStepMode();
@@ -70,8 +73,19 @@ public:
      * @param aEvent button event being processed
      */
     static void SwitchActionEventHandler(uint16_t eventType);
+=======
+>>>>>>> csa/v1.4.2-branch
 
-    static LightSwitchMgr & GetInstance() { return sSwitch; }
+    StepModeEnum getStepMode();
+    void changeStepMode();
+
+    /**
+     * @brief Button event processing function
+     *        Function triggers a switch action sent to the CHIP task
+     *
+     * @param aEvent button event being processed
+     */
+    static void SwitchActionEventHandler(uint16_t eventType);
 
 private:
     static LightSwitchMgr sSwitch;
@@ -81,6 +95,15 @@ private:
 
     LightSwitchMgr() = default;
 
+<<<<<<< HEAD
+=======
+    /**
+     * @brief This function will be called when PB0 is
+     *        long-pressed to trigger the factory-reset
+     */
+    void HandleLongPress();
+
+>>>>>>> csa/v1.4.2-branch
     static void GenericSwitchWorkerFunction(intptr_t context);
 
     chip::EndpointId mLightSwitchEndpoint   = chip::kInvalidEndpointId;

@@ -133,7 +133,10 @@ declare_args() {
 if (slc_generate || slc_reuse_files) {
   silabs_gen_folder = slc_gen_path
 } else {
-  print("Using pre-generate files")
+  if (!chip_build_all_platform_tests) {
+    # We can't print to the console when running our tests in the CSA CI otherwise CI fails.
+    print("Using pre-generate files")
+  }
   silabs_gen_folder = sl_pre_gen_path
 }
 
@@ -363,6 +366,7 @@ template("efr32_sdk") {
         "${wifi_sdk_root}/components/device/silabs/si91x/mcu/core/config",
         "${wifi_sdk_root}/components/device/silabs/si91x/wireless/inc",
         "${wifi_sdk_root}/components/device/silabs/si91x/wireless/ble/inc",
+        "${wifi_sdk_root}/components/device/silabs/si91x/wireless/firmware_upgrade",
 
         # wifi component
         "${wifi_sdk_root}/components/protocol/wifi/inc",
@@ -387,10 +391,14 @@ template("efr32_sdk") {
 
     if (use_rs9116) {
       # TODO: we should create a seperate directory for headers that are necessary for the underlying sdks
+<<<<<<< HEAD
       _include_dirs += [
         "${chip_root}/src/platform/silabs/wifi/rs911x/platform",
         "${chip_root}/src/platform/silabs/wifi/rs911x",
       ]
+=======
+      _include_dirs += [ "${chip_root}/src/platform/silabs/wifi/rs911x/ncp" ]
+>>>>>>> csa/v1.4.2-branch
     }
 
     if (use_rs9116 || use_SiWx917) {
@@ -498,6 +506,7 @@ template("efr32_sdk") {
       "SL_OPENTHREAD_STACK_FEATURES_CONFIG_FILE=\"sl_openthread_features_config.h\"",
       "SL_CSL_TIMEOUT=${sl_ot_csl_timeout_sec}",
       "CIRCULAR_QUEUE_USE_LOCAL_CONFIG_HEADER=1",
+      "SILABS_LOG_OUT_UART=${sl_uart_log_output}",
     ]
 
     if (silabs_log_enabled && chip_logging) {
@@ -506,12 +515,15 @@ template("efr32_sdk") {
       defines += [ "SILABS_LOG_ENABLED=0" ]
     }
 
+<<<<<<< HEAD
     if (sl_uart_log_output) {
       defines += [ "SILABS_LOG_OUT_UART=1" ]
     } else {
       defines += [ "SILABS_LOG_OUT_UART=0" ]
     }
 
+=======
+>>>>>>> csa/v1.4.2-branch
     if (use_silabs_thread_lib) {
       defines += [ "SL_CONFIG_OPENTHREAD_LIB=1" ]
     } else {
@@ -561,10 +573,16 @@ template("efr32_sdk") {
       ]
     }
 
+<<<<<<< HEAD
     if (chip_enable_multi_ota_requestor) {
       if (chip_enable_multi_ota_encryption) {
         defines += [ "SL_MATTER_ENABLE_OTA_ENCRYPTION=1" ]
       }
+=======
+    if (chip_enable_multi_ota_encryption && chip_enable_multi_ota_requestor) {
+      defines += [ "SL_MATTER_ENABLE_OTA_ENCRYPTION=1" ]
+    }
+>>>>>>> csa/v1.4.2-branch
 
       if (chip_enable_ota_custom_tlv_testing) {
         defines += [ "OTA_TEST_CUSTOM_TLVS=1" ]
@@ -599,7 +617,6 @@ template("efr32_sdk") {
           "EXP_BOARD=1",
           "CHIP_917",
           "SLI_SI917=1",
-          "SL_WFX_CONFIG_SCAN=1",
           "CHIP_9117",
           "SL_WIFI_COMPONENT_INCLUDED",
           "SLI_SI91X_LWIP_HOSTED_NETWORK_STACK",
@@ -623,6 +640,7 @@ template("efr32_sdk") {
 
       if (use_wf200 || use_rs9116 || use_SiWx917) {
         import("${chip_root}/src/platform/silabs/wifi/args.gni")
+<<<<<<< HEAD
 
         defines += [ "LWIP_NETIF_API=1" ]
         if (chip_enable_wifi_ipv4) {
@@ -646,6 +664,8 @@ template("efr32_sdk") {
         } else {
           defines += [ "LWIP_IPV6=0" ]
         }
+=======
+>>>>>>> csa/v1.4.2-branch
       }
     }
 

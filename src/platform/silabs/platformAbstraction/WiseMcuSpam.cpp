@@ -32,9 +32,17 @@
 
 // TODO add includes ?
 extern "C" {
+<<<<<<< HEAD
 #if defined(SL_SI91X_BOARD_INIT)
 #include "rsi_board.h"
 #endif // SL_SI91X_BOARD_INIT
+=======
+#include "em_core.h"
+#if defined(SL_SI91X_BOARD_INIT)
+#include "rsi_board.h"
+#endif // SL_SI91X_BOARD_INIT
+#include "sl_event_handler.h"
+>>>>>>> csa/v1.4.2-branch
 
 #include "sl_si91x_hal_soc_soft_reset.h"
 
@@ -57,7 +65,11 @@ const sl_rgb_led_t * ledPinArray[SL_LED_COUNT] = { &led_led0 };
 #include "sl_si91x_led_instances.h"
 #define SL_LED_COUNT SL_SI91x_LED_COUNT
 uint8_t ledPinArray[SL_LED_COUNT] = { SL_LED_LED0_PIN, SL_LED_LED1_PIN };
+<<<<<<< HEAD
 #endif // SL_MATTER_RGB_LED_ENABLED
+=======
+#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
+>>>>>>> csa/v1.4.2-branch
 #endif // ENABLE_WSTK_LEDS
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER == 0
@@ -92,9 +104,16 @@ SilabsPlatform::SilabsButtonCb SilabsPlatform::mButtonCallback = nullptr;
 
 CHIP_ERROR SilabsPlatform::Init(void)
 {
+<<<<<<< HEAD
     mButtonCallback = nullptr;
 
 #if (CHIP_CONFIG_ENABLE_ICD_SERVER == 0) && (SL_PROVISION_GENERATOR == 0)
+=======
+    // TODO: Setting the highest priority for SVCall_IRQn to avoid the HardFault issue
+    NVIC_SetPriority(SVCall_IRQn, CORE_INTERRUPT_HIGHEST_PRIORITY);
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER == 0
+>>>>>>> csa/v1.4.2-branch
     // Configuration the clock rate
     soc_pll_config();
 #endif // !CHIP_CONFIG_ENABLE_ICD_SERVER && !SL_PROVISION_GENERATOR
@@ -131,7 +150,11 @@ CHIP_ERROR SilabsPlatform::SetLed(bool state, uint8_t led)
     (state) ? sl_si91x_simple_rgb_led_on(SL_RGB_LED_INSTANCE(led)) : sl_si91x_simple_rgb_led_off(SL_RGB_LED_INSTANCE(led));
 #else
     (state) ? sl_si91x_led_set(ledPinArray[led]) : sl_si91x_led_clear(ledPinArray[led]);
+<<<<<<< HEAD
 #endif // defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
+=======
+#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
+>>>>>>> csa/v1.4.2-branch
     return CHIP_NO_ERROR;
 }
 
@@ -148,10 +171,33 @@ CHIP_ERROR SilabsPlatform::ToggleLed(uint8_t led)
     sl_si91x_simple_rgb_led_toggle(SL_RGB_LED_INSTANCE(led));
 #else
     sl_si91x_led_toggle(ledPinArray[led]);
+<<<<<<< HEAD
 #endif // defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED
+=======
+#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
+>>>>>>> csa/v1.4.2-branch
     return CHIP_NO_ERROR;
 }
 #endif // ENABLE_WSTK_LEDS
+
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+bool SilabsPlatform::GetRGBLedState(uint8_t led)
+{
+    return sl_si91x_simple_rgb_led_get_current_state(SL_RGB_LED_INSTANCE(led));
+}
+CHIP_ERROR SilabsPlatform::SetLedColor(uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    uint32_t rgb_color;
+    rgb_color = (red) << 16 | (green) << 8 | (blue);
+    sl_si91x_simple_rgb_led_set_colour(SL_RGB_LED_INSTANCE(led), rgb_color);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR SilabsPlatform::GetLedColor(uint8_t led, uint16_t & r, uint16_t & g, uint16_t & b)
+{
+    sl_si91x_simple_rgb_led_get_colour(SL_RGB_LED_INSTANCE(led), &r, &g, &b);
+    return CHIP_NO_ERROR;
+}
+#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
 
 void SilabsPlatform::StartScheduler()
 {

@@ -28,9 +28,15 @@ CHIP_ERROR OTAFactoryDataProcessor::ProcessInternal(ByteSpan & block)
     CHIP_ERROR error = CHIP_NO_ERROR;
 
     ReturnErrorOnFailure(mAccumulator.Accumulate(block));
+<<<<<<< HEAD
 #if SL_MATTER_ENABLE_OTA_ENCRYPTION
     MutableByteSpan byteBlock = MutableByteSpan(mAccumulator.data(), mAccumulator.GetThreshold());
     OTATlvProcessor::vOtaProcessInternalEncryption(byteBlock);
+=======
+#ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION
+    MutableByteSpan mBlock = MutableByteSpan(mAccumulator.data(), mAccumulator.GetThreshold());
+    OTATlvProcessor::vOtaProcessInternalEncryption(mBlock);
+>>>>>>> csa/v1.4.2-branch
 #endif
     error = DecodeTlv();
 

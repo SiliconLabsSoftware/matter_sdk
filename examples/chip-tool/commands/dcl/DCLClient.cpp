@@ -131,7 +131,11 @@ CHIP_ERROR ValidateTermsAndConditionsSchema(const Json::Value & tc, unsigned int
     return ValidateTCCountryEntries(tc["countryEntries"]);
 }
 
+<<<<<<< HEAD
 CHIP_ERROR RequestTermsAndConditions(const Json::Value & json, Json::Value & tc)
+=======
+CHIP_ERROR RequestTermsAndConditions(const Json::Value & json, Json::Value & tc, tool::https::HttpsSecurityMode httpsSecurityMode)
+>>>>>>> csa/v1.4.2-branch
 {
     auto & model = json["model"];
     if ((model["enhancedSetupFlowOptions"].asUInt() & 0x01) == 0)
@@ -151,7 +155,11 @@ CHIP_ERROR RequestTermsAndConditions(const Json::Value & json, Json::Value & tc)
     auto * tcUrl                = enhancedSetupFlowTCUrl.asCString();
     const auto optionalFileSize = MakeOptional(static_cast<uint32_t>(enhancedSetupFlowTCFileSize.asUInt()));
     const auto optionalDigest   = MakeOptional(enhancedSetupFlowTCDigest.asCString());
+<<<<<<< HEAD
     ReturnErrorOnFailure(https::Request(tcUrl, tc, optionalFileSize, optionalDigest));
+=======
+    ReturnErrorOnFailure(https::Request(tcUrl, tc, optionalFileSize, optionalDigest, httpsSecurityMode));
+>>>>>>> csa/v1.4.2-branch
     ReturnErrorOnFailure(ValidateTermsAndConditionsSchema(tc, enhancedSetupFlowTCRevision.asUInt()));
 
     return CHIP_NO_ERROR;
@@ -159,11 +167,17 @@ CHIP_ERROR RequestTermsAndConditions(const Json::Value & json, Json::Value & tc)
 
 } // namespace
 
+<<<<<<< HEAD
 DCLClient::DCLClient(Optional<const char *> hostname, Optional<uint16_t> port)
 {
     mHostName = hostname.ValueOr(kDefaultDCLHostName);
     mPort     = port.ValueOr(0);
 }
+=======
+DCLClient::DCLClient(Optional<const char *> hostname, Optional<uint16_t> port, https::HttpsSecurityMode httpsSecurityMode) :
+    mHostName(hostname.ValueOr(kDefaultDCLHostName)), mPort(port.ValueOr(0)), mHttpsSecurityMode(httpsSecurityMode)
+{}
+>>>>>>> csa/v1.4.2-branch
 
 CHIP_ERROR DCLClient::Model(const char * onboardingPayload, Json::Value & outModel)
 {
@@ -209,7 +223,11 @@ CHIP_ERROR DCLClient::Model(const chip::VendorId vendorId, const uint16_t produc
     char path[kRequestPathBufferSize];
     VerifyOrReturnError(snprintf(path, sizeof(path), kRequestModelVendorProductPath, to_underlying(vendorId), productId) >= 0,
                         CHIP_ERROR_INVALID_ARGUMENT);
+<<<<<<< HEAD
     ReturnErrorOnFailure(https::Request(mHostName, mPort, path, outModel));
+=======
+    ReturnErrorOnFailure(https::Request(mHostName, mPort, path, outModel, NullOptional, NullOptional, mHttpsSecurityMode));
+>>>>>>> csa/v1.4.2-branch
 
     CHIP_ERROR error = ValidateModelSchema(outModel);
     VerifyOrReturnError(CHIP_NO_ERROR == error, error,
@@ -223,7 +241,11 @@ CHIP_ERROR DCLClient::TermsAndConditions(const char * onboardingPayload, Json::V
     Json::Value json;
     ReturnErrorOnFailure(Model(onboardingPayload, json));
     VerifyOrReturnError(Json::nullValue != json.type(), CHIP_NO_ERROR, outTc = Json::nullValue);
+<<<<<<< HEAD
     ReturnErrorOnFailure(RequestTermsAndConditions(json, outTc));
+=======
+    ReturnErrorOnFailure(RequestTermsAndConditions(json, outTc, mHttpsSecurityMode));
+>>>>>>> csa/v1.4.2-branch
     return CHIP_NO_ERROR;
 }
 
@@ -232,7 +254,11 @@ CHIP_ERROR DCLClient::TermsAndConditions(const chip::VendorId vendorId, const ui
     Json::Value json;
     ReturnErrorOnFailure(Model(vendorId, productId, json));
     VerifyOrReturnError(Json::nullValue != json.type(), CHIP_NO_ERROR, outTc = Json::nullValue);
+<<<<<<< HEAD
     ReturnErrorOnFailure(RequestTermsAndConditions(json, outTc));
+=======
+    ReturnErrorOnFailure(RequestTermsAndConditions(json, outTc, mHttpsSecurityMode));
+>>>>>>> csa/v1.4.2-branch
     return CHIP_NO_ERROR;
 }
 

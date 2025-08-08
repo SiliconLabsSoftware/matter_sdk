@@ -27,6 +27,7 @@
 #include "sl_wfx_constants.h"
 #else
 
+<<<<<<< HEAD
 // These names exists in the Si SDK as typedef enum. If they are present in the WF200 builds, we end up with conflicting
 // definitions but no erros because one is a define the other is a typedef enum. This causes different files to use different
 // values.
@@ -39,6 +40,8 @@ typedef struct
 {
     uint8_t octet[6]; ///< Table to store a MAC address
 } sl_wfx_mac_address_t;
+=======
+>>>>>>> csa/v1.4.2-branch
 /**
  * @brief General Message header structure
  *

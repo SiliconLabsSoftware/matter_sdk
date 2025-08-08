@@ -16,18 +16,43 @@
 #
 
 # === BEGIN CI TEST ARGUMENTS ===
+<<<<<<< HEAD
 # test-runner-runs: run1
 # test-runner-run/run1/app: ${TERMS_AND_CONDITIONS_APP}
 # test-runner-run/run1/factoryreset: True
 # test-runner-run/run1/quiet: True
 # test-runner-run/run1/app-args: --tc-min-required-version 1 --tc-required-acknowledgements 1 --custom-flow 2 --capabilities 6
 # test-runner-run/run1/script-args: --PICS src/app/tests/suites/certification/ci-pics-values --in-test-commissioning-method on-network --int-arg PIXIT.CGEN.FailsafeExpiryLengthSeconds:900 PIXIT.CGEN.RequiredTCAcknowledgements:1 PIXIT.CGEN.TCRevision:1 --qr-code MT:-24J0AFN00KA0648G00 --trace-to json:log
+=======
+# test-runner-runs:
+#   run1:
+#       app: ${TERMS_AND_CONDITIONS_APP}
+#       app-args: >
+#           --tc-min-required-version 1
+#           --tc-required-acknowledgements 1
+#           --custom-flow 2
+#           --capabilities 6
+#       script-args:
+#           --PICS src/app/tests/suites/certification/ci-pics-values
+#           --in-test-commissioning-method on-network
+#           --int-arg PIXIT.CGEN.FailsafeExpiryLengthSeconds:900
+#           --int-arg PIXIT.CGEN.RequiredTCAcknowledgements:1
+#           --int-arg PIXIT.CGEN.TCRevision:1
+#           --qr-code MT:-24J0AFN00KA0648G00
+#           --trace-to json:log
+#       factory-reset: true
+#       quiet: True
+>>>>>>> csa/v1.4.2-branch
 # === END CI TEST ARGUMENTS ===
 
 import chip.clusters as Clusters
 from chip import ChipDeviceCtrl
 from chip.commissioning import ROOT_ENDPOINT_ID
+<<<<<<< HEAD
 from matter_testing_support import MatterBaseTest, TestStep, async_test_body, default_matter_test_main
+=======
+from chip.testing.matter_testing import MatterBaseTest, TestStep, async_test_body, default_matter_test_main
+>>>>>>> csa/v1.4.2-branch
 from mobly import asserts
 
 
@@ -41,8 +66,12 @@ class TC_CGEN_2_7(MatterBaseTest):
 
     def steps_TC_CGEN_2_7(self) -> list[TestStep]:
         return [
+<<<<<<< HEAD
             TestStep(0, description="", expectation="", is_commissioning=False),
             TestStep(1, "TH begins commissioning the DUT and performs the following steps in order:\n* Security setup using PASE\n* Setup fail-safe timer, with ExpiryLengthSeconds field set to PIXIT.CGEN.FailsafeExpiryLengthSeconds and the Breadcrumb value as 1\n* Configure information- UTC time, regulatory, etc."),
+=======
+            TestStep(1, "TH begins commissioning the DUT and performs the following steps in order:\n* Security setup using PASE\n* Setup fail-safe timer, with ExpiryLengthSeconds field set to PIXIT.CGEN.FailsafeExpiryLengthSeconds and the Breadcrumb value as 1\n* Configure information- UTC time, regulatory, etc.", is_commissioning=False),
+>>>>>>> csa/v1.4.2-branch
             TestStep(2, "TH reads from the DUT the attribute TCMinRequiredVersion. Store the value as minVersion."),
             TestStep(3, "TH sends SetTCAcknowledgements to DUT with the following values:\n* TCVersion: minVersion\n* TCUserResponse: 0"),
             TestStep(4, "TH continues commissioning with the DUT and performs the steps from 'Operation CSR exchange' through 'Security setup using CASE'"),
@@ -58,7 +87,10 @@ class TC_CGEN_2_7(MatterBaseTest):
         tc_version_to_simulate = self.matter_test_config.global_test_params['PIXIT.CGEN.TCRevision']
         tc_user_response_to_simulate = self.matter_test_config.global_test_params['PIXIT.CGEN.RequiredTCAcknowledgements']
 
+<<<<<<< HEAD
         self.step(0)
+=======
+>>>>>>> csa/v1.4.2-branch
         if not self.check_pics("CGEN.S.F00"):
             asserts.skip('Root endpoint does not support the [commissioning] feature under test')
             return

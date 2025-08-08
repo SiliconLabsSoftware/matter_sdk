@@ -101,7 +101,11 @@ void RegisterCommands()
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_DSLS) && CHIP_CONFIG_ENABLE_ICD_DSLS
         { &HelpHandler, "help", "Usage: icd <subcommand>" }
     };
+<<<<<<< HEAD
     sShellICDSubCommands.RegisterCommands(sLitICDSubCommands, ArraySize(sLitICDSubCommands));
+=======
+    sShellICDSubCommands.RegisterCommands(sLitICDSubCommands, MATTER_ARRAY_SIZE(sLitICDSubCommands));
+>>>>>>> csa/v1.4.2-branch
 
 #if defined(CHIP_CONFIG_ENABLE_ICD_DSLS) && CHIP_CONFIG_ENABLE_ICD_DSLS
     static const shell_command_t sDynamicSitLitSubCommands[] = {
@@ -109,7 +113,11 @@ void RegisterCommands()
         { &DynamicSitLit::RemoveSitModeReq, "remove", "Removes SIT mode requirement." },
         { &DynamicSitLit::HelpHandler, "help", "Usage : icd dsls <subcommand>." }
     };
+<<<<<<< HEAD
     sShellDynamicSitLitSubCommands.RegisterCommands(sDynamicSitLitSubCommands, ArraySize(sDynamicSitLitSubCommands));
+=======
+    sShellDynamicSitLitSubCommands.RegisterCommands(sDynamicSitLitSubCommands, MATTER_ARRAY_SIZE(sDynamicSitLitSubCommands));
+>>>>>>> csa/v1.4.2-branch
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_DSLS) && CHIP_CONFIG_ENABLE_ICD_DSLS
 
     static const shell_command_t sICDCommand = { &CommandHandler, "icd", "ICD commands. Usage: icd <subcommand>" };

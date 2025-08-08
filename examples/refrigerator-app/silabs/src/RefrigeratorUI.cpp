@@ -28,7 +28,11 @@
 
 // Only needed for wifi NCP devices
 #if SL_WIFI && !defined(SLI_SI91X_MCU_INTERFACE)
+<<<<<<< HEAD
 #include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
+=======
+#include <platform/silabs/wifi/ncp/spi_multiplex.h>
+>>>>>>> csa/v1.4.2-branch
 #endif // SL_WIFI && !defined(SLI_SI91X_MCU_INTERFACE)
 
 // LCD line define

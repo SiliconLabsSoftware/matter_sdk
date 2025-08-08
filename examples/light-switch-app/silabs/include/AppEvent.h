@@ -19,6 +19,7 @@
 
 #pragma once
 
+<<<<<<< HEAD
 #include <cstdint>
 #ifdef DISPLAY_ENABLED
 #include "lcd.h"
@@ -26,15 +27,22 @@
 
 struct AppEvent;
 typedef void (*EventHandler)(AppEvent *);
+=======
+#include "BaseAppEvent.h"
+>>>>>>> csa/v1.4.2-branch
 
-struct AppEvent
+struct AppEvent : public BaseAppEvent
 {
     enum AppEventTypes
     {
+<<<<<<< HEAD
         kEventType_Button = 0,
         kEventType_LCD,
         kEventType_Timer,
         kEventType_Light,
+=======
+        kEventType_Light = BaseAppEvent::kEventType_Max + 1,
+>>>>>>> csa/v1.4.2-branch
         kEventType_Install,
         kEventType_ResetWarning,
         kEventType_ResetCanceled,
@@ -47,12 +55,11 @@ struct AppEvent
         kEventType_TriggerToggle,
     };
 
-    uint16_t Type;
-
     union
     {
         struct
         {
+<<<<<<< HEAD
             uint8_t Action;
         } ButtonEvent;
 #ifdef DISPLAY_ENABLED
@@ -68,8 +75,9 @@ struct AppEvent
         struct
         {
             void * Context;
+=======
+            void * Context;
+>>>>>>> csa/v1.4.2-branch
         } LightSwitchEvent;
     };
-
-    EventHandler Handler;
 };

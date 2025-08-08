@@ -21,6 +21,10 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/SafeInt.h>
 
+<<<<<<< HEAD
+=======
+#include <algorithm>
+>>>>>>> csa/v1.4.2-branch
 #include <iostream>
 #include <regex>
 #include <unordered_map>

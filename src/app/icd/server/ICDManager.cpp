@@ -116,6 +116,7 @@ void ICDManager::Shutdown()
 
 bool ICDManager::SupportsFeature(Feature feature)
 {
+<<<<<<< HEAD
     // Can't use attribute accessors/Attributes::FeatureMap::Get in unit tests
 #if !(CONFIG_BUILD_FOR_HOST_UNIT_TEST)
     uint32_t featureMap = 0;
@@ -124,6 +125,9 @@ bool ICDManager::SupportsFeature(Feature feature)
 #else
     return ((mFeatureMap & to_underlying(feature)) != 0);
 #endif // !(CONFIG_BUILD_FOR_HOST_UNIT_TEST)
+=======
+    return ICDConfigurationData::GetInstance().GetFeatureMap().Has(feature);
+>>>>>>> csa/v1.4.2-branch
 }
 
 uint32_t ICDManager::StayActiveRequest(uint32_t stayActiveDuration)
@@ -394,12 +398,15 @@ void ICDManager::UpdateICDMode()
     if (ICDConfigurationData::GetInstance().GetICDMode() != tempMode)
     {
         ICDConfigurationData::GetInstance().SetICDMode(tempMode);
+<<<<<<< HEAD
 
         // Can't use attribute accessors/Attributes::OperatingMode::Set in unit tests
 #if !(CONFIG_BUILD_FOR_HOST_UNIT_TEST)
         Attributes::OperatingMode::Set(kRootEndpointId, static_cast<OperatingModeEnum>(tempMode));
 #endif
 
+=======
+>>>>>>> csa/v1.4.2-branch
         postObserverEvent(ObserverEventType::ICDModeChange);
     }
 
@@ -689,6 +696,7 @@ void ICDManager::ExtendActiveMode(Milliseconds16 extendDuration)
 
 CHIP_ERROR ICDManager::HandleEventTrigger(uint64_t eventTrigger)
 {
+    eventTrigger                     = clearEndpointInEventTrigger(eventTrigger);
     ICDTestEventTriggerEvent trigger = static_cast<ICDTestEventTriggerEvent>(eventTrigger);
     CHIP_ERROR err                   = CHIP_NO_ERROR;
 

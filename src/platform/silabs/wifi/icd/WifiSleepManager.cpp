@@ -17,6 +17,7 @@
 
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
+<<<<<<< HEAD
 #include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
@@ -100,6 +101,10 @@ CHIP_ERROR ConfigureHighPerformance()
 
 } // namespace
 
+=======
+#include <platform/silabs/wifi/icd/WifiSleepManager.h>
+
+>>>>>>> csa/v1.4.2-branch
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -107,20 +112,43 @@ namespace Silabs {
 // Initialize the static instance
 WifiSleepManager WifiSleepManager::mInstance;
 
+<<<<<<< HEAD
 CHIP_ERROR WifiSleepManager::Init()
 {
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR WifiSleepManager::RequestHighPerformance()
+=======
+CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiStateProvider * wifiStateProvider)
+{
+    VerifyOrReturnError(platformInterface != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(wifiStateProvider != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    mPowerSaveInterface = platformInterface;
+    mWifiStateProvider  = wifiStateProvider;
+
+    return VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent);
+}
+
+CHIP_ERROR WifiSleepManager::RequestHighPerformance(bool triggerTransition)
+>>>>>>> csa/v1.4.2-branch
 {
     VerifyOrReturnError(mHighPerformanceRequestCounter < std::numeric_limits<uint8_t>::max(), CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "High performance request counter overflow"));
 
     mHighPerformanceRequestCounter++;
 
+<<<<<<< HEAD
     // We don't do the mHighPerformanceRequestCounter check here; the check is in VerifyAndTransitionToLowPowerMode function
     ReturnErrorOnFailure(VerifyAndTransitionToLowPowerMode());
+=======
+    if (triggerTransition)
+    {
+        // We don't do the mHighPerformanceRequestCounter check here; the check is in the VerifyAndTransitionToLowPowerMode function
+        ReturnErrorOnFailure(VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent));
+    }
+>>>>>>> csa/v1.4.2-branch
 
     return CHIP_NO_ERROR;
 }
@@ -132,8 +160,13 @@ CHIP_ERROR WifiSleepManager::RemoveHighPerformanceRequest()
 
     mHighPerformanceRequestCounter--;
 
+<<<<<<< HEAD
     // We don't do the mHighPerformanceRequestCounter check here; the check is in VerifyAndTransitionToLowPowerMode function
     ReturnErrorOnFailure(VerifyAndTransitionToLowPowerMode());
+=======
+    // We don't do the mHighPerformanceRequestCounter check here; the check is in the VerifyAndTransitionToLowPowerMode function
+    ReturnErrorOnFailure(VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent));
+>>>>>>> csa/v1.4.2-branch
 
     return CHIP_NO_ERROR;
 }
@@ -145,23 +178,47 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     case PowerEvent::kCommissioningComplete:
         ChipLogProgress(AppServer, "WifiSleepManager: Handling Commissioning Complete Event");
         mIsCommissioningInProgress = false;
+<<<<<<< HEAD
         break;
+=======
+
+        // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
+        WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+        break;
+
+>>>>>>> csa/v1.4.2-branch
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
         // No additional processing needed for these events at the moment
         break;
+<<<<<<< HEAD
+=======
+
+>>>>>>> csa/v1.4.2-branch
     default:
         ChipLogError(AppServer, "Unknown Power Event");
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> csa/v1.4.2-branch
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 {
+<<<<<<< HEAD
     ReturnErrorOnFailure(HandlePowerEvent(event));
 
 #if SLI_SI917 // 917 SoC & NCP
+=======
+    VerifyOrDieWithMsg(mWifiStateProvider != nullptr, DeviceLayer, "WifiStateProvider is not initialized");
+    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
+
+    ReturnErrorOnFailure(HandlePowerEvent(event));
+
+>>>>>>> csa/v1.4.2-branch
     if (mHighPerformanceRequestCounter > 0)
     {
         return ConfigureHighPerformance();
@@ -169,6 +226,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 
     if (mIsCommissioningInProgress)
     {
+<<<<<<< HEAD
         // During commissioning, don't let the device to go to sleep
         // This is needed to interrupt the sleep and retry to join the network
         return CHIP_NO_ERROR;
@@ -179,10 +237,19 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     wfx_get_wifi_provision(&wifiConfig);
 
     if (!(wifiConfig.ssid[0] != 0))
+=======
+        // During commissioning, don't let the device go to sleep
+        // This is needed to interrupt the sleep and retry joining the network
+        return CHIP_NO_ERROR;
+    }
+
+    if (!mWifiStateProvider->IsWifiProvisioned())
+>>>>>>> csa/v1.4.2-branch
     {
         return ConfigureDeepSleep();
     }
 
+<<<<<<< HEAD
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
         return ConfigureLIBasedSleep();
@@ -197,6 +264,39 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 #else             // wf200
     return CHIP_NO_ERROR;
 #endif
+=======
+    return ConfigureDTIMBasedSleep();
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureDTIMBasedSleep()
+{
+    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
+
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(false));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    ReturnLogErrorOnFailure(
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kConnectedSleep, 0));
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureDeepSleep()
+{
+    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
+
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep, 0));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
+{
+    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
+
+    ReturnLogErrorOnFailure(
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kHighPerformance, 0));
+    return CHIP_NO_ERROR;
+>>>>>>> csa/v1.4.2-branch
 }
 
 } // namespace Silabs

@@ -42,7 +42,11 @@ void RefrigeratorAndTemperatureControlledCabinetModeDelegate::HandleChangeToMode
 CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeLabelByIndex(uint8_t modeIndex,
                                                                                         chip::MutableCharSpan & label)
 {
+<<<<<<< HEAD
     if (modeIndex >= ArraySize(kModeOptions))
+=======
+    if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
+>>>>>>> csa/v1.4.2-branch
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -51,7 +55,11 @@ CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeLabel
 
 CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
 {
+<<<<<<< HEAD
     if (modeIndex >= ArraySize(kModeOptions))
+=======
+    if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
+>>>>>>> csa/v1.4.2-branch
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -62,7 +70,11 @@ CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeValue
 CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeTagsByIndex(uint8_t modeIndex,
                                                                                        List<ModeTagStructType> & tags)
 {
+<<<<<<< HEAD
     if (modeIndex >= ArraySize(kModeOptions))
+=======
+    if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
+>>>>>>> csa/v1.4.2-branch
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -106,6 +118,10 @@ void emberAfRefrigeratorAndTemperatureControlledCabinetModeClusterInitCallback(c
         new RefrigeratorAndTemperatureControlledCabinetMode::RefrigeratorAndTemperatureControlledCabinetModeDelegate;
     gRefrigeratorAndTemperatureControlledCabinetModeInstance =
         new ModeBase::Instance(gRefrigeratorAndTemperatureControlledCabinetModeDelegate, 0x1,
+<<<<<<< HEAD
                                RefrigeratorAndTemperatureControlledCabinetMode::Id, chip::to_underlying(Feature::kOnOff));
+=======
+                               RefrigeratorAndTemperatureControlledCabinetMode::Id, chip::to_underlying(ModeBase::Feature::kOnOff));
+>>>>>>> csa/v1.4.2-branch
     gRefrigeratorAndTemperatureControlledCabinetModeInstance->Init();
 }

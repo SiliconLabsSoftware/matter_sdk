@@ -130,8 +130,15 @@ static_library("efr32") {
     "${chip_root}/src/tracing/silabs:silabs_tracing",
     "${sl_provision_root}:headers",
   ]
+<<<<<<< HEAD
 
   public_configs = []
+=======
+  deps = [
+    "${chip_root}/src/app/common:ids",
+    "${sl_provision_root}:headers",
+  ]
+>>>>>>> csa/v1.4.2-branch
 
   if (matter_enable_tracing_support) {
     public_deps += [
@@ -159,7 +166,11 @@ static_library("efr32") {
   if (chip_enable_openthread) {
     public_deps += [ "${chip_root}/third_party/openthread:openthread" ]
 
-    deps += [ "${chip_root}/third_party/openthread:openthread_cli" ]
+    deps += [
+      "${chip_root}/src/app:app_config",
+      "${chip_root}/src/app:app_config",
+      "${chip_root}/third_party/openthread:openthread_cli",
+    ]
 
     sources += [
       "${silabs_platform_dir}/ThreadStackManagerImpl.h",

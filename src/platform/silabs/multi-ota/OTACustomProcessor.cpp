@@ -21,6 +21,21 @@
 
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 
+<<<<<<< HEAD
+=======
+#if SL_WIFI
+#include <platform/silabs/wifi/ncp/spi_multiplex.h>
+#endif // SL_WIFI
+
+extern "C" {
+#include "btl_interface.h"
+#include "sl_core.h"
+}
+
+/// No error, operation OK
+#define SL_BOOTLOADER_OK 0L
+
+>>>>>>> csa/v1.4.2-branch
 namespace chip {
 
 // Define static memebers
@@ -29,6 +44,26 @@ uint32_t OTACustomProcessor::mWriteOffset                                       
 uint16_t OTACustomProcessor::writeBufOffset                                          = 0;
 uint8_t OTACustomProcessor::writeBuffer[kAlignmentBytes] __attribute__((aligned(4))) = { 0 };
 
+<<<<<<< HEAD
+=======
+CHIP_ERROR OTACustomProcessor::Init()
+{
+    VerifyOrReturnError(mCallbackProcessDescriptor != nullptr, CHIP_OTA_PROCESSOR_CB_NOT_REGISTERED);
+    mAccumulator.Init(sizeof(Descriptor));
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR OTACustomProcessor::Clear()
+{
+    OTATlvProcessor::ClearInternal();
+    mAccumulator.Clear();
+    mDescriptorProcessed = false;
+
+    return CHIP_NO_ERROR;
+}
+
+>>>>>>> csa/v1.4.2-branch
 CHIP_ERROR OTACustomProcessor::ProcessInternal(ByteSpan & block)
 {
     if (!mDescriptorProcessed)

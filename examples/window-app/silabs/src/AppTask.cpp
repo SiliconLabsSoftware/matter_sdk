@@ -23,9 +23,9 @@
 
 #include "WindowManager.h"
 
-#include <app/server/OnboardingCodesUtil.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
+#include <setup_payload/OnboardingCodesUtil.h>
 
 #include <assert.h>
 
@@ -50,11 +50,14 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(WindowManager::ButtonEventHandler);
 
+<<<<<<< HEAD
 #ifdef DISPLAY_ENABLED
     GetLCD().Init((uint8_t *) "Window-App");
     GetLCD().SetCustomUI(WindowManager::DrawUI);
 #endif
 
+=======
+>>>>>>> csa/v1.4.2-branch
     err = WindowManager::sWindow.Init();
 
     if (err != CHIP_NO_ERROR)

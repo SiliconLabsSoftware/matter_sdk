@@ -57,6 +57,10 @@ public:
     void SetAddTrustedRootCertInvoked() { mAddTrustedRootCertHasBeenInvoked = true; }
     void SetCsrRequestForUpdateNoc(bool isForUpdateNoc) { mIsCsrRequestForUpdateNoc = isForUpdateNoc; }
     void SetUpdateTermsAndConditionsHasBeenInvoked() { mUpdateTermsAndConditionsHasBeenInvoked = true; }
+<<<<<<< HEAD
+=======
+    void RecordSetVidVerificationStatementHasBeenInvoked() { mSetVidVerificationStatementHasBeenInvoked = true; }
+>>>>>>> csa/v1.4.2-branch
 
     /**
      * @brief
@@ -92,7 +96,12 @@ public:
     bool UpdateNocCommandHasBeenInvoked() const { return mUpdateNocCommandHasBeenInvoked; }
     bool AddTrustedRootCertHasBeenInvoked() const { return mAddTrustedRootCertHasBeenInvoked; }
     bool IsCsrRequestForUpdateNoc() const { return mIsCsrRequestForUpdateNoc; }
+<<<<<<< HEAD
     bool UpdateTermsAndConditionsHasBeenInvoked() { return mUpdateTermsAndConditionsHasBeenInvoked; }
+=======
+    bool UpdateTermsAndConditionsHasBeenInvoked() const { return mUpdateTermsAndConditionsHasBeenInvoked; }
+    bool HasSetVidVerificationStatementHasBeenInvoked() const { return mSetVidVerificationStatementHasBeenInvoked; }
+>>>>>>> csa/v1.4.2-branch
 
     FabricIndex GetFabricIndex() const
     {
@@ -111,9 +120,16 @@ private:
     bool mUpdateNocCommandHasBeenInvoked   = false;
     bool mAddTrustedRootCertHasBeenInvoked = false;
     // The fact of whether a CSR occurred at all is stored elsewhere.
+<<<<<<< HEAD
     bool mIsCsrRequestForUpdateNoc               = false;
     FabricIndex mFabricIndex                     = kUndefinedFabricIndex;
     bool mUpdateTermsAndConditionsHasBeenInvoked = false;
+=======
+    bool mIsCsrRequestForUpdateNoc                  = false;
+    FabricIndex mFabricIndex                        = kUndefinedFabricIndex;
+    bool mUpdateTermsAndConditionsHasBeenInvoked    = false;
+    bool mSetVidVerificationStatementHasBeenInvoked = false;
+>>>>>>> csa/v1.4.2-branch
 
     /**
      * @brief
@@ -143,16 +159,25 @@ private:
     {
         SetFailSafeArmed(false);
 
+<<<<<<< HEAD
         mAddNocCommandHasBeenInvoked            = false;
         mUpdateNocCommandHasBeenInvoked         = false;
         mAddTrustedRootCertHasBeenInvoked       = false;
         mFailSafeBusy                           = false;
         mIsCsrRequestForUpdateNoc               = false;
         mUpdateTermsAndConditionsHasBeenInvoked = false;
+=======
+        mAddNocCommandHasBeenInvoked               = false;
+        mUpdateNocCommandHasBeenInvoked            = false;
+        mAddTrustedRootCertHasBeenInvoked          = false;
+        mFailSafeBusy                              = false;
+        mIsCsrRequestForUpdateNoc                  = false;
+        mUpdateTermsAndConditionsHasBeenInvoked    = false;
+        mSetVidVerificationStatementHasBeenInvoked = false;
+>>>>>>> csa/v1.4.2-branch
     }
 
     void FailSafeTimerExpired();
-    CHIP_ERROR CommitToStorage();
 };
 
 } // namespace app

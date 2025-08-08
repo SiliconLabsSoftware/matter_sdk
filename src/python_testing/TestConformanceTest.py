@@ -18,12 +18,15 @@
 from typing import Any, Optional
 
 import chip.clusters as Clusters
-from basic_composition_support import arls_populated
-from conformance_support import ConformanceDecision
-from global_attribute_ids import GlobalAttributeIds
-from matter_testing_support import MatterBaseTest, async_test_body, default_matter_test_main
+from chip.testing.basic_composition import arls_populated
+from chip.testing.matter_testing import MatterBaseTest, async_test_body, default_matter_test_main
+from chip.testing.spec_parsing import PrebuiltDataModelDirectory, build_xml_clusters, build_xml_device_types
+from fake_device_builder import create_minimal_dt
 from mobly import asserts
+<<<<<<< HEAD
 from spec_parsing_support import PrebuiltDataModelDirectory, build_xml_clusters, build_xml_device_types
+=======
+>>>>>>> csa/v1.4.2-branch
 from TC_DeviceConformance import DeviceConformanceTests
 
 
@@ -112,10 +115,6 @@ def create_onoff_endpoint(endpoint: int) -> dict[int, dict[int, dict[int, Any]]]
     return endpoint_tlv
 
 
-def is_mandatory(conformance):
-    return conformance(0, [], []).decision == ConformanceDecision.MANDATORY
-
-
 class TestConformanceSupport(MatterBaseTest, DeviceConformanceTests):
     def setup_class(self):
         # Latest fully qualified version
@@ -144,6 +143,7 @@ class TestConformanceSupport(MatterBaseTest, DeviceConformanceTests):
         success, problems = self.check_conformance(ignore_in_progress=False, is_ci=False, allow_provisional=False)
         asserts.assert_true(success, "Unexpected failure parsing endpoint with no clusters marked as provisional")
 
+<<<<<<< HEAD
     def _get_field_by_label(self, cl_object: Clusters.ClusterObjects.ClusterObject, label: str) -> Optional[Clusters.ClusterObjects.ClusterObjectFieldDescriptor]:
         for field in cl_object.descriptor.Fields:
             if field.Label == label:
@@ -224,6 +224,8 @@ class TestConformanceSupport(MatterBaseTest, DeviceConformanceTests):
 
         return endpoint
 
+=======
+>>>>>>> csa/v1.4.2-branch
     def add_macl(self, root_endpoint: dict[int, dict[int, Any]], populate_arl: bool = False, populate_commissioning_arl: bool = False):
         ac = Clusters.AccessControl
         root_endpoint[ac.id][ac.Attributes.FeatureMap.attribute_id] = ac.Bitmaps.Feature.kManagedDevice
@@ -249,12 +251,18 @@ class TestConformanceSupport(MatterBaseTest, DeviceConformanceTests):
         root_node_id = self._get_device_type_id('root node')
         on_off_id = self._get_device_type_id('On/Off Light')
 
-        root = self._create_minimal_dt(device_type_id=root_node_id)
-        nim = self._create_minimal_dt(device_type_id=nim_id)
+        root = create_minimal_dt(self.xml_clusters, self.xml_device_types, device_type_id=root_node_id)
+        nim = create_minimal_dt(self.xml_clusters, self.xml_device_types, device_type_id=nim_id)
         self.endpoints_tlv = {0: root, 1: nim}
 
+<<<<<<< HEAD
         root_no_tlv = self._create_minimal_dt(device_type_id=root_node_id, is_tlv_endpoint=False)
         nim_no_tlv = self._create_minimal_dt(device_type_id=nim_id, is_tlv_endpoint=False)
+=======
+        root_no_tlv = create_minimal_dt(self.xml_clusters, self.xml_device_types,
+                                        device_type_id=root_node_id, is_tlv_endpoint=False)
+        nim_no_tlv = create_minimal_dt(self.xml_clusters, self.xml_device_types, device_type_id=nim_id, is_tlv_endpoint=False)
+>>>>>>> csa/v1.4.2-branch
         self.endpoints = {0: root_no_tlv, 1: nim_no_tlv}
         asserts.assert_true(self._has_device_type_supporting_macl(), "Did not find supported device in generated device")
 
@@ -269,7 +277,12 @@ class TestConformanceSupport(MatterBaseTest, DeviceConformanceTests):
         asserts.assert_true(success, "Unexpected failure with NIM and MACL")
 
         # A MACL is not allowed when there is no NIM
+<<<<<<< HEAD
         self.endpoints[1] = self._create_minimal_dt(device_type_id=on_off_id, is_tlv_endpoint=False)
+=======
+        self.endpoints[1] = create_minimal_dt(self.xml_clusters, self.xml_device_types,
+                                              device_type_id=on_off_id, is_tlv_endpoint=False)
+>>>>>>> csa/v1.4.2-branch
         success, problems = self.check_conformance(ignore_in_progress=False, is_ci=False, allow_provisional=True)
         self.problems.extend(problems)
         asserts.assert_false(success, "Unexpected success with On/Off and MACL")
@@ -282,8 +295,8 @@ class TestConformanceSupport(MatterBaseTest, DeviceConformanceTests):
         nim_id = self._get_device_type_id('network infrastructure manager')
         root_node_id = self._get_device_type_id('root node')
 
-        root = self._create_minimal_dt(device_type_id=root_node_id)
-        nim = self._create_minimal_dt(device_type_id=nim_id)
+        root = create_minimal_dt(self.xml_clusters, self.xml_device_types, device_type_id=root_node_id)
+        nim = create_minimal_dt(self.xml_clusters, self.xml_device_types, device_type_id=nim_id)
         self.endpoints_tlv = {0: root, 1: nim}
 
         # device with no macl

@@ -23,7 +23,11 @@ from typing import Tuple
 # Use scripts/tools/zap/version_update.py to manage ZAP versioning as many
 # files may need updating for versions
 #
+<<<<<<< HEAD
 MIN_ZAP_VERSION = '2024.10.24'
+=======
+MIN_ZAP_VERSION = '2025.5.14'
+>>>>>>> csa/v1.4.2-branch
 
 
 class ZapTool:

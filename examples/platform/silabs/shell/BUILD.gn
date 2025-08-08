@@ -27,6 +27,7 @@ config("icd-shell-config") {
   include_dirs = [ "./icd/" ]
 }
 
+<<<<<<< HEAD
 config("tracing-shell-config") {
   include_dirs = [ "./tracing/" ]
 }
@@ -34,6 +35,8 @@ config("ble-shell-config") {
   include_dirs = [ "./ble/" ]
 }
 
+=======
+>>>>>>> csa/v1.4.2-branch
 source_set("icd") {
   sources = [
     "./icd/ICDShellCommands.cpp",
@@ -42,6 +45,7 @@ source_set("icd") {
 
   public_configs = [ ":icd-shell-config" ]
 
+<<<<<<< HEAD
   deps = [ "${shell_dependency_path}:matter-shell" ]
 }
 
@@ -65,4 +69,10 @@ source_set("ble") {
   public_configs = [ ":ble-shell-config" ]
 
   deps = [ "${shell_dependency_path}:matter-shell" ]
+=======
+  deps = [
+    "${chip_root}/src/app/icd/server:notifier",
+    "${shell_dependency_path}:matter-shell",
+  ]
+>>>>>>> csa/v1.4.2-branch
 }

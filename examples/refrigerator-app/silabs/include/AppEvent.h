@@ -17,6 +17,7 @@
  */
 
 #pragma once
+<<<<<<< HEAD
 #include <stdint.h>
 #ifdef DISPLAY_ENABLED
 #include "lcd.h"
@@ -38,11 +39,25 @@ struct AppEvent
 
     uint16_t Type;
 
+=======
+
+#include "BaseAppEvent.h"
+
+struct AppEvent : public BaseAppEvent
+{
+    enum AppEventTypes
+    {
+        kEventType_Refrigerator = BaseAppEvent::kEventType_Max + 1,
+        kEventType_Install,
+    };
+
+>>>>>>> csa/v1.4.2-branch
     union
     {
         struct
         {
             uint8_t Action;
+<<<<<<< HEAD
         } ButtonEvent;
 #ifdef DISPLAY_ENABLED
         struct
@@ -62,4 +77,9 @@ struct AppEvent
     };
 
     EventHandler Handler;
+=======
+            int32_t Actor;
+        } RefrigeratorEvent;
+    };
+>>>>>>> csa/v1.4.2-branch
 };

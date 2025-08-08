@@ -18,18 +18,21 @@
  */
 
 #pragma once
+<<<<<<< HEAD
 #include <stdint.h>
 #ifdef DISPLAY_ENABLED
 #include "lcd.h"
 #endif
+=======
+>>>>>>> csa/v1.4.2-branch
 
-struct AppEvent;
-typedef void (*EventHandler)(AppEvent *);
+#include "BaseAppEvent.h"
 
-struct AppEvent
+struct AppEvent : public BaseAppEvent
 {
     enum AppEventTypes
     {
+<<<<<<< HEAD
         kEventType_Button = 0,
         kEventType_LCD,
         kEventType_Timer,
@@ -57,4 +60,8 @@ struct AppEvent
     };
 
     EventHandler Handler;
+=======
+        kEventType_Install = BaseAppEvent::kEventType_Max + 1,
+    };
+>>>>>>> csa/v1.4.2-branch
 };

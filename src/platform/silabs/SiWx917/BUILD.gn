@@ -16,7 +16,10 @@ import("//build_overrides/chip.gni")
 
 import("${chip_root}/build/chip/buildconfig_header.gni")
 import("${chip_root}/src/crypto/crypto.gni")
+<<<<<<< HEAD
 import("${chip_root}/src/platform/device.gni")
+=======
+>>>>>>> csa/v1.4.2-branch
 import("${chip_root}/src/platform/silabs/wifi/args.gni")
 import("${chip_root}/third_party/silabs/SiWx917_sdk.gni")
 import("${chip_root}/third_party/silabs/silabs_board.gni")
@@ -115,6 +118,19 @@ static_library("SiWx917") {
     ]
   }
 
+<<<<<<< HEAD
+=======
+  public_deps = [
+    "${chip_root}/src/app/icd/server:icd-server-config",
+    "${chip_root}/src/platform:platform_base",
+  ]
+  deps = [
+    "${chip_root}/src/app/common:ids",
+    "${chip_root}/src/platform/logging:headers",
+    "${sl_provision_root}:headers",
+  ]
+
+>>>>>>> csa/v1.4.2-branch
   # Add platform crypto implementation
   if (chip_crypto == "platform") {
     if (sl_si91x_crypto_flavor == "tinycrypt") {

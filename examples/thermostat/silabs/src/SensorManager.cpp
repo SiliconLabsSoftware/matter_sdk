@@ -63,8 +63,12 @@ CHIP_ERROR SensorManager::Init()
     }
 
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+<<<<<<< HEAD
     sl_status_t status = Si70xxSensor::Init();
     if (status != SL_STATUS_OK)
+=======
+    if (SL_STATUS_OK != Si70xxSensor::Init())
+>>>>>>> csa/v1.4.2-branch
     {
         SILABS_LOG("Failed to Init Sensor with error code: %lx", status);
         return MATTER_PLATFORM_ERROR(status);
@@ -109,7 +113,7 @@ void SensorManager::TemperatureUpdateEventHandler(AppEvent * aEvent)
 #else
     static uint8_t nbOfRepetition = 0;
     static uint8_t simulatedIndex = 0;
-    if (simulatedIndex >= ArraySize(mSimulatedTemp))
+    if (simulatedIndex >= MATTER_ARRAY_SIZE(mSimulatedTemp))
     {
         simulatedIndex = 0;
     }

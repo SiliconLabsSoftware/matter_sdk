@@ -18,6 +18,7 @@
 
 #pragma once
 
+<<<<<<< HEAD
 #ifdef DISPLAY_ENABLED
 #include "lcd.h"
 #endif
@@ -25,19 +26,26 @@
 struct AppEvent;
 typedef void (*EventHandler)(AppEvent *);
 
+=======
+#include "BaseAppEvent.h"
+>>>>>>> csa/v1.4.2-branch
 #include <app/clusters/window-covering-server/window-covering-server.h>
 #include <lib/core/CHIPError.h>
 
 using namespace chip::app::Clusters::WindowCovering;
 
-struct AppEvent
+struct AppEvent : public BaseAppEvent
 {
     enum AppEventTypes
     {
+<<<<<<< HEAD
         kEventType_Button = 0,
         kEventType_LCD,
         kEventType_Timer,
         kEventType_ResetWarning,
+=======
+        kEventType_ResetWarning = BaseAppEvent::kEventType_Max + 1,
+>>>>>>> csa/v1.4.2-branch
         kEventType_ResetCanceled,
         // Button events
         kEventType_UpPressed,
@@ -53,7 +61,6 @@ struct AppEvent
         kEventType_AttributeChange,
     };
 
-    uint16_t Type;
     chip::EndpointId mEndpoint = 0;
     chip::AttributeId mAttributeId;
 
@@ -61,6 +68,7 @@ struct AppEvent
     {
         struct
         {
+<<<<<<< HEAD
             uint8_t Action;
         } ButtonEvent;
 #ifdef DISPLAY_ENABLED
@@ -76,9 +84,9 @@ struct AppEvent
 
         struct
         {
+=======
+>>>>>>> csa/v1.4.2-branch
             void * Context;
         } WindowEvent;
     };
-
-    EventHandler Handler;
 };

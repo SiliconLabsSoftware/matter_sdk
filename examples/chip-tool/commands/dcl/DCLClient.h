@@ -16,6 +16,13 @@
  *
  */
 
+<<<<<<< HEAD
+=======
+#pragma once
+
+#include "HTTPSRequest.h"
+
+>>>>>>> csa/v1.4.2-branch
 #include <lib/core/CHIPError.h>
 #include <lib/core/CHIPVendorIdentifiers.hpp>
 #include <lib/core/Optional.h>
@@ -29,7 +36,12 @@ namespace dcl {
 class DCLClient
 {
 public:
+<<<<<<< HEAD
     DCLClient(Optional<const char *> hostname, Optional<uint16_t> port);
+=======
+    DCLClient(Optional<const char *> hostname, Optional<uint16_t> port,
+              https::HttpsSecurityMode httpsSecurityMode = https::HttpsSecurityMode::kDefault);
+>>>>>>> csa/v1.4.2-branch
 
     /**
      * @brief Retrieves the model information from the DCL based on the onboarding payload.
@@ -94,6 +106,10 @@ public:
 private:
     std::string mHostName;
     uint16_t mPort;
+<<<<<<< HEAD
+=======
+    https::HttpsSecurityMode mHttpsSecurityMode;
+>>>>>>> csa/v1.4.2-branch
 };
 } // namespace dcl
 } // namespace tool

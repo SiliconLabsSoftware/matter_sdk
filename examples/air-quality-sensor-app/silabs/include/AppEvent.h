@@ -18,32 +18,37 @@
  */
 
 #pragma once
+<<<<<<< HEAD
 #include <cstdint>
 #ifdef DISPLAY_ENABLED
 #include "lcd.h"
 #endif
+=======
+>>>>>>> csa/v1.4.2-branch
 
-struct AppEvent;
-typedef void (*EventHandler)(AppEvent *);
+#include "BaseAppEvent.h"
 
-struct AppEvent
+struct AppEvent : public BaseAppEvent
 {
     enum AppEventTypes
     {
+<<<<<<< HEAD
         kEventType_Button = 0,
         kEventType_LCD,
         kEventType_Timer,
         kEventType_AirQualitySensor,
+=======
+        kEventType_AirQualitySensor = BaseAppEvent::kEventType_Max + 1,
+>>>>>>> csa/v1.4.2-branch
         kEventType_Install,
     };
-
-    uint16_t Type;
 
     union
     {
         struct
         {
             uint8_t Action;
+<<<<<<< HEAD
         } ButtonEvent;
 #ifdef DISPLAY_ENABLED
         struct
@@ -58,9 +63,9 @@ struct AppEvent
         struct
         {
             uint8_t Action;
+=======
+>>>>>>> csa/v1.4.2-branch
             int32_t Actor;
         } AirQualitySensorEvent;
     };
-
-    EventHandler Handler;
 };

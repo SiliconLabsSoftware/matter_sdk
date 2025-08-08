@@ -1,20 +1,28 @@
 {
     "packages": [
         {
-            "path": "fuchsia/third_party/zap/${platform}",
+            "path": "fuchsia/third_party/3pp/zap/${platform}",
             "platforms": [
                 "linux-amd64",
                 "linux-arm64",
                 "mac-amd64",
                 "windows-amd64"
             ],
+<<<<<<< HEAD
             "tags": ["version:2@v2024.10.24-nightly.1"]
+=======
+            "tags": ["version:2@v2025.05.14.1"]
+>>>>>>> csa/v1.4.2-branch
         },
         {
             "_comment": "Always get the amd64 version on mac until usable arm64 zap build is available",
-            "path": "fuchsia/third_party/zap/mac-amd64",
+            "path": "fuchsia/third_party/3pp/zap/mac-amd64",
             "platforms": ["mac-arm64"],
+<<<<<<< HEAD
             "tags": ["version:2@v2024.10.24-nightly.1"]
+=======
+            "tags": ["version:2@v2025.05.14.1"]
+>>>>>>> csa/v1.4.2-branch
         }
     ]
 }

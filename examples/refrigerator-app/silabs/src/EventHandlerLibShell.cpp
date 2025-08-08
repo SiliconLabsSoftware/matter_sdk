@@ -146,9 +146,16 @@ CHIP_ERROR RegisterRefrigeratorEvents()
                                                           "refrigerator alarm commands. Usage: refrigeratoralarm <subcommand>" };
 
     sShellRefrigeratorEventAlarmDoorSubCommands.RegisterCommands(sRefrigeratorEventAlarmDoorSubCommands,
+<<<<<<< HEAD
                                                                  ArraySize(sRefrigeratorEventAlarmDoorSubCommands));
     sShellRefrigeratorEventSubCommands.RegisterCommands(sRefrigeratorEventSubCommands, ArraySize(sRefrigeratorEventSubCommands));
     sShellRefrigeratorSubCommands.RegisterCommands(sRefrigeratorSubCommands, ArraySize(sRefrigeratorSubCommands));
+=======
+                                                                 MATTER_ARRAY_SIZE(sRefrigeratorEventAlarmDoorSubCommands));
+    sShellRefrigeratorEventSubCommands.RegisterCommands(sRefrigeratorEventSubCommands,
+                                                        MATTER_ARRAY_SIZE(sRefrigeratorEventSubCommands));
+    sShellRefrigeratorSubCommands.RegisterCommands(sRefrigeratorSubCommands, MATTER_ARRAY_SIZE(sRefrigeratorSubCommands));
+>>>>>>> csa/v1.4.2-branch
 
     Engine::Root().RegisterCommands(&sRefrigeratorCommand, 1);
 

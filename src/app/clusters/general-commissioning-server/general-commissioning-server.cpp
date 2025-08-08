@@ -24,7 +24,10 @@
 #include "general-commissioning-server.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
+<<<<<<< HEAD
 #include <app-common/zap-generated/cluster-objects.h>
+=======
+>>>>>>> csa/v1.4.2-branch
 #include <app/AppConfig.h>
 #include <app/AttributeAccessInterfaceRegistry.h>
 #include <app/CommandHandler.h>
@@ -34,6 +37,13 @@
 #include <app/reporting/reporting.h>
 #include <app/server/CommissioningWindowManager.h>
 #include <app/server/Server.h>
+<<<<<<< HEAD
+=======
+#include <clusters/GeneralCommissioning/Attributes.h>
+#include <clusters/GeneralCommissioning/Commands.h>
+#include <clusters/GeneralCommissioning/Metadata.h>
+#include <clusters/GeneralCommissioning/Structs.h>
+>>>>>>> csa/v1.4.2-branch
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceConfig.h>
@@ -114,7 +124,14 @@ CHIP_ERROR GeneralCommissioningGlobalInstance::Read(const ConcreteReadAttributeP
 #endif // CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
         return aEncoder.Encode(features);
     }
+<<<<<<< HEAD
 
+=======
+    case ClusterRevision::Id: {
+        // Always the latest.
+        return aEncoder.Encode(kRevision);
+    }
+>>>>>>> csa/v1.4.2-branch
     case RegulatoryConfig::Id: {
         return ReadIfSupported(&ConfigurationManager::GetRegulatoryLocation, aEncoder);
     }
@@ -663,6 +680,13 @@ public:
     }
 };
 
+<<<<<<< HEAD
+=======
+namespace {
+static GeneralCommissioningFabricTableDelegate fabricDelegate;
+}
+
+>>>>>>> csa/v1.4.2-branch
 void MatterGeneralCommissioningPluginServerInitCallback()
 {
     Breadcrumb::Set(0, 0);
@@ -670,8 +694,21 @@ void MatterGeneralCommissioningPluginServerInitCallback()
     ReturnOnFailure(CommandHandlerInterfaceRegistry::Instance().RegisterCommandHandler(&gGeneralCommissioningInstance));
     DeviceLayer::PlatformMgrImpl().AddEventHandler(OnPlatformEventHandler);
 
+<<<<<<< HEAD
     static GeneralCommissioningFabricTableDelegate fabricDelegate;
     Server::GetInstance().GetFabricTable().AddFabricDelegate(&fabricDelegate);
+=======
+    Server::GetInstance().GetFabricTable().AddFabricDelegate(&fabricDelegate);
+}
+
+void MatterGeneralCommissioningPluginServerShutdownCallback()
+{
+    Server::GetInstance().GetFabricTable().RemoveFabricDelegate(&fabricDelegate);
+
+    DeviceLayer::PlatformMgrImpl().RemoveEventHandler(OnPlatformEventHandler);
+    AttributeAccessInterfaceRegistry::Instance().Unregister(&gGeneralCommissioningInstance);
+    ReturnOnFailure(CommandHandlerInterfaceRegistry::Instance().UnregisterCommandHandler(&gGeneralCommissioningInstance));
+>>>>>>> csa/v1.4.2-branch
 }
 
 namespace chip {
