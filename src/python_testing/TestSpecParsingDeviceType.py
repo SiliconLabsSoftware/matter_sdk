@@ -23,7 +23,7 @@ from conformance_support import conformance_allowed
 from jinja2 import Template
 from matter_testing_support import MatterBaseTest, default_matter_test_main
 from mobly import asserts
-from spec_parsing_support import build_xml_clusters, build_xml_device_types, parse_single_device_type, PrebuiltDataModelDirectory
+from spec_parsing_support import PrebuiltDataModelDirectory, build_xml_clusters, build_xml_device_types, parse_single_device_type
 from TC_DeviceConformance import DeviceConformanceTests
 
 

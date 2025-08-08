@@ -15,12 +15,12 @@
 #    limitations under the License.
 #
 import chip.clusters as Clusters
-from conformance_support import ConformanceDecision, ConformanceException
-from global_attribute_ids import attribute_id_type, AttributeIdType
-from matter_testing_support import MatterBaseTest, default_matter_test_main
-from spec_parsing_support import PrebuiltDataModelDirectory, build_xml_clusters, dm_from_spec_version
 from chip.tlv import uint
+from conformance_support import ConformanceDecision, ConformanceException
+from global_attribute_ids import AttributeIdType, attribute_id_type
+from matter_testing_support import MatterBaseTest, default_matter_test_main
 from mobly import asserts, signals
+from spec_parsing_support import PrebuiltDataModelDirectory, build_xml_clusters, dm_from_spec_version
 from TC_DeviceConformance import DeviceConformanceTests
 
 
