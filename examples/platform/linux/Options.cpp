@@ -135,6 +135,8 @@ enum
     kDeviceOption_TermsAndConditions_Required,
 #endif
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
+    kDeviceOption_icdActiveModeDurationMs,
+    kDeviceOption_icdIdleModeDuration,
 #endif
 #if ENABLE_CAMERA_SERVER
     kDeviceOption_Camera_DeferredOffer,
@@ -147,6 +149,7 @@ enum
     kDeviceOption_SerialNumber,
 };
 
+constexpr unsigned kAppUsageLength = 64;
 
 OptionDef sDeviceOptionDefs[] = {
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
@@ -412,15 +415,6 @@ const char * sDeviceOptionHelp =
     "  --active-threshold-time <time>\n"
     "      Sets the MRP active threshold (in milliseconds).\n"
     "      Specifies the time after which the device transitions from active to idle.\n"
-    "\n"
-#endif
-#if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
-    "  --tc-version\n"
-    "       Sets the minimum required version of the Terms and Conditions\n"
-    "\n"
-    "  --tc-required\n"
-    "       Sets the required acknowledgements for the Terms and Conditions as a 16-bit enumeration.\n"
-    "       Each bit represents an ordinal corresponding to a specific acknowledgment requirement.\n"
     "\n"
 #endif
 #if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED

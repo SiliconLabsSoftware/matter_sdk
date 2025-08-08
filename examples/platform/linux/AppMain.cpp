@@ -806,16 +806,6 @@ void ChipLinuxAppMainLoop(AppMainLoopImplementation * impl)
     }
 #endif // CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
 
-#if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
-    if (LinuxDeviceOptions::GetInstance().tcVersion.HasValue() && LinuxDeviceOptions::GetInstance().tcRequired.HasValue())
-    {
-        uint16_t version  = LinuxDeviceOptions::GetInstance().tcVersion.Value();
-        uint16_t required = LinuxDeviceOptions::GetInstance().tcRequired.Value();
-        Optional<app::TermsAndConditions> requiredAcknowledgements(app::TermsAndConditions(required, version));
-        app::TermsAndConditionsManager::GetInstance()->Init(initParams.persistentStorageDelegate, requiredAcknowledgements);
-    }
-#endif // CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
-
 #if defined(ENABLE_CHIP_SHELL)
     Engine::Root().Init();
     Shell::RegisterCommissioneeCommands();
