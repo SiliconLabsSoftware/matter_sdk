@@ -129,6 +129,8 @@ template("siwx917_sdk") {
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/sleeptimer/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/unified_api/inc",
       "${efr32_sdk_root}/hardware/driver/memlcd/src/ls013b7dh03",
+      "${efr32_sdk_root}/platform/service/sl_main/inc",
+      "${efr32_sdk_root}/platform/service/sl_main/src",
       "${efr32_sdk_root}/platform/service/sleeptimer/inc",
       "${efr32_sdk_root}/platform/service/sleeptimer/config",
       "${efr32_sdk_root}/platform/service/sleeptimer/src",
@@ -153,7 +155,6 @@ template("siwx917_sdk") {
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/power_manager/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/clock_manager/inc",
       "${wifi_sdk_root}/components/sli_wifi_command_engine/inc",
-      "${wifi_sdk_root}/components/sli_si91x_wifi_event_handler/inc",
     ]
 
     if (sl_enable_rgb_led) {
@@ -257,9 +258,10 @@ template("siwx917_sdk") {
       "SL_CODE_COMPONENT_FREERTOS_KERNEL=freertos_kernel",
       "SLI_CODE_CLASSIFICATION_DISABLE=1",
       "SL_MATTER_GN_BUILD=1",
-      "SILABS_LOG_OUT_UART=${sl_uart_log_output}",
       "SUPPORT_CPLUSPLUS=1",
       "SLI_SI91X_LWIP_HOSTED_NETWORK_STACK=1",
+      "__FREERTOS_OS_WISECONNECT=1",
+      "SL_SI91X_SOC_MODE=1",
 
       # TODO: This is a workaround for the init issue with the SiWx917
       "SL_WLAN_EVENT_THREAD_PRIORITY=osPriorityRealtime6",
@@ -272,6 +274,12 @@ template("siwx917_sdk") {
       defines += [ "SILABS_LOG_ENABLED=0" ]
     }
 
+    if (sl_uart_log_output) {
+      defines += [ "SILABS_LOG_OUT_UART=1" ]
+    } else {
+      defines += [ "SILABS_LOG_OUT_UART=0" ]
+    }
+
     if (chip_enable_wifi_ipv4) {
       defines += [ "CHIP_DEVICE_CONFIG_ENABLE_IPV4=1" ]
     }
@@ -282,7 +290,7 @@ template("siwx917_sdk") {
     if (chip_enable_icd_server || !disable_lcd) {
       defines += [
         "SL_SLEEP_TIMER=1",
-        "SI91X_SYSRTC_COUNT=1",
+        "SI91X_SYSRTC_COUNT=2",
       ]
     }
 
@@ -719,8 +727,6 @@ template("siwx917_sdk") {
       "${wifi_sdk_root}/components/sli_wifi_command_engine/src/sli_wifi_command_engine.c",
 
       # modified hal
-      "${efr32_sdk_root}/platform/emlib/src/em_core.c",
-      "${efr32_sdk_root}/platform/service/device_init/src/sl_device_init_nvic.c",
       "${efr32_sdk_root}/platform/service/system/src/sl_system_init.c",
       "${efr32_sdk_root}/platform/service/system/src/sl_system_kernel.c",
       "${efr32_sdk_root}/util/third_party/freertos/kernel/croutine.c",

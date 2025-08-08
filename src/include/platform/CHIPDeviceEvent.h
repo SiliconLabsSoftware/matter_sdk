@@ -261,6 +261,7 @@ enum PublicEventTypes
      */
     kSocketSelectStart,
 
+	/**
      * Signals that factory reset has started.
      */
     kFactoryReset,

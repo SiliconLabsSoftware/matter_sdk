@@ -257,22 +257,6 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     SILABS_TRACE_END(TimeTraceOperation::kImageUpload);
 }
 
-// TODO: SE access is not thread safe. It assert if other tasks accesses it during bootloader_verifyImage or
-// bootloader_setImageToBootload steps - MATTER-4155 - PLATFORM_HYD-3235
-void OTAImageProcessorImpl::LockRadioProcessing()
-{
-#if !SL_WIFI
-    DeviceLayer::ThreadStackMgr().LockThreadStack();
-#endif // SL_WIFI
-}
-
-void OTAImageProcessorImpl::UnlockRadioProcessing()
-{
-#if !SL_WIFI
-    DeviceLayer::ThreadStackMgr().UnlockThreadStack();
-#endif // SL_WIFI
-}
-
 // TODO: SE access is not thread safe. It asserts if other tasks accesses it during bootloader_verifyImage or
 // bootloader_setImageToBootload steps - MATTER-4155 - PLATFORM_HYD-3235
 void OTAImageProcessorImpl::LockRadioProcessing()

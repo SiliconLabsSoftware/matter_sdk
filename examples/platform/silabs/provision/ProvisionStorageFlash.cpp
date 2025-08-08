@@ -812,12 +812,6 @@ CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 
-CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
-{
-    // TODO: Implement this function if needed.
-    return CHIP_ERROR_NOT_IMPLEMENTED;
-}
-
 CHIP_ERROR Storage::GetTestEventTriggerKey(MutableByteSpan & keySpan)
 {
 #ifdef SL_MATTER_TEST_EVENT_TRIGGER_ENABLED

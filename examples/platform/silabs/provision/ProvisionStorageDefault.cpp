@@ -743,22 +743,6 @@ CHIP_ERROR Storage::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uin
 }
 #endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
 
-#if defined(SL_MATTER_TEST_EVENT_TRIGGER_ENABLED) && SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
-CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
-{
-    constexpr size_t kEnableKeyLength = 16; // Expected byte size of the EnableKey
-
-    // Verify that the provided key has the correct length
-    VerifyOrReturnError(value.size() == kEnableKeyLength, CHIP_ERROR_INVALID_ARGUMENT);
-
-    // Write the key to the configuration storage
-    ReturnErrorOnFailure(
-        SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Test_Event_Trigger_Key, value.data(), value.size()));
-
-    return CHIP_NO_ERROR;
-}
-#endif // SL_MATTER_ENABLE_OTA_ENCRYPTION
-
 CHIP_ERROR Storage::SetTestEventTriggerKey(const ByteSpan & value)
 {
 #ifdef SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
