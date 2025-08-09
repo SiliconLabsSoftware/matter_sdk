@@ -22,7 +22,7 @@
 #include <platform/silabs/SilabsConfig.h>
 
 #if SL_WIFI
-#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
+#include <platform/silabs/wifi/ncp/spi_multiplex.h>
 #endif // SL_WIFI
 
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
@@ -33,6 +33,20 @@ extern "C" {
 }
 
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
+
+#ifdef _SILICON_LABS_32B_SERIES_2
+// Series 2 bootloader_ api calls must be called from a critical section context for thread safeness
+#define WRAP_BL_DFU_CALL(code)                                                                                                     \
+    {                                                                                                                              \
+        CORE_CRITICAL_SECTION(code;)                                                                                               \
+    }
+#else
+// series 3 bootloader_ calls uses rtos mutex for thread safety. Cannot be called within a critical section
+#define WRAP_BL_DFU_CALL(code)                                                                                                     \
+    {                                                                                                                              \
+        code;                                                                                                                      \
+    }
+#endif
 
 #ifdef _SILICON_LABS_32B_SERIES_2
 // Series 2 bootloader_ api calls must be called from a critical section context for thread safeness
@@ -63,7 +77,7 @@ uint8_t OTAImageProcessorImpl::writeBuffer[kAlignmentBytes] __attribute__((align
 
 CHIP_ERROR OTAImageProcessorImpl::Init(OTADownloader * downloader)
 {
-    ReturnErrorCodeIf(downloader == nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(downloader != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
     gImageProcessor.SetOTADownloader(downloader);
 
@@ -243,18 +257,18 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     SILABS_TRACE_END(TimeTraceOperation::kImageUpload);
 }
 
-// TODO: SE access is not thread safe. It assert if other tasks accesses it during bootloader_verifyImage or
+// TODO: SE access is not thread safe. It asserts if other tasks accesses it during bootloader_verifyImage or
 // bootloader_setImageToBootload steps - MATTER-4155 - PLATFORM_HYD-3235
 void OTAImageProcessorImpl::LockRadioProcessing()
 {
-#if !SL_WIFI
+#if !SL_WIFI && defined(_SILICON_LABS_32B_SERIES_3)
     DeviceLayer::ThreadStackMgr().LockThreadStack();
 #endif // SL_WIFI
 }
 
 void OTAImageProcessorImpl::UnlockRadioProcessing()
 {
-#if !SL_WIFI
+#if !SL_WIFI && defined(_SILICON_LABS_32B_SERIES_3)
     DeviceLayer::ThreadStackMgr().UnlockThreadStack();
 #endif // SL_WIFI
 }
@@ -436,7 +450,7 @@ CHIP_ERROR OTAImageProcessorImpl::ProcessHeader(ByteSpan & block)
         CHIP_ERROR error = mHeaderParser.AccumulateAndDecode(block, header);
 
         // Needs more data to decode the header
-        ReturnErrorCodeIf(error == CHIP_ERROR_BUFFER_TOO_SMALL, CHIP_NO_ERROR);
+        VerifyOrReturnError(error != CHIP_ERROR_BUFFER_TOO_SMALL, CHIP_NO_ERROR);
         ReturnErrorOnFailure(error);
 
         // SL TODO -- store version somewhere

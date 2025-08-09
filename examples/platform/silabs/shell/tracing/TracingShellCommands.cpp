@@ -233,7 +233,7 @@ void RegisterCommands()
     static const Shell::Command cmds_silabs_tracing = { &TracingCommandHandler, "tracing",
                                                         "Dispatch Silicon Labs Tracing command" };
 
-    sShellTracingSubCommands.RegisterCommands(sTracingSubCommands, ArraySize(sTracingSubCommands));
+    sShellTracingSubCommands.RegisterCommands(sTracingSubCommands, MATTER_ARRAY_SIZE(sTracingSubCommands));
     Engine::Root().RegisterCommands(&cmds_silabs_tracing, 1);
 }
 
