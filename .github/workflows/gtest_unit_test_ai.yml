@@ -1,0 +1,42 @@
+name: "Unit Test Validator"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v3
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: "Install dependencies"
+        run: pip install requests
+
+      - name: "Fetch PR Diff using GitHub REST API"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          curl -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" > pr_diff.json
+
+      - name: "Filter C/C++ files"
+        run: |
+          # Filter C/C++ files from the PR diff
+          jq -r '.[] | select(.filename | test("\\.(c|cpp|cc|cxx|h|hpp|hxx)$")) | .filename' pr_diff.json > cpp_files.txt
+
+          echo "C/C++ files changed in this PR:"
+          cat cpp_files.txt
+
+      # Add your analysis and test steps here, e.g.:
+      # - name: "Run Unit Test Validator"
+      #   run: python your_script.py pr_diff.json
