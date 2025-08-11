@@ -63,6 +63,8 @@ static_library("SiWx917") {
     "${silabs_platform_dir}/PlatformManagerImpl.h",
     "${silabs_platform_dir}/SilabsConfig.cpp",
     "${silabs_platform_dir}/SilabsConfig.h",
+    "${silabs_platform_dir}/SilabsConfigUtils.cpp",
+    "${silabs_platform_dir}/SilabsConfigUtils.h",
     "${silabs_platform_dir}/SystemPlatformConfig.h",
     "../../FreeRTOS/SystemTimeSupport.cpp",
     "../../SingletonConfigurationManager.cpp",

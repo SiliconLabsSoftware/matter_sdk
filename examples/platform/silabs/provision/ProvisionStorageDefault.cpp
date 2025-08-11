@@ -21,13 +21,20 @@
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceConfig.h>
+#include <platform/silabs/SilabsConfig.h>
+#include <platform/silabs/SilabsConfigUtils.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+#include <silabs_creds.h>
+
+#ifdef SL_TOKEN_MANAGER_DEFINES_H
+#include <sl_token_manager_api.h>
+#else
 #include <nvm3.h>
 #include <nvm3_default.h>
 #include <nvm3_hal_flash.h>
-#include <platform/CHIPDeviceConfig.h>
-#include <platform/silabs/SilabsConfig.h>
-#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-#include <silabs_creds.h>
+#endif
+
 #ifndef NDEBUG
 #if defined(SL_MATTER_TEST_EVENT_TRIGGER_ENABLED) && SL_MATTER_TEST_EVENT_TRIGGER_ENABLED && (SL_MATTER_GN_BUILD == 0)
 #include <sl_matter_test_event_trigger_config.h>
@@ -58,11 +65,25 @@ namespace DeviceLayer {
 namespace Silabs {
 namespace Provision {
 
-namespace {
+namespace Migration {
 // Miss-aligned certificates is a common error, and printing the first few bytes is
 // useful to verify proper alignment. Eight bytes is enough for this purpose.
 constexpr size_t kDebugLength = 8;
 size_t sCredentialsOffset     = 0;
+
+// Single buffers for old and new credentials
+uint8_t old_cred_buf[512];
+uint8_t new_cred_buf[512];
+
+CHIP_ERROR SetCredentialsBaseAddress(uint32_t addr)
+{
+    return SilabsConfig::WriteConfigValue(SilabsConfig::kConfigKey_Creds_Base_Addr, addr);
+}
+
+CHIP_ERROR GetCredentialsBaseAddress(uint32_t & addr)
+{
+    return SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_Base_Addr, addr);
+}
 
 CHIP_ERROR ErasePage(uint32_t addr)
 {
@@ -103,7 +124,7 @@ CHIP_ERROR WritePage(uint32_t addr, const uint8_t * data, size_t size)
 CHIP_ERROR WriteFile(Storage & store, SilabsConfig::Key offset_key, SilabsConfig::Key size_key, const ByteSpan & value)
 {
     uint32_t base_addr = 0;
-    ReturnErrorOnFailure(store.GetCredentialsBaseAddress(base_addr));
+    ReturnErrorOnFailure(GetCredentialsBaseAddress(base_addr));
     if (0 == sCredentialsOffset)
     {
         ReturnErrorOnFailure(ErasePage(base_addr));
@@ -120,10 +141,10 @@ CHIP_ERROR WriteFile(Storage & store, SilabsConfig::Key offset_key, SilabsConfig
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR ReadFileByOffset(Storage & store, const char * description, uint32_t offset, uint32_t size, MutableByteSpan & value)
+CHIP_ERROR ReadFileByOffset(const char * description, uint32_t offset, uint32_t size, MutableByteSpan & value)
 {
     uint32_t base_addr = 0;
-    ReturnErrorOnFailure(store.GetCredentialsBaseAddress(base_addr));
+    ReturnErrorOnFailure(GetCredentialsBaseAddress(base_addr));
 
     uint8_t * address = (uint8_t *) (base_addr + offset);
     ByteSpan span(address, size);
@@ -132,7 +153,7 @@ CHIP_ERROR ReadFileByOffset(Storage & store, const char * description, uint32_t 
     return CopySpanToMutableSpan(span, value);
 }
 
-CHIP_ERROR ReadFileByKey(Storage & store, const char * description, uint32_t offset_key, uint32_t size_key, MutableByteSpan & value)
+CHIP_ERROR ReadFileByKey(const char * description, uint32_t offset_key, uint32_t size_key, MutableByteSpan & value)
 {
     uint32_t offset = 0;
     uint32_t size   = 0;
@@ -145,10 +166,93 @@ CHIP_ERROR ReadFileByKey(Storage & store, const char * description, uint32_t off
     VerifyOrReturnError(SilabsConfig::ConfigValueExists(size_key), CHIP_ERROR_NOT_FOUND);
     ReturnErrorOnFailure(SilabsConfig::ReadConfigValue(size_key, size));
 
-    return ReadFileByOffset(store, description, offset, size, value);
+    return ReadFileByOffset(description, offset, size, value);
 }
 
-} // namespace
+CHIP_ERROR SetCertificationDeclaration(Storage & store, const ByteSpan & value)
+{
+    ReturnErrorOnFailure(WriteFile(store, SilabsConfig::kConfigKey_Creds_CD_Offset, SilabsConfig::kConfigKey_Creds_CD_Size, value));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR SetProductAttestationIntermediateCert(Storage & store, const ByteSpan & value)
+{
+    ReturnErrorOnFailure(
+        WriteFile(store, SilabsConfig::kConfigKey_Creds_PAI_Offset, SilabsConfig::kConfigKey_Creds_PAI_Size, value));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR SetDeviceAttestationCert(Storage & store, const ByteSpan & value)
+{
+    ReturnErrorOnFailure(
+        WriteFile(store, SilabsConfig::kConfigKey_Creds_DAC_Offset, SilabsConfig::kConfigKey_Creds_DAC_Size, value));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR GetCertificationDeclaration(MutableByteSpan & value)
+{
+    CHIP_ERROR err = ReadFileByKey("GetCertificationDeclaration", SilabsConfig::kConfigKey_Creds_CD_Offset,
+                                   SilabsConfig::kConfigKey_Creds_CD_Size, value);
+#if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
+    if (CHIP_ERROR_NOT_FOUND == err)
+    {
+        // Reading from the old script's location.
+        err = ReadFileByOffset("GetCertificationDeclaration", SL_CREDENTIALS_CD_OFFSET, SL_CREDENTIALS_CD_SIZE, value);
+    }
+#endif
+#ifdef CHIP_DEVICE_CONFIG_ENABLE_EXAMPLE_CREDENTIALS
+    if (CHIP_ERROR_NOT_FOUND == err)
+    {
+        // Example CD
+        err = Examples::GetExampleDACProvider()->GetCertificationDeclaration(value);
+    }
+#endif
+    return err;
+}
+
+CHIP_ERROR GetProductAttestationIntermediateCert(MutableByteSpan & value)
+{
+    CHIP_ERROR err = ReadFileByKey("GetProductAttestationIntermediateCert", SilabsConfig::kConfigKey_Creds_PAI_Offset,
+                                   SilabsConfig::kConfigKey_Creds_PAI_Size, value);
+#if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
+    if (CHIP_ERROR_NOT_FOUND == err)
+    {
+        // Reading from the old script's location.
+        err = ReadFileByOffset("GetProductAttestationIntermediateCert", SL_CREDENTIALS_PAI_OFFSET, SL_CREDENTIALS_PAI_SIZE, value);
+    }
+#endif
+#ifdef CHIP_DEVICE_CONFIG_ENABLE_EXAMPLE_CREDENTIALS
+    if (CHIP_ERROR_NOT_FOUND == err)
+    {
+        // Example PAI
+        err = Examples::GetExampleDACProvider()->GetProductAttestationIntermediateCert(value);
+    }
+#endif
+    return err;
+}
+
+CHIP_ERROR GetDeviceAttestationCert(MutableByteSpan & value)
+{
+    CHIP_ERROR err = ReadFileByKey("GetDeviceAttestationCert", SilabsConfig::kConfigKey_Creds_DAC_Offset,
+                                   SilabsConfig::kConfigKey_Creds_DAC_Size, value);
+#if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
+    if (CHIP_ERROR_NOT_FOUND == err)
+    {
+        // Reading from the old script's location.
+        err = ReadFileByOffset("GetDeviceAttestationCert", SL_CREDENTIALS_DAC_OFFSET, SL_CREDENTIALS_DAC_SIZE, value);
+    }
+#endif
+#ifdef CHIP_DEVICE_CONFIG_ENABLE_EXAMPLE_CREDENTIALS
+    if (CHIP_ERROR_NOT_FOUND == err)
+    {
+        // Example DAC
+        return Examples::GetExampleDACProvider()->GetDeviceAttestationCert(value);
+    }
+#endif
+    return err;
+}
+
+} // namespace Migration
 
 //
 // Initialization
@@ -156,7 +260,7 @@ CHIP_ERROR ReadFileByKey(Storage & store, const char * description, uint32_t off
 
 CHIP_ERROR Storage::Initialize(uint32_t flash_addr, uint32_t flash_size)
 {
-    sCredentialsOffset = 0;
+    Migration::sCredentialsOffset = 0;
 
     uint32_t base_addr = (uint32_t) linker_nvm_end;
     if (flash_size > 0)
@@ -478,87 +582,64 @@ CHIP_ERROR Storage::GetFirmwareInformation(MutableByteSpan & value)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR Storage::SetCertificationDeclaration(const ByteSpan & value)
+// Helper function to set credential data using token manager
+static CHIP_ERROR SetCredentialData(SilabsConfig::Key size_key, SilabsConfig::Key token_key, const ByteSpan & value)
 {
-    ReturnErrorOnFailure(WriteFile(*this, SilabsConfig::kConfigKey_Creds_CD_Offset, SilabsConfig::kConfigKey_Creds_CD_Size, value));
+    ReturnErrorOnFailure(SilabsConfig::WriteConfigValue(size_key, (uint32_t) value.size()));
+#ifdef SL_TOKEN_MANAGER_DEFINES_H
+    sl_status_t status = sl_token_manager_set_data(token_key, const_cast<uint8_t *>(value.data()), value.size());
+#else
+    sl_status_t status = nvm3_writeData(nvm3_defaultHandle, token_key, const_cast<uint8_t *>(value.data()), value.size());
+#endif // SL_TOKEN_MANAGER_DEFINES_H
+    return MapNvm3Error(status);
+}
+
+// Helper function to get credential data using token manager
+static CHIP_ERROR GetCredentialData(SilabsConfig::Key size_key, SilabsConfig::Key token_key, MutableByteSpan & value)
+{
+    uint32_t key_size = 0;
+
+    VerifyOrReturnError(SilabsConfig::ConfigValueExists(size_key), CHIP_ERROR_NOT_FOUND);
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValue(size_key, key_size));
+    VerifyOrReturnError(value.size() >= key_size, CHIP_ERROR_BUFFER_TOO_SMALL);
+#ifdef SL_TOKEN_MANAGER_DEFINES_H
+    sl_status_t status = sl_token_manager_get_data(token_key, value.data(), key_size);
+#else
+    sl_status_t status = nvm3_readData(nvm3_defaultHandle, token_key, value.data(), key_size);
+#endif // SL_TOKEN_MANAGER_DEFINES_H
+    ReturnErrorOnFailure(MapNvm3Error(status));
+    value.reduce_size(key_size);
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR Storage::GetCertificationDeclaration(MutableByteSpan & value)
+CHIP_ERROR Storage::SetCertificationDeclaration(const ByteSpan & value)
 {
-    CHIP_ERROR err = ReadFileByKey(*this, "GetCertificationDeclaration", SilabsConfig::kConfigKey_Creds_CD_Offset,
-                                   SilabsConfig::kConfigKey_Creds_CD_Size, value);
-#if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
-    if (CHIP_ERROR_NOT_FOUND == err)
-    {
-        // Reading from the old script's location.
-        err = ReadFileByOffset(*this, "GetDeviceAttestationCert", SL_CREDENTIALS_CD_OFFSET, SL_CREDENTIALS_CD_SIZE, value);
-    }
-#endif
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
-    if (CHIP_ERROR_NOT_FOUND == err)
-    {
-        // Example CD
-        err = Examples::GetExampleDACProvider()->GetCertificationDeclaration(value);
-    }
-#endif
-    return err;
+    return SetCredentialData(SilabsConfig::kConfigKey_Creds_CD_Size, SilabsConfig::kConfigKey_Creds_CD, value);
 }
 
 CHIP_ERROR Storage::SetProductAttestationIntermediateCert(const ByteSpan & value)
 {
-    ReturnErrorOnFailure(
-        WriteFile(*this, SilabsConfig::kConfigKey_Creds_PAI_Offset, SilabsConfig::kConfigKey_Creds_PAI_Size, value));
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR Storage::GetProductAttestationIntermediateCert(MutableByteSpan & value)
-{
-    CHIP_ERROR err = ReadFileByKey(*this, "GetProductAttestationIntermediateCert", SilabsConfig::kConfigKey_Creds_PAI_Offset,
-                                   SilabsConfig::kConfigKey_Creds_PAI_Size, value);
-#if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
-    if (CHIP_ERROR_NOT_FOUND == err)
-    {
-        // Reading from the old script's location.
-        err = ReadFileByOffset(*this, "GetDeviceAttestationCert", SL_CREDENTIALS_PAI_OFFSET, SL_CREDENTIALS_PAI_SIZE, value);
-    }
-#endif
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
-    if (CHIP_ERROR_NOT_FOUND == err)
-    {
-        // Example PAI
-        err = Examples::GetExampleDACProvider()->GetProductAttestationIntermediateCert(value);
-    }
-#endif
-    return err;
+    return SetCredentialData(SilabsConfig::kConfigKey_Creds_PAI_Size, SilabsConfig::kConfigKey_Creds_Pai, value);
 }
 
 CHIP_ERROR Storage::SetDeviceAttestationCert(const ByteSpan & value)
 {
-    ReturnErrorOnFailure(
-        WriteFile(*this, SilabsConfig::kConfigKey_Creds_DAC_Offset, SilabsConfig::kConfigKey_Creds_DAC_Size, value));
-    return CHIP_NO_ERROR;
+    return SetCredentialData(SilabsConfig::kConfigKey_Creds_DAC_Size, SilabsConfig::kConfigKey_Creds_Dac, value);
+}
+
+CHIP_ERROR Storage::GetCertificationDeclaration(MutableByteSpan & value)
+{
+    return GetCredentialData(SilabsConfig::kConfigKey_Creds_CD_Size, SilabsConfig::kConfigKey_Creds_CD, value);
+}
+
+CHIP_ERROR Storage::GetProductAttestationIntermediateCert(MutableByteSpan & value)
+{
+    return GetCredentialData(SilabsConfig::kConfigKey_Creds_PAI_Size, SilabsConfig::kConfigKey_Creds_Pai, value);
 }
 
 CHIP_ERROR Storage::GetDeviceAttestationCert(MutableByteSpan & value)
 {
-    CHIP_ERROR err = ReadFileByKey(*this, "GetDeviceAttestationCert", SilabsConfig::kConfigKey_Creds_DAC_Offset,
-                                   SilabsConfig::kConfigKey_Creds_DAC_Size, value);
-#if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
-    if (CHIP_ERROR_NOT_FOUND == err)
-    {
-        // Reading from the old script's location.
-        err = ReadFileByOffset(*this, "GetDeviceAttestationCert", SL_CREDENTIALS_DAC_OFFSET, SL_CREDENTIALS_DAC_SIZE, value);
-    }
-#endif
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
-    if (CHIP_ERROR_NOT_FOUND == err)
-    {
-        // Example DAC
-        return Examples::GetExampleDACProvider()->GetDeviceAttestationCert(value);
-    }
-#endif
-    return err;
+    return GetCredentialData(SilabsConfig::kConfigKey_Creds_DAC_Size, SilabsConfig::kConfigKey_Creds_Dac, value);
 }
 
 #if defined(SLI_SI91X_MCU_INTERFACE) && defined(SL_MBEDTLS_USE_TINYCRYPT)
@@ -802,6 +883,57 @@ CHIP_ERROR Storage::GetTestEventTriggerKey(MutableByteSpan & keySpan)
 }
 
 #endif // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
+
+//
+// Migration and test helpers for attestation credential API migration
+//
+
+CHIP_ERROR Storage::MigrateAttestationCredentialAPI()
+{
+    MutableByteSpan old_cred_span(Migration::old_cred_buf, sizeof(Migration::old_cred_buf));
+    MutableByteSpan new_cred_span(Migration::new_cred_buf, sizeof(Migration::new_cred_buf));
+
+    // Migrate DAC (Device Attestation Certificate) first
+    ReturnLogErrorOnFailure(Migration::GetDeviceAttestationCert(old_cred_span));
+    ReturnLogErrorOnFailure(SetDeviceAttestationCert(ByteSpan(old_cred_span.data(), old_cred_span.size())));
+
+    // Verify DAC migration
+    ReturnLogErrorOnFailure(GetDeviceAttestationCert(new_cred_span));
+    VerifyOrReturnError(old_cred_span.size() == new_cred_span.size() &&
+                            memcmp(old_cred_span.data(), new_cred_span.data(), old_cred_span.size()) == 0,
+                        CHIP_ERROR_INCORRECT_STATE);
+    ChipLogProgress(DeviceLayer, "DAC migration verified successfully.");
+
+    // Migrate PAI (Product Attestation Intermediate Certificate)
+    old_cred_span = MutableByteSpan(Migration::old_cred_buf, sizeof(Migration::old_cred_buf));
+    ReturnLogErrorOnFailure(Migration::GetProductAttestationIntermediateCert(old_cred_span));
+    ReturnLogErrorOnFailure(SetProductAttestationIntermediateCert(ByteSpan(old_cred_span.data(), old_cred_span.size())));
+
+    // Verify PAI migration
+    new_cred_span = MutableByteSpan(Migration::new_cred_buf, sizeof(Migration::new_cred_buf));
+    ReturnLogErrorOnFailure(GetProductAttestationIntermediateCert(new_cred_span));
+    VerifyOrReturnError(old_cred_span.size() == new_cred_span.size() &&
+                            memcmp(old_cred_span.data(), new_cred_span.data(), old_cred_span.size()) == 0,
+                        CHIP_ERROR_INCORRECT_STATE);
+    ChipLogProgress(DeviceLayer, "PAI migration verified successfully.");
+
+    // Migrate CD (Certification Declaration)
+    old_cred_span = MutableByteSpan(Migration::old_cred_buf, sizeof(Migration::old_cred_buf));
+    ReturnLogErrorOnFailure(Migration::GetCertificationDeclaration(old_cred_span));
+    ReturnLogErrorOnFailure(SetCertificationDeclaration(ByteSpan(old_cred_span.data(), old_cred_span.size())));
+
+    // Verify CD migration
+    new_cred_span = MutableByteSpan(Migration::new_cred_buf, sizeof(Migration::new_cred_buf));
+    ReturnLogErrorOnFailure(GetCertificationDeclaration(new_cred_span));
+    VerifyOrReturnError(old_cred_span.size() == new_cred_span.size() &&
+                            memcmp(old_cred_span.data(), new_cred_span.data(), old_cred_span.size()) == 0,
+                        CHIP_ERROR_INCORRECT_STATE);
+    ChipLogProgress(DeviceLayer, "CD migration verified successfully.");
+
+    // Log successful migration
+    ChipLogProgress(DeviceLayer, "Attestation credential API migration succeeded.");
+    return CHIP_NO_ERROR;
+}
 
 } // namespace Provision
 } // namespace Silabs

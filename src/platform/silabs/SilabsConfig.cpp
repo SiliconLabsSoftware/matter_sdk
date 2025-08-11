@@ -27,6 +27,7 @@
 #include <lib/support/CodeUtils.h>
 #include <platform/internal/testing/ConfigUnitTest.h>
 #include <platform/silabs/CHIPDevicePlatformConfig.h>
+#include <platform/silabs/SilabsConfigUtils.h>
 
 #include <nvm3.h>
 #include <nvm3_default.h>
@@ -63,25 +64,6 @@ namespace DeviceLayer {
 namespace Internal {
 
 namespace {
-CHIP_ERROR MapNvm3Error(sl_status_t nvm3Res)
-{
-    CHIP_ERROR err;
-
-    switch (nvm3Res)
-    {
-    case SL_STATUS_OK:
-        err = CHIP_NO_ERROR;
-        break;
-    case SL_STATUS_NOT_FOUND:
-        err = CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND;
-        break;
-    default:
-        err = CHIP_ERROR(ChipError::Range::kPlatform, (nvm3Res & 0xFF) + CHIP_DEVICE_CONFIG_SILABS_NVM3_ERROR_MIN);
-        break;
-    }
-
-    return err;
-}
 
 template <typename T>
 CHIP_ERROR ReadConfigValueHelper(SilabsConfig::Key key, T & val)

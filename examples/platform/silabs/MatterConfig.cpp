@@ -268,8 +268,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
-    ReturnErrorOnFailure(PlatformMgr().InitChipStack());
-
     chip::DeviceLayer::ConnectivityMgr().SetBLEDeviceName(appName);
 
     // Provision Manager
@@ -278,6 +276,8 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     SetDeviceInstanceInfoProvider(&provision.GetStorage());
     SetCommissionableDataProvider(&provision.GetStorage());
     ChipLogProgress(DeviceLayer, "Provision mode %s", provision.IsProvisionRequired() ? "ENABLED" : "disabled");
+
+    ReturnErrorOnFailure(PlatformMgr().InitChipStack());
 
 #if CHIP_ENABLE_OPENTHREAD
     ReturnErrorOnFailure(InitOpenThread());
