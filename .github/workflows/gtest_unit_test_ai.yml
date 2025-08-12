@@ -74,6 +74,66 @@ jobs:
           echo "=== Detailed File Changes ==="
           jq -r '.[] | select(.filename | test("\\.(c|cpp|cc|cxx|h|hpp|hxx)$")) | "File: \(.filename) | Additions: \(.additions) | Deletions: \(.deletions) | Total: \(.additions + .deletions)"' pr_diff.json
 
+      - name: "Find Existing GTest Unit Tests"
+        run: |
+          echo "=== Finding Existing GTest Unit Tests ==="
+
+          # Read modified C/C++ files into array
+          declare -a modified_files
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then
+              modified_files+=("$file")
+            fi
+          done < cpp_files.txt
+
+          echo "Modified C/C++ files: ${#modified_files[@]}"
+
+          # Find all GTest files recursively from src/app/tests
+          if [ -d "src/app/tests" ]; then
+            echo "Searching for GTest files in src/app/tests..."
+            
+            # Find test files containing gtest patterns
+            find src/app/tests -type f \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" \) -exec grep -l "TEST\|EXPECT_\|ASSERT_" {} \; > found_test_files.txt 2>/dev/null
+            
+            test_file_count=$(wc -l < found_test_files.txt 2>/dev/null || echo "0")
+            echo "Total GTest files found: $test_file_count"
+            
+            # Map modified files to test files
+            files_with_tests=0
+            > file_test_mapping.txt
+            
+            for modified_file in "${modified_files[@]}"; do
+              base_name=$(basename "$modified_file" | sed 's/\.[^.]*$//')
+              
+              # Look for test files that might test this file
+              matching_tests=$(grep -i "${base_name}" found_test_files.txt 2>/dev/null || true)
+              
+              # Look for includes of the modified file in test files
+              include_tests=""
+              if [ -f "$modified_file" ]; then
+                include_name=$(basename "$modified_file")
+                include_tests=$(find src/app/tests -type f \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" \) -exec grep -l "#include.*${include_name}" {} \; 2>/dev/null || true)
+              fi
+              
+              # Combine results
+              all_tests=$(echo -e "$matching_tests\n$include_tests" | sort -u | grep -v '^$' || true)
+              
+              if [ -n "$all_tests" ]; then
+                files_with_tests=$((files_with_tests + 1))
+                echo "$modified_file:$all_tests" >> file_test_mapping.txt
+              else
+                echo "$modified_file:" >> file_test_mapping.txt
+              fi
+            done
+            
+            echo "Files with existing tests: $files_with_tests out of ${#modified_files[@]}"
+            
+          else
+            echo "src/app/tests directory not found"
+            touch found_test_files.txt
+            touch file_test_mapping.txt
+          fi
+
       # Add your analysis and test steps here, e.g.:
       # - name: "Run Unit Test Validator"
       #   run: python your_script.py pr_diff.json
