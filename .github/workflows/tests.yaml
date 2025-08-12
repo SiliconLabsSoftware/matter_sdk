@@ -475,8 +475,6 @@ jobs:
         # if: github.actor != 'restyled-io[bot]'
         if: false
 
-        if: github.actor != 'restyled-io[bot]'
-
         strategy:
             matrix:
                 build_variant: [ipv6only-no-ble-no-wifi]
