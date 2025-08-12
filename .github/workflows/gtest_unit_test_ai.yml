@@ -29,6 +29,9 @@ jobs:
           curl -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" > pr_diff.json
 
+          echo "=== PR Diff JSON Response ==="
+          cat pr_diff.json
+
       - name: "Filter C/C++ files"
         run: |
           # Filter C/C++ files from the PR diff
