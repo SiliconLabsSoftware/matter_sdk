@@ -20,6 +20,7 @@ jobs:
         uses: restyled-io/actions/run@v4
         with:
           fail-on-differences: true
+          path: '.'
 
       - if: |
           !cancelled() &&
