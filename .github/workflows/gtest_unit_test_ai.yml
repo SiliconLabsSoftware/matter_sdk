@@ -37,6 +37,40 @@ jobs:
           echo "C/C++ files changed in this PR:"
           cat cpp_files.txt
 
+      - name: "Calculate total changes and determine coverage requirement"
+        run: |
+          # Calculate total lines added for C/C++ files
+          TOTAL_CHANGES=$(jq -r '.[] | select(.filename | test("\\.(c|cpp|cc|cxx|h|hpp|hxx)$")) | (.additions)' pr_diff.json | awk '{sum += $1} END {print sum}')
+
+          # Handle case when no C/C++ files are found
+          if [ -z "$TOTAL_CHANGES" ] || [ "$TOTAL_CHANGES" = "0" ]; then
+            echo "No C/C++ files changed in this PR"
+            exit 0
+          fi
+
+          echo "=== PR Change Summary ==="
+          echo "Total lines added in C/C++ files: $TOTAL_CHANGES"
+
+          # Determine required code coverage based on number of changes
+          if [ "$TOTAL_CHANGES" -le 10 ]; then
+            REQUIRED_COVERAGE=90
+            echo "Changes are minimal (≤10 lines)"
+          else
+            REQUIRED_COVERAGE=100
+            echo "Changes are significant (>10 lines)"
+          fi
+
+          echo "Required code coverage: ${REQUIRED_COVERAGE}%"
+
+          # Store values in environment for future steps
+          echo "TOTAL_CHANGES=$TOTAL_CHANGES" >> $GITHUB_ENV
+          echo "REQUIRED_COVERAGE=$REQUIRED_COVERAGE" >> $GITHUB_ENV
+
+          # Print detailed breakdown
+          echo ""
+          echo "=== Detailed File Changes ==="
+          jq -r '.[] | select(.filename | test("\\.(c|cpp|cc|cxx|h|hpp|hxx)$")) | "File: \(.filename) | Additions: \(.additions) | Deletions: \(.deletions) | Total: \(.additions + .deletions)"' pr_diff.json
+
       # Add your analysis and test steps here, e.g.:
       # - name: "Run Unit Test Validator"
       #   run: python your_script.py pr_diff.json
