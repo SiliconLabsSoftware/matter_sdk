@@ -47,9 +47,9 @@ extern "C" {
 static TaskHandle_t matterAwsTask         = NULL;
 static EventGroupHandle_t matterAwsEvents = NULL;
 
-mqtt_client_t * mqtt_client  = nullptr;
-MQTT_Transport_t * transport = nullptr;
-matterAws_subscribe_cb gSubsCB     = NULL;
+mqtt_client_t * mqtt_client    = nullptr;
+MQTT_Transport_t * transport   = nullptr;
+matterAws_subscribe_cb gSubsCB = NULL;
 static mqtt_transport_intf_t trans;
 
 static bool end_loop;
@@ -62,8 +62,8 @@ static void MatterAwsMqttSubscribeCb(void * arg, mqtt_err_t err)
     ChipLogProgress(AppServer, "[MATTER_AWS] MQTT sub request callback: %d", (int) err);
 }
 
-matterAws_err_t MatterAwsMqttSubscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb, mqtt_incoming_data_cb_t data_cb,
-                             const char * topic, uint8_t qos)
+matterAws_err_t MatterAwsMqttSubscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb,
+                                       mqtt_incoming_data_cb_t data_cb, const char * topic, uint8_t qos)
 {
     mqtt_set_inpub_callback(mqtt_client, publish_cb, data_cb, NULL);
     int mret = mqtt_subscribe(mqtt_client, topic, qos, MatterAwsMqttSubscribeCb, NULL);
