@@ -433,7 +433,17 @@ sl_status_t SetWifiConfigurations()
 sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLenght, void * arg)
 {
     sl_status_t status = SL_STATUS_OK;
-    wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
+    // If the failed event is encountered when sl_net_up is in-progress,
+    // we ignore it and wait for the sl_net_up to complete.
+    if (wfx_rsi.dev_state.Has(WifiState::kStationConnecting))
+    {
+        wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
+        if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
+        {
+            return SL_STATUS_IN_PROGRESS;
+        }
+    }
+
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
         status = *reinterpret_cast<sl_status_t *>(result);
@@ -470,6 +480,19 @@ sl_status_t JoinWifiNetwork(void)
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
+
+    if (!(wfx_rsi.dev_state.Has(WifiState::kStationConnecting)))
+    {
+        // TODO: Remove this check once the sl_net_up is fixed, sl_net_up is not completely synchronous
+        // and issue is mostly seen on OPEN access points
+
+        // sl_net_up can return SL_STATUS_SUCCESS, even if the join callback has been called
+        // If the state has changed, it means that the join callback has already been called
+        // rejoin already started, so we should not proceed with further processing
+        ChipLogDetail(DeviceLayer, "JoinCallback already called, skipping further processing");
+
+        status = SL_STATUS_FAIL;
+    }
 
     if (status == SL_STATUS_OK)
     {
