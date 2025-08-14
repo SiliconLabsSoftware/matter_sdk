@@ -435,10 +435,10 @@ sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLe
     sl_status_t status = SL_STATUS_OK;
     // If the failed event is encountered when sl_net_up is in-progress,
     // we ignore it and wait for the sl_net_up to complete.
-    if (wfx_rsi.dev_state.Has(WifiState::kStationConnecting)) {
-        wfx_rsi.dev_state.Clear(WifiState::kStationConnecting)
-        if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
-            return SL_STATUS_IN_PROGRESS;
+    if (wfx_rsi.dev_state.Has(WifiState::kStationConnecting))
+    {
+        wfx_rsi.dev_state.Clear(
+            WifiState::kStationConnecting) if (SL_WIFI_CHECK_IF_EVENT_FAILED(event)) return SL_STATUS_IN_PROGRESS;
     }
 
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
@@ -478,7 +478,7 @@ sl_status_t JoinWifiNetwork(void)
 
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
 
-    if(!(wfx_rsi.dev_state.Has(WifiState::kStationConnecting)))
+    if (!(wfx_rsi.dev_state.Has(WifiState::kStationConnecting)))
     {
         // TODO: Remove this check once the sl_net_up is fixed, sl_net_up is not completely synchronous
         // and issue is mostly seen on OPEN access points
