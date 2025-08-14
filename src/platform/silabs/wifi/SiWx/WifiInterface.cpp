@@ -471,6 +471,19 @@ sl_status_t JoinWifiNetwork(void)
 
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
 
+    if(!(wfx_rsi.dev_state.Has(WifiState::kStationConnecting)))
+    {
+        // TODO: Remove this check once the sl_net_up is fixed, sl_net_up is not completely synchronous 
+        // and issue is mostly seen on OPEN access points
+
+        // sl_net_up can return SL_STATUS_SUCCESS, even if the join callback has been called
+        // If the state has changed, it means that the join callback has already been called
+        // rejoin already started, so we should not proceed with further processing
+        ChipLogDetail(DeviceLayer, "JoinCallback already called, skipping further processing");
+    
+        return SL_STATUS_FAIL;
+    }
+
     if (status == SL_STATUS_OK)
     {
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
