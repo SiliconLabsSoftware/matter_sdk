@@ -480,14 +480,14 @@ sl_status_t JoinWifiNetwork(void)
 
     if(!(wfx_rsi.dev_state.Has(WifiState::kStationConnecting)))
     {
-        // TODO: Remove this check once the sl_net_up is fixed, sl_net_up is not completely synchronous 
+        // TODO: Remove this check once the sl_net_up is fixed, sl_net_up is not completely synchronous
         // and issue is mostly seen on OPEN access points
 
         // sl_net_up can return SL_STATUS_SUCCESS, even if the join callback has been called
         // If the state has changed, it means that the join callback has already been called
         // rejoin already started, so we should not proceed with further processing
         ChipLogDetail(DeviceLayer, "JoinCallback already called, skipping further processing");
-    
+
         status = SL_STATUS_FAIL;
     }
 
