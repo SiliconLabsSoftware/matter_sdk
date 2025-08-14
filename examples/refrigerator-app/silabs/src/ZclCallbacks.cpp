@@ -48,7 +48,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
                         ChipLogValueMEI(attributePath.mAttributeId), type, *value, size);
         break;
     case app::Clusters::RefrigeratorAlarm::Id:
-        RefrigeratorMgr().RefAlaramAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        RefrigeratorMgr().RefAlarmAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
 #ifdef SL_MATTER_ENABLE_AWS
         matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
 #endif // SL_MATTER_ENABLE_AWS
