@@ -18,7 +18,8 @@ import("${chip_root}/src/platform/silabs/efr32/args.gni")
 
 silabs_sdk_target = get_label_info(":sdk", "label_no_toolchain")
 
-app_data_model = "${chip_root}/examples/platform/silabs/platform-app/data_model:silabs-platform"
+app_data_model =
+    "${chip_root}/examples/base-platform-app/data_model:silabs-platform"
 chip_enable_ota_requestor = true
 chip_enable_openthread = true
 chip_enable_read_client = false
