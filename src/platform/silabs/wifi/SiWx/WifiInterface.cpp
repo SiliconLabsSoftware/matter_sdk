@@ -433,7 +433,14 @@ sl_status_t SetWifiConfigurations()
 sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLenght, void * arg)
 {
     sl_status_t status = SL_STATUS_OK;
-    wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
+    // If the failed event is encountered when sl_net_up is in-progress,
+    // we ignore it and wait for the sl_net_up to complete.
+    if (wfx_rsi.dev_state.Has(WifiState::kStationConnecting)) {
+        wfx_rsi.dev_state.Clear(WifiState::kStationConnecting)
+        if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
+            return SL_STATUS_IN_PROGRESS;
+    }
+
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
         status = *reinterpret_cast<sl_status_t *>(result);
@@ -481,7 +488,7 @@ sl_status_t JoinWifiNetwork(void)
         // rejoin already started, so we should not proceed with further processing
         ChipLogDetail(DeviceLayer, "JoinCallback already called, skipping further processing");
     
-        return SL_STATUS_FAIL;
+        status = SL_STATUS_FAIL;
     }
 
     if (status == SL_STATUS_OK)
