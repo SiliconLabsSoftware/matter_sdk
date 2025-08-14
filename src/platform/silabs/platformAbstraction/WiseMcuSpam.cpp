@@ -158,6 +158,7 @@ bool SilabsPlatform::GetRGBLedState(uint8_t led)
 {
     return sl_si91x_simple_rgb_led_get_current_state(SL_RGB_LED_INSTANCE(led));
 }
+
 CHIP_ERROR SilabsPlatform::SetLedColor(uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
 {
     uint32_t rgb_color;
@@ -165,6 +166,7 @@ CHIP_ERROR SilabsPlatform::SetLedColor(uint8_t led, uint8_t red, uint8_t green, 
     sl_si91x_simple_rgb_led_set_colour(SL_RGB_LED_INSTANCE(led), rgb_color);
     return CHIP_NO_ERROR;
 }
+
 CHIP_ERROR SilabsPlatform::GetLedColor(uint8_t led, uint16_t & r, uint16_t & g, uint16_t & b)
 {
     sl_si91x_simple_rgb_led_get_colour(SL_RGB_LED_INSTANCE(led), &r, &g, &b);
@@ -172,10 +174,12 @@ CHIP_ERROR SilabsPlatform::GetLedColor(uint8_t led, uint16_t & r, uint16_t & g, 
 }
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
 
+#if defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
 void SilabsPlatform::StartScheduler()
 {
     vTaskStartScheduler();
 }
+#endif // SL_CATALOG_CUSTOM_MAIN_PRESENT
 
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
 extern "C" void sl_button_on_change(uint8_t btn, uint8_t btnAction)

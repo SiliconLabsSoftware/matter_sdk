@@ -55,6 +55,7 @@ config("chip_examples_project_config") {
     "-Wl,--wrap=_realloc_r",
     "-Wl,--wrap=_free_r",
     "-Wl,--wrap=_calloc_r",
+    "-Wl,--wrap=main",
   ]
 }
 
@@ -63,7 +64,6 @@ config("test-event-trigger-config") {
 }
 
 source_set("test-event-trigger") {
-
   deps = [ "${sl_provision_root}:headers" ]
   public_configs = [ ":test-event-trigger-config" ]
   public_deps = [

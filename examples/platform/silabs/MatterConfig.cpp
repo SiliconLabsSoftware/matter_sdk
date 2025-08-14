@@ -229,10 +229,8 @@ void SilabsMatterConfig::AppInit()
     ChipLogProgress(DeviceLayer, "Starting scheduler");
     VerifyOrDie(sMainTaskHandle); // We can't proceed if the Main Task creation failed.
 
-// SL-TEMP: GN cannot use sl_main until it supports sisdk 2025.6
-// sl_system_init is always used for 917 soc
-// Also use sl_system for projects upgraded to 2025.6, identified by the presence of SL_CATALOG_CUSTOM_MAIN_PRESENT
-#if (SL_MATTER_GN_BUILD == 1 || SLI_SI91X_MCU_INTERFACE) || defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
+// Use sl_system for projects upgraded to 2025.6, identified by the presence of SL_CATALOG_CUSTOM_MAIN_PRESENT
+#if defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
     GetPlatform().StartScheduler();
 
     // Should never get here.
@@ -240,8 +238,7 @@ void SilabsMatterConfig::AppInit()
 
     ChipLogError(DeviceLayer, "Start Scheduler Failed, Not enough RAM");
     appError(CHIP_ERROR_NO_MEMORY);
-#endif
-
+#endif // SL_CATALOG_CUSTOM_MAIN_PRESENT
 }
 
 CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
