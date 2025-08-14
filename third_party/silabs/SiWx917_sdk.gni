@@ -340,11 +340,11 @@ template("siwx917_sdk") {
       defines += [ "SLI_SI91X_MCU_INTR_BASED_RX_ON_UART=1" ]
     }
     if (enable_matter_aws) {
-      defines += [ "MATTER_AWS_ENABLE=1" ]
+      defines += [ "SL_MATTER_ENABLE_AWS=1" ]
     }
 
     if (aws_sdk_ota) {
-      defines += [ "ENABLE_AWS_OTA_FEAT=1" ]
+      defines += [ "SL_MATTER_ENABLE_AWS_OTA_FEAT=1" ]
     }
 
     if (chip_enable_multi_ota_requestor) {

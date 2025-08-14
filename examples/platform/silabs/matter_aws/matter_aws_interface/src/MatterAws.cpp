@@ -260,7 +260,7 @@ matterAws_err_t MatterAwsSendMsg(const char * subject, const char * content)
     return MATTER_AWS_OK;
 }
 
-#ifdef ENABLE_AWS_OTA_FEAT
+#ifdef SL_MATTER_ENABLE_AWS_OTA_FEAT
 
 struct sub_cb_info sub_info;
 
@@ -370,4 +370,4 @@ matterAws_err_t MatterAwsOtaClose()
 
     return MATTER_AWS_OK;
 }
-#endif // ENABLE_AWS_OTA_FEAT
+#endif // SL_MATTER_ENABLE_AWS_OTA_FEAT

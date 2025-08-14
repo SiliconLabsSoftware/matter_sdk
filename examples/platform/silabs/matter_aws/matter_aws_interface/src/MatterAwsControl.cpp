@@ -24,7 +24,7 @@
 #include "MatterAws.h"
 #include "MatterAwsControl.h"
 
-#ifdef ENABLE_AWS_OTA_FEAT
+#ifdef SL_MATTER_ENABLE_AWS_OTA_FEAT
 extern "C" {
 extern void aws_ota_init(void);
 }
@@ -173,7 +173,7 @@ namespace control {
  *     but error codes should be returned as many thing could happen here ***
  */
 
-#ifdef ENABLE_AWS_OTA_FEAT
+#ifdef SL_MATTER_ENABLE_AWS_OTA_FEAT
 void aws_ota_init_task(void * parameters)
 {
     (void) parameters;
@@ -205,7 +205,7 @@ void MatterAwsIncomingDataCb(void * arg, const char * topic, uint16_t topic_len,
     }
     ChipLogDetail(AppServer, "[MATTER_AWS] _value: %ld", _value);
 
-#ifdef ENABLE_AWS_OTA_FEAT
+#ifdef SL_MATTER_ENABLE_AWS_OTA_FEAT
     if (strcmp(cmd, "ota") == 0)
     {
         static TaskHandle_t AWS_OTA = NULL;

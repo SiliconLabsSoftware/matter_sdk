@@ -26,8 +26,8 @@
 #define MBEDTLS_HKDF_C
 #define MBEDTLS_PKCS5_C
 
-// MATTER_AWS Specific Configurations
-#ifdef MATTER_AWS_ENABLE
+// MATTER AWS Specific Configurations
+#ifdef SL_MATTER_ENABLE_AWS
 
 #define MBEDTLS_MPI_MAX_SIZE 512
 
@@ -55,7 +55,7 @@
 #define MBEDTLS_SHA256_C
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
 
-#endif // MATTER_AWS_ENABLE
+#endif // SL_MATTER_ENABLE_AWS
 
 #ifdef SL_MBEDTLS_USE_TINYCRYPT
 #define TINYCRYPT_PRIMITIVES
@@ -63,7 +63,7 @@
 
 #define MBEDTLS_FREERTOS
 
-#if (!(MATTER_AWS_ENABLE) || !defined(MATTER_AWS_ENABLE))
+#if (!(SL_MATTER_ENABLE_AWS) || !defined(SL_MATTER_ENABLE_AWS))
 /**< Maximum windows size used. */
 #define MBEDTLS_MPI_WINDOW_SIZE 1
 
@@ -71,7 +71,7 @@
 #define MBEDTLS_MPI_MAX_SIZE 32
 /**< Maxium fragment length in bytes */
 #define MBEDTLS_SSL_MAX_CONTENT_LEN 768
-#endif // !(MATTER_AWS_ENABLE)
+#endif // !(SL_MATTER_ENABLE_AWS)
 
 #define MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
 #define MBEDTLS_PLATFORM_SNPRINTF_MACRO snprintf

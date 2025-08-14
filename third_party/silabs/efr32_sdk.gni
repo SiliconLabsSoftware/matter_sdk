@@ -575,10 +575,10 @@ template("efr32_sdk") {
     if (defined(invoker.chip_enable_wifi) && invoker.chip_enable_wifi) {
       if (enable_matter_aws) {
         assert(chip_enable_wifi_ipv4, "enable chip_enable_wifi_ipv4")
-        defines += [ "MATTER_AWS_ENABLE=1" ]
+        defines += [ "SL_MATTER_ENABLE_AWS=1" ]
       }
       if (aws_sdk_ota) {
-        defines += [ "ENABLE_AWS_OTA_FEAT=1" ]
+        defines += [ "SL_MATTER_ENABLE_AWS_OTA_FEAT=1" ]
       }
       if (chip_enable_wifi_ipv4) {
         defines += [ "CHIP_DEVICE_CONFIG_ENABLE_IPV4=1" ]

@@ -28,9 +28,9 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#ifdef MATTER_AWS_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
 #include "MatterAwsControl.h"
-#endif // MATTER_AWS_ENABLE
+#endif // SL_MATTER_ENABLE_AWS
 
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
@@ -50,8 +50,8 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     else if (clusterId == Thermostat::Id)
     {
         TempMgr().AttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
-#ifdef MATTER_AWS_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
         matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
-#endif // MATTER_AWS_ENABLE
+#endif // SL_MATTER_ENABLE_AWS
     }
 }

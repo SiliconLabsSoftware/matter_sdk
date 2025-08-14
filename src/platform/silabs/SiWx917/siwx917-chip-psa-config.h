@@ -18,15 +18,15 @@
 
 #pragma once
 
-// MATTER_AWS Specific Configurations
-#ifdef MATTER_AWS_ENABLE
+// MATTER AWS Specific Configurations
+#ifdef SL_MATTER_ENABLE_AWS
 #define MBEDTLS_PSA_BUILTIN_ALG_TLS12_PRF
 
 #define PSA_WANT_ALG_CBC_NO_PADDING
 #define PSA_WANT_ALG_RSA_PKCS1V15_SIGN
 #define PSA_WANT_ALG_SOME_PAKE
 #define PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY
-#endif // MATTER_AWS_ENABLE
+#endif // SL_MATTER_ENABLE_AWS
 
 // SLC GENERATED
 #include "psa_crypto_config.h"

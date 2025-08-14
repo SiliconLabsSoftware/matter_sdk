@@ -54,7 +54,7 @@ matterAws_err_t MatterAwsMqttSubscribe(mqtt_client_t * client, mqtt_incoming_pub
 
 matterAws_err_t MatterAwsSendMsg(const char * subject, const char * content);
 
-#ifdef ENABLE_AWS_OTA_FEAT
+#ifdef SL_MATTER_ENABLE_AWS_OTA_FEAT
 
 typedef void (*callback_t)(const char * sub_topic, uint16_t top_len, const void * pload, uint16_t pLoadLength);
 struct sub_cb_info
@@ -74,7 +74,7 @@ matterAws_err_t MatterAwsOtaSubscribe(const char * topic, uint8_t qos, callback_
 matterAws_err_t MatterAwsOtaProcess();
 
 matterAws_err_t MatterAwsOtaClose();
-#endif // ENABLE_AWS_OTA_FEAT
+#endif // SL_MATTER_ENABLE_AWS_OTA_FEAT
 
 #ifdef __cplusplus
 }
