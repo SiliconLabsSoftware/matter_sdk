@@ -20,7 +20,6 @@ import("//build_overrides/pigweed.gni")
 import("${build_root}/config/defaults.gni")
 import("${silabs_sdk_build_root}/silabs_executable.gni")
 
-import("${chip_root}/examples/common/pigweed/pigweed_rpcs.gni")
 import("${chip_root}/src/platform/device.gni")
 import("${chip_root}/third_party/silabs/silabs_board.gni")
 
@@ -122,6 +121,19 @@ silabs_executable("platform_app") {
     deps += [ "${examples_plat_dir}:siwx917-common" ]
   } else {
     deps += [ "${examples_plat_dir}:efr32-common" ]
+  }
+
+  ldscript = "${examples_common_plat_dir}/ldscripts/${silabs_family}.ld"
+
+  inputs = [ ldscript ]
+
+  ldflags = [ "-T" + rebase_path(ldscript, root_build_dir) ]
+
+  if (chip_print_memory_usage) {
+    ldflags += [
+      "-Wl,--print-memory-usage",
+      "-fstack-usage",
+    ]
   }
 
   # WiFi Settings

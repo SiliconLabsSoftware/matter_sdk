@@ -30,10 +30,6 @@
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
 
-#if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
-#include <app/icd/server/ICDNotifier.h>
-#endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
-
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
@@ -109,7 +105,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if (defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    chip::Server::GetInstance().GetICDManager().RegisterObserver(&sAppTask);
+    Server::GetInstance().GetICDManager().RegisterObserver(&sAppTask);
 #else
     sAppTask.StartStatusLEDTimer();
 #endif
