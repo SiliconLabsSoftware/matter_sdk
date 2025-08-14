@@ -19,18 +19,18 @@
  *
  ******************************************************************************/
 
-#ifndef _RMC_NVM_CERT_H
+#ifndef _MATTER_AWS_NVM_CERT_H
 
 #include <lib/core/CHIPError.h>
 
-CHIP_ERROR RMCGetCACertificate(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR MatterAwsGetCACertificate(char * buf, size_t buf_len, size_t * bufSize);
 
-CHIP_ERROR RMCGetDeviceCertificate(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR MatterAwsGetDeviceCertificate(char * buf, size_t buf_len, size_t * bufSize);
 
-CHIP_ERROR RMCGetDevicePrivKey(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR MatterAwsGetDevicePrivKey(char * buf, size_t buf_len, size_t * bufSize);
 
-CHIP_ERROR RMCGetHostname(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR MatterAwsGetHostname(char * buf, size_t buf_len, size_t * bufSize);
 
-CHIP_ERROR RMCGetClientId(char * buf, size_t buf_len, size_t * bufSize);
+CHIP_ERROR MatterAwsGetClientId(char * buf, size_t buf_len, size_t * bufSize);
 
-#endif //_RMC_NVM_CERT_H
+#endif //_MATTER_AWS_NVM_CERT_H

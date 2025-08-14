@@ -26,8 +26,8 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/SilabsConfig.h>
 
-#include "RmcConfig.h"
-#include "RmcNvmCert.h"
+#include "MatterAwsConfig.h"
+#include "MatterAwsNvmCert.h"
 
 char ca_certificate[]     = "";
 char device_certificate[] = "";
@@ -35,15 +35,15 @@ char device_key[]         = "";
 
 using namespace chip::DeviceLayer::Internal;
 
-CHIP_ERROR RMCGetCACertificate(char * buf, size_t buf_len, size_t * bufSize)
+CHIP_ERROR MatterAwsGetCACertificate(char * buf, size_t buf_len, size_t * bufSize)
 {
     CHIP_ERROR status = CHIP_NO_ERROR;
-#if SL_RMC_NVM_EMBED_CERT
+#if SL_MATTER_AWS_NVM_EMBED_CERT
     status =
         SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_CACerts, reinterpret_cast<uint8_t *>(buf), buf_len, *bufSize);
 #else
     *bufSize = sizeof(ca_certificate);
-    if (buf == NULL && buf_len < *bufSize)
+    if (buf == NULL || buf_len < *bufSize)
     {
         return CHIP_ERROR_INTERNAL;
     }
@@ -52,15 +52,15 @@ CHIP_ERROR RMCGetCACertificate(char * buf, size_t buf_len, size_t * bufSize)
     return status;
 }
 
-CHIP_ERROR RMCGetDeviceCertificate(char * buf, size_t buf_len, size_t * bufSize)
+CHIP_ERROR MatterAwsGetDeviceCertificate(char * buf, size_t buf_len, size_t * bufSize)
 {
     CHIP_ERROR status = CHIP_NO_ERROR;
-#if SL_RMC_NVM_EMBED_CERT
+#if SL_MATTER_AWS_NVM_EMBED_CERT
     status =
         SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_DeviceCerts, reinterpret_cast<uint8_t *>(buf), buf_len, *bufSize);
 #else
     *bufSize = sizeof(device_certificate);
-    if (buf == NULL && buf_len < *bufSize)
+    if (buf == NULL || buf_len < *bufSize)
     {
         return CHIP_ERROR_INTERNAL;
     }
@@ -69,15 +69,15 @@ CHIP_ERROR RMCGetDeviceCertificate(char * buf, size_t buf_len, size_t * bufSize)
     return status;
 }
 
-CHIP_ERROR RMCGetDevicePrivKey(char * buf, size_t buf_len, size_t * bufSize)
+CHIP_ERROR MatterAwsGetDevicePrivKey(char * buf, size_t buf_len, size_t * bufSize)
 {
     CHIP_ERROR status = CHIP_NO_ERROR;
-#if SL_RMC_NVM_EMBED_CERT
+#if SL_MATTER_AWS_NVM_EMBED_CERT
     status =
         SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_DeviceKey, reinterpret_cast<uint8_t *>(buf), buf_len, *bufSize);
 #else
     *bufSize = sizeof(device_key);
-    if (buf == NULL && buf_len < *bufSize)
+    if (buf == NULL || buf_len < *bufSize)
     {
         return CHIP_ERROR_INTERNAL;
     }
@@ -86,36 +86,36 @@ CHIP_ERROR RMCGetDevicePrivKey(char * buf, size_t buf_len, size_t * bufSize)
     return status;
 }
 
-CHIP_ERROR RMCGetHostname(char * buf, size_t buf_len, size_t * bufSize)
+CHIP_ERROR MatterAwsGetHostname(char * buf, size_t buf_len, size_t * bufSize)
 {
     CHIP_ERROR status = CHIP_NO_ERROR;
-#if SL_RMC_NVM_EMBED_CERT
+#if SL_MATTER_AWS_NVM_EMBED_CERT
     status =
         SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_hostname, reinterpret_cast<uint8_t *>(buf), buf_len, *bufSize);
 #else
-    *bufSize = sizeof(RMC_SERVER_HOST);
-    if (buf == NULL && buf_len < *bufSize)
+    *bufSize = sizeof(MATTER_AWS_SERVER_HOST);
+    if (buf == NULL || buf_len < *bufSize)
     {
         return CHIP_ERROR_INTERNAL;
     }
-    strncpy(buf, RMC_SERVER_HOST, *bufSize);
+    strncpy(buf, MATTER_AWS_SERVER_HOST, *bufSize);
 #endif
     return status;
 }
 
-CHIP_ERROR RMCGetClientId(char * buf, size_t buf_len, size_t * bufSize)
+CHIP_ERROR MatterAwsGetClientId(char * buf, size_t buf_len, size_t * bufSize)
 {
     CHIP_ERROR status = CHIP_NO_ERROR;
-#if SL_RMC_NVM_EMBED_CERT
+#if SL_MATTER_AWS_NVM_EMBED_CERT
     status =
         SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_clientid, reinterpret_cast<uint8_t *>(buf), buf_len, *bufSize);
 #else
-    *bufSize = sizeof(RMC_CLIENT_ID);
-    if (buf == NULL && buf_len < *bufSize)
+    *bufSize = sizeof(MATTER_AWS_CLIENT_ID);
+    if (buf == NULL || buf_len < *bufSize)
     {
         return CHIP_ERROR_INTERNAL;
     }
-    strncpy(buf, RMC_CLIENT_ID, *bufSize);
+    strncpy(buf, MATTER_AWS_CLIENT_ID, *bufSize);
 #endif
     return status;
 }

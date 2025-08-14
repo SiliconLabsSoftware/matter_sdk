@@ -31,9 +31,9 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#ifdef RMC_ENABLE
-#include "Rmc.h"
-#endif // RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
+#include "MatterAws.h"
+#endif // MATTER_AWS_ENABLE
 
 using namespace ::chip::app::Clusters;
 using namespace ::chip::DeviceLayer::Internal;
@@ -51,9 +51,9 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         [[maybe_unused]] DoorLock::DlLockState lockState = *(reinterpret_cast<DoorLock::DlLockState *>(value));
         ChipLogProgress(Zcl, "Door lock cluster: " ChipLogFormatMEI " state %d", ChipLogValueMEI(clusterId),
                         to_underlying(lockState));
-#ifdef RMC_ENABLE
-        rmc_sendmsg("lock/state", (const char *) (lockState == DoorLock::DlLockState::kLocked ? "lock" : "unlock"));
-#endif // RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
+        MatterAwsSendMsg("lock/state", (const char *) (lockState == DoorLock::DlLockState::kLocked ? "lock" : "unlock"));
+#endif // MATTER_AWS_ENABLE
     }
 }
 

@@ -18,12 +18,12 @@
  *
  ******************************************************************************/
 
-#ifndef __RMC_H
-#define __RMC_H
+#ifndef __MATTER_AWS_H
+#define __MATTER_AWS_H
 
 #include <stdint.h>
 
-#include "RmcConfig.h"
+#include "MatterAwsConfig.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,28 +31,28 @@ extern "C" {
 #include "mqtt.h"
 typedef enum
 {
-    RMC_OK = 0,
-    RMC_ERR_INVAL,
-    RMC_ERR_MEM,
-    RMC_ERR_FAIL,
-    RMC_ERR_CONN,
-    RMC_ERR_PUBLISH,
-} rmc_err_t;
+    MATTER_AWS_OK = 0,
+    MATTER_AWS_ERR_INVAL,
+    MATTER_AWS_ERR_MEM,
+    MATTER_AWS_ERR_FAIL,
+    MATTER_AWS_ERR_CONN,
+    MATTER_AWS_ERR_PUBLISH,
+} matterAws_err_t;
 
 typedef struct
 {
     uint8_t * dataP;
     uint16_t dataLen;
-} rmc_buff_t;
+} matterAws_buff_t;
 
-typedef void (*rmc_subscribe_cb)(void);
+typedef void (*matterAws_subscribe_cb)(void);
 
-rmc_err_t rmc_init(rmc_subscribe_cb subs_cb);
+matterAws_err_t MatterAwsInit(matterAws_subscribe_cb subs_cb);
 
-rmc_err_t rmc_mqtt_subscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb, mqtt_incoming_data_cb_t data_cb,
+matterAws_err_t MatterAwsMqttSubscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb, mqtt_incoming_data_cb_t data_cb,
                              const char * topic, uint8_t qos);
 
-rmc_err_t rmc_sendmsg(const char * subject, const char * content);
+matterAws_err_t MatterAwsSendMsg(const char * subject, const char * content);
 
 #ifdef ENABLE_AWS_OTA_FEAT
 
@@ -63,20 +63,20 @@ struct sub_cb_info
     callback_t cb;
 };
 
-int rmc_init_status(void);
+int MatterAwsInitStatus(void);
 
-rmc_err_t rmc_aws_ota_publish(const char * const topic, const char * message, uint32_t message_len, uint8_t qos);
+matterAws_err_t MatterAwsOtaPublish(const char * const topic, const char * message, uint32_t message_len, uint8_t qos);
 
-rmc_err_t rmc_aws_ota_unsubscribe(const char * topic);
+matterAws_err_t MatterAwsOtaUnsubscribe(const char * topic);
 
-rmc_err_t rmc_aws_ota_subscribe(const char * topic, uint8_t qos, callback_t subscribe_cb);
+matterAws_err_t MatterAwsOtaSubscribe(const char * topic, uint8_t qos, callback_t subscribe_cb);
 
-rmc_err_t rmc_aws_ota_process();
+matterAws_err_t MatterAwsOtaProcess();
 
-rmc_err_t rmc_aws_ota_close();
+matterAws_err_t MatterAwsOtaClose();
 #endif // ENABLE_AWS_OTA_FEAT
 
 #ifdef __cplusplus
 }
 #endif
-#endif //__RMC_H
+#endif //__MATTER_AWS_H

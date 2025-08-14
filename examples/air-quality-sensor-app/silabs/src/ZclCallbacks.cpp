@@ -28,9 +28,9 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#ifdef RMC_ENABLE
-#include "RmcControl.h"
-#endif // RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
+#include "MatterAwsControl.h"
+#endif // MATTER_AWS_ENABLE
 
 using namespace ::chip;
 using namespace ::chip::app::Clusters;

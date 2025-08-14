@@ -30,7 +30,7 @@ struct MQTT_Transport_t {
   struct altcp_tls_config *tls_config;
   struct altcp_pcb *conn;
 
-  rmc_connect_cb rmc_conn_cb;
+  matter_aws_connect_cb matter_aws_conn_cb;
   ip_addr_t *ipaddr;
   /** received buffers from tcp */
   struct pbuf *pcbRxStart;
@@ -73,9 +73,9 @@ void dns_callback(const char *name, const ip_addr_t *ipaddr, void *callback_arg)
 
 MQTT_Transport_t *MQTT_Transport_Init(mqtt_transport_intf_t *trans,
                                       mqtt_client_t *mqtt_client,
-                                      EventGroupHandle_t rmcEvents)
+                                      EventGroupHandle_t matterAwsEvents)
 {
-  if (trans == NULL && mqtt_client == NULL && rmcEvents == NULL) {
+  if (trans == NULL && mqtt_client == NULL && matterAwsEvents == NULL) {
     SILABS_LOG("MQTT transport init failed");
     return NULL;
   }
@@ -84,7 +84,7 @@ MQTT_Transport_t *MQTT_Transport_Init(mqtt_transport_intf_t *trans,
     SILABS_LOG("dns_servers[0] = %s\n", ipaddr_ntoa(dns_getserver(0)));
     memset(client, 0, sizeof(MQTT_Transport_t));
     setup_transport_callbacks(client, trans);
-    client->events = rmcEvents;
+    client->events = matterAwsEvents;
   }
   return client;
 }
@@ -108,7 +108,10 @@ err_t MQTT_Transport_SSLConfigure(MQTT_Transport_t *transP,
   return ERR_OK;
 }
 
-err_t MQTT_Transport_Connect(MQTT_Transport_t *transP, const char *host, u16_t port, rmc_connect_cb rmc_conn_cb)
+err_t MQTT_Transport_Connect(MQTT_Transport_t *transP,
+                             const char *host,
+                             u16_t port,
+                             matter_aws_connect_cb matter_aws_conn_cb)
 {
   err_t ret;
   err_t dns_ret;
@@ -128,8 +131,8 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t *transP, const char *host, u16_t p
       return dns_ret;
     }
   }
-  transP->rmc_conn_cb = rmc_conn_cb;
-  ret                 = connection_new(transP, &ipaddr, port);
+  transP->matter_aws_conn_cb = matter_aws_conn_cb;
+  ret                        = connection_new(transP, &ipaddr, port);
   return ret;
 }
 
@@ -234,7 +237,7 @@ static void transport_err_cb(void *arg, err_t err)
   if (client->conn_state)
     xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_CONN_CLOSE);
   client->conn_state = TRANSPORT_NOT_CONNECTED;
-  client->rmc_conn_cb(err);
+  client->matter_aws_conn_cb(err);
 }
 
 static err_t transport_recv_cb(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err)
@@ -340,7 +343,7 @@ static err_t transport_connect_cb(void *arg, struct altcp_pcb *tpcb, err_t err)
     TRANSPORT_DEBUGF(("transport_connect_cb: TCP connect error %d\n", err));
     SILABS_LOG("TCP connect error");
     client->conn_state = TRANSPORT_NOT_CONNECTED;
-    client->rmc_conn_cb(err);
+    client->matter_aws_conn_cb(err);
     return err;
   }
   /* Setup TCP callbacks */
@@ -350,8 +353,8 @@ static err_t transport_connect_cb(void *arg, struct altcp_pcb *tpcb, err_t err)
   TRANSPORT_DEBUGF(("transport_connect_cb: TCP connection established to server\n"));
   SILABS_LOG("tcp_cb: TCP connection established to server\n");
   client->conn_state = TRANSPORT_CONNECTED;
-  if (client->rmc_conn_cb != NULL) {
-    client->rmc_conn_cb(ERR_OK);
+  if (client->matter_aws_conn_cb != NULL) {
+    client->matter_aws_conn_cb(ERR_OK);
   }
   return ERR_OK;
 }

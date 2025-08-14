@@ -8,7 +8,7 @@
 ## How to build AWS OTA feature
 
 -   For Building AWS OTA feature, refer
-    [Addition of RMC AWS OTA component](./../../../docs/silabs/slc/sld253-matter-wifi/build-rmc.md)
+    [Addition of MATTER AWS OTA component](./../../../docs/silabs/slc/sld253-matter-wifi/build-rmc.md)
 
 ## How to execute AWS OTA command through MQTT Explorer
 

@@ -18,44 +18,46 @@
  *
  ******************************************************************************/
 
-#ifndef __RMC_CONFIG_H
-#define __RMC_CONFIG_H
+#ifndef __MATTER_AWS_CONFIG_H
+#define __MATTER_AWS_CONFIG_H
 
 /* Instance configuration */
 
-#ifndef SL_RMC_NVM_EMBED_CERT
-#define SL_RMC_NVM_EMBED_CERT (0)
+#ifndef SL_MATTER_AWS_NVM_EMBED_CERT
+#define SL_MATTER_AWS_NVM_EMBED_CERT (0)
 #endif
 
 /* Task Configuration */
-#define RMC_TASK_NAME "RMC"
-#define RMC_TASK_STACK_SIZE (2 * 1024) // 2k
-#define RMC_TASK_PRIORITY (5)
+#define MATTER_AWS_TASK_NAME "MATTER_AWS"
+#define MATTER_AWS_TASK_STACK_SIZE (2 * 1024) // 2k
+#define MATTER_AWS_TASK_PRIORITY (5)
 
 /* Network Configuration */
-#define RMC_SERVER_HOST ""
-#define RMC_SERVER_PORT (8883)
+#define MATTER_AWS_SERVER_HOST ""
+#define MATTER_AWS_SERVER_PORT (8883)
 
-#define RMC_KEEP_ALIVE (0)
+#define MATTER_AWS_KEEP_ALIVE (0)
 
 /* MQTT Client Configuration */
-#define RMC_CLIENT_ID "sl_rmc_client"
-#define RMC_CLIENT_USER NULL
-#define RMC_CLIENT_PASS NULL
+#define MATTER_AWS_CLIENT_ID "SL_MATTER_AWS_CLIENT"
+#define MATTER_AWS_CLIENT_USER NULL
+#define MATTER_AWS_CLIENT_PASS NULL
 
 #define MQTT_QOS_0 (0)
 #define MQTT_SUBSCRIBE_TOPIC "command"
 
 /* MQTT Client Certification Configuration */
-#define RMC_CA_CERT_LENGTH (1212)
-#define RMC_DEV_CERT_LENGTH (1212)
-#define RMC_DEV_KEY_LENGTH (1212)
-#define RMC_HOSTNAME_LENGTH (55)
-#define RMC_CLIENTID_LENGTH (30)
+#define MATTER_AWS_CA_CERT_LENGTH (800)
+#define MATTER_AWS_DEV_CERT_LENGTH (1400)
+#define MATTER_AWS_DEV_KEY_LENGTH (500)
+#define MATTER_AWS_HOSTNAME_LENGTH (55)
+#define MATTER_AWS_CLIENTID_LENGTH (30)
 
 #ifdef ENABLE_AWS_OTA_FEAT
 #define AWS_OTA_TASK_STACK_SIZE (1024)
 #define AWS_OTA_TASK_PRIORITY (1)
 #endif // ENABLE_AWS_OTA_FEAT
 
-#endif // __RMC_CONFIG_H
+#define ZCL_USING_ON_OFF_CLUSTER_SERVER
+
+#endif // __MATTER_AWS_CONFIG_H

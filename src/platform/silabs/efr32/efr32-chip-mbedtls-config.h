@@ -32,8 +32,8 @@
 #include <crypto/CryptoBuildConfig.h>
 #endif // CHIP_HAVE_CONFIG_H
 
-// RMC Specific Configurations
-#ifdef RMC_ENABLE
+// MATTER_AWS Specific Configurations
+#ifdef MATTER_AWS_ENABLE
 #define MBEDTLS_PKCS1_V15
 #define MBEDTLS_RSA_NO_CRT
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
@@ -65,7 +65,7 @@
 #define MBEDTLS_ECDH_C
 #define MBEDTLS_ENTROPY_C
 
-#endif // RMC_ENABLE
+#endif // MATTER_AWS_ENABLE
 
 // Configurations necessary for ot coap cert libs
 #if SL_USE_COAP_CONFIG

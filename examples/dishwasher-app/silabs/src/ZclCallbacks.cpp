@@ -28,9 +28,9 @@
 #include "DishwasherManager.h"
 #include "ElectricalSensorManager.h"
 
-#ifdef RMC_ENABLE
-#include "Rmc.h"
-#endif // RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
+#include "MatterAws.h"
+#endif // MATTER_AWS_ENABLE
 
 using namespace chip;
 using namespace chip::app::Clusters;

@@ -26,8 +26,8 @@
 #define MBEDTLS_HKDF_C
 #define MBEDTLS_PKCS5_C
 
-// RMC Specific Configurations
-#ifdef RMC_ENABLE
+// MATTER_AWS Specific Configurations
+#ifdef MATTER_AWS_ENABLE
 
 #define MBEDTLS_MPI_MAX_SIZE 512
 
@@ -42,7 +42,20 @@
 #define MBEDTLS_SSL_MAX_CONTENT_LEN 5120
 #define MBEDTLS_SSL_OUT_CONTENT_LEN 1560
 
-#endif // RMC_ENABLE
+#define MBEDTLS_DEBUG_C
+#define MBEDTLS_X509_USE_C
+#define MBEDTLS_X509_CRT_PARSE_C
+#define MBEDTLS_SSL_PROTO_TLS1_2
+#define MBEDTLS_ECP_DP_SECP256R1_ENABLED
+#define MBEDTLS_ECDHE_ECDSA_ENABLED
+#define MBEDTLS_GCM_C
+#define MBEDTLS_AES_C
+#define MBEDTLS_ECDSA_C
+#define MBEDTLS_ECP_C
+#define MBEDTLS_SHA256_C
+#define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+
+#endif // MATTER_AWS_ENABLE
 
 #ifdef SL_MBEDTLS_USE_TINYCRYPT
 #define TINYCRYPT_PRIMITIVES
@@ -50,7 +63,7 @@
 
 #define MBEDTLS_FREERTOS
 
-#if (!(RMC_ENABLE) || !defined(RMC_ENABLE))
+#if (!(MATTER_AWS_ENABLE) || !defined(MATTER_AWS_ENABLE))
 /**< Maximum windows size used. */
 #define MBEDTLS_MPI_WINDOW_SIZE 1
 
@@ -58,7 +71,7 @@
 #define MBEDTLS_MPI_MAX_SIZE 32
 /**< Maxium fragment length in bytes */
 #define MBEDTLS_SSL_MAX_CONTENT_LEN 768
-#endif // !(RMC_ENABLE)
+#endif // !(MATTER_AWS_ENABLE)
 
 #define MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
 #define MBEDTLS_PLATFORM_SNPRINTF_MACRO snprintf

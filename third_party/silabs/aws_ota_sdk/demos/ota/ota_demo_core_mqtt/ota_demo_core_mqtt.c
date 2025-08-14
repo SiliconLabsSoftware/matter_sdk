@@ -33,7 +33,7 @@
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
-#include "Rmc.h"
+#include "MatterAws.h"
 #include "mqtt.h"
 #include "MQTT_transport.h"
 
@@ -661,7 +661,7 @@ static int establishConnection(void)
      * attempts are reached or maximum timeout value is reached. The function
      * returns EXIT_FAILURE if the TCP connection cannot be established to
      * broker after configured number of attempts. */
-  if (rmc_init_status()) {
+  if (MatterAwsInitStatus()) {
     mqttSessionEstablished = true;
     returnStatus           = EXIT_SUCCESS;
     SILABS_LOG("DIC Init is completed");
@@ -724,7 +724,7 @@ static OtaMqttStatus_t mqttSubscribe(const char *pTopicFilter, uint16_t topicFil
   (void)qos;
 
   if (xSemaphoreTake(sem_mutex, portMAX_DELAY) == pdTRUE) {
-    mqttStatus = rmc_aws_ota_subscribe(pTopicFilter, qos, mqttEventCallback);
+    mqttStatus = MatterAwsOtaSubscribe(pTopicFilter, qos, mqttEventCallback);
 
     xSemaphoreGive(sem_mutex);
   } else {
@@ -757,7 +757,7 @@ static OtaMqttStatus_t mqttPublish(const char *const pacTopic,
   int mqttStatus;
 
   if (xSemaphoreTake(sem_mutex, portMAX_DELAY) == pdTRUE) {
-    mqttStatus = rmc_aws_ota_publish(pacTopic, pMsg, msgSize, qos);
+    mqttStatus = MatterAwsOtaPublish(pacTopic, pMsg, msgSize, qos);
     if (mqttStatus != 0) {
       otaRet = OtaMqttPublishFailed;
     }
@@ -805,7 +805,7 @@ static OtaMqttStatus_t mqttUnsubscribe(const char *pTopicFilter, uint16_t topicF
   (void)qos;
 
   if (xSemaphoreTake(sem_mutex, portMAX_DELAY) == pdTRUE) {
-    mqttStatus = rmc_aws_ota_unsubscribe(pTopicFilter);
+    mqttStatus = MatterAwsOtaUnsubscribe(pTopicFilter);
     xSemaphoreGive(sem_mutex);
   } else {
     SILABS_LOG("Failed to acquire mutex for executing MQTT_Unsubscribe"
@@ -1056,7 +1056,7 @@ int aws_ota_init(void *parameters)
   }
 
   /* Disconnect from broker and close connection. */
-  rmc_aws_ota_close();
+  MatterAwsOtaClose();
 
   if (bufferSemInitialized == true) {
     /* Cleanup semaphore created for buffer operations. */

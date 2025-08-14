@@ -80,10 +80,10 @@
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
-#ifdef RMC_ENABLE
-#include "Rmc.h"
-#include "RmcControl.h"
-#endif // RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
+#include "MatterAws.h"
+#include "MatterAwsControl.h"
+#endif // MATTER_AWS_ENABLE
 
 #ifdef PERFORMANCE_TEST_ENABLED
 #include <performance_test_commands.h>
@@ -969,15 +969,15 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
-#ifdef RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
         if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
         {
-            if (RMC_OK != rmc_init(rmc::control::subscribeCB))
+            if (MATTER_AWS_OK != MatterAwsInit(matterAws::control::subscribeCB))
             {
                 ChipLogError(AppServer, "dic_init failed");
             }
         }
-#endif // RMC_ENABLE
+#endif // MATTER_AWS_ENABLE
 #ifdef DISPLAY_ENABLED
         SilabsLCD::Screen_e screen;
         AppTask::GetLCD().GetScreen(screen);

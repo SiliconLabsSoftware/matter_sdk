@@ -684,12 +684,13 @@ static int dummy_rng(void *ctx, unsigned char *buffer, size_t len)
 #define ALTCP_MBEDTLS_RNG_FN dummy_rng
 #endif /* ALTCP_MBEDTLS_RNG_FN */
 
-static int ciphers[] = {
-  MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-  MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-  MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,    MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-  MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,   0
-};
+static int ciphers[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                         MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                         MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                         MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+                         MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+                         MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                         0 };
 
 /** Create new TLS configuration
  * ATTENTION: Server certificate and private key have to be added outside this function!
@@ -770,7 +771,7 @@ static struct altcp_tls_config *altcp_tls_create_config(int is_server, int have_
   mbedtls_ssl_conf_rng(&conf->conf, mbedtls_ctr_drbg_random, &conf->ctr_drbg);
 #if ALTCP_MBEDTLS_DEBUG
   mbedtls_ssl_conf_dbg(&conf->conf, altcp_mbedtls_debug, stdout);
-  mbedtls_debug_set_threshold(1);
+  mbedtls_debug_set_threshold(ALTCP_MBEDTLS_DEBUG);
 #endif
 #if defined(MBEDTLS_SSL_CACHE_C) && ALTCP_MBEDTLS_SESSION_CACHE_TIMEOUT_SECONDS
   mbedtls_ssl_conf_session_cache(&conf->conf, &conf->cache, mbedtls_ssl_cache_get, mbedtls_ssl_cache_set);

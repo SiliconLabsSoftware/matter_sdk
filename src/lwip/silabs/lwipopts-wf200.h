@@ -70,7 +70,7 @@
 
 #define LWIP_SOCKET 0
 
-#ifdef RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
 #define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())
 #define MEM_SIZE 5632
@@ -82,7 +82,7 @@
 #define MEMP_NUM_UDP_PCB (5)
 #define TCP_MSS (1152)
 #define TCPIP_THREAD_PRIO osPriorityAboveNormal
-#endif // RMC_ENABLE
+#endif // MATTER_AWS_ENABLE
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1
 

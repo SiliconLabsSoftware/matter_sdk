@@ -32,9 +32,9 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#ifdef RMC_ENABLE
-#include "Rmc.h"
-#endif // RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
+#include "MatterAws.h"
+#endif // MATTER_AWS_ENABLE
 
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
@@ -48,10 +48,10 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
 
     if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
     {
-#ifdef RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
         ChipLogProgress(Zcl, "sending light state update");
-        rmc_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
-#endif // RMC_ENABLE
+        MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
+#endif // MATTER_AWS_ENABLE
         LightMgr().InitiateAction(AppEvent::kEventType_Light, *value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION,
                                   value);
     }

@@ -18,12 +18,12 @@
 
 #pragma once
 
-// RMC Specific Configurations
-#ifdef RMC_ENABLE
+// MATTER_AWS Specific Configurations
+#ifdef MATTER_AWS_ENABLE
 #define PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY
 #define PSA_WANT_ALG_CBC_NO_PADDING
 #define PSA_WANT_ALG_RSA_PKCS1V15_SIGN
-#endif // RMC_ENABLE
+#endif // MATTER_AWS_ENABLE
 
 // Configurations necessary for ot coap cert libs
 #if SL_USE_COAP_CONFIG

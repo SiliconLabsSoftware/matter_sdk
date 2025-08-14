@@ -35,7 +35,7 @@
 #define SIGNAL_TRANSINTF_TX_ACK     0x02
 #define SIGNAL_TRANSINTF_CONN_CLOSE 0x04
 
-typedef void (*rmc_connect_cb)(err_t);
+typedef void (*matter_aws_connect_cb)(err_t);
 typedef struct MQTT_Transport_t MQTT_Transport_t;
 void transport_process_mbedtls_rx(MQTT_Transport_t *client);
 MQTT_Transport_t *MQTT_Transport_Init(mqtt_transport_intf_t *trans,
@@ -50,6 +50,6 @@ err_t MQTT_Transport_SSLConfigure(MQTT_Transport_t *transP,
                                   size_t privkey_pass_len,
                                   const u8_t *cert,
                                   size_t cert_len);
-err_t MQTT_Transport_Connect(MQTT_Transport_t *client, const char *host, u16_t port, rmc_connect_cb rmc_con_cb);
+err_t MQTT_Transport_Connect(MQTT_Transport_t *client, const char *host, u16_t port, matter_aws_connect_cb matterAws_con_cb);
 
 #endif //MQTT_TRANSPORT_H

@@ -54,11 +54,11 @@ using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 #define APP_ACTION_LED 1
 
-#ifdef RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
 #define DECIMAL 10
 #define MSG_SIZE 6
-#include "Rmc.h"
-#endif // RMC_ENABLE
+#include "MatterAws.h"
+#endif // MATTER_AWS_ENABLE
 
 using namespace ::chip::Credentials;
 using namespace ::chip::DeviceLayer;
@@ -479,22 +479,22 @@ void WindowManager::Cover::PositionSet(chip::EndpointId endpointId, chip::Percen
     if (action == ControlAction::Tilt)
     {
         TiltPositionSet(endpointId, nullablePosition);
-#ifdef RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
         uint16_t value = position;
         char buffer[MSG_SIZE];
         itoa(value, buffer, DECIMAL);
-        rmc_sendmsg("tilt/position set", (const char *) (buffer));
-#endif // RMC_ENABLE
+        MatterAwsSendMsg("tilt/position set", (const char *) (buffer));
+#endif // MATTER_AWS_ENABLE
     }
     else
     {
         LiftPositionSet(endpointId, nullablePosition);
-#ifdef RMC_ENABLE
+#ifdef MATTER_AWS_ENABLE
         uint16_t value = position;
         char buffer[MSG_SIZE];
         itoa(value, buffer, DECIMAL);
-        rmc_sendmsg("lift/position set", (const char *) (buffer));
-#endif // RMC_ENABLE
+        MatterAwsSendMsg("lift/position set", (const char *) (buffer));
+#endif // MATTER_AWS_ENABLE
     }
 }
 
