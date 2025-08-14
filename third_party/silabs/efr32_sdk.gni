@@ -66,9 +66,6 @@ declare_args() {
   sl_icd_supported_clients_per_fabric = 2  # 2 registration slots per fabric
   sl_use_subscription_syncing = false
 
-  # TODO: Remove this workaround for the multiple subscription issue with the SiWx917
-  sl_icd_enable_selective_sleep = true  # Enable Selective Sleep
-
   silabs_log_enabled = true
 
   # Enable Synchronized Sleepy End Device

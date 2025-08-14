@@ -28,6 +28,9 @@ examples_plat_dir = "${chip_root}/examples/platform/silabs/SiWx917"
 declare_args() {
   # option to select the crypto library
   sl_si91x_crypto_flavor = "tinycrypt"
+  
+  # TODO: Remove this workaround for the multiple subscription issue with the SiWx917
+  sl_icd_enable_selective_sleep = true  # Enable Selective Sleep
 }
 
 # Defines an siwx917 SDK build target.
