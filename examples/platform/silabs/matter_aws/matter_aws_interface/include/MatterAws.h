@@ -49,8 +49,8 @@ typedef void (*matterAws_subscribe_cb)(void);
 
 matterAws_err_t MatterAwsInit(matterAws_subscribe_cb subs_cb);
 
-matterAws_err_t MatterAwsMqttSubscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb, mqtt_incoming_data_cb_t data_cb,
-                             const char * topic, uint8_t qos);
+matterAws_err_t MatterAwsMqttSubscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb,
+                                       mqtt_incoming_data_cb_t data_cb, const char * topic, uint8_t qos);
 
 matterAws_err_t MatterAwsSendMsg(const char * subject, const char * content);
 

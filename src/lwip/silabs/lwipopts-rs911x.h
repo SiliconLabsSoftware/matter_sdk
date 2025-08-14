@@ -70,8 +70,6 @@
 
 #define LWIP_SOCKET 0
 
-
-
 #ifdef SL_MATTER_ENABLE_AWS
 #define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())

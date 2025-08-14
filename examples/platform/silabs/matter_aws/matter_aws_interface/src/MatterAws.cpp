@@ -102,7 +102,7 @@ void MatterAwsTcpConnectCb(err_t err)
         memset(&connect_info, 0, sizeof(connect_info));
 
         char clientID[MATTER_AWS_CLIENTID_LENGTH] = { 0 };
-        size_t length                      = 0;
+        size_t length                             = 0;
 
         VerifyOrExit(MatterAwsGetClientId(clientID, MATTER_AWS_CLIENTID_LENGTH, &length) == CHIP_NO_ERROR,
                      ChipLogError(AppServer, "[MATTER_AWS] failed to fetch client ID"));
@@ -138,16 +138,16 @@ static void MatterAwsTaskFn(void * args)
 {
     /* get MQTT client handle */
     err_t ret;
-    gSubsCB                              = reinterpret_cast<void (*)()>(args);
-    mqtt_client                          = mqtt_client_new();
+    gSubsCB                                     = reinterpret_cast<void (*)()>(args);
+    mqtt_client                                 = mqtt_client_new();
     char ca_cert_buf[MATTER_AWS_CA_CERT_LENGTH] = { 0 };
     char cert_buf[MATTER_AWS_DEV_CERT_LENGTH]   = { 0 };
     char key_buf[MATTER_AWS_DEV_KEY_LENGTH]     = { 0 };
     char hostname[MATTER_AWS_HOSTNAME_LENGTH]   = { 0 };
-    size_t ca_cert_length                = 0;
-    size_t cert_length                   = 0;
-    size_t key_length                    = 0;
-    size_t hostname_length               = 0;
+    size_t ca_cert_length                       = 0;
+    size_t cert_length                          = 0;
+    size_t key_length                           = 0;
+    size_t hostname_length                      = 0;
 
     VerifyOrExit(mqtt_client != NULL, ChipLogError(AppServer, "[MATTER_AWS] failed to create mqtt client"));
 
@@ -180,9 +180,10 @@ static void MatterAwsTaskFn(void * args)
     while (!end_loop)
     {
         EventBits_t event;
-        event = xEventGroupWaitBits(
-            matterAwsEvents, SIGNAL_TRANSINTF_RX | SIGNAL_TRANSINTF_TX_ACK | SIGNAL_TRANSINTF_CONN_CLOSE | SIGNAL_TRANSINTF_MBEDTLS_RX, 1,
-            0, portMAX_DELAY);
+        event = xEventGroupWaitBits(matterAwsEvents,
+                                    SIGNAL_TRANSINTF_RX | SIGNAL_TRANSINTF_TX_ACK | SIGNAL_TRANSINTF_CONN_CLOSE |
+                                        SIGNAL_TRANSINTF_MBEDTLS_RX,
+                                    1, 0, portMAX_DELAY);
         if (event & SIGNAL_TRANSINTF_CONN_CLOSE)
         {
             mqtt_close(mqtt_client, MQTT_CONNECT_DISCONNECTED);
@@ -225,7 +226,9 @@ matterAws_err_t MatterAwsInit(matterAws_subscribe_cb subs_cb)
         return MATTER_AWS_ERR_FAIL;
     }
 
-    if ((pdPASS != xTaskCreate(MatterAwsTaskFn, MATTER_AWS_TASK_NAME, MATTER_AWS_TASK_STACK_SIZE, (void *) subs_cb, MATTER_AWS_TASK_PRIORITY, &matterAwsTask)) ||
+    if ((pdPASS !=
+         xTaskCreate(MatterAwsTaskFn, MATTER_AWS_TASK_NAME, MATTER_AWS_TASK_STACK_SIZE, (void *) subs_cb, MATTER_AWS_TASK_PRIORITY,
+                     &matterAwsTask)) ||
         !matterAwsTask)
     {
         ChipLogError(AppServer, "[MATTER_AWS] failed to create task");
@@ -252,7 +255,8 @@ matterAws_err_t MatterAwsSendMsg(const char * subject, const char * content)
     matterAws_buff_t buffValue;
     buffValue.dataP   = (uint8_t *) content;
     buffValue.dataLen = strlen(content);
-    if (MQTT_ERR_OK != mqtt_publish(mqtt_client, subject, buffValue.dataP, buffValue.dataLen, MQTT_QOS_0, 0, MatterAwsPubRespCb, NULL))
+    if (MQTT_ERR_OK !=
+        mqtt_publish(mqtt_client, subject, buffValue.dataP, buffValue.dataLen, MQTT_QOS_0, 0, MatterAwsPubRespCb, NULL))
     {
         ChipLogError(AppServer, "[MATTER_AWS] failed to publish");
         return MATTER_AWS_ERR_PUBLISH;
@@ -275,7 +279,7 @@ int MatterAwsInitStatus()
 }
 
 static void MatterAwsOtaMqttIncomingDataCb(void * arg, const char * topic, u16_t topic_len, const u8_t * data, u16_t len,
-                                              u8_t flags)
+                                           u8_t flags)
 {
     const struct mqtt_connect_client_info_t * client_info = (const struct mqtt_connect_client_info_t *) arg;
     (void) client_info;
