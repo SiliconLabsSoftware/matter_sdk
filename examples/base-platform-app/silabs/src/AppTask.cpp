@@ -22,6 +22,18 @@
 #include "AppEvent.h"
 
 #include "LEDWidget.h"
+
+#ifdef DISPLAY_ENABLED
+#include "lcd.h"
+#ifdef QR_CODE_ENABLED
+#include "qrcodegen.h"
+#endif // QR_CODE_ENABLED
+#endif // DISPLAY_ENABLED
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <app/icd/server/ICDNotifier.h>
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
+
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
@@ -31,6 +43,12 @@
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
+
+#ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
+#define LIGHT_LED 1
+#else
+#define LIGHT_LED 0
+#endif
 
 #define APP_FUNCTION_BUTTON 0
 #define APP_USER_ACTION 1
@@ -42,12 +60,21 @@ using namespace ::chip::DeviceLayer::Silabs;
 using namespace chip::TLV;
 using namespace ::chip::DeviceLayer;
 
+namespace {
+LEDWidget sLightLED;
+} // namespace
+
 AppTask AppTask::sAppTask;
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
+    sLightLED.Init(LIGHT_LED);
+    sLightLED.Set(false);
+
+#ifdef DISPLAY_ENABLED
+    GetLCD().WriteDemoUI(true);
 #ifdef QR_CODE_ENABLED
 #ifdef SL_WIFI
     if (!ConnectivityMgr().IsWiFiStationProvisioned())
@@ -58,6 +85,7 @@ CHIP_ERROR AppTask::AppInit()
         GetLCD().ShowQRCode(true);
     }
 #endif // QR_CODE_ENABLED
+#endif // DISPLAY_ENABLED
 
     return err;
 }
@@ -73,13 +101,16 @@ void AppTask::AppTaskMain(void * pvParameter)
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
     CHIP_ERROR err = sAppTask.Init();
+
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("AppTask.Init() failed");
         appError(err);
     }
 
-#if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
+#if (defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
+    chip::Server::GetInstance().GetICDManager().RegisterObserver(&sAppTask);
+#else
     sAppTask.StartStatusLEDTimer();
 #endif
 
@@ -101,25 +132,7 @@ void AppTask::ApplicationEventHandler(AppEvent * aEvent)
     VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Button);
     VerifyOrReturn(aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed));
 
-    // Simple Application logic that toggles the BoleanState StateValue attribute.
-    // DO NOT COPY for product logic. This is only meant to showcase the Platform app support for the LIT ICD feature in test.
-    PlatformMgr().ScheduleWork([](intptr_t) {
-        bool state = true;
-
-        Protocols::InteractionModel::Status status = chip::app::Clusters::BooleanState::Attributes::StateValue::Get(1, &state);
-        if (status != Protocols::InteractionModel::Status::Success)
-        {
-            // Failed to read StateValue. Default to true (open state)
-            state = true;
-            ChipLogError(NotSpecified, "ERR: reading boolean status value %x", to_underlying(status));
-        }
-
-        status = chip::app::Clusters::BooleanState::Attributes::StateValue::Set(1, !state);
-        if (status != Protocols::InteractionModel::Status::Success)
-        {
-            ChipLogError(NotSpecified, "ERR: updating boolean status value %x", to_underlying(status));
-        }
-    });
+    sLightLED.GetLEDStatus(LIGHT_LED) ? sLightLED.Set(false) : sLightLED.Set(true);
 }
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
@@ -140,6 +153,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     }
 }
 
+#if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
 // DO NOT COPY for product logic. This is only a showcase of the Platform app support for the LIT ICD feature in test.
 void AppTask::OnEnterActiveMode()
 {
@@ -155,3 +169,21 @@ void AppTask::OnEnterIdleMode()
     sAppTask.GetLCD().WriteDemoUI(false);
 #endif
 }
+
+void AppTask::OnTransitionToIdle()
+{
+    ChipLogDetail(DeviceLayer, "AppTask transitioning to idle");
+}
+
+void AppTask::OnICDModeChange()
+{
+    if (ICDConfigurationData::GetInstance().GetICDMode() == ICDConfigurationData::ICDMode::SIT)
+    {
+        ChipLogDetail(DeviceLayer, "Entering SIT Mode");
+    }
+    else
+    {
+        ChipLogDetail(DeviceLayer, "Entering LIT Mode");
+    }
+}
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER

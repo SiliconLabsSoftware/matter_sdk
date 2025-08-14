@@ -23,4 +23,4 @@ chip_enable_read_client = false
 
 chip_enable_ota_requestor = true
 app_data_model =
-    "${chip_root}/examples/base-platform-app/data_model:silabs-platform"
+    "${chip_root}/examples/base-platform-app/silabs/data_model:silabs-platform"

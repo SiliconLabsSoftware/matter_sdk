@@ -20,5 +20,15 @@
             "boards": ["BRD4187C"],
             "arguments": ["--docker", "--release"]
         }
+    ],
+    "base-platform-app":
+    [
+        {
+            "boards": ["BRD4187C"],
+            "arguments": [
+                "--docker",
+                "--icd"
+            ]
+        }
     ]
 }

@@ -17,6 +17,11 @@ import("${chip_root}/src/app/chip_data_model.gni")
 import("${chip_root}/src/platform/device.gni")
 
 chip_data_model("silabs-platform") {
-  zap_file = "platform-thread-app.zap"
+  if (chip_enable_icd_server) {
+    zap_file = "platform-thread-icd-app.zap"
+  } else {
+    zap_file = "platform-thread-app.zap"
+  }
+
   is_server = true
 }

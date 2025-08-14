@@ -32,6 +32,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <app/icd/server/ICDStateObserver.h>
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
+
 /**********************************************************
  * Defines
  *********************************************************/
@@ -49,6 +53,10 @@
  *********************************************************/
 
 class AppTask : public BaseApplication
+#if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
+    ,
+                public chip::app::ICDStateObserver
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
 {
 
 public:
@@ -75,6 +83,7 @@ public:
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
+#if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
     /**
      * @brief When the ICD enters ActiveMode, update LCD to reflect the ICD current state.
      *        Set LCD to ActiveMode UI.
@@ -87,6 +96,16 @@ public:
      */
     void OnEnterIdleMode();
 
+    /**
+     * @brief AppTask logs the transition to iddle happening.
+     */
+    void OnTransitionToIdle();
+
+    /**
+     * @brief AppTask logs the ICD mode on mode change.
+     */
+    void OnICDModeChange();
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
 private:
     static AppTask sAppTask;
 
@@ -96,15 +115,6 @@ private:
      * @return CHIP_ERROR
      */
     CHIP_ERROR AppInit() override;
-
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
-     *
-     * @param aEvent button event being processed
-     */
-    static void ButtonHandler(AppEvent * aEvent);
 
     /**
      * @brief PB1 Button event processing function

@@ -19,7 +19,7 @@ import("${chip_root}/src/platform/silabs/efr32/args.gni")
 silabs_sdk_target = get_label_info(":sdk", "label_no_toolchain")
 
 app_data_model =
-    "${chip_root}/examples/base-platform-app/data_model:silabs-platform"
+    "${chip_root}/examples/base-platform-app/silabs/data_model:silabs-platform"
 chip_enable_ota_requestor = true
 chip_enable_openthread = true
 chip_enable_read_client = false
@@ -27,19 +27,22 @@ chip_enable_read_client = false
 openthread_external_platform =
     "${chip_root}/third_party/openthread/platforms/efr32:libopenthread-efr32"
 
-# ICD Default configurations
-chip_enable_icd_server = true
-chip_subscription_timeout_resumption = false
-sl_use_subscription_syncing = true
-chip_icd_report_on_active_mode = true
-chip_enable_icd_lit = true
-chip_enable_icd_dsls = true
+# ICD Default: false, build with --icd to enable ICD features
+chip_enable_icd_server = false
 
-# Openthread Configuration flags
-sl_transport_idle_interval_ms = 3600000  # 60mins Idle Polling Interval
-sl_transport_active_interval_ms = 1000  # 1000ms Active Polling Interval
+if (chip_enable_icd_server) {
+  chip_subscription_timeout_resumption = false
+  sl_use_subscription_syncing = true
+  chip_icd_report_on_active_mode = true
+  chip_enable_icd_lit = true
+  chip_enable_icd_dsls = true
 
-# ICD Matter Configuration flags
-sl_idle_mode_duration_s = 3600  # 60min Idle Mode Duration
-sl_active_mode_duration_ms = 0  # 0 Active Mode Duration
-sl_active_mode_threshold_ms = 5000  # 5s Active Mode Threshold
+  # Openthread Configuration flags
+  sl_transport_idle_interval_ms = 3600000  # 60mins Idle Polling Interval
+  sl_transport_active_interval_ms = 1000  # 1000ms Active Polling Interval
+
+  # ICD Matter Configuration flags
+  sl_idle_mode_duration_s = 3600  # 60min Idle Mode Duration
+  sl_active_mode_duration_ms = 0  # 0 Active Mode Duration
+  sl_active_mode_threshold_ms = 5000  # 5s Active Mode Threshold
+}
