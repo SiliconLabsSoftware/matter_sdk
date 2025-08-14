@@ -116,12 +116,13 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     {
         return ConfigureDeepSleep();
     }
-#if SL_MATTER_ICD_ENABLE_SELECTIVE_SLEEP
+    // TODO: Remove this workaround for the multiple subscription issue with the SiWx917
+#if SL_ICD_ENABLE_SELECTIVE_SLEEP
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
         return ConfigureLIBasedSleep();
     }
-#endif // SL_MATTER_ICD_ENABLE_SELECTIVE_SLEEP
+#endif // SL_ICD_ENABLE_SELECTIVE_SLEEP
     return ConfigureDTIMBasedSleep();
 }
 
