@@ -329,8 +329,9 @@ template("siwx917_sdk") {
         # Enable Wakeup source for ICD
         "SL_ENABLE_GPIO_WAKEUP_SOURCE=1",
         "ENABLE_NPSS_GPIO_2=1",
+
         # TODO: Remove this workaround for the multiple subscription issue with the SiWx917
-        "SL_ICD_ENABLE_SELECTIVE_SLEEP=${sl_icd_enable_selective_sleep}"
+        "SL_ICD_ENABLE_SELECTIVE_SLEEP=${sl_icd_enable_selective_sleep}",
       ]
     }
 
