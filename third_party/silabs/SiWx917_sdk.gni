@@ -280,12 +280,6 @@ template("siwx917_sdk") {
       defines += [ "SILABS_LOG_OUT_UART=0" ]
     }
 
-    if (sl_uart_log_output) {
-      defines += [ "SILABS_LOG_OUT_UART=1" ]
-    } else {
-      defines += [ "SILABS_LOG_OUT_UART=0" ]
-    }
-
     if (chip_enable_wifi_ipv4) {
       defines += [ "CHIP_DEVICE_CONFIG_ENABLE_IPV4=1" ]
     }
