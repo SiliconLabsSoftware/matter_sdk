@@ -76,7 +76,7 @@
 #define MEM_SIZE 5632
 #define MEMP_NUM_UDP_PCB (6)
 #define TCP_MSS (4 * 1152)
-#define TCPIP_THREAD_PRIO osPriorityAboveHigh
+#define TCPIP_THREAD_PRIO osPriorityHigh7
 #else
 #define LWIP_DNS 0
 #define MEMP_NUM_UDP_PCB (5)
