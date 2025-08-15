@@ -55,9 +55,9 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     else if (clusterId == Thermostat::Id)
     {
         TempMgr().AttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
-#ifdef DIC_ENABLE
-        dic::control::AttributeHandler(attributePath.mEndpointId, attributeId);
-#endif // DIC_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
+        matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
+#endif // SL_MATTER_ENABLE_AWS
     }
 
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT

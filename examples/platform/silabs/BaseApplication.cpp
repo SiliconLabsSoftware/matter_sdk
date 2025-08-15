@@ -81,10 +81,10 @@
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
-#ifdef DIC_ENABLE
-#include "dic.h"
-#include "dic_control.h"
-#endif // DIC_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
+#include "MatterAws.h"
+#include "MatterAwsControl.h"
+#endif // SL_MATTER_ENABLE_AWS
 
 #ifdef PERFORMANCE_TEST_ENABLED
 #include <performance_test_commands.h>
@@ -995,15 +995,15 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
-#ifdef DIC_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
         if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
         {
-            if (DIC_OK != dic_init(dic::control::subscribeCB))
+            if (MATTER_AWS_OK != MatterAwsInit(matterAws::control::subscribeCB))
             {
                 ChipLogError(AppServer, "dic_init failed");
             }
         }
-#endif // DIC_ENABLE
+#endif // SL_MATTER_ENABLE_AWS
 #ifdef DISPLAY_ENABLED
         SilabsLCD::Screen_e screen;
         AppTask::GetLCD().GetScreen(screen);
