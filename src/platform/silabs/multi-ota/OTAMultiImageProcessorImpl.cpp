@@ -430,7 +430,8 @@ void OTAMultiImageProcessorImpl::HandleApply(intptr_t context)
 #if (defined(_SILICON_LABS_32B_SERIES_3) || defined(SLI_SI91X_MCU_INTERFACE)) && CHIP_PROGRESS_LOGGING
     osDelay(500); // sl-temp: delay for uart print before reboot
 #endif
-    // This reboots the device
+    // Write that we are rebooting after a software update and reboot the device
+    SilabsConfig::WriteConfigValue(SilabsConfig::kConfigKey_MatterUpdateReboot, true);
 #ifdef SLI_SI91X_MCU_INTERFACE // 917 SoC reboot
     chip::DeviceLayer::Silabs::GetPlatform().SoftwareReset();
 #else // EFR reboot
