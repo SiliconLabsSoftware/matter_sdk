@@ -35,8 +35,7 @@ class TestGlobMatcher(unittest.TestCase):
             TargetPart('bar', bar=2),
         ])
 
-        # targets get sorted alphabetically for better readability
-        self.assertEqual(t.HumanString(), "fake-{bar,foo}")
+        self.assertEqual(t.HumanString(), "fake-{foo,bar}")
 
         self.assertIsNotNone(t.StringIntoTargetParts('fake-foo'))
         self.assertIsNotNone(t.StringIntoTargetParts('fake-bar'))
@@ -61,7 +60,7 @@ class TestGlobMatcher(unittest.TestCase):
 
         self.assertEqual(
             t.HumanString(),
-            "fake-{bar,foo}-{1,2,3}-{1,2,3}"
+            "fake-{foo,bar}-{1,2,3}-{1,2,3}"
         )
 
         self.assertIsNotNone(t.StringIntoTargetParts('fake-foo-1-2'))
@@ -93,7 +92,7 @@ class TestGlobMatcher(unittest.TestCase):
 
         self.assertEqual(
             t.HumanString(),
-            "fake-{bar,foo}-{one,two}[-m1][-m2][-x1][-y1]"
+            "fake-{foo,bar}-{one,two}[-m1][-m2][-x1][-y1]"
         )
 
         self.assertEqual(

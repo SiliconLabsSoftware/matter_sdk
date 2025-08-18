@@ -36,10 +36,6 @@
 #include <lib/dnssd/minimal_mdns/responders/Txt.h>
 #include <lib/support/CHIPMem.h>
 
-#if CHIP_DEVICE_LAYER_TARGET_DARWIN
-#include <dns_sd.h>
-#endif
-
 using chip::Dnssd::DnssdService;
 using chip::Dnssd::DnssdServiceProtocol;
 using chip::Dnssd::TextEntry;
@@ -82,8 +78,8 @@ class TestDnssd : public ::testing::Test
 public: // protected
     static void SetUpTestSuite()
     {
-        ASSERT_EQ(chip::Platform::MemoryInit(), CHIP_NO_ERROR);
-        ASSERT_EQ(chip::DeviceLayer::PlatformMgr().InitChipStack(), CHIP_NO_ERROR);
+        EXPECT_EQ(chip::Platform::MemoryInit(), CHIP_NO_ERROR);
+        EXPECT_EQ(chip::DeviceLayer::PlatformMgr().InitChipStack(), CHIP_NO_ERROR);
     }
     static void TearDownTestSuite()
     {
@@ -114,7 +110,7 @@ static void HandleResolve(void * context, DnssdService * result, const chip::Spa
     auto * ctx = static_cast<TestDnssd *>(context);
     char addrBuf[100];
 
-    ASSERT_NE(result, nullptr);
+    EXPECT_NE(result, nullptr);
     EXPECT_EQ(error, CHIP_NO_ERROR);
 
     if (!addresses.empty())
@@ -124,8 +120,6 @@ static void HandleResolve(void * context, DnssdService * result, const chip::Spa
     }
 
     EXPECT_EQ(result->mTextEntrySize, 1u);
-    // must have at least 1 entry to check next key/val expectations.
-    ASSERT_GE(result->mTextEntrySize, 1u);
     EXPECT_STREQ(result->mTextEntries[0].mKey, "key");
     EXPECT_STREQ(reinterpret_cast<const char *>(result->mTextEntries[0].mData), "val");
 
@@ -185,7 +179,6 @@ void TestDnssdBrowse_DnssdInitCallback(void * context, CHIP_ERROR error)
               CHIP_NO_ERROR);
 }
 
-#if !CHIP_SYSTEM_CONFIG_USE_NETWORK_FRAMEWORK
 // Verify that platform DNS-SD implementation can browse and resolve services.
 //
 // This test case uses platform-independent mDNS server implementation based on
@@ -193,10 +186,6 @@ void TestDnssdBrowse_DnssdInitCallback(void * context, CHIP_ERROR error)
 // A and AAAA queries without additional records. In order to pass this test,
 // the platform DNS-SD client implementation must be able to browse and resolve
 // services by querying for all of these records separately.
-//
-// However, when using Network.framework (on Darwin), we can't bind to port 5353
-// because SO_REUSEPORT is not supported. As a result, the minimal server cannot run,
-// even if it is compiled.
 TEST_F(TestDnssd, TestDnssdBrowse)
 {
     mdns::Minimal::SetDefaultAddressPolicy();
@@ -254,7 +243,6 @@ TEST_F(TestDnssd, TestDnssdBrowse)
 
     chip::Dnssd::ChipDnssdShutdown();
 }
-#endif // !CHIP_SYSTEM_CONFIG_USE_NETWORK_FRAMEWORK
 
 static void HandlePublish(void * context, const char * type, const char * instanceName, CHIP_ERROR error)
 {
@@ -269,13 +257,7 @@ static void TestDnssdPublishService_DnssdInitCallback(void * context, CHIP_ERROR
     DnssdService service{};
     TextEntry entry{ "key", reinterpret_cast<const uint8_t *>("val"), 3 };
 
-#if CHIP_DEVICE_LAYER_TARGET_DARWIN
-    constexpr chip::Inet::InterfaceId kInterfaceId = chip::Inet::InterfaceId(kDNSServiceInterfaceIndexLocalOnly);
-#else
-    constexpr chip::Inet::InterfaceId kInterfaceId = chip::Inet::InterfaceId::Null();
-#endif
-
-    service.mInterface = kInterfaceId;
+    service.mInterface = chip::Inet::InterfaceId::Null();
     service.mPort      = 80;
     strcpy(service.mHostName, "MatterTest");
     strcpy(service.mName, "test");
@@ -289,8 +271,8 @@ static void TestDnssdPublishService_DnssdInitCallback(void * context, CHIP_ERROR
 
     EXPECT_EQ(ChipDnssdPublishService(&service, HandlePublish, nullptr), CHIP_NO_ERROR);
 
-    EXPECT_EQ(ChipDnssdBrowse("_mock", DnssdServiceProtocol::kDnssdProtocolTcp, chip::Inet::IPAddressType::kAny, kInterfaceId,
-                              HandleBrowse, context, &ctx->mBrowseIdentifier),
+    EXPECT_EQ(ChipDnssdBrowse("_mock", DnssdServiceProtocol::kDnssdProtocolTcp, chip::Inet::IPAddressType::kAny,
+                              chip::Inet::InterfaceId::Null(), HandleBrowse, context, &ctx->mBrowseIdentifier),
               CHIP_NO_ERROR);
 }
 

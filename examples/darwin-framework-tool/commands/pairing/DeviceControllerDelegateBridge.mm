@@ -75,9 +75,4 @@
     _commandBridge->SetCommandExitStatus(error, [message UTF8String]);
 }
 
-- (void)controller:(MTRDeviceController *)controller commissioneeHasReceivedNetworkCredentials:(NSNumber *)nodeID
-{
-    NSLog(@"Node %@ has received network credentials", nodeID);
-}
-
 @end

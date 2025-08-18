@@ -19,6 +19,7 @@
 #include <pw_unit_test/unit_test_service.h>
 
 #include <AppConfig.h>
+#include <FreeRTOS.h>
 #include <PigweedLogger.h>
 #include <PigweedLoggerMutex.h>
 #include <cmsis_os2.h>
@@ -73,17 +74,13 @@ public:
 } // namespace chip::rpc
 
 namespace {
-osThreadId_t sTestTaskHandle;
-osThread_t testTaskControlBlock;
-constexpr uint32_t kTestTaskStackSize = 16 * 1024;
-uint8_t testTaskStack[kTestTaskStackSize];
-constexpr osThreadAttr_t kTestTaskAttr = { .name       = "TestDriver",
-                                           .attr_bits  = osThreadDetached,
-                                           .cb_mem     = &testTaskControlBlock,
-                                           .cb_size    = osThreadCbSize,
-                                           .stack_mem  = testTaskStack,
-                                           .stack_size = kTestTaskStackSize,
-                                           .priority   = osPriorityNormal };
+
+#define TEST_TASK_STACK_SIZE 16 * 1024
+#define TEST_TASK_PRIORITY 1
+
+static TaskHandle_t sTestTaskHandle;
+StaticTask_t sTestTaskBuffer;
+StackType_t sTestTaskStack[TEST_TASK_STACK_SIZE];
 
 chip::rpc::NlTest nl_test_service;
 pw::unit_test::UnitTestService unit_test_service;
@@ -120,7 +117,7 @@ void app_init(void)
     SetDeviceInstanceInfoProvider(&provision.GetStorage());
     SetCommissionableDataProvider(&provision.GetStorage());
 
-    ChipLogProgress(AppServer, "***** CHIP EFR32 device tests *****\r\n");
+    SILABS_LOG("***** CHIP EFR32 device tests *****\r\n");
 
     // Start RPC service which runs the tests.
     sTestTaskHandle = osThreadNew(RunRpcService, nullptr, &kTestTaskAttr);
@@ -136,7 +133,7 @@ int main(void)
     SILABS_LOG("Starting FreeRTOS scheduler");
     sl_system_kernel_start();
     // Should never get here.
-    ChipLogProgress(AppServer, "sl_system_kernel_start() failed");
+    SILABS_LOG("vTaskStartScheduler() failed");
     return -1;
 }
 #endif

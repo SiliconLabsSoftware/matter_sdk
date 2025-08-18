@@ -58,9 +58,7 @@ struct TestCommissionerDUTVectors : public ::testing::Test
 
 TEST_F(TestCommissionerDUTVectors, TestCommissionerDUTVectors)
 {
-    chip::Credentials::DeviceAttestationRevocationDelegate * kDeviceAttestationRevocationNotChecked = nullptr;
-    DeviceAttestationVerifier * example_dac_verifier =
-        GetDefaultDACVerifier(GetTestAttestationTrustStore(), kDeviceAttestationRevocationNotChecked);
+    DeviceAttestationVerifier * example_dac_verifier = GetDefaultDACVerifier(GetTestAttestationTrustStore());
     ASSERT_NE(example_dac_verifier, nullptr);
 
     std::string dirPath("../../../../../credentials/development/commissioner_dut/");

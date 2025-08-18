@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2024-2025 Project CHIP Authors
+ *    Copyright (c) 2024 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -35,20 +35,8 @@ static struct stream_flash_ctx stream;
 
 static constexpr uint16_t deltaRebootDelayMs = 200;
 
-static chip::OTAImageProcessorImpl gImageProcessor;
-
 namespace chip {
-
-using namespace ::chip::DeviceLayer;
-
-CHIP_ERROR OTAImageProcessorImpl::Init(OTADownloader * downloader)
-{
-    VerifyOrReturnError(downloader != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    gImageProcessor.SetOTADownloader(downloader);
-
-    return CHIP_NO_ERROR;
-}
+namespace DeviceLayer {
 
 CHIP_ERROR OTAImageProcessorImpl::PrepareDownload()
 {
@@ -163,10 +151,10 @@ CHIP_ERROR OTAImageProcessorImpl::ProcessBlock(ByteSpan & aBlock)
 bool OTAImageProcessorImpl::IsFirstImageRun()
 {
     OTARequestorInterface * requestor = GetRequestorInstance();
-    VerifyOrReturnError(requestor != nullptr, false);
+    ReturnErrorCodeIf(requestor == nullptr, false);
 
     uint32_t currentVersion;
-    VerifyOrReturnError(ConfigurationMgr().GetSoftwareVersion(currentVersion) == CHIP_NO_ERROR, false);
+    ReturnErrorCodeIf(ConfigurationMgr().GetSoftwareVersion(currentVersion) != CHIP_NO_ERROR, false);
 
     return requestor->GetCurrentUpdateState() == OTARequestorInterface::OTAUpdateStateEnum::kApplying &&
         requestor->GetTargetVersion() == currentVersion;
@@ -185,7 +173,7 @@ CHIP_ERROR OTAImageProcessorImpl::ProcessHeader(ByteSpan & aBlock)
         CHIP_ERROR error = mHeaderParser.AccumulateAndDecode(aBlock, header);
 
         // Needs more data to decode the header
-        VerifyOrReturnError(error != CHIP_ERROR_BUFFER_TOO_SMALL, CHIP_NO_ERROR);
+        ReturnErrorCodeIf(error == CHIP_ERROR_BUFFER_TOO_SMALL, CHIP_NO_ERROR);
         ReturnErrorOnFailure(error);
 
         mParams.totalFileBytes = header.mPayloadSize;
@@ -199,10 +187,5 @@ void OTAImageProcessorImpl::SetRebootDelaySec(uint16_t rebootDelay)
 {
     mDelayBeforeRebootSec = rebootDelay;
 }
-
-OTAImageProcessorImpl & OTAImageProcessorImpl::GetDefaultInstance()
-{
-    return gImageProcessor;
-}
-
+} // namespace DeviceLayer
 } // namespace chip

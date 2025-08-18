@@ -42,9 +42,9 @@ RemoteDataModelLoggerDelegate * gDelegate;
 
 CHIP_ERROR LogError(Json::Value & value, const chip::app::StatusIB & status)
 {
-    if (status.mClusterStatus.has_value())
+    if (status.mClusterStatus.HasValue())
     {
-        auto statusValue          = *status.mClusterStatus;
+        auto statusValue          = status.mClusterStatus.Value();
         value[kClusterErrorIdKey] = statusValue;
     }
 

@@ -2,12 +2,12 @@
 orphan: true
 ---
 
-# Matter QPG6200 SDK
+# Matter QPG6105 SDK
 
 ## Qorvo SDK
 
 More detailed information on the Qorvo SDK can be found in the
-[Qorvo Matter SDK](https://gitlab.com/qorvo_sdk/public/devkits/qpg6200-iot-sdk).
+[Qorvo Matter SDK](https://github.com/Qorvo/QMatter).
 
 ## More information
 

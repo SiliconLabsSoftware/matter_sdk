@@ -106,7 +106,6 @@ public:
     {
         return TCPDisconnectImpl<0>(conn, shouldAbort);
     }
-
 #endif // INET_CONFIG_ENABLE_TCP_ENDPOINT
 
     void Close() override { return CloseImpl<0>(); }

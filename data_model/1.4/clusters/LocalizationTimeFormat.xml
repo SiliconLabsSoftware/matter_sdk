@@ -144,9 +144,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="CALFMT"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
   </attributes>
 </cluster>

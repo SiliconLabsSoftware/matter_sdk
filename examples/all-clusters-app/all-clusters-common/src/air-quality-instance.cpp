@@ -45,8 +45,3 @@ void emberAfAirQualityClusterInitCallback(chip::EndpointId endpointId)
     gAirQualityCluster = new Instance(1, airQualityFeatures);
     gAirQualityCluster->Init();
 }
-
-void emberAfAirQualityClusterShutdownCallback(chip::EndpointId endpointId)
-{
-    AirQuality::Shutdown();
-}

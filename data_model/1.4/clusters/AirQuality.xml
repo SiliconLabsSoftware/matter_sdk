@@ -116,9 +116,7 @@ Davis, CA 95616, USA
     <attribute id="0x0000" name="AirQuality" type="AirQualityEnum" default="0">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
   </attributes>
 </cluster>

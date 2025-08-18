@@ -51,9 +51,7 @@ tests:
           constraints:
               type: temperature
 
-    - label:
-          "Step 4: TH reads from the DUT the Step attribute and validates
-          constraints"
+    - label: "Step 4: TH reads from the DUT the Step attribute"
       PICS: TCTL.S.A0003
       command: "readAttribute"
       attribute: "Step"
@@ -61,7 +59,6 @@ tests:
           saveAs: StepValue
           constraints:
               type: temperature
-              minValue: 1
               maxValue: MaxTemperatureValue - MinTemperatureValue
 
     - label:

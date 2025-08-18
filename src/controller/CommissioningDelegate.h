@@ -18,14 +18,11 @@
 
 #pragma once
 #include <app-common/zap-generated/cluster-objects.h>
-#include <app/AttributePathParams.h>
-#include <app/ClusterStateCache.h>
 #include <app/OperationalSessionSetup.h>
 #include <controller/CommissioneeDeviceProxy.h>
 #include <credentials/attestation_verifier/DeviceAttestationDelegate.h>
 #include <credentials/attestation_verifier/DeviceAttestationVerifier.h>
 #include <crypto/CHIPCryptoPAL.h>
-#include <lib/support/Span.h>
 #include <lib/support/Variant.h>
 #include <matter/tracing/build_config.h>
 #include <system/SystemClock.h>
@@ -39,7 +36,8 @@ enum CommissioningStage : uint8_t
 {
     kError,
     kSecurePairing,              ///< Establish a PASE session with the device
-    kReadCommissioningInfo,      ///< Query Attributes relevant to commissioning (can perform multiple read interactions)
+    kReadCommissioningInfo,      ///< Query General Commissioning Attributes, Network Features and Time Synchronization Cluster
+    kReadCommissioningInfo2,     ///< Query SupportsConcurrentConnection, ICD state, check for matching fabric
     kArmFailsafe,                ///< Send ArmFailSafe (0x30:0) command to the device
     kConfigRegulatory,           ///< Send SetRegulatoryConfig (0x30:2) command to the device
     kConfigureUTCTime,           ///< SetUTCTime if the DUT has a time cluster
@@ -57,7 +55,7 @@ enum CommissioningStage : uint8_t
     kSendTrustedRootCert,        ///< Send AddTrustedRootCertificate (0x3E:11) command to the device
     kSendNOC,                    ///< Send AddNOC (0x3E:6) command to the device
     kConfigureTrustedTimeSource, ///< Configure a trusted time source if one is required and available (must be done after SendNOC)
-    kICDGetRegistrationInfo,     ///< Waiting for the higher layer to provide ICD registration informations.
+    kICDGetRegistrationInfo,     ///< Waiting for the higher layer to provide ICD registraion informations.
     kICDRegistration,            ///< Register for ICD management
     kWiFiNetworkSetup,           ///< Send AddOrUpdateWiFiNetwork (0x31:2) command to the device
     kThreadNetworkSetup,         ///< Send AddOrUpdateThreadNetwork (0x31:3) command to the device
@@ -84,9 +82,7 @@ enum CommissioningStage : uint8_t
     kRemoveWiFiNetworkConfig,         ///< Remove Wi-Fi network config.
     kRemoveThreadNetworkConfig,       ///< Remove Thread network config.
     kConfigureTCAcknowledgments,      ///< Send SetTCAcknowledgements (0x30:6) command to the device
-    kCleanup,                         ///< Call delegates with status, free memory, clear timers and state/
-    kJFValidateNOC,                   ///< Verify Admin NOC contains an Administrator CAT
-    kSendVIDVerificationRequest,      ///< Send SignVIDVerificationRequest command to the device
+    kCleanup,                         ///< Call delegates with status, free memory, clear timers and state
 };
 
 enum class ICDRegistrationStrategy : uint8_t
@@ -173,7 +169,7 @@ public:
     }
 
     // Value to determine whether the node supports Concurrent Connections as read from the GeneralCommissioning cluster.
-    // In the AutoCommissioner, this is automatically set from from the kReadCommissioningInfo stage.
+    // In the AutoCommissioner, this is automatically set from from the kReadCommissioningInfo2 stage.
     Optional<bool> GetSupportsConcurrentConnection() const { return mSupportsConcurrentConnection; }
 
     // The country code to be used for the node, if set.
@@ -596,86 +592,6 @@ public:
     }
     void ClearICDStayActiveDurationMsec() { mICDStayActiveDurationMsec.ClearValue(); }
 
-    Span<const app::AttributePathParams> GetExtraReadPaths() const { return mExtraReadPaths; }
-
-    // Additional attribute paths to read as part of the kReadCommissioningInfo stage.
-    // These values read from the device will be available in ReadCommissioningInfo.attributes.
-    // Clients should avoid requesting paths that are already read internally by the commissioner
-    // as no consolidation of internally read and extra paths provided here will be performed.
-    CommissioningParameters & SetExtraReadPaths(Span<const app::AttributePathParams> paths)
-    {
-        mExtraReadPaths = paths;
-        return *this;
-    }
-
-#if CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-    // Execute Joint Commissioning Method
-    Optional<bool> GetExecuteJCM() const { return mExecuteJCM; }
-
-    CommissioningParameters & SetExecuteJCM(bool executeJCM)
-    {
-        mExecuteJCM = MakeOptional(executeJCM);
-        return *this;
-    }
-
-    const Optional<ByteSpan> GetJFAdminNOC() const { return mJFAdminNOC; }
-
-    CommissioningParameters & SetJFAdminNOC(const ByteSpan & JFAdminNOC)
-    {
-        mJFAdminNOC = MakeOptional(JFAdminNOC);
-        return *this;
-    }
-
-    const Optional<ByteSpan> GetJFAdminICAC() const { return mJFAdminICAC; }
-
-    CommissioningParameters & SetJFAdminICAC(const ByteSpan & JFAdminICAC)
-    {
-        mJFAdminICAC = MakeOptional(JFAdminICAC);
-        return *this;
-    }
-
-    const Optional<ByteSpan> GetJFAdminRCAC() const { return mJFAdminRCAC; }
-
-    CommissioningParameters & SetJFAdminRCAC(const ByteSpan & JFAdminRCAC)
-    {
-        mJFAdminRCAC = MakeOptional(JFAdminRCAC);
-        return *this;
-    }
-
-    const Optional<EndpointId> GetJFAdminEndpointId() const { return mJFAdminEndpointId; }
-
-    CommissioningParameters & SetJFAdminEndpointId(const EndpointId JFAdminEndpointId)
-    {
-        mJFAdminEndpointId = MakeOptional(JFAdminEndpointId);
-        return *this;
-    }
-
-    const Optional<FabricIndex> GetJFAdministratorFabricIndex() const { return mJFAdministratorFabricIndex; }
-
-    CommissioningParameters & SetJFAdministratorFabricIndex(const FabricIndex JFAdministratorFabricIndex)
-    {
-        mJFAdministratorFabricIndex = MakeOptional(JFAdministratorFabricIndex);
-        return *this;
-    }
-
-    const Optional<FabricId> GetJFAdminFabricId() const { return mJFAdminFabricId; }
-
-    CommissioningParameters & SetJFAdminFabricId(const FabricId JFAdminFabricId)
-    {
-        mJFAdminFabricId = MakeOptional(JFAdminFabricId);
-        return *this;
-    }
-
-    const Optional<VendorId> GetJFAdminVendorId() const { return mJFAdminVendorId; }
-
-    CommissioningParameters & SetJFAdminVendorId(const VendorId JFAdminVendorId)
-    {
-        mJFAdminVendorId = MakeOptional(JFAdminVendorId);
-        return *this;
-    }
-
-#endif // CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-
     // Clear all members that depend on some sort of external buffer.  Can be
     // used to make sure that we are not holding any dangling pointers.
     void ClearExternalBufferDependentValues()
@@ -698,12 +614,6 @@ public:
         mDSTOffsets.ClearValue();
         mDefaultNTP.ClearValue();
         mICDSymmetricKey.ClearValue();
-        mExtraReadPaths = decltype(mExtraReadPaths)();
-#if CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-        mJFAdminNOC.ClearValue();
-        mJFAdminICAC.ClearValue();
-        mJFAdminRCAC.ClearValue();
-#endif // CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
     }
 
 private:
@@ -753,21 +663,6 @@ private:
     Optional<uint32_t> mICDStayActiveDurationMsec;
     ICDRegistrationStrategy mICDRegistrationStrategy = ICDRegistrationStrategy::kIgnore;
     bool mCheckForMatchingFabric                     = false;
-    Span<const app::AttributePathParams> mExtraReadPaths;
-
-#if CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-    Optional<bool> mExecuteJCM;
-
-    Optional<EndpointId> mJFAdminEndpointId;
-    Optional<FabricIndex> mJFAdministratorFabricIndex;
-
-    Optional<FabricId> mJFAdminFabricId;
-    Optional<VendorId> mJFAdminVendorId;
-
-    Optional<ByteSpan> mJFAdminNOC;
-    Optional<ByteSpan> mJFAdminICAC;
-    Optional<ByteSpan> mJFAdminRCAC;
-#endif // CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
 };
 
 struct RequestedCertificate
@@ -815,7 +710,7 @@ struct OperationalNodeFoundData
 struct NetworkClusterInfo
 {
     EndpointId endpoint = kInvalidEndpointId;
-    app::Clusters::NetworkCommissioning::Attributes::ConnectMaxTimeSeconds::TypeInfo::DecodableType minConnectionTime = 0;
+    app::Clusters::NetworkCommissioning::Attributes::ConnectMaxTimeSeconds::TypeInfo::DecodableType minConnectionTime;
 };
 struct NetworkClusters
 {
@@ -866,20 +761,8 @@ struct ICDManagementClusterInfo
     CharSpan userActiveModeTriggerInstruction;
 };
 
-#if CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-struct JFFabricTableInfo
-{
-    VendorId vendorId = VendorId::Common;
-    FabricId fabricId = kUndefinedFabricId;
-};
-
-#endif // CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-
 struct ReadCommissioningInfo
 {
-#if CHIP_CONFIG_ENABLE_READ_CLIENT
-    app::ClusterStateCache const * attributes = nullptr;
-#endif
     NetworkClusters network;
     BasicClusterInfo basic;
     GeneralCommissioningInfo general;
@@ -892,17 +775,6 @@ struct ReadCommissioningInfo
     NodeId remoteNodeId               = kUndefinedNodeId;
     bool supportsConcurrentConnection = true;
     ICDManagementClusterInfo icd;
-
-#if CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-    EndpointId JFAdminEndpointId           = kInvalidEndpointId;
-    FabricIndex JFAdministratorFabricIndex = kUndefinedFabricIndex;
-
-    JFFabricTableInfo JFAdminFabricTable;
-
-    ByteSpan JFAdminNOC;
-    ByteSpan JFAdminICAC;
-    ByteSpan JFAdminRCAC;
-#endif // CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
 };
 
 struct TimeZoneResponseInfo
@@ -935,7 +807,8 @@ class CommissioningDelegate
 public:
     virtual ~CommissioningDelegate(){};
     /* CommissioningReport is returned after each commissioning step is completed. The reports for each step are:
-     * kReadCommissioningInfo: ReadCommissioningInfo
+     * kReadCommissioningInfo: Reported together with ReadCommissioningInfo2
+     * kReadCommissioningInfo2: ReadCommissioningInfo
      * kArmFailsafe: CommissioningErrorInfo if there is an error
      * kConfigRegulatory: CommissioningErrorInfo if there is an error
      * kConfigureUTCTime: None

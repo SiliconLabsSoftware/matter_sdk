@@ -112,17 +112,6 @@ CHIP_ERROR NXPWiFiDriver::CommitConfiguration()
 
 CHIP_ERROR NXPWiFiDriver::RevertConfiguration()
 {
-    struct wlan_network searchedNetwork = { 0 };
-
-    /* If network was added we have to remove it (as the connection failed) from wifi driver to be able
-    to connect to another network next commissioning */
-    if (wlan_get_network_byname(mStagingNetwork.ssid, &searchedNetwork) == WM_SUCCESS)
-    {
-        if (wlan_remove_network(mStagingNetwork.ssid) != WM_SUCCESS)
-        {
-            return CHIP_ERROR_INTERNAL;
-        }
-    }
     mStagingNetwork = mSavedNetwork;
 
     return CHIP_NO_ERROR;
@@ -155,8 +144,6 @@ Status NXPWiFiDriver::RemoveNetwork(ByteSpan networkId, MutableCharSpan & outDeb
 {
     outDebugText.reduce_size(0);
     outNetworkIndex = 0;
-    VerifyOrReturnError(NetworkMatch(mStagingNetwork, networkId), Status::kNetworkIDNotFound);
-
     // Use empty ssid for representing invalid network
     mStagingNetwork.ssidLen = 0;
 
@@ -203,11 +190,7 @@ CHIP_ERROR NXPWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen,
 
 void NXPWiFiDriver::OnConnectWiFiNetwork(Status commissioningError, CharSpan debugText, int32_t connectStatus)
 {
-    /* Commit wifi network credentials in flash only if the connection succeeded */
-    if (commissioningError == NetworkCommissioning::Status::kSuccess)
-    {
-        CommitConfiguration();
-    }
+    CommitConfiguration();
 
     if (mpConnectCallback != nullptr)
     {

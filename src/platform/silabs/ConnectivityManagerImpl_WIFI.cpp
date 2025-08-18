@@ -48,13 +48,11 @@ extern "C" {
 #endif
 
 #include "CHIPDevicePlatformConfig.h"
-#include <platform/silabs/wifi/WifiInterface.h>
-
+#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 using namespace ::chip;
 using namespace ::chip::Inet;
 using namespace ::chip::System;
 using namespace ::chip::DeviceLayer::Internal;
-using namespace ::chip::DeviceLayer::Silabs;
 
 namespace chip {
 namespace DeviceLayer {
@@ -91,7 +89,7 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     // TODO Initialize the Chip Addressing and Routing Module.
 
     // Ensure that station mode is enabled.
-    WifiInterface::GetInstance().ConfigureStationMode();
+    wfx_enable_sta_mode();
 
     err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
 
@@ -121,45 +119,60 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
 #endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
     if (event->Type == DeviceEventType::kWFXSystemEvent)
     {
-
-        switch (event->Platform.WFXSystemEvent.data.genericMsgEvent.header.id)
+        if (event->Platform.WFXSystemEvent.eventBase == WIFI_EVENT)
         {
-        case to_underlying(WifiInterface::WifiEvent::kStartUp):
-            ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_START");
-            DriveStationState();
-            break;
-        case to_underlying(WifiInterface::WifiEvent::kConnect):
-            ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_CONNECTED");
-            if (mWiFiStationState == kWiFiStationState_Connecting)
+            switch (event->Platform.WFXSystemEvent.data.genericMsgEvent.header.id)
             {
-                if (event->Platform.WFXSystemEvent.data.connectEvent.body.status == 0)
+            case SL_WFX_STARTUP_IND_ID:
+                ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_START");
+                DriveStationState();
+                break;
+            case SL_WFX_CONNECT_IND_ID:
+                ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_CONNECTED");
+                if (mWiFiStationState == kWiFiStationState_Connecting)
                 {
-                    ChangeWiFiStationState(kWiFiStationState_Connecting_Succeeded);
+                    if (event->Platform.WFXSystemEvent.data.connectEvent.body.status == 0)
+                    {
+                        ChangeWiFiStationState(kWiFiStationState_Connecting_Succeeded);
+                    }
+                    else
+                    {
+                        ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
+                    }
                 }
-                else
+                DriveStationState();
+                break;
+            case SL_WFX_DISCONNECT_IND_ID:
+                ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_DISCONNECTED");
+                if (mWiFiStationState == kWiFiStationState_Connecting)
                 {
                     ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
                 }
+                DriveStationState();
+                break;
+            default:
+                break;
             }
-            DriveStationState();
-            break;
-        case to_underlying(WifiInterface::WifiEvent::kDisconnect):
-            ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_DISCONNECTED");
-            if (mWiFiStationState == kWiFiStationState_Connecting)
+        }
+        else if (event->Platform.WFXSystemEvent.eventBase == IP_EVENT)
+        {
+            switch (event->Platform.WFXSystemEvent.data.genericMsgEvent.header.id)
             {
-                ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
+            case IP_EVENT_STA_GOT_IP:
+                ChipLogProgress(DeviceLayer, "IP_EVENT_STA_GOT_IP");
+                UpdateInternetConnectivityState();
+                break;
+            case IP_EVENT_STA_LOST_IP:
+                ChipLogProgress(DeviceLayer, "IP_EVENT_STA_LOST_IP");
+                UpdateInternetConnectivityState();
+                break;
+            case IP_EVENT_GOT_IP6:
+                ChipLogProgress(DeviceLayer, "IP_EVENT_GOT_IP6");
+                UpdateInternetConnectivityState();
+                break;
+            default:
+                break;
             }
-            DriveStationState();
-            break;
-
-        case to_underlying(WifiInterface::WifiEvent::kGotIPv4):
-        case to_underlying(WifiInterface::WifiEvent::kLostIP):
-        case to_underlying(WifiInterface::WifiEvent::kGotIPv6):
-            ChipLogProgress(DeviceLayer, "IP Change Event");
-            UpdateInternetConnectivityState();
-            break;
-        default:
-            break;
         }
     }
 }
@@ -168,7 +181,8 @@ ConnectivityManager::WiFiStationMode ConnectivityManagerImpl::_GetWiFiStationMod
 {
     if (mWiFiStationMode != kWiFiStationMode_ApplicationControlled)
     {
-        if (WifiInterface::GetInstance().IsStationModeEnabled())
+        wifi_mode_t curWiFiMode = wfx_get_wifi_mode();
+        if ((curWiFiMode == WIFI_MODE_STA) || (curWiFiMode == WIFI_MODE_APSTA))
         {
             mWiFiStationMode = kWiFiStationMode_Enabled;
         }
@@ -177,18 +191,22 @@ ConnectivityManager::WiFiStationMode ConnectivityManagerImpl::_GetWiFiStationMod
             mWiFiStationMode = kWiFiStationMode_Disabled;
         }
     }
-
     return mWiFiStationMode;
 }
 
 bool ConnectivityManagerImpl::_IsWiFiStationProvisioned(void)
 {
-    return WifiInterface::GetInstance().IsWifiProvisioned();
+    wfx_wifi_provision_t wifiConfig;
+    if (wfx_get_wifi_provision(&wifiConfig))
+    {
+        return (wifiConfig.ssid[0] != 0);
+    }
+    return false;
 }
 
 bool ConnectivityManagerImpl::_IsWiFiStationEnabled(void)
 {
-    return WifiInterface::GetInstance().IsStationModeEnabled();
+    return wfx_is_sta_mode_enabled();
 }
 
 CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiFiStationMode val)
@@ -216,7 +234,7 @@ void ConnectivityManagerImpl::_ClearWiFiStationProvision(void)
 {
     if (mWiFiStationMode != kWiFiStationMode_ApplicationControlled)
     {
-        WifiInterface::GetInstance().ClearWifiCredentials();
+        wfx_clear_wifi_provision();
 
         DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
     }
@@ -253,7 +271,8 @@ CHIP_ERROR ConnectivityManagerImpl::_SetPollingInterval(System::Clock::Milliseco
 
 void ConnectivityManagerImpl::DriveStationState()
 {
-    bool stationConnected = false;
+    sl_status_t serr;
+    bool stationConnected;
 
     // Refresh the current station mode.
     GetWiFiStationMode();
@@ -261,15 +280,17 @@ void ConnectivityManagerImpl::DriveStationState()
     // If the station interface is NOT under application control...
     if (mWiFiStationMode != kWiFiStationMode_ApplicationControlled)
     {
-        // Ensure that the Wifi task is started.
-        CHIP_ERROR error = WifiInterface::GetInstance().StartWifiTask();
-        VerifyOrReturn(error == CHIP_NO_ERROR, ChipLogError(DeviceLayer, "StartWifiTask() failed: %s", ErrorStr(error)));
-
-        // Ensure that station mode is enabled in the WiFi layer.
-        WifiInterface::GetInstance().ConfigureStationMode();
+        // Ensure that the WFX is started.
+        if ((serr = wfx_wifi_start()) != SL_STATUS_OK)
+        {
+            ChipLogError(DeviceLayer, "wfx_wifi_start() failed: %lx", serr);
+            return;
+        }
+        // Ensure that station mode is enabled in the WFX WiFi layer.
+        wfx_enable_sta_mode();
     }
 
-    stationConnected = WifiInterface::GetInstance().IsStationConnected();
+    stationConnected = wfx_is_sta_connected();
 
     // If the station interface is currently connected ...
     if (stationConnected)
@@ -294,9 +315,12 @@ void ConnectivityManagerImpl::DriveStationState()
             (mWiFiStationMode != kWiFiStationMode_Enabled && !IsWiFiStationProvisioned()))
         {
             ChipLogProgress(DeviceLayer, "Disconnecting WiFi station interface");
-
-            CHIP_ERROR error = WifiInterface::GetInstance().TriggerDisconnection();
-            SuccessOrExitAction(error, ChipLogError(DeviceLayer, "TriggerDisconnection() failed: %s", ErrorStr(error)));
+            serr = sl_matter_wifi_disconnect();
+            if (serr != SL_STATUS_OK)
+            {
+                ChipLogError(DeviceLayer, "wfx_wifi_disconnect() failed: %lx", serr);
+            }
+            SuccessOrExit(serr);
 
             ChangeWiFiStationState(kWiFiStationState_Disconnecting);
         }
@@ -339,8 +363,11 @@ void ConnectivityManagerImpl::DriveStationState()
                 if (mWiFiStationState != kWiFiStationState_Connecting)
                 {
                     ChipLogProgress(DeviceLayer, "Attempting to connect WiFi");
-                    SuccessOrExitAction(WifiInterface::GetInstance().ConnectToAccessPoint(),
-                                        ChipLogError(DeviceLayer, "ConnectToAccessPoint() failed"));
+                    if ((serr = wfx_connect_to_ap()) != SL_STATUS_OK)
+                    {
+                        ChipLogError(DeviceLayer, "wfx_connect_to_ap() failed: %" PRId32, serr);
+                    }
+                    SuccessOrExit(serr);
 
                     ChangeWiFiStationState(kWiFiStationState_Connecting);
                 }
@@ -368,10 +395,8 @@ exit:
 
 void ConnectivityManagerImpl::OnStationConnected()
 {
-    NetworkCommissioning::SlWiFiDriver * nwDriver = NetworkCommissioning::SlWiFiDriver::GetInstance();
-    // Cannot use the driver if the instance is not initialized.
-    VerifyOrDie(nwDriver != nullptr); // should never be null
-    nwDriver->OnConnectWiFiNetwork();
+    wfx_setup_ip6_link_local(SL_WFX_STA_INTERFACE);
+    NetworkCommissioning::SlWiFiDriver::GetInstance().OnConnectWiFiNetwork();
 
     UpdateInternetConnectivityState();
     // Alert other components of the new state.
@@ -404,11 +429,7 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
         ChipLogProgress(DeviceLayer, "WiFi station state change: %s -> %s", WiFiStationStateToStr(mWiFiStationState),
                         WiFiStationStateToStr(newState));
         mWiFiStationState = newState;
-
-        NetworkCommissioning::SlWiFiDriver * nwDriver = NetworkCommissioning::SlWiFiDriver::GetInstance();
-        // Cannot use the driver if the instance is not initialized.
-        VerifyOrDie(nwDriver != nullptr); // should never be null
-        nwDriver->UpdateNetworkingStatus();
+        NetworkCommissioning::SlWiFiDriver::GetInstance().UpdateNetworkingStatus();
     }
 }
 
@@ -424,9 +445,9 @@ void ConnectivityManagerImpl::UpdateInternetConnectivityState(void)
     if (mWiFiStationState == kWiFiStationState_Connected)
     {
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
-        haveIPv4Conn = WifiInterface::GetInstance().HasAnIPv4Address();
+        haveIPv4Conn = wfx_have_ipv4_addr(SL_WFX_STA_INTERFACE);
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
-        haveIPv6Conn = WifiInterface::GetInstance().HasAnIPv6Address();
+        haveIPv6Conn = wfx_have_ipv6_addr(SL_WFX_STA_INTERFACE);
     }
 
     // If the internet connectivity state has changed...

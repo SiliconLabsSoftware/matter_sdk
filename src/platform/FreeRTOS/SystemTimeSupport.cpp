@@ -28,7 +28,6 @@
 #include <lib/support/TimeUtils.h>
 
 #include "FreeRTOS.h"
-#include "task.h"
 
 namespace chip {
 namespace System {

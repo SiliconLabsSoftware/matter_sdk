@@ -21,13 +21,7 @@
 
 #include <platform/internal/GenericConfigurationManagerImpl.ipp>
 
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-extern "C" {
-#include <bl_sys.h>
-}
-#else
 extern "C" void hal_reboot(void);
-#endif
 
 namespace chip {
 namespace DeviceLayer {
@@ -190,17 +184,6 @@ void ConfigurationManagerImpl::RunConfigUnitTest(void)
     BLConfig::RunConfigUnitTest();
 }
 
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-void ConfigurationManagerImpl::ClearThreadStack()
-{
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT
-    ThreadStackMgr().ClearAllSrpHostAndServices();
-#endif // CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT
-    ChipLogProgress(DeviceLayer, "Clearing Thread provision");
-    ThreadStackMgr().ErasePersistentInfo();
-}
-#endif
-
 void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
 {
     CHIP_ERROR err;
@@ -219,11 +202,8 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
 
     // Restart the system.
     ChipLogProgress(DeviceLayer, "System restarting");
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-    bl_sys_reset_por();
-#else
+
     hal_reboot();
-#endif
 }
 
 ConfigurationManager & ConfigurationMgrImpl()

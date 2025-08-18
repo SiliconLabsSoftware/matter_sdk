@@ -166,7 +166,7 @@ static const Structs::MeasurementAccuracyStruct::Type kMeasurementAccuracies[] =
 
 uint8_t ElectricalPowerMeasurementDelegate::GetNumberOfMeasurementTypes()
 {
-    return MATTER_ARRAY_SIZE(kMeasurementAccuracies);
+    return ArraySize(kMeasurementAccuracies);
 };
 
 /* @brief This function is called by the cluster server at the start of read cycle
@@ -181,7 +181,7 @@ CHIP_ERROR ElectricalPowerMeasurementDelegate::StartAccuracyRead()
 CHIP_ERROR ElectricalPowerMeasurementDelegate::GetAccuracyByIndex(uint8_t accuracyIndex,
                                                                   Structs::MeasurementAccuracyStruct::Type & accuracy)
 {
-    if (accuracyIndex >= MATTER_ARRAY_SIZE(kMeasurementAccuracies))
+    if (accuracyIndex >= ArraySize(kMeasurementAccuracies))
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -225,7 +225,7 @@ CHIP_ERROR ElectricalPowerMeasurementDelegate::GetRangeByIndex(uint8_t rangeInde
      *   - .maxTimestamp (the time at which the maximum value was recorded)
      *   (and optionally use sys time equivalents)
      *
-     *   if (rangeIndex >= MATTER_ARRAY_SIZE(mMeasurementRanges))
+     *   if (rangeIndex >= ArraySize(mMeasurementRanges))
      *   {
      *       return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
      *   }
@@ -277,7 +277,7 @@ ElectricalPowerMeasurementDelegate::GetHarmonicCurrentsByIndex(uint8_t harmonicC
      */
 
     /* Added to support testing using a static array for now */
-    if (harmonicCurrentsIndex >= MATTER_ARRAY_SIZE(kHarmonicCurrentMeasurements))
+    if (harmonicCurrentsIndex >= ArraySize(kHarmonicCurrentMeasurements))
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -322,7 +322,7 @@ CHIP_ERROR ElectricalPowerMeasurementDelegate::GetHarmonicPhasesByIndex(uint8_t 
      */
 
     /* Added to support testing using a static array for now */
-    if (harmonicPhaseIndex >= MATTER_ARRAY_SIZE(kHarmonicPhaseMeasurements))
+    if (harmonicPhaseIndex >= ArraySize(kHarmonicPhaseMeasurements))
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }

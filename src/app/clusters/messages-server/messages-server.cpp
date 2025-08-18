@@ -295,8 +295,3 @@ void MatterMessagesPluginServerInitCallback()
 {
     AttributeAccessInterfaceRegistry::Instance().Register(&gMessagesAttrAccess);
 }
-
-void MatterMessagesPluginServerShutdownCallback()
-{
-    AttributeAccessInterfaceRegistry::Instance().Unregister(&gMessagesAttrAccess);
-}

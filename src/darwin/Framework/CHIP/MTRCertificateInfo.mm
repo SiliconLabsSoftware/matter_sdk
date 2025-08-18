@@ -21,15 +21,9 @@
 
 #include <credentials/CHIPCert.h>
 
-#import "NSDataSpanConversion.h"
-
-#include <credentials/CHIPCert.h>
-#include <crypto/CHIPCryptoPAL.h>
-
 NS_ASSUME_NONNULL_BEGIN
 
 using namespace chip;
-using namespace chip::Crypto;
 using namespace chip::Credentials;
 using namespace chip::ASN1;
 
@@ -69,18 +63,6 @@ MTR_DIRECT_MEMBERS
 - (NSDate *)notBefore
 {
     return MatterEpochSecondsAsDate(_data.mNotBeforeTime);
-}
-
-- (nullable NSData *)publicKeyData
-{
-    P256PublicKeySpan publicKeySpan;
-    CHIP_ERROR err = ExtractPublicKeyFromChipCert(AsByteSpan(_bytes), publicKeySpan);
-
-    if (err != CHIP_NO_ERROR) {
-        return nil;
-    }
-
-    return AsData(publicKeySpan);
 }
 
 - (NSDate *)notAfter

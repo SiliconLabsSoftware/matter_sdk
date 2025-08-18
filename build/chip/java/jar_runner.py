@@ -79,8 +79,8 @@ def FindCommand(command):
 
 
 def main():
-    java_home = FindCommand('jar')
-    if not java_home:
+    java_path = FindCommand('jar')
+    if not java_path:
         sys.stderr.write('jar: command not found\n')
         sys.exit(EXIT_FAILURE)
 
@@ -89,7 +89,7 @@ def main():
         sys.stderr.write('usage: %s [jar_args]...\n' % sys.argv[0])
         sys.exit(EXIT_FAILURE)
 
-    return subprocess.check_call([java_home] + args)
+    return subprocess.check_call([java_path] + args)
 
 
 if __name__ == '__main__':

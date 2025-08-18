@@ -185,9 +185,7 @@ Davis, CA 95616, USA
     <struct name="NetworkInterface">
       <field id="0" name="Name" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="32"/>
-        </constraint>
+        <constraint type="maxLength" value="32"/>
       </field>
       <field id="1" name="IsOperational" type="bool">
         <mandatoryConform/>
@@ -202,26 +200,18 @@ Davis, CA 95616, USA
       </field>
       <field id="4" name="HardwareAddress" type="hwadr">
         <mandatoryConform/>
-        <constraint>
-          <allowed value="6"/>
-        </constraint>
-        <constraint>
-          <allowed value="8"/>
-        </constraint>
+        <constraint type="allowed" value="6"/>
+        <constraint type="allowed" value="8"/>
       </field>
       <field id="5" name="IPv4Addresses" type="list">
         <entry type="ipv4adr"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="4"/>
-        </constraint>
+        <constraint type="maxCount" value="4"/>
       </field>
       <field id="6" name="IPv6Addresses" type="list">
         <entry type="ipv6adr"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="8"/>
-        </constraint>
+        <constraint type="maxCount" value="8"/>
       </field>
       <field id="7" name="Type" type="InterfaceTypeEnum">
         <mandatoryConform/>
@@ -233,9 +223,7 @@ Davis, CA 95616, USA
       <entry type="NetworkInterface"/>
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <maxCount value="8"/>
-      </constraint>
+      <constraint type="maxCount" value="8"/>
     </attribute>
     <attribute id="0x0001" name="RebootCount" type="uint16">
       <access read="true" readPrivilege="view"/>
@@ -260,25 +248,19 @@ Davis, CA 95616, USA
       <entry type="HardwareFaultEnum"/>
       <access read="true" readPrivilege="view"/>
       <optionalConform/>
-      <constraint>
-        <maxCount value="11"/>
-      </constraint>
+      <constraint type="maxCount" value="11"/>
     </attribute>
     <attribute id="0x0006" name="ActiveRadioFaults" type="list">
       <entry type="RadioFaultEnum"/>
       <access read="true" readPrivilege="view"/>
       <optionalConform/>
-      <constraint>
-        <maxCount value="7"/>
-      </constraint>
+      <constraint type="maxCount" value="7"/>
     </attribute>
     <attribute id="0x0007" name="ActiveNetworkFaults" type="list">
       <entry type="NetworkFaultEnum"/>
       <access read="true" readPrivilege="view"/>
       <optionalConform/>
-      <constraint>
-        <maxCount value="4"/>
-      </constraint>
+      <constraint type="maxCount" value="4"/>
     </attribute>
     <attribute id="0x0008" name="TestEventTriggersEnabled" type="bool">
       <access read="true" readPrivilege="view"/>
@@ -294,9 +276,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="EnableKey" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <allowed value="16"/>
-        </constraint>
+        <constraint type="allowed" value="16"/>
       </field>
       <field id="1" name="EventTrigger" type="uint64">
         <mandatoryConform/>
@@ -323,18 +303,14 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="EnableKey" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <allowed value="16"/>
-        </constraint>
+        <constraint type="allowed" value="16"/>
       </field>
       <field id="1" name="Value" type="uint8">
         <mandatoryConform/>
       </field>
       <field id="2" name="Count" type="uint16">
         <mandatoryConform/>
-        <constraint>
-          <max value="2048"/>
-        </constraint>
+        <constraint type="max" value="2048"/>
       </field>
     </command>
     <command id="0x04" name="PayloadTestResponse" direction="responseFromServer">
@@ -343,9 +319,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Payload" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="2048"/>
-        </constraint>
+        <constraint type="maxLength" value="2048"/>
       </field>
     </command>
   </commands>
@@ -356,16 +330,12 @@ Davis, CA 95616, USA
       <field id="0" name="Current" type="list">
         <entry type="HardwareFaultEnum"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="11"/>
-        </constraint>
+        <constraint type="maxCount" value="11"/>
       </field>
       <field id="1" name="Previous" type="list">
         <entry type="HardwareFaultEnum"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="11"/>
-        </constraint>
+        <constraint type="maxCount" value="11"/>
       </field>
     </event>
     <event id="0x01" name="RadioFaultChange" priority="critical">
@@ -374,16 +344,12 @@ Davis, CA 95616, USA
       <field id="0" name="Current" type="list">
         <entry type="RadioFaultEnum"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="7"/>
-        </constraint>
+        <constraint type="maxCount" value="7"/>
       </field>
       <field id="1" name="Previous" type="list">
         <entry type="RadioFaultEnum"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="7"/>
-        </constraint>
+        <constraint type="maxCount" value="7"/>
       </field>
     </event>
     <event id="0x02" name="NetworkFaultChange" priority="critical">
@@ -392,16 +358,12 @@ Davis, CA 95616, USA
       <field id="0" name="Current" type="list">
         <entry type="NetworkFaultEnum"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="4"/>
-        </constraint>
+        <constraint type="maxCount" value="4"/>
       </field>
       <field id="1" name="Previous" type="list">
         <entry type="NetworkFaultEnum"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="4"/>
-        </constraint>
+        <constraint type="maxCount" value="4"/>
       </field>
     </event>
     <event id="0x03" name="BootReason" priority="critical">

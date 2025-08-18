@@ -132,10 +132,10 @@ void CommandResponseSender::DispatchCommand(CommandHandlerImpl & apCommandObj, c
     mpCommandHandlerCallback->DispatchCommand(apCommandObj, aCommandPath, apPayload);
 }
 
-Protocols::InteractionModel::Status CommandResponseSender::ValidateCommandCanBeDispatched(const DataModel::InvokeRequest & request)
+Status CommandResponseSender::CommandExists(const ConcreteCommandPath & aCommandPath)
 {
-    VerifyOrReturnValue(mpCommandHandlerCallback, Protocols::InteractionModel::Status::Failure);
-    return mpCommandHandlerCallback->ValidateCommandCanBeDispatched(request);
+    VerifyOrReturnValue(mpCommandHandlerCallback, Protocols::InteractionModel::Status::UnsupportedCommand);
+    return mpCommandHandlerCallback->CommandExists(aCommandPath);
 }
 
 CHIP_ERROR CommandResponseSender::SendCommandResponse()

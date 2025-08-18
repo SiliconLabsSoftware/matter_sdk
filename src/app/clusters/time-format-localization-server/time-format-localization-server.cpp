@@ -234,8 +234,3 @@ void MatterTimeFormatLocalizationPluginServerInitCallback()
 {
     AttributeAccessInterfaceRegistry::Instance().Register(&gAttrAccess);
 }
-
-void MatterTimeFormatLocalizationPluginServerShutdownCallback()
-{
-    AttributeAccessInterfaceRegistry::Instance().Unregister(&gAttrAccess);
-}

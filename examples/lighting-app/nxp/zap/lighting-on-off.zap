@@ -1,6 +1,6 @@
 {
   "fileFormat": 2,
-  "featureLevel": 106,
+  "featureLevel": 103,
   "creator": "zap",
   "keyValuePairs": [
     {
@@ -41,20 +41,18 @@
         "code": 22,
         "profileId": 259,
         "label": "MA-rootdevice",
-        "name": "MA-rootdevice",
-        "deviceTypeOrder": 0
+        "name": "MA-rootdevice"
       },
       "deviceTypes": [
         {
           "code": 22,
           "profileId": 259,
           "label": "MA-rootdevice",
-          "name": "MA-rootdevice",
-          "deviceTypeOrder": 0
+          "name": "MA-rootdevice"
         }
       ],
       "deviceVersions": [
-        3
+        2
       ],
       "deviceIdentifiers": [
         22
@@ -264,7 +262,7 @@
               "side": "server",
               "type": "bitmap32",
               "included": 1,
-              "storageOption": "External",
+              "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
               "defaultValue": "0",
@@ -556,22 +554,6 @@
               "reportableChange": 0
             },
             {
-              "name": "ConfigurationVersion",
-              "code": 24,
-              "mfgCode": null,
-              "side": "server",
-              "type": "int32u",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": "1",
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
               "name": "FeatureMap",
               "code": 65532,
               "mfgCode": null,
@@ -597,7 +579,7 @@
               "storageOption": "RAM",
               "singleton": 1,
               "bounded": 0,
-              "defaultValue": "5",
+              "defaultValue": "3",
               "reportable": 1,
               "minInterval": 0,
               "maxInterval": 65344,
@@ -978,7 +960,7 @@
               "side": "server",
               "type": "int16u",
               "included": 1,
-              "storageOption": "External",
+              "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
               "defaultValue": "1",
@@ -2705,30 +2687,6 @@
               "source": "client",
               "isIncoming": 1,
               "isEnabled": 1
-            },
-            {
-              "name": "SetVIDVerificationStatement",
-              "code": 12,
-              "mfgCode": null,
-              "source": "client",
-              "isIncoming": 1,
-              "isEnabled": 1
-            },
-            {
-              "name": "SignVIDVerificationRequest",
-              "code": 13,
-              "mfgCode": null,
-              "source": "client",
-              "isIncoming": 1,
-              "isEnabled": 1
-            },
-            {
-              "name": "SignVIDVerificationResponse",
-              "code": 14,
-              "mfgCode": null,
-              "source": "server",
-              "isIncoming": 0,
-              "isEnabled": 1
             }
           ],
           "attributes": [
@@ -3027,16 +2985,14 @@
         "code": 256,
         "profileId": 259,
         "label": "MA-onofflight",
-        "name": "MA-onofflight",
-        "deviceTypeOrder": 0
+        "name": "MA-onofflight"
       },
       "deviceTypes": [
         {
           "code": 256,
           "profileId": 259,
           "label": "MA-onofflight",
-          "name": "MA-onofflight",
-          "deviceTypeOrder": 0
+          "name": "MA-onofflight"
         }
       ],
       "deviceVersions": [
@@ -3181,7 +3137,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "0x0005",
+              "defaultValue": "4",
               "reportable": 1,
               "minInterval": 0,
               "maxInterval": 65344,
@@ -3681,7 +3637,7 @@
               "storageOption": "NVM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "0xFE",
+              "defaultValue": "0x01",
               "reportable": 1,
               "minInterval": 0,
               "maxInterval": 65344,

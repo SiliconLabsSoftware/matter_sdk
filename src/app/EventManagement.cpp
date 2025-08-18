@@ -21,18 +21,18 @@
 #include <access/SubjectDescriptor.h>
 #include <app/EventManagement.h>
 #include <app/InteractionModelEngine.h>
+#include <app/RequiredPrivilege.h>
+#include <assert.h>
+#include <inttypes.h>
 #include <lib/core/TLVUtilities.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
-
-#include <cassert>
-#include <cinttypes>
 
 using namespace chip::TLV;
 
 namespace chip {
 namespace app {
-EventManagement EventManagement::sInstance;
+static EventManagement sInstance;
 
 /**
  * @brief
@@ -80,20 +80,26 @@ struct CopyAndAdjustDeltaTimeContext
     EventLoadOutContext * mpContext = nullptr;
 };
 
-CHIP_ERROR EventManagement::Init(Messaging::ExchangeManager * apExchangeManager, uint32_t aNumBuffers,
-                                 CircularEventBuffer * apCircularEventBuffer,
-                                 const LogStorageResources * const apLogStorageResources,
-                                 MonotonicallyIncreasingCounter<EventNumber> * apEventNumberCounter,
-                                 System::Clock::Milliseconds64 aMonotonicStartupTime, EventReporter * apEventReporter)
+void EventManagement::Init(Messaging::ExchangeManager * apExchangeManager, uint32_t aNumBuffers,
+                           CircularEventBuffer * apCircularEventBuffer, const LogStorageResources * const apLogStorageResources,
+                           MonotonicallyIncreasingCounter<EventNumber> * apEventNumberCounter,
+                           System::Clock::Milliseconds64 aMonotonicStartupTime)
 {
-    VerifyOrReturnError(apEventReporter != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(aNumBuffers != 0, CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(mState == EventManagementStates::Shutdown, CHIP_ERROR_INCORRECT_STATE);
-
     CircularEventBuffer * current = nullptr;
     CircularEventBuffer * prev    = nullptr;
     CircularEventBuffer * next    = nullptr;
 
+    if (aNumBuffers == 0)
+    {
+        ChipLogError(EventLogging, "Invalid aNumBuffers");
+        return;
+    }
+
+    if (mState != EventManagementStates::Shutdown)
+    {
+        ChipLogError(EventLogging, "Invalid EventManagement State");
+        return;
+    }
     mpExchangeMgr = apExchangeManager;
 
     for (uint32_t bufferIndex = 0; bufferIndex < aNumBuffers; bufferIndex++)
@@ -118,10 +124,6 @@ CHIP_ERROR EventManagement::Init(Messaging::ExchangeManager * apExchangeManager,
     mBytesWritten = 0;
 
     mMonotonicStartupTime = aMonotonicStartupTime;
-
-    mpEventReporter = apEventReporter;
-
-    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR EventManagement::CopyToNextBuffer(CircularEventBuffer * apEventBuffer)
@@ -262,7 +264,7 @@ exit:
     return err;
 }
 
-CHIP_ERROR EventManagement::CalculateEventSize(EventLoggingDelegate * apDelegate, const InternalEventOptions * apOptions,
+CHIP_ERROR EventManagement::CalculateEventSize(EventLoggingDelegate * apDelegate, const EventOptions * apOptions,
                                                uint32_t & requiredSize)
 {
     System::PacketBufferTLVWriter writer;
@@ -285,7 +287,7 @@ CHIP_ERROR EventManagement::CalculateEventSize(EventLoggingDelegate * apDelegate
 }
 
 CHIP_ERROR EventManagement::ConstructEvent(EventLoadOutContext * apContext, EventLoggingDelegate * apDelegate,
-                                           const InternalEventOptions * apOptions)
+                                           const EventOptions * apOptions)
 {
     VerifyOrReturnError(apContext->mCurrentEventNumber >= apContext->mStartingEventNumber, CHIP_NO_ERROR
                         /* no-op: don't write event, but advance current event Number */);
@@ -343,7 +345,7 @@ void EventManagement::CreateEventManagement(Messaging::ExchangeManager * apExcha
 {
 
     sInstance.Init(apExchangeManager, aNumBuffers, apCircularEventBuffer, apLogStorageResources, apEventNumberCounter,
-                   aMonotonicStartupTime, &InteractionModelEngine::GetInstance()->GetReportingEngine());
+                   aMonotonicStartupTime);
 }
 
 /**
@@ -425,7 +427,7 @@ CHIP_ERROR EventManagement::LogEventPrivate(EventLoggingDelegate * apDelegate, c
     aEventNumber                 = 0;
     CircularTLVWriter checkpoint = writer;
     EventLoadOutContext ctxt     = EventLoadOutContext(writer, aEventOptions.mPriority, mLastEventNumber);
-    InternalEventOptions opts;
+    EventOptions opts;
 
     Timestamp timestamp;
 #if CHIP_DEVICE_CONFIG_EVENT_LOGGING_UTC_TIMESTAMPS
@@ -442,7 +444,7 @@ CHIP_ERROR EventManagement::LogEventPrivate(EventLoggingDelegate * apDelegate, c
         timestamp         = Timestamp::System(systemTimeMs);
     }
 
-    opts = InternalEventOptions(timestamp);
+    opts = EventOptions(timestamp);
     // Start the event container (anonymous structure) in the circular buffer
     writer.Init(*mpEventBuffer);
 
@@ -488,7 +490,7 @@ exit:
                       opts.mTimestamp.mType == Timestamp::Type::kSystem ? "Sys" : "Epoch", ChipLogValueX64(opts.mTimestamp.mValue));
 #endif // CHIP_CONFIG_EVENT_LOGGING_VERBOSE_DEBUG_LOGS
 
-        err = mpEventReporter->NewEventGenerated(opts.mPath, mBytesWritten);
+        err = InteractionModelEngine::GetInstance()->GetReportingEngine().ScheduleEventDelivery(opts.mPath, mBytesWritten);
     }
 
     return err;
@@ -552,20 +554,18 @@ CHIP_ERROR EventManagement::CheckEventContext(EventLoadOutContext * eventLoadOut
 
     ReturnErrorOnFailure(ret);
 
-    DataModel::EventEntry eventInfo;
-    ReturnErrorOnFailure(InteractionModelEngine::GetInstance()->GetDataModelProvider()->EventInfo(path, eventInfo));
-
     Access::RequestPath requestPath{ .cluster     = event.mClusterId,
                                      .endpoint    = event.mEndpointId,
                                      .requestType = Access::RequestType::kEventReadRequest,
                                      .entityId    = event.mEventId };
+    Access::Privilege requestPrivilege = RequiredPrivilege::ForReadEvent(path);
     CHIP_ERROR accessControlError =
-        Access::GetAccessControl().Check(eventLoadOutContext->mSubjectDescriptor, requestPath, eventInfo.readPrivilege);
+        Access::GetAccessControl().Check(eventLoadOutContext->mSubjectDescriptor, requestPath, requestPrivilege);
     if (accessControlError != CHIP_NO_ERROR)
     {
-        VerifyOrReturnError((accessControlError == CHIP_ERROR_ACCESS_DENIED) ||
-                                (accessControlError == CHIP_ERROR_ACCESS_RESTRICTED_BY_ARL),
-                            accessControlError);
+        ReturnErrorCodeIf((accessControlError != CHIP_ERROR_ACCESS_DENIED) &&
+                              (accessControlError != CHIP_ERROR_ACCESS_RESTRICTED_BY_ARL),
+                          accessControlError);
         ret = CHIP_ERROR_UNEXPECTED_EVENT;
     }
 

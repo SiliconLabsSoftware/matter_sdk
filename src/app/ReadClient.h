@@ -86,7 +86,8 @@ public:
         /**
          * Used to notify a (maybe empty) report data is received from peer and the subscription and the peer is alive.
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * This object MUST continue to exist after this call is completed. The application shall wait until it
+         * receives an OnDone call to destroy the object.
          *
          */
         virtual void NotifySubscriptionStillActive(const ReadClient & apReadClient) {}
@@ -94,7 +95,8 @@ public:
         /**
          * Used to signal the commencement of processing of the first attribute or event report received in a given exchange.
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * This object MUST continue to exist after this call is completed. The application shall wait until it
+         * receives an OnDone call to destroy the object.
          *
          * Once OnReportBegin has been called, either OnReportEnd or OnError will be called before OnDone.
          *
@@ -104,7 +106,8 @@ public:
         /**
          * Used to signal the completion of processing of the last attribute or event report in a given exchange.
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * This object MUST continue to exist after this call is completed. The application shall wait until it
+         * receives an OnDone call to destroy the object.
          *
          */
         virtual void OnReportEnd() {}
@@ -114,7 +117,8 @@ public:
          *
          * Only one of the apData and apStatus can be non-null.
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * This object MUST continue to exist after this call is completed. The application shall wait until it
+         * receives an OnDone call to destroy the object.
          *
          * @param[in] aEventHeader The event header in report response.
          * @param[in] apData A TLVReader positioned right on the payload of the event.
@@ -131,7 +135,8 @@ public:
          *   - Receiving attribute data as reports of subscriptions
          *   - Receiving attribute data as initial reports of subscriptions
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * This object MUST continue to exist after this call is completed. The application shall wait until it
+         * receives an OnDone call to destroy the object.
          *
          * @param[in] aPath        The attribute path field in report response.
          * @param[in] apData       The attribute data of the given path, will be a nullptr if status is not Success.
@@ -144,7 +149,8 @@ public:
          * OnSubscriptionEstablished will be called when a subscription is established for the given subscription transaction.
          * If using auto resubscription, OnSubscriptionEstablished will be called whenever resubscription is established.
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * This object MUST continue to exist after this call is completed. The application shall wait until it
+         * receives an OnDone call to destroy the object.
          *
          * @param[in] aSubscriptionId The identifier of the subscription that was established.
          */
@@ -172,7 +178,8 @@ public:
          * other than CHIP_NO_ERROR will terminate the interaction and result in OnError, OnDeallocatePaths and OnDone being called
          * in that sequence.
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * This object MUST continue to exist after this call is completed. The
+         * application shall wait until it receives an OnDone call to destroy the object.
          *
          * @param[in] aTerminationCause The cause of failure of the subscription that just terminated.
          */
@@ -192,7 +199,8 @@ public:
          *   a StatusIB from the error can be used to extract the status.
          * - CHIP_ERROR*: All other cases.
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * This object MUST continue to exist after this call is completed. The application shall wait until it
+         * receives an OnDone call to destroy the object.
          *
          * @param[in] aError       A system error code that conveys the overall error code.
          */
@@ -203,17 +211,11 @@ public:
          * safe to destroy and free the allocated ReadClient object and any
          * other objects associated with the Read or Subscribe interaction.
          *
-         * The ReadClient is allowed to be destroyed during execution of this callback.
-         *
          * This function will:
-         *      - Only be called after a successful call to SendRequest or
-         *        SendAutoResubscribeRequest has been made, when the read completes or
-         *        the subscription is shut down.
-         *      - Not be called if the ReadClient instance is destroyed before
-         *        the OnDone call happens.
-         *      - Always be called exactly *once* for a given ReadClient instance,
-         *        if it's called at all.
+         *      - Always be called exactly *once* for a given ReadClient instance.
          *      - Be called even in error circumstances.
+         *      - Only be called after a successful call to SendRequest has been
+         *        made, when the read completes or the subscription is shut down.
          *
          * @param[in] apReadClient the ReadClient for the completed interaction.
          */
@@ -238,8 +240,6 @@ public:
          * aEncodedDataVersionList boolean to true if it has successfully encoded at least one data version filter.
          *
          * Otherwise aEncodedDataVersionList will be set to false.
-         *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
          */
         virtual CHIP_ERROR OnUpdateDataVersionFilterList(DataVersionFilterIBs::Builder & aDataVersionFilterIBsBuilder,
                                                          const Span<AttributePathParams> & aAttributePaths,
@@ -249,12 +249,10 @@ public:
             return CHIP_NO_ERROR;
         }
 
-        /**
+        /*
          * Get highest received event number.
          * If the application does not want to filter events by event number, it should call ClearValue() on aEventNumber
          * and return CHIP_NO_ERROR.  An error return from this function will fail the entire read client interaction.
-         *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
          */
         virtual CHIP_ERROR GetHighestReceivedEventNumber(Optional<EventNumber> & aEventNumber)
         {
@@ -271,7 +269,7 @@ public:
          *   - When receiving any unsolicited communication from the node
          *   - Even for disconnected subscriptions.
          *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
+         * Callee MUST not synchronously destroy ReadClients in this callback.
          *
          * @param[in] apReadClient the ReadClient for the subscription.
          */
@@ -284,8 +282,6 @@ public:
          *
          * The callee is allowed to modify the ReadPrepareParams (e.g. to change
          * things like min/max intervals based on the session parameters).
-         *
-         * The ReadClient MUST NOT be destroyed during execution of this callback (i.e. before the callback returns).
          */
         virtual void OnCASESessionEstablished(const SessionHandle & aSession, ReadPrepareParams & aSubscriptionParams) {}
     };
@@ -328,13 +324,10 @@ public:
     /**
      * Destructor.
      *
-     * The ReadClient object may be destroyed at any time while not in the middle of executing a ReadClient::Callback
-     * callback, and may also be destroyed from inside the OnDone callback.
-     *
-     * Destroying the ReadClient will abort the exchange context if a valid one still exists. It will also cancel any
+     * Will abort the exchange context if a valid one still exists. It will also cancel any
      * liveness timers that may be active.
      *
-     * OnDone() will not be called if the ReadClient is destroyed before that call would have happened.
+     * OnDone() will not be called.
      */
     ~ReadClient() override;
 
@@ -382,8 +375,6 @@ public:
 
     FabricIndex GetFabricIndex() const { return mPeer.GetFabricIndex(); }
     NodeId GetPeerNodeId() const { return mPeer.GetNodeId(); }
-    ScopedNodeId GetPeerScopedId() const { return mPeer; }
-
     bool IsReadType() { return mInteractionType == InteractionType::Read; }
     bool IsSubscriptionType() const { return mInteractionType == InteractionType::Subscribe; };
 
@@ -408,8 +399,8 @@ public:
     /**
      *  Like SendSubscribeRequest, but the ReadClient will automatically attempt to re-establish the subscription if
      *  we decide that the subscription has dropped.  The exact behavior of the re-establishment can be controlled
-     *  by overriding Callback::OnResubscriptionNeeded().  If not overridden, a default behavior with exponential
-     *  backoff from will be used.
+     *  by setting mResubscribePolicy in the ReadPrepareParams.  If not set, a default behavior with exponential backoff will be
+     *  used.
      *
      *  The application has to know to
      *  a) allocate a ReadPrepareParams object that will have fields mpEventPathParamsList and mpAttributePathParamsList and
@@ -417,9 +408,8 @@ public:
      *  OnDeallocatePaths. Note: At a given time in the system, you can either have a single subscription with re-sub enabled that
      *  has mKeepSubscriptions = false, OR, multiple subs with re-sub enabled with mKeepSubscriptions = true. You shall not
      *  have a mix of both simultaneously. If SendAutoResubscribeRequest is called at all, it guarantees that it will call
-     *  OnDeallocatePaths (either before returning error, or when OnDone is called or the ReadClient is destroyed).
-     *  SendAutoResubscribeRequest is the only case that calls OnDeallocatePaths, since that's the only case when the consumer
-     *  moved a ReadParams into the client.
+     *  OnDeallocatePaths (either befor returning error, or when OnDone is called). SendAutoResubscribeRequest is the only case
+     *  that calls OnDeallocatePaths, since that's the only case when the consumer moved a ReadParams into the client.
      *
      */
     CHIP_ERROR SendAutoResubscribeRequest(ReadPrepareParams && aReadPrepareParams);
@@ -498,10 +488,8 @@ public:
      * communicating, so right now is a good time to try to resubscribe.
      *
      * The reason string is used for logging if a resubscribe is triggered.
-     *
-     * Returns whether a resubscribe is triggered.
      */
-    bool TriggerResubscribeIfScheduled(const char * reason);
+    void TriggerResubscribeIfScheduled(const char * reason);
 
     /**
      * Returns the timeout after which we consider the subscription to have
@@ -686,12 +674,6 @@ private:
     // of RequestMessage (another end of container)).
     static constexpr uint16_t kReservedSizeForTLVEncodingOverhead =
         kReservedSizeForEndOfContainer + kReservedSizeForIMRevision + kReservedSizeForEndOfContainer;
-
-#if CHIP_PROGRESS_LOGGING
-    // Tracks the time when a subscribe request is successfully sent.
-    // This timestamp allows for logging the duration taken to established the subscription.
-    System::Clock::Timestamp mSubscribeRequestTime = System::Clock::kZero;
-#endif
 };
 
 };     // namespace app

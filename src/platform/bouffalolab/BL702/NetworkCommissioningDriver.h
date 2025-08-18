@@ -113,8 +113,7 @@ public:
 
     CHIP_ERROR ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, const char * key, uint8_t keyLen);
     void OnConnectWiFiNetwork(bool isConnected);
-    void OnScanWiFiNetworkDone(void);
-    void OnScanWiFiNetworkDone(void * opaque);
+    void OnScanWiFiNetworkDone(void * opaque = NULL);
     void OnNetworkStatusChange(void);
 
     CHIP_ERROR SetLastDisconnectReason(const ChipDeviceEvent * event);
@@ -128,9 +127,6 @@ public:
 
 private:
     bool NetworkMatch(const WiFiNetwork & network, ByteSpan networkId);
-
-    WiFiScanResponse * mScanResponse = nullptr;
-    size_t mScanResponseNum          = 0;
 
     WiFiNetwork mSavedNetwork;
     WiFiNetwork mStagingNetwork;

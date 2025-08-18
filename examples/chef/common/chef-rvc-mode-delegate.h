@@ -42,7 +42,6 @@ private:
     using ModeTagStructType               = detail::Structs::ModeTagStruct::Type;
     ModeTagStructType ModeTagsIdle[1]     = { { .value = to_underlying(ModeTag::kIdle) } };
     ModeTagStructType ModeTagsCleaning[1] = { { .value = to_underlying(ModeTag::kCleaning) } };
-    ModeTagStructType ModeTagsMapping[1]  = { { .value = to_underlying(ModeTag::kMapping) } };
 
     const detail::Structs::ModeOptionStruct::Type kModeOptions[3] = {
         detail::Structs::ModeOptionStruct::Type{ .label    = CharSpan::fromCharString("Idle"),
@@ -53,7 +52,7 @@ private:
                                                  .modeTags = DataModel::List<const ModeTagStructType>(ModeTagsCleaning) },
         detail::Structs::ModeOptionStruct::Type{ .label    = CharSpan::fromCharString("Mapping"),
                                                  .mode     = ModeMapping,
-                                                 .modeTags = DataModel::List<const ModeTagStructType>(ModeTagsMapping) },
+                                                 .modeTags = DataModel::List<const ModeTagStructType>(ModeTagsIdle) },
     };
 
     CHIP_ERROR Init() override;
@@ -123,8 +122,6 @@ void Shutdown();
 } // namespace chip
 
 #ifdef MATTER_DM_PLUGIN_RVC_RUN_MODE_SERVER
-chip::app::Clusters::ModeBase::Instance * getRvcRunModeInstance();
-
 chip::Protocols::InteractionModel::Status chefRvcRunModeWriteCallback(chip::EndpointId endpoint, chip::ClusterId clusterId,
                                                                       const EmberAfAttributeMetadata * attributeMetadata,
                                                                       uint8_t * buffer);

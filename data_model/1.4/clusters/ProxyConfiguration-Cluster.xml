@@ -71,16 +71,12 @@ Davis, CA 95616, USA
     <struct name="ConfigurationStruct">
       <field id="1" name="ProxyAllNodes" type="bool" default="false">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="SourceList" type="list" default="empty">
         <entry type="node-id"/>
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <access fabricScoped="true"/>
     </struct>

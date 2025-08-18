@@ -20,7 +20,6 @@
 
 #include <app-common/zap-generated/attribute-type.h>
 #include <app/util/af-types.h>
-#include <app/util/attribute-storage.h>
 #include <lib/core/DataModelTypes.h>
 
 #include <cstddef>
@@ -75,18 +74,11 @@ struct MockEventConfig
     const EventId id;
 };
 
-enum class MockClusterSide : uint8_t
-{
-    kServer = 0x1,
-    kClient = 0x2,
-};
-
 struct MockClusterConfig
 {
     MockClusterConfig(ClusterId aId, std::initializer_list<MockAttributeConfig> aAttributes = {},
                       std::initializer_list<MockEventConfig> aEvents = {}, std::initializer_list<CommandId> aAcceptedCommands = {},
-                      std::initializer_list<CommandId> aGeneratedCommands = {},
-                      BitMask<MockClusterSide> side = BitMask<MockClusterSide>().Set(MockClusterSide::kServer));
+                      std::initializer_list<CommandId> aGeneratedCommands = {});
 
     // Cluster-config is self-referential: mEmberCluster.attributes references  mAttributeMetaData.data()
     MockClusterConfig(const MockClusterConfig & other);
@@ -110,10 +102,7 @@ private:
 struct MockEndpointConfig
 {
     MockEndpointConfig(EndpointId aId, std::initializer_list<MockClusterConfig> aClusters = {},
-                       std::initializer_list<EmberAfDeviceType> aDeviceTypes                                    = {},
-                       std::initializer_list<app::Clusters::Descriptor::Structs::SemanticTagStruct::Type> aTags = {},
-                       app::EndpointComposition composition = app::EndpointComposition::kFullFamily,
-                       chip::CharSpan aEndpointUniqueID     = chip::CharSpan());
+                       std::initializer_list<EmberAfDeviceType> aDeviceTypes = {});
 
     // Endpoint-config is self-referential: mEmberEndpoint.clusters references  mEmberClusters.data()
     MockEndpointConfig(const MockEndpointConfig & other);
@@ -126,21 +115,12 @@ struct MockEndpointConfig
         return Span<const EmberAfDeviceType>(mDeviceTypes.data(), mDeviceTypes.size());
     }
 
-    Span<const app::Clusters::Descriptor::Structs::SemanticTagStruct::Type> semanticTags() const
-    {
-        return Span<const app::Clusters::Descriptor::Structs::SemanticTagStruct::Type>(mSemanticTags.data(), mSemanticTags.size());
-    }
-
     const EndpointId id;
-    const app::EndpointComposition composition;
     const std::vector<MockClusterConfig> clusters;
-    char endpointUniqueIdBuffer[app::Clusters::Descriptor::Attributes::EndpointUniqueID::TypeInfo::MaxLength()] = { 0 };
-    uint8_t endpointUniqueIdSize;
 
 private:
     std::vector<EmberAfCluster> mEmberClusters;
     std::vector<EmberAfDeviceType> mDeviceTypes;
-    std::vector<app::Clusters::Descriptor::Structs::SemanticTagStruct::Type> mSemanticTags;
     EmberAfEndpointType mEmberEndpoint;
 };
 

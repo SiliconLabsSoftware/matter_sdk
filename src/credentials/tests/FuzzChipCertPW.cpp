@@ -10,38 +10,12 @@ namespace {
 
 using namespace chip;
 using namespace chip::Credentials;
+
 using namespace fuzztest;
 
-/*-----------------------------------  Helper Functions: Seed Providers   -----------------------------------*/
-/******************************************************************************************************************* */
-
-const std::string OpCertsDir = "credentials/test/operational-certificates-error-cases/";
-auto isChipFile              = [](std::string_view name) { return absl::EndsWith(name, ".chip"); };
-auto isDerFile               = [](std::string_view name) { return absl::EndsWith(name, ".der"); };
-auto isChipRCACFile = [](std::string_view name) { return absl::StrContains(name, "RCAC") && absl::EndsWith(name, ".chip"); };
-
-// Lambda that reads certificates from a directory and returns them as a vector of strings, to be used as seeds
-auto seedProvider = [](auto filterFunction) -> std::vector<std::string> {
-    // fuzztest::ReadFilesFromDirectory returns a vector of tuples, each tuple contains a file
-    // We need to unpack the tuples and then extract file content into a vector of strings.
-    std::vector<std::tuple<std::string>> tupleVector = ReadFilesFromDirectory(OpCertsDir, filterFunction);
-    std::vector<std::string> seeds;
-
-    if (tupleVector.size() == 0)
-    {
-        std::cout << "No Matching Seed files found in the chosen directory" << std::endl;
-    }
-    // DEBUG TIP: print tupleVector.size() here to check that we have the correct number of files as seeds.
-    for (auto & [fileContents] : tupleVector)
-    {
-        seeds.push_back(fileContents);
-    }
-    return seeds;
-};
-
-void ChipCertFuzzer(const std::string & fuzzChipCerts)
+void ChipCertFuzzer(const std::vector<std::uint8_t> & bytes)
 {
-    ByteSpan span(reinterpret_cast<const uint8_t *>(fuzzChipCerts.data()), fuzzChipCerts.size());
+    ByteSpan span(bytes.data(), bytes.size());
 
     {
         NodeId nodeId;
@@ -54,23 +28,54 @@ void ChipCertFuzzer(const std::string & fuzzChipCerts)
         CATValues cats;
         (void) ExtractCATsFromOpCert(span, cats);
     }
-}
-FUZZ_TEST(FuzzChipCert, ChipCertFuzzer).WithDomains(Arbitrary<std::string>().WithSeeds(seedProvider(isChipFile)));
 
-/*-----------------------------------  Chip Cert FuzzTests  -----------------------------------*/
-/******************************************************************************************************************* */
+    {
+        Credentials::P256PublicKeySpan key;
+        (void) ExtractPublicKeyFromChipCert(span, key);
+    }
+
+    {
+        chip::System::Clock::Seconds32 rcacNotBefore;
+        (void) ExtractNotBeforeFromChipCert(span, rcacNotBefore);
+    }
+
+    {
+        Credentials::CertificateKeyId skid;
+        (void) ExtractSKIDFromChipCert(span, skid);
+    }
+
+    {
+        ChipDN subjectDN;
+        (void) ExtractSubjectDNFromChipCert(span, subjectDN);
+    }
+
+    {
+        uint8_t outCertBuf[kMaxDERCertLength];
+        MutableByteSpan outCert(outCertBuf);
+        (void) ConvertChipCertToX509Cert(span, outCert);
+    }
+
+    {
+        // TODO: #35369 Move this to a Fixture once Errors related to FuzzTest Fixtures are resolved
+        ASSERT_EQ(chip::Platform::MemoryInit(), CHIP_NO_ERROR);
+        ValidateChipRCAC(span);
+        chip::Platform::MemoryShutdown();
+    }
+}
+
+FUZZ_TEST(FuzzChipCert, ChipCertFuzzer).WithDomains(Arbitrary<std::vector<std::uint8_t>>());
 
 // The Property function for DecodeChipCertFuzzer, The FUZZ_TEST Macro will call this function.
-void DecodeChipCertFuzzer(const std::string & fuzzChipCerts, BitFlags<CertDecodeFlags> aDecodeFlag)
+void DecodeChipCertFuzzer(const std::vector<std::uint8_t> & bytes, BitFlags<CertDecodeFlags> aDecodeFlag)
 {
+    ByteSpan span(bytes.data(), bytes.size());
+
     // TODO: #34352 To Move this to a Fixture once Errors related to FuzzTest Fixtures are resolved
     ASSERT_EQ(chip::Platform::MemoryInit(), CHIP_NO_ERROR);
-    {
-        ByteSpan span(reinterpret_cast<const uint8_t *>(fuzzChipCerts.data()), fuzzChipCerts.size());
 
-        ChipCertificateData certData;
-        (void) DecodeChipCert(span, certData, aDecodeFlag);
-    }
+    ChipCertificateData certData;
+    (void) DecodeChipCert(span, certData, aDecodeFlag);
+
     chip::Platform::MemoryShutdown();
 }
 
@@ -86,60 +91,5 @@ auto AnyCertDecodeFlag()
     return ElementOf<CertDecodeFlags>({ NullDecodeFlag, GenTBSHashFlag, TrustAnchorFlag });
 }
 
-FUZZ_TEST(FuzzChipCert, DecodeChipCertFuzzer)
-    .WithDomains(Arbitrary<std::string>().WithSeeds(seedProvider(isChipFile)), AnyCertDecodeFlag());
-
-/*************************************** */
-
-void ConvertChipCertToX509CertFuzz(const std::string & fuzzChipCerts)
-{
-    ByteSpan span(reinterpret_cast<const uint8_t *>(fuzzChipCerts.data()), fuzzChipCerts.size());
-
-    uint8_t outCertBuf[kMaxDERCertLength];
-    MutableByteSpan outCert(outCertBuf);
-    (void) ConvertChipCertToX509Cert(span, outCert);
-}
-FUZZ_TEST(FuzzChipCert, ConvertChipCertToX509CertFuzz).WithDomains(Arbitrary<std::string>().WithSeeds(seedProvider(isChipFile)));
-
-/******************************************************************************** */
-/******************************************************************************** */
-
-void ValidateChipRCACFuzz(const std::string & fuzzRcacCerts)
-{
-    // TODO: #35369 Move this to a Fixture once Errors related to FuzzTest Fixtures are resolved
-    ASSERT_EQ(chip::Platform::MemoryInit(), CHIP_NO_ERROR);
-    {
-        ByteSpan span(reinterpret_cast<const uint8_t *>(fuzzRcacCerts.data()), fuzzRcacCerts.size());
-        ValidateChipRCAC(span);
-    }
-    chip::Platform::MemoryShutdown();
-}
-
-FUZZ_TEST(FuzzChipCert, ValidateChipRCACFuzz).WithDomains(Arbitrary<std::string>().WithSeeds(seedProvider(isChipRCACFile)));
-
-/*-----------------------------------  DER Cert FuzzTests  -----------------------------------*/
-/******************************************************************************** */
-
-void ConvertX509CertToChipCertFuzz(const std::string & fuzzDerCerts)
-{
-    ByteSpan span(reinterpret_cast<const uint8_t *>(fuzzDerCerts.data()), fuzzDerCerts.size());
-
-    uint8_t outCertBuf[kMaxDERCertLength];
-    MutableByteSpan outCert(outCertBuf);
-
-    ConvertX509CertToChipCert(span, outCert);
-}
-FUZZ_TEST(FuzzChipCert, ConvertX509CertToChipCertFuzz).WithDomains(Arbitrary<std::string>().WithSeeds(seedProvider(isDerFile)));
-
-/******************************************************************************** */
-/******************************************************************************** */
-
-void ExtractSubjectDNFromX509CertFuzz(const std::string & fuzzDerCerts)
-{
-    ByteSpan span(reinterpret_cast<const uint8_t *>(fuzzDerCerts.data()), fuzzDerCerts.size());
-    ChipDN subjectDN;
-    ExtractSubjectDNFromX509Cert(span, subjectDN);
-}
-FUZZ_TEST(FuzzChipCert, ExtractSubjectDNFromX509CertFuzz).WithDomains(Arbitrary<std::string>().WithSeeds(seedProvider(isDerFile)));
-
+FUZZ_TEST(FuzzChipCert, DecodeChipCertFuzzer).WithDomains(Arbitrary<std::vector<std::uint8_t>>(), AnyCertDecodeFlag());
 } // namespace

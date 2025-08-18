@@ -110,7 +110,7 @@ private:
     PwmBackend * m_backend;
 };
 
-#if CONFIG_WS2812_STRIP_GPIO_TELINK
+#if CONFIG_WS2812_STRIP
 
 class Ws2812Strip : public PwmBackend
 {
@@ -170,4 +170,4 @@ private:
     PwmDummy(){};
 };
 
-#endif // CONFIG_WS2812_STRIP_GPIO_TELINK
+#endif // CONFIG_WS2812_STRIP

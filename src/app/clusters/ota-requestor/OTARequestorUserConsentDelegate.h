@@ -32,7 +32,7 @@ public:
     // check if the user consent is granted or denied.
     virtual UserConsentState CheckDeferredUserConsentState() = 0;
 
-    static const char * UserConsentStateToString(UserConsentState state)
+    const char * UserConsentStateToString(UserConsentState state)
     {
         switch (state)
         {

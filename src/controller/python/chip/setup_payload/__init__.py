@@ -14,6 +14,6 @@
 #    limitations under the License.
 #
 
-from .setup_payload import SetupPayload
+from chip.setup_payload.setup_payload import SetupPayload
 
 __all__ = ["SetupPayload"]

@@ -25,12 +25,14 @@
 
 namespace chip {
 namespace app {
-
+#if CHIP_CONFIG_ENABLE_READ_CLIENT
+class ReadClient;
+#endif // CHIP_CONFIG_ENABLE_READ_CLIENT
 struct AttributePathParams
 {
     AttributePathParams() = default;
 
-    constexpr explicit AttributePathParams(EndpointId aEndpointId) :
+    explicit AttributePathParams(EndpointId aEndpointId) :
         AttributePathParams(aEndpointId, kInvalidClusterId, kInvalidAttributeId, kInvalidListIndex)
     {}
 
@@ -38,19 +40,19 @@ struct AttributePathParams
     // TODO: (Issue #10596) Need to ensure that we do not encode the NodeId over the wire
     // if it is either not 'set', or is set to a value that matches accessing fabric
     // on which the interaction is undertaken.
-    constexpr AttributePathParams(EndpointId aEndpointId, ClusterId aClusterId) :
+    AttributePathParams(EndpointId aEndpointId, ClusterId aClusterId) :
         AttributePathParams(aEndpointId, aClusterId, kInvalidAttributeId, kInvalidListIndex)
     {}
 
-    constexpr AttributePathParams(EndpointId aEndpointId, ClusterId aClusterId, AttributeId aAttributeId) :
+    AttributePathParams(EndpointId aEndpointId, ClusterId aClusterId, AttributeId aAttributeId) :
         AttributePathParams(aEndpointId, aClusterId, aAttributeId, kInvalidListIndex)
     {}
 
-    constexpr AttributePathParams(ClusterId aClusterId, AttributeId aAttributeId) :
+    AttributePathParams(ClusterId aClusterId, AttributeId aAttributeId) :
         AttributePathParams(kInvalidEndpointId, aClusterId, aAttributeId, kInvalidListIndex)
     {}
 
-    constexpr AttributePathParams(EndpointId aEndpointId, ClusterId aClusterId, AttributeId aAttributeId, ListIndex aListIndex) :
+    AttributePathParams(EndpointId aEndpointId, ClusterId aClusterId, AttributeId aAttributeId, ListIndex aListIndex) :
         mClusterId(aClusterId), mAttributeId(aAttributeId), mEndpointId(aEndpointId), mListIndex(aListIndex)
     {}
 

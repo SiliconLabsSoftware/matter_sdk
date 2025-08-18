@@ -27,7 +27,6 @@ scripts/examples/gn_build_example.sh examples/ota-provider-app/linux "$OTA_PROVI
 echo "Test" >"$FIRMWARE_BIN"
 
 rm -f /tmp/chip_*
-mkdir -p /tmp/ota/
 
 ./src/app/ota_image_tool.py create -v 0xDEAD -p 0xBEEF -vn 10 -vs "10.0" -da sha256 "$FIRMWARE_BIN" "$FIRMWARE_OTA"
 
@@ -60,9 +59,9 @@ else
     echo Requestor not commissioned properly
 fi
 
-echo "Sending announce-otaprovider"
+echo "Sending announce-ota-provider"
 
-./"$CHIP_TOOL_FOLDER"/"$CHIP_TOOL_APP" otasoftwareupdaterequestor announce-otaprovider 1 0 0 0 2 0 | tee /tmp/ota/chip-tool-announce-ota.txt
+./"$CHIP_TOOL_FOLDER"/"$CHIP_TOOL_APP" otasoftwareupdaterequestor announce-ota-provider 1 0 0 0 2 0 | tee /tmp/ota/chip-tool-announce-ota.txt
 
 timeout 30 grep -q "OTA image downloaded to" <(tail -n0 -f /tmp/ota/requestor-log.txt)
 

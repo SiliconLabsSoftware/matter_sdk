@@ -23,7 +23,7 @@
 
 #include "DiagnosticDataProviderImplNrf.h"
 
-#ifdef CONFIG_WIFI_NRF70
+#ifdef CONFIG_WIFI_NRF700X
 #include <platform/nrfconnect/wifi/WiFiManager.h>
 #endif
 
@@ -41,12 +41,12 @@ DiagnosticDataProviderImplNrf & DiagnosticDataProviderImplNrf::GetDefaultInstanc
     return sInstance;
 }
 
-#ifdef CONFIG_WIFI_NRF70
+#ifdef CONFIG_WIFI_NRF700X
 CHIP_ERROR DiagnosticDataProviderImplNrf::GetWiFiBssId(MutableByteSpan & value)
 {
     WiFiManager::WiFiInfo info;
     ReturnErrorOnFailure(WiFiManager::Instance().GetWiFiInfo(info));
-    VerifyOrReturnError(sizeof(info.mBssId) < value.size(), CHIP_ERROR_BUFFER_TOO_SMALL);
+    ReturnErrorCodeIf(sizeof(info.mBssId) >= value.size(), CHIP_ERROR_BUFFER_TOO_SMALL);
 
     memcpy(value.data(), info.mBssId, sizeof(info.mBssId));
     value.reduce_size(sizeof(info.mBssId));

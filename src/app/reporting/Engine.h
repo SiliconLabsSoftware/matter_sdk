@@ -25,7 +25,6 @@
 #pragma once
 
 #include <access/AccessControl.h>
-#include <app/EventReporter.h>
 #include <app/MessageDef/ReportDataMessage.h>
 #include <app/ReadHandler.h>
 #include <app/data-model-provider/ProviderChangeListener.h>
@@ -56,7 +55,7 @@ namespace reporting {
  *         At its core, it  tries to gather and pack as much relevant attributes changes and/or events as possible into a report
  * message before sending that to the reader. It continues to do so until it has no more work to do.
  */
-class Engine : public DataModel::ProviderChangeListener, public EventReporter
+class Engine : public DataModel::ProviderChangeListener
 {
 public:
     /**
@@ -67,12 +66,10 @@ public:
     /**
      * Initializes the reporting engine. Should only be called once.
      *
-     * @param[in] A pointer to EventManagement, should not be a nullptr.
-     *
      * @retval #CHIP_NO_ERROR On success.
      * @retval other           Was unable to retrieve data and write it into the writer.
      */
-    CHIP_ERROR Init(EventManagement * apEventManagement);
+    CHIP_ERROR Init();
 
     void Shutdown();
 
@@ -98,6 +95,13 @@ public:
      * Application marks mutated change path and would be sent out in later report.
      */
     CHIP_ERROR SetDirty(const AttributePathParams & aAttributePathParams);
+
+    /**
+     * @brief
+     *  Schedule the event delivery
+     *
+     */
+    CHIP_ERROR ScheduleEventDelivery(ConcreteEventPath & aPath, uint32_t aBytesWritten);
 
     /*
      * Resets the tracker that tracks the currently serviced read handler.
@@ -168,15 +172,6 @@ private:
                                                        bool * apHasMoreChunks, bool * apHasEncodedData);
     CHIP_ERROR BuildSingleReportDataEventReports(ReportDataMessage::Builder & reportDataBuilder, ReadHandler * apReadHandler,
                                                  bool aBufferIsUsed, bool * apHasMoreChunks, bool * apHasEncodedData);
-
-    /**
-     * Encodes StatusIB event reports for non-wildcard paths that fail to be validated:
-     *   - invalid paths (invalid endpoint/cluster id)
-     *   - failure to validate ACL (cannot fetch ACL requirement or ACL failure)
-     *
-     * Returns CHIP_NO_ERROR if encoding succeeds, returns error code on a fatal error (generally failure to encode EventStatusIB
-     * values).
-     */
     CHIP_ERROR CheckAccessDeniedEventPaths(TLV::TLVWriter & aWriter, bool & aHasEncodedData, ReadHandler * apReadHandler);
 
     // If version match, it means don't send, if version mismatch, it means send.
@@ -186,12 +181,6 @@ private:
     // match the current data version of that cluster.
     bool IsClusterDataVersionMatch(const SingleLinkedListNode<DataVersionFilter> * aDataVersionFilterList,
                                    const ConcreteReadAttributePath & aPath);
-
-    /**
-     *  EventReporter implementation.
-     *
-     */
-    CHIP_ERROR NewEventGenerated(ConcreteEventPath & aPath, uint32_t aBytesConsumed) override;
 
     /**
      * Send Report via ReadHandler
@@ -298,8 +287,6 @@ private:
 #endif
 
     InteractionModelEngine * mpImEngine = nullptr;
-
-    EventManagement * mpEventManagement = nullptr;
 };
 
 }; // namespace reporting

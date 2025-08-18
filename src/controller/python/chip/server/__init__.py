@@ -16,22 +16,14 @@
 
 import ctypes
 
-from ..native import Library, PostAttributeChangeCallback, _GetLibraryHandle, c_PostAttributeChangeCallback
-
-__all__ = [
-    "GetLibraryHandle",
-    "PostAttributeChangeCallback",
-]
+from chip import native
+from chip.native import PostAttributeChangeCallback
 
 
-def GetLibraryHandle(cb: c_PostAttributeChangeCallback) -> ctypes.CDLL:
-    """Get a memoized handle to the chip native code dll.
+def GetLibraryHandle(cb: PostAttributeChangeCallback) -> ctypes.CDLL:
+    """Get a memoized handle to the chip native code dll."""
 
-    Args:
-      cb: A callback decorated by PostAttributeChangeCallback decorator.
-    """
-
-    handle = _GetLibraryHandle(Library.SERVER, False)
+    handle = native._GetLibraryHandle(native.Library.SERVER, False)
     if not handle.initialized:
         handle.dll.pychip_server_native_init().raise_on_error()
         handle.dll.pychip_server_set_callbacks(cb)

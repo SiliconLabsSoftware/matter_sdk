@@ -57,7 +57,7 @@ CHIP_ERROR StatusIB::Parser::DecodeStatusIB(StatusIB & aStatusIB) const
         case to_underlying(Tag::kClusterStatus):
             ClusterStatus clusterStatus;
             ReturnErrorOnFailure(reader.Get(clusterStatus));
-            aStatusIB.mClusterStatus.emplace(clusterStatus);
+            aStatusIB.mClusterStatus.SetValue(clusterStatus);
             break;
         }
     }
@@ -124,9 +124,9 @@ StatusIB::Builder & StatusIB::Builder::EncodeStatusIB(const StatusIB & aStatusIB
     mError = mpWriter->Put(TLV::ContextTag(Tag::kStatus), aStatusIB.mStatus);
     SuccessOrExit(mError);
 
-    if (aStatusIB.mClusterStatus.has_value())
+    if (aStatusIB.mClusterStatus.HasValue())
     {
-        mError = mpWriter->Put(TLV::ContextTag(Tag::kClusterStatus), *aStatusIB.mClusterStatus);
+        mError = mpWriter->Put(TLV::ContextTag(Tag::kClusterStatus), aStatusIB.mClusterStatus.Value());
         SuccessOrExit(mError);
     }
 
@@ -142,9 +142,9 @@ CHIP_ERROR StatusIB::ToChipError() const
         return CHIP_NO_ERROR;
     }
 
-    if (mClusterStatus.has_value())
+    if (mClusterStatus.HasValue())
     {
-        return ChipError(ChipError::SdkPart::kIMClusterStatus, *mClusterStatus);
+        return ChipError(ChipError::SdkPart::kIMClusterStatus, mClusterStatus.Value());
     }
 
     return ChipError(ChipError::SdkPart::kIMGlobalStatus, to_underlying(mStatus));
@@ -168,7 +168,7 @@ bool FormatStatusIBError(char * buf, uint16_t bufSize, CHIP_ERROR err)
     // formatted string, as long as we account for the possible string formats.
     constexpr size_t statusNameMaxLength =
 #define CHIP_IM_STATUS_CODE(name, spec_name, value)                                                                                \
-        std::max(sizeof(#spec_name),
+        max(sizeof(#spec_name),
 #include <protocols/interaction_model/StatusCodeList.h>
 #undef CHIP_IM_STATUS_CODE
         static_cast<size_t>(0)
@@ -177,13 +177,13 @@ bool FormatStatusIBError(char * buf, uint16_t bufSize, CHIP_ERROR err)
 #include <protocols/interaction_model/StatusCodeList.h>
 #undef CHIP_IM_STATUS_CODE
         ;
-    constexpr size_t formattedSize = std::max(sizeof(generalFormat) + statusNameMaxLength, sizeof(clusterFormat));
+    constexpr size_t formattedSize = max(sizeof(generalFormat) + statusNameMaxLength, sizeof(clusterFormat));
     char formattedString[formattedSize];
 
     StatusIB status(err);
-    if (status.mClusterStatus.has_value())
+    if (status.mClusterStatus.HasValue())
     {
-        snprintf(formattedString, formattedSize, clusterFormat, *status.mClusterStatus);
+        snprintf(formattedString, formattedSize, clusterFormat, status.mClusterStatus.Value());
     }
     else
     {

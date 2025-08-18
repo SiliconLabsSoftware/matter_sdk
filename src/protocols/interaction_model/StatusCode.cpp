@@ -43,7 +43,7 @@ ClusterStatusCode::ClusterStatusCode(CHIP_ERROR err)
     if (err.IsPart(ChipError::SdkPart::kIMClusterStatus))
     {
         mStatus              = Status::Failure;
-        mClusterSpecificCode = err.GetSdkCode();
+        mClusterSpecificCode = chip::MakeOptional(err.GetSdkCode());
         return;
     }
 

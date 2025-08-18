@@ -16,6 +16,7 @@
  *    limitations under the License.
  */
 
+#ifdef MATTER_DM_PLUGIN_SWITCH_SERVER
 #include "SwitchEventHandler.h"
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/clusters/switch-server/switch-server.h>
@@ -24,9 +25,7 @@
 #include <platform/PlatformManager.h>
 
 #include "chef-descriptor-namespace.h"
-#include <app/util/config.h>
-
-#if MATTER_DM_SWITCH_CLUSTER_SERVER_ENDPOINT_COUNT > 0
+#include "chef-rpc-actions-worker.h"
 
 using namespace chip;
 using namespace chip::app;
@@ -34,12 +33,8 @@ using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::Switch;
 using namespace chip::DeviceLayer;
 
-using namespace chip::app;
-
-#if CONFIG_ENABLE_PW_RPC
-
-#include "chef-rpc-actions-worker.h"
 using namespace chip::rpc;
+using namespace chip::app;
 
 class SwitchActionsDelegate : public chip::app::ActionsDelegate
 {
@@ -148,11 +143,6 @@ void SwitchActionsDelegate::EventHandler(chip::EndpointId endpointId, chip::Even
     }
 };
 
-static SwitchEventHandler * gSwitchEventHandler       = new SwitchEventHandler();
-static SwitchActionsDelegate * gSwitchActionsDelegate = new SwitchActionsDelegate(Clusters::Switch::Id, gSwitchEventHandler);
-
-#endif // CONFIG_ENABLE_PW_RPC
-
 const Clusters::Descriptor::Structs::SemanticTagStruct::Type gLatchingSwitch[] = {
     { .namespaceID = kNamespaceCommonLevel,
       .tag         = kTagCommonLow,
@@ -168,13 +158,14 @@ const Clusters::Descriptor::Structs::SemanticTagStruct::Type gLatchingSwitch[] =
           { chip::app::DataModel::MakeNullable(chip::CharSpan("High", 4)) }) }
 };
 
+static SwitchEventHandler * gSwitchEventHandler       = new SwitchEventHandler();
+static SwitchActionsDelegate * gSwitchActionsDelegate = new SwitchActionsDelegate(Clusters::Switch::Id, gSwitchEventHandler);
+
 void emberAfSwitchClusterInitCallback(EndpointId endpointId)
 {
     ChipLogProgress(Zcl, "Chef: emberAfSwitchClusterInitCallback");
 
-#if CONFIG_ENABLE_PW_RPC
     ChefRpcActionsWorker::Instance().RegisterRpcActionsDelegate(Clusters::Switch::Id, gSwitchActionsDelegate);
-#endif // CONFIG_ENABLE_PW_RPC
     SetTagList(/* endpoint= */ 1, Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gLatchingSwitch));
 }
-#endif // MATTER_DM_SWITCH_CLUSTER_SERVER_ENDPOINT_COUNT > 0
+#endif // MATTER_DM_PLUGIN_SWITCH_SERVER

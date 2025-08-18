@@ -24,8 +24,7 @@ gdbus_library("wpa") {
     "DBusWpaNetwork.xml",
   ]
 
-  c_namespace = "WpaSupplicant"
-  interface_prefix = "fi.w1.wpa_supplicant"
+  c_namespace = "Wpa"
   c_generate_object_manager = false
   dbus_out_dir = "platform/Linux/dbus/wpa"
 }

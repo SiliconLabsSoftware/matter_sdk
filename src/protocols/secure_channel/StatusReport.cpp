@@ -16,7 +16,6 @@
  *    limitations under the License.
  */
 
-#include <optional>
 #include <protocols/secure_channel/Constants.h>
 #include <protocols/secure_channel/StatusReport.h>
 
@@ -51,7 +50,7 @@ CHIP_ERROR StatusReport::Parse(System::PacketBufferHandle buf)
 {
     uint16_t tempGeneralCode = 0;
 
-    VerifyOrReturnError(!buf.IsNull(), CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorCodeIf(buf.IsNull(), CHIP_ERROR_INVALID_ARGUMENT);
 
     uint8_t * bufStart = buf->Start();
     LittleEndian::Reader bufReader(bufStart, buf->DataLength());
@@ -70,14 +69,6 @@ CHIP_ERROR StatusReport::Parse(System::PacketBufferHandle buf)
         if (mProtocolData.IsNull())
         {
             return CHIP_ERROR_NO_MEMORY;
-        }
-
-        if (IsBusy())
-        {
-            Encoding::LittleEndian::Reader reader(mProtocolData->Start(), mProtocolData->DataLength());
-            uint16_t tmpMinimumWaitTime = 0;
-            ReturnErrorOnFailure(reader.Read16(&tmpMinimumWaitTime).StatusCode());
-            mMinimumWaitTime = std::make_optional<System::Clock::Milliseconds16>(tmpMinimumWaitTime);
         }
     }
     else
@@ -104,11 +95,6 @@ size_t StatusReport::Size() const
     return WriteToBuffer(emptyBuf).Needed();
 }
 
-bool StatusReport::IsBusy() const
-{
-    return (mGeneralCode == GeneralStatusCode::kBusy && mProtocolCode == kProtocolCodeBusy);
-}
-
 System::PacketBufferHandle StatusReport::MakeBusyStatusReportMessage(System::Clock::Milliseconds16 minimumWaitTime)
 {
     using namespace Protocols::SecureChannel;
@@ -127,7 +113,6 @@ System::PacketBufferHandle StatusReport::MakeBusyStatusReportMessage(System::Clo
 
     // Build a busy status report
     StatusReport statusReport(GeneralStatusCode::kBusy, Protocols::SecureChannel::Id, kProtocolCodeBusy, std::move(handle));
-    statusReport.mMinimumWaitTime = std::make_optional<System::Clock::Milliseconds16>(minimumWaitTime);
 
     // Build the status report message
     handle = System::PacketBufferHandle::New(statusReport.Size());

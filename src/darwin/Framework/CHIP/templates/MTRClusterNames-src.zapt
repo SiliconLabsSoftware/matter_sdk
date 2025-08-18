@@ -23,7 +23,7 @@ NSString * MTRClusterNameForID(MTRClusterIDType clusterID)
 {{/zcl_clusters}}
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+            result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
             break;
     }
     
@@ -72,8 +72,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
 
 {{#if (isSupported (asUpperCamelCase label preserveAcronyms=true) isForIds=true)}}
             default:
-                // Not a known {{asUpperCamelCase name preserveAcronyms=true}} attribute.
-                result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+                result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
                 break;
         }
         break;
@@ -81,7 +80,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
 
 {{/zcl_clusters}}
         default:
-           result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+           result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
            break;
         }
 
@@ -120,7 +119,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
 {{> commandIDs clusterName=label}}
 
             default:
-                result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+                result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
                 break;
         }
         break;
@@ -128,7 +127,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
 
 {{/zcl_clusters}}
         default:
-           result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+           result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
            break;
         }
 
@@ -184,7 +183,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
 
 {{#if (isSupported (asUpperCamelCase label preserveAcronyms=true) isForIds=true)}}
             default:
-                result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+                result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
                 break;
         }
         break;
@@ -192,7 +191,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
 
 {{/zcl_clusters}}
         default:
-           result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+           result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
            break;
         }
 

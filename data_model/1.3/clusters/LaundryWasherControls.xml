@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright (C) Connectivity Standards Alliance (2025). All rights reserved.
+Copyright (C) Connectivity Standards Alliance (2023). All rights reserved.
 The information within this document is the property of the Connectivity
 Standards Alliance and its use and disclosure are restricted, except as
 expressly set forth herein.
@@ -51,11 +51,9 @@ are the sole property of their respective owners.
 
 This notice and disclaimer must be included on all copies of this document.
 
-Connectivity Standards Alliance
-508 Second Street, Suite 206
+Connectivity Standards Alliance +
+508 Second Street, Suite 206 +
 Davis, CA 95616, USA
-
-:xrefstyle: basic
 -->
 <cluster xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="types types.xsd cluster cluster.xsd" id="0x0053" name="Laundry Washer Controls Cluster" revision="1">
   <revisionHistory>
@@ -100,39 +98,28 @@ Davis, CA 95616, USA
   <attributes>
     <attribute id="0x0000" name="SpinSpeeds" type="list">
       <entry type="string">
-        <constraint>
-          <maxLength value="64"/>
-        </constraint>
+        <constraint type="maxLength" value="64"/>
       </entry>
       <access read="true" readPrivilege="view"/>
       <mandatoryConform>
         <feature name="SPIN"/>
       </mandatoryConform>
-      <constraint>
-        <maxCount value="16"/>
-      </constraint>
+      <constraint type="maxCount" value="16"/>
     </attribute>
     <attribute id="0x0001" name="SpinSpeedCurrent" type="uint8" default="desc">
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
-      <quality nullable="true"/>
+      <quality changeOmitted="false" nullable="true" scene="false" persistence="volatile" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform>
         <feature name="SPIN"/>
       </mandatoryConform>
-      <constraint>
-        <between>
-          <from value="0"/>
-          <to value="15"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="0" to="15"/>
     </attribute>
     <attribute id="0x0002" name="NumberOfRinses" type="NumberOfRinsesEnum" default="1">
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
       <mandatoryConform>
         <feature name="RINSE"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0003" name="SupportedRinses" type="list">
       <entry type="NumberOfRinsesEnum"/>
@@ -140,9 +127,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="RINSE"/>
       </mandatoryConform>
-      <constraint>
-        <maxCount value="4"/>
-      </constraint>
+      <constraint type="maxCount" value="4"/>
     </attribute>
   </attributes>
 </cluster>

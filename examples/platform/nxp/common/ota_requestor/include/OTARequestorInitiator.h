@@ -1,7 +1,7 @@
 /*
  *
  *    Copyright (c) 2022 Project CHIP Authors
- *    Copyright 2023-2025 NXP
+ *    Copyright 2023-2024 NXP
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,11 +24,15 @@
 #include "app/clusters/ota-requestor/DefaultOTARequestorDriver.h"
 #include "app/clusters/ota-requestor/DefaultOTARequestorStorage.h"
 
-#ifndef CONFIG_APP_FREERTOS_OS
+#ifdef CONFIG_CHIP_OTA_IMAGE_PROCESSOR_HEADER
+#include CONFIG_CHIP_OTA_IMAGE_PROCESSOR_HEADER
+#else
+#ifdef CONFIG_CHIP
 #include <platform/nxp/zephyr/ota/OTAImageProcessorImpl.h>
 #else
-#include "platform/nxp/common/ota/OTAImageProcessorImpl.h"
-#endif /* CONFIG_APP_FREERTOS_OS */
+#include "platform/nxp/common/OTAImageProcessorImpl.h"
+#endif /* CONFIG_CHIP */
+#endif /* CONFIG_CHIP_OTA_IMAGE_PROCESSOR_HEADER */
 
 #include <stdint.h>
 
@@ -56,6 +60,7 @@ public:
     DefaultOTARequestorStorage gRequestorStorage;
     DeviceLayer::DefaultOTARequestorDriver gRequestorUser;
     BDXDownloader gDownloader;
+    OTAImageProcessorImpl gImageProcessor;
 };
 } // namespace App
 } // namespace NXP

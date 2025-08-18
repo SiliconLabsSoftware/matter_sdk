@@ -18,19 +18,16 @@
  */
 
 #include "ThermostaticRadiatorValveManager.h"
+#include "qvIO.h"
 #include <FreeRTOS.h>
 
 #include "AppConfig.h"
 #include "AppTask.h"
 
-#include "StatusLed.h"
-#include "qPinCfg.h"
-
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <lib/support/logging/CHIPLogging.h>
 
 #include "gpSched.h"
-#include "qDrvTsens.h"
 
 ThermostaticRadiatorValveManager ThermostaticRadiatorValveManager::sThermostaticRadiatorValve;
 using namespace chip;
@@ -43,24 +40,19 @@ TimerHandle_t sThermostaticRadiatorValveTimer;
 StaticTimer_t sThermostaticRadiatorValveTimerBuffer;
 #endif
 
-static Int16 lastMeasuredTemperature;
-static qDrvTsens_Config_t tsensConfig  = Q_DRV_TSENS_CONFIG_DEFAULT(0, 0, qDrvTsens_HanningCycles128);
-static const qDrvTsens_Callbacks_t cbs = { .aboveMaximum = NULL, .belowMinimum = NULL, .fifoNotEmpty = NULL };
-
-Int16 (*resultGetFunction)(void) = NULL;
-
 #define DEGREE_FAHRENHEIT_CONVERSION(x) (int) ((float) x * 1.8) + 3200 // in unit of 0.01
 
-#define ONE_SECOND_MS 1000 // 1000 mseconds
-#define ONE_MIN_MS 60 * ONE_SECOND_MS
-#define TRV_MEASUREMENT_PERIOD ONE_MIN_MS
+#define DURATION_1SECOND 1000 // 1000 mseconds
+#define DURATION_1MIN 60 * DURATION_1SECOND
+#define TRV_MEASUREMENT_PERIOD DURATION_1MIN
 
+#define ONE_SECOND_US 1000000UL
 #define QPG_THERMOSTATIC_ENDPOINT_ID (1)
 
 static void DelayInit(void)
 {
     // measure temperature for the first time
-    lastMeasuredTemperature = resultGetFunction();
+    qvIO_MeasureTemperature();
 
     // start operation
     ThermostaticRadiatorValveMgr().StartNormalOperation();
@@ -93,31 +85,11 @@ CHIP_ERROR ThermostaticRadiatorValveManager::Init()
     if (sThermostaticRadiatorValveTimer == NULL)
     {
         ChipLogProgress(NotSpecified, "sThermostaticRadiatorValveTimer timer create failed");
-        return CHIP_ERROR_UNINITIALIZED;
+        return APP_ERROR_CREATE_TIMER_FAILED;
     }
 
-    if (qDrvTsens_InitCheck())
-    {
-        // Temperature sensor can be used by the calibration module.
-        // qDrvTsens_InitCheck() returns true if the temperature sensor is already initialized.
-        // In this case, we need to use the non-blocking function to get the temperature as the calibration module
-        // triggers the temperature sensor in the background.
-        resultGetFunction = qDrvTsens_ResultGetNonBlocking;
-    }
-    else
-    {
-        // Initiate temperature sensor here.
-        qResult_t result = qDrvTsens_Init(&tsensConfig, &cbs);
-        if (result != Q_OK)
-        {
-            return CHIP_ERROR_UNINITIALIZED;
-        }
-
-        // Set the function pointer to the blocking function as the application is the only one using the temperature sensor.
-        resultGetFunction = qDrvTsens_ResultGetBlocking;
-    }
-
-    lastMeasuredTemperature = resultGetFunction();
+    // initiate temperature sensor here
+    qvIO_TemperatureMeasurementInit();
 
     gpSched_ScheduleEvent(ONE_SECOND_US, DelayInit);
 
@@ -201,7 +173,7 @@ void ThermostaticRadiatorValveManager::TimerEventHandler(TimerHandle_t xTimer)
     event.TimerEvent.Context = thermostaticRadiatorValve;
     event.Handler            = PeriodicTimerEventHandler;
 
-    AppTask::GetAppTask().PostEvent(&event);
+    GetAppTask().PostEvent(&event);
 }
 
 /* periodic event handler */
@@ -218,26 +190,16 @@ void ThermostaticRadiatorValveManager::PeriodicTimerEventHandler(AppEvent * aEve
 /* Read local temperature from temperature sensor */
 int16_t ThermostaticRadiatorValveManager::GetLocalTemperature()
 {
-    int temp_integerPart;
-    int temp_floatingPart;
     int temp = 0;
 
     // measure temperature through ADC peripheral
-    if (resultGetFunction)
-    {
-        lastMeasuredTemperature = resultGetFunction();
-    }
-
-    temp_integerPart  = (int) HAL_ADC_TEMPERATURE_GET_INTEGER_PART(lastMeasuredTemperature);
-    temp_floatingPart = (int) HAL_ADC_TEMPERATURE_GET_FLOATING_PART(lastMeasuredTemperature);
-
-    temp = (int) (temp_integerPart * 100 + temp_floatingPart / 10);
+    qvIO_GetTemperatureValue(&temp);
 
     /* ADC module will be resume after SDP012-576*/
     // measure temperature through ADC peripheral
     // ADC_GetTemperatureValue(&temp);
 
-    ChipLogDetail(NotSpecified, "GetLocalTemperature (0.01 degC) - %d", temp);
+    ChipLogProgress(NotSpecified, "GetLocalTemperature (0.01 degC) - %d", temp);
 
     return (int16_t) temp;
 }
@@ -274,7 +236,7 @@ void ThermostaticRadiatorValveManager::UpdateThermostaticRadiatorValveStatus(voi
             pi = delta / heatingSetpoint * 100;
             SetPIHeatingDemand((uint8_t) pi);
             // configure LED
-            StatusLed_SetLed(SYSTEM_OPERATING_LED, true);
+            qvIO_LedSet(SYSTEM_OPERATING_LED, true);
             // update the state
             mThermostaticRadiatorValve_action = TRV_HEATING_ACTION;
         }
@@ -291,7 +253,7 @@ void ThermostaticRadiatorValveManager::UpdateThermostaticRadiatorValveStatus(voi
             SetPICoolingDemand((uint8_t) pi);
 
             // configure LED
-            StatusLed_SetLed(SYSTEM_OPERATING_LED, true);
+            qvIO_LedSet(SYSTEM_OPERATING_LED, true);
             // update the state
             mThermostaticRadiatorValve_action = TRV_COOLING_ACTION;
         }
@@ -303,7 +265,7 @@ void ThermostaticRadiatorValveManager::UpdateThermostaticRadiatorValveStatus(voi
         SetPICoolingDemand((uint8_t) 0);
         SetPIHeatingDemand((uint8_t) 0);
 
-        StatusLed_SetLed(SYSTEM_OPERATING_LED, false);
+        qvIO_LedSet(SYSTEM_OPERATING_LED, false);
     }
 
     UpdateLocalTemperature(localTemperature);

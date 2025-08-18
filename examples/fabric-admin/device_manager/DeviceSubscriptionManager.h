@@ -25,38 +25,19 @@
 
 #include <memory>
 
-namespace admin {
-
 class DeviceSubscriptionManager
 {
 public:
-    static DeviceSubscriptionManager & Instance()
-    {
-        static DeviceSubscriptionManager instance;
-        return instance;
-    }
+    static DeviceSubscriptionManager & Instance();
 
     /// Usually called after we have added a synchronized device to fabric-bridge to monitor
     /// for any changes that need to be propagated to fabric-bridge.
-    CHIP_ERROR StartSubscription(chip::Controller::DeviceController & controller, chip::ScopedNodeId scopedNodeId);
+    CHIP_ERROR StartSubscription(chip::Controller::DeviceController & controller, chip::NodeId nodeId);
 
-    CHIP_ERROR RemoveSubscription(chip::ScopedNodeId scopedNodeId);
+    CHIP_ERROR RemoveSubscription(chip::NodeId nodeId);
 
 private:
-    struct ScopedNodeIdHasher
-    {
-        std::size_t operator()(const chip::ScopedNodeId & scopedNodeId) const
-        {
-            std::size_t h1 = std::hash<uint64_t>{}(scopedNodeId.GetFabricIndex());
-            std::size_t h2 = std::hash<uint64_t>{}(scopedNodeId.GetNodeId());
-            // Bitshifting h2 reduces collisions when fabricIndex == nodeId.
-            return h1 ^ (h2 << 1);
-        }
-    };
+    void DeviceSubscriptionTerminated(chip::NodeId nodeId);
 
-    void DeviceSubscriptionTerminated(chip::ScopedNodeId scopedNodeId);
-
-    std::unordered_map<chip::ScopedNodeId, std::unique_ptr<DeviceSubscription>, ScopedNodeIdHasher> mDeviceSubscriptionMap;
+    std::unordered_map<chip::NodeId, std::unique_ptr<DeviceSubscription>> mDeviceSubscriptionMap;
 };
-
-} // namespace admin

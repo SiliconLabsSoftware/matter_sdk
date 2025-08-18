@@ -78,17 +78,13 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <disallowConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0001" name="VendorName" type="string" default="MS">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="32"/>
-      </constraint>
+      <constraint type="maxLength" value="32"/>
     </attribute>
     <attribute id="0x0002" name="VendorID" type="vendor-id" default="MS">
       <access read="true" readPrivilege="view"/>
@@ -99,9 +95,7 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="32"/>
-      </constraint>
+      <constraint type="maxLength" value="32"/>
     </attribute>
     <attribute id="0x0004" name="ProductID" type="uint16" default="MS">
       <access read="true" readPrivilege="view"/>
@@ -111,17 +105,13 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="32"/>
-      </constraint>
+      <constraint type="maxLength" value="32"/>
     </attribute>
     <attribute id="0x0006" name="Location" type="string" default="&quot;XX&quot;">
       <access read="true" write="true" readPrivilege="view" writePrivilege="admin"/>
       <quality persistence="nonVolatile"/>
       <disallowConform/>
-      <constraint>
-        <allowed value="2"/>
-      </constraint>
+      <constraint type="allowed" value="2"/>
     </attribute>
     <attribute id="0x0007" name="HardwareVersion" type="uint16" default="0">
       <access read="true" readPrivilege="view"/>
@@ -132,74 +122,49 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <lengthBetween>
-          <from value="1"/>
-          <to value="64"/>
-        </lengthBetween>
-      </constraint>
+      <constraint type="lengthBetween" from="1" to="64"/>
     </attribute>
     <attribute id="0x0009" name="SoftwareVersion" type="uint32" default="0">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x000A" name="SoftwareVersionString" type="string" default="MS">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <lengthBetween>
-          <from value="1"/>
-          <to value="64"/>
-        </lengthBetween>
-      </constraint>
+      <constraint type="lengthBetween" from="1" to="64"/>
     </attribute>
     <attribute id="0x000B" name="ManufacturingDate" type="string" default="MS">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <lengthBetween>
-          <from value="8"/>
-          <to value="16"/>
-        </lengthBetween>
-      </constraint>
+      <constraint type="lengthBetween" from="8" to="16"/>
     </attribute>
     <attribute id="0x000C" name="PartNumber" type="string" default="MS">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="32"/>
-      </constraint>
+      <constraint type="maxLength" value="32"/>
     </attribute>
     <attribute id="0x000D" name="ProductURL" type="string" default="MS">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="256"/>
-      </constraint>
+      <constraint type="maxLength" value="256"/>
     </attribute>
     <attribute id="0x000E" name="ProductLabel" type="string" default="MS">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="64"/>
-      </constraint>
+      <constraint type="maxLength" value="64"/>
     </attribute>
     <attribute id="0x000F" name="SerialNumber" type="string" default="MS">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="32"/>
-      </constraint>
+      <constraint type="maxLength" value="32"/>
     </attribute>
     <attribute id="0x0010" name="LocalConfigDisabled" type="bool" default="false">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
@@ -214,9 +179,7 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <mandatoryConform/>
-      <constraint>
-        <maxLength value="32"/>
-      </constraint>
+      <constraint type="maxLength" value="32"/>
     </attribute>
     <attribute id="0x0013" name="CapabilityMinima" type="CapabilityMinimaStruct" default="MS">
       <access read="true" readPrivilege="view"/>
@@ -232,17 +195,13 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <disallowConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0016" name="MaxPathsPerInvoke" type="uint16" default="1">
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <disallowConform/>
-      <constraint>
-        <min value="1"/>
-      </constraint>
+      <constraint type="min" value="1"/>
     </attribute>
   </attributes>
   <commands>
@@ -256,12 +215,7 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="TimeoutMs" type="uint32">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="30000"/>
-            <to value="3600000"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="30000" to="3600000"/>
       </field>
     </command>
   </commands>
@@ -292,9 +246,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="PromisedActiveDuration" type="uint32">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </event>
   </events>

@@ -85,9 +85,7 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality persistence="fixed"/>
       <mandatoryConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
   </attributes>
   <commands>
@@ -96,30 +94,22 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="GroupID" type="group-id">
         <mandatoryConform/>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
       <field id="1" name="GroupName" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
     </command>
     <command id="0x00" name="AddGroupResponse" direction="responseFromServer">
       <mandatoryConform/>
       <field id="0" name="Status" type="enum8">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="GroupID" type="group-id">
         <mandatoryConform/>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
     </command>
     <command id="0x01" name="ViewGroup" direction="commandToServer" response="ViewGroupResponse">
@@ -127,30 +117,22 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="GroupID" type="group-id">
         <mandatoryConform/>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
     </command>
     <command id="0x01" name="ViewGroupResponse" direction="responseFromServer">
       <mandatoryConform/>
       <field id="0" name="Status" type="enum8">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="GroupID" type="group-id">
         <mandatoryConform/>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
       <field id="2" name="GroupName" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
     </command>
     <command id="0x02" name="GetGroupMembership" direction="commandToServer" response="GetGroupMembershipResponse">
@@ -158,9 +140,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="GroupList" type="list">
         <entry type="group-id">
-          <constraint>
-            <min value="1"/>
-          </constraint>
+          <constraint type="min" value="1"/>
         </entry>
         <mandatoryConform/>
       </field>
@@ -173,9 +153,7 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="GroupList" type="list">
         <entry type="group-id">
-          <constraint>
-            <min value="1"/>
-          </constraint>
+          <constraint type="min" value="1"/>
         </entry>
         <mandatoryConform/>
       </field>
@@ -185,24 +163,18 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="GroupID" type="group-id">
         <mandatoryConform/>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
     </command>
     <command id="0x03" name="RemoveGroupResponse" direction="responseFromServer">
       <mandatoryConform/>
       <field id="0" name="Status" type="enum8">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="GroupID" type="group-id">
         <mandatoryConform/>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
     </command>
     <command id="0x04" name="RemoveAllGroups" direction="commandToServer" response="Y">
@@ -214,15 +186,11 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="GroupID" type="group-id">
         <mandatoryConform/>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
       <field id="1" name="GroupName" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
     </command>
   </commands>

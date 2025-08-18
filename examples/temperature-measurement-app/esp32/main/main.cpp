@@ -30,6 +30,7 @@
 #include <common/Esp32AppServer.h>
 #include <credentials/DeviceAttestationCredsProvider.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
+#include <diagnostic-logs-provider-delegate-impl.h>
 #include <platform/ESP32/ESP32Utils.h>
 
 #include <cmath>
@@ -50,14 +51,6 @@
 #else
 #include <DeviceInfoProviderImpl.h>
 #endif // CONFIG_ENABLE_ESP32_DEVICE_INFO_PROVIDER
-
-#ifdef CONFIG_ENABLE_ESP_DIAGNOSTICS_TRACE
-#include <diagnostic-logs-provider-delegate-impl.h>
-static uint8_t retrievalBuffer[CONFIG_RETRIEVAL_BUFFER_SIZE]; // Global static buffer used to retrieve diagnostics
-static uint8_t endUserBuffer[CONFIG_END_USER_BUFFER_SIZE];    // Global static buffer used to store diagnostics
-
-using namespace chip::app::Clusters::DiagnosticLogs;
-#endif // CONFIG_ENABLE_ESP_DIAGNOSTICS_TRACE
 
 namespace {
 #if CONFIG_ENABLE_ESP32_FACTORY_DATA_PROVIDER
@@ -89,6 +82,7 @@ extern "C" void app_main()
 #if CONFIG_ENABLE_PW_RPC
     chip::rpc::Init();
 #endif
+
     ESP_LOGI(TAG, "Temperature sensor!");
 
     // Initialize the ESP NVS layer.
@@ -136,17 +130,9 @@ extern "C" void app_main()
     chip::DeviceLayer::PlatformMgr().ScheduleWork(InitServer, reinterpret_cast<intptr_t>(nullptr));
 }
 
-#ifdef CONFIG_ENABLE_ESP_DIAGNOSTICS_TRACE
+using namespace chip::app::Clusters::DiagnosticLogs;
 void emberAfDiagnosticLogsClusterInitCallback(chip::EndpointId endpoint)
 {
-    auto & logProvider                        = LogProvider::GetInstance();
-    LogProvider::LogProviderInit providerInit = {
-        .endUserBuffer       = endUserBuffer,
-        .endUserBufferSize   = CONFIG_END_USER_BUFFER_SIZE,
-        .retrievalBuffer     = retrievalBuffer,
-        .retrievalBufferSize = CONFIG_RETRIEVAL_BUFFER_SIZE,
-    };
-    logProvider.Init(providerInit);
+    auto & logProvider = LogProvider::GetInstance();
     DiagnosticLogsServer::Instance().SetDiagnosticLogsProviderDelegate(endpoint, &logProvider);
 }
-#endif // CONFIG_ENABLE_ESP_DIAGNOSTICS_TRACE

@@ -318,7 +318,7 @@ CHIP_ERROR OperationalSessionSetup::EstablishConnection(const ResolveResult & re
 #endif
 
     mCASEClient = mClientPool->Allocate();
-    VerifyOrReturnError(mCASEClient != nullptr, CHIP_ERROR_NO_MEMORY);
+    ReturnErrorCodeIf(mCASEClient == nullptr, CHIP_ERROR_NO_MEMORY);
 
     MATTER_LOG_METRIC_BEGIN(kMetricDeviceCASESession);
     CHIP_ERROR err = mCASEClient->EstablishSession(mInitParams, mPeerId, mDeviceAddress, config, this);
@@ -744,7 +744,7 @@ CHIP_ERROR OperationalSessionSetup::ScheduleSessionSetupReattempt(System::Clock:
                   "Our backoff calculation will overflow.");
     System::Clock::Timeout actualTimerDelay = System::Clock::Seconds16(
         static_cast<uint16_t>(CHIP_DEVICE_CONFIG_AUTOMATIC_CASE_RETRY_INITIAL_DELAY_SECONDS
-                              << std::min((mAttemptsDone - 1), CHIP_DEVICE_CONFIG_AUTOMATIC_CASE_RETRY_MAX_BACKOFF)));
+                              << min((mAttemptsDone - 1), CHIP_DEVICE_CONFIG_AUTOMATIC_CASE_RETRY_MAX_BACKOFF)));
     const bool responseWasBusy = mRequestedBusyDelay != System::Clock::kZero;
     if (responseWasBusy)
     {

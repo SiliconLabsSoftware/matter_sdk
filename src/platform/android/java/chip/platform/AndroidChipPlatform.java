@@ -38,12 +38,6 @@ public final class AndroidChipPlatform {
     initChipStack();
   }
 
-  public native void onNfcTagResponse(byte[] response);
-
-  public native void onNfcTagError();
-
-  private native void nativeSetNFCCommissioningManager(NfcCommissioningManager manager);
-
   // for BLEManager
   public BleManager getBLEManager() {
     return mBleManager;

@@ -39,7 +39,7 @@ extern "C" void main_task(void const * argument)
     chip::NXP::App::GetAppTask().Start();
 }
 #else
-int main(int argc, char * argv[])
+extern "C" int main(int argc, char * argv[])
 {
     chip::DeviceLayer::PlatformMgrImpl().HardwareInit();
     chip::NXP::App::GetAppTask().Start();

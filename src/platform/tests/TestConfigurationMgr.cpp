@@ -389,16 +389,9 @@ TEST_F(TestConfigurationMgr, GetPrimaryMACAddress)
     MutableByteSpan mac6Bytes(macBuffer6Bytes);
 
     err = ConfigurationMgr().GetPrimaryMACAddress(mac8Bytes);
-    if (sizeof(macBuffer8Bytes) != ConfigurationManager::kPrimaryMACAddressLength)
+    if (mac8Bytes.size() != ConfigurationManager::kPrimaryMACAddressLength)
     {
-        // Should have failed input validation
         EXPECT_EQ(err, CHIP_ERROR_INVALID_ARGUMENT);
-    }
-    else if (mac8Bytes.size() != ConfigurationManager::kPrimaryMACAddressLength)
-    {
-        // This can happen if the primary address is Thread but then there is no
-        // Thread address to be had and we fell back to Wi-Fi.
-        EXPECT_EQ(mac8Bytes.size(), ConfigurationManager::kEthernetMACAddressLength);
     }
 
     err = ConfigurationMgr().GetPrimaryMACAddress(mac6Bytes);

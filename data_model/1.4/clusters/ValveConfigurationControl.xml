@@ -114,17 +114,13 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="1"/>
-      </constraint>
+      <constraint type="min" value="1"/>
     </attribute>
     <attribute id="0x0001" name="DefaultOpenDuration" type="elapsed-s" default="null">
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
       <quality nullable="true" persistence="nonVolatile"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="1"/>
-      </constraint>
+      <constraint type="min" value="1"/>
     </attribute>
     <attribute id="0x0002" name="AutoCloseTime" type="epoch-us" default="null">
       <access read="true" readPrivilege="view"/>
@@ -168,12 +164,7 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="LVL"/>
       </optionalConform>
-      <constraint>
-        <between>
-          <from value="1"/>
-          <to value="100"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="1" to="100"/>
     </attribute>
     <attribute id="0x0009" name="ValveFault" type="ValveFaultBitmap" default="0">
       <access read="true" readPrivilege="view"/>
@@ -185,12 +176,7 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="LVL"/>
       </optionalConform>
-      <constraint>
-        <between>
-          <from value="1"/>
-          <to value="50"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="1" to="50"/>
     </attribute>
   </attributes>
   <commands>
@@ -200,17 +186,13 @@ Davis, CA 95616, USA
       <field id="0" name="OpenDuration" type="elapsed-s">
         <quality nullable="true"/>
         <optionalConform/>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
       <field id="1" name="TargetLevel" type="percent">
         <optionalConform>
           <feature name="LVL"/>
         </optionalConform>
-        <constraint>
-          <min value="1"/>
-        </constraint>
+        <constraint type="min" value="1"/>
       </field>
     </command>
     <command id="0x01" name="Close" direction="commandToServer" response="Y">

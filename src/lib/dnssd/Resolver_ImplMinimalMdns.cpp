@@ -590,7 +590,7 @@ CHIP_ERROR MinMdnsResolver::BuildQuery(QueryBuilder & builder, const ActiveResol
         break;
     }
 
-    VerifyOrReturnError(qname.nameCount, CHIP_ERROR_NO_MEMORY);
+    ReturnErrorCodeIf(!qname.nameCount, CHIP_ERROR_NO_MEMORY);
 
     mdns::Minimal::Query query(qname);
     query
@@ -665,7 +665,7 @@ CHIP_ERROR MinMdnsResolver::BuildQuery(QueryBuilder & builder, const ActiveResol
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
-    VerifyOrReturnError(builder.Ok(), CHIP_ERROR_INTERNAL);
+    ReturnErrorCodeIf(!builder.Ok(), CHIP_ERROR_INTERNAL);
     return CHIP_NO_ERROR;
 }
 
@@ -681,7 +681,7 @@ CHIP_ERROR MinMdnsResolver::SendAllPendingQueries()
         }
 
         System::PacketBufferHandle buffer = System::PacketBufferHandle::New(kMdnsMaxPacketSize);
-        VerifyOrReturnError(!buffer.IsNull(), CHIP_ERROR_NO_MEMORY);
+        ReturnErrorCodeIf(buffer.IsNull(), CHIP_ERROR_NO_MEMORY);
 
         QueryBuilder builder(std::move(buffer));
         builder.Header().SetMessageId(0);
@@ -770,7 +770,7 @@ CHIP_ERROR MinMdnsResolver::ScheduleRetries()
 {
     MATTER_TRACE_SCOPE("Schedule retries", "MinMdnsResolver");
 
-    VerifyOrReturnError(mSystemLayer != nullptr, CHIP_ERROR_INCORRECT_STATE);
+    ReturnErrorCodeIf(mSystemLayer == nullptr, CHIP_ERROR_INCORRECT_STATE);
     mSystemLayer->CancelTimer(&RetryCallback, this);
 
     std::optional<System::Clock::Timeout> delay = mActiveResolves.GetTimeUntilNextExpectedResponse();

@@ -17,9 +17,6 @@
 
 #pragma once
 
-#include <lib/core/DataModelTypes.h>
-#include <vector>
-
 namespace chip {
 namespace rpc {
 

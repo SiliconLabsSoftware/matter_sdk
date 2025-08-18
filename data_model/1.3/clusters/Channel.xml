@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright (C) Connectivity Standards Alliance (2025). All rights reserved.
+Copyright (C) Connectivity Standards Alliance (2021). All rights reserved.
 The information within this document is the property of the Connectivity
 Standards Alliance and its use and disclosure are restricted, except as
 expressly set forth herein.
@@ -167,9 +167,7 @@ Davis, CA 95616, USA
       </field>
       <field id="3" name="LineupInfoType" type="LineupInfoTypeEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </struct>
     <struct name="PageTokenStruct">
@@ -178,51 +176,37 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="After" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8192"/>
-        </constraint>
+        <constraint type="maxLength" value="8192"/>
       </field>
       <field id="2" name="Before" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8192"/>
-        </constraint>
+        <constraint type="maxLength" value="8192"/>
       </field>
     </struct>
     <struct name="ProgramCastStruct">
       <field id="0" name="Name" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
       <field id="1" name="Role" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
     </struct>
     <struct name="ProgramCategoryStruct">
       <field id="0" name="Category" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
       <field id="1" name="SubCategory" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
     </struct>
     <struct name="ProgramStruct">
       <field id="0" name="Identifier" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="255"/>
-        </constraint>
+        <constraint type="maxLength" value="255"/>
       </field>
       <field id="1" name="Channel" type="ChannelInfoStruct">
         <mandatoryConform/>
@@ -235,69 +219,47 @@ Davis, CA 95616, USA
       </field>
       <field id="4" name="Title" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="255"/>
-        </constraint>
+        <constraint type="maxLength" value="255"/>
       </field>
       <field id="5" name="Subtitle" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="255"/>
-        </constraint>
+        <constraint type="maxLength" value="255"/>
       </field>
       <field id="6" name="Description" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8192"/>
-        </constraint>
+        <constraint type="maxLength" value="8192"/>
       </field>
       <field id="7" name="AudioLanguages" type="list" default="empty">
         <entry type="string">
-          <constraint>
-            <maxLength value="50"/>
-          </constraint>
+          <constraint type="maxLength" value="50"/>
         </entry>
         <optionalConform/>
-        <constraint>
-          <maxCount value="10"/>
-        </constraint>
+        <constraint type="maxCount" value="10"/>
       </field>
       <field id="8" name="Ratings" type="list" default="empty">
         <entry type="string"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="255"/>
-        </constraint>
+        <constraint type="maxCount" value="255"/>
       </field>
       <field id="9" name="ThumbnailUrl" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8192"/>
-        </constraint>
+        <constraint type="maxLength" value="8192"/>
       </field>
       <field id="10" name="PosterArtUrl" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8192"/>
-        </constraint>
+        <constraint type="maxLength" value="8192"/>
       </field>
       <field id="11" name="DvbiUrl" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8192"/>
-        </constraint>
+        <constraint type="maxLength" value="8192"/>
       </field>
       <field id="12" name="ReleaseDate" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="30"/>
-        </constraint>
+        <constraint type="maxLength" value="30"/>
       </field>
       <field id="13" name="ParentalGuidanceText" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="255"/>
-        </constraint>
+        <constraint type="maxLength" value="255"/>
       </field>
       <field id="14" name="RecordingFlag" type="RecordingFlagBitmap">
         <mandatoryConform>
@@ -311,37 +273,27 @@ Davis, CA 95616, USA
       <field id="16" name="CategoryList" type="list" default="empty">
         <entry type="ProgramCategoryStruct"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="255"/>
-        </constraint>
+        <constraint type="maxCount" value="255"/>
       </field>
       <field id="17" name="CastList" type="list" default="empty">
         <entry type="ProgramCastStruct"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="255"/>
-        </constraint>
+        <constraint type="maxCount" value="255"/>
       </field>
       <field id="18" name="ExternalIDList" type="list" default="empty">
-        <entry type="AdditionalInfoStruct"/>
+        <entry type="ref_AdditionalInfoStruct"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="255"/>
-        </constraint>
+        <constraint type="maxCount" value="255"/>
       </field>
     </struct>
     <struct name="SeriesInfoStruct">
       <field id="0" name="Season" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
       <field id="1" name="Episode" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
     </struct>
   </dataTypes>
@@ -355,21 +307,17 @@ Davis, CA 95616, USA
     </attribute>
     <attribute id="0x0001" name="Lineup" type="LineupInfoStruct" default="null">
       <access read="true" readPrivilege="view"/>
-      <quality nullable="true"/>
+      <quality changeOmitted="false" nullable="true" scene="false" persistence="volatile" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform>
         <feature name="LI"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0002" name="CurrentChannel" type="ChannelInfoStruct" default="null">
       <access read="true" readPrivilege="view"/>
-      <quality nullable="true"/>
+      <quality changeOmitted="false" nullable="true" scene="false" persistence="volatile" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
   </attributes>
   <commands>
@@ -394,9 +342,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Status" type="StatusEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="Data" type="string">
         <optionalConform/>
@@ -434,9 +380,7 @@ Davis, CA 95616, USA
       <field id="2" name="ChannelList" type="list" default="empty">
         <entry type="ChannelInfoStruct"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="255"/>
-        </constraint>
+        <constraint type="maxCount" value="255"/>
       </field>
       <field id="3" name="PageToken" type="PageTokenStruct" default="null">
         <quality nullable="true"/>
@@ -447,17 +391,13 @@ Davis, CA 95616, USA
         <optionalConform/>
       </field>
       <field id="6" name="ExternalIDList" type="list" default="empty">
-        <entry type="AdditionalInfoStruct"/>
+        <entry type="ref_AdditionalInfoStruct"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="255"/>
-        </constraint>
+        <constraint type="maxCount" value="255"/>
       </field>
       <field id="7" name="Data" type="octstr" default="MS">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8092"/>
-        </constraint>
+        <constraint type="maxLength" value="8092"/>
       </field>
     </command>
     <command id="0x05" name="ProgramGuideResponse" direction="responseFromServer">
@@ -484,25 +424,19 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="ProgramIdentifier" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="255"/>
-        </constraint>
+        <constraint type="maxLength" value="255"/>
       </field>
       <field id="1" name="ShouldRecordSeries" type="bool">
         <mandatoryConform/>
       </field>
       <field id="2" name="ExternalIDList" type="list" default="empty">
-        <entry type="AdditionalInfoStruct"/>
+        <entry type="ref_AdditionalInfoStruct"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="255"/>
-        </constraint>
+        <constraint type="maxCount" value="255"/>
       </field>
       <field id="3" name="Data" type="octstr" default="MS">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8092"/>
-        </constraint>
+        <constraint type="maxLength" value="8092"/>
       </field>
     </command>
     <command id="0x07" name="CancelRecordProgram" direction="commandToServer" response="Y">
@@ -516,25 +450,19 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="ProgramIdentifier" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="255"/>
-        </constraint>
+        <constraint type="maxLength" value="255"/>
       </field>
       <field id="1" name="ShouldRecordSeries" type="bool">
         <mandatoryConform/>
       </field>
       <field id="2" name="ExternalIDList" type="list" default="empty">
-        <entry type="AdditionalInfoStruct"/>
+        <entry type="ref_AdditionalInfoStruct"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="255"/>
-        </constraint>
+        <constraint type="maxCount" value="255"/>
       </field>
       <field id="3" name="Data" type="octstr" default="MS">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8092"/>
-        </constraint>
+        <constraint type="maxLength" value="8092"/>
       </field>
     </command>
   </commands>

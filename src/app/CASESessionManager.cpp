@@ -76,17 +76,6 @@ void CASESessionManager::FindOrEstablishSession(const ScopedNodeId & peerId, Cal
                                  transportPayloadCapability);
 }
 
-void CASESessionManager::FindOrEstablishSession(const ScopedNodeId & peerId, Callback::Callback<OnDeviceConnected> * onConnection,
-                                                Callback::Callback<OnDeviceConnectionFailure> * onFailure,
-                                                TransportPayloadCapability transportPayloadCapability)
-{
-    FindOrEstablishSessionHelper(peerId, onConnection, onFailure, nullptr,
-#if CHIP_DEVICE_CONFIG_ENABLE_AUTOMATIC_CASE_RETRIES
-                                 1 /* attemptCount */, nullptr /* onRetry */,
-#endif
-                                 transportPayloadCapability);
-}
-
 void CASESessionManager::FindOrEstablishSessionHelper(const ScopedNodeId & peerId,
                                                       Callback::Callback<OnDeviceConnected> * onConnection,
                                                       Callback::Callback<OnDeviceConnectionFailure> * onFailure,
@@ -157,7 +146,7 @@ CHIP_ERROR CASESessionManager::GetPeerAddress(const ScopedNodeId & peerId, Trans
 {
     ReturnErrorOnFailure(mConfig.sessionInitParams.Validate());
     auto optionalSessionHandle = FindExistingSession(peerId, transportPayloadCapability);
-    VerifyOrReturnError(optionalSessionHandle.HasValue(), CHIP_ERROR_NOT_CONNECTED);
+    ReturnErrorCodeIf(!optionalSessionHandle.HasValue(), CHIP_ERROR_NOT_CONNECTED);
     addr = optionalSessionHandle.Value()->AsSecureSession()->GetPeerAddress();
     return CHIP_NO_ERROR;
 }
@@ -197,12 +186,6 @@ Optional<SessionHandle> CASESessionManager::FindExistingSession(const ScopedNode
 {
     return mConfig.sessionInitParams.sessionManager->FindSecureSessionForNode(
         peerId, MakeOptional(Transport::SecureSession::Type::kCASE), transportPayloadCapability);
-}
-
-void CASESessionManager::ReleaseSession(const ScopedNodeId & peerId)
-{
-    auto * session = mConfig.sessionSetupPool->FindSessionSetup(peerId, false);
-    ReleaseSession(session);
 }
 
 void CASESessionManager::ReleaseSession(OperationalSessionSetup * session)

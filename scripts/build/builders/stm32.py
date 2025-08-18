@@ -36,7 +36,7 @@ class stm32App(Enum):
 
     def FlashBundleName(self):
         if self == stm32App.LIGHT:
-            return 'lighting_app.flashbundle.txt'
+            return 'lighting_app.out.flashbundle.txt'
         else:
             raise Exception('Unknown app type: %r' % self)
 
@@ -79,7 +79,7 @@ class stm32Builder(GnBuilder):
         return self.extra_gn_options
 
     def build_outputs(self):
-        extensions = ["bin", "elf"]
+        extensions = ["out", "out.hex"]
         if self.options.enable_link_map_file:
             extensions.append("out.map")
         for ext in extensions:

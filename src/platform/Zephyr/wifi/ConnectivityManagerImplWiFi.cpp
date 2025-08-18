@@ -102,6 +102,13 @@ void ConnectivityManagerImplWiFi::_ClearWiFiStationProvision(void)
     }
 }
 
+bool ConnectivityManagerImplWiFi::_CanStartWiFiScan()
+{
+    return (WiFiManager::StationStatus::DISABLED != WiFiManager::Instance().GetStationStatus() &&
+            WiFiManager::StationStatus::SCANNING != WiFiManager::Instance().GetStationStatus() &&
+            WiFiManager::StationStatus::CONNECTING != WiFiManager::Instance().GetStationStatus());
+}
+
 void ConnectivityManagerImplWiFi::_OnWiFiStationProvisionChange()
 {
     // do nothing

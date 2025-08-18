@@ -93,8 +93,8 @@ def ComputeClasspath(build_config_json):
 
 
 def main():
-    java_home = FindCommand('javac')
-    if not java_home:
+    java_path = FindCommand('javac')
+    if not java_path:
         sys.stderr.write('javac: command not found\n')
         sys.exit(EXIT_FAILURE)
 
@@ -123,7 +123,7 @@ def main():
 
     build_config_json = ReadBuildConfig(args.build_config)
     classpath = ComputeClasspath(build_config_json)
-    java_args = [java_home]
+    java_args = [java_path]
     if classpath:
         java_args += ["-classpath", classpath]
 

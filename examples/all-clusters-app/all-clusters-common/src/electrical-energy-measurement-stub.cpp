@@ -40,12 +40,3 @@ void emberAfElectricalEnergyMeasurementClusterInitCallback(chip::EndpointId endp
         gAttrAccess->Init();
     }
 }
-
-void emberAfElectricalEnergyMeasurementClusterShutdownCallback(chip::EndpointId endpointId)
-{
-    if (gAttrAccess)
-    {
-        gAttrAccess->Shutdown();
-    }
-    gAttrAccess = nullptr;
-}

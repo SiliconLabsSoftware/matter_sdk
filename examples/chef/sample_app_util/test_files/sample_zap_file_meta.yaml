@@ -22,6 +22,9 @@
             EthernetNetworkDiagnostics/55:
                 attributes:
                     FeatureMap/65532: '3'
+            FixedLabel/64:
+                attributes:
+                    FeatureMap/65532: '0'
             GeneralCommissioning/48:
                 attributes:
                     FeatureMap/65532: '6'

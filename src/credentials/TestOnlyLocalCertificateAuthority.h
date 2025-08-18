@@ -161,9 +161,9 @@ protected:
         if (mIncludeIcac)
         {
             Platform::ScopedMemoryBufferWithSize<uint8_t> icacDerBuf;
-            VerifyOrReturnError(icacDerBuf.Alloc(Credentials::kMaxDERCertLength), CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf(!icacDerBuf.Alloc(Credentials::kMaxDERCertLength), CHIP_ERROR_NO_MEMORY);
             Platform::ScopedMemoryBufferWithSize<uint8_t> icacChipBuf;
-            VerifyOrReturnError(icacChipBuf.Alloc(Credentials::kMaxCHIPCertLength), CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf(!icacChipBuf.Alloc(Credentials::kMaxCHIPCertLength), CHIP_ERROR_NO_MEMORY);
 
             ReturnErrorOnFailure(icac_dn.AddAttribute_MatterFabricId(fabricId));
             ReturnErrorOnFailure(icac_dn.AddAttribute_MatterICACId(1234));
@@ -176,7 +176,7 @@ protected:
             MutableByteSpan icacChipSpan{ icacChipBuf.Get(), icacChipBuf.AllocatedSize() };
             ReturnErrorOnFailure(Credentials::ConvertX509CertToChipCert(icacDerSpan, icacChipSpan));
 
-            VerifyOrReturnError(mLastIcac.Alloc(icacChipSpan.size()), CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf(!mLastIcac.Alloc(icacChipSpan.size()), CHIP_ERROR_NO_MEMORY);
 
             memcpy(mLastIcac.Get(), icacChipSpan.data(), icacChipSpan.size());
 
@@ -187,9 +187,9 @@ protected:
         // Generate NOC always, either issued from ICAC if present or from RCAC
         {
             Platform::ScopedMemoryBufferWithSize<uint8_t> nocDerBuf;
-            VerifyOrReturnError(nocDerBuf.Alloc(Credentials::kMaxDERCertLength), CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf(!nocDerBuf.Alloc(Credentials::kMaxDERCertLength), CHIP_ERROR_NO_MEMORY);
             Platform::ScopedMemoryBufferWithSize<uint8_t> nocChipBuf;
-            VerifyOrReturnError(nocChipBuf.Alloc(Credentials::kMaxCHIPCertLength), CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf(!nocChipBuf.Alloc(Credentials::kMaxCHIPCertLength), CHIP_ERROR_NO_MEMORY);
 
             ReturnErrorOnFailure(noc_dn.AddAttribute_MatterFabricId(fabricId));
             ReturnErrorOnFailure(noc_dn.AddAttribute_MatterNodeId(nodeId));
@@ -202,7 +202,7 @@ protected:
             MutableByteSpan nocChipSpan{ nocChipBuf.Get(), nocChipBuf.AllocatedSize() };
             ReturnErrorOnFailure(Credentials::ConvertX509CertToChipCert(nocDerSpan, nocChipSpan));
 
-            VerifyOrReturnError(mLastNoc.Alloc(nocChipSpan.size()), CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf(!mLastNoc.Alloc(nocChipSpan.size()), CHIP_ERROR_NO_MEMORY);
 
             memcpy(mLastNoc.Get(), nocChipSpan.data(), nocChipSpan.size());
         }

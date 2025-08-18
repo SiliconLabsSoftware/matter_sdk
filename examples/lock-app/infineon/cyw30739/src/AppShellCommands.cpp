@@ -52,7 +52,7 @@ void RegisterAppShellCommands(void)
         .cmd_help = "App commands",
     };
 
-    sAppSubcommands.RegisterCommands(sAppSubCommands, MATTER_ARRAY_SIZE(sAppSubCommands));
+    sAppSubcommands.RegisterCommands(sAppSubCommands, ArraySize(sAppSubCommands));
 
     Engine::Root().RegisterCommands(&sAppCommand, 1);
 }

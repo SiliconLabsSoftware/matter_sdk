@@ -21,10 +21,9 @@ import traceback
 from dataclasses import dataclass
 
 import click
-
-from matter.yamltests.errors import TestStepError, TestStepKeyError
-from matter.yamltests.hooks import TestParserHooks, TestRunnerHooks, WebSocketRunnerHooks
-from matter.yamltests.parser import TestStep
+from matter_yamltests.errors import TestStepError, TestStepKeyError
+from matter_yamltests.hooks import TestParserHooks, TestRunnerHooks, WebSocketRunnerHooks
+from matter_yamltests.parser import TestStep
 
 
 def _strikethrough(str):

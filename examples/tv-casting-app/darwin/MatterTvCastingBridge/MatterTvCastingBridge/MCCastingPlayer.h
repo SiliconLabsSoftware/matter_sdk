@@ -27,16 +27,6 @@
 @class MCEndpoint;
 
 /**
- * @brief Represents CastingPlayer ConnectionState.
- * @note Should be kept up to date with matter::casting::core::ConnectionState.
- */
-typedef enum {
-    MC_CASTING_PLAYER_NOT_CONNECTED,
-    MC_CASTING_PLAYER_CONNECTING,
-    MC_CASTING_PLAYER_CONNECTED,
-} MCCastingPlayerConnectionState;
-
-/**
  * @brief MCCastingPlayer represents a Matter commissioner that is able to play media to a physical
  * output or to a display screen which is part of the device.
  */
@@ -157,13 +147,6 @@ typedef enum {
  * @brief Sets the internal connection state of this MCCastingPlayer to "disconnected"
  */
 - (void)disconnect;
-
-/**
- * @brief Get the CastingPlayer's connection state
- * @param state The current connection state that will be return.
- * @return nil if request submitted successfully, otherwise a NSError object corresponding to the error.
- */
-- (NSError * _Nullable)getConnectionState:(MCCastingPlayerConnectionState * _Nonnull)state;
 
 - (NSString * _Nonnull)identifier;
 - (NSString * _Nonnull)deviceName;

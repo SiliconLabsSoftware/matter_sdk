@@ -64,8 +64,6 @@ public:
     uint32_t GetFeatureMap(chip::EndpointId endpoint) override;
     uint16_t GetClusterRevision(chip::EndpointId endpoint) override;
 
-    void SetEndpoint(chip::EndpointId endpointId) { mEndpoint = endpointId; }
-
 protected:
     uint16_t mCurrentChannelIndex;
     ChannelInfoType mCurrentChannel;
@@ -77,5 +75,4 @@ private:
     static constexpr uint32_t mDynamicEndpointFeatureMap =
         chip::BitMask<Feature, uint32_t>(Feature::kChannelList, Feature::kLineupInfo).Raw();
     static constexpr uint16_t kClusterRevision = 2;
-    chip::EndpointId mEndpoint;
 };

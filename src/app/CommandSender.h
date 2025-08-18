@@ -18,8 +18,8 @@
 
 /**
  *    @file
- *      This file defines objects that allow sending Matter Invoke Request messages
- *      (i.e. sending client to server commands).
+ *      This file defines objects for a CHIP IM Invoke Command Sender
+ *
  */
 
 #pragma once
@@ -54,9 +54,6 @@
 namespace chip {
 namespace app {
 
-/**
- * An object that allows creating and sending an Invoke Request message.
- */
 class CommandSender final : public Messaging::ExchangeDelegate
 {
 public:

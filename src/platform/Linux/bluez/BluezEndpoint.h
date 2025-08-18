@@ -55,7 +55,7 @@
 #include <ble/Ble.h>
 #include <lib/core/CHIPError.h>
 #include <platform/GLibTypeDeleter.h>
-#include <platform/Linux/dbus/bluez/DBusBluez.h>
+#include <platform/Linux/dbus/bluez/DbusBluez.h>
 
 #include "BluezConnection.h"
 #include "BluezObjectManager.h"
@@ -118,8 +118,8 @@ private:
     bool mIsInitialized = false;
 
     // Paths for objects published by this service
-    GAutoPtr<char> mRootPath;
-    GAutoPtr<char> mServicePath;
+    char * mpRootPath    = nullptr;
+    char * mpServicePath = nullptr;
 
     // Objects (interfaces) published by this service
     GAutoPtr<GDBusObjectManagerServer> mRoot;
@@ -133,7 +133,7 @@ private:
 
     std::unordered_map<std::string, BluezConnection *> mConnMap;
     GAutoPtr<GCancellable> mConnectCancellable;
-    GAutoPtr<char> mPeerDevicePath;
+    char * mpPeerDevicePath = nullptr;
 
     // Allow BluezConnection to access our private members
     friend class BluezConnection;

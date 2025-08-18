@@ -175,53 +175,29 @@ Davis, CA 95616, USA
     <struct name="RatingNameStruct">
       <field id="0" name="RatingName" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="8"/>
-        </constraint>
+        <constraint type="maxLength" value="8"/>
       </field>
       <field id="1" name="RatingNameDesc" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="64"/>
-        </constraint>
+        <constraint type="maxLength" value="64"/>
       </field>
     </struct>
     <struct name="TimePeriodStruct">
       <field id="0" name="StartHour" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="23"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="23"/>
       </field>
       <field id="1" name="StartMinute" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="59"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="59"/>
       </field>
       <field id="2" name="EndHour" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="23"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="23"/>
       </field>
       <field id="3" name="EndMinute" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="59"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="59"/>
       </field>
     </struct>
     <struct name="TimeWindowStruct">
@@ -231,16 +207,12 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="DayOfWeek" type="DayOfWeekBitmap">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="TimePeriod" type="list">
         <entry type="TimePeriodStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </struct>
   </dataTypes>
@@ -261,9 +233,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="OCR"/>
       </mandatoryConform>
-      <constraint>
-        <maxLength value="8"/>
-      </constraint>
+      <constraint type="maxLength" value="8"/>
     </attribute>
     <attribute id="0x0003" name="ScheduledContentRatings" type="list">
       <entry type="RatingNameStruct"/>
@@ -277,27 +247,21 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SCR"/>
       </mandatoryConform>
-      <constraint>
-        <maxLength value="8"/>
-      </constraint>
+      <constraint type="maxLength" value="8"/>
     </attribute>
     <attribute id="0x0005" name="ScreenDailyTime" type="elapsed-s">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform>
         <feature name="ST"/>
       </mandatoryConform>
-      <constraint>
-        <max value="86400"/>
-      </constraint>
+      <constraint type="max" value="86400"/>
     </attribute>
     <attribute id="0x0006" name="RemainingScreenTime" type="elapsed-s">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform>
         <feature name="ST"/>
       </mandatoryConform>
-      <constraint>
-        <max value="86400"/>
-      </constraint>
+      <constraint type="max" value="86400"/>
     </attribute>
     <attribute id="0x0007" name="BlockUnrated" type="bool">
       <access read="true" readPrivilege="view"/>
@@ -325,9 +289,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="BTW"/>
       </mandatoryConform>
-      <constraint>
-        <maxCount value="7"/>
-      </constraint>
+      <constraint type="maxCount" value="7"/>
     </attribute>
   </attributes>
   <commands>
@@ -338,15 +300,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="OldPIN" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="6"/>
-        </constraint>
+        <constraint type="maxLength" value="6"/>
       </field>
       <field id="1" name="NewPIN" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="6"/>
-        </constraint>
+        <constraint type="maxLength" value="6"/>
       </field>
     </command>
     <command id="0x01" name="ResetPIN" direction="commandToServer" response="ResetPINResponse">
@@ -361,9 +319,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="PINCode" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="6"/>
-        </constraint>
+        <constraint type="maxLength" value="6"/>
       </field>
     </command>
     <command id="0x03" name="Enable" direction="commandToServer" response="Y">
@@ -381,15 +337,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="PINCode" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="6"/>
-        </constraint>
+        <constraint type="maxLength" value="6"/>
       </field>
       <field id="1" name="BonusTime" type="elapsed-s" default="300">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x06" name="SetScreenDailyTime" direction="commandToServer" response="Y">
@@ -399,9 +351,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="ScreenTime" type="elapsed-s">
         <mandatoryConform/>
-        <constraint>
-          <max value="86400"/>
-        </constraint>
+        <constraint type="max" value="86400"/>
       </field>
     </command>
     <command id="0x07" name="BlockUnratedContent" direction="commandToServer" response="Y">
@@ -423,9 +373,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Rating" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="8"/>
-        </constraint>
+        <constraint type="maxLength" value="8"/>
       </field>
     </command>
     <command id="0x0A" name="SetScheduledContentRatingThreshold" direction="commandToServer" response="Y">
@@ -435,9 +383,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Rating" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="8"/>
-        </constraint>
+        <constraint type="maxLength" value="8"/>
       </field>
     </command>
     <command id="0x0B" name="AddBlockChannels" direction="commandToServer" response="Y">

@@ -18,14 +18,11 @@
 
 #include <cstdint>
 #include <optional>
-#include <system/SystemClock.h>
 
 namespace chip {
 namespace Platform {
 
-std::optional<System::Clock::Milliseconds16> GetUserDefaultBDXThrottleIntervalForThread();
-
-std::optional<uint8_t> GetUserDefaultBDXThreadFramesPerBlock();
+std::optional<uint16_t> GetUserDefaultDnssdSRPTimeoutInMSecs();
 
 } // namespace Platform
 } // namespace chip

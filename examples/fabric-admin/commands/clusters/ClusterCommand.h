@@ -84,6 +84,7 @@ public:
         if (data != nullptr)
         {
             LogErrorOnFailure(RemoteDataModelLogger::LogCommandAsJSON(path, data));
+            DeviceMgr().HandleCommandResponse(path, *data);
         }
     }
 

@@ -18,7 +18,6 @@
 #pragma once
 
 #include <app-common/zap-generated/cluster-objects.h>
-#include <app/CommandHandlerInterface.h>
 
 namespace chip {
 namespace app {
@@ -101,26 +100,14 @@ public:
     virtual ~Delegate() = default;
 };
 
-class CommissionerControlServer : public CommandHandlerInterface
+class CommissionerControlServer
 {
 public:
-    /**
-     * @brief Creates a Commissioner Control cluster instance. The Init() function needs to be called for this instance
-     * to be registered and called by the interaction model at the appropriate times.
-     * @param delegate A pointer to the delegate to be used by this server.
-     * Note: the caller must ensure that the delegate lives throughout the instance's lifetime.
-     * @param endpointId The endpoint on which this cluster exists. This must match the zap configuration.
-     */
-    CommissionerControlServer(Delegate * delegate, EndpointId endpointId);
+    static CommissionerControlServer & Instance();
 
-    ~CommissionerControlServer() override;
+    CHIP_ERROR Init(Delegate & delegate);
 
-    /**
-     * @brief Initialise the Commissioner Control server instance.
-     * This function must be called after defining an CommissionerControlServer class object.
-     * @return Returns an error if the CommandHandler registration fails, else returns CHIP_NO_ERROR.
-     */
-    CHIP_ERROR Init();
+    Delegate * GetDelegate() { return mDelegate; }
 
     Protocols::InteractionModel::Status
     GetSupportedDeviceCategoriesValue(EndpointId endpoint,
@@ -133,31 +120,13 @@ public:
      * @brief
      *   Called after the server return SUCCESS to a correctly formatted RequestCommissioningApproval command.
      */
-    CHIP_ERROR GenerateCommissioningRequestResultEvent(EndpointId endpoint,
-                                                       const Events::CommissioningRequestResult::Type & result);
+    CHIP_ERROR GenerateCommissioningRequestResultEvent(const Events::CommissioningRequestResult::Type & result);
 
 private:
-    /**
-     * @brief Inherited from CommandHandlerInterface
-     */
-    void InvokeCommand(HandlerContext & ctx) override;
+    CommissionerControlServer()  = default;
+    ~CommissionerControlServer() = default;
 
-    /**
-     * @brief Handle Command: SetCookingParameters.
-     * @param ctx Returns the Interaction Model status code which was user determined in the business logic.
-     * If the input value is invalid, returns the Interaction Model status code of INVALID_COMMAND.
-     * If the operational state is not in 'Stopped', returns the Interaction Model status code of INVALID_IN_STATE.
-     */
-    void HandleRequestCommissioningApproval(HandlerContext & ctx,
-                                            const Commands::RequestCommissioningApproval::DecodableType & req);
-
-    /**
-     * @brief Handle Command: AddMoreTime.
-     * @param ctx Returns the Interaction Model status code which was user determined in the business logic.
-     * If the cook time value is out of range, returns the Interaction Model status code of CONSTRAINT_ERROR.
-     * If the operational state is in 'Error', returns the Interaction Model status code of INVALID_IN_STATE.
-     */
-    void HandleCommissionNode(HandlerContext & ctx, const Commands::CommissionNode::DecodableType & req);
+    static CommissionerControlServer sInstance;
 
     Delegate * mDelegate = nullptr;
 };

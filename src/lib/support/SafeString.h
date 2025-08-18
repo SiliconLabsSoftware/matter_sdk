@@ -23,10 +23,8 @@
 
 #pragma once
 
-#include <algorithm>
-#include <utility>
-
 #include <lib/support/CodeUtils.h>
+#include <utility>
 
 namespace chip {
 
@@ -50,7 +48,7 @@ template <size_t FirstLength, typename... RestOfTypes>
 constexpr size_t MaxStringLength(const char (&)[FirstLength], RestOfTypes &&... aArgs)
 {
     // Subtract 1 because we are not counting the null-terminator.
-    return std::max(FirstLength - 1, MaxStringLength(std::forward<RestOfTypes>(aArgs)...));
+    return max(FirstLength - 1, MaxStringLength(std::forward<RestOfTypes>(aArgs)...));
 }
 
 /**

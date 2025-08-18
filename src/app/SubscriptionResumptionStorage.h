@@ -95,9 +95,9 @@ public:
                 attributePathCount++;
                 attributePath = attributePath->mpNext;
             }
-            VerifyOrReturnError((attributePathCount * sizeof(AttributePathParamsValues)) <= UINT16_MAX, CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf((attributePathCount * sizeof(AttributePathParamsValues)) > UINT16_MAX, CHIP_ERROR_NO_MEMORY);
             mAttributePaths.Calloc(attributePathCount);
-            VerifyOrReturnError(mAttributePaths.Get() != nullptr, CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf(mAttributePaths.Get() == nullptr, CHIP_ERROR_NO_MEMORY);
             attributePath = pAttributePathList;
             for (size_t i = 0; i < attributePathCount; i++)
             {
@@ -120,9 +120,9 @@ public:
                 eventPathCount++;
                 eventPath = eventPath->mpNext;
             }
-            VerifyOrReturnError((eventPathCount * sizeof(EventPathParamsValues)) <= UINT16_MAX, CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf((eventPathCount * sizeof(EventPathParamsValues)) > UINT16_MAX, CHIP_ERROR_NO_MEMORY);
             mEventPaths.Calloc(eventPathCount);
-            VerifyOrReturnError(mEventPaths.Get() != nullptr, CHIP_ERROR_NO_MEMORY);
+            ReturnErrorCodeIf(mEventPaths.Get() == nullptr, CHIP_ERROR_NO_MEMORY);
             eventPath = pEventPathList;
             for (size_t i = 0; i < eventPathCount; i++)
             {

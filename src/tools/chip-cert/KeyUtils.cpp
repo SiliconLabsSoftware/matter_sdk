@@ -24,9 +24,6 @@
  *
  */
 
-#include <memory>
-#include <utility>
-
 #include "chip-cert.h"
 #include <lib/core/CHIPEncoding.h>
 #include <lib/support/BufferWriter.h>
@@ -199,7 +196,7 @@ bool ReadKey(const char * fileNameOrStr, std::unique_ptr<EVP_PKEY, void (*)(EVP_
         res = ReadFileIntoMem(fileNameOrStr, nullptr, keyDataLen);
         VerifyTrueOrExit(res);
 
-        keyData = std::make_unique<uint8_t[]>(keyDataLen);
+        keyData = std::unique_ptr<uint8_t[]>(new uint8_t[keyDataLen]);
 
         res = ReadFileIntoMem(fileNameOrStr, keyData.get(), keyDataLen);
         VerifyTrueOrExit(res);
@@ -223,7 +220,7 @@ bool ReadKey(const char * fileNameOrStr, std::unique_ptr<EVP_PKEY, void (*)(EVP_
             return false;
         }
 
-        keyData = std::make_unique<uint8_t[]>(keyDataLen);
+        keyData = std::unique_ptr<uint8_t[]>(new uint8_t[keyDataLen]);
         memcpy(keyData.get(), fileNameOrStr, keyDataLen);
     }
 

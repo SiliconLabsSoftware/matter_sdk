@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright (C) Connectivity Standards Alliance (2025). All rights reserved.
+Copyright (C) Connectivity Standards Alliance (2021). All rights reserved.
 The information within this document is the property of the Connectivity
 Standards Alliance and its use and disclosure are restricted, except as
 expressly set forth herein.
@@ -106,36 +106,27 @@ Davis, CA 95616, USA
   <attributes>
     <attribute id="0x0000" name="CurrentSensitivityLevel" type="uint8" default="MS">
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
-      <quality persistence="nonVolatile"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="nonVolatile" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform>
         <feature name="SENSLVL"/>
       </mandatoryConform>
-      <constraint>
-        <max value="SupportedSensitivityLevels - 1"/>
-      </constraint>
+      <constraint type="max" value="SupportedSensitivityLevels - 1"/>
     </attribute>
     <attribute id="0x0001" name="SupportedSensitivityLevels" type="uint8" default="MS">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform>
         <feature name="SENSLVL"/>
       </mandatoryConform>
-      <constraint>
-        <between>
-          <from value="2"/>
-          <to value="10"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="2" to="10"/>
     </attribute>
     <attribute id="0x0002" name="DefaultSensitivityLevel" type="uint8" default="MS">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <optionalConform>
         <feature name="SENSLVL"/>
       </optionalConform>
-      <constraint>
-        <max value="SupportedSensitivityLevels - 1"/>
-      </constraint>
+      <constraint type="max" value="SupportedSensitivityLevels - 1"/>
     </attribute>
     <attribute id="0x0003" name="AlarmsActive" type="AlarmModeBitmap" default="0">
       <access read="true" readPrivilege="view"/>
@@ -154,7 +145,7 @@ Davis, CA 95616, USA
     </attribute>
     <attribute id="0x0005" name="AlarmsEnabled" type="AlarmModeBitmap" default="MS">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="nonVolatile"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="nonVolatile" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <optionalConform>
         <orTerm>
           <feature name="VIS"/>
@@ -164,7 +155,7 @@ Davis, CA 95616, USA
     </attribute>
     <attribute id="0x0006" name="AlarmsSupported" type="AlarmModeBitmap" default="0">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform>
         <orTerm>
           <feature name="VIS"/>

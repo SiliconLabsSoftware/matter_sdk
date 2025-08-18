@@ -7,9 +7,8 @@ control Matter accessory devices.
 
 -   [Matter Controller Kotlin App Example](#matter-controller-kotlin-app-example)
     -   [Requirements for building](#requirements-for-building)
-        -   [Linux](#linux)
     -   [Preparing for build](#preparing-for-build)
-    -   [Building \& Running the app](#building--running-the-app)
+    -   [Building & Running the app](#building--running-the-app)
 
 <hr>
 
@@ -83,7 +82,7 @@ export PATH="/usr/lib/kotlinc/bin:$PATH"
 ### Linux
 
 ```shell
-export JAVA_HOME=[JDK path]
+export JAVA_PATH=[JDK path]
 ```
 
 <hr>

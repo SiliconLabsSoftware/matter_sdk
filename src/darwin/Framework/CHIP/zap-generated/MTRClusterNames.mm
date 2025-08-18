@@ -216,8 +216,8 @@ NSString * MTRClusterNameForID(MTRClusterIDType clusterID)
     case MTRClusterIDTypeWaterHeaterManagementID:
         result = @"WaterHeaterManagement";
         break;
-    case MTRClusterIDTypeCommodityPriceID:
-        result = @"CommodityPrice";
+    case MTRClusterIDTypeDemandResponseLoadControlID:
+        result = @"DemandResponseLoadControl";
         break;
     case MTRClusterIDTypeMessagesID:
         result = @"Messages";
@@ -243,20 +243,11 @@ NSString * MTRClusterNameForID(MTRClusterIDType clusterID)
     case MTRClusterIDTypeDeviceEnergyManagementModeID:
         result = @"DeviceEnergyManagementMode";
         break;
-    case MTRClusterIDTypeElectricalGridConditionsID:
-        result = @"ElectricalGridConditions";
-        break;
     case MTRClusterIDTypeDoorLockID:
         result = @"DoorLock";
         break;
     case MTRClusterIDTypeWindowCoveringID:
         result = @"WindowCovering";
-        break;
-    case MTRClusterIDTypeClosureControlID:
-        result = @"ClosureControl";
-        break;
-    case MTRClusterIDTypeClosureDimensionID:
-        result = @"ClosureDimension";
         break;
     case MTRClusterIDTypeServiceAreaID:
         result = @"ServiceArea";
@@ -327,9 +318,6 @@ NSString * MTRClusterNameForID(MTRClusterIDType clusterID)
     case MTRClusterIDTypeRadonConcentrationMeasurementID:
         result = @"RadonConcentrationMeasurement";
         break;
-    case MTRClusterIDTypeSoilMeasurementID:
-        result = @"SoilMeasurement";
-        break;
     case MTRClusterIDTypeWiFiNetworkManagementID:
         result = @"WiFiNetworkManagement";
         break;
@@ -381,53 +369,17 @@ NSString * MTRClusterNameForID(MTRClusterIDType clusterID)
     case MTRClusterIDTypeContentAppObserverID:
         result = @"ContentAppObserver";
         break;
-    case MTRClusterIDTypeZoneManagementID:
-        result = @"ZoneManagement";
-        break;
-    case MTRClusterIDTypeCameraAVStreamManagementID:
-        result = @"CameraAVStreamManagement";
-        break;
-    case MTRClusterIDTypeCameraAVSettingsUserLevelManagementID:
-        result = @"CameraAVSettingsUserLevelManagement";
-        break;
     case MTRClusterIDTypeWebRTCTransportProviderID:
         result = @"WebRTCTransportProvider";
         break;
-    case MTRClusterIDTypeWebRTCTransportRequestorID:
-        result = @"WebRTCTransportRequestor";
-        break;
-    case MTRClusterIDTypePushAVStreamTransportID:
-        result = @"PushAVStreamTransport";
-        break;
     case MTRClusterIDTypeChimeID:
         result = @"Chime";
-        break;
-    case MTRClusterIDTypeCommodityTariffID:
-        result = @"CommodityTariff";
         break;
     case MTRClusterIDTypeEcosystemInformationID:
         result = @"EcosystemInformation";
         break;
     case MTRClusterIDTypeCommissionerControlID:
         result = @"CommissionerControl";
-        break;
-    case MTRClusterIDTypeJointFabricDatastoreID:
-        result = @"JointFabricDatastore";
-        break;
-    case MTRClusterIDTypeJointFabricAdministratorID:
-        result = @"JointFabricAdministrator";
-        break;
-    case MTRClusterIDTypeTLSCertificateManagementID:
-        result = @"TLSCertificateManagement";
-        break;
-    case MTRClusterIDTypeTLSClientManagementID:
-        result = @"TLSClientManagement";
-        break;
-    case MTRClusterIDTypeMeterIdentificationID:
-        result = @"MeterIdentification";
-        break;
-    case MTRClusterIDTypeCommodityMeteringID:
-        result = @"CommodityMetering";
         break;
     case MTRClusterIDTypeUnitTestingID:
         result = @"UnitTesting";
@@ -437,7 +389,7 @@ NSString * MTRClusterNameForID(MTRClusterIDType clusterID)
         break;
 
     default:
-        result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+        result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
         break;
     }
 
@@ -473,6 +425,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterIdentifyAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterIdentifyAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -486,8 +442,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Identify attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -509,6 +464,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterGroupsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterGroupsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -522,8 +481,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Groups attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -561,6 +519,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterOnOffAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterOnOffAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -574,8 +536,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OnOff attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -649,6 +610,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterLevelControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterLevelControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -662,8 +627,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known LevelControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -681,6 +645,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPulseWidthModulationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPulseWidthModulationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -694,8 +662,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PulseWidthModulation attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -725,16 +692,16 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"TagList";
             break;
 
-        case MTRAttributeIDTypeClusterDescriptorAttributeEndpointUniqueIDID:
-            result = @"EndpointUniqueID";
-            break;
-
         case MTRAttributeIDTypeClusterDescriptorAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterDescriptorAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterDescriptorAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterDescriptorAttributeAttributeListID:
@@ -750,8 +717,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Descriptor attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -773,6 +739,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterBindingAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterBindingAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -786,8 +756,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Binding attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -833,6 +802,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterAccessControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterAccessControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -846,8 +819,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known AccessControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -877,6 +849,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterActionsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterActionsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -890,8 +866,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Actions attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -993,16 +968,16 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"MaxPathsPerInvoke";
             break;
 
-        case MTRAttributeIDTypeClusterBasicInformationAttributeConfigurationVersionID:
-            result = @"ConfigurationVersion";
-            break;
-
         case MTRAttributeIDTypeClusterBasicInformationAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterBasicInformationAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterBasicInformationAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterBasicInformationAttributeAttributeListID:
@@ -1018,8 +993,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known BasicInformation attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1037,6 +1011,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterOTASoftwareUpdateProviderAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterOTASoftwareUpdateProviderAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1050,8 +1028,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OTASoftwareUpdateProvider attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1085,6 +1062,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterOTASoftwareUpdateRequestorAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterOTASoftwareUpdateRequestorAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1098,8 +1079,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OTASoftwareUpdateRequestor attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1125,6 +1105,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterLocalizationConfigurationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterLocalizationConfigurationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1138,8 +1122,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known LocalizationConfiguration attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1169,6 +1152,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterTimeFormatLocalizationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterTimeFormatLocalizationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1182,8 +1169,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known TimeFormatLocalization attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1197,16 +1183,16 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"TemperatureUnit";
             break;
 
-        case MTRAttributeIDTypeClusterUnitLocalizationAttributeSupportedTemperatureUnitsID:
-            result = @"SupportedTemperatureUnits";
-            break;
-
         case MTRAttributeIDTypeClusterUnitLocalizationAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterUnitLocalizationAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterUnitLocalizationAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterUnitLocalizationAttributeAttributeListID:
@@ -1222,8 +1208,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known UnitLocalization attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1245,6 +1230,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPowerSourceConfigurationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPowerSourceConfigurationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1258,8 +1247,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PowerSourceConfiguration attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1405,6 +1393,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPowerSourceAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPowerSourceAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1418,8 +1410,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PowerSource attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1469,20 +1460,16 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"TCUpdateDeadline";
             break;
 
-        case MTRAttributeIDTypeClusterGeneralCommissioningAttributeRecoveryIdentifierID:
-            result = @"RecoveryIdentifier";
-            break;
-
-        case MTRAttributeIDTypeClusterGeneralCommissioningAttributeNetworkRecoveryReasonID:
-            result = @"NetworkRecoveryReason";
-            break;
-
         case MTRAttributeIDTypeClusterGeneralCommissioningAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterGeneralCommissioningAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterGeneralCommissioningAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterGeneralCommissioningAttributeAttributeListID:
@@ -1498,8 +1485,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known GeneralCommissioning attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1561,6 +1547,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterNetworkCommissioningAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterNetworkCommissioningAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1574,8 +1564,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known NetworkCommissioning attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1593,6 +1582,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterDiagnosticLogsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterDiagnosticLogsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1606,8 +1599,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known DiagnosticLogs attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1661,6 +1653,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterGeneralDiagnosticsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterGeneralDiagnosticsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1674,8 +1670,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known GeneralDiagnostics attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1709,6 +1704,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterSoftwareDiagnosticsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterSoftwareDiagnosticsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -1722,8 +1721,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known SoftwareDiagnostics attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -1985,20 +1983,16 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"ActiveNetworkFaultsList";
             break;
 
-        case MTRAttributeIDTypeClusterThreadNetworkDiagnosticsAttributeExtAddressID:
-            result = @"ExtAddress";
-            break;
-
-        case MTRAttributeIDTypeClusterThreadNetworkDiagnosticsAttributeRloc16ID:
-            result = @"Rloc16";
-            break;
-
         case MTRAttributeIDTypeClusterThreadNetworkDiagnosticsAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterThreadNetworkDiagnosticsAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterThreadNetworkDiagnosticsAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterThreadNetworkDiagnosticsAttributeAttributeListID:
@@ -2014,8 +2008,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ThreadNetworkDiagnostics attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2085,6 +2078,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterWiFiNetworkDiagnosticsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterWiFiNetworkDiagnosticsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2098,8 +2095,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known WiFiNetworkDiagnostics attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2153,6 +2149,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterEthernetNetworkDiagnosticsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterEthernetNetworkDiagnosticsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2166,8 +2166,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known EthernetNetworkDiagnostics attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2237,6 +2236,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterTimeSynchronizationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterTimeSynchronizationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2250,8 +2253,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known TimeSynchronization attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2329,16 +2331,16 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"ProductAppearance";
             break;
 
-        case MTRAttributeIDTypeClusterBridgedDeviceBasicInformationAttributeConfigurationVersionID:
-            result = @"ConfigurationVersion";
-            break;
-
         case MTRAttributeIDTypeClusterBridgedDeviceBasicInformationAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterBridgedDeviceBasicInformationAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterBridgedDeviceBasicInformationAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterBridgedDeviceBasicInformationAttributeAttributeListID:
@@ -2354,8 +2356,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known BridgedDeviceBasicInformation attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2385,6 +2386,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterSwitchAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterSwitchAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2398,8 +2403,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Switch attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2429,6 +2433,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterAdministratorCommissioningAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterAdministratorCommissioningAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2442,8 +2450,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known AdministratorCommissioning attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2485,6 +2492,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterOperationalCredentialsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterOperationalCredentialsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2498,8 +2509,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OperationalCredentials attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2533,6 +2543,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterGroupKeyManagementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterGroupKeyManagementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2546,8 +2560,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known GroupKeyManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2569,6 +2582,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterFixedLabelAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterFixedLabelAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2582,8 +2599,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known FixedLabel attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2605,6 +2621,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterUserLabelAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterUserLabelAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2618,8 +2638,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known UserLabel attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2641,6 +2660,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterBooleanStateAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterBooleanStateAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2654,8 +2677,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known BooleanState attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2713,6 +2735,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterICDManagementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterICDManagementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2726,8 +2752,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ICDManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2757,6 +2782,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterTimerAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterTimerAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2770,8 +2799,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Timer attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2813,6 +2841,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterOvenCavityOperationalStateAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterOvenCavityOperationalStateAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2826,8 +2858,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OvenCavityOperationalState attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2845,12 +2876,24 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"CurrentMode";
             break;
 
+        case MTRAttributeIDTypeClusterOvenModeAttributeStartUpModeID:
+            result = @"StartUpMode";
+            break;
+
+        case MTRAttributeIDTypeClusterOvenModeAttributeOnModeID:
+            result = @"OnMode";
+            break;
+
         case MTRAttributeIDTypeClusterOvenModeAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterOvenModeAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterOvenModeAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterOvenModeAttributeAttributeListID:
@@ -2866,8 +2909,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OvenMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2893,6 +2935,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterLaundryDryerControlsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterLaundryDryerControlsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2906,8 +2952,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known LaundryDryerControls attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2949,6 +2994,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterModeSelectAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterModeSelectAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -2962,8 +3011,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ModeSelect attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -2981,12 +3029,24 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"CurrentMode";
             break;
 
+        case MTRAttributeIDTypeClusterLaundryWasherModeAttributeStartUpModeID:
+            result = @"StartUpMode";
+            break;
+
+        case MTRAttributeIDTypeClusterLaundryWasherModeAttributeOnModeID:
+            result = @"OnMode";
+            break;
+
         case MTRAttributeIDTypeClusterLaundryWasherModeAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterLaundryWasherModeAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterLaundryWasherModeAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterLaundryWasherModeAttributeAttributeListID:
@@ -3002,8 +3062,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known LaundryWasherMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3021,12 +3080,24 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"CurrentMode";
             break;
 
+        case MTRAttributeIDTypeClusterRefrigeratorAndTemperatureControlledCabinetModeAttributeStartUpModeID:
+            result = @"StartUpMode";
+            break;
+
+        case MTRAttributeIDTypeClusterRefrigeratorAndTemperatureControlledCabinetModeAttributeOnModeID:
+            result = @"OnMode";
+            break;
+
         case MTRAttributeIDTypeClusterRefrigeratorAndTemperatureControlledCabinetModeAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterRefrigeratorAndTemperatureControlledCabinetModeAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterRefrigeratorAndTemperatureControlledCabinetModeAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterRefrigeratorAndTemperatureControlledCabinetModeAttributeAttributeListID:
@@ -3042,8 +3113,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known RefrigeratorAndTemperatureControlledCabinetMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3077,6 +3147,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterLaundryWasherControlsAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterLaundryWasherControlsAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3090,8 +3164,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known LaundryWasherControls attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3117,6 +3190,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterRVCRunModeAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterRVCRunModeAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3130,8 +3207,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known RVCRunMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3157,6 +3233,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterRVCCleanModeAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterRVCCleanModeAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3170,8 +3250,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known RVCCleanMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3213,6 +3292,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterTemperatureControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterTemperatureControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3226,8 +3309,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known TemperatureControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3257,6 +3339,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterRefrigeratorAlarmAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterRefrigeratorAlarmAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3270,8 +3356,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known RefrigeratorAlarm attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3289,12 +3374,24 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"CurrentMode";
             break;
 
+        case MTRAttributeIDTypeClusterDishwasherModeAttributeStartUpModeID:
+            result = @"StartUpMode";
+            break;
+
+        case MTRAttributeIDTypeClusterDishwasherModeAttributeOnModeID:
+            result = @"OnMode";
+            break;
+
         case MTRAttributeIDTypeClusterDishwasherModeAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterDishwasherModeAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterDishwasherModeAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterDishwasherModeAttributeAttributeListID:
@@ -3310,8 +3407,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known DishwasherMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3333,6 +3429,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterAirQualityAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterAirQualityAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3346,8 +3446,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known AirQuality attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3417,6 +3516,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterSmokeCOAlarmAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterSmokeCOAlarmAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3430,8 +3533,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known SmokeCOAlarm attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3465,6 +3567,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterDishwasherAlarmAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterDishwasherAlarmAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3478,8 +3584,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known DishwasherAlarm attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3505,6 +3610,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterMicrowaveOvenModeAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterMicrowaveOvenModeAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3518,8 +3627,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known MicrowaveOvenMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3573,6 +3681,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterMicrowaveOvenControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterMicrowaveOvenControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3586,8 +3698,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known MicrowaveOvenControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3629,6 +3740,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterOperationalStateAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterOperationalStateAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3642,8 +3757,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OperationalState attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3685,6 +3799,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterRVCOperationalStateAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterRVCOperationalStateAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3698,8 +3816,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known RVCOperationalState attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3709,6 +3826,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
         switch (attributeID) {
 
             // Cluster ScenesManagement attributes
+        case MTRAttributeIDTypeClusterScenesManagementAttributeLastConfiguredByID:
+            result = @"LastConfiguredBy";
+            break;
+
         case MTRAttributeIDTypeClusterScenesManagementAttributeSceneTableSizeID:
             result = @"SceneTableSize";
             break;
@@ -3725,6 +3846,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterScenesManagementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterScenesManagementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3738,8 +3863,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ScenesManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3781,6 +3905,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterHEPAFilterMonitoringAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterHEPAFilterMonitoringAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3794,8 +3922,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known HEPAFilterMonitoring attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3837,6 +3964,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterActivatedCarbonFilterMonitoringAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterActivatedCarbonFilterMonitoringAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3850,8 +3981,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ActivatedCarbonFilterMonitoring attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3901,6 +4031,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterBooleanStateConfigurationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterBooleanStateConfigurationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3914,8 +4048,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known BooleanStateConfiguration attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -3977,6 +4110,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterValveConfigurationAndControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterValveConfigurationAndControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -3990,8 +4127,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ValveConfigurationAndControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4085,6 +4221,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterElectricalPowerMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterElectricalPowerMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4098,8 +4238,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ElectricalPowerMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4141,6 +4280,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterElectricalEnergyMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterElectricalEnergyMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4154,8 +4297,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ElectricalEnergyMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4197,6 +4339,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterWaterHeaterManagementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterWaterHeaterManagementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4210,56 +4356,74 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known WaterHeaterManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
 
-    case MTRClusterIDTypeCommodityPriceID:
+    case MTRClusterIDTypeDemandResponseLoadControlID:
 
         switch (attributeID) {
 
-            // Cluster CommodityPrice attributes
-        case MTRAttributeIDTypeClusterCommodityPriceAttributeTariffUnitID:
-            result = @"TariffUnit";
+            // Cluster DemandResponseLoadControl attributes
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeLoadControlProgramsID:
+            result = @"LoadControlPrograms";
             break;
 
-        case MTRAttributeIDTypeClusterCommodityPriceAttributeCurrencyID:
-            result = @"Currency";
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeNumberOfLoadControlProgramsID:
+            result = @"NumberOfLoadControlPrograms";
             break;
 
-        case MTRAttributeIDTypeClusterCommodityPriceAttributeCurrentPriceID:
-            result = @"CurrentPrice";
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeEventsID:
+            result = @"Events";
             break;
 
-        case MTRAttributeIDTypeClusterCommodityPriceAttributePriceForecastID:
-            result = @"PriceForecast";
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeActiveEventsID:
+            result = @"ActiveEvents";
             break;
 
-        case MTRAttributeIDTypeClusterCommodityPriceAttributeGeneratedCommandListID:
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeNumberOfEventsPerProgramID:
+            result = @"NumberOfEventsPerProgram";
+            break;
+
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeNumberOfTransitionsID:
+            result = @"NumberOfTransitions";
+            break;
+
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeDefaultRandomStartID:
+            result = @"DefaultRandomStart";
+            break;
+
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeDefaultRandomDurationID:
+            result = @"DefaultRandomDuration";
+            break;
+
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
-        case MTRAttributeIDTypeClusterCommodityPriceAttributeAcceptedCommandListID:
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
             break;
 
-        case MTRAttributeIDTypeClusterCommodityPriceAttributeAttributeListID:
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
 
-        case MTRAttributeIDTypeClusterCommodityPriceAttributeFeatureMapID:
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeFeatureMapID:
             result = @"FeatureMap";
             break;
 
-        case MTRAttributeIDTypeClusterCommodityPriceAttributeClusterRevisionID:
+        case MTRAttributeIDTypeClusterDemandResponseLoadControlAttributeClusterRevisionID:
             result = @"ClusterRevision";
             break;
 
         default:
-            // Not a known CommodityPrice attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4285,6 +4449,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterMessagesAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterMessagesAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4298,8 +4466,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Messages attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4349,6 +4516,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterDeviceEnergyManagementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterDeviceEnergyManagementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4362,8 +4533,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known DeviceEnergyManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4473,6 +4643,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterEnergyEVSEAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterEnergyEVSEAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4486,8 +4660,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known EnergyEVSE attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4525,6 +4698,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterEnergyPreferenceAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterEnergyPreferenceAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4538,8 +4715,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known EnergyPreference attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4565,6 +4741,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPowerTopologyAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPowerTopologyAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4578,8 +4758,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PowerTopology attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4597,12 +4776,24 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"CurrentMode";
             break;
 
+        case MTRAttributeIDTypeClusterEnergyEVSEModeAttributeStartUpModeID:
+            result = @"StartUpMode";
+            break;
+
+        case MTRAttributeIDTypeClusterEnergyEVSEModeAttributeOnModeID:
+            result = @"OnMode";
+            break;
+
         case MTRAttributeIDTypeClusterEnergyEVSEModeAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterEnergyEVSEModeAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterEnergyEVSEModeAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterEnergyEVSEModeAttributeAttributeListID:
@@ -4618,8 +4809,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known EnergyEVSEMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4637,12 +4827,24 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"CurrentMode";
             break;
 
+        case MTRAttributeIDTypeClusterWaterHeaterModeAttributeStartUpModeID:
+            result = @"StartUpMode";
+            break;
+
+        case MTRAttributeIDTypeClusterWaterHeaterModeAttributeOnModeID:
+            result = @"OnMode";
+            break;
+
         case MTRAttributeIDTypeClusterWaterHeaterModeAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterWaterHeaterModeAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterWaterHeaterModeAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterWaterHeaterModeAttributeAttributeListID:
@@ -4658,8 +4860,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known WaterHeaterMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4677,12 +4878,24 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"CurrentMode";
             break;
 
+        case MTRAttributeIDTypeClusterDeviceEnergyManagementModeAttributeStartUpModeID:
+            result = @"StartUpMode";
+            break;
+
+        case MTRAttributeIDTypeClusterDeviceEnergyManagementModeAttributeOnModeID:
+            result = @"OnMode";
+            break;
+
         case MTRAttributeIDTypeClusterDeviceEnergyManagementModeAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
 
         case MTRAttributeIDTypeClusterDeviceEnergyManagementModeAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterDeviceEnergyManagementModeAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterDeviceEnergyManagementModeAttributeAttributeListID:
@@ -4698,52 +4911,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known DeviceEnergyManagementMode attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeElectricalGridConditionsID:
-
-        switch (attributeID) {
-
-            // Cluster ElectricalGridConditions attributes
-        case MTRAttributeIDTypeClusterElectricalGridConditionsAttributeLocalGenerationAvailableID:
-            result = @"LocalGenerationAvailable";
-            break;
-
-        case MTRAttributeIDTypeClusterElectricalGridConditionsAttributeCurrentConditionsID:
-            result = @"CurrentConditions";
-            break;
-
-        case MTRAttributeIDTypeClusterElectricalGridConditionsAttributeForecastConditionsID:
-            result = @"ForecastConditions";
-            break;
-
-        case MTRAttributeIDTypeClusterElectricalGridConditionsAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterElectricalGridConditionsAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterElectricalGridConditionsAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterElectricalGridConditionsAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterElectricalGridConditionsAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known ElectricalGridConditions attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -4941,6 +5109,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterDoorLockAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterDoorLockAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -4954,8 +5126,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known DoorLock attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -5061,6 +5232,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterWindowCoveringAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterWindowCoveringAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -5074,140 +5249,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known WindowCovering attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeClosureControlID:
-
-        switch (attributeID) {
-
-            // Cluster ClosureControl attributes
-        case MTRAttributeIDTypeClusterClosureControlAttributeCountdownTimeID:
-            result = @"CountdownTime";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeMainStateID:
-            result = @"MainState";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeCurrentErrorListID:
-            result = @"CurrentErrorList";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeOverallCurrentStateID:
-            result = @"OverallCurrentState";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeOverallTargetStateID:
-            result = @"OverallTargetState";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeLatchControlModesID:
-            result = @"LatchControlModes";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureControlAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known ClosureControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeClosureDimensionID:
-
-        switch (attributeID) {
-
-            // Cluster ClosureDimension attributes
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeCurrentStateID:
-            result = @"CurrentState";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeTargetID:
-            result = @"Target";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeResolutionID:
-            result = @"Resolution";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeStepValueID:
-            result = @"StepValue";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeUnitID:
-            result = @"Unit";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeUnitRangeID:
-            result = @"UnitRange";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeLimitRangeID:
-            result = @"LimitRange";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeTranslationDirectionID:
-            result = @"TranslationDirection";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeRotationAxisID:
-            result = @"RotationAxis";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeOverflowID:
-            result = @"Overflow";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeModulationTypeID:
-            result = @"ModulationType";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterClosureDimensionAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known ClosureDimension attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -5249,6 +5291,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterServiceAreaAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterServiceAreaAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -5262,8 +5308,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ServiceArea attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -5373,6 +5418,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPumpConfigurationAndControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPumpConfigurationAndControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -5386,8 +5435,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PumpConfigurationAndControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -5645,6 +5693,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterThermostatAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterThermostatAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -5658,8 +5710,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Thermostat attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -5725,6 +5776,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterFanControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterFanControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -5738,8 +5793,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known FanControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -5769,6 +5823,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterThermostatUserInterfaceConfigurationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterThermostatUserInterfaceConfigurationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -5782,8 +5840,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ThermostatUserInterfaceConfiguration attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6009,6 +6066,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterColorControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterColorControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6022,8 +6083,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ColorControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6097,6 +6157,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterBallastConfigurationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterBallastConfigurationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6110,8 +6174,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known BallastConfiguration attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6149,6 +6212,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterIlluminanceMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterIlluminanceMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6162,8 +6229,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known IlluminanceMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6197,6 +6263,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterTemperatureMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterTemperatureMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6210,8 +6280,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known TemperatureMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6265,6 +6334,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPressureMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPressureMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6278,8 +6351,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PressureMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6313,6 +6385,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterFlowMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterFlowMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6326,8 +6402,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known FlowMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6361,6 +6436,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterRelativeHumidityMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterRelativeHumidityMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6374,8 +6453,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known RelativeHumidityMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6449,6 +6527,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterOccupancySensingAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterOccupancySensingAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6462,8 +6544,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OccupancySensing attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6525,6 +6606,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterCarbonMonoxideConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterCarbonMonoxideConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6538,8 +6623,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known CarbonMonoxideConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6601,6 +6685,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterCarbonDioxideConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterCarbonDioxideConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6614,8 +6702,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known CarbonDioxideConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6677,6 +6764,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterNitrogenDioxideConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterNitrogenDioxideConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6690,8 +6781,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known NitrogenDioxideConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6753,6 +6843,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterOzoneConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterOzoneConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6766,8 +6860,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known OzoneConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6829,6 +6922,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPM25ConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPM25ConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6842,8 +6939,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PM25ConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6905,6 +7001,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterFormaldehydeConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterFormaldehydeConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6918,8 +7018,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known FormaldehydeConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -6981,6 +7080,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPM1ConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPM1ConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -6994,8 +7097,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PM1ConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7057,6 +7159,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterPM10ConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterPM10ConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7070,8 +7176,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known PM10ConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7133,6 +7238,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterTotalVolatileOrganicCompoundsConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterTotalVolatileOrganicCompoundsConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7146,8 +7255,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known TotalVolatileOrganicCompoundsConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7209,6 +7317,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterRadonConcentrationMeasurementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterRadonConcentrationMeasurementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7222,48 +7334,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known RadonConcentrationMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeSoilMeasurementID:
-
-        switch (attributeID) {
-
-            // Cluster SoilMeasurement attributes
-        case MTRAttributeIDTypeClusterSoilMeasurementAttributeSoilMoistureMeasurementLimitsID:
-            result = @"SoilMoistureMeasurementLimits";
-            break;
-
-        case MTRAttributeIDTypeClusterSoilMeasurementAttributeSoilMoistureMeasuredValueID:
-            result = @"SoilMoistureMeasuredValue";
-            break;
-
-        case MTRAttributeIDTypeClusterSoilMeasurementAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterSoilMeasurementAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterSoilMeasurementAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterSoilMeasurementAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterSoilMeasurementAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known SoilMeasurement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7289,6 +7360,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterWiFiNetworkManagementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterWiFiNetworkManagementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7302,8 +7377,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known WiFiNetworkManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7345,6 +7419,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterThreadBorderRouterManagementAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterThreadBorderRouterManagementAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7358,8 +7436,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ThreadBorderRouterManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7389,6 +7466,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterThreadNetworkDirectoryAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterThreadNetworkDirectoryAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7402,8 +7483,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ThreadNetworkDirectory attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7429,6 +7509,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterWakeOnLANAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterWakeOnLANAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7442,8 +7526,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known WakeOnLAN attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7473,6 +7556,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterChannelAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterChannelAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7486,8 +7573,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Channel attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7513,6 +7599,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterTargetNavigatorAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterTargetNavigatorAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7526,8 +7616,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known TargetNavigator attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7589,6 +7678,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterMediaPlaybackAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterMediaPlaybackAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7602,8 +7695,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known MediaPlayback attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7629,6 +7721,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterMediaInputAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterMediaInputAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7642,8 +7738,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known MediaInput attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7661,6 +7756,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterLowPowerAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterLowPowerAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7674,8 +7773,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known LowPower attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7693,6 +7791,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterKeypadInputAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterKeypadInputAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7706,8 +7808,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known KeypadInput attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7733,6 +7834,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterContentLauncherAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterContentLauncherAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7746,8 +7851,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ContentLauncher attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7773,6 +7877,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterAudioOutputAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterAudioOutputAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7786,8 +7894,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known AudioOutput attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7813,6 +7920,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterApplicationLauncherAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterApplicationLauncherAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7826,8 +7937,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ApplicationLauncher attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7877,6 +7987,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterApplicationBasicAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterApplicationBasicAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7890,8 +8004,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ApplicationBasic attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7909,6 +8022,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterAccountLoginAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterAccountLoginAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7922,8 +8039,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known AccountLogin attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -7973,6 +8089,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterContentControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterContentControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -7986,8 +8106,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ContentControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -8005,6 +8124,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterContentAppObserverAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterContentAppObserverAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -8018,332 +8141,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known ContentAppObserver attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeZoneManagementID:
-
-        switch (attributeID) {
-
-            // Cluster ZoneManagement attributes
-        case MTRAttributeIDTypeClusterZoneManagementAttributeMaxUserDefinedZonesID:
-            result = @"MaxUserDefinedZones";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeMaxZonesID:
-            result = @"MaxZones";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeZonesID:
-            result = @"Zones";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeTriggersID:
-            result = @"Triggers";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeSensitivityMaxID:
-            result = @"SensitivityMax";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeSensitivityID:
-            result = @"Sensitivity";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeTwoDCartesianMaxID:
-            result = @"TwoDCartesianMax";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterZoneManagementAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known ZoneManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCameraAVStreamManagementID:
-
-        switch (attributeID) {
-
-            // Cluster CameraAVStreamManagement attributes
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMaxConcurrentEncodersID:
-            result = @"MaxConcurrentEncoders";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMaxEncodedPixelRateID:
-            result = @"MaxEncodedPixelRate";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeVideoSensorParamsID:
-            result = @"VideoSensorParams";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeNightVisionUsesInfraredID:
-            result = @"NightVisionUsesInfrared";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMinViewportID:
-            result = @"MinViewport";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeRateDistortionTradeOffPointsID:
-            result = @"RateDistortionTradeOffPoints";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMaxContentBufferSizeID:
-            result = @"MaxContentBufferSize";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMicrophoneCapabilitiesID:
-            result = @"MicrophoneCapabilities";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSpeakerCapabilitiesID:
-            result = @"SpeakerCapabilities";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeTwoWayTalkSupportID:
-            result = @"TwoWayTalkSupport";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSnapshotCapabilitiesID:
-            result = @"SnapshotCapabilities";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMaxNetworkBandwidthID:
-            result = @"MaxNetworkBandwidth";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeCurrentFrameRateID:
-            result = @"CurrentFrameRate";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeHDRModeEnabledID:
-            result = @"HDRModeEnabled";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSupportedStreamUsagesID:
-            result = @"SupportedStreamUsages";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeAllocatedVideoStreamsID:
-            result = @"AllocatedVideoStreams";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeAllocatedAudioStreamsID:
-            result = @"AllocatedAudioStreams";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeAllocatedSnapshotStreamsID:
-            result = @"AllocatedSnapshotStreams";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeStreamUsagePrioritiesID:
-            result = @"StreamUsagePriorities";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSoftRecordingPrivacyModeEnabledID:
-            result = @"SoftRecordingPrivacyModeEnabled";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSoftLivestreamPrivacyModeEnabledID:
-            result = @"SoftLivestreamPrivacyModeEnabled";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeHardPrivacyModeOnID:
-            result = @"HardPrivacyModeOn";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeNightVisionID:
-            result = @"NightVision";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeNightVisionIllumID:
-            result = @"NightVisionIllum";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeViewportID:
-            result = @"Viewport";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSpeakerMutedID:
-            result = @"SpeakerMuted";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSpeakerVolumeLevelID:
-            result = @"SpeakerVolumeLevel";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSpeakerMaxLevelID:
-            result = @"SpeakerMaxLevel";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeSpeakerMinLevelID:
-            result = @"SpeakerMinLevel";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMicrophoneMutedID:
-            result = @"MicrophoneMuted";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMicrophoneVolumeLevelID:
-            result = @"MicrophoneVolumeLevel";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMicrophoneMaxLevelID:
-            result = @"MicrophoneMaxLevel";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMicrophoneMinLevelID:
-            result = @"MicrophoneMinLevel";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeMicrophoneAGCEnabledID:
-            result = @"MicrophoneAGCEnabled";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeImageRotationID:
-            result = @"ImageRotation";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeImageFlipHorizontalID:
-            result = @"ImageFlipHorizontal";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeImageFlipVerticalID:
-            result = @"ImageFlipVertical";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeLocalVideoRecordingEnabledID:
-            result = @"LocalVideoRecordingEnabled";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeLocalSnapshotRecordingEnabledID:
-            result = @"LocalSnapshotRecordingEnabled";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeStatusLightEnabledID:
-            result = @"StatusLightEnabled";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeStatusLightBrightnessID:
-            result = @"StatusLightBrightness";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVStreamManagementAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known CameraAVStreamManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCameraAVSettingsUserLevelManagementID:
-
-        switch (attributeID) {
-
-            // Cluster CameraAVSettingsUserLevelManagement attributes
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeMPTZPositionID:
-            result = @"MPTZPosition";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeMaxPresetsID:
-            result = @"MaxPresets";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeMPTZPresetsID:
-            result = @"MPTZPresets";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeDPTZStreamsID:
-            result = @"DPTZStreams";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeZoomMaxID:
-            result = @"ZoomMax";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeTiltMinID:
-            result = @"TiltMin";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeTiltMaxID:
-            result = @"TiltMax";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributePanMinID:
-            result = @"PanMin";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributePanMaxID:
-            result = @"PanMax";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterCameraAVSettingsUserLevelManagementAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known CameraAVSettingsUserLevelManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -8365,6 +8163,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterWebRTCTransportProviderAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterWebRTCTransportProviderAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -8378,84 +8180,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known WebRTCTransportProvider attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeWebRTCTransportRequestorID:
-
-        switch (attributeID) {
-
-            // Cluster WebRTCTransportRequestor attributes
-        case MTRAttributeIDTypeClusterWebRTCTransportRequestorAttributeCurrentSessionsID:
-            result = @"CurrentSessions";
-            break;
-
-        case MTRAttributeIDTypeClusterWebRTCTransportRequestorAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterWebRTCTransportRequestorAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterWebRTCTransportRequestorAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterWebRTCTransportRequestorAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterWebRTCTransportRequestorAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known WebRTCTransportRequestor attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypePushAVStreamTransportID:
-
-        switch (attributeID) {
-
-            // Cluster PushAVStreamTransport attributes
-        case MTRAttributeIDTypeClusterPushAVStreamTransportAttributeSupportedFormatsID:
-            result = @"SupportedFormats";
-            break;
-
-        case MTRAttributeIDTypeClusterPushAVStreamTransportAttributeCurrentConnectionsID:
-            result = @"CurrentConnections";
-            break;
-
-        case MTRAttributeIDTypeClusterPushAVStreamTransportAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterPushAVStreamTransportAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterPushAVStreamTransportAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterPushAVStreamTransportAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterPushAVStreamTransportAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known PushAVStreamTransport attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -8469,8 +8194,8 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"InstalledChimeSounds";
             break;
 
-        case MTRAttributeIDTypeClusterChimeAttributeSelectedChimeID:
-            result = @"SelectedChime";
+        case MTRAttributeIDTypeClusterChimeAttributeActiveChimeIDID:
+            result = @"ActiveChimeID";
             break;
 
         case MTRAttributeIDTypeClusterChimeAttributeEnabledID:
@@ -8483,6 +8208,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
 
         case MTRAttributeIDTypeClusterChimeAttributeAcceptedCommandListID:
             result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterChimeAttributeEventListID:
+            result = @"EventList";
             break;
 
         case MTRAttributeIDTypeClusterChimeAttributeAttributeListID:
@@ -8498,116 +8227,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known Chime attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCommodityTariffID:
-
-        switch (attributeID) {
-
-            // Cluster CommodityTariff attributes
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeTariffInfoID:
-            result = @"TariffInfo";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeTariffUnitID:
-            result = @"TariffUnit";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeStartDateID:
-            result = @"StartDate";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeDayEntriesID:
-            result = @"DayEntries";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeDayPatternsID:
-            result = @"DayPatterns";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeCalendarPeriodsID:
-            result = @"CalendarPeriods";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeIndividualDaysID:
-            result = @"IndividualDays";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeCurrentDayID:
-            result = @"CurrentDay";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeNextDayID:
-            result = @"NextDay";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeCurrentDayEntryID:
-            result = @"CurrentDayEntry";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeCurrentDayEntryDateID:
-            result = @"CurrentDayEntryDate";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeNextDayEntryID:
-            result = @"NextDayEntry";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeNextDayEntryDateID:
-            result = @"NextDayEntryDate";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeTariffComponentsID:
-            result = @"TariffComponents";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeTariffPeriodsID:
-            result = @"TariffPeriods";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeCurrentTariffComponentsID:
-            result = @"CurrentTariffComponents";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeNextTariffComponentsID:
-            result = @"NextTariffComponents";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeDefaultRandomizationOffsetID:
-            result = @"DefaultRandomizationOffset";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeDefaultRandomizationTypeID:
-            result = @"DefaultRandomizationType";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityTariffAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known CommodityTariff attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -8633,6 +8253,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterEcosystemInformationAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterEcosystemInformationAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -8646,8 +8270,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known EcosystemInformation attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -8669,6 +8292,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterCommissionerControlAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterCommissionerControlAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -8682,316 +8309,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known CommissionerControl attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeJointFabricDatastoreID:
-
-        switch (attributeID) {
-
-            // Cluster JointFabricDatastore attributes
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeAnchorRootCAID:
-            result = @"AnchorRootCA";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeAnchorNodeIDID:
-            result = @"AnchorNodeID";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeAnchorVendorIDID:
-            result = @"AnchorVendorID";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeFriendlyNameID:
-            result = @"FriendlyName";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeGroupKeySetListID:
-            result = @"GroupKeySetList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeGroupListID:
-            result = @"GroupList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeNodeListID:
-            result = @"NodeList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeAdminListID:
-            result = @"AdminList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeStatusID:
-            result = @"Status";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeEndpointGroupIDListID:
-            result = @"EndpointGroupIDList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeEndpointBindingListID:
-            result = @"EndpointBindingList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeNodeKeySetListID:
-            result = @"NodeKeySetList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeNodeACLListID:
-            result = @"NodeACLList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeNodeEndpointListID:
-            result = @"NodeEndpointList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricDatastoreAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known JointFabricDatastore attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeJointFabricAdministratorID:
-
-        switch (attributeID) {
-
-            // Cluster JointFabricAdministrator attributes
-        case MTRAttributeIDTypeClusterJointFabricAdministratorAttributeAdministratorFabricIndexID:
-            result = @"AdministratorFabricIndex";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricAdministratorAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricAdministratorAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricAdministratorAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricAdministratorAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterJointFabricAdministratorAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known JointFabricAdministrator attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeTLSCertificateManagementID:
-
-        switch (attributeID) {
-
-            // Cluster TLSCertificateManagement attributes
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeMaxRootCertificatesID:
-            result = @"MaxRootCertificates";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeProvisionedRootCertificatesID:
-            result = @"ProvisionedRootCertificates";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeMaxClientCertificatesID:
-            result = @"MaxClientCertificates";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeProvisionedClientCertificatesID:
-            result = @"ProvisionedClientCertificates";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSCertificateManagementAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known TLSCertificateManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeTLSClientManagementID:
-
-        switch (attributeID) {
-
-            // Cluster TLSClientManagement attributes
-        case MTRAttributeIDTypeClusterTLSClientManagementAttributeMaxProvisionedID:
-            result = @"MaxProvisioned";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSClientManagementAttributeProvisionedEndpointsID:
-            result = @"ProvisionedEndpoints";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSClientManagementAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSClientManagementAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSClientManagementAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSClientManagementAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterTLSClientManagementAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known TLSClientManagement attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeMeterIdentificationID:
-
-        switch (attributeID) {
-
-            // Cluster MeterIdentification attributes
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributeMeterTypeID:
-            result = @"MeterType";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributePointOfDeliveryID:
-            result = @"PointOfDelivery";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributeMeterSerialNumberID:
-            result = @"MeterSerialNumber";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributeProtocolVersionID:
-            result = @"ProtocolVersion";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributePowerThresholdID:
-            result = @"PowerThreshold";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterMeterIdentificationAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known MeterIdentification attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCommodityMeteringID:
-
-        switch (attributeID) {
-
-            // Cluster CommodityMetering attributes
-        case MTRAttributeIDTypeClusterCommodityMeteringAttributeMeteredQuantityID:
-            result = @"MeteredQuantity";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityMeteringAttributeMeteredQuantityTimestampID:
-            result = @"MeteredQuantityTimestamp";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityMeteringAttributeMeasurementTypeID:
-            result = @"MeasurementType";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityMeteringAttributeGeneratedCommandListID:
-            result = @"GeneratedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityMeteringAttributeAcceptedCommandListID:
-            result = @"AcceptedCommandList";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityMeteringAttributeAttributeListID:
-            result = @"AttributeList";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityMeteringAttributeFeatureMapID:
-            result = @"FeatureMap";
-            break;
-
-        case MTRAttributeIDTypeClusterCommodityMeteringAttributeClusterRevisionID:
-            result = @"ClusterRevision";
-            break;
-
-        default:
-            // Not a known CommodityMetering attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -9361,6 +8679,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterUnitTestingAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterUnitTestingAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -9378,8 +8700,7 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known UnitTesting attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
@@ -9401,6 +8722,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AcceptedCommandList";
             break;
 
+        case MTRAttributeIDTypeClusterSampleMEIAttributeEventListID:
+            result = @"EventList";
+            break;
+
         case MTRAttributeIDTypeClusterSampleMEIAttributeAttributeListID:
             result = @"AttributeList";
             break;
@@ -9414,14 +8739,13 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             break;
 
         default:
-            // Not a known SampleMEI attribute.
-            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            result = [NSString stringWithFormat:@"<Unknown attributeID %d>", attributeID];
             break;
         }
         break;
 
     default:
-        result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+        result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
         break;
     }
 
@@ -9449,7 +8773,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9483,7 +8807,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9517,7 +8841,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9563,7 +8887,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9573,7 +8897,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9583,7 +8907,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9593,7 +8917,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9607,7 +8931,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9665,7 +8989,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9675,7 +8999,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9697,7 +9021,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9711,7 +9035,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9721,7 +9045,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9731,7 +9055,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9741,7 +9065,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9751,7 +9075,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9761,7 +9085,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9787,7 +9111,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9825,7 +9149,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9839,7 +9163,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9861,7 +9185,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9875,7 +9199,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9889,7 +9213,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9903,7 +9227,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9917,7 +9241,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9947,7 +9271,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9961,7 +9285,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9971,7 +9295,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -9993,7 +9317,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10034,16 +9358,8 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             result = @"AddTrustedRootCertificate";
             break;
 
-        case MTRCommandIDTypeClusterOperationalCredentialsCommandSetVIDVerificationStatementID:
-            result = @"SetVIDVerificationStatement";
-            break;
-
-        case MTRCommandIDTypeClusterOperationalCredentialsCommandSignVIDVerificationRequestID:
-            result = @"SignVIDVerificationRequest";
-            break;
-
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10069,7 +9385,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10079,7 +9395,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10089,7 +9405,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10099,7 +9415,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10121,7 +9437,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10147,7 +9463,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10155,6 +9471,10 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
     case MTRClusterIDTypeOvenCavityOperationalStateID:
 
         switch (commandID) {
+
+        case MTRCommandIDTypeClusterOvenCavityOperationalStateCommandPauseID:
+            result = @"Pause";
+            break;
 
         case MTRCommandIDTypeClusterOvenCavityOperationalStateCommandStopID:
             result = @"Stop";
@@ -10164,8 +9484,12 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             result = @"Start";
             break;
 
+        case MTRCommandIDTypeClusterOvenCavityOperationalStateCommandResumeID:
+            result = @"Resume";
+            break;
+
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10179,7 +9503,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10189,7 +9513,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10203,7 +9527,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10217,7 +9541,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10231,7 +9555,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10241,7 +9565,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10255,7 +9579,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10269,7 +9593,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10283,7 +9607,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10293,7 +9617,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10307,7 +9631,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10317,7 +9641,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10331,7 +9655,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10349,7 +9673,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10359,7 +9683,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10377,7 +9701,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10403,7 +9727,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10425,7 +9749,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10467,7 +9791,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10481,7 +9805,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10495,7 +9819,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10513,7 +9837,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10531,7 +9855,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10541,7 +9865,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10551,7 +9875,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10569,25 +9893,37 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
 
-    case MTRClusterIDTypeCommodityPriceID:
+    case MTRClusterIDTypeDemandResponseLoadControlID:
 
         switch (commandID) {
 
-        case MTRCommandIDTypeClusterCommodityPriceCommandGetDetailedPriceRequestID:
-            result = @"GetDetailedPriceRequest";
+        case MTRCommandIDTypeClusterDemandResponseLoadControlCommandRegisterLoadControlProgramRequestID:
+            result = @"RegisterLoadControlProgramRequest";
             break;
 
-        case MTRCommandIDTypeClusterCommodityPriceCommandGetDetailedForecastRequestID:
-            result = @"GetDetailedForecastRequest";
+        case MTRCommandIDTypeClusterDemandResponseLoadControlCommandUnregisterLoadControlProgramRequestID:
+            result = @"UnregisterLoadControlProgramRequest";
+            break;
+
+        case MTRCommandIDTypeClusterDemandResponseLoadControlCommandAddLoadControlEventRequestID:
+            result = @"AddLoadControlEventRequest";
+            break;
+
+        case MTRCommandIDTypeClusterDemandResponseLoadControlCommandRemoveLoadControlEventRequestID:
+            result = @"RemoveLoadControlEventRequest";
+            break;
+
+        case MTRCommandIDTypeClusterDemandResponseLoadControlCommandClearLoadControlEventsRequestID:
+            result = @"ClearLoadControlEventsRequest";
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10605,7 +9941,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10647,7 +9983,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10685,7 +10021,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10695,7 +10031,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10705,7 +10041,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10719,7 +10055,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10733,7 +10069,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10747,17 +10083,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeElectricalGridConditionsID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10851,7 +10177,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10889,47 +10215,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeClosureControlID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterClosureControlCommandStopID:
-            result = @"Stop";
-            break;
-
-        case MTRCommandIDTypeClusterClosureControlCommandMoveToID:
-            result = @"MoveTo";
-            break;
-
-        case MTRCommandIDTypeClusterClosureControlCommandCalibrateID:
-            result = @"Calibrate";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeClosureDimensionID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterClosureDimensionCommandSetTargetID:
-            result = @"SetTarget";
-            break;
-
-        case MTRCommandIDTypeClusterClosureDimensionCommandStepID:
-            result = @"Step";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10947,7 +10233,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10957,7 +10243,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -10995,7 +10281,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11009,7 +10295,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11019,7 +10305,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11105,7 +10391,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11115,7 +10401,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11125,7 +10411,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11135,7 +10421,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11145,7 +10431,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11155,7 +10441,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11165,7 +10451,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11175,7 +10461,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11185,7 +10471,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11195,7 +10481,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11205,7 +10491,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11215,7 +10501,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11225,7 +10511,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11235,7 +10521,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11245,7 +10531,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11255,7 +10541,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11265,7 +10551,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11275,17 +10561,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeSoilMeasurementID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11299,7 +10575,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11325,7 +10601,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11347,7 +10623,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11357,7 +10633,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11391,7 +10667,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11405,7 +10681,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11471,7 +10747,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11497,7 +10773,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11511,7 +10787,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11525,7 +10801,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11543,7 +10819,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11561,7 +10837,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11583,7 +10859,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11593,7 +10869,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11615,7 +10891,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11665,7 +10941,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11679,125 +10955,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeZoneManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterZoneManagementCommandCreateTwoDCartesianZoneID:
-            result = @"CreateTwoDCartesianZone";
-            break;
-
-        case MTRCommandIDTypeClusterZoneManagementCommandUpdateTwoDCartesianZoneID:
-            result = @"UpdateTwoDCartesianZone";
-            break;
-
-        case MTRCommandIDTypeClusterZoneManagementCommandRemoveZoneID:
-            result = @"RemoveZone";
-            break;
-
-        case MTRCommandIDTypeClusterZoneManagementCommandCreateOrUpdateTriggerID:
-            result = @"CreateOrUpdateTrigger";
-            break;
-
-        case MTRCommandIDTypeClusterZoneManagementCommandRemoveTriggerID:
-            result = @"RemoveTrigger";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCameraAVStreamManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandAudioStreamAllocateID:
-            result = @"AudioStreamAllocate";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandAudioStreamDeallocateID:
-            result = @"AudioStreamDeallocate";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandVideoStreamAllocateID:
-            result = @"VideoStreamAllocate";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandVideoStreamModifyID:
-            result = @"VideoStreamModify";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandVideoStreamDeallocateID:
-            result = @"VideoStreamDeallocate";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandSnapshotStreamAllocateID:
-            result = @"SnapshotStreamAllocate";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandSnapshotStreamModifyID:
-            result = @"SnapshotStreamModify";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandSnapshotStreamDeallocateID:
-            result = @"SnapshotStreamDeallocate";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandSetStreamPrioritiesID:
-            result = @"SetStreamPriorities";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandCaptureSnapshotID:
-            result = @"CaptureSnapshot";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCameraAVSettingsUserLevelManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterCameraAVSettingsUserLevelManagementCommandMPTZSetPositionID:
-            result = @"MPTZSetPosition";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVSettingsUserLevelManagementCommandMPTZRelativeMoveID:
-            result = @"MPTZRelativeMove";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVSettingsUserLevelManagementCommandMPTZMoveToPresetID:
-            result = @"MPTZMoveToPreset";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVSettingsUserLevelManagementCommandMPTZSavePresetID:
-            result = @"MPTZSavePreset";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVSettingsUserLevelManagementCommandMPTZRemovePresetID:
-            result = @"MPTZRemovePreset";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVSettingsUserLevelManagementCommandDPTZSetViewportID:
-            result = @"DPTZSetViewport";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVSettingsUserLevelManagementCommandDPTZRelativeMoveID:
-            result = @"DPTZRelativeMove";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11818,8 +10976,8 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             result = @"ProvideAnswer";
             break;
 
-        case MTRCommandIDTypeClusterWebRTCTransportProviderCommandProvideICECandidatesID:
-            result = @"ProvideICECandidates";
+        case MTRCommandIDTypeClusterWebRTCTransportProviderCommandProvideICECandidateID:
+            result = @"ProvideICECandidate";
             break;
 
         case MTRCommandIDTypeClusterWebRTCTransportProviderCommandEndSessionID:
@@ -11827,67 +10985,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeWebRTCTransportRequestorID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterWebRTCTransportRequestorCommandOfferID:
-            result = @"Offer";
-            break;
-
-        case MTRCommandIDTypeClusterWebRTCTransportRequestorCommandAnswerID:
-            result = @"Answer";
-            break;
-
-        case MTRCommandIDTypeClusterWebRTCTransportRequestorCommandICECandidatesID:
-            result = @"ICECandidates";
-            break;
-
-        case MTRCommandIDTypeClusterWebRTCTransportRequestorCommandEndID:
-            result = @"End";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypePushAVStreamTransportID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterPushAVStreamTransportCommandAllocatePushTransportID:
-            result = @"AllocatePushTransport";
-            break;
-
-        case MTRCommandIDTypeClusterPushAVStreamTransportCommandDeallocatePushTransportID:
-            result = @"DeallocatePushTransport";
-            break;
-
-        case MTRCommandIDTypeClusterPushAVStreamTransportCommandModifyPushTransportID:
-            result = @"ModifyPushTransport";
-            break;
-
-        case MTRCommandIDTypeClusterPushAVStreamTransportCommandSetTransportStatusID:
-            result = @"SetTransportStatus";
-            break;
-
-        case MTRCommandIDTypeClusterPushAVStreamTransportCommandManuallyTriggerTransportID:
-            result = @"ManuallyTriggerTransport";
-            break;
-
-        case MTRCommandIDTypeClusterPushAVStreamTransportCommandFindTransportID:
-            result = @"FindTransport";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11901,25 +10999,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCommodityTariffID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterCommodityTariffCommandGetTariffComponentID:
-            result = @"GetTariffComponent";
-            break;
-
-        case MTRCommandIDTypeClusterCommodityTariffCommandGetDayEntryID:
-            result = @"GetDayEntry";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11929,7 +11009,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -11947,219 +11027,7 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeJointFabricDatastoreID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandAddKeySetID:
-            result = @"AddKeySet";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandUpdateKeySetID:
-            result = @"UpdateKeySet";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandRemoveKeySetID:
-            result = @"RemoveKeySet";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandAddGroupID:
-            result = @"AddGroup";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandUpdateGroupID:
-            result = @"UpdateGroup";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandRemoveGroupID:
-            result = @"RemoveGroup";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandAddAdminID:
-            result = @"AddAdmin";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandUpdateAdminID:
-            result = @"UpdateAdmin";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandRemoveAdminID:
-            result = @"RemoveAdmin";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandAddPendingNodeID:
-            result = @"AddPendingNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandRefreshNodeID:
-            result = @"RefreshNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandUpdateNodeID:
-            result = @"UpdateNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandRemoveNodeID:
-            result = @"RemoveNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandUpdateEndpointForNodeID:
-            result = @"UpdateEndpointForNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandAddGroupIDToEndpointForNodeID:
-            result = @"AddGroupIDToEndpointForNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandRemoveGroupIDFromEndpointForNodeID:
-            result = @"RemoveGroupIDFromEndpointForNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandAddBindingToEndpointForNodeID:
-            result = @"AddBindingToEndpointForNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandRemoveBindingFromEndpointForNodeID:
-            result = @"RemoveBindingFromEndpointForNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandAddACLToNodeID:
-            result = @"AddACLToNode";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricDatastoreCommandRemoveACLFromNodeID:
-            result = @"RemoveACLFromNode";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeJointFabricAdministratorID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandICACCSRRequestID:
-            result = @"ICACCSRRequest";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandAddICACID:
-            result = @"AddICAC";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandOpenJointCommissioningWindowID:
-            result = @"OpenJointCommissioningWindow";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandTransferAnchorRequestID:
-            result = @"TransferAnchorRequest";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandTransferAnchorCompleteID:
-            result = @"TransferAnchorComplete";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandAnnounceJointFabricAdministratorID:
-            result = @"AnnounceJointFabricAdministrator";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeTLSCertificateManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandProvisionRootCertificateID:
-            result = @"ProvisionRootCertificate";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandFindRootCertificateID:
-            result = @"FindRootCertificate";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandLookupRootCertificateID:
-            result = @"LookupRootCertificate";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandRemoveRootCertificateID:
-            result = @"RemoveRootCertificate";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandTLSClientCSRID:
-            result = @"TLSClientCSR";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandProvisionClientCertificateID:
-            result = @"ProvisionClientCertificate";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandFindClientCertificateID:
-            result = @"FindClientCertificate";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandLookupClientCertificateID:
-            result = @"LookupClientCertificate";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandRemoveClientCertificateID:
-            result = @"RemoveClientCertificate";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeTLSClientManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterTLSClientManagementCommandProvisionEndpointID:
-            result = @"ProvisionEndpoint";
-            break;
-
-        case MTRCommandIDTypeClusterTLSClientManagementCommandFindEndpointID:
-            result = @"FindEndpoint";
-            break;
-
-        case MTRCommandIDTypeClusterTLSClientManagementCommandRemoveEndpointID:
-            result = @"RemoveEndpoint";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeMeterIdentificationID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCommodityMeteringID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12272,16 +11140,12 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             result = @"GlobalEchoRequest";
             break;
 
-        case MTRCommandIDTypeClusterUnitTestingCommandTestCheckCommandFlagsID:
-            result = @"TestCheckCommandFlags";
-            break;
-
         case MTRCommandIDTypeClusterUnitTestingCommandTestDifferentVendorMeiRequestID:
             result = @"TestDifferentVendorMeiRequest";
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12299,13 +11163,13 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
 
     default:
-        result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+        result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
         break;
     }
 
@@ -12323,7 +11187,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12349,7 +11213,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12359,7 +11223,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12369,7 +11233,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12379,7 +11243,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12389,7 +11253,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12399,7 +11263,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12413,7 +11277,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12423,7 +11287,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12433,7 +11297,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12451,7 +11315,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12461,7 +11325,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12471,7 +11335,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12481,7 +11345,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12491,7 +11355,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12501,7 +11365,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12511,7 +11375,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12537,7 +11401,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12563,7 +11427,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12577,7 +11441,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12595,7 +11459,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12605,7 +11469,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12615,7 +11479,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12625,7 +11489,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12635,7 +11499,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12649,7 +11513,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12659,7 +11523,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12669,7 +11533,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12679,7 +11543,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12704,12 +11568,8 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             result = @"NOCResponse";
             break;
 
-        case MTRCommandIDTypeClusterOperationalCredentialsCommandSignVIDVerificationResponseID:
-            result = @"SignVIDVerificationResponse";
-            break;
-
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12727,7 +11587,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12737,7 +11597,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12747,7 +11607,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12757,7 +11617,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12775,7 +11635,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12785,7 +11645,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12799,7 +11659,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12813,7 +11673,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12823,7 +11683,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12833,7 +11693,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12847,7 +11707,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12861,7 +11721,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12871,7 +11731,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12885,7 +11745,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12899,7 +11759,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12909,7 +11769,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12919,7 +11779,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12933,7 +11793,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12943,7 +11803,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12953,7 +11813,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12963,7 +11823,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12973,7 +11833,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12983,7 +11843,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -12997,7 +11857,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13011,7 +11871,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13049,7 +11909,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13059,7 +11919,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13069,7 +11929,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13079,7 +11939,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13089,7 +11949,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13099,7 +11959,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13109,7 +11969,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13119,25 +11979,17 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
 
-    case MTRClusterIDTypeCommodityPriceID:
+    case MTRClusterIDTypeDemandResponseLoadControlID:
 
         switch (commandID) {
 
-        case MTRCommandIDTypeClusterCommodityPriceCommandGetDetailedPriceResponseID:
-            result = @"GetDetailedPriceResponse";
-            break;
-
-        case MTRCommandIDTypeClusterCommodityPriceCommandGetDetailedForecastResponseID:
-            result = @"GetDetailedForecastResponse";
-            break;
-
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13147,7 +11999,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13157,7 +12009,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13171,7 +12023,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13181,7 +12033,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13191,7 +12043,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13205,7 +12057,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13219,7 +12071,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13233,17 +12085,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeElectricalGridConditionsID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13277,7 +12119,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13287,27 +12129,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeClosureControlID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeClosureDimensionID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13325,7 +12147,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13335,7 +12157,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13353,7 +12175,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13363,7 +12185,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13373,7 +12195,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13383,7 +12205,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13393,7 +12215,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13403,7 +12225,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13413,7 +12235,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13423,7 +12245,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13433,7 +12255,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13443,7 +12265,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13453,7 +12275,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13463,7 +12285,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13473,7 +12295,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13483,7 +12305,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13493,7 +12315,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13503,7 +12325,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13513,7 +12335,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13523,7 +12345,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13533,7 +12355,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13543,7 +12365,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13553,17 +12375,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeSoilMeasurementID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13577,7 +12389,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13591,7 +12403,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13605,7 +12417,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13615,7 +12427,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13633,7 +12445,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13647,7 +12459,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13661,7 +12473,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13671,7 +12483,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13681,7 +12493,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13695,7 +12507,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13709,7 +12521,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13719,7 +12531,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13733,7 +12545,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13743,7 +12555,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13757,7 +12569,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13771,7 +12583,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13785,57 +12597,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeZoneManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterZoneManagementCommandCreateTwoDCartesianZoneResponseID:
-            result = @"CreateTwoDCartesianZoneResponse";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCameraAVStreamManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandAudioStreamAllocateResponseID:
-            result = @"AudioStreamAllocateResponse";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandVideoStreamAllocateResponseID:
-            result = @"VideoStreamAllocateResponse";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandSnapshotStreamAllocateResponseID:
-            result = @"SnapshotStreamAllocateResponse";
-            break;
-
-        case MTRCommandIDTypeClusterCameraAVStreamManagementCommandCaptureSnapshotResponseID:
-            result = @"CaptureSnapshotResponse";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCameraAVSettingsUserLevelManagementID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13853,35 +12615,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeWebRTCTransportRequestorID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypePushAVStreamTransportID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterPushAVStreamTransportCommandAllocatePushTransportResponseID:
-            result = @"AllocatePushTransportResponse";
-            break;
-
-        case MTRCommandIDTypeClusterPushAVStreamTransportCommandFindTransportResponseID:
-            result = @"FindTransportResponse";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13891,25 +12625,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCommodityTariffID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterCommodityTariffCommandGetTariffComponentResponseID:
-            result = @"GetTariffComponentResponse";
-            break;
-
-        case MTRCommandIDTypeClusterCommodityTariffCommandGetDayEntryResponseID:
-            result = @"GetDayEntryResponse";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13919,7 +12635,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         switch (commandID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -13933,111 +12649,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeJointFabricDatastoreID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeJointFabricAdministratorID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandICACCSRResponseID:
-            result = @"ICACCSRResponse";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandICACResponseID:
-            result = @"ICACResponse";
-            break;
-
-        case MTRCommandIDTypeClusterJointFabricAdministratorCommandTransferAnchorResponseID:
-            result = @"TransferAnchorResponse";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeTLSCertificateManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandProvisionRootCertificateResponseID:
-            result = @"ProvisionRootCertificateResponse";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandFindRootCertificateResponseID:
-            result = @"FindRootCertificateResponse";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandLookupRootCertificateResponseID:
-            result = @"LookupRootCertificateResponse";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandTLSClientCSRResponseID:
-            result = @"TLSClientCSRResponse";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandFindClientCertificateResponseID:
-            result = @"FindClientCertificateResponse";
-            break;
-
-        case MTRCommandIDTypeClusterTLSCertificateManagementCommandLookupClientCertificateResponseID:
-            result = @"LookupClientCertificateResponse";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeTLSClientManagementID:
-
-        switch (commandID) {
-
-        case MTRCommandIDTypeClusterTLSClientManagementCommandProvisionEndpointResponseID:
-            result = @"ProvisionEndpointResponse";
-            break;
-
-        case MTRCommandIDTypeClusterTLSClientManagementCommandFindEndpointResponseID:
-            result = @"FindEndpointResponse";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeMeterIdentificationID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCommodityMeteringID:
-
-        switch (commandID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -14111,7 +12723,7 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
@@ -14125,13 +12737,13 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            result = [NSString stringWithFormat:@"<Unknown commandID %d>", commandID];
             break;
         }
         break;
 
     default:
-        result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+        result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
         break;
     }
 
@@ -14151,7 +12763,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14161,7 +12773,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14171,7 +12783,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14181,7 +12793,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14191,7 +12803,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14201,7 +12813,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14211,7 +12823,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14234,7 +12846,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14253,7 +12865,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14280,7 +12892,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14290,7 +12902,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14313,7 +12925,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14323,7 +12935,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14333,7 +12945,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14343,7 +12955,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14353,7 +12965,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14376,7 +12988,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14386,7 +12998,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14396,7 +13008,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14406,7 +13018,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14433,7 +13045,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14448,7 +13060,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14467,7 +13079,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14490,7 +13102,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14500,7 +13112,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14531,7 +13143,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14562,7 +13174,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14601,7 +13213,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14611,7 +13223,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14621,7 +13233,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14631,7 +13243,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14641,7 +13253,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14651,7 +13263,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14666,7 +13278,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14676,7 +13288,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14686,7 +13298,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14705,7 +13317,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14715,7 +13327,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14725,7 +13337,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14735,7 +13347,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14745,7 +13357,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14755,7 +13367,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14765,7 +13377,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14775,7 +13387,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14785,7 +13397,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14795,7 +13407,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14810,7 +13422,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14820,7 +13432,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14830,7 +13442,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14885,7 +13497,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14900,7 +13512,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14910,7 +13522,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14920,7 +13532,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14939,7 +13551,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14958,7 +13570,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14968,7 +13580,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14978,7 +13590,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -14988,7 +13600,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15007,7 +13619,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15026,7 +13638,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15041,7 +13653,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15060,7 +13672,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15079,22 +13691,22 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
 
-    case MTRClusterIDTypeCommodityPriceID:
+    case MTRClusterIDTypeDemandResponseLoadControlID:
 
         switch (eventID) {
 
-            // Cluster CommodityPrice events
-        case MTREventIDTypeClusterCommodityPriceEventPriceChangeID:
-            result = @"PriceChange";
+            // Cluster DemandResponseLoadControl events
+        case MTREventIDTypeClusterDemandResponseLoadControlEventLoadControlEventStatusChangeID:
+            result = @"LoadControlEventStatusChange";
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15117,7 +13729,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15144,7 +13756,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15179,7 +13791,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15189,7 +13801,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15199,7 +13811,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15209,7 +13821,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15219,7 +13831,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15229,22 +13841,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeElectricalGridConditionsID:
-
-        switch (eventID) {
-
-            // Cluster ElectricalGridConditions events
-        case MTREventIDTypeClusterElectricalGridConditionsEventCurrentConditionsChangedID:
-            result = @"CurrentConditionsChanged";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15275,7 +13872,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15285,44 +13882,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeClosureControlID:
-
-        switch (eventID) {
-
-            // Cluster ClosureControl events
-        case MTREventIDTypeClusterClosureControlEventOperationalErrorID:
-            result = @"OperationalError";
-            break;
-
-        case MTREventIDTypeClusterClosureControlEventMovementCompletedID:
-            result = @"MovementCompleted";
-            break;
-
-        case MTREventIDTypeClusterClosureControlEventEngageStateChangedID:
-            result = @"EngageStateChanged";
-            break;
-
-        case MTREventIDTypeClusterClosureControlEventSecureStateChangedID:
-            result = @"SecureStateChanged";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeClosureDimensionID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15332,7 +13892,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15411,7 +13971,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15421,7 +13981,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15431,7 +13991,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15441,7 +14001,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15451,7 +14011,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15461,7 +14021,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15471,7 +14031,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15481,7 +14041,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15491,7 +14051,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15501,7 +14061,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15511,7 +14071,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15526,7 +14086,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15536,7 +14096,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15546,7 +14106,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15556,7 +14116,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15566,7 +14126,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15576,7 +14136,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15586,7 +14146,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15596,7 +14156,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15606,7 +14166,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15616,7 +14176,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15626,17 +14186,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeSoilMeasurementID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15646,7 +14196,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15656,7 +14206,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15666,7 +14216,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15676,7 +14226,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15686,7 +14236,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15701,7 +14251,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15716,7 +14266,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15726,7 +14276,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15736,7 +14286,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15746,7 +14296,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15756,7 +14306,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15766,7 +14316,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15776,7 +14326,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15786,7 +14336,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15801,7 +14351,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15816,7 +14366,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15826,46 +14376,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeZoneManagementID:
-
-        switch (eventID) {
-
-            // Cluster ZoneManagement events
-        case MTREventIDTypeClusterZoneManagementEventZoneTriggeredID:
-            result = @"ZoneTriggered";
-            break;
-
-        case MTREventIDTypeClusterZoneManagementEventZoneStoppedID:
-            result = @"ZoneStopped";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCameraAVStreamManagementID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCameraAVSettingsUserLevelManagementID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15875,36 +14386,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeWebRTCTransportRequestorID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypePushAVStreamTransportID:
-
-        switch (eventID) {
-
-            // Cluster PushAVStreamTransport events
-        case MTREventIDTypeClusterPushAVStreamTransportEventPushTransportBeginID:
-            result = @"PushTransportBegin";
-            break;
-
-        case MTREventIDTypeClusterPushAVStreamTransportEventPushTransportEndID:
-            result = @"PushTransportEnd";
-            break;
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15914,17 +14396,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCommodityTariffID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15934,7 +14406,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
         switch (eventID) {
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -15949,67 +14421,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeJointFabricDatastoreID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeJointFabricAdministratorID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeTLSCertificateManagementID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeTLSClientManagementID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeMeterIdentificationID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
-            break;
-        }
-        break;
-
-    case MTRClusterIDTypeCommodityMeteringID:
-
-        switch (eventID) {
-
-        default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -16032,7 +14444,7 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
@@ -16047,13 +14459,13 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             break;
 
         default:
-            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            result = [NSString stringWithFormat:@"<Unknown eventID %d>", eventID];
             break;
         }
         break;
 
     default:
-        result = [NSString stringWithFormat:@"<Unknown clusterID %u>", clusterID];
+        result = [NSString stringWithFormat:@"<Unknown clusterID %d>", clusterID];
         break;
     }
 

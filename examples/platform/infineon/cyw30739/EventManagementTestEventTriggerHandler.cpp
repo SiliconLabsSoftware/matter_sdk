@@ -27,7 +27,6 @@ namespace CYW30739 {
 
 CHIP_ERROR EventManagementTestEventTriggerHandler::HandleEventTrigger(uint64_t eventTrigger)
 {
-    eventTrigger = clearEndpointInEventTrigger(eventTrigger);
     switch (eventTrigger)
     {
     case kFillUpEventLoggingBuffer:

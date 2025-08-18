@@ -18,8 +18,4 @@
 
 #pragma once
 
-namespace admin {
-
 void InitRpcServer(uint16_t rpcServerPort);
-
-} // namespace admin

@@ -153,11 +153,11 @@ MTR_AVAILABLE(ios(17.6), macos(14.6), watchos(10.6), tvos(17.6))
 /**
  * The root certificate we were initialized with.
  */
-@property (nonatomic, copy, readonly) MTRCertificateDERBytes rootCertificate MTR_AVAILABLE(ios(18.2), macos(15.2), watchos(11.2), tvos(18.2));
+@property (nonatomic, copy, readonly) MTRCertificateDERBytes rootCertificate MTR_NEWLY_AVAILABLE;
 
 @end
 
-MTR_AVAILABLE(ios(18.2), macos(15.2), watchos(11.2), tvos(18.2))
+MTR_NEWLY_AVAILABLE
 @interface MTRXPCDeviceControllerParameters : MTRDeviceControllerAbstractParameters
 
 - (instancetype)init NS_UNAVAILABLE;
@@ -174,8 +174,8 @@ MTR_AVAILABLE(ios(18.2), macos(15.2), watchos(11.2), tvos(18.2))
 - (instancetype)initWithXPConnectionBlock:(NSXPCConnection * (^)(void) )xpcConnectionBlock
                          uniqueIdentifier:(NSUUID *)uniqueIdentifier;
 
-@property (atomic, readonly, retain) NSUUID * uniqueIdentifier MTR_AVAILABLE(ios(18.2), macos(15.2), watchos(11.2), tvos(18.2));
-@property (readonly, strong, nonatomic) NSXPCConnection * (^xpcConnectionBlock)(void) MTR_AVAILABLE(ios(18.2), macos(15.2), watchos(11.2), tvos(18.2));
+@property (atomic, readonly, retain) NSUUID * uniqueIdentifier MTR_NEWLY_AVAILABLE;
+@property (readonly, strong, nonatomic) NSXPCConnection * (^xpcConnectionBlock)(void) MTR_NEWLY_AVAILABLE;
 
 @end
 

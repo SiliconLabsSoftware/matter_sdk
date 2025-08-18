@@ -117,7 +117,7 @@ void ENFORCE_FORMAT(3, 0) LoggingCallback(const char * module, uint8_t category,
 #if defined(PW_RPC_ENABLED)
 void AttemptRpcClientConnect(System::Layer * systemLayer, void * appState)
 {
-    if (admin::StartRpcClient() == CHIP_NO_ERROR)
+    if (StartRpcClient() == CHIP_NO_ERROR)
     {
         // print to console
         fprintf(stderr, "Connected to Fabric-Bridge\n");
@@ -138,17 +138,27 @@ void ExecuteDeferredConnect(intptr_t ignored)
 
 } // namespace
 
-std::string InteractiveStartCommand::GetCommand() const
+char * InteractiveStartCommand::GetCommand(char * command)
 {
     std::unique_lock<std::mutex> lock(sQueueMutex);
     sQueueCondition.wait(lock, [&] { return !sCommandQueue.empty(); });
 
-    std::string command = sCommandQueue.front();
+    std::string cmd = sCommandQueue.front();
     sCommandQueue.pop();
 
-    if (!command.empty())
+    if (command != nullptr)
     {
-        add_history(command.c_str());
+        free(command);
+        command = nullptr;
+    }
+
+    command = new char[cmd.length() + 1];
+    strcpy(command, cmd.c_str());
+
+    // Do not save empty lines
+    if (command != nullptr && *command)
+    {
+        add_history(command);
         write_history(GetHistoryFilePath().c_str());
     }
 
@@ -189,8 +199,8 @@ CHIP_ERROR InteractiveStartCommand::RunCommand()
     }
 
 #if defined(PW_RPC_ENABLED)
-    admin::SetRpcRemoteServerPort(mFabricBridgeServerPort.Value());
-    admin::InitRpcServer(mLocalServerPort.Value());
+    SetRpcRemoteServerPort(mFabricBridgeServerPort.Value());
+    InitRpcServer(mLocalServerPort.Value());
     ChipLogProgress(NotSpecified, "PW_RPC initialized.");
     DeviceLayer::PlatformMgr().ScheduleWork(ExecuteDeferredConnect, 0);
 #endif
@@ -198,14 +208,21 @@ CHIP_ERROR InteractiveStartCommand::RunCommand()
     std::thread readCommands(ReadCommandThread);
     readCommands.detach();
 
+    char * command = nullptr;
     int status;
     while (true)
     {
-        std::string command = GetCommand();
-        if (!command.empty() && !ParseCommand(command, &status))
+        command = GetCommand(command);
+        if (command != nullptr && !ParseCommand(command, &status))
         {
             break;
         }
+    }
+
+    if (command != nullptr)
+    {
+        free(command);
+        command = nullptr;
     }
 
     SetCommandExitStatus(CHIP_NO_ERROR);
@@ -214,9 +231,9 @@ CHIP_ERROR InteractiveStartCommand::RunCommand()
     return CHIP_NO_ERROR;
 }
 
-bool InteractiveCommand::ParseCommand(const std::string & command, int * status)
+bool InteractiveCommand::ParseCommand(char * command, int * status)
 {
-    if (command == kInteractiveModeStopCommand)
+    if (strcmp(command, kInteractiveModeStopCommand) == 0)
     {
         // If scheduling the cleanup fails, there is not much we can do.
         // But if something went wrong while the application is leaving it could be because things have
@@ -227,7 +244,7 @@ bool InteractiveCommand::ParseCommand(const std::string & command, int * status)
 
     ClearLine();
 
-    *status = mHandler->RunInteractive(command.c_str(), GetStorageDirectory(), NeedsOperationalAdvertising());
+    *status = mHandler->RunInteractive(command, GetStorageDirectory(), NeedsOperationalAdvertising());
 
     return true;
 }

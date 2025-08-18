@@ -18,8 +18,7 @@
  */
 
 #include "LightingManager.h"
-#include "ColorLedHandler.h"
-#include "qPinCfg.h"
+#include "qvIO.h"
 #include <lib/support/logging/CHIPLogging.h>
 
 // initialization values for Blue in XY color space
@@ -33,8 +32,6 @@ constexpr HsvColor_t kWhiteHSV = { 0, 0, 255 };
 // default initialization value for the light level after start
 constexpr uint8_t kDefaultLevel = 1;
 
-constexpr qPinAltMapper_t ColorLedConfig[] = QPINCFG_COLOR_LED;
-
 LightingManager LightingManager::sLight;
 
 CHIP_ERROR LightingManager::Init()
@@ -44,8 +41,6 @@ CHIP_ERROR LightingManager::Init()
     mXY    = kWhiteXY;
     mHSV   = kWhiteHSV;
     mRGB   = XYToRgb(mLevel, mXY.x, mXY.y);
-
-    ColorLedHandler_Init(ColorLedConfig, Q_ARRAY_SIZE(ColorLedConfig));
 
     return CHIP_NO_ERROR;
 }
@@ -234,6 +229,6 @@ void LightingManager::Set(bool aOn)
 void LightingManager::UpdateLight()
 {
     ChipLogProgress(NotSpecified, "UpdateLight: %d L:%d R:%d G:%d B:%d", mState, mLevel, mRGB.r, mRGB.g, mRGB.b);
-    ColorLedHandler_SetColorLevel(mRGB.r, mRGB.g, mRGB.b);
-    ColorLedHandler_SetOnOff(mState == kState_On);
+    qvIO_PWMSetColor(mRGB.r, mRGB.g, mRGB.b);
+    qvIO_PWMColorOnOff(mState == kState_On);
 }

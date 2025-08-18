@@ -20,14 +20,13 @@
 #include <app/ReadClient.h>
 #include <controller/CHIPDeviceController.h>
 #include <lib/core/DataModelTypes.h>
+
 #include <memory>
 
 #if defined(PW_RPC_ENABLED)
 #include "fabric_bridge_service/fabric_bridge_service.pb.h"
 #include "fabric_bridge_service/fabric_bridge_service.rpc.pb.h"
 #endif
-
-namespace admin {
 
 class DeviceSubscriptionManager;
 
@@ -40,12 +39,12 @@ class DeviceSubscriptionManager;
 class DeviceSubscription : public chip::app::ReadClient::Callback
 {
 public:
-    using OnDoneCallback = std::function<void(chip::ScopedNodeId)>;
+    using OnDoneCallback = std::function<void(chip::NodeId)>;
 
     DeviceSubscription();
 
     CHIP_ERROR StartSubscription(OnDoneCallback onDoneCallback, chip::Controller::DeviceController & controller,
-                                 chip::ScopedNodeId nodeId);
+                                 chip::NodeId nodeId);
 
     /// This will trigger stopping the subscription. Once subscription is stopped the OnDoneCallback
     /// provided in StartSubscription will be called to indicate that subscription have been terminated.
@@ -81,7 +80,7 @@ private:
     void MoveToState(const State aTargetState);
     const char * GetStateStr() const;
 
-    chip::ScopedNodeId mScopedNodeId;
+    chip::NodeId mNodeId = chip::kUndefinedNodeId;
 
     OnDoneCallback mOnDoneCallback;
     std::unique_ptr<chip::app::ReadClient> mClient;
@@ -96,5 +95,3 @@ private:
     bool mChangeDetected = false;
     State mState         = State::Idle;
 };
-
-} // namespace admin

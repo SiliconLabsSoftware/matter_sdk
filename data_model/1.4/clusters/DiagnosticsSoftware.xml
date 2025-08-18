@@ -79,9 +79,7 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="Name" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8"/>
-        </constraint>
+        <constraint type="maxLength" value="8"/>
       </field>
       <field id="2" name="StackFreeCurrent" type="uint32" default="MS">
         <optionalConform/>
@@ -99,9 +97,7 @@ Davis, CA 95616, USA
       <entry type="ThreadMetricsStruct"/>
       <access read="true" readPrivilege="view"/>
       <optionalConform/>
-      <constraint>
-        <maxCount value="64"/>
-      </constraint>
+      <constraint type="maxCount" value="64"/>
     </attribute>
     <attribute id="0x0001" name="CurrentHeapFree" type="uint64">
       <access read="true" readPrivilege="view"/>
@@ -135,15 +131,11 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="Name" type="string" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8"/>
-        </constraint>
+        <constraint type="maxLength" value="8"/>
       </field>
       <field id="2" name="FaultRecording" type="octstr" default="empty">
         <optionalConform/>
-        <constraint>
-          <maxLength value="1024"/>
-        </constraint>
+        <constraint type="maxLength" value="1024"/>
       </field>
     </event>
   </events>

@@ -39,6 +39,9 @@
 
 static_assert(LWIP_VERSION_MAJOR > 1, "CHIP requires LwIP 2.0 or later");
 
+// TODO: Update to use RunOnTCPIP.
+static_assert(LWIP_TCPIP_CORE_LOCKING, "CHIP requires config LWIP_TCPIP_CORE_LOCKING enabled");
+
 namespace chip {
 namespace Inet {
 
@@ -55,13 +58,16 @@ void nil_tcpip_callback(void * _aContext) {}
 
 err_t start_tcp_timers(void)
 {
-    return tcpip_callback(nil_tcpip_callback, nullptr);
+    return tcpip_callback(nil_tcpip_callback, NULL);
 }
 
 } // anonymous namespace
 
 CHIP_ERROR TCPEndPointImplLwIP::BindImpl(IPAddressType addrType, const IPAddress & addr, uint16_t port, bool reuseAddr)
 {
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
     // Get the appropriate type of PCB.
     CHIP_ERROR res = GetPCB(addrType);
 
@@ -71,41 +77,32 @@ CHIP_ERROR TCPEndPointImplLwIP::BindImpl(IPAddressType addrType, const IPAddress
     {
         if (reuseAddr)
         {
-            RunOnTCPIP([this]() { ip_set_option(mTCP, SOF_REUSEADDR); });
+            ip_set_option(mTCP, SOF_REUSEADDR);
         }
         res = addr.ToLwIPAddr(addrType, ipAddr);
     }
 
     if (res == CHIP_NO_ERROR)
     {
-        res = chip::System::MapErrorLwIP(RunOnTCPIPRet([this, &ipAddr, port]() { return tcp_bind(mTCP, &ipAddr, port); }));
+        res = chip::System::MapErrorLwIP(tcp_bind(mTCP, &ipAddr, port));
     }
 
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
     return res;
 }
 
 CHIP_ERROR TCPEndPointImplLwIP::ListenImpl(uint16_t backlog)
 {
+    // Start listening for incoming connections.
+    mTCP              = tcp_listen(mTCP);
     mLwIPEndPointType = LwIPEndPointType::TCP;
-    CHIP_ERROR err    = CHIP_NO_ERROR;
-    if (!mPreAllocatedConnectEP)
-    {
-        // Pre allocate a TCP EndPoint for TCP connection, it will be released under either of the two conditions:
-        // - The Listen EndPoint receives a connection and the connection will use this endpoint. The endpoint will be release when
-        // the connection is released.
-        // - The Listen Endpoint is closed.
-        err = GetEndPointManager().NewEndPoint(&mPreAllocatedConnectEP);
-    }
-    if (err == CHIP_NO_ERROR)
-    {
-        RunOnTCPIP([this]() {
-            // Start listening for incoming connections.
-            mTCP = tcp_listen(mTCP);
-            tcp_arg(mTCP, this);
-            tcp_accept(mTCP, LwIPHandleIncomingConnection);
-        });
-    }
-    return err;
+
+    tcp_arg(mTCP, this);
+
+    tcp_accept(mTCP, LwIPHandleIncomingConnection);
+
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR TCPEndPointImplLwIP::ConnectImpl(const IPAddress & addr, uint16_t port, InterfaceId intfId)
@@ -133,16 +130,18 @@ CHIP_ERROR TCPEndPointImplLwIP::ConnectImpl(const IPAddress & addr, uint16_t por
             return res;
     }
 
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
     res = GetPCB(addrType);
 
     if (res == CHIP_NO_ERROR)
     {
+        tcp_arg(mTCP, this);
+        tcp_err(mTCP, LwIPHandleError);
+
         ip_addr_t lwipAddr = addr.ToLwIPAddr();
-        res                = chip::System::MapErrorLwIP(RunOnTCPIPRet([this, &lwipAddr, port]() {
-            tcp_arg(mTCP, this);
-            tcp_err(mTCP, LwIPHandleError);
-            return tcp_connect(mTCP, &lwipAddr, port, LwIPHandleConnectComplete);
-        }));
+        res                = chip::System::MapErrorLwIP(tcp_connect(mTCP, &lwipAddr, port, LwIPHandleConnectComplete));
 
         // Ensure that TCP timers are started
         if (res == CHIP_NO_ERROR)
@@ -161,6 +160,8 @@ CHIP_ERROR TCPEndPointImplLwIP::ConnectImpl(const IPAddress & addr, uint16_t por
         }
     }
 
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
     return res;
 }
 
@@ -168,30 +169,42 @@ CHIP_ERROR TCPEndPointImplLwIP::GetPeerInfo(IPAddress * retAddr, uint16_t * retP
 {
     VerifyOrReturnError(IsConnected(), CHIP_ERROR_INCORRECT_STATE);
 
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
+    CHIP_ERROR res = CHIP_ERROR_CONNECTION_ABORTED;
     if (mTCP != nullptr)
     {
-        RunOnTCPIP([this, &retAddr, &retPort]() {
-            *retPort = mTCP->remote_port;
-            *retAddr = IPAddress(mTCP->remote_ip);
-        });
-        return CHIP_NO_ERROR;
+        *retPort = mTCP->remote_port;
+        *retAddr = IPAddress(mTCP->remote_ip);
+        res      = CHIP_NO_ERROR;
     }
-    return CHIP_ERROR_CONNECTION_ABORTED;
+
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
+
+    return res;
 }
 
 CHIP_ERROR TCPEndPointImplLwIP::GetLocalInfo(IPAddress * retAddr, uint16_t * retPort) const
 {
     VerifyOrReturnError(IsConnected(), CHIP_ERROR_INCORRECT_STATE);
 
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
+    CHIP_ERROR res = CHIP_ERROR_CONNECTION_ABORTED;
     if (mTCP != nullptr)
     {
-        RunOnTCPIP([this, &retAddr, &retPort]() {
-            *retPort = mTCP->local_port;
-            *retAddr = IPAddress(mTCP->local_ip);
-        });
-        return CHIP_NO_ERROR;
+        *retPort = mTCP->local_port;
+        *retAddr = IPAddress(mTCP->local_ip);
+        res      = CHIP_NO_ERROR;
     }
-    return CHIP_ERROR_CONNECTION_ABORTED;
+
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
+
+    return res;
 }
 
 CHIP_ERROR TCPEndPointImplLwIP::GetInterfaceId(InterfaceId * retInterface)
@@ -221,12 +234,21 @@ CHIP_ERROR TCPEndPointImplLwIP::SendQueuedImpl(bool queueWasEmpty)
 CHIP_ERROR TCPEndPointImplLwIP::EnableNoDelay()
 {
     VerifyOrReturnError(IsConnected(), CHIP_ERROR_INCORRECT_STATE);
+
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
+    CHIP_ERROR res = CHIP_ERROR_CONNECTION_ABORTED;
     if (mTCP != nullptr)
     {
-        RunOnTCPIP([this]() { tcp_nagle_disable(mTCP); });
-        return CHIP_NO_ERROR;
+        tcp_nagle_disable(mTCP);
+        res = CHIP_NO_ERROR;
     }
-    return CHIP_ERROR_CONNECTION_ABORTED;
+
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
+
+    return res;
 }
 
 CHIP_ERROR TCPEndPointImplLwIP::EnableKeepAlive(uint16_t interval, uint16_t timeoutCount)
@@ -235,27 +257,33 @@ CHIP_ERROR TCPEndPointImplLwIP::EnableKeepAlive(uint16_t interval, uint16_t time
     CHIP_ERROR res = CHIP_ERROR_NOT_IMPLEMENTED;
 
 #if LWIP_TCP_KEEPALIVE
-    if (mTCP != nullptr)
+
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
+    if (mTCP != NULL)
     {
-        RunOnTCPIP([this, interval, timeoutCount]() {
-            // Set the idle interval
-            mTCP->keep_idle = (uint32_t) interval * 1000;
+        // Set the idle interval
+        mTCP->keep_idle = (uint32_t) interval * 1000;
 
-            // Set the probe retransmission interval.
-            mTCP->keep_intvl = (uint32_t) interval * 1000;
+        // Set the probe retransmission interval.
+        mTCP->keep_intvl = (uint32_t) interval * 1000;
 
-            // Set the probe timeout count
-            mTCP->keep_cnt = timeoutCount;
+        // Set the probe timeout count
+        mTCP->keep_cnt = timeoutCount;
 
-            // Enable keepalives for the connection.
-            ip_set_option(mTCP, SOF_KEEPALIVE);
-        });
+        // Enable keepalives for the connection.
+        ip_set_option(mTCP, SOF_KEEPALIVE);
         res = CHIP_NO_ERROR;
     }
     else
     {
         res = CHIP_ERROR_CONNECTION_ABORTED;
     }
+
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
+
 #endif // LWIP_TCP_KEEPALIVE
 
     return res;
@@ -267,16 +295,24 @@ CHIP_ERROR TCPEndPointImplLwIP::DisableKeepAlive()
     CHIP_ERROR res = CHIP_ERROR_NOT_IMPLEMENTED;
 
 #if LWIP_TCP_KEEPALIVE
-    if (mTCP != nullptr)
+
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
+    if (mTCP != NULL)
     {
         // Disable keepalives on the connection.
-        RunOnTCPIP([this]() { ip_reset_option(mTCP, SOF_KEEPALIVE); });
+        ip_reset_option(mTCP, SOF_KEEPALIVE);
         res = CHIP_NO_ERROR;
     }
     else
     {
         res = CHIP_ERROR_CONNECTION_ABORTED;
     }
+
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
+
 #endif // LWIP_TCP_KEEPALIVE
 
     return res;
@@ -290,14 +326,17 @@ CHIP_ERROR TCPEndPointImplLwIP::SetUserTimeoutImpl(uint32_t userTimeoutMillis)
 CHIP_ERROR TCPEndPointImplLwIP::DriveSendingImpl()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
+
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
     // If the connection hasn't been aborted ...
-    if (mTCP != nullptr)
+    if (mTCP != NULL)
     {
         err_t lwipErr;
 
         // Determine the current send window size. This is the maximum amount we can write to the connection.
-        uint16_t sendWindowSize;
-        RunOnTCPIP([this, &sendWindowSize]() { sendWindowSize = tcp_sndbuf(mTCP); });
+        uint16_t sendWindowSize = tcp_sndbuf(mTCP);
 
         // If there's data to be sent and the send window is open...
         bool canSend = (RemainingToSend() > 0 && sendWindowSize > 0);
@@ -329,9 +368,7 @@ CHIP_ERROR TCPEndPointImplLwIP::DriveSendingImpl()
                 // backing. Using TCP_WRITE_FLAG_COPY would eliminate this requirement, but overall
                 // requires many more memory allocations which may be problematic when very
                 // memory-constrained or when using pool-based allocations.
-                lwipErr = RunOnTCPIPRet([this, sendData, sendLen, canSend]() {
-                    return tcp_write(mTCP, sendData, sendLen, (canSend) ? TCP_WRITE_FLAG_MORE : 0);
-                });
+                lwipErr = tcp_write(mTCP, sendData, sendLen, (canSend) ? TCP_WRITE_FLAG_MORE : 0);
                 if (lwipErr != ERR_OK)
                 {
                     err = chip::System::MapErrorLwIP(lwipErr);
@@ -363,7 +400,7 @@ CHIP_ERROR TCPEndPointImplLwIP::DriveSendingImpl()
 
             if (err == CHIP_NO_ERROR)
             {
-                lwipErr = RunOnTCPIPRet([this]() { return tcp_output(mTCP); });
+                lwipErr = tcp_output(mTCP);
 
                 if (lwipErr != ERR_OK)
                     err = chip::System::MapErrorLwIP(lwipErr);
@@ -375,16 +412,19 @@ CHIP_ERROR TCPEndPointImplLwIP::DriveSendingImpl()
             // If in the SendShutdown state and the unsent queue is now empty, shutdown the PCB for sending.
             if (mState == State::kSendShutdown && (RemainingToSend() == 0))
             {
-                lwipErr = RunOnTCPIPRet([this]() { return tcp_shutdown(mTCP, 0, 1); });
+                lwipErr = tcp_shutdown(mTCP, 0, 1);
                 if (lwipErr != ERR_OK)
                     err = chip::System::MapErrorLwIP(lwipErr);
             }
         }
     }
+
     else
-    {
         err = CHIP_ERROR_CONNECTION_ABORTED;
-    }
+
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
+
     return err;
 }
 
@@ -392,15 +432,18 @@ void TCPEndPointImplLwIP::HandleConnectCompleteImpl() {}
 
 void TCPEndPointImplLwIP::DoCloseImpl(CHIP_ERROR err, State oldState)
 {
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
     // If the LwIP PCB hasn't been closed yet...
-    if (mTCP != nullptr)
+    if (mTCP != NULL)
     {
         // If the endpoint was a connection endpoint (vs. a listening endpoint)...
         if (oldState != State::kListening)
         {
             // Prevent further callbacks for incoming data.  This has the effect of instructing
             // LwIP to discard any further data received from the peer.
-            RunOnTCPIP([this]() { tcp_recv(mTCP, NULL); });
+            tcp_recv(mTCP, NULL);
 
             // If entering the Closed state...
             if (mState == State::kClosed)
@@ -417,23 +460,24 @@ void TCPEndPointImplLwIP::DoCloseImpl(CHIP_ERROR err, State oldState)
                 // when LwIP will no longer make callbacks to its user. Thus we must block further
                 // callbacks to prevent them from happening after the endpoint has been freed.
                 //
-                RunOnTCPIP([this]() { tcp_err(mTCP, nullptr); });
+                tcp_err(mTCP, NULL);
 
                 // If the endpoint is being closed without error, THEN call tcp_close() to close the underlying
                 // TCP connection gracefully, preserving any in-transit send data.
                 if (err == CHIP_NO_ERROR)
                 {
-                    RunOnTCPIP([this]() { tcp_close(mTCP); });
+                    tcp_close(mTCP);
                 }
+
                 // OTHERWISE, call tcp_abort() to abort the TCP connection, discarding any in-transit data.
                 else
                 {
-                    RunOnTCPIP([this]() { tcp_abort(mTCP); });
+                    tcp_abort(mTCP);
                 }
 
                 // Discard the reference to the PCB to ensure there is no further interaction with it
                 // after this point.
-                mTCP              = nullptr;
+                mTCP              = NULL;
                 mLwIPEndPointType = LwIPEndPointType::Unknown;
             }
         }
@@ -441,21 +485,18 @@ void TCPEndPointImplLwIP::DoCloseImpl(CHIP_ERROR err, State oldState)
         // OTHERWISE the endpoint was being used for listening, so simply close it.
         else
         {
-            RunOnTCPIP([this]() { tcp_close(mTCP); });
+            tcp_close(mTCP);
 
             // Discard the reference to the PCB to ensure there is no further interaction with it
             // after this point.
-            mTCP              = nullptr;
+            mTCP              = NULL;
             mLwIPEndPointType = LwIPEndPointType::Unknown;
         }
     }
 
-    if (mPreAllocatedConnectEP)
-    {
-        // If the Listen EndPoint has a pre-allocated connect EndPoint, release it for the Retain() in the constructor
-        mPreAllocatedConnectEP->Free();
-        mPreAllocatedConnectEP = nullptr;
-    }
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
+
     if (mState == State::kClosed)
     {
         mUnackedLength = 0;
@@ -465,14 +506,22 @@ void TCPEndPointImplLwIP::DoCloseImpl(CHIP_ERROR err, State oldState)
 CHIP_ERROR TCPEndPointImplLwIP::AckReceive(size_t len)
 {
     VerifyOrReturnError(IsConnected(), CHIP_ERROR_INCORRECT_STATE);
+    CHIP_ERROR res = CHIP_NO_ERROR;
+
     VerifyOrReturnError(CanCastTo<uint16_t>(len), CHIP_ERROR_INVALID_ARGUMENT);
 
+    // Lock LwIP stack
+    LOCK_TCPIP_CORE();
+
     if (mTCP != nullptr)
-    {
-        RunOnTCPIP([this, len]() { tcp_recved(mTCP, static_cast<uint16_t>(len)); });
-        return CHIP_NO_ERROR;
-    }
-    return CHIP_ERROR_CONNECTION_ABORTED;
+        tcp_recved(mTCP, static_cast<uint16_t>(len));
+    else
+        res = CHIP_ERROR_CONNECTION_ABORTED;
+
+    // Unlock LwIP stack
+    UNLOCK_TCPIP_CORE();
+
+    return res;
 }
 
 #if INET_CONFIG_OVERRIDE_SYSTEM_TCP_USER_TIMEOUT
@@ -493,10 +542,14 @@ uint16_t TCPEndPointImplLwIP::RemainingToSend()
     {
         return 0;
     }
-    // We can never have reported more unacked data than there is pending
-    // in the send queue! This would indicate a critical accounting bug.
-    VerifyOrDie(mUnackedLength <= mSendQueue->TotalLength());
-    return static_cast<uint16_t>(mSendQueue->TotalLength() - mUnackedLength);
+    else
+    {
+        // We can never have reported more unacked data than there is pending
+        // in the send queue! This would indicate a critical accounting bug.
+        VerifyOrDie(mUnackedLength <= mSendQueue->TotalLength());
+
+        return static_cast<uint16_t>(mSendQueue->TotalLength() - mUnackedLength);
+    }
 }
 
 TCPEndPointImplLwIP::BufferOffset TCPEndPointImplLwIP::FindStartOfUnsent()
@@ -543,17 +596,17 @@ TCPEndPointImplLwIP::BufferOffset TCPEndPointImplLwIP::FindStartOfUnsent()
 CHIP_ERROR TCPEndPointImplLwIP::GetPCB(IPAddressType addrType)
 {
     // IMMPORTANT: This method MUST be called with the LwIP stack LOCKED!
-    if (mTCP == nullptr)
+    if (mTCP == NULL)
     {
         switch (addrType)
         {
         case IPAddressType::kIPv6:
-            RunOnTCPIP([this]() { mTCP = tcp_new_ip_type(IPADDR_TYPE_V6); });
+            mTCP = tcp_new_ip_type(IPADDR_TYPE_V6);
             break;
 
 #if INET_CONFIG_ENABLE_IPV4
         case IPAddressType::kIPv4:
-            RunOnTCPIP([this]() { mTCP = tcp_new_ip_type(IPADDR_TYPE_V4); });
+            mTCP = tcp_new_ip_type(IPADDR_TYPE_V4);
             break;
 #endif // INET_CONFIG_ENABLE_IPV4
 
@@ -561,11 +614,14 @@ CHIP_ERROR TCPEndPointImplLwIP::GetPCB(IPAddressType addrType)
             return INET_ERROR_WRONG_ADDRESS_TYPE;
         }
 
-        if (mTCP == nullptr)
+        if (mTCP == NULL)
         {
             return CHIP_ERROR_NO_MEMORY;
         }
-        mLwIPEndPointType = LwIPEndPointType::TCP;
+        else
+        {
+            mLwIPEndPointType = LwIPEndPointType::TCP;
+        }
     }
     else
     {
@@ -603,7 +659,7 @@ void TCPEndPointImplLwIP::HandleDataSent(uint16_t lenSent)
             DoClose(CHIP_ERROR_UNEXPECTED_EVENT, false);
             return;
         }
-        if (mSendQueue.IsNull())
+        else if (mSendQueue.IsNull())
         {
             ChipLogError(Inet, "Got ACK for %d bytes but data backing gone", (int) lenSent);
             DoClose(CHIP_ERROR_UNEXPECTED_EVENT, false);
@@ -638,20 +694,16 @@ void TCPEndPointImplLwIP::HandleDataSent(uint16_t lenSent)
         MarkActive();
 
         // If requested, call the app's OnDataSent callback.
-        if (OnDataSent != nullptr)
-        {
+        if (OnDataSent != NULL)
             OnDataSent(this, lenSent);
-        }
+
         // If unsent data exists, attempt to send it now...
         if (RemainingToSend() > 0)
-        {
             DriveSending();
-        }
+
         // If in the closing state and the send queue is now empty, attempt to transition to closed.
         if ((mState == State::kClosing) && (RemainingToSend() == 0))
-        {
             DoClose(CHIP_NO_ERROR, false);
-        }
     }
 }
 
@@ -687,19 +739,14 @@ void TCPEndPointImplLwIP::HandleDataReceived(System::PacketBufferHandle && buf)
             // the app to decide whether to keep the send side of the connection open after
             // the peer has closed. If no OnPeerClose is provided, we assume that the app
             // wants to close both directions and automatically enter the Closing state.
-            if (mState == State::kConnected && OnPeerClose != nullptr)
-            {
+            if (mState == State::kConnected && OnPeerClose != NULL)
                 mState = State::kReceiveShutdown;
-            }
             else
-            {
                 mState = State::kClosing;
-            }
+
             // Call the app's OnPeerClose.
             if (OnPeerClose != NULL)
-            {
                 OnPeerClose(this);
-            }
         }
 
         // Drive the received data into the app.
@@ -716,57 +763,45 @@ void TCPEndPointImplLwIP::HandleIncomingConnection(TCPEndPoint * conEP)
     if (mState == State::kListening)
     {
         // If there's no callback available, fail with an error.
-        if (OnConnectionReceived == nullptr)
-        {
+        if (OnConnectionReceived == NULL)
             err = CHIP_ERROR_NO_CONNECTION_HANDLER;
-        }
+
         // Extract the peer's address information.
         if (err == CHIP_NO_ERROR)
-        {
             err = conEP->GetPeerInfo(&peerAddr, &peerPort);
-        }
+
         // If successful, call the app's callback function.
         if (err == CHIP_NO_ERROR)
-        {
             OnConnectionReceived(this, conEP, peerAddr, peerPort);
-        }
+
         // Otherwise clean up and call the app's error callback.
-        else if (OnAcceptError != nullptr)
-        {
+        else if (OnAcceptError != NULL)
             OnAcceptError(this, err);
-        }
     }
     else
-    {
         err = CHIP_ERROR_INCORRECT_STATE;
-    }
+
     // If something failed above, abort and free the connection end point.
     if (err != CHIP_NO_ERROR)
-    {
         conEP->Free();
-    }
 }
 
 void TCPEndPointImplLwIP::HandleError(CHIP_ERROR err)
 {
     if (mState == State::kListening)
     {
-        if (OnAcceptError != nullptr)
-        {
+        if (OnAcceptError != NULL)
             OnAcceptError(this, err);
-        }
     }
     else
-    {
         DoClose(err, false);
-    }
 }
 
 err_t TCPEndPointImplLwIP::LwIPHandleConnectComplete(void * arg, struct tcp_pcb * tpcb, err_t lwipErr)
 {
     err_t res = ERR_OK;
 
-    if (arg != nullptr)
+    if (arg != NULL)
     {
         TCPEndPointImplLwIP * ep = static_cast<TCPEndPointImplLwIP *>(arg);
 
@@ -790,13 +825,11 @@ err_t TCPEndPointImplLwIP::LwIPHandleConnectComplete(void * arg, struct tcp_pcb 
         }
     }
     else
-    {
         res = ERR_ABRT;
-    }
+
     if (res != ERR_OK)
-    {
         tcp_abort(tpcb);
-    }
+
     return res;
 }
 
@@ -804,17 +837,16 @@ err_t TCPEndPointImplLwIP::LwIPHandleIncomingConnection(void * arg, struct tcp_p
 {
     CHIP_ERROR err = chip::System::MapErrorLwIP(lwipErr);
 
-    if (arg != nullptr)
+    if (arg != NULL)
     {
         TCPEndPointImplLwIP * listenEP = static_cast<TCPEndPointImplLwIP *>(arg);
-        TCPEndPointImplLwIP * conEP    = nullptr;
+        TCPEndPointImplLwIP * conEP    = NULL;
         System::Layer & lSystemLayer   = listenEP->GetSystemLayer();
 
         // Tell LwIP we've accepted the connection so it can decrement the listen PCB's pending_accepts counter.
         tcp_accepted(listenEP->mTCP);
 
-        // If we did in fact receive a connection, rather than an error, use the pre-allocated end point object for the incoming
-        // connection.
+        // If we did in fact receive a connection, rather than an error, attempt to allocate an end point object.
         //
         // NOTE: Although most of the LwIP callbacks defer the real work to happen on the endpoint's thread
         // (by posting events to the thread's event queue) we can't do that here because as soon as this
@@ -823,13 +855,9 @@ err_t TCPEndPointImplLwIP::LwIPHandleIncomingConnection(void * arg, struct tcp_p
         //
         if (err == CHIP_NO_ERROR)
         {
-            conEP = static_cast<TCPEndPointImplLwIP *>(listenEP->mPreAllocatedConnectEP);
-            if (conEP == nullptr)
-            {
-                // The listen endpoint received a new incoming connection before it had a chance to pre-allocate a new connection
-                // endpoint.
-                err = CHIP_ERROR_BUSY;
-            }
+            TCPEndPoint * connectEndPoint = nullptr;
+            err                           = listenEP->GetEndPointManager().NewEndPoint(&connectEndPoint);
+            conEP                         = static_cast<TCPEndPointImplLwIP *>(connectEndPoint);
         }
 
         // Ensure that TCP timers have been started
@@ -860,18 +888,8 @@ err_t TCPEndPointImplLwIP::LwIPHandleIncomingConnection(void * arg, struct tcp_p
             // Post a callback to the HandleConnectionReceived() function, passing it the new end point.
             listenEP->Retain();
             conEP->Retain();
-            // Hand over the implied ref from constructing mPreAllocatedConnectEP to
-            // ongoing connection.
-            listenEP->mPreAllocatedConnectEP = nullptr;
-
             err = lSystemLayer.ScheduleLambda([listenEP, conEP] {
                 listenEP->HandleIncomingConnection(conEP);
-                // Pre-allocate another endpoint for next connection if current connection is established
-                CHIP_ERROR error = listenEP->GetEndPointManager().NewEndPoint(&listenEP->mPreAllocatedConnectEP);
-                if (error != CHIP_NO_ERROR)
-                {
-                    listenEP->HandleError(error);
-                }
                 conEP->Release();
                 listenEP->Release();
             });
@@ -881,6 +899,7 @@ err_t TCPEndPointImplLwIP::LwIPHandleIncomingConnection(void * arg, struct tcp_p
                 listenEP->Release();
                 err = CHIP_ERROR_CONNECTION_ABORTED;
                 conEP->Release(); // for the Retain() above
+                conEP->Release(); // for the implied Retain() on construction
             }
         }
 
@@ -899,23 +918,24 @@ err_t TCPEndPointImplLwIP::LwIPHandleIncomingConnection(void * arg, struct tcp_p
         }
     }
     else
-    {
         err = CHIP_ERROR_CONNECTION_ABORTED;
-    }
 
-    if (err != CHIP_NO_ERROR && tpcb != nullptr)
+    if (err != CHIP_NO_ERROR && tpcb != NULL)
     {
         tcp_abort(tpcb);
         return ERR_ABRT;
     }
-    return ERR_OK;
+    else
+    {
+        return ERR_OK;
+    }
 }
 
 err_t TCPEndPointImplLwIP::LwIPHandleDataReceived(void * arg, struct tcp_pcb * tpcb, struct pbuf * p, err_t _err)
 {
     err_t res = ERR_OK;
 
-    if (arg != nullptr)
+    if (arg != NULL)
     {
         TCPEndPointImplLwIP * ep = static_cast<TCPEndPointImplLwIP *>(arg);
 
@@ -932,9 +952,7 @@ err_t TCPEndPointImplLwIP::LwIPHandleDataReceived(void * arg, struct tcp_pcb * t
         }
     }
     else
-    {
         res = ERR_ABRT;
-    }
 
     if (res != ERR_OK)
     {
@@ -952,7 +970,7 @@ err_t TCPEndPointImplLwIP::LwIPHandleDataSent(void * arg, struct tcp_pcb * tpcb,
 {
     err_t res = ERR_OK;
 
-    if (arg != nullptr)
+    if (arg != NULL)
     {
         TCPEndPointImplLwIP * ep = static_cast<TCPEndPointImplLwIP *>(arg);
 
@@ -969,31 +987,27 @@ err_t TCPEndPointImplLwIP::LwIPHandleDataSent(void * arg, struct tcp_pcb * tpcb,
         }
     }
     else
-    {
         res = ERR_ABRT;
-    }
 
     if (res != ERR_OK)
-    {
         tcp_abort(tpcb);
-    }
 
     return res;
 }
 
 void TCPEndPointImplLwIP::LwIPHandleError(void * arg, err_t lwipErr)
 {
-    if (arg != nullptr)
+    if (arg != NULL)
     {
-        TCPEndPointImplLwIP * ep     = static_cast<TCPEndPointImplLwIP *>(arg);
-        System::Layer & lSystemLayer = ep->GetSystemLayer();
+        TCPEndPointImplLwIP * ep             = static_cast<TCPEndPointImplLwIP *>(arg);
+        System::LayerFreeRTOS & lSystemLayer = static_cast<System::LayerFreeRTOS &>(ep->GetSystemLayer());
 
         // At this point LwIP has already freed the PCB.  Since the thread that owns the TCPEndPoint may
         // try to use the PCB before it receives the TCPError event posted below, we set the PCB to NULL
         // as a means to signal the other thread that the connection has been aborted.  The implication
         // of this is that the mTCP field is shared state between the two threads and thus must only be
         // accessed with the LwIP lock held.
-        ep->mTCP              = nullptr;
+        ep->mTCP              = NULL;
         ep->mLwIPEndPointType = LwIPEndPointType::Unknown;
 
         // Post callback to HandleError.
@@ -1003,9 +1017,7 @@ void TCPEndPointImplLwIP::LwIPHandleError(void * arg, err_t lwipErr)
             ep->Release();
         });
         if (err != CHIP_NO_ERROR)
-        {
             ep->Release();
-        }
     }
 }
 

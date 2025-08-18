@@ -25,6 +25,9 @@
 
 #pragma once
 
+// TODO(#32628): Remove the CHIPCore.h header when the esp32 build is correctly fixed
+#include <lib/core/CHIPCore.h>
+
 #include <access/AccessControl.h>
 #include <app/AppConfig.h>
 #include <app/AttributePathParams.h>
@@ -46,8 +49,6 @@
 #include <app/TimedHandler.h>
 #include <app/WriteClient.h>
 #include <app/WriteHandler.h>
-#include <app/data-model-provider/MetadataTypes.h>
-#include <app/data-model-provider/OperationTypes.h>
 #include <app/data-model-provider/Provider.h>
 #include <app/icd/server/ICDServerConfig.h>
 #include <app/reporting/Engine.h>
@@ -124,13 +125,11 @@ public:
      *  @param[in]    apExchangeMgr    A pointer to the ExchangeManager object.
      *  @param[in]    apFabricTable    A pointer to the FabricTable object.
      *  @param[in]    apCASESessionMgr An optional pointer to a CASESessionManager (used for re-subscriptions).
-     *  @parma[in]    eventManagement  An optional pointer to a EventManagement. If null, the global instance will be used.
      *
      */
     CHIP_ERROR Init(Messaging::ExchangeManager * apExchangeMgr, FabricTable * apFabricTable,
                     reporting::ReportScheduler * reportScheduler, CASESessionManager * apCASESessionMgr = nullptr,
-                    SubscriptionResumptionStorage * subscriptionResumptionStorage = nullptr,
-                    EventManagement * eventManagement                             = nullptr);
+                    SubscriptionResumptionStorage * subscriptionResumptionStorage = nullptr);
 
     void Shutdown();
 
@@ -169,13 +168,7 @@ public:
      * Tears down all active subscriptions.
      */
     void ShutdownAllSubscriptions();
-
 #endif // CHIP_CONFIG_ENABLE_READ_CLIENT
-
-    /**
-     * Tears down all subscription handlers.
-     */
-    void ShutdownAllSubscriptionHandlers();
 
     uint32_t GetNumActiveReadHandlers() const;
     uint32_t GetNumActiveReadHandlers(ReadHandler::InteractionType type) const;
@@ -330,14 +323,6 @@ public:
      *        was successful or not.
      */
     void DecrementNumSubscriptionsToResume();
-#if CHIP_CONFIG_SUBSCRIPTION_TIMEOUT_RESUMPTION
-    /**
-     * @brief Function resets the number of retries of subscriptions resumption - mNumSubscriptionResumptionRetries.
-     *        This should be called after we have completed a re-subscribe attempt successfully on a persisted subscription,
-     *        or when the subscription resumption gets terminated.
-     */
-    void ResetNumSubscriptionsRetries();
-#endif // CHIP_CONFIG_SUBSCRIPTION_TIMEOUT_RESUMPTION
 #endif // CHIP_CONFIG_PERSIST_SUBSCRIPTIONS
 
 #if CONFIG_BUILD_FOR_HOST_UNIT_TEST
@@ -420,7 +405,10 @@ public:
     }
 #endif
 
-    DataModel::Provider * GetDataModelProvider() const;
+    // Temporarily NOT const because the data model provider will be auto-set
+    // to codegen on first usage. This behaviour will be changed once each
+    // application must explicitly set the data model provider.
+    DataModel::Provider * GetDataModelProvider();
 
     // MUST NOT be used while the interaction model engine is running as interaction
     // model functionality (e.g. active reads/writes/subscriptions) rely on data model
@@ -522,7 +510,7 @@ private:
     void DispatchCommand(CommandHandlerImpl & apCommandObj, const ConcreteCommandPath & aCommandPath,
                          TLV::TLVReader & apPayload) override;
 
-    Protocols::InteractionModel::Status ValidateCommandCanBeDispatched(const DataModel::InvokeRequest & request) override;
+    Protocols::InteractionModel::Status CommandExists(const ConcreteCommandPath & aCommandPath) override;
 
     bool HasActiveRead();
 
@@ -627,16 +615,9 @@ private:
                                        const Optional<NodeId> & aPeerNodeId       = NullOptional);
 
     /**
-     * Validates that the command exists and on success returns the data for the command in `entry`.
+     * Check if the given attribute path is a valid path in the data model provider.
      */
-    Status CheckCommandExistence(const ConcreteCommandPath & aCommandPath, DataModel::AcceptedCommandEntry & entry);
-    Status CheckCommandAccess(const DataModel::InvokeRequest & aRequest, const DataModel::AcceptedCommandEntry & entry);
-    Status CheckCommandFlags(const DataModel::InvokeRequest & aRequest, const DataModel::AcceptedCommandEntry & entry);
-
-    /**
-     * Find the AttributeEntry that corresponds to the given attribute, if there is one.
-     */
-    std::optional<DataModel::AttributeEntry> FindAttributeEntry(const ConcreteAttributePath & path);
+    bool IsExistentAttributePath(const ConcreteAttributePath & path);
 
     static void ResumeSubscriptionsTimerCallback(System::Layer * apSystemLayer, void * apAppState);
 
@@ -733,14 +714,6 @@ private:
 
     DataModel::Provider * mDataModelProvider      = nullptr;
     Messaging::ExchangeContext * mCurrentExchange = nullptr;
-
-    enum class State : uint8_t
-    {
-        kUninitialized, // The object has not been initialized.
-        kInitializing,  // Initial setup is in progress (e.g. setting up mpExchangeMgr).
-        kInitialized    // The object has been fully initialized and is ready for use.
-    };
-    State mState = State::kUninitialized;
 
     // Changes the current exchange context of a InteractionModelEngine to a given context
     class CurrentExchangeValueScope

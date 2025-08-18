@@ -19,25 +19,40 @@
 #import <Matter/Matter.h>
 
 #import "MTRErrorTestUtils.h"
-#import "MTRTestCase+ServerAppRunner.h"
-#import "MTRTestCase.h"
 #import "MTRTestKeys.h"
+#import "MTRTestResetCommissioneeHelper.h"
 #import "MTRTestStorage.h"
 
 #import <math.h> // For INFINITY
 
+// system dependencies
+#import <XCTest/XCTest.h>
+
+// Fixture: chip-all-clusters-app --KVS "$(mktemp -t chip-test-kvs)" --interface-id -1
+
 static const uint16_t kPairingTimeoutInSeconds = 30;
 static const uint16_t kCASESetupTimeoutInSeconds = 30;
+static const uint16_t kTimeoutInSeconds = 3;
 static const uint64_t kDeviceId = 0x12344321;
 static NSString * kOnboardingPayload = @"MT:-24J0AFN00KA0648G00";
 static const uint16_t kLocalPort = 5541;
 static const uint16_t kTestVendorId = 0xFFF1u;
+
+// This test suite reuses a device object to speed up the test process for CI.
+// The following global variable holds the reference to the device object.
+static MTRBaseDevice * sConnectedDevice;
 
 // Singleton controller we use.
 static MTRDeviceController * sController = nil;
 
 // Keys we can use to restart the controller.
 static MTRTestKeys * sTestKeys = nil;
+
+static MTRBaseDevice * GetConnectedDevice(void)
+{
+    XCTAssertNotNil(sConnectedDevice);
+    return sConnectedDevice;
+}
 
 @interface MTRBackwardsCompatTestPairingDelegate : NSObject <MTRDevicePairingDelegate>
 @property (nonatomic, strong) XCTestExpectation * expectation;
@@ -73,7 +88,7 @@ static MTRTestKeys * sTestKeys = nil;
 
 @end
 
-@interface MTRBackwardsCompatTests : MTRTestCase
+@interface MTRBackwardsCompatTests : XCTestCase
 @end
 
 @implementation MTRBackwardsCompatTests
@@ -81,11 +96,6 @@ static MTRTestKeys * sTestKeys = nil;
 + (void)setUp
 {
     [super setUp];
-
-    BOOL started = [self startAppWithName:@"all-clusters"
-                                arguments:@[]
-                                  payload:kOnboardingPayload];
-    XCTAssertTrue(started);
 
     XCTestExpectation * expectation = [[XCTestExpectation alloc] initWithDescription:@"Pairing Complete"];
 
@@ -130,6 +140,7 @@ static MTRTestKeys * sTestKeys = nil;
             completionHandler:^(MTRBaseDevice * _Nullable device, NSError * _Nullable error) {
                 XCTAssertEqual(error.code, 0);
                 [connectionExpectation fulfill];
+                sConnectedDevice = device;
                 connectionExpectation = nil;
             }];
     XCTAssertEqual([XCTWaiter waitForExpectations:@[ connectionExpectation ] timeout:kCASESetupTimeoutInSeconds], XCTWaiterResultCompleted);
@@ -137,6 +148,8 @@ static MTRTestKeys * sTestKeys = nil;
 
 + (void)tearDown
 {
+    ResetCommissionee(GetConnectedDevice(), dispatch_get_main_queue(), nil, kTimeoutInSeconds);
+
     [sController shutdown];
     XCTAssertFalse([sController isRunning]);
     [[MTRControllerFactory sharedInstance] shutdown];

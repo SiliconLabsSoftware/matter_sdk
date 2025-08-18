@@ -2,9 +2,9 @@ ARG VERSION=1
 FROM ghcr.io/project-chip/chip-build-tizen:${VERSION}
 LABEL org.opencontainers.image.source https://github.com/project-chip/connectedhomeip
 
-ENV TIZEN_IOT_QEMU_KERNEL=$TIZEN_SDK_ROOT/iot-qemu-virt-zImage
-ENV TIZEN_IOT_IMAGE_ROOT=$TIZEN_SDK_ROOT/iot-rootfs.img
-ENV TIZEN_IOT_IMAGE_DATA=$TIZEN_SDK_ROOT/iot-sysdata.img
+ENV TIZEN_IOT_QEMU_KERNEL $TIZEN_SDK_ROOT/iot-qemu-virt-zImage
+ENV TIZEN_IOT_IMAGE_ROOT $TIZEN_SDK_ROOT/iot-rootfs.img
+ENV TIZEN_IOT_IMAGE_DATA $TIZEN_SDK_ROOT/iot-sysdata.img
 
 # ------------------------------------------------------------------------------
 # Switch to the root user so we could install things
@@ -21,7 +21,6 @@ RUN set -x \
     patch \
     qemu-system-arm \
     xz-utils \
-    gdb-multiarch \
     # Cleanup
     && apt-get clean \
     && rm -rf /var/lib/apt/lists \
@@ -40,32 +39,30 @@ RUN set -x \
     && wget --progress=dot:giga -r -nd --no-parent -e robots=off -A 'rpi4-linux-kernel-*.src.rpm' \
     http://download.tizen.org/snapshots/TIZEN/Tizen-$TIZEN_VERSION/Tizen-$TIZEN_VERSION-Unified/latest/repos/standard/source/ \
     # Prepare kernel source (Linux kernel + Tizen patchset)
-    && 7z x -so rpi4-linux-kernel-*.src.rpm | cpio -idmv \
+    && unrpm rpi4-linux-kernel-*.src.rpm \
     && rm rpi4-linux-kernel-*.src.rpm \
     && tar -xJf linux-kernel-*.tar.xz \
     && rm linux-kernel-*.tar.xz \
     && cd *linux-kernel-* \
     && zcat ../*-to-*.diff.gz | patch -p1 \
     && patch -p1 < $TIZEN_SDK_ROOT/files/0001-smack-add-permissive-mode.patch \
-    # Configure
+    # Compile
     && export MAKEFLAGS=-j$(nproc) \
     && export ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- \
     && make tizen_bcm2711_defconfig \
-    # Add support for QEMU VirtIO devices
-    && ./scripts/config -e ARCH_VIRT -e VIRTIO_MMIO \
+    && ./scripts/config -e ARCH_VIRT \
+    && ./scripts/config -e VIRTIO_MMIO -e HW_RANDOM_VIRTIO \
     && ./scripts/config -e VIRTIO_PCI -e VIRTIO_BLK \
     && ./scripts/config -e VIRTIO_NET -e VETH \
-    && ./scripts/config -e HW_RANDOM_VIRTIO \
-    # Use ARM PL031 RTC and synchronize time during boot
-    && ./scripts/config -e RTC_DRV_PL031 -e RTC_HCTOSYS \
-    # Enable vHCI driver to add support for Bluetooth virtualization
+    && ./scripts/config -e IKCONFIG -e IKCONFIG_PROC \
     && ./scripts/config -e BT_HCIVHCI -e CRYPTO_USER_API_HASH -e CRYPTO_USER_API_SKCIPHER \
-    # Enable overlay FS and disable SMACK to workaround permission issues
-    && ./scripts/config -e OVERLAY_FS -e SECURITY_SMACK_PERMISSIVE_MODE \
-    # Enable 9P filesystem support to share files between host and guest
-    && ./scripts/config -e INET -e PCI_HOST_GENERIC -e NET_9P -e NET_9P_VIRTIO -e 9P_FS \
+    && ./scripts/config -e OVERLAY_FS \
+    && ./scripts/config -e SECURITY_SMACK_PERMISSIVE_MODE \
+    && ./scripts/config -e NET_9P -e NET_9P_VIRTIO \
+    && ./scripts/config -e INET \
+    && ./scripts/config -e 9P_FS -e 9P_FS_POSIX_ACL \
+    && ./scripts/config -e PCI_HOST_GENERIC \
     && make olddefconfig \
-    # Compile
     && make -j$(nproc) zImage \
     && mv arch/arm/boot/zImage $TIZEN_IOT_QEMU_KERNEL \
     # Cleanup
@@ -166,10 +163,6 @@ RUN set -x \
     | guestfish --rw -a $TIZEN_IOT_IMAGE_ROOT -m /dev/sda upload - $SYSTEMD_UNIT_9P_MOUNT : \
     ln-sf $SYSTEMD_UNIT_9P_MOUNT $SYSTEMD_REQUIRES_LOCAL_FS : \
     mkdir /mnt/chip \
-    # Setup crash manager
-    && guestfish --rw -a $TIZEN_IOT_IMAGE_ROOT -m /dev/sda download /etc/crash-manager.conf crash-manager.conf \
-    && sed -i 's|# CrashRootPath=/usr/opt/share/crash/|CrashRootPath=/mnt/chip/|g' crash-manager.conf \
-    && guestfish --rw -a $TIZEN_IOT_IMAGE_ROOT -m /dev/sda upload crash-manager.conf /etc/crash-manager.conf \
     # Setup auto-login for root user
     && SYSTEMD_UNIT_SERIAL_GETTY=$SYSTEMD_SYSTEM/serial-getty@.service \
     && virt-edit $TIZEN_IOT_IMAGE_ROOT -e \
@@ -187,13 +180,9 @@ RUN set -x \
     && echo -n \
     "#!/bin/bash\n" \
     "grep -q 'rootshell' /proc/cmdline && exit\n" \
-    "runner=\$(grep -o 'runner=[^ ]*' /proc/cmdline | sed 's/runner=//')\n" \
-    "if [[ -z \"\$runner\" ]]; then\n" \
-    "  runner='/mnt/chip/runner.sh' \n" \
-    "fi\n" \
-    "if [[ -x \"\$runner\" ]]; then\n" \
+    "if [[ -x /mnt/chip/runner.sh ]]; then\n" \
     "  echo '### RUNNER START ###'\n" \
-    "  \"\$runner\"\n" \
+    "  /mnt/chip/runner.sh\n" \
     "  echo '### RUNNER STOP:' \$?\n" \
     "else\n" \
     "  read -r -t 5 -p 'Press ENTER to access root shell...' && exit || echo ' timeout.'\n" \

@@ -3,8 +3,8 @@
 
 # Update the submodule.
 cd "$(dirname "${BASH_SOURCE[0]}")/repo"
-git fetch origin main
-git checkout origin/main
+git fetch origin master
+git checkout origin/master
 
 # Copy the CIPD manifest but change the Python line so we don't use CIPD
 # Python on Linux.

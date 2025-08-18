@@ -21,7 +21,6 @@
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/operational-state-server/operational-state-server.h>
 
-#include <app/util/attribute-metadata.h>
 #include <protocols/interaction_model/StatusCode.h>
 
 #ifdef MATTER_DM_PLUGIN_OPERATIONAL_STATE_SERVER
@@ -111,7 +110,6 @@ private:
         GenericOperationalState(to_underlying(OperationalStateEnum::kPaused)),
         GenericOperationalState(to_underlying(OperationalStateEnum::kError)),
     };
-    const CharSpan opPhaseList[3] = { "pre-soak"_span, "rinse"_span, "spin"_span };
 
 public:
     const uint32_t kExampleCountDown = 30;
@@ -119,7 +117,6 @@ public:
     OperationalStateDelegate()
     {
         GenericOperationalStateDelegateImpl::mOperationalStateList = Span<const GenericOperationalState>(opStateList);
-        GenericOperationalStateDelegateImpl::mOperationalPhaseList = Span<const CharSpan>(opPhaseList);
     }
 
     /**

@@ -22,7 +22,7 @@
 #include <glib.h>
 
 #include <platform/CHIPDeviceConfig.h>
-#include <platform/Linux/dbus/bluez/DBusBluez.h>
+#include <platform/Linux/dbus/bluez/DbusBluez.h>
 
 namespace chip {
 namespace DeviceLayer {

@@ -16,8 +16,8 @@
 
 import ctypes
 
-from ..native import GetLibraryHandle, HandleFlags, NativeLibraryHandleMethodArguments
-from .types import LogRedirectCallback_t
+import chip.native
+from chip.logging.types import LogRedirectCallback_t
 
 
 def _GetLoggingLibraryHandle() -> ctypes.CDLL:
@@ -29,12 +29,12 @@ def _GetLoggingLibraryHandle() -> ctypes.CDLL:
 
     # Getting a handle without requiring init, as logging methods
     # do not require chip stack startup
-    handle = GetLibraryHandle(HandleFlags(0))
+    handle = chip.native.GetLibraryHandle(chip.native.HandleFlags(0))
 
     # Uses one of the type decorators as an indicator for everything being
     # initialized.
     if not handle.pychip_logging_set_callback.argtypes:
-        setter = NativeLibraryHandleMethodArguments(handle)
+        setter = chip.native.NativeLibraryHandleMethodArguments(handle)
 
         setter.Set('pychip_logging_set_callback',
                    ctypes.c_void_p, [LogRedirectCallback_t])

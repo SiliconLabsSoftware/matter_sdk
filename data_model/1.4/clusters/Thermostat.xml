@@ -523,9 +523,7 @@ Davis, CA 95616, USA
       <field id="0" name="PresetHandle" type="octstr">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
       <field id="1" name="PresetScenario" type="PresetScenarioEnum">
         <mandatoryConform/>
@@ -533,25 +531,19 @@ Davis, CA 95616, USA
       <field id="2" name="Name" type="string" default="null">
         <quality nullable="true"/>
         <optionalConform/>
-        <constraint>
-          <maxLength value="64"/>
-        </constraint>
+        <constraint type="maxLength" value="64"/>
       </field>
       <field id="3" name="CoolingSetpoint" type="temperature" default="2600">
         <mandatoryConform>
           <feature name="COOL"/>
         </mandatoryConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="4" name="HeatingSetpoint" type="temperature" default="2000">
         <mandatoryConform>
           <feature name="HEAT"/>
         </mandatoryConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="5" name="BuiltIn" type="bool" default="false">
         <quality nullable="true"/>
@@ -573,35 +565,26 @@ Davis, CA 95616, USA
       <field id="0" name="ScheduleHandle" type="octstr">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
       <field id="1" name="SystemMode" type="SystemModeEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="Name" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="64"/>
-        </constraint>
+        <constraint type="maxLength" value="64"/>
       </field>
       <field id="3" name="PresetHandle" type="octstr">
         <optionalConform/>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
       <field id="4" name="Transitions" type="list" default="empty">
         <entry type="ScheduleTransitionStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <countBetween value="1">
-            <attribute name="NumberOfScheduleTransitions"/>
-          </countBetween>
+        <constraint type="countBetween">
+          <from value="1"/>
+          <to attribute="NumberOfScheduleTransitions"/>
         </constraint>
       </field>
       <field id="5" name="BuiltIn" type="bool" default="false">
@@ -612,75 +595,55 @@ Davis, CA 95616, USA
     <struct name="ScheduleTransitionStruct">
       <field id="0" name="DayOfWeek" type="ScheduleDayOfWeekBitmap">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="TransitionTime" type="uint16">
         <mandatoryConform/>
-        <constraint>
-          <max value="1439"/>
-        </constraint>
+        <constraint type="max" value="1439"/>
       </field>
       <field id="2" name="PresetHandle" type="octstr">
         <optionalConform>
           <feature name="PRES"/>
         </optionalConform>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
       <field id="3" name="SystemMode" type="SystemModeEnum">
         <optionalConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="4" name="CoolingSetpoint" type="temperature">
         <optionalConform>
           <feature name="COOL"/>
         </optionalConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="5" name="HeatingSetpoint" type="temperature">
         <optionalConform>
           <feature name="HEAT"/>
         </optionalConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </struct>
     <struct name="ScheduleTypeStruct">
       <field id="0" name="SystemMode" type="SystemModeEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="NumberOfSchedules" type="uint8" default="0">
         <mandatoryConform/>
-        <constraint>
-          <max>
-            <attribute name="NumberOfSchedules"/>
-          </max>
+        <constraint type="max">
+          <value attribute="NumberOfSchedules"/>
         </constraint>
       </field>
       <field id="2" name="ScheduleTypeFeatures" type="ScheduleTypeFeaturesBitmap" default="0">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </struct>
     <struct name="WeeklyScheduleTransitionStruct">
       <field id="0" name="TransitionTime" type="uint16">
         <mandatoryConform/>
-        <constraint>
-          <max value="1439"/>
-        </constraint>
+        <constraint type="max" value="1439"/>
       </field>
       <field id="1" name="HeatSetpoint" type="temperature">
         <quality nullable="true"/>
@@ -715,9 +678,7 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="HEAT"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0004" name="AbsMaxHeatSetpointLimit" type="temperature" default="3000">
       <access read="true" readPrivilege="view"/>
@@ -725,9 +686,7 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="HEAT"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0005" name="AbsMinCoolSetpointLimit" type="temperature" default="1600">
       <access read="true" readPrivilege="view"/>
@@ -735,9 +694,7 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="COOL"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0006" name="AbsMaxCoolSetpointLimit" type="temperature" default="3200">
       <access read="true" readPrivilege="view"/>
@@ -745,9 +702,7 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="COOL"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0007" name="PICoolingDemand" type="uint8" default="">
       <access read="true" readPrivilege="view"/>
@@ -755,12 +710,7 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="COOL"/>
       </optionalConform>
-      <constraint>
-        <between>
-          <from value="0"/>
-          <to value="100"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="0" to="100"/>
     </attribute>
     <attribute id="0x0008" name="PIHeatingDemand" type="uint8" default="">
       <access read="true" readPrivilege="view"/>
@@ -768,20 +718,13 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="HEAT"/>
       </optionalConform>
-      <constraint>
-        <between>
-          <from value="0"/>
-          <to value="100"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="0" to="100"/>
     </attribute>
     <attribute id="0x0009" name="HVACSystemTypeConfiguration" type="HVACSystemTypeBitmap" default="0">
       <access read="true" write="optional" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <deprecateConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0010" name="LocalTemperatureCalibration" type="int8s" default="0">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
@@ -798,9 +741,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="COOL"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0012" name="OccupiedHeatingSetpoint" type="temperature" default="2000">
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
@@ -808,9 +749,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="HEAT"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0013" name="UnoccupiedCoolingSetpoint" type="temperature" default="2600">
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
@@ -821,9 +760,7 @@ Davis, CA 95616, USA
           <feature name="OCC"/>
         </andTerm>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0014" name="UnoccupiedHeatingSetpoint" type="temperature" default="2000">
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
@@ -834,53 +771,43 @@ Davis, CA 95616, USA
           <feature name="OCC"/>
         </andTerm>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0015" name="MinHeatSetpointLimit" type="temperature">
-      <attribute name="AbsMinHeatSetpointLimit"/>
+      <default attribute="AbsMinHeatSetpointLimit"/>
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform>
         <feature name="HEAT"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0016" name="MaxHeatSetpointLimit" type="temperature">
-      <attribute name="AbsMaxHeatSetpointLimit"/>
+      <default attribute="AbsMaxHeatSetpointLimit"/>
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform>
         <feature name="HEAT"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0017" name="MinCoolSetpointLimit" type="temperature">
-      <attribute name="AbsMinCoolSetpointLimit"/>
+      <default attribute="AbsMinCoolSetpointLimit"/>
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform>
         <feature name="COOL"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0018" name="MaxCoolSetpointLimit" type="temperature">
-      <attribute name="AbsMaxCoolSetpointLimit"/>
+      <default attribute="AbsMaxCoolSetpointLimit"/>
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform>
         <feature name="COOL"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0019" name="MinSetpointDeadBand" type="int8s" default="25">
       <access read="true" write="optional" readPrivilege="view" writePrivilege="manage"/>
@@ -888,12 +815,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="AUTO"/>
       </mandatoryConform>
-      <constraint>
-        <between>
-          <from value="0"/>
-          <to value="127"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="0" to="127"/>
     </attribute>
     <attribute id="0x001A" name="RemoteSensing" type="RemoteSensingBitmap" default="0">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
@@ -904,26 +826,20 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <mandatoryConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x001C" name="SystemMode" type="SystemModeEnum" default="1">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <mandatoryConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x001E" name="ThermostatRunningMode" type="ThermostatRunningModeEnum" default="0">
       <access read="true" readPrivilege="view"/>
       <optionalConform>
         <feature name="AUTO"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0020" name="StartOfWeek" type="StartOfWeekEnum" default="">
       <access read="true" readPrivilege="view"/>
@@ -931,9 +847,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SCH"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0021" name="NumberOfWeeklyTransitions" type="uint8" default="0">
       <access read="true" readPrivilege="view"/>
@@ -953,39 +867,29 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0024" name="TemperatureSetpointHoldDuration" type="uint16" default="null">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality nullable="true" persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <max value="1440"/>
-      </constraint>
+      <constraint type="max" value="1440"/>
     </attribute>
     <attribute id="0x0025" name="ThermostatProgrammingOperationMode" type="ProgrammingOperationModeBitmap" default="0">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality reportable="true"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0029" name="ThermostatRunningState" type="RelayStateBitmap" default="">
       <access read="true" readPrivilege="view"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0030" name="SetpointChangeSource" type="SetpointChangeSourceEnum" default="0">
       <access read="true" readPrivilege="view"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0031" name="SetpointChangeAmount" type="int16s" default="null">
       <access read="true" readPrivilege="view"/>
@@ -1002,11 +906,9 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SB"/>
       </mandatoryConform>
-      <constraint>
-        <between>
-          <attribute name="OccupiedSetbackMin"/>
-          <attribute name="OccupiedSetbackMax"/>
-        </between>
+      <constraint type="between">
+        <from attribute="OccupiedSetbackMin"/>
+        <to attribute="OccupiedSetbackMax"/>
       </constraint>
     </attribute>
     <attribute id="0x0035" name="OccupiedSetbackMin" type="uint8" default="null">
@@ -1015,10 +917,8 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SB"/>
       </mandatoryConform>
-      <constraint>
-        <max>
-          <attribute name="OccupiedSetbackMax"/>
-        </max>
+      <constraint type="max">
+        <value attribute="OccupiedSetbackMax"/>
       </constraint>
     </attribute>
     <attribute id="0x0036" name="OccupiedSetbackMax" type="uint8" default="null">
@@ -1027,10 +927,9 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SB"/>
       </mandatoryConform>
-      <constraint>
-        <between value="254">
-          <attribute name="OccupiedSetbackMin"/>
-        </between>
+      <constraint type="between">
+        <from attribute="OccupiedSetbackMin"/>
+        <to value="254"/>
       </constraint>
     </attribute>
     <attribute id="0x0037" name="UnoccupiedSetback" type="uint8" default="null">
@@ -1042,11 +941,9 @@ Davis, CA 95616, USA
           <feature name="OCC"/>
         </andTerm>
       </mandatoryConform>
-      <constraint>
-        <between>
-          <attribute name="UnoccupiedSetbackMin"/>
-          <attribute name="UnoccupiedSetbackMax"/>
-        </between>
+      <constraint type="between">
+        <from attribute="UnoccupiedSetbackMin"/>
+        <to attribute="UnoccupiedSetbackMax"/>
       </constraint>
     </attribute>
     <attribute id="0x0038" name="UnoccupiedSetbackMin" type="uint8" default="null">
@@ -1058,10 +955,8 @@ Davis, CA 95616, USA
           <feature name="OCC"/>
         </andTerm>
       </mandatoryConform>
-      <constraint>
-        <max>
-          <attribute name="UnoccupiedSetbackMax"/>
-        </max>
+      <constraint type="max">
+        <value attribute="UnoccupiedSetbackMax"/>
       </constraint>
     </attribute>
     <attribute id="0x0039" name="UnoccupiedSetbackMax" type="uint8" default="null">
@@ -1073,10 +968,9 @@ Davis, CA 95616, USA
           <feature name="OCC"/>
         </andTerm>
       </mandatoryConform>
-      <constraint>
-        <between value="254">
-          <attribute name="UnoccupiedSetbackMin"/>
-        </between>
+      <constraint type="between">
+        <from attribute="UnoccupiedSetbackMin"/>
+        <to value="254"/>
       </constraint>
     </attribute>
     <attribute id="0x003A" name="EmergencyHeatDelta" type="uint8" default="255">
@@ -1088,9 +982,7 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0041" name="ACCapacity" type="uint16" default="0">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
@@ -1101,17 +993,13 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0043" name="ACCompressorType" type="ACCompressorTypeEnum" default="0">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0044" name="ACErrorCode" type="ACErrorCodeBitmap" default="0">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
@@ -1121,9 +1009,7 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0046" name="ACCoilTemperature" type="temperature" default="null">
       <access read="true" readPrivilege="view"/>
@@ -1134,9 +1020,7 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0048" name="PresetTypes" type="list" default="MS">
       <entry type="PresetTypeStruct"/>
@@ -1145,9 +1029,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="PRES"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0049" name="ScheduleTypes" type="list" default="MS">
       <entry type="ScheduleTypeStruct"/>
@@ -1156,9 +1038,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="MSCH"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x004A" name="NumberOfPresets" type="uint8" default="0">
       <access read="true" readPrivilege="view"/>
@@ -1194,9 +1074,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="PRES"/>
       </mandatoryConform>
-      <constraint>
-        <maxLength value="16"/>
-      </constraint>
+      <constraint type="maxLength" value="16"/>
     </attribute>
     <attribute id="0x004F" name="ActiveScheduleHandle" type="octstr" default="null">
       <access read="true" readPrivilege="view"/>
@@ -1204,9 +1082,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="MSCH"/>
       </mandatoryConform>
-      <constraint>
-        <maxLength value="16"/>
-      </constraint>
+      <constraint type="maxLength" value="16"/>
     </attribute>
     <attribute id="0x0050" name="Presets" type="list" default="empty">
       <entry type="PresetStruct"/>
@@ -1215,10 +1091,8 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="PRES"/>
       </mandatoryConform>
-      <constraint>
-        <maxCount>
-          <attribute name="NumberOfPresets"/>
-        </maxCount>
+      <constraint type="maxCount">
+        <value attribute="NumberOfPresets"/>
       </constraint>
     </attribute>
     <attribute id="0x0051" name="Schedules" type="list" default="empty">
@@ -1228,9 +1102,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="MSCH"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0052" name="SetpointHoldExpiryTimestamp" type="epoch-s" default="null">
       <access read="true" readPrivilege="view"/>
@@ -1244,9 +1116,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="Mode" type="SetpointRaiseLowerModeEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="Amount" type="int8">
         <mandatoryConform/>
@@ -1261,22 +1131,16 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="DayOfWeekForSequence" type="ScheduleDayOfWeekBitmap">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="ModeForSequence" type="ScheduleModeBitmap">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="3" name="Transitions" type="list">
         <entry type="WeeklyScheduleTransitionStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="10"/>
-        </constraint>
+        <constraint type="maxCount" value="10"/>
       </field>
     </command>
     <command id="0x01" name="SetWeeklySchedule" direction="commandToServer" response="Y">
@@ -1289,22 +1153,16 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="DayOfWeekForSequence" type="ScheduleDayOfWeekBitmap">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="ModeForSequence" type="ScheduleModeBitmap">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="3" name="Transitions" type="list">
         <entry type="WeeklyScheduleTransitionStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="10"/>
-        </constraint>
+        <constraint type="maxCount" value="10"/>
       </field>
     </command>
     <command id="0x02" name="GetWeeklySchedule" direction="commandToServer" response="GetWeeklyScheduleResponse">
@@ -1314,15 +1172,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="DaysToReturn" type="ScheduleDayOfWeekBitmap">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="ModeToReturn" type="ScheduleModeBitmap">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x03" name="ClearWeeklySchedule" direction="commandToServer" response="Y">
@@ -1338,9 +1192,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="ScheduleHandle" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
     </command>
     <command id="0x06" name="SetActivePresetRequest" direction="commandToServer" response="Y">
@@ -1351,9 +1203,7 @@ Davis, CA 95616, USA
       <field id="0" name="PresetHandle" type="octstr">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </field>
     </command>
   </commands>

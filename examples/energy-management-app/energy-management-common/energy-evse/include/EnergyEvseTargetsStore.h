@@ -42,7 +42,6 @@ public:
     ~EvseTargetsDelegate();
 
     CHIP_ERROR Init(PersistentStorageDelegate * targetStore);
-    void Shutdown();
 
     /**
      * @brief Delegate should implement a handler for LoadTargets

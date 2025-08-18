@@ -153,7 +153,7 @@ MeasurementData * MeasurementDataForEndpoint(EndpointId endpointId)
         return nullptr;
     }
 
-    if (index >= MATTER_ARRAY_SIZE(gMeasurements))
+    if (index >= ArraySize(gMeasurements))
     {
         ChipLogError(NotSpecified, "Internal error: invalid/unexpected energy measurement index.");
         return nullptr;

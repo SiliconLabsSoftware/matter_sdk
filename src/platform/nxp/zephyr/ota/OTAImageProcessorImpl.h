@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2024-2025 Project CHIP Authors
+ *    Copyright (c) 2024 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,12 +24,13 @@ namespace chip {
 
 class OTADownloader;
 
+namespace DeviceLayer {
+
 class OTAImageProcessorImpl : public OTAImageProcessorInterface
 {
 public:
     static constexpr size_t kBufferSize = CONFIG_CHIP_OTA_REQUESTOR_BUFFER_SIZE;
 
-    CHIP_ERROR Init(OTADownloader * downloader);
     void SetOTADownloader(OTADownloader * downloader) { mDownloader = downloader; };
 
     CHIP_ERROR PrepareDownload() override;
@@ -41,8 +42,6 @@ public:
     CHIP_ERROR ConfirmCurrentImage() override;
     void SetRebootDelaySec(uint16_t rebootDelay);
 
-    static OTAImageProcessorImpl & GetDefaultInstance();
-
 private:
     CHIP_ERROR PrepareDownloadImpl();
     CHIP_ERROR ProcessHeader(ByteSpan & aBlock);
@@ -53,4 +52,5 @@ private:
     uint8_t mBuffer[kBufferSize];
 };
 
+} // namespace DeviceLayer
 } // namespace chip

@@ -119,7 +119,6 @@ private:
 
     bool _IsWiFiStationEnabled();
     bool _IsWiFiStationConnected();
-    bool _IsWiFiStationProvisioned();
     bool _IsWiFiStationApplicationControlled();
     CHIP_ERROR _DisconnectNetwork(void);
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_WPA */
@@ -132,28 +131,14 @@ private:
     static ConnectivityManagerImpl sInstance;
 
     // ===== Private members reserved for use by this class only.
-    bool mBorderRouterInit = false;
-
-#if CONFIG_CHIP_ETHERNET && !CHIP_DEVICE_CONFIG_ENABLE_WPA
-    enum class ConnectivityFlags : uint16_t{
-        kHaveIPv4InternetConnectivity = 0x0001,
-        kHaveIPv6InternetConnectivity = 0x0002,
-        kAwaitingConnectivity         = 0x0010,
-    };
-    BitFlags<ConnectivityFlags> mFlags;
-#endif
-
-#if CHIP_DEVICE_CONFIG_ENABLE_WPA || CONFIG_CHIP_ETHERNET
-    void UpdateInternetConnectivityState(void);
-#endif
-
-#if CHIP_DEVICE_CONFIG_ENABLE_WPA
     ConnectivityManager::WiFiStationMode mWiFiStationMode;
     ConnectivityManager::WiFiStationState mWiFiStationState;
     ConnectivityManager::WiFiAPMode mWiFiAPMode;
     uint32_t mWiFiStationReconnectIntervalMS;
-    bool mWifiManagerInit   = false;
-    bool mWifiIsProvisioned = false;
+    bool mBorderRouterInit = false;
+
+#if CHIP_DEVICE_CONFIG_ENABLE_WPA
+    bool mWifiManagerInit = false;
 
     enum WiFiEventGroup{
         kWiFiEventGroup_WiFiStationModeBit = (1 << 0),
@@ -164,10 +149,14 @@ private:
     static constexpr uint32_t kWlanInitWaitMs = CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL;
 
 #if CHIP_ENABLE_OPENTHREAD
+    static constexpr uint8_t kMaxIp6Addr = 3;
+
     Inet::InterfaceId mThreadNetIf;
     Inet::InterfaceId mExternalNetIf;
 
     char mHostname[chip::Dnssd::kHostNameMaxLength + 1] = "";
+    otIp6Address mIp6AddrList[kMaxIp6Addr];
+    uint32_t mIp6AddrNum = 0;
 #endif
 
     static int _WlanEventCallback(enum wlan_event_reason event, void * data);
@@ -175,10 +164,11 @@ private:
 
     void OnStationConnected(void);
     void OnStationDisconnected(void);
+    void UpdateInternetConnectivityState(void);
 #if CHIP_ENABLE_OPENTHREAD
-    void BrHandleStateChange();
-    static void LockThreadStack();
-    static void UnlockThreadStack();
+    void BrHandleStateChange(bool bLinkState);
+    void UpdateMdnsHost(void);
+    bool UpdateIp6AddrList(void);
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_THREAD */
 #endif
     /* CHIP_DEVICE_CONFIG_ENABLE_WPA */

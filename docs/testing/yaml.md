@@ -330,11 +330,12 @@ or
 bootstrap.sh should be used for for the first setup, activate.sh may be used for
 subsequent setups as it is faster.
 
-Next build the python wheels and create a venv
+Next build the python wheels and create a venv (called `py` here, but any name
+may be used)
 
 ```
-./scripts/build_python.sh -i out/python_env
-source out/python_env/bin/activate
+./scripts/build_python.sh -i py
+source py/bin/activate
 ```
 
 Compile chip-tool:

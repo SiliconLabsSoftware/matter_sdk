@@ -207,7 +207,7 @@ public:
 protected:
     virtual CHIP_ERROR SyncGetKeyValueInternal(const char * key, void * buffer, uint16_t & size)
     {
-        VerifyOrReturnError((buffer != nullptr) || (size == 0), CHIP_ERROR_INVALID_ARGUMENT);
+        ReturnErrorCodeIf(((buffer == nullptr) && (size != 0)), CHIP_ERROR_INVALID_ARGUMENT);
 
         // Making sure poison keys are not accessed
         if (mPoisonKeys.find(std::string(key)) != mPoisonKeys.end())
@@ -226,8 +226,8 @@ protected:
         }
 
         uint16_t valueSizeUint16 = static_cast<uint16_t>(valueSize);
-        VerifyOrReturnError(size != 0 || valueSizeUint16 != 0, CHIP_NO_ERROR);
-        VerifyOrReturnError(buffer != nullptr, CHIP_ERROR_BUFFER_TOO_SMALL);
+        ReturnErrorCodeIf(size == 0 && valueSizeUint16 == 0, CHIP_NO_ERROR);
+        ReturnErrorCodeIf(buffer == nullptr, CHIP_ERROR_BUFFER_TOO_SMALL);
 
         uint16_t sizeToCopy = std::min(size, valueSizeUint16);
 

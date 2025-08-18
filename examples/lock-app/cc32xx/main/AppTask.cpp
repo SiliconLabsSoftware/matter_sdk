@@ -39,8 +39,7 @@
 #include <platform/CHIPDeviceLayer.h>
 
 #include <app/server/Dnssd.h>
-#include <data-model-providers/codegen/Instance.h>
-#include <setup_payload/OnboardingCodesUtil.h>
+#include <app/server/OnboardingCodesUtil.h>
 
 #include <ti/drivers/apps/Button.h>
 #include <ti/drivers/apps/LED.h>
@@ -152,7 +151,6 @@ int AppTask::Init()
     PLAT_LOG("Initialize Server");
     static chip::CommonCaseDeviceServerInitParams initParams;
     (void) initParams.InitializeStaticResourcesBeforeServerInit();
-    initParams.dataModelProvider = app::CodegenDataModelProviderInstance(initParams.persistentStorageDelegate);
     chip::Server::GetInstance().Init(initParams);
 
     // Initialize device attestation config

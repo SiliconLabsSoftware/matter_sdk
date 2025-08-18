@@ -32,7 +32,6 @@
 #include <lib/core/CHIPError.h>
 #include <lib/dnssd/Constants.h>
 #include <lib/dnssd/platform/Dnssd.h>
-#include <platform/GLibTypeDeleter.h>
 
 namespace chip {
 namespace Dnssd {
@@ -107,13 +106,13 @@ struct ResolveContext : public GenericContext
     bool mIsResolving              = false;
 
     // Resolved service
-    DnssdService mResult = {};
-    GAutoPtr<char> mResultTxtRecord;
+    DnssdService mResult               = {};
+    uint8_t * mResultTxtRecord         = nullptr;
     unsigned short mResultTxtRecordLen = 0;
 
     ResolveContext(DnssdTizen * instance, const char * name, const char * type, uint32_t interfaceId, DnssdResolveCallback callback,
                    void * context);
-    ~ResolveContext() override = default;
+    ~ResolveContext() override;
 
     void Finalize(CHIP_ERROR error);
 };

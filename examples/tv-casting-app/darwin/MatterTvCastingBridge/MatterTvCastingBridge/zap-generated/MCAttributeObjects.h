@@ -48,6 +48,9 @@
 @interface MCOnOffClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
 @end
 
+@interface MCOnOffClusterEventListAttribute : MCAttribute <NSArray *>
+@end
+
 @interface MCOnOffClusterAttributeListAttribute : MCAttribute <NSArray *>
 @end
 
@@ -107,6 +110,9 @@
 @interface MCLevelControlClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
 @end
 
+@interface MCLevelControlClusterEventListAttribute : MCAttribute <NSArray *>
+@end
+
 @interface MCLevelControlClusterAttributeListAttribute : MCAttribute <NSArray *>
 @end
 
@@ -130,6 +136,9 @@
 @interface MCWakeOnLanClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
 @end
 
+@interface MCWakeOnLanClusterEventListAttribute : MCAttribute <NSArray *>
+@end
+
 @interface MCWakeOnLanClusterAttributeListAttribute : MCAttribute <NSArray *>
 @end
 
@@ -151,6 +160,9 @@
 @end
 
 @interface MCTargetNavigatorClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
+@end
+
+@interface MCTargetNavigatorClusterEventListAttribute : MCAttribute <NSArray *>
 @end
 
 @interface MCTargetNavigatorClusterAttributeListAttribute : MCAttribute <NSArray *>
@@ -203,6 +215,9 @@
 @interface MCMediaPlaybackClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
 @end
 
+@interface MCMediaPlaybackClusterEventListAttribute : MCAttribute <NSArray *>
+@end
+
 @interface MCMediaPlaybackClusterAttributeListAttribute : MCAttribute <NSArray *>
 @end
 
@@ -218,6 +233,9 @@
 @end
 
 @interface MCKeypadInputClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
+@end
+
+@interface MCKeypadInputClusterEventListAttribute : MCAttribute <NSArray *>
 @end
 
 @interface MCKeypadInputClusterAttributeListAttribute : MCAttribute <NSArray *>
@@ -243,6 +261,9 @@
 @interface MCContentLauncherClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
 @end
 
+@interface MCContentLauncherClusterEventListAttribute : MCAttribute <NSArray *>
+@end
+
 @interface MCContentLauncherClusterAttributeListAttribute : MCAttribute <NSArray *>
 @end
 
@@ -264,6 +285,9 @@
 @end
 
 @interface MCApplicationLauncherClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
+@end
+
+@interface MCApplicationLauncherClusterEventListAttribute : MCAttribute <NSArray *>
 @end
 
 @interface MCApplicationLauncherClusterAttributeListAttribute : MCAttribute <NSArray *>
@@ -305,6 +329,9 @@
 @end
 
 @interface MCApplicationBasicClusterAcceptedCommandListAttribute : MCAttribute <NSArray *>
+@end
+
+@interface MCApplicationBasicClusterEventListAttribute : MCAttribute <NSArray *>
 @end
 
 @interface MCApplicationBasicClusterAttributeListAttribute : MCAttribute <NSArray *>

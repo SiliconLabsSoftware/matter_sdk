@@ -369,7 +369,7 @@ TEST_F(TestCommands, TestSuccessNoDataResponseWithClusterStatus)
     auto onSuccessCb = [&onSuccessWasCalled, &statusCheck](const app::ConcreteCommandPath & commandPath,
                                                            const app::StatusIB & aStatus, const auto & dataResponse) {
         statusCheck        = (aStatus.mStatus == Protocols::InteractionModel::Status::Success &&
-                       *aStatus.mClusterStatus == kTestSuccessClusterStatus);
+                       aStatus.mClusterStatus.Value() == kTestSuccessClusterStatus);
         onSuccessWasCalled = true;
     };
 
@@ -411,7 +411,7 @@ TEST_F(TestCommands, TestFailureWithClusterStatus)
         {
             app::StatusIB status(aError);
             statusCheck = (status.mStatus == Protocols::InteractionModel::Status::Failure &&
-                           status.mClusterStatus == kTestFailureClusterStatus);
+                           status.mClusterStatus == MakeOptional(kTestFailureClusterStatus));
         }
         onFailureWasCalled = true;
     };

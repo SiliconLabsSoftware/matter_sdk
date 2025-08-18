@@ -147,9 +147,7 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint>
-        <allowed value="6"/>
-      </constraint>
+      <constraint type="allowed" value="6"/>
     </attribute>
     <attribute id="0x0001" name="SecurityType" type="SecurityTypeEnum" default="null">
       <access read="true" readPrivilege="view"/>
@@ -170,12 +168,7 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality changeOmitted="true" nullable="true"/>
       <mandatoryConform/>
-      <constraint>
-        <between>
-          <from value="-120"/>
-          <to value="0"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="-120" to="0"/>
     </attribute>
     <attribute id="0x0005" name="BeaconLostCount" type="uint32" default="0">
       <access read="true" readPrivilege="view"/>

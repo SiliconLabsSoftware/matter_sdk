@@ -59,7 +59,7 @@ class EEVSEBaseTestHelper:
 
     async def write_user_max_charge(self, endpoint: int = None, user_max_charge: int = 0):
         if endpoint is None:
-            endpoint = self.get_endpoint()
+            endpoint = self.matter_test_config.endpoint
         result = await self.default_controller.WriteAttribute(self.dut_node_id,
                                                               [(endpoint,
                                                                Clusters.EnergyEvse.Attributes.UserMaximumChargeCurrent(user_max_charge))])

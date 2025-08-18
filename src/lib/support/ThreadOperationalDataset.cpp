@@ -73,7 +73,7 @@ public:
 
     void SetLength(uint8_t aLength)
     {
-        assert(aLength != kLengthEscape);
+        assert(mLength != kLengthEscape);
         mLength = aLength;
     }
 

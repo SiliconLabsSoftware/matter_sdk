@@ -144,8 +144,3 @@ void MatterWakeOnLanPluginServerInitCallback()
 {
     app::AttributeAccessInterfaceRegistry::Instance().Register(&gWakeOnLanAttrAccess);
 }
-
-void MatterWakeOnLanPluginServerShutdownCallback()
-{
-    app::AttributeAccessInterfaceRegistry::Instance().Unregister(&gWakeOnLanAttrAccess);
-}

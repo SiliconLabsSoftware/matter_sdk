@@ -127,21 +127,15 @@ JNI_METHOD(jobject, finishStartup)(JNIEnv *, jobject)
     return support::convertMatterErrorFromCppToJava(CHIP_NO_ERROR);
 }
 
-JNI_METHOD(void, finishStopping)(JNIEnv *, jobject)
+JNI_METHOD(jobject, shutdownAllSubscriptions)(JNIEnv * env, jobject)
 {
     chip::DeviceLayer::StackLock lock;
-    ChipLogProgress(AppServer, "CastingApp-JNI::finishStopping() called");
+    ChipLogProgress(AppServer, "CastingApp-JNI::shutdownAllSubscriptions() called");
 
 #if CHIP_DEVICE_CONFIG_ENABLE_COMMISSIONER_DISCOVERY_CLIENT
     // Remove the handler previously set for Commissioner's CommissionerDeclaration messages.
     chip::Server::GetInstance().GetUserDirectedCommissioningClient()->SetCommissionerDeclarationHandler(nullptr);
 #endif // CHIP_DEVICE_CONFIG_ENABLE_COMMISSIONER_DISCOVERY_CLIENT
-}
-
-JNI_METHOD(jobject, shutdownAllSubscriptions)(JNIEnv * env, jobject)
-{
-    chip::DeviceLayer::StackLock lock;
-    ChipLogProgress(AppServer, "CastingApp-JNI::shutdownAllSubscriptions() called");
 
     CHIP_ERROR err = matter::casting::core::CastingApp::GetInstance()->ShutdownAllSubscriptions();
     return support::convertMatterErrorFromCppToJava(err);

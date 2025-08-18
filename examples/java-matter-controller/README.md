@@ -9,9 +9,8 @@ cluster requests to a Matter device
 
 -   [Matter Controller Java App Example](#matter-controller-java-app-example)
     -   [Requirements for building](#requirements-for-building)
-        -   [Linux](#linux)
     -   [Preparing for build](#preparing-for-build)
-    -   [Building \& Running the app](#building--running-the-app)
+    -   [Building & Running the app](#building--running-the-app)
 
 <hr>
 
@@ -31,7 +30,7 @@ system or not. In order to install the Java Runtime Environment on your system,
 run the following command as root:
 
 ```
-sudo apt install default-jre
+sudo apt install default-jre Install Java default JRE
 ```
 
 After installing the JRE, let us check if we have the Java Development Kit
@@ -47,8 +46,6 @@ system. You can install it through the following command as root:
 ```shell
 sudo apt install default-jdk
 ```
-
-Note: Current matter controller java app example needs java 8+.
 
 You also need to install kotlin compiler on your Ubuntu system:
 
@@ -96,7 +93,7 @@ export PATH="/usr/lib/kotlinc/bin:$PATH"
 ### Linux
 
 ```shell
-export JAVA_HOME=[JDK path]
+export JAVA_PATH=[JDK path]
 ```
 
 <hr>

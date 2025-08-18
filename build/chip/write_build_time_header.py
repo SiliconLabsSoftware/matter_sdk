@@ -15,18 +15,17 @@
 
 import argparse
 import os
-from time import time
+from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 FALLBACK_LKGT_FILENAME = os.path.abspath(os.path.join(SCRIPT_DIR, 'fallback_last_known_good_time'))
 
-# Offset between the Unix epoch (1970-01-01) and the Matter epoch (2000-01-01)
-MATTER_UNIX_EPOCH_OFFSET = 10957 * 24 * 60 * 60  # 10957 days, see src/lib/support/TimeUtils.h
 
-
-def posix_time_in_matter_epoch_s(posix_epoch_time: int) -> int:
-    """Converts a POSIX epoch time to Matter epoch time."""
-    return posix_epoch_time - MATTER_UNIX_EPOCH_OFFSET
+def utc_time_in_matter_epoch_s(time: datetime):
+    """ Returns the time in matter epoch in s. """
+    # Matter epoch is 0 hours, 0 minutes, 0 seconds on Jan 1, 2000 UTC
+    utc_matter = time - datetime(2000, 1, 1, 0, 0, 0, 0, timezone.utc)
+    return int(utc_matter.total_seconds())
 
 
 class Options:
@@ -46,7 +45,7 @@ def write_header(options):
 
 def update_fallback_time_in_file():
     with open(FALLBACK_LKGT_FILENAME, "w") as output_file:
-        output_file.write(str(posix_time_in_matter_epoch_s(int(time()))))
+        output_file.write(str(utc_time_in_matter_epoch_s(datetime.now(tz=timezone.utc))))
 
 
 def main():
@@ -69,18 +68,10 @@ def main():
 
     define_name = 'CHIP_DEVICE_CONFIG_FIRMWARE_BUILD_TIME_MATTER_EPOCH_S'
     if cmdline_options.use_current_time:
-        build_time = posix_time_in_matter_epoch_s(int(time()))
+        build_time = utc_time_in_matter_epoch_s(datetime.now(tz=timezone.utc))
     else:
         with open(FALLBACK_LKGT_FILENAME, "r") as input_file:
             build_time = int(input_file.read())
-
-        # If SOURCE_DATE_EPOCH is set in the environment and is ahead of the fallback time, use it.
-        # See https://reproducible-builds.org/specs/source-date-epoch/
-        source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
-        if source_date_epoch is not None:
-            source_date_time = posix_time_in_matter_epoch_s(int(source_date_epoch))
-            if source_date_time > build_time:
-                build_time = source_date_time
 
     opts = Options(output=output,
                    define_name=define_name,

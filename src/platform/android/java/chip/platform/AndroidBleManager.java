@@ -89,7 +89,6 @@ public class AndroidBleManager implements BleManager {
   private static final int MSG_BLE_SCAN = 0;
   private static final int MSG_BLE_CONNECT = 1;
   private static final int MSG_BLE_CONNECT_SUCCESS = 2;
-  private static final int MSG_BLE_CONNECT_RETRY = 3;
   private static final int MSG_BLE_FAIL = 99;
 
   private static final int BLE_TIMEOUT_MS = 10000;
@@ -502,10 +501,7 @@ public class AndroidBleManager implements BleManager {
           break;
         case MSG_BLE_CONNECT:
           stopBleScan();
-          connectBLE(new ConnectionGattCallback((BluetoothDevice) msg.obj));
-          break;
-        case MSG_BLE_CONNECT_RETRY:
-          connectBLE((ConnectionGattCallback) msg.obj);
+          connectBLE(msg.obj);
           break;
         case MSG_BLE_CONNECT_SUCCESS:
           bleConnectSuccess(msg.obj);
@@ -571,16 +567,20 @@ public class AndroidBleManager implements BleManager {
     }
   }
 
-  private void connectBLE(ConnectionGattCallback callback) {
+  private void connectBLE(Object bluetoothDeviceObj) {
+    if (bluetoothDeviceObj == null) {
+      return;
+    }
+
     // Fail Timer reset.
     mConnectionHandler.removeMessages(MSG_BLE_FAIL);
     mConnectionHandler.sendEmptyMessageDelayed(MSG_BLE_FAIL, BLE_TIMEOUT_MS);
 
     @SuppressWarnings("unchecked")
-    BluetoothDevice device = callback.getTargetDevice();
+    BluetoothDevice device = (BluetoothDevice) bluetoothDeviceObj;
 
     Log.i(TAG, "Connecting");
-    device.connectGatt(mContext, false, callback, BluetoothDevice.TRANSPORT_LE);
+    BluetoothGatt gatt = device.connectGatt(mContext, false, new ConnectionGattCallback());
   }
 
   class ConnectionGattCallback extends AndroidBluetoothGattCallback {
@@ -588,22 +588,7 @@ public class AndroidBleManager implements BleManager {
     private static final int STATE_DISCOVER_SERVICE = 2;
     private static final int STATE_REQUEST_MTU = 3;
 
-    /// Unfortunately GATT 133 is very generic, however among other things
-    /// it may also show up on device out of range or BLE being closed due to
-    /// background task termination, hence it is a candidate to retry connectivity.
-    private static final int kGattRetryableErrorStatus = 133;
-
     private int mState = STATE_INIT;
-    private BluetoothDevice mDevice;
-    private int connectRetriesLeft = 3;
-
-    public ConnectionGattCallback(BluetoothDevice device) {
-      mDevice = device;
-    }
-
-    public BluetoothDevice getTargetDevice() {
-      return mDevice;
-    }
 
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -614,27 +599,9 @@ public class AndroidBleManager implements BleManager {
         mState = STATE_DISCOVER_SERVICE;
         gatt.discoverServices();
         return;
-      }
-
-      if (newState == BluetoothProfile.STATE_DISCONNECTED
-          && status == kGattRetryableErrorStatus
-          && connectRetriesLeft-- > 0) {
-        Log.i(TAG, "Retries left: " + connectRetriesLeft + ". Retrying connect...");
-
-        gatt.close();
-
-        Message msg = mConnectionHandler.obtainMessage();
-        msg.what = MSG_BLE_CONNECT_RETRY;
-        msg.obj = (Object) this;
-        mConnectionHandler.sendMessage(msg);
-
-        return;
-      }
-
-      if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+      } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
         Log.i(TAG, "Services Disconnected");
       }
-
       mConnectionHandler.sendEmptyMessage(MSG_BLE_FAIL);
     }
 

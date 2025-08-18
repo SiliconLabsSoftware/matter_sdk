@@ -45,6 +45,8 @@ void ReportCommand::OnAttributeData(const app::ConcreteDataAttributePath & path,
     }
 
     LogErrorOnFailure(RemoteDataModelLogger::LogAttributeAsJSON(path, data));
+
+    DeviceMgr().HandleAttributeData(path, *data);
 }
 
 void ReportCommand::OnEventData(const app::EventHeader & eventHeader, TLV::TLVReader * data, const app::StatusIB * status)
@@ -70,4 +72,6 @@ void ReportCommand::OnEventData(const app::EventHeader & eventHeader, TLV::TLVRe
     }
 
     LogErrorOnFailure(RemoteDataModelLogger::LogEventAsJSON(eventHeader, data));
+
+    DeviceMgr().HandleEventData(eventHeader, *data);
 }

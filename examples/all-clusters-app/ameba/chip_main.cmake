@@ -157,8 +157,6 @@ list(
 
     ${chip_dir}/examples/all-clusters-app/all-clusters-common/src/bridged-actions-stub.cpp
     ${chip_dir}/examples/all-clusters-app/all-clusters-common/src/air-quality-instance.cpp
-    ${chip_dir}/examples/all-clusters-app/all-clusters-common/src/camera-av-settings-user-level-management-stub.cpp
-    ${chip_dir}/examples/all-clusters-app/all-clusters-common/src/chime-instance.cpp
     ${chip_dir}/examples/all-clusters-app/all-clusters-common/src/concentration-measurement-instances.cpp
     ${chip_dir}/examples/all-clusters-app/all-clusters-common/src/device-energy-management-stub.cpp
     ${chip_dir}/examples/all-clusters-app/all-clusters-common/src/energy-evse-stub.cpp
@@ -203,6 +201,8 @@ list(
     ${chip_dir}/examples/platform/ameba/route_hook/ameba_route_table.c
 
     ${chip_dir}/examples/platform/ameba/test_event_trigger/AmebaTestEventTriggerDelegate.cpp
+
+    ${chip_dir}/examples/providers/DeviceInfoProviderImpl.cpp
 )
 
 add_library(
@@ -248,7 +248,6 @@ target_include_directories(
     ${chip_dir}/examples/energy-management-app/energy-management-common/energy-reporting/include
     ${chip_dir}/examples/all-clusters-app/ameba/main/include
     ${chip_dir}/examples/platform/ameba
-    ${chip_dir}/examples/platform/ameba/observer
     ${chip_dir}/examples/platform/ameba/route_hook
     ${chip_dir}/examples/providers
     ${chip_dir_output}/gen/include

@@ -170,14 +170,13 @@ CHIP_ERROR RegisterLockEvents()
     static const shell_command_t sDoorLockCommand = { &DoorlockCommandHandler, "doorlock",
                                                       "doorlock commands. Usage: doorlock <subcommand>" };
 
-    sShellDoorlockEventAlarmSubCommands.RegisterCommands(sDoorlockEventAlarmSubCommands,
-                                                         MATTER_ARRAY_SIZE(sDoorlockEventAlarmSubCommands));
+    sShellDoorlockEventAlarmSubCommands.RegisterCommands(sDoorlockEventAlarmSubCommands, ArraySize(sDoorlockEventAlarmSubCommands));
 
     sShellDoorlockEventDoorStateSubCommands.RegisterCommands(sDoorlockEventDoorStateSubCommands,
-                                                             MATTER_ARRAY_SIZE(sDoorlockEventDoorStateSubCommands));
+                                                             ArraySize(sDoorlockEventDoorStateSubCommands));
 
-    sShellDoorlockEventSubCommands.RegisterCommands(sDoorlockEventSubCommands, MATTER_ARRAY_SIZE(sDoorlockEventSubCommands));
-    sShellDoorlockSubCommands.RegisterCommands(sDoorlockSubCommands, MATTER_ARRAY_SIZE(sDoorlockSubCommands));
+    sShellDoorlockEventSubCommands.RegisterCommands(sDoorlockEventSubCommands, ArraySize(sDoorlockEventSubCommands));
+    sShellDoorlockSubCommands.RegisterCommands(sDoorlockSubCommands, ArraySize(sDoorlockSubCommands));
 
     Engine::Root().RegisterCommands(&sDoorLockCommand, 1);
 
@@ -209,7 +208,4 @@ void EventWorkerFunction(intptr_t context)
         break;
     }
     }
-
-    // free the allocated memory from the event handlers
-    Platform::Delete(data);
 }

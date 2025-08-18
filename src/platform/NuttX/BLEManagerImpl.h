@@ -189,6 +189,7 @@ private:
     BluezEndpoint mEndpoint;
 
     BluezAdvertisement mBLEAdvertisement;
+    const char * mpBLEAdvUUID = nullptr;
 
     ChipDeviceScanner mDeviceScanner;
     BLEScanConfig mBLEScanConfig;

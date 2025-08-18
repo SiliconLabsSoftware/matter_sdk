@@ -124,6 +124,7 @@ public:
      *
      * @param event AppEvent to post
      */
+
     static void PostEvent(const AppEvent * event);
 
 #ifdef DISPLAY_ENABLED
@@ -153,7 +154,7 @@ public:
      * @param screen The screen to be displayed
      */
     static void PostUpdateDisplayEvent(SilabsLCD::Screen_e screen);
-#endif // DISPLAY_ENABLED
+#endif
 
     /**
      * @brief Function called to start the LED light timer

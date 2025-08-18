@@ -86,8 +86,7 @@ void RegisterBLECommands()
         { &BLEAdvertiseHandler, "adv", "Manage BLE advertising. Usage: ble adv <start|stop|state>" },
     };
 
-    static constexpr Command bleCommand = { &SubShellCommand<MATTER_ARRAY_SIZE(subCommands), subCommands>, "ble",
-                                            "Bluetooth LE commands" };
+    static constexpr Command bleCommand = { &SubShellCommand<ArraySize(subCommands), subCommands>, "ble", "Bluetooth LE commands" };
 
     Engine::Root().RegisterCommands(&bleCommand, 1);
 }

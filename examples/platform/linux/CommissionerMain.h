@@ -18,15 +18,18 @@
 
 #pragma once
 
-#include <platform/CHIPDeviceConfig.h>
-
-#if CHIP_DEVICE_CONFIG_ENABLE_BOTH_COMMISSIONER_AND_COMMISSIONEE
-
-#include <controller/CHIPDeviceController.h> // nogncheck
+#include <controller/CHIPDeviceController.h>
 #include <controller/CommissionerDiscoveryController.h>
 #include <credentials/DeviceAttestationCredsProvider.h>
 #include <lib/core/CHIPError.h>
-#include <lib/core/CHIPPersistentStorageDelegate.h>
+#include <platform/CHIPDeviceLayer.h>
+#include <platform/PlatformManager.h>
+#include <transport/TransportMgr.h>
+
+#if CHIP_DEVICE_CONFIG_ENABLE_BOTH_COMMISSIONER_AND_COMMISSIONEE
+
+using chip::Controller::DeviceCommissioner;
+using chip::Transport::PeerAddress;
 
 CHIP_ERROR CommissionerPairOnNetwork(uint32_t pincode, uint16_t disc, PeerAddress address);
 CHIP_ERROR CommissionerPairUDC(uint32_t pincode, size_t index);
@@ -34,9 +37,7 @@ CHIP_ERROR CommissionerPairUDC(uint32_t pincode, size_t index);
 CHIP_ERROR InitCommissioner(uint16_t commissionerPort, uint16_t udcListenPort, chip::FabricId fabricId = chip::kUndefinedFabricId);
 void ShutdownCommissioner();
 
-chip::Controller::DeviceCommissioner * GetDeviceCommissioner();
+DeviceCommissioner * GetDeviceCommissioner();
 CommissionerDiscoveryController * GetCommissionerDiscoveryController();
-chip::Crypto::SessionKeystore * GetSessionKeystore();
-chip::PersistentStorageDelegate * GetPersistentStorageDelegate();
 
 #endif // CHIP_DEVICE_CONFIG_ENABLE_BOTH_COMMISSIONER_AND_COMMISSIONEE

@@ -59,7 +59,7 @@ static constexpr size_t kMaxPerSpecApplicationPayloadAndMICSizeBytes =
 static constexpr size_t kMaxPacketBufferApplicationPayloadAndMICSizeBytes = System::PacketBuffer::kMaxSize;
 
 static constexpr size_t kMaxApplicationPayloadAndMICSizeBytes =
-    std::min(kMaxPerSpecApplicationPayloadAndMICSizeBytes, kMaxPacketBufferApplicationPayloadAndMICSizeBytes);
+    min(kMaxPerSpecApplicationPayloadAndMICSizeBytes, kMaxPacketBufferApplicationPayloadAndMICSizeBytes);
 } // namespace detail
 
 static constexpr size_t kMaxTagLen = 16;

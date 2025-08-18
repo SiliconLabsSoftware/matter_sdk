@@ -42,7 +42,6 @@ uint16_t socket_port                  = 33000;
 
 stream::ServerSocket server_socket;
 stream::SocketStream socket_stream;
-bool socket_stream_ready = false;
 
 hdlc::RpcChannelOutput hdlc_channel_output(socket_stream, hdlc::kDefaultRpcAddress, "HDLC channel");
 Channel channels[] = { rpc::Channel::Create<1>(&hdlc_channel_output) };
@@ -57,21 +56,16 @@ void set_socket_port(uint16_t new_socket_port)
 
 void Init()
 {
+    log_basic::SetOutput([](std::string_view log) {
+        std::fprintf(stderr, "%.*s\n", static_cast<int>(log.size()), log.data());
+        hdlc::WriteUIFrame(1, as_bytes(span(log)), socket_stream).IgnoreError(); // TODO(pwbug/387): Handle Status properly
+    });
+
     PW_LOG_INFO("Starting pw_rpc server on port %d", socket_port);
-    Status status = server_socket.Listen(socket_port);
-    if (!status.ok())
-    {
-        PW_LOG_ERROR("Listen failed. Initialization failed.");
-        return;
-    }
+    PW_CHECK_OK(server_socket.Listen(socket_port));
     auto accept_result = server_socket.Accept();
-    if (!accept_result.status().ok())
-    {
-        PW_LOG_ERROR("Accept failed. Initialization failed.");
-        return;
-    }
-    socket_stream       = *std::move(accept_result);
-    socket_stream_ready = true;
+    PW_CHECK_OK(accept_result.status());
+    socket_stream = *std::move(accept_result);
 }
 
 rpc::Server & Server()
@@ -81,11 +75,6 @@ rpc::Server & Server()
 
 Status Start()
 {
-    if (!socket_stream_ready)
-    {
-        PW_LOG_ERROR("Socket failed to initialize. PWRPC start failed.");
-        return Status::FailedPrecondition();
-    }
     // Declare a buffer for decoding incoming HDLC frames.
     std::array<std::byte, kMaxTransmissionUnit> input_buffer;
     hdlc::Decoder decoder(input_buffer);
@@ -103,18 +92,9 @@ Status Start()
                 // remote to connect.
                 socket_stream.Close();
                 server_socket.Close();
-                Status status = server_socket.Listen(socket_port);
-                if (!status.ok())
-                {
-                    PW_LOG_ERROR("Listen failed. Exiting RPC Server loop");
-                    return status;
-                }
+                PW_CHECK_OK(server_socket.Listen(socket_port));
                 auto accept_result = server_socket.Accept();
-                if (!accept_result.status().ok())
-                {
-                    PW_LOG_ERROR("Accept failed. Exiting RPC Server loop");
-                    return accept_result.status();
-                }
+                PW_CHECK_OK(accept_result.status());
                 socket_stream = *std::move(accept_result);
             }
             continue;

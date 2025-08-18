@@ -139,14 +139,11 @@ static const NSString * MTRCAKeyChainLabel = @"matter-tool.nodeopcerts.CA:0";
         return NULL;
     }
 
-    CFErrorRef cfError = NULL;
+    CFErrorRef error = NULL;
     SecKeyRef key = SecKeyCreateWithData(
-        (__bridge CFDataRef) keyData,
-        (__bridge CFDictionaryRef)[FabricKeys privateKeyCreationParams],
-        &cfError);
-
-    if (!key) {
-        NSLog(@"Could not reconstruct private key %@", (__bridge_transfer NSError *) cfError);
+        (__bridge CFDataRef) keyData, (__bridge CFDictionaryRef)[FabricKeys privateKeyCreationParams], &error);
+    if (error) {
+        NSLog(@"Could not reconstruct private key %@", (__bridge NSError *) error);
         return NULL;
     }
 
@@ -162,19 +159,16 @@ static const NSString * MTRCAKeyChainLabel = @"matter-tool.nodeopcerts.CA:0";
     // item at all.
     SecItemDelete((__bridge CFDictionaryRef) query);
 
-    CFErrorRef cfError = NULL;
-    SecKeyRef key = SecKeyCreateRandomKey(
-        (__bridge CFDictionaryRef)[FabricKeys privateKeyCreationParams],
-        &cfError);
-
-    if (!key) {
-        NSLog(@"Could not generate private key: %@", (__bridge_transfer NSError *) cfError);
+    CFErrorRef error = NULL;
+    SecKeyRef key = SecKeyCreateRandomKey((__bridge CFDictionaryRef)[FabricKeys privateKeyCreationParams], &error);
+    if (error) {
+        NSLog(@"Could not generate private key: %@", (__bridge NSError *) error);
         return NULL;
     }
 
-    NSData * keyData = (__bridge_transfer NSData *) SecKeyCopyExternalRepresentation(key, &cfError);
-    if (!keyData) {
-        NSLog(@"Could not get key external representation: %@", (__bridge_transfer NSError *) cfError);
+    NSData * keyData = (__bridge_transfer NSData *) SecKeyCopyExternalRepresentation(key, &error);
+    if (error) {
+        NSLog(@"Could not get key external representation: %@", (__bridge NSError *) error);
         CFRelease(key);
         return NULL;
     }
@@ -215,19 +209,14 @@ static const NSString * MTRCAKeyChainLabel = @"matter-tool.nodeopcerts.CA:0";
 
 - (NSData *)signMessageECDSA_DER:(NSData *)message
 {
-    CFErrorRef cfError = NULL;
-    CFDataRef cfData = SecKeyCreateSignature(
-        _privateKey,
-        kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
-        (__bridge CFDataRef) message,
-        &cfError);
+    CFErrorRef error = NULL;
+    CFDataRef outData
+        = SecKeyCreateSignature(_privateKey, kSecKeyAlgorithmECDSASignatureMessageX962SHA256, (__bridge CFDataRef) message, &error);
 
-    if (!cfData) {
-        NSLog(@"Failed to sign cert: %@", (__bridge_transfer NSError *) cfError);
-        return nil;
+    if (error != noErr) {
+        NSLog(@"Failed to sign cert: %@", (__bridge NSError *) error);
     }
-
-    return (__bridge_transfer NSData *) cfData;
+    return (__bridge_transfer NSData *) outData;
 }
 
 - (void)dealloc

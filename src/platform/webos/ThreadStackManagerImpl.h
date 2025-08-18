@@ -25,7 +25,7 @@
 #include <platform/NetworkCommissioning.h>
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 #include <platform/internal/DeviceNetworkInfo.h>
-#include <platform/webos/dbus/openthread/DBusOpenthread.h>
+#include <platform/webos/dbus/openthread/introspect.h>
 
 namespace chip {
 namespace DeviceLayer {

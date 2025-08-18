@@ -65,7 +65,6 @@ public:
     static const Key kConfigKey_Spake2pSalt;
     static const Key kConfigKey_Spake2pVerifier;
     static const Key kConfigKey_LocationCapability;
-    static const Key kConfigKey_ConfigurationVersion;
     static const Key kConfigKey_VendorId;
     static const Key kConfigKey_ProductId;
 

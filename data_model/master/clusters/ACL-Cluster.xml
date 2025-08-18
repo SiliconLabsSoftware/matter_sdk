@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright (C) Connectivity Standards Alliance (2025). All rights reserved.
+Copyright (C) Connectivity Standards Alliance (2021). All rights reserved.
 The information within this document is the property of the Connectivity
 Standards Alliance and its use and disclosure are restricted, except as
 expressly set forth herein.
@@ -54,8 +54,6 @@ This notice and disclaimer must be included on all copies of this document.
 Connectivity Standards Alliance
 508 Second Street, Suite 206
 Davis, CA 95616, USA
-
-:xrefstyle: basic
 -->
 <cluster xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="types types.xsd cluster cluster.xsd" id="0x001F" name="Access Control Cluster" revision="2">
   <revisionHistory>
@@ -63,16 +61,14 @@ Davis, CA 95616, USA
     <revision revision="2" summary="Added Managed Device feature, Extension feature, fixed conformance"/>
   </revisionHistory>
   <clusterIds>
-    <clusterId id="0x001F" name="Access Control"/>
+    <clusterId id="0x001F" name="AccessControl"/>
   </clusterIds>
   <classification hierarchy="base" role="utility" picsCode="ACL" scope="Node"/>
   <features>
     <feature bit="0" code="EXTS" name="Extension" summary="Device provides ACL Extension attribute">
       <optionalConform/>
     </feature>
-    <feature bit="1" code="MNGD" name="ManagedDevice" summary="Device is managed">
-      <describedConform/>
-    </feature>
+    <feature bit="1" code="MNGD" name="ManagedDevice" summary="Device is managed"/>
   </features>
   <dataTypes>
     <enum name="AccessControlEntryAuthModeEnum">
@@ -87,11 +83,14 @@ Davis, CA 95616, USA
       </item>
     </enum>
     <enum name="AccessControlEntryPrivilegeEnum">
-      <item value="1" name="View" summary="Can read and observe all (except Access Control Cluster)">
+      <item value="1" name="View" summary="Can read and observe all (except Access Control Cluster and as seen by a non-Proxy)">
         <mandatoryConform/>
       </item>
-      <item value="2" name="ProxyView">
-        <deprecateConform/>
+      <item value="2" name="Proxy" summary="Can read and observe all (as seen by a Proxy)">
+        <otherwiseConform>
+          <provisionalConform/>
+          <mandatoryConform/>
+        </otherwiseConform>
       </item>
       <item value="3" name="Operate" summary="View privileges, and can perform the primary function of this Node (except Access Control Cluster)">
         <mandatoryConform/>
@@ -138,26 +137,18 @@ Davis, CA 95616, USA
         <mandatoryConform/>
       </field>
       <field id="3" name="Subjects" type="list">
-        <entry type="subject-id"/>
+        <entry type="SubjectID"/>
         <access fabricSensitive="true"/>
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount>
-            <attribute name="SubjectsPerAccessControlEntry"/>
-          </maxCount>
-        </constraint>
+        <constraint type="maxCount" value="SubjectsPerAccessControlEntry"/>
       </field>
       <field id="4" name="Targets" type="list">
         <entry type="AccessControlTargetStruct"/>
         <access fabricSensitive="true"/>
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount>
-            <attribute name="TargetsPerAccessControlEntry"/>
-          </maxCount>
-        </constraint>
+        <constraint type="maxCount" value="TargetsPerAccessControlEntry"/>
       </field>
       <access fabricScoped="true"/>
     </struct>
@@ -165,9 +156,7 @@ Davis, CA 95616, USA
       <field id="1" name="Data" type="octstr">
         <access fabricSensitive="true"/>
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="128"/>
-        </constraint>
+        <constraint type="maxLength" value="128"/>
       </field>
       <access fabricScoped="true"/>
     </struct>
@@ -194,13 +183,11 @@ Davis, CA 95616, USA
         <access fabricSensitive="true"/>
         <mandatoryConform/>
       </field>
-      <field id="2" name="Restrictions" type="list">
+      <field id="2" name="Restrictions" type="list" default="desc">
         <entry type="AccessRestrictionStruct"/>
         <access fabricSensitive="true"/>
         <mandatoryConform/>
-        <constraint>
-          <minCount value="1"/>
-        </constraint>
+        <constraint type="minCount" value="1"/>
       </field>
       <access fabricScoped="true"/>
     </struct>
@@ -220,12 +207,10 @@ Davis, CA 95616, USA
       <field id="1" name="Cluster" type="cluster-id">
         <mandatoryConform/>
       </field>
-      <field id="2" name="Restrictions" type="list">
+      <field id="2" name="Restrictions" type="list" default="desc">
         <entry type="AccessRestrictionStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <minCount value="1"/>
-        </constraint>
+        <constraint type="minCount" value="1"/>
       </field>
     </struct>
   </dataTypes>
@@ -234,9 +219,7 @@ Davis, CA 95616, USA
       <entry type="AccessControlEntryStruct"/>
       <access read="true" write="true" readPrivilege="admin" writePrivilege="admin" fabricScoped="true"/>
       <mandatoryConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0001" name="Extension" type="list" default="desc">
       <entry type="AccessControlExtensionStruct"/>
@@ -244,54 +227,42 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="EXTS"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0002" name="SubjectsPerAccessControlEntry" type="uint16" default="4">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="4"/>
-      </constraint>
+      <constraint type="min" value="4"/>
     </attribute>
     <attribute id="0x0003" name="TargetsPerAccessControlEntry" type="uint16" default="3">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="3"/>
-      </constraint>
+      <constraint type="min" value="3"/>
     </attribute>
     <attribute id="0x0004" name="AccessControlEntriesPerFabric" type="uint16" default="4">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="4"/>
-      </constraint>
+      <constraint type="min" value="4"/>
     </attribute>
-    <attribute id="0x0005" name="CommissioningARL" type="list" default="empty">
+    <attribute id="0x0005" name="CommissioningARL" type="list" default="[]">
       <entry type="CommissioningAccessRestrictionEntryStruct"/>
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform>
         <feature name="MNGD"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
-    <attribute id="0x0006" name="ARL" type="list" default="empty">
+    <attribute id="0x0006" name="ARL" type="list" default="[]">
       <entry type="AccessRestrictionEntryStruct"/>
       <access read="true" readPrivilege="view" fabricScoped="true"/>
       <mandatoryConform>
         <feature name="MNGD"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
   </attributes>
   <commands>
@@ -303,9 +274,7 @@ Davis, CA 95616, USA
       <field id="0" name="ARL" type="list" default="desc">
         <entry type="CommissioningAccessRestrictionEntryStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x01" name="ReviewFabricRestrictionsResponse" direction="responseFromServer">
@@ -324,16 +293,12 @@ Davis, CA 95616, USA
       <field id="1" name="AdminNodeID" type="node-id">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="AdminPasscodeID" type="uint16">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="3" name="ChangeType" type="ChangeTypeEnum">
         <mandatoryConform/>
@@ -351,16 +316,12 @@ Davis, CA 95616, USA
       <field id="1" name="AdminNodeID" type="node-id">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="AdminPasscodeID" type="uint16">
         <quality nullable="true"/>
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="3" name="ChangeType" type="ChangeTypeEnum">
         <mandatoryConform/>
@@ -380,15 +341,11 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="Instruction" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="512"/>
-        </constraint>
+        <constraint type="maxLength" value="512"/>
       </field>
       <field id="2" name="ARLRequestFlowUrl" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
     </event>
   </events>

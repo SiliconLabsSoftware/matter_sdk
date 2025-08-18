@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright (C) Connectivity Standards Alliance (2025). All rights reserved.
+Copyright (C) Connectivity Standards Alliance (2023). All rights reserved.
 The information within this document is the property of the Connectivity
 Standards Alliance and its use and disclosure are restricted, except as
 expressly set forth herein.
@@ -70,10 +70,12 @@ Davis, CA 95616, USA
   </clusterIds>
   <classification hierarchy="base" role="application" picsCode="DEM" scope="Endpoint"/>
   <features>
-    <feature bit="0" code="PA" name="PowerAdjustment" summary="Allows an EMS to make a temporary power adjustment (within the limits offered by the ESA).">
-      <optionalConform choice="a" more="true" min="1"/>
+    <feature bit="0" code="PA" name="PowerAdjustment" summary="Allows an EMS to make a temporary power
+                                                                             adjustment (within the limits offered by the ESA).">
+      <optionalConform choice="a" more="true"/>
     </feature>
-    <feature bit="1" code="PFR" name="PowerForecastReporting" summary="Allows an ESA to advertise its indicative future power consumption vs time.">
+    <feature bit="1" code="PFR" name="PowerForecastReporting" summary="Allows an ESA to advertise its indicative
+                                                                             future power consumption vs time.">
       <otherwiseConform>
         <mandatoryConform>
           <andTerm>
@@ -88,10 +90,11 @@ Davis, CA 95616, USA
             </notTerm>
           </andTerm>
         </mandatoryConform>
-        <optionalConform choice="a" more="true" min="1"/>
+        <optionalConform choice="a" more="true"/>
       </otherwiseConform>
     </feature>
-    <feature bit="2" code="SFR" name="StateForecastReporting" summary="Allows an ESA to advertise its indicative future state vs time.">
+    <feature bit="2" code="SFR" name="StateForecastReporting" summary="Allows an ESA to advertise its indicative
+                                                                             future state vs time.">
       <otherwiseConform>
         <mandatoryConform>
           <andTerm>
@@ -106,25 +109,29 @@ Davis, CA 95616, USA
             </notTerm>
           </andTerm>
         </mandatoryConform>
-        <optionalConform choice="a" more="true" min="1"/>
+        <optionalConform choice="a" more="true"/>
       </otherwiseConform>
     </feature>
-    <feature bit="3" code="STA" name="StartTimeAdjustment" summary="Allows an EMS to delay an ESA&apos;s planned operation.">
-      <optionalConform choice="a" more="true" min="1"/>
+    <feature bit="3" code="STA" name="StartTimeAdjustment" summary="Allows an EMS to delay an ESA's
+                                                                             planned operation.">
+      <optionalConform choice="a" more="true"/>
     </feature>
-    <feature bit="4" code="PAU" name="Pausable" summary="Allows an EMS to pause an ESA&apos;s planned operation.">
-      <optionalConform choice="a" more="true" min="1"/>
+    <feature bit="4" code="PAU" name="Pausable" summary="Allows an EMS to pause an ESA's
+                                                                             planned operation.">
+      <optionalConform choice="a" more="true"/>
     </feature>
-    <feature bit="5" code="FA" name="ForecastAdjustment" summary="Allows an EMS to adjust an ESA&apos;s planned operation.">
+    <feature bit="5" code="FA" name="ForecastAdjustment" summary="Allows an EMS to adjust an ESA's
+                                                                             planned operation.">
       <otherwiseConform>
         <provisionalConform/>
-        <optionalConform choice="a" more="true" min="1"/>
+        <optionalConform choice="a" more="true"/>
       </otherwiseConform>
     </feature>
-    <feature bit="6" code="CON" name="ConstraintBasedAdjustment" summary="Allows an EMS to request constraints to an ESA&apos;s planned operation.">
+    <feature bit="6" code="CON" name="ConstraintBasedAdjustment" summary="Allows an EMS to request constraints to an ESA's
+                                                                             planned operation.">
       <otherwiseConform>
         <provisionalConform/>
-        <optionalConform choice="a" more="true" min="1"/>
+        <optionalConform choice="a" more="true"/>
       </otherwiseConform>
     </feature>
   </features>
@@ -147,7 +154,7 @@ Davis, CA 95616, USA
       <item value="2" name="Fault" summary="The ESA has developed a fault could not complete the adjustment">
         <optionalConform/>
       </item>
-      <item value="3" name="UserOptOut" summary="The user has disabled the ESA&apos;s flexibility capability">
+      <item value="3" name="UserOptOut" summary="The user has disabled the ESA's flexibility capability">
         <optionalConform/>
       </item>
       <item value="4" name="Cancelled" summary="The adjustment was cancelled by a client">
@@ -264,26 +271,17 @@ Davis, CA 95616, USA
     <struct name="ConstraintsStruct">
       <field id="0" name="StartTime" type="epoch-s">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="Duration" type="elapsed-s">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="86400"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="86400"/>
       </field>
       <field id="2" name="NominalPower" type="power-mW">
         <mandatoryConform>
           <feature name="PFR"/>
         </mandatoryConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="3" name="MaximumEnergy" type="energy-mWh">
         <mandatoryConform>
@@ -308,9 +306,7 @@ Davis, CA 95616, USA
       </field>
       <field id="3" name="Currency" type="uint16" default="0">
         <optionalConform/>
-        <constraint>
-          <max value="999"/>
-        </constraint>
+        <constraint type="max" value="999"/>
       </field>
     </struct>
     <struct name="ForecastStruct">
@@ -342,11 +338,9 @@ Davis, CA 95616, USA
         <mandatoryConform/>
       </field>
       <field id="7" name="Slots" type="list">
-        <entry type=""/>
+        <entry type="SlotStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="10"/>
-        </constraint>
+        <constraint type="maxCount" value="10"/>
       </field>
       <field id="8" name="ForecastUpdateReason" type="ForecastUpdateReasonEnum">
         <mandatoryConform/>
@@ -369,21 +363,15 @@ Davis, CA 95616, USA
     <struct name="SlotAdjustmentStruct">
       <field id="0" name="SlotIndex" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="NominalPower" type="power-mW">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="Duration" type="elapsed-s">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </struct>
     <struct name="SlotStruct">
@@ -445,9 +433,7 @@ Davis, CA 95616, USA
       <field id="13" name="Costs" type="list">
         <entry type="CostStruct"/>
         <optionalConform/>
-        <constraint>
-          <maxCount value="5"/>
-        </constraint>
+        <constraint type="maxCount" value="5"/>
       </field>
       <field id="14" name="MinPowerAdjustment" type="power-mW">
         <mandatoryConform>
@@ -490,25 +476,20 @@ Davis, CA 95616, USA
     </struct>
   </dataTypes>
   <attributes>
-    <attribute id="0x0000" name="ESAType" type="ESATypeEnum">
-      <default>
-        <enum default="Other"/>
-      </default>
+    <attribute id="0x0000" name="ESAType" type="ESATypeEnum" default="Other">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform/>
     </attribute>
     <attribute id="0x0001" name="ESACanGenerate" type="bool" default="false">
       <access read="true" readPrivilege="view"/>
-      <quality persistence="fixed"/>
+      <quality changeOmitted="false" nullable="false" scene="false" persistence="fixed" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform/>
     </attribute>
     <attribute id="0x0002" name="ESAState" type="ESAStateEnum" default="0">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0003" name="AbsMinPower" type="power-mW" default="0">
       <access read="true" readPrivilege="view"/>
@@ -521,17 +502,15 @@ Davis, CA 95616, USA
     <attribute id="0x0005" name="PowerAdjustmentCapability" type="list" default="null">
       <entry type="PowerAdjustStruct"/>
       <access read="true" readPrivilege="view"/>
-      <quality nullable="true"/>
+      <quality changeOmitted="false" nullable="true" scene="false" persistence="volatile" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform>
         <feature name="PA"/>
       </mandatoryConform>
-      <constraint>
-        <maxCount value="8"/>
-      </constraint>
+      <constraint type="maxCount" value="8"/>
     </attribute>
     <attribute id="0x0006" name="Forecast" type="ForecastStruct" default="null">
       <access read="true" readPrivilege="view"/>
-      <quality nullable="true"/>
+      <quality changeOmitted="false" nullable="true" scene="false" persistence="volatile" reportable="false" sourceAttribution="false" quieterReporting="false"/>
       <mandatoryConform>
         <orTerm>
           <feature name="PFR"/>
@@ -550,9 +529,7 @@ Davis, CA 95616, USA
           <feature name="CON"/>
         </orTerm>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
   </attributes>
   <commands>
@@ -563,21 +540,15 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Power" type="power-mW">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="Duration" type="elapsed-s">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="Cause" type="AdjustmentCauseEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x01" name="CancelPowerAdjustRequest" direction="commandToServer" response="Y">
@@ -593,15 +564,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="RequestedStartTime" type="epoch-s">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="Cause" type="AdjustmentCauseEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x03" name="PauseRequest" direction="commandToServer" response="Y">
@@ -611,15 +578,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Duration" type="elapsed-s">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="Cause" type="AdjustmentCauseEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x04" name="ResumeRequest" direction="commandToServer" response="Y">
@@ -639,15 +602,11 @@ Davis, CA 95616, USA
       <field id="1" name="SlotAdjustments" type="list">
         <entry type="SlotAdjustmentStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="10"/>
-        </constraint>
+        <constraint type="maxCount" value="10"/>
       </field>
       <field id="2" name="Cause" type="AdjustmentCauseEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x06" name="RequestConstraintBasedForecast" direction="commandToServer" response="Y">
@@ -658,15 +617,11 @@ Davis, CA 95616, USA
       <field id="0" name="Constraints" type="list">
         <entry type="ConstraintsStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="10"/>
-        </constraint>
+        <constraint type="maxCount" value="10"/>
       </field>
       <field id="1" name="Cause" type="AdjustmentCauseEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x07" name="CancelRequest" direction="commandToServer" response="Y">

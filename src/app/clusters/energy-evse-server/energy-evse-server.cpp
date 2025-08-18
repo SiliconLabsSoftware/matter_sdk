@@ -505,4 +505,3 @@ void Instance::HandleClearTargets(HandlerContext & ctx, const Commands::ClearTar
 // Plugin initialization
 
 void MatterEnergyEvsePluginServerInitCallback() {}
-void MatterEnergyEvsePluginServerShutdownCallback() {}

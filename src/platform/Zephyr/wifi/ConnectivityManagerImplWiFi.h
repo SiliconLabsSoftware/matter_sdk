@@ -51,6 +51,7 @@ private:
     bool _IsWiFiStationProvisioned(void);
     void _ClearWiFiStationProvision(void);
     CHIP_ERROR _GetAndLogWiFiStatsCounters(void);
+    bool _CanStartWiFiScan();
     void _OnWiFiScanDone();
     void _OnWiFiStationProvisionChange();
 

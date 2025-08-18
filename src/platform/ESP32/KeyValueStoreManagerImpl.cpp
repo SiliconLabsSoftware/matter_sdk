@@ -49,10 +49,10 @@ namespace {
 // Returns true if key is hashed, false otherwise.
 bool HashIfLongKey(const char * key, char * keyHash)
 {
-    VerifyOrReturnError(strlen(key) >= NVS_KEY_NAME_MAX_SIZE, false);
+    ReturnErrorCodeIf(strlen(key) < NVS_KEY_NAME_MAX_SIZE, false);
 
     uint8_t hashBuffer[chip::Crypto::kSHA1_Hash_Length];
-    VerifyOrReturnError(Crypto::Hash_SHA1(Uint8::from_const_char(key), strlen(key), hashBuffer) == CHIP_NO_ERROR, false);
+    ReturnErrorCodeIf(Crypto::Hash_SHA1(Uint8::from_const_char(key), strlen(key), hashBuffer) != CHIP_NO_ERROR, false);
 
     BitFlags<Encoding::HexFlags> flags(Encoding::HexFlags::kNone);
     Encoding::BytesToHex(hashBuffer, NVS_KEY_NAME_MAX_SIZE / 2, keyHash, NVS_KEY_NAME_MAX_SIZE, flags);

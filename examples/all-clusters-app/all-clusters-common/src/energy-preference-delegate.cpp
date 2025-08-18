@@ -71,12 +71,12 @@ EPrefDelegate::~EPrefDelegate()
 
 size_t EPrefDelegate::GetNumEnergyBalances(chip::EndpointId aEndpoint)
 {
-    return (MATTER_ARRAY_SIZE(gsEnergyBalances));
+    return (ArraySize(gsEnergyBalances));
 }
 
 size_t EPrefDelegate::GetNumLowPowerModeSensitivities(chip::EndpointId aEndpoint)
 {
-    return (MATTER_ARRAY_SIZE(gsEnergyBalances));
+    return (ArraySize(gsEnergyBalances));
 }
 
 CHIP_ERROR
@@ -104,7 +104,7 @@ EPrefDelegate::GetEnergyPriorityAtIndex(chip::EndpointId aEndpoint, size_t aInde
 {
     static EnergyPriorityEnum priorities[] = { EnergyPriorityEnum::kEfficiency, EnergyPriorityEnum::kComfort };
 
-    if (aIndex < MATTER_ARRAY_SIZE(priorities))
+    if (aIndex < ArraySize(priorities))
     {
         priority = priorities[aIndex];
         return CHIP_NO_ERROR;

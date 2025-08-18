@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright (C) Connectivity Standards Alliance (2025). All rights reserved.
+Copyright (C) Connectivity Standards Alliance (2021). All rights reserved.
 The information within this document is the property of the Connectivity
 Standards Alliance and its use and disclosure are restricted, except as
 expressly set forth herein.
@@ -60,7 +60,7 @@ Davis, CA 95616, USA
 <cluster xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="types types.xsd cluster cluster.xsd" id="0x050E" name="Account Login Cluster" revision="2">
   <revisionHistory>
     <revision revision="1" summary="Initial revision"/>
-    <revision revision="2" summary="Add support for 8 character Passcode in GetSetupPIN and Login, Add Node to Login, Logout commands. Add LoggedOut event."/>
+    <revision revision="2" summary="Add support for 8 character PIN code, Add Node to Login, Logout commands. Add LoggedOut event."/>
   </revisionHistory>
   <clusterIds>
     <clusterId id="0x050E" name="Account Login"/>
@@ -72,12 +72,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="TempAccountIdentifier" type="string">
         <mandatoryConform/>
-        <constraint>
-          <lengthBetween>
-            <from value="16"/>
-            <to value="100"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="16" to="100"/>
       </field>
     </command>
     <command id="0x01" name="GetSetupPINResponse" direction="responseFromServer">
@@ -85,9 +80,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="SetupPIN" type="string">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x02" name="Login" direction="commandToServer" response="Y">
@@ -95,18 +88,11 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="TempAccountIdentifier" type="string">
         <mandatoryConform/>
-        <constraint>
-          <lengthBetween>
-            <from value="16"/>
-            <to value="100"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="16" to="100"/>
       </field>
       <field id="1" name="SetupPIN" type="string">
         <mandatoryConform/>
-        <constraint>
-          <minLength value="8"/>
-        </constraint>
+        <constraint type="minLength" value="8"/>
       </field>
       <field id="2" name="Node" type="node-id">
         <optionalConform/>

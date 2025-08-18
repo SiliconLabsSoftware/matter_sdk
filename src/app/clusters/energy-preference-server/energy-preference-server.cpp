@@ -230,8 +230,3 @@ void MatterEnergyPreferencePluginServerInitCallback()
 {
     AttributeAccessInterfaceRegistry::Instance().Register(&gEnergyPrefAttrAccess);
 }
-
-void MatterEnergyPreferencePluginServerShutdownCallback()
-{
-    AttributeAccessInterfaceRegistry::Instance().Unregister(&gEnergyPrefAttrAccess);
-}

@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from chip.yaml.runner import ReplTestRunner
-
-from matter.yamltests.adapter import TestAdapter
+from matter_yamltests.adapter import TestAdapter
 
 
 class Adapter(TestAdapter):

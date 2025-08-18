@@ -28,6 +28,16 @@
 
 #include "chip-cert.h"
 
+namespace chip {
+namespace Logging {
+namespace Platform {
+
+void LogV(const char * module, uint8_t category, const char * msg, va_list v) {}
+
+} // namespace Platform
+} // namespace Logging
+} // namespace chip
+
 namespace {
 
 // clang-format off
@@ -75,7 +85,7 @@ bool PrintVersion()
 
 } // namespace
 
-int main(int argc, char * argv[])
+extern "C" int main(int argc, char * argv[])
 {
     bool res = false;
 

@@ -65,7 +65,6 @@ public:
 
     using ThreadStackManager::InitThreadStack;
     CHIP_ERROR InitThreadStack(otInstance * otInst);
-    void FactoryResetThreadStack(void);
 
 private:
     // ===== Methods that implement the ThreadStackManager abstract interface.

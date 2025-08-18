@@ -388,6 +388,67 @@
 }
 @end
 
+@implementation MCOnOffClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::OnOff::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::OnOff::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::OnOff::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::OnOff::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::OnOff::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::OnOff::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::OnOff::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::OnOff::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
 @implementation MCOnOffClusterAttributeListAttribute
 - (void)read:(void * _Nullable)context
     completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
@@ -1333,6 +1394,67 @@
 }
 @end
 
+@implementation MCLevelControlClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::LevelControl::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::LevelControl::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::LevelControl::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::LevelControl::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::LevelControl::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::LevelControl::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::LevelControl::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::LevelControl::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
 @implementation MCLevelControlClusterAttributeListAttribute
 - (void)read:(void * _Nullable)context
     completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
@@ -1682,6 +1804,67 @@
     if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::WakeOnLan::Attributes::AcceptedCommandList::TypeInfo::DecodableType>)) {
         std::shared_ptr<chip::app::Clusters::WakeOnLan::Attributes::AcceptedCommandList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::WakeOnLan::Attributes::AcceptedCommandList::TypeInfo::DecodableType>>(cppValue);
         chip::app::Clusters::WakeOnLan::Attributes::AcceptedCommandList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
+@implementation MCWakeOnLanClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::WakeOnLan::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::WakeOnLan::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::WakeOnLan::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::WakeOnLan::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::WakeOnLan::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::WakeOnLan::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::WakeOnLan::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::WakeOnLan::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
         *aError = CHIP_NO_ERROR;
         NSArray * _Nonnull value;
         { // Scope for our temporary variables
@@ -2073,6 +2256,67 @@
     if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::TargetNavigator::Attributes::AcceptedCommandList::TypeInfo::DecodableType>)) {
         std::shared_ptr<chip::app::Clusters::TargetNavigator::Attributes::AcceptedCommandList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::TargetNavigator::Attributes::AcceptedCommandList::TypeInfo::DecodableType>>(cppValue);
         chip::app::Clusters::TargetNavigator::Attributes::AcceptedCommandList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
+@implementation MCTargetNavigatorClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::TargetNavigator::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::TargetNavigator::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::TargetNavigator::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::TargetNavigator::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::TargetNavigator::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::TargetNavigator::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::TargetNavigator::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::TargetNavigator::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
         *aError = CHIP_NO_ERROR;
         NSArray * _Nonnull value;
         { // Scope for our temporary variables
@@ -3077,6 +3321,67 @@
 }
 @end
 
+@implementation MCMediaPlaybackClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::MediaPlayback::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::MediaPlayback::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::MediaPlayback::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::MediaPlayback::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::MediaPlayback::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::MediaPlayback::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::MediaPlayback::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::MediaPlayback::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
 @implementation MCMediaPlaybackClusterAttributeListAttribute
 - (void)read:(void * _Nullable)context
     completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
@@ -3329,6 +3634,67 @@
     if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::KeypadInput::Attributes::AcceptedCommandList::TypeInfo::DecodableType>)) {
         std::shared_ptr<chip::app::Clusters::KeypadInput::Attributes::AcceptedCommandList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::KeypadInput::Attributes::AcceptedCommandList::TypeInfo::DecodableType>>(cppValue);
         chip::app::Clusters::KeypadInput::Attributes::AcceptedCommandList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
+@implementation MCKeypadInputClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::KeypadInput::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::KeypadInput::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::KeypadInput::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::KeypadInput::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::KeypadInput::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::KeypadInput::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::KeypadInput::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::KeypadInput::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
         *aError = CHIP_NO_ERROR;
         NSArray * _Nonnull value;
         { // Scope for our temporary variables
@@ -3743,6 +4109,67 @@
 }
 @end
 
+@implementation MCContentLauncherClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::ContentLauncher::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::ContentLauncher::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::ContentLauncher::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::ContentLauncher::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::ContentLauncher::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::ContentLauncher::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::ContentLauncher::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::ContentLauncher::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
 @implementation MCContentLauncherClusterAttributeListAttribute
 - (void)read:(void * _Nullable)context
     completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
@@ -4119,6 +4546,67 @@
     if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::ApplicationLauncher::Attributes::AcceptedCommandList::TypeInfo::DecodableType>)) {
         std::shared_ptr<chip::app::Clusters::ApplicationLauncher::Attributes::AcceptedCommandList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::ApplicationLauncher::Attributes::AcceptedCommandList::TypeInfo::DecodableType>>(cppValue);
         chip::app::Clusters::ApplicationLauncher::Attributes::AcceptedCommandList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
+@implementation MCApplicationLauncherClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::ApplicationLauncher::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::ApplicationLauncher::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::ApplicationLauncher::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::ApplicationLauncher::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::ApplicationLauncher::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::ApplicationLauncher::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::ApplicationLauncher::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::ApplicationLauncher::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
         *aError = CHIP_NO_ERROR;
         NSArray * _Nonnull value;
         { // Scope for our temporary variables
@@ -4801,6 +5289,67 @@
     if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::ApplicationBasic::Attributes::AcceptedCommandList::TypeInfo::DecodableType>)) {
         std::shared_ptr<chip::app::Clusters::ApplicationBasic::Attributes::AcceptedCommandList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::ApplicationBasic::Attributes::AcceptedCommandList::TypeInfo::DecodableType>>(cppValue);
         chip::app::Clusters::ApplicationBasic::Attributes::AcceptedCommandList::TypeInfo::DecodableType _cppValue = *sharedPtr;
+        *aError = CHIP_NO_ERROR;
+        NSArray * _Nonnull value;
+        { // Scope for our temporary variables
+            auto * array_0 = [NSMutableArray new];
+            auto iter_0 = _cppValue.begin();
+            while (iter_0.Next()) {
+                auto & entry_0 = iter_0.GetValue();
+                NSNumber * newElement_0;
+                newElement_0 = [NSNumber numberWithUnsignedInt:entry_0];
+                [array_0 addObject:newElement_0];
+            }
+            CHIP_ERROR err = iter_0.GetStatus();
+            if (err != CHIP_NO_ERROR) {
+                *aError = err;
+                return nil;
+            }
+            value = array_0;
+        }
+        return value;
+    }
+    *aError = CHIP_ERROR_INTERNAL;
+    return value;
+}
+@end
+
+@implementation MCApplicationBasicClusterEventListAttribute
+- (void)read:(void * _Nullable)context
+    completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+{
+    MCAttributeTemplate<chip::app::Clusters::ApplicationBasic::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::ApplicationBasic::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->read(context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+        completion(context, before, after, err);
+        delete mcAttribute;
+    });
+}
+
+- (void)subscribe:(void * _Nullable)context
+       completion:(void (^_Nonnull __strong)(void * _Nullable, id _Nullable __strong before, id _Nullable __strong after, NSError * _Nullable __strong error))completion
+      minInterval:(NSNumber * _Nonnull)minInterval
+      maxInterval:(NSNumber * _Nonnull)maxInterval
+{
+    MCAttributeTemplate<chip::app::Clusters::ApplicationBasic::Attributes::EventList::TypeInfo> * mcAttribute = new MCAttributeTemplate<chip::app::Clusters::ApplicationBasic::Attributes::EventList::TypeInfo>(self.cppAttribute,
+        [self](std::any cppValue, CHIP_ERROR * errPtr) {
+            return [self getObjCTypeFromCpp:cppValue errorCode:errPtr];
+        });
+    mcAttribute->subscribe(
+        context, [mcAttribute, completion](void * context, id before, id after, NSError * err) {
+            completion(context, before, after, err);
+            delete mcAttribute;
+        }, minInterval, maxInterval);
+}
+
+- (id _Nullable)getObjCTypeFromCpp:(std::any)cppValue errorCode:(CHIP_ERROR *)aError
+{
+    NSArray * value = nil;
+    if (cppValue.type() == typeid(std::shared_ptr<chip::app::Clusters::ApplicationBasic::Attributes::EventList::TypeInfo::DecodableType>)) {
+        std::shared_ptr<chip::app::Clusters::ApplicationBasic::Attributes::EventList::TypeInfo::DecodableType> sharedPtr = std::any_cast<std::shared_ptr<chip::app::Clusters::ApplicationBasic::Attributes::EventList::TypeInfo::DecodableType>>(cppValue);
+        chip::app::Clusters::ApplicationBasic::Attributes::EventList::TypeInfo::DecodableType _cppValue = *sharedPtr;
         *aError = CHIP_NO_ERROR;
         NSArray * _Nonnull value;
         { // Scope for our temporary variables

@@ -18,12 +18,11 @@
 #include <app/ConcreteAttributePath.h>
 #include <app/data-model/Nullable.h>
 #include <app/util/attribute-metadata.h>
+#include <cstring>
+#include <inttypes.h>
 #include <lib/support/BufferReader.h>
 #include <lib/support/BufferWriter.h>
 #include <lib/support/Span.h>
-
-#include <cstring>
-#include <inttypes.h>
 
 namespace chip {
 namespace app {
@@ -71,7 +70,7 @@ public:
      * Read an attribute of type intX, uintX or bool from non-volatile memory.
      *
      * @param [in]     aPath the attribute path for the data being persisted.
-     * @param [out]    aValue where to place the data.
+     * @param [in,out] aValue where to place the data.
      *
      * @retval CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND if no stored value exists for the attribute
      */
@@ -112,7 +111,7 @@ public:
      * Read an attribute of type nullable intX, uintX from non-volatile memory.
      *
      * @param [in]     aPath the attribute path for the data being persisted.
-     * @param [out]    aValue where to place the data.
+     * @param [in,out] aValue where to place the data.
      *
      * @retval CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND if no stored value exists for the attribute
      */

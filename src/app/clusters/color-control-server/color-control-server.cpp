@@ -307,14 +307,14 @@ public:
             {
             case EnhancedColorMode::kCurrentHueAndCurrentSaturation:
 #ifdef MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_HSV
-                ColorControlServer::Instance().moveToSaturation(
-                    endpoint, static_cast<uint8_t>(colorSaturationTransitionState->finalValue), transitionTime10th);
+                ColorControlServer::Instance().moveToSaturation(static_cast<uint8_t>(colorSaturationTransitionState->finalValue),
+                                                                transitionTime10th, endpoint);
 #endif // MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_HSV
                 break;
             case EnhancedColorMode::kCurrentXAndCurrentY:
 #ifdef MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_XY
-                ColorControlServer::Instance().moveToColor(endpoint, colorXTransitionState->finalValue,
-                                                           colorYTransitionState->finalValue, transitionTime10th);
+                ColorControlServer::Instance().moveToColor(colorXTransitionState->finalValue, colorYTransitionState->finalValue,
+                                                           transitionTime10th, endpoint);
 #endif // MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_XY
                 break;
             case EnhancedColorMode::kColorTemperatureMireds:
@@ -326,8 +326,8 @@ public:
             case EnhancedColorMode::kEnhancedCurrentHueAndCurrentSaturation:
 #ifdef MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_HSV
                 ColorControlServer::Instance().moveToHueAndSaturation(
-                    endpoint, colorHueTransitionState->finalEnhancedHue,
-                    static_cast<uint8_t>(colorSaturationTransitionState->finalValue), transitionTime10th, true);
+                    colorHueTransitionState->finalEnhancedHue, static_cast<uint8_t>(colorSaturationTransitionState->finalValue),
+                    transitionTime10th, true, endpoint);
 #endif // MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_HSV
                 break;
             default:
@@ -470,9 +470,11 @@ Status ColorControlServer::stopAllColorTransitions(EndpointId endpoint)
     return Status::Success;
 }
 
-Status ColorControlServer::stopMoveStepCommand(EndpointId endpoint, const Commands::StopMoveStep::DecodableType & commandData)
+bool ColorControlServer::stopMoveStepCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                             BitMask<OptionsBitmap> optionsMask, BitMask<OptionsBitmap> optionsOverride)
 {
-    Status status = Status::Success;
+    EndpointId endpoint = commandPath.mEndpointId;
+    Status status       = Status::Success;
 
     // StopMoveStep command has no effect on an active color loop.
     // Fetch if it is supported and active.
@@ -486,7 +488,7 @@ Status ColorControlServer::stopMoveStepCommand(EndpointId endpoint, const Comman
         }
     }
 
-    if (shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride) && !isColorLoopActive)
+    if (shouldExecuteIfOff(endpoint, optionsMask, optionsOverride) && !isColorLoopActive)
     {
         status = stopAllColorTransitions(endpoint);
 
@@ -505,7 +507,8 @@ Status ColorControlServer::stopMoveStepCommand(EndpointId endpoint, const Comman
 #endif // MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_HSV
     }
 
-    return status;
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
 bool ColorControlServer::shouldExecuteIfOff(EndpointId endpoint, BitMask<OptionsBitmap> optionMask,
@@ -689,7 +692,7 @@ EmberEventControl * ColorControlServer::getEventControl(EndpointId endpoint)
     uint16_t index            = getEndpointIndex(endpoint);
     EmberEventControl * event = nullptr;
 
-    if (index < MATTER_ARRAY_SIZE(eventControls))
+    if (index < ArraySize(eventControls))
     {
         event = &eventControls[index];
     }
@@ -817,7 +820,7 @@ ColorControlServer::ColorHueTransitionState * ColorControlServer::getColorHueTra
 {
     ColorHueTransitionState * state = nullptr;
 
-    if (index < MATTER_ARRAY_SIZE(colorHueTransitionStates))
+    if (index < ArraySize(colorHueTransitionStates))
     {
         state = &colorHueTransitionStates[index];
     }
@@ -845,7 +848,7 @@ ColorControlServer::Color16uTransitionState * ColorControlServer::getSaturationT
 {
     Color16uTransitionState * state = nullptr;
 
-    if (index < MATTER_ARRAY_SIZE(colorSatTransitionStates))
+    if (index < ArraySize(colorSatTransitionStates))
     {
         state = &colorSatTransitionStates[index];
     }
@@ -1090,7 +1093,7 @@ void ColorControlServer::SetHSVRemainingTime(chip::EndpointId endpoint)
     {
         bool hsvTransitionStart = (hueTransitionState->stepsRemaining == hueTransitionState->stepsTotal) ||
             (saturationTransitionState->stepsRemaining == saturationTransitionState->stepsTotal);
-        SetQuietReportRemainingTime(endpoint, std::max(hueTransitionState->timeRemaining, saturationTransitionState->timeRemaining),
+        SetQuietReportRemainingTime(endpoint, max(hueTransitionState->timeRemaining, saturationTransitionState->timeRemaining),
                                     hsvTransitionStart);
     }
 }
@@ -1258,19 +1261,16 @@ EmberEventControl * ColorControlServer::configureHSVEventControl(EndpointId endp
 }
 
 /**
- * @brief Executes move to saturation command
+ * @brief executes move to saturation command
  *
- * @param endpoint Target endpoint where to execute move
- * @param saturation Target saturation
- * @param transitionTime Transition time in 10th of seconds
- * @return Status::Success When successful,
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a saturation transition state,
- *         Status::ConstraintError if the saturation or tansitionTime are above maximum.
+ * @param saturation target saturation
+ * @param transitionTime transition time in 10th of seconds
+ * @param endpoint target endpoint where to execute move
+ * @return Status::Success if successful,Status::UnsupportedEndpoint if the saturation transition state doesn't exist,
+ * Status::ConstraintError if the saturation is above maximum
  */
-Status ColorControlServer::moveToSaturation(EndpointId endpoint, uint8_t saturation, uint16_t transitionTime)
+Status ColorControlServer::moveToSaturation(uint8_t saturation, uint16_t transitionTime, EndpointId endpoint)
 {
-    VerifyOrReturnError(saturation <= MAX_SATURATION_VALUE, Status::ConstraintError);
-    VerifyOrReturnError(transitionTime <= kMaxTransitionTime, Status::ConstraintError);
     Color16uTransitionState * colorSaturationTransitionState = getSaturationTransitionState(endpoint);
     VerifyOrReturnError(nullptr != colorSaturationTransitionState, Status::UnsupportedEndpoint);
 
@@ -1283,7 +1283,7 @@ Status ColorControlServer::moveToSaturation(EndpointId endpoint, uint8_t saturat
     // now, kick off the state machine.
     initSaturationTransitionState(endpoint, colorSaturationTransitionState);
     colorSaturationTransitionState->finalValue     = saturation;
-    colorSaturationTransitionState->stepsRemaining = std::max<uint16_t>(transitionTime, 1);
+    colorSaturationTransitionState->stepsRemaining = max<uint16_t>(transitionTime, 1);
     colorSaturationTransitionState->stepsTotal     = colorSaturationTransitionState->stepsRemaining;
     colorSaturationTransitionState->timeRemaining  = transitionTime;
     colorSaturationTransitionState->transitionTime = transitionTime;
@@ -1300,28 +1300,23 @@ Status ColorControlServer::moveToSaturation(EndpointId endpoint, uint8_t saturat
 }
 
 /**
- * @brief Executes move to hue and saturatioan command.
+ * @brief executes move to hue and saturatioan command
  *
- * @param[in] endpoint EndpointId of the recipient Color control cluster.
- * @param[in] hue Target hue.
- * @param[in] saturation Target saturation.
- * @param[in] transitionTime Transition time in 10th of seconds.
+ * @param[in] hue target hue
+ * @param[in] saturation target saturation
+ * @param[in] transitionTime transition time in 10th of seconds
  * @param[in] isEnhanced If True, function was called by EnhancedMoveHue command and rate is a uint16 value. If False function
- * was called by MoveHue command and rate is a uint8 value.
- * @return Status::Success When successful,
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a saturation transition state,
- *         Status::ConstraintError if the hue, saturation or transitionTime, are above maximum.
+ * was called by MoveHue command and rate is a uint8 value
+ * @param[in] endpoint
+ * @return Status::Success if successful,Status::UnsupportedEndpoint if the saturation transition state doesn't exist,
+ * Status::ConstraintError if the saturation is above maximum
  */
-Status ColorControlServer::moveToHueAndSaturation(EndpointId endpoint, uint16_t hue, uint8_t saturation, uint16_t transitionTime,
-                                                  bool isEnhanced)
+Status ColorControlServer::moveToHueAndSaturation(uint16_t hue, uint8_t saturation, uint16_t transitionTime, bool isEnhanced,
+                                                  EndpointId endpoint)
 {
     uint16_t currentHue = 0;
     uint16_t halfWay    = isEnhanced ? HALF_MAX_UINT16T : HALF_MAX_UINT8T;
     bool moveUp;
-
-    VerifyOrReturnError((isEnhanced || hue <= MAX_HUE_VALUE), Status::ConstraintError);
-    VerifyOrReturnError(saturation <= MAX_SATURATION_VALUE, Status::ConstraintError);
-    VerifyOrReturnError(transitionTime <= kMaxTransitionTime, Status::ConstraintError);
 
     uint16_t epIndex                                         = getEndpointIndex(endpoint);
     Color16uTransitionState * colorSaturationTransitionState = getSaturationTransitionStateByIndex(epIndex);
@@ -1368,7 +1363,7 @@ Status ColorControlServer::moveToHueAndSaturation(EndpointId endpoint, uint16_t 
     }
 
     colorHueTransitionState->up             = moveUp;
-    colorHueTransitionState->stepsRemaining = std::max<uint16_t>(transitionTime, 1);
+    colorHueTransitionState->stepsRemaining = max<uint16_t>(transitionTime, 1);
     colorHueTransitionState->stepsTotal     = colorHueTransitionState->stepsRemaining;
     colorHueTransitionState->timeRemaining  = transitionTime;
     colorHueTransitionState->transitionTime = transitionTime;
@@ -1394,35 +1389,44 @@ Status ColorControlServer::moveToHueAndSaturation(EndpointId endpoint, uint16_t 
 }
 
 /**
- * @brief Executes move Hue Command.
+ * @brief Executes move Hue Command
  *
- * @param[in] endpoint EndpointId of the recipient Color control cluster.
+ * @param[in] endpoint
  * @param[in] moveMode
  * @param[in] rate
  * @param[in] optionsMask
  * @param[in] optionsOverride
  * @param[in] isEnhanced If True, function was called by EnhancedMoveHue command and rate is a uint16 value. If False function
- * was called by MoveHue command and rate is a uint8 value.
- * @return Status::Success when successful,
- *         Status::InvalidCommand when Rate is 0 or an unknown moveMode is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a hue transition state,
+ * was called by MoveHue command and rate is a uint8 value
+ * @return true Success
+ * @return false Failed
  */
-Status ColorControlServer::moveHueCommand(EndpointId endpoint, HueMoveMode moveMode, uint16_t rate,
-                                          BitMask<OptionsBitmap> optionsMask, BitMask<OptionsBitmap> optionsOverride,
-                                          bool isEnhanced)
+bool ColorControlServer::moveHueCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                        HueMoveMode moveMode, uint16_t rate, BitMask<OptionsBitmap> optionsMask,
+                                        BitMask<OptionsBitmap> optionsOverride, bool isEnhanced)
 {
     MATTER_TRACE_SCOPE("moveHue", "ColorControl");
-
-    // check moveMode and rate before any operation is done on the transition states
-    // rate value is ignored if the MoveMode is stop
-    VerifyOrReturnValue(moveMode != HueMoveMode::kUnknownEnumValue, Status::InvalidCommand);
-    VerifyOrReturnValue((rate != 0 || moveMode == HueMoveMode::kStop), Status::InvalidCommand);
+    EndpointId endpoint = commandPath.mEndpointId;
+    Status status       = Status::Success;
 
     uint16_t epIndex                                  = getEndpointIndex(endpoint);
     ColorHueTransitionState * colorHueTransitionState = getColorHueTransitionStateByIndex(epIndex);
-    VerifyOrReturnValue(colorHueTransitionState != nullptr, Status::UnsupportedEndpoint);
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, optionsMask, optionsOverride), Status::Success);
+    VerifyOrExit(colorHueTransitionState != nullptr, status = Status::UnsupportedEndpoint);
+
+    // check moveMode and rate before any operation is done on the transition states
+    // rate value is ignored if the MoveMode is stop
+    if (moveMode == HueMoveMode::kUnknownEnumValue || (rate == 0 && moveMode != HueMoveMode::kStop))
+    {
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
+    }
+
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
     // New command.  Need to stop any active transitions.
     stopAllColorTransitions(endpoint);
@@ -1434,7 +1438,8 @@ Status ColorControlServer::moveHueCommand(EndpointId endpoint, HueMoveMode moveM
         // Per spec any saturation transition must also be cancelled.
         Color16uTransitionState * saturationState = getSaturationTransitionStateByIndex(epIndex);
         initSaturationTransitionState(endpoint, saturationState);
-        return Status::Success;
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
     }
 
     // Handle color mode transition, if necessary.
@@ -1486,43 +1491,50 @@ Status ColorControlServer::moveHueCommand(EndpointId endpoint, HueMoveMode moveM
 
     // kick off the state machine:
     scheduleTimerCallbackMs(configureHSVEventControl(endpoint), TRANSITION_UPDATE_TIME_MS.count());
-    return Status::Success;
+
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
 /**
- * @brief Executes move to hue command.
+ * @brief Executes move to hue command
  *
- * @param[in] endpoint EndpointId of the recipient Color control cluster.
+ * @param[in] endpoint
  * @param[in] hue
- * @param[in] moveDirection
+ * @param[in] hueMoveMode
  * @param[in] transitionTime
  * @param[in] optionsMask
  * @param[in] optionsOverride
  * @param[in] isEnhanced If True, function was called by EnhancedMoveHue command and rate is a uint16 value. If False function
- * was called by MoveHue command and rate is a uint8 value.
- * @return Status::Success when successful,
- *         Status::InvalidCommand when Rate is 0 or an unknown moveDirection is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a hue transition state,
- *         Status::ConstraintError when the other parameters are outside their defined value range.
+ * was called by MoveHue command and rate is a uint8 value
+ * @return true Success
+ * @return false Failed
  */
-Status ColorControlServer::moveToHueCommand(EndpointId endpoint, uint16_t hue, DirectionEnum moveDirection, uint16_t transitionTime,
-                                            BitMask<OptionsBitmap> optionsMask, BitMask<OptionsBitmap> optionsOverride,
-                                            bool isEnhanced)
+bool ColorControlServer::moveToHueCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                          uint16_t hue, DirectionEnum moveDirection, uint16_t transitionTime,
+                                          BitMask<OptionsBitmap> optionsMask, BitMask<OptionsBitmap> optionsOverride,
+                                          bool isEnhanced)
 {
     MATTER_TRACE_SCOPE("moveToHue", "ColorControl");
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue((isEnhanced || hue <= MAX_HUE_VALUE), Status::ConstraintError);
-    VerifyOrReturnValue(transitionTime <= kMaxTransitionTime, Status::ConstraintError);
+    EndpointId endpoint = commandPath.mEndpointId;
 
-    VerifyOrReturnValue(moveDirection != DirectionEnum::kUnknownEnumValue, Status::InvalidCommand);
-
-    ColorHueTransitionState * colorHueTransitionState = getColorHueTransitionState(endpoint);
-    VerifyOrReturnValue(colorHueTransitionState != nullptr, Status::UnsupportedEndpoint);
-
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, optionsMask, optionsOverride), Status::Success);
-
+    Status status       = Status::Success;
     uint16_t currentHue = 0;
     DirectionEnum direction;
+
+    ColorHueTransitionState * colorHueTransitionState = getColorHueTransitionState(endpoint);
+
+    VerifyOrExit(colorHueTransitionState != nullptr, status = Status::UnsupportedEndpoint);
+
+    // Standard Hue limit checking:  hue is 0..254.  Spec dictates we ignore
+    // this and report a constraint error.
+    if (!isEnhanced && (hue > MAX_HUE_VALUE))
+    {
+        commandObj->AddStatus(commandPath, Status::ConstraintError);
+        return true;
+    }
+
     if (isEnhanced)
     {
         Attributes::EnhancedCurrentHue::Get(endpoint, &currentHue);
@@ -1531,6 +1543,7 @@ Status ColorControlServer::moveToHueCommand(EndpointId endpoint, uint16_t hue, D
     {
         uint8_t current8bitHue = 0;
         Attributes::CurrentHue::Get(endpoint, &current8bitHue);
+
         currentHue = static_cast<uint16_t>(current8bitHue);
     }
 
@@ -1564,9 +1577,16 @@ Status ColorControlServer::moveToHueCommand(EndpointId endpoint, uint16_t hue, D
         direction = moveDirection;
         break;
     case DirectionEnum::kUnknownEnumValue:
-        return Status::InvalidCommand;
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
         /* No default case, so if a new direction value gets added we will just fail
            to compile until we handle it correctly.  */
+    }
+
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
     }
 
     // New command.  Need to stop any active transitions.
@@ -1594,7 +1614,7 @@ Status ColorControlServer::moveToHueCommand(EndpointId endpoint, uint16_t hue, D
         colorHueTransitionState->finalHue = static_cast<uint8_t>(hue);
     }
 
-    colorHueTransitionState->stepsRemaining = std::max<uint16_t>(transitionTime, 1);
+    colorHueTransitionState->stepsRemaining = max<uint16_t>(transitionTime, 1);
     colorHueTransitionState->stepsTotal     = colorHueTransitionState->stepsRemaining;
     colorHueTransitionState->timeRemaining  = transitionTime;
     colorHueTransitionState->transitionTime = transitionTime;
@@ -1606,43 +1626,57 @@ Status ColorControlServer::moveToHueCommand(EndpointId endpoint, uint16_t hue, D
 
     // kick off the state machine:
     scheduleTimerCallbackMs(configureHSVEventControl(endpoint), transitionTime ? TRANSITION_UPDATE_TIME_MS.count() : 0);
-    return Status::Success;
+
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
 /**
- * @brief Executes move to hue and saturatioan command.
- * @param[in] endpoint EndpointId of the recipient Color control cluster.
+ * @brief executes move to hue and saturatioan command
+ *
+ * @param[in] commandObj
+ * @param[in] commandPath
  * @param[in] hue
  * @param[in] saturation
  * @param[in] transitionTime
  * @param[in] optionsMask
  * @param[in] optionsOverride
  * @param[in] isEnhanced If True, function was called by EnhancedMoveHue command and rate is a uint16 value. If False function
- * was called by MoveHue command and rate is a uint8 value.
- * @return Status::Success when successful,
- *         Status::ConstraintError when the other parameters are outside their defined value range.
+ * was called by MoveHue command and rate is a uint8 value
+ * @return true Success
+ * @return false Failed
  */
-Status ColorControlServer::moveToHueAndSaturationCommand(EndpointId endpoint, uint16_t hue, uint8_t saturation,
-                                                         uint16_t transitionTime, BitMask<OptionsBitmap> optionsMask,
-                                                         BitMask<OptionsBitmap> optionsOverride, bool isEnhanced)
+bool ColorControlServer::moveToHueAndSaturationCommand(app::CommandHandler * commandObj,
+                                                       const app::ConcreteCommandPath & commandPath, uint16_t hue,
+                                                       uint8_t saturation, uint16_t transitionTime,
+                                                       BitMask<OptionsBitmap> optionsMask, BitMask<OptionsBitmap> optionsOverride,
+                                                       bool isEnhanced)
 {
     MATTER_TRACE_SCOPE("moveToHueAndSaturation", "ColorControl");
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue((isEnhanced || hue <= MAX_HUE_VALUE), Status::ConstraintError);
-    VerifyOrReturnValue(saturation <= MAX_SATURATION_VALUE, Status::ConstraintError);
-    VerifyOrReturnValue(transitionTime <= kMaxTransitionTime, Status::ConstraintError);
+    // limit checking:  hue and saturation are 0..254.  Spec dictates we ignore
+    // this and report a constraint error.
+    if ((!isEnhanced && hue > MAX_HUE_VALUE) || saturation > MAX_SATURATION_VALUE)
+    {
+        commandObj->AddStatus(commandPath, Status::ConstraintError);
+        return true;
+    }
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, optionsMask, optionsOverride), Status::Success);
-
-    Status status = moveToHueAndSaturation(endpoint, hue, saturation, transitionTime, isEnhanced);
+    if (!shouldExecuteIfOff(commandPath.mEndpointId, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
+    Status status = moveToHueAndSaturation(hue, saturation, transitionTime, isEnhanced, commandPath.mEndpointId);
 #ifdef MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(endpoint);
+    ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(commandPath.mEndpointId);
 #endif // MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    return status;
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
 /**
- * @brief Executes step hue command.
+ * @brief Executes step hue command
  *
  * @param[in] endpoint
  * @param[in] stepMode
@@ -1651,31 +1685,34 @@ Status ColorControlServer::moveToHueAndSaturationCommand(EndpointId endpoint, ui
  * @param[in] optionsMask
  * @param[in] optionsOverride
  * @param[in] isEnhanced If True, function was called by EnhancedMoveHue command and rate is a uint16 value. If False function
- * was called by MoveHue command and rate is a uint8 value.
- * @return Status::Success when successful,
- *         Status::InvalidCommand when StepSize is 0 or an unknown HueStepMode is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a hue transition state.
- *         Status::ConstraintError when the other parameters are outside their defined value range.
+ * was called by MoveHue command and rate is a uint8 value
+ * @return true Success
+ * @return false Failed
  */
-Status ColorControlServer::stepHueCommand(EndpointId endpoint, HueStepMode stepMode, uint16_t stepSize, uint16_t transitionTime,
-                                          BitMask<OptionsBitmap> optionsMask, BitMask<OptionsBitmap> optionsOverride,
-                                          bool isEnhanced)
+bool ColorControlServer::stepHueCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                        HueStepMode stepMode, uint16_t stepSize, uint16_t transitionTime,
+                                        BitMask<OptionsBitmap> optionsMask, BitMask<OptionsBitmap> optionsOverride, bool isEnhanced)
 {
     MATTER_TRACE_SCOPE("stepHue", "ColorControl");
-    // Command Parameters constraint checks:
-    // The non-enhanced variant passed a uint8 type for transitionTime and the full range (0-255) is allowed
-    if (isEnhanced)
-    {
-        VerifyOrReturnValue(transitionTime <= kMaxTransitionTime, Status::ConstraintError);
-    }
-    // Confirm validity of the step mode and step size received
-    VerifyOrReturnValue(stepMode != HueStepMode::kUnknownEnumValue, Status::InvalidCommand);
-    VerifyOrReturnValue(stepSize != 0, Status::InvalidCommand);
+    EndpointId endpoint = commandPath.mEndpointId;
+
+    Status status = Status::Success;
 
     ColorHueTransitionState * colorHueTransitionState = getColorHueTransitionState(endpoint);
-    VerifyOrReturnValue(colorHueTransitionState != nullptr, Status::UnsupportedEndpoint);
+    VerifyOrExit(colorHueTransitionState != nullptr, status = Status::UnsupportedEndpoint);
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, optionsMask, optionsOverride), Status::Success);
+    // Confirm validity of the step mode and step size received
+    if (stepMode == HueStepMode::kUnknownEnumValue || stepSize == 0)
+    {
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
+    }
+
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
     // New command.  Need to stop any active transitions.
     stopAllColorTransitions(endpoint);
@@ -1721,7 +1758,7 @@ Status ColorControlServer::stepHueCommand(EndpointId endpoint, HueStepMode stepM
         }
     }
 
-    colorHueTransitionState->stepsRemaining = std::max<uint16_t>(transitionTime, 1);
+    colorHueTransitionState->stepsRemaining = max<uint16_t>(transitionTime, 1);
     colorHueTransitionState->stepsTotal     = colorHueTransitionState->stepsRemaining;
     colorHueTransitionState->timeRemaining  = transitionTime;
     colorHueTransitionState->transitionTime = transitionTime;
@@ -1733,55 +1770,71 @@ Status ColorControlServer::stepHueCommand(EndpointId endpoint, HueStepMode stepM
     // kick off the state machine:
     scheduleTimerCallbackMs(configureHSVEventControl(endpoint), transitionTime ? TRANSITION_UPDATE_TIME_MS.count() : 0);
 
-    return Status::Success;
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
-/**
- * @brief Executes moveSaturation command.
- * @param endpoint EndpointId of the recipient Color control cluster.
- * @param commandData Struct containing the parameters of the command.
- * @return Status::Success when successful,
- *         Status::InvalidCommand when a rate of 0 for a non-stop move or an unknown SaturationMoveMode is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a saturation transition state.
- */
-Status ColorControlServer::moveSaturationCommand(EndpointId endpoint, const Commands::MoveSaturation::DecodableType & commandData)
+bool ColorControlServer::moveSaturationCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                               const Commands::MoveSaturation::DecodableType & commandData)
 {
     MATTER_TRACE_SCOPE("moveSaturation", "ColorControl");
-    // check moveMode and rate before any operation is done on the transition states
-    // rate value is ignored if the MoveMode is stop
-    VerifyOrReturnValue(commandData.moveMode != SaturationMoveMode::kUnknownEnumValue, Status::InvalidCommand);
-    VerifyOrReturnValue(commandData.rate != 0 || commandData.moveMode == SaturationMoveMode::kStop, Status::InvalidCommand);
+    auto & moveMode        = commandData.moveMode;
+    auto & rate            = commandData.rate;
+    auto & optionsMask     = commandData.optionsMask;
+    auto & optionsOverride = commandData.optionsOverride;
+    EndpointId endpoint    = commandPath.mEndpointId;
+    Status status          = Status::Success;
 
     uint16_t epIndex                                         = getEndpointIndex(endpoint);
     Color16uTransitionState * colorSaturationTransitionState = getSaturationTransitionStateByIndex(epIndex);
-    VerifyOrReturnValue(colorSaturationTransitionState != nullptr, Status::UnsupportedEndpoint);
+    VerifyOrExit(colorSaturationTransitionState != nullptr, status = Status::UnsupportedEndpoint);
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
+    // check moveMode and rate before any operation is done on the transition states
+    // rate value is ignored if the MoveMode is stop
+    if (moveMode == SaturationMoveMode::kUnknownEnumValue || (rate == 0 && moveMode != SaturationMoveMode::kStop))
+    {
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
+    }
+
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
+
+    uint16_t transitionTime;
+
     // New command.  Need to stop any active transitions.
     stopAllColorTransitions(endpoint);
+
     // now, kick off the state machine.
     initSaturationTransitionState(endpoint, colorSaturationTransitionState);
-    if (commandData.moveMode == SaturationMoveMode::kStop)
+
+    if (moveMode == SaturationMoveMode::kStop)
     {
         // Per spec any hue transition must also be cancelled.
         ColorHueTransitionState * hueState = getColorHueTransitionStateByIndex(epIndex);
         initHueTransitionState(endpoint, hueState, false /*isEnhancedHue don't care*/);
-        return Status::Success;
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
     }
 
     // Handle color mode transition, if necessary.
     handleModeSwitch(endpoint, EnhancedColorMode::kCurrentHueAndCurrentSaturation);
 
-    if (commandData.moveMode == SaturationMoveMode::kUp)
+    if (moveMode == SaturationMoveMode::kUp)
     {
         colorSaturationTransitionState->finalValue = MAX_SATURATION_VALUE;
     }
-    else if (commandData.moveMode == SaturationMoveMode::kDown)
+    else if (moveMode == SaturationMoveMode::kDown)
     {
         colorSaturationTransitionState->finalValue = MIN_SATURATION_VALUE;
     }
 
-    uint16_t transitionTime = computeTransitionTimeFromStateAndRate(colorSaturationTransitionState, commandData.rate);
+    transitionTime = computeTransitionTimeFromStateAndRate(colorSaturationTransitionState, rate);
+
     colorSaturationTransitionState->stepsRemaining = transitionTime;
     colorSaturationTransitionState->stepsTotal     = transitionTime;
     colorSaturationTransitionState->timeRemaining  = transitionTime;
@@ -1794,74 +1847,97 @@ Status ColorControlServer::moveSaturationCommand(EndpointId endpoint, const Comm
 
     // kick off the state machine:
     scheduleTimerCallbackMs(configureHSVEventControl(endpoint), TRANSITION_UPDATE_TIME_MS.count());
-    return Status::Success;
+
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
 /**
- * @brief Executes move to saturation command.
- * @param endpoint EndpointId of the recipient Color control cluster.
- * @param commandData Struct containing the parameters of the command.
- * @return Status::Success when successful,
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a saturation transition state (verified in
- * moveToSaturation function)
- *         Status::ConstraintError when a command parameter is outside its defined value range.
+ * @brief executes move to saturation command
+ *
+ * @param commandObj
+ * @param commandPath
+ * @param commandData
+ * @return true
+ * @return false
  */
-Status ColorControlServer::moveToSaturationCommand(EndpointId endpoint,
-                                                   const Commands::MoveToSaturation::DecodableType & commandData)
+bool ColorControlServer::moveToSaturationCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                                 const Commands::MoveToSaturation::DecodableType & commandData)
 {
     MATTER_TRACE_SCOPE("moveToSaturation", "ColorControl");
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue(commandData.saturation <= MAX_SATURATION_VALUE, Status::ConstraintError);
-    VerifyOrReturnValue(commandData.transitionTime <= kMaxTransitionTime, Status::ConstraintError);
+    // limit checking: saturation is 0..254.  Spec dictates we ignore
+    // this and report a malformed packet.
+    if (commandData.saturation > MAX_SATURATION_VALUE)
+    {
+        commandObj->AddStatus(commandPath, Status::ConstraintError);
+        return true;
+    }
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
-    Status status = moveToSaturation(endpoint, commandData.saturation, commandData.transitionTime);
+    if (!shouldExecuteIfOff(commandPath.mEndpointId, commandData.optionsMask, commandData.optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
+    Status status = moveToSaturation(commandData.saturation, commandData.transitionTime, commandPath.mEndpointId);
 #ifdef MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(endpoint);
+    ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(commandPath.mEndpointId);
 #endif // MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    return status;
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
-/**
- * @brief Executes step saturation command.
- * @param endpoint EndpointId of the recipient Color control cluster.
- * @param commandData Struct containing the parameters of the command.
- * @return Status::Success when successful,
- *         Status::InvalidCommand when a step size of 0 or an unknown SaturationStepMode is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a saturation transition state,
- */
-Status ColorControlServer::stepSaturationCommand(EndpointId endpoint, const Commands::StepSaturation::DecodableType & commandData)
+bool ColorControlServer::stepSaturationCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                               const Commands::StepSaturation::DecodableType & commandData)
 {
     MATTER_TRACE_SCOPE("stepSaturation", "ColorControl");
-    // Confirm validity of the step mode and step size received
-    VerifyOrReturnValue(commandData.stepMode != SaturationStepMode::kUnknownEnumValue, Status::InvalidCommand);
-    VerifyOrReturnValue(commandData.stepSize != 0, Status::InvalidCommand);
+    auto stepMode                          = commandData.stepMode;
+    uint8_t stepSize                       = commandData.stepSize;
+    uint8_t transitionTime                 = commandData.transitionTime;
+    BitMask<OptionsBitmap> optionsMask     = commandData.optionsMask;
+    BitMask<OptionsBitmap> optionsOverride = commandData.optionsOverride;
+    EndpointId endpoint                    = commandPath.mEndpointId;
+    Status status                          = Status::Success;
+    uint8_t currentSaturation              = 0;
 
     Color16uTransitionState * colorSaturationTransitionState = getSaturationTransitionState(endpoint);
-    VerifyOrReturnValue(colorSaturationTransitionState != nullptr, Status::UnsupportedEndpoint);
+    VerifyOrExit(colorSaturationTransitionState != nullptr, status = Status::UnsupportedEndpoint);
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
+    // Confirm validity of the step mode and step size received
+    if (stepMode == SaturationStepMode::kUnknownEnumValue || stepSize == 0)
+    {
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
+    }
+
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
     // New command.  Need to stop any active transitions.
     stopAllColorTransitions(endpoint);
+
     // Handle color mode transition, if necessary.
     handleModeSwitch(endpoint, EnhancedColorMode::kCurrentHueAndCurrentSaturation);
+
     // now, kick off the state machine.
     initSaturationTransitionState(endpoint, colorSaturationTransitionState);
-    uint8_t currentSaturation = static_cast<uint8_t>(colorSaturationTransitionState->currentValue);
+    currentSaturation = static_cast<uint8_t>(colorSaturationTransitionState->currentValue);
 
-    if (commandData.stepMode == SaturationStepMode::kUp)
+    if (stepMode == SaturationStepMode::kUp)
     {
-        colorSaturationTransitionState->finalValue = addSaturation(currentSaturation, commandData.stepSize);
+        colorSaturationTransitionState->finalValue = addSaturation(currentSaturation, stepSize);
     }
-    else if (commandData.stepMode == SaturationStepMode::kDown)
+    else if (stepMode == SaturationStepMode::kDown)
     {
-        colorSaturationTransitionState->finalValue = subtractSaturation(currentSaturation, commandData.stepSize);
+        colorSaturationTransitionState->finalValue = subtractSaturation(currentSaturation, stepSize);
     }
-    colorSaturationTransitionState->stepsRemaining = std::max<uint8_t>(commandData.transitionTime, 1);
+    colorSaturationTransitionState->stepsRemaining = max<uint8_t>(transitionTime, 1);
     colorSaturationTransitionState->stepsTotal     = colorSaturationTransitionState->stepsRemaining;
-    colorSaturationTransitionState->timeRemaining  = commandData.transitionTime;
-    colorSaturationTransitionState->transitionTime = commandData.transitionTime;
+    colorSaturationTransitionState->timeRemaining  = transitionTime;
+    colorSaturationTransitionState->transitionTime = transitionTime;
     colorSaturationTransitionState->endpoint       = endpoint;
     colorSaturationTransitionState->lowLimit       = MIN_SATURATION_VALUE;
     colorSaturationTransitionState->highLimit      = MAX_SATURATION_VALUE;
@@ -1869,52 +1945,65 @@ Status ColorControlServer::stepSaturationCommand(EndpointId endpoint, const Comm
     SetHSVRemainingTime(endpoint);
 
     // kick off the state machine:
-    scheduleTimerCallbackMs(configureHSVEventControl(endpoint), commandData.transitionTime ? TRANSITION_UPDATE_TIME_MS.count() : 0);
-    return Status::Success;
+    scheduleTimerCallbackMs(configureHSVEventControl(endpoint), transitionTime ? TRANSITION_UPDATE_TIME_MS.count() : 0);
+
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
-/**
- * @brief Executes ColorLoop command.
- * @param endpoint EndpointId of the recipient Color control cluster.
- * @param commandData Struct containing the parameters of the command.
- * @return Status::Success when successful,
- *         Status::InvalidCommand when an unknown action or direction is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a hue transition state,
- */
-Status ColorControlServer::colorLoopCommand(EndpointId endpoint, const Commands::ColorLoopSet::DecodableType & commandData)
+bool ColorControlServer::colorLoopCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                          const Commands::ColorLoopSet::DecodableType & commandData)
 {
     MATTER_TRACE_SCOPE("colorLoop", "ColorControl");
-    // Validate the action and direction parameters of the command
-    VerifyOrReturnValue(commandData.action != ColorLoopActionEnum::kUnknownEnumValue, Status::InvalidCommand);
-    VerifyOrReturnValue(commandData.direction != ColorLoopDirectionEnum::kUnknownEnumValue, Status::InvalidCommand);
+    auto updateFlags                       = commandData.updateFlags;
+    auto action                            = commandData.action;
+    auto direction                         = commandData.direction;
+    uint16_t time                          = commandData.time;
+    uint16_t startHue                      = commandData.startHue;
+    BitMask<OptionsBitmap> optionsMask     = commandData.optionsMask;
+    BitMask<OptionsBitmap> optionsOverride = commandData.optionsOverride;
+    EndpointId endpoint                    = commandPath.mEndpointId;
+    Status status                          = Status::Success;
+    uint8_t isColorLoopActive              = 0;
+    uint8_t deactiveColorLoop              = 0;
 
     uint16_t epIndex                                  = getEndpointIndex(endpoint);
     ColorHueTransitionState * colorHueTransitionState = getColorHueTransitionStateByIndex(epIndex);
-    VerifyOrReturnValue(colorHueTransitionState != nullptr, Status::UnsupportedEndpoint);
+    VerifyOrExit(colorHueTransitionState != nullptr, status = Status::UnsupportedEndpoint);
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
+    // Validate the action and direction parameters of the command
+    if (action == ColorLoopActionEnum::kUnknownEnumValue || direction == ColorLoopDirectionEnum::kUnknownEnumValue)
+    {
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
+    }
 
-    uint8_t isColorLoopActive = 0;
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
+
     // In case of get failure, isColorLoopActive will remain at the init value 0 (not active)
     if (Attributes::ColorLoopActive::Get(endpoint, &isColorLoopActive) != Status::Success)
     {
         ChipLogError(Zcl, "Failed to retrieve ColorLoopActive value");
     }
 
-    uint8_t deactiveColorLoop =
-        commandData.updateFlags.Has(ColorLoopUpdateFlags::kUpdateAction) && (commandData.action == ColorLoopAction::kDeactivate);
+    deactiveColorLoop = updateFlags.Has(ColorLoopUpdateFlags::kUpdateAction) && (action == ColorLoopAction::kDeactivate);
 
-    if (commandData.updateFlags.Has(ColorLoopUpdateFlags::kUpdateDirection))
+    if (updateFlags.Has(ColorLoopUpdateFlags::kUpdateDirection))
     {
-        Attributes::ColorLoopDirection::Set(endpoint, to_underlying(commandData.direction));
+        Attributes::ColorLoopDirection::Set(endpoint, to_underlying(direction));
 
         // Checks if color loop is active and stays active
         if (isColorLoopActive && !deactiveColorLoop)
         {
-            colorHueTransitionState->up                 = (commandData.direction == ColorLoopDirectionEnum::kIncrement);
+            colorHueTransitionState->up                 = (direction == ColorLoopDirectionEnum::kIncrement);
             colorHueTransitionState->initialEnhancedHue = colorHueTransitionState->currentEnhancedHue;
 
-            if (commandData.direction == ColorLoopDirectionEnum::kIncrement)
+            if (direction == ColorLoopDirectionEnum::kIncrement)
             {
                 colorHueTransitionState->finalEnhancedHue = static_cast<uint16_t>(colorHueTransitionState->initialEnhancedHue - 1);
             }
@@ -1926,14 +2015,14 @@ Status ColorControlServer::colorLoopCommand(EndpointId endpoint, const Commands:
         }
     }
 
-    if (commandData.updateFlags.Has(ColorLoopUpdateFlags::kUpdateTime))
+    if (updateFlags.Has(ColorLoopUpdateFlags::kUpdateTime))
     {
-        Attributes::ColorLoopTime::Set(endpoint, commandData.time);
+        Attributes::ColorLoopTime::Set(endpoint, time);
 
         // Checks if color loop is active and stays active
         if (isColorLoopActive && !deactiveColorLoop)
         {
-            colorHueTransitionState->stepsTotal         = static_cast<uint16_t>(commandData.time * TRANSITION_STEPS_PER_1S);
+            colorHueTransitionState->stepsTotal         = static_cast<uint16_t>(time * TRANSITION_STEPS_PER_1S);
             colorHueTransitionState->initialEnhancedHue = colorHueTransitionState->currentEnhancedHue;
 
             if (colorHueTransitionState->up)
@@ -1948,14 +2037,14 @@ Status ColorControlServer::colorLoopCommand(EndpointId endpoint, const Commands:
         }
     }
 
-    if (commandData.updateFlags.Has(ColorLoopUpdateFlags::kUpdateStartHue))
+    if (updateFlags.Has(ColorLoopUpdateFlags::kUpdateStartHue))
     {
-        Attributes::ColorLoopStartEnhancedHue::Set(endpoint, commandData.startHue);
+        Attributes::ColorLoopStartEnhancedHue::Set(endpoint, startHue);
     }
 
-    if (commandData.updateFlags.Has(ColorLoopUpdateFlags::kUpdateAction))
+    if (updateFlags.Has(ColorLoopUpdateFlags::kUpdateAction))
     {
-        if (commandData.action == ColorLoopAction::kDeactivate)
+        if (action == ColorLoopAction::kDeactivate)
         {
             if (isColorLoopActive)
             {
@@ -1974,24 +2063,26 @@ Status ColorControlServer::colorLoopCommand(EndpointId endpoint, const Commands:
                 // Do Nothing since it's not on
             }
         }
-        else if (commandData.action == ColorLoopAction::kActivateFromColorLoopStartEnhancedHue)
+        else if (action == ColorLoopAction::kActivateFromColorLoopStartEnhancedHue)
         {
             startColorLoop(endpoint, true);
         }
-        else if (commandData.action == ColorLoopAction::kActivateFromEnhancedCurrentHue)
+        else if (action == ColorLoopAction::kActivateFromEnhancedCurrentHue)
         {
             startColorLoop(endpoint, false);
         }
     }
 
+exit:
 #ifdef MATTER_DM_PLUGIN_SCENES_MANAGEMENT
     ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(endpoint);
 #endif // MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    return Status::Success;
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
 /**
- * @brief Updates Hue and saturation after timer is finished.
+ * @brief updates Hue and saturation after timer is finished
  *
  * @param endpoint
  */
@@ -2071,7 +2162,7 @@ void ColorControlServer::updateHueSatCommand(EndpointId endpoint)
 ColorControlServer::Color16uTransitionState * ColorControlServer::getXTransitionStateByIndex(uint16_t index)
 {
     Color16uTransitionState * state = nullptr;
-    if (index < MATTER_ARRAY_SIZE(colorXtransitionStates))
+    if (index < ArraySize(colorXtransitionStates))
     {
         state = &colorXtransitionStates[index];
     }
@@ -2099,7 +2190,7 @@ ColorControlServer::Color16uTransitionState * ColorControlServer::getXTransition
 ColorControlServer::Color16uTransitionState * ColorControlServer::getYTransitionStateByIndex(uint16_t index)
 {
     Color16uTransitionState * state = nullptr;
-    if (index < MATTER_ARRAY_SIZE(colorYtransitionStates))
+    if (index < ArraySize(colorYtransitionStates))
     {
         state = &colorYtransitionStates[index];
     }
@@ -2160,22 +2251,14 @@ EmberEventControl * ColorControlServer::configureXYEventControl(EndpointId endpo
 /**
  * @brief executes move to saturation command
  *
- * @param endpoint target endpoint where to execute move
  * @param colorX target X
  * @param colorY target Y
  * @param transitionTime transition time in 10th of seconds
- * @return Status::Success if successful,
- * @return Status::Success when successful,
- *         Status::UnsupportedEndpoint XY is not supported on the endpoint,
- *         Status::ConstraintError when a command parameter is outside its defined value range.
+ * @param endpoint target endpoint where to execute move
+ * @return Status::Success if successful,Status::UnsupportedEndpoint XY is not supported on the endpoint
  */
-Status ColorControlServer::moveToColor(EndpointId endpoint, uint16_t colorX, uint16_t colorY, uint16_t transitionTime)
+Status ColorControlServer::moveToColor(uint16_t colorX, uint16_t colorY, uint16_t transitionTime, EndpointId endpoint)
 {
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue(colorX <= MAX_CIE_XY_VALUE, Status::ConstraintError);
-    VerifyOrReturnValue(colorY <= MAX_CIE_XY_VALUE, Status::ConstraintError);
-    VerifyOrReturnValue(transitionTime <= kMaxTransitionTime, Status::ConstraintError);
-
     uint16_t epIndex                                = getEndpointIndex(endpoint);
     Color16uTransitionState * colorXTransitionState = getXTransitionStateByIndex(epIndex);
     Color16uTransitionState * colorYTransitionState = getYTransitionStateByIndex(epIndex);
@@ -2193,7 +2276,7 @@ Status ColorControlServer::moveToColor(EndpointId endpoint, uint16_t colorX, uin
     Attributes::CurrentX::Get(endpoint, &(colorXTransitionState->initialValue));
     Attributes::CurrentX::Get(endpoint, &(colorXTransitionState->currentValue));
     colorXTransitionState->finalValue     = colorX;
-    colorXTransitionState->stepsRemaining = std::max<uint16_t>(transitionTime, 1);
+    colorXTransitionState->stepsRemaining = max<uint16_t>(transitionTime, 1);
     colorXTransitionState->stepsTotal     = colorXTransitionState->stepsRemaining;
     colorXTransitionState->timeRemaining  = transitionTime;
     colorXTransitionState->transitionTime = transitionTime;
@@ -2220,48 +2303,45 @@ Status ColorControlServer::moveToColor(EndpointId endpoint, uint16_t colorX, uin
     return Status::Success;
 }
 
-/**
- * @brief executes move to color command
- * @param endpoint endpointId of the recipient Color control cluster
- * @param commandData Struct containing the parameters of the command
- * @return Status::Success when successful,
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a Color XY transition state (verified in
- * moveToColor function),
- *         Status::ConstraintError when a command parameter is outside its defined value range.
- */
-Status ColorControlServer::moveToColorCommand(EndpointId endpoint, const Commands::MoveToColor::DecodableType & commandData)
+bool ColorControlServer::moveToColorCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                            const Commands::MoveToColor::DecodableType & commandData)
 {
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue(commandData.colorX <= MAX_CIE_XY_VALUE, Status::ConstraintError);
-    VerifyOrReturnValue(commandData.colorY <= MAX_CIE_XY_VALUE, Status::ConstraintError);
-    VerifyOrReturnValue(commandData.transitionTime <= kMaxTransitionTime, Status::ConstraintError);
+    if (!shouldExecuteIfOff(commandPath.mEndpointId, commandData.optionsMask, commandData.optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
-
-    Status status = moveToColor(endpoint, commandData.colorX, commandData.colorY, commandData.transitionTime);
+    Status status = moveToColor(commandData.colorX, commandData.colorY, commandData.transitionTime, commandPath.mEndpointId);
 #ifdef MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(endpoint);
+    ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(commandPath.mEndpointId);
 #endif // MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    return status;
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
-/**
- * @brief executes move color command
- * @param endpoint endpointId of the recipient Color control cluster
- * @param commandData Struct containing the parameters of the command
- * @return Status::Success when successful,
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a Color XY transition state (verified in
- * moveToColor).
- */
-Status ColorControlServer::moveColorCommand(EndpointId endpoint, const Commands::MoveColor::DecodableType & commandData)
+bool ColorControlServer::moveColorCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                          const Commands::MoveColor::DecodableType & commandData)
 {
+    int16_t rateX                          = commandData.rateX;
+    int16_t rateY                          = commandData.rateY;
+    BitMask<OptionsBitmap> optionsMask     = commandData.optionsMask;
+    BitMask<OptionsBitmap> optionsOverride = commandData.optionsOverride;
+    EndpointId endpoint                    = commandPath.mEndpointId;
+    Status status                          = Status::Success;
+
     uint16_t epIndex                                = getEndpointIndex(endpoint);
     Color16uTransitionState * colorXTransitionState = getXTransitionStateByIndex(epIndex);
     Color16uTransitionState * colorYTransitionState = getYTransitionStateByIndex(epIndex);
-    VerifyOrReturnValue(colorXTransitionState != nullptr, Status::UnsupportedEndpoint);
-    VerifyOrReturnValue(colorYTransitionState != nullptr, Status::UnsupportedEndpoint);
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
+    VerifyOrExit(colorXTransitionState != nullptr, status = Status::UnsupportedEndpoint);
+    VerifyOrExit(colorYTransitionState != nullptr, status = Status::UnsupportedEndpoint);
+
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
     uint16_t transitionTimeX, transitionTimeY;
     uint16_t unsignedRate;
@@ -2269,10 +2349,11 @@ Status ColorControlServer::moveColorCommand(EndpointId endpoint, const Commands:
     // New command.  Need to stop any active transitions.
     stopAllColorTransitions(endpoint);
 
-    if (commandData.rateX == 0 && commandData.rateY == 0)
+    if (rateX == 0 && rateY == 0)
     {
         // any current transition has been stopped. We are done.
-        return Status::Success;
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
     }
 
     // Handle color mode transition, if necessary.
@@ -2281,15 +2362,15 @@ Status ColorControlServer::moveColorCommand(EndpointId endpoint, const Commands:
     // now, kick off the state machine.
     Attributes::CurrentX::Get(endpoint, &(colorXTransitionState->initialValue));
     colorXTransitionState->currentValue = colorXTransitionState->initialValue;
-    if (commandData.rateX > 0)
+    if (rateX > 0)
     {
         colorXTransitionState->finalValue = MAX_CIE_XY_VALUE;
-        unsignedRate                      = static_cast<uint16_t>(commandData.rateX);
+        unsignedRate                      = static_cast<uint16_t>(rateX);
     }
     else
     {
         colorXTransitionState->finalValue = MIN_CIE_XY_VALUE;
-        unsignedRate                      = static_cast<uint16_t>(commandData.rateX * -1);
+        unsignedRate                      = static_cast<uint16_t>(rateX * -1);
     }
     transitionTimeX                       = computeTransitionTimeFromStateAndRate(colorXTransitionState, unsignedRate);
     colorXTransitionState->stepsRemaining = transitionTimeX;
@@ -2302,15 +2383,15 @@ Status ColorControlServer::moveColorCommand(EndpointId endpoint, const Commands:
 
     Attributes::CurrentY::Get(endpoint, &(colorYTransitionState->initialValue));
     colorYTransitionState->currentValue = colorYTransitionState->initialValue;
-    if (commandData.rateY > 0)
+    if (rateY > 0)
     {
         colorYTransitionState->finalValue = MAX_CIE_XY_VALUE;
-        unsignedRate                      = static_cast<uint16_t>(commandData.rateY);
+        unsignedRate                      = static_cast<uint16_t>(rateY);
     }
     else
     {
         colorYTransitionState->finalValue = MIN_CIE_XY_VALUE;
-        unsignedRate                      = static_cast<uint16_t>(commandData.rateY * -1);
+        unsignedRate                      = static_cast<uint16_t>(rateY * -1);
     }
     transitionTimeY                       = computeTransitionTimeFromStateAndRate(colorYTransitionState, unsignedRate);
     colorYTransitionState->stepsRemaining = transitionTimeY;
@@ -2321,44 +2402,56 @@ Status ColorControlServer::moveColorCommand(EndpointId endpoint, const Commands:
     colorYTransitionState->lowLimit       = MIN_CIE_XY_VALUE;
     colorYTransitionState->highLimit      = MAX_CIE_XY_VALUE;
 
-    SetQuietReportRemainingTime(endpoint, std::max(transitionTimeX, transitionTimeY), true /* isNewTransition */);
+    SetQuietReportRemainingTime(endpoint, max(transitionTimeX, transitionTimeY), true /* isNewTransition */);
 
     // kick off the state machine:
     scheduleTimerCallbackMs(configureXYEventControl(endpoint), TRANSITION_UPDATE_TIME_MS.count());
-    return Status::Success;
+
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
-/**
- * @brief executes step color command
- * @param endpoint endpointId of the recipient Color control cluster
- * @param commandData Struct containing the parameters of the command
- * @return Status::Success when successful,
- *         Status::InvalidCommand when a step X and Y of 0 is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a Color XY transition state,
- *         Status::ConstraintError when a command parameter is outside its defined value range.
- */
-Status ColorControlServer::stepColorCommand(EndpointId endpoint, const Commands::StepColor::DecodableType & commandData)
+bool ColorControlServer::stepColorCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                          const Commands::StepColor::DecodableType & commandData)
 {
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue(commandData.transitionTime <= kMaxTransitionTime, Status::ConstraintError);
+    int16_t stepX                          = commandData.stepX;
+    int16_t stepY                          = commandData.stepY;
+    uint16_t transitionTime                = commandData.transitionTime;
+    BitMask<OptionsBitmap> optionsMask     = commandData.optionsMask;
+    BitMask<OptionsBitmap> optionsOverride = commandData.optionsOverride;
+    EndpointId endpoint                    = commandPath.mEndpointId;
+    uint16_t currentColorX                 = 0;
+    uint16_t currentColorY                 = 0;
+    uint16_t colorX                        = 0;
+    uint16_t colorY                        = 0;
 
-    VerifyOrReturnValue(commandData.stepX != 0 || commandData.stepY != 0, Status::InvalidCommand);
+    Status status = Status::Success;
 
     uint16_t epIndex                                = getEndpointIndex(endpoint);
     Color16uTransitionState * colorXTransitionState = getXTransitionStateByIndex(epIndex);
     Color16uTransitionState * colorYTransitionState = getYTransitionStateByIndex(epIndex);
 
-    VerifyOrReturnValue(colorXTransitionState != nullptr, Status::UnsupportedEndpoint);
-    VerifyOrReturnValue(colorYTransitionState != nullptr, Status::UnsupportedEndpoint);
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
+    VerifyOrExit(colorXTransitionState != nullptr, status = Status::UnsupportedEndpoint);
+    VerifyOrExit(colorYTransitionState != nullptr, status = Status::UnsupportedEndpoint);
 
-    uint16_t currentColorX = 0;
-    uint16_t currentColorY = 0;
+    if (stepX == 0 && stepY == 0)
+    {
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
+    }
+
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
+
     Attributes::CurrentX::Get(endpoint, &currentColorX);
     Attributes::CurrentY::Get(endpoint, &currentColorY);
 
-    uint16_t colorX = findNewColorValueFromStep(currentColorX, commandData.stepX);
-    uint16_t colorY = findNewColorValueFromStep(currentColorY, commandData.stepY);
+    colorX = findNewColorValueFromStep(currentColorX, stepX);
+    colorY = findNewColorValueFromStep(currentColorY, stepY);
 
     // New command.  Need to stop any active transitions.
     stopAllColorTransitions(endpoint);
@@ -2370,10 +2463,10 @@ Status ColorControlServer::stepColorCommand(EndpointId endpoint, const Commands:
     colorXTransitionState->initialValue   = currentColorX;
     colorXTransitionState->currentValue   = currentColorX;
     colorXTransitionState->finalValue     = colorX;
-    colorXTransitionState->stepsRemaining = std::max<uint16_t>(commandData.transitionTime, 1);
+    colorXTransitionState->stepsRemaining = max<uint16_t>(transitionTime, 1);
     colorXTransitionState->stepsTotal     = colorXTransitionState->stepsRemaining;
-    colorXTransitionState->timeRemaining  = commandData.transitionTime;
-    colorXTransitionState->transitionTime = commandData.transitionTime;
+    colorXTransitionState->timeRemaining  = transitionTime;
+    colorXTransitionState->transitionTime = transitionTime;
     colorXTransitionState->endpoint       = endpoint;
     colorXTransitionState->lowLimit       = MIN_CIE_XY_VALUE;
     colorXTransitionState->highLimit      = MAX_CIE_XY_VALUE;
@@ -2383,17 +2476,20 @@ Status ColorControlServer::stepColorCommand(EndpointId endpoint, const Commands:
     colorYTransitionState->finalValue     = colorY;
     colorYTransitionState->stepsRemaining = colorXTransitionState->stepsRemaining;
     colorYTransitionState->stepsTotal     = colorXTransitionState->stepsRemaining;
-    colorYTransitionState->timeRemaining  = commandData.transitionTime;
-    colorYTransitionState->transitionTime = commandData.transitionTime;
+    colorYTransitionState->timeRemaining  = transitionTime;
+    colorYTransitionState->transitionTime = transitionTime;
     colorYTransitionState->endpoint       = endpoint;
     colorYTransitionState->lowLimit       = MIN_CIE_XY_VALUE;
     colorYTransitionState->highLimit      = MAX_CIE_XY_VALUE;
 
-    SetQuietReportRemainingTime(endpoint, commandData.transitionTime, true /* isNewTransition */);
+    SetQuietReportRemainingTime(endpoint, transitionTime, true /* isNewTransition */);
 
     // kick off the state machine:
-    scheduleTimerCallbackMs(configureXYEventControl(endpoint), commandData.transitionTime ? TRANSITION_UPDATE_TIME_MS.count() : 0);
-    return Status::Success;
+    scheduleTimerCallbackMs(configureXYEventControl(endpoint), transitionTime ? TRANSITION_UPDATE_TIME_MS.count() : 0);
+
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
 /**
@@ -2411,7 +2507,7 @@ void ColorControlServer::updateXYCommand(EndpointId endpoint)
     bool isXTransitionDone = computeNewColor16uValue(colorXTransitionState);
     bool isYTransitionDone = computeNewColor16uValue(colorYTransitionState);
 
-    SetQuietReportRemainingTime(endpoint, std::max(colorXTransitionState->timeRemaining, colorYTransitionState->timeRemaining));
+    SetQuietReportRemainingTime(endpoint, max(colorXTransitionState->timeRemaining, colorYTransitionState->timeRemaining));
 
     if (isXTransitionDone && isYTransitionDone)
     {
@@ -2447,7 +2543,7 @@ void ColorControlServer::updateXYCommand(EndpointId endpoint)
 ColorControlServer::Color16uTransitionState * ColorControlServer::getTempTransitionStateByIndex(uint16_t index)
 {
     Color16uTransitionState * state = nullptr;
-    if (index < MATTER_ARRAY_SIZE(colorTempTransitionStates))
+    if (index < ArraySize(colorTempTransitionStates))
     {
         state = &colorTempTransitionStates[index];
     }
@@ -2467,20 +2563,17 @@ ColorControlServer::Color16uTransitionState * ColorControlServer::getTempTransit
 }
 
 /**
- * @brief Executes move to color temp logic.
+ * @brief executes move to color temp logic
  *
  * @param aEndpoint
  * @param colorTemperature
  * @param transitionTime
- * @return Status::Success if successful, Status::UnsupportedEndpoint if the endpoint doesn't support color temperature.
+ * @return Status::Success if successful, Status::UnsupportedEndpoint if the endpoint doesn't support color temperature
  */
 Status ColorControlServer::moveToColorTemp(EndpointId aEndpoint, uint16_t colorTemperature, uint16_t transitionTime)
 {
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue(colorTemperature <= kMaxColorTemperatureMireds, Status::ConstraintError);
-    VerifyOrReturnValue(transitionTime <= kMaxTransitionTime, Status::ConstraintError);
+    EndpointId endpoint = aEndpoint;
 
-    EndpointId endpoint                                = aEndpoint;
     Color16uTransitionState * colorTempTransitionState = getTempTransitionState(endpoint);
     VerifyOrReturnError(nullptr != colorTempTransitionState, Status::UnsupportedEndpoint);
 
@@ -2514,7 +2607,7 @@ Status ColorControlServer::moveToColorTemp(EndpointId aEndpoint, uint16_t colorT
     Attributes::ColorTemperatureMireds::Get(endpoint, &(colorTempTransitionState->currentValue));
 
     colorTempTransitionState->finalValue     = colorTemperature;
-    colorTempTransitionState->stepsRemaining = std::max<uint16_t>(transitionTime, 1);
+    colorTempTransitionState->stepsRemaining = max<uint16_t>(transitionTime, 1);
     colorTempTransitionState->stepsTotal     = colorTempTransitionState->stepsRemaining;
     colorTempTransitionState->timeRemaining  = transitionTime;
     colorTempTransitionState->transitionTime = transitionTime;
@@ -2671,33 +2764,49 @@ void ColorControlServer::updateTempCommand(EndpointId endpoint)
 }
 
 /**
- * @brief Executes move color temp command.
- * @param endpoint EndpointId of the recipient Color control cluster.
- * @param commandData Struct containing the parameters of the command.
- * @return Status::Success when successful,
- *         Status::InvalidCommand when a rate of 0 for a non-stop move or an unknown HueMoveMode is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a color temp transition state.
- *         Status::ConstraintError when a command parameter is outside its defined value range.
+ * @brief move color temp command
+ *
+ * @param moveMode
+ * @param rate
+ * @param colorTemperatureMinimum
+ * @param colorTemperatureMaximum
+ * @param optionsMask
+ * @param optionsOverride
+ * @return true
+ * @return false
  */
-Status ColorControlServer::moveColorTempCommand(EndpointId endpoint,
-                                                const Commands::MoveColorTemperature::DecodableType & commandData)
+bool ColorControlServer::moveColorTempCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                              const Commands::MoveColorTemperature::DecodableType & commandData)
 {
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue(commandData.colorTemperatureMinimumMireds <= kMaxColorTemperatureMireds, Status::ConstraintError);
-    VerifyOrReturnValue(commandData.colorTemperatureMaximumMireds <= kMaxColorTemperatureMireds, Status::ConstraintError);
+    auto moveMode                          = commandData.moveMode;
+    uint16_t rate                          = commandData.rate;
+    uint16_t colorTemperatureMinimum       = commandData.colorTemperatureMinimumMireds;
+    uint16_t colorTemperatureMaximum       = commandData.colorTemperatureMaximumMireds;
+    BitMask<OptionsBitmap> optionsMask     = commandData.optionsMask;
+    BitMask<OptionsBitmap> optionsOverride = commandData.optionsOverride;
+    EndpointId endpoint                    = commandPath.mEndpointId;
+    Status status                          = Status::Success;
+    uint16_t tempPhysicalMin               = MIN_TEMPERATURE_VALUE;
+    uint16_t tempPhysicalMax               = MAX_TEMPERATURE_VALUE;
+    uint16_t transitionTime;
+
+    Color16uTransitionState * colorTempTransitionState = getTempTransitionState(endpoint);
+    VerifyOrExit(colorTempTransitionState != nullptr, status = Status::UnsupportedEndpoint);
 
     // check moveMode and rate before any operation is done on the transition states
     // rate value is ignored if the MoveMode is stop
-    VerifyOrReturnValue(commandData.moveMode != HueMoveMode::kUnknownEnumValue, Status::InvalidCommand);
-    VerifyOrReturnValue((commandData.rate != 0 || commandData.moveMode == HueMoveMode::kStop), Status::InvalidCommand);
+    if (moveMode == HueMoveMode::kUnknownEnumValue || (rate == 0 && moveMode != HueMoveMode::kStop))
+    {
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
+    }
 
-    Color16uTransitionState * colorTempTransitionState = getTempTransitionState(endpoint);
-    VerifyOrReturnValue(colorTempTransitionState != nullptr, Status::UnsupportedEndpoint);
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
-
-    uint16_t tempPhysicalMin = MIN_TEMPERATURE_VALUE;
-    uint16_t tempPhysicalMax = MAX_TEMPERATURE_VALUE;
     Attributes::ColorTempPhysicalMinMireds::Get(endpoint, &tempPhysicalMin);
     Attributes::ColorTempPhysicalMaxMireds::Get(endpoint, &tempPhysicalMax);
 
@@ -2706,12 +2815,15 @@ Status ColorControlServer::moveColorTempCommand(EndpointId endpoint,
 
     // New command.  Need to stop any active transitions.
     stopAllColorTransitions(endpoint);
-    // For HueMoveMode::kStop we are done here.
-    VerifyOrReturnValue(commandData.moveMode != HueMoveMode::kStop, Status::Success);
+
+    if (moveMode == HueMoveMode::kStop)
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
     // Per spec, colorTemperatureMinimumMireds field is limited to ColorTempPhysicalMinMireds and
     // when colorTemperatureMinimumMireds field is 0, ColorTempPhysicalMinMireds shall be used (always > 0)
-    uint16_t colorTemperatureMinimum = commandData.colorTemperatureMinimumMireds;
     if (colorTemperatureMinimum < tempPhysicalMin)
     {
         colorTemperatureMinimum = tempPhysicalMin;
@@ -2719,7 +2831,6 @@ Status ColorControlServer::moveColorTempCommand(EndpointId endpoint,
 
     // Per spec, colorTemperatureMaximumMireds field is limited to ColorTempPhysicalMaxMireds and
     // when colorTemperatureMaximumMireds field is 0, ColorTempPhysicalMaxMireds shall be used
-    uint16_t colorTemperatureMaximum = commandData.colorTemperatureMaximumMireds;
     if ((colorTemperatureMaximum == 0) || (colorTemperatureMaximum > tempPhysicalMax))
     {
         colorTemperatureMaximum = tempPhysicalMax;
@@ -2733,7 +2844,7 @@ Status ColorControlServer::moveColorTempCommand(EndpointId endpoint,
     Attributes::ColorTemperatureMireds::Get(endpoint, &colorTempTransitionState->initialValue);
     colorTempTransitionState->currentValue = colorTempTransitionState->initialValue;
 
-    if (commandData.moveMode == HueMoveMode::kUp)
+    if (moveMode == HueMoveMode::kUp)
     {
         if (tempPhysicalMax > colorTemperatureMaximum)
         {
@@ -2755,8 +2866,7 @@ Status ColorControlServer::moveColorTempCommand(EndpointId endpoint,
             colorTempTransitionState->finalValue = tempPhysicalMin;
         }
     }
-
-    uint16_t transitionTime                  = computeTransitionTimeFromStateAndRate(colorTempTransitionState, commandData.rate);
+    transitionTime                           = computeTransitionTimeFromStateAndRate(colorTempTransitionState, rate);
     colorTempTransitionState->stepsRemaining = transitionTime;
     colorTempTransitionState->stepsTotal     = transitionTime;
     colorTempTransitionState->timeRemaining  = transitionTime;
@@ -2769,65 +2879,63 @@ Status ColorControlServer::moveColorTempCommand(EndpointId endpoint,
 
     // kick off the state machine:
     scheduleTimerCallbackMs(configureTempEventControl(endpoint), TRANSITION_UPDATE_TIME_MS.count());
-    return Status::Success;
+
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
-/**
- * @brief Executes move to color temp command.
- * @param endpoint EndpointId of the recipient Color control cluster.
- * @param commandData Struct containing the parameters of the command.
- * @return Status::Success when successful,
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a color XY transition state (verified in
- * moveToColorTemp function),
- *         Status::ConstraintError when a command parameter is outside its defined value range.
- */
-Status ColorControlServer::moveToColorTempCommand(EndpointId endpoint,
-                                                  const Commands::MoveToColorTemperature::DecodableType & commandData)
+bool ColorControlServer::moveToColorTempCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                                const Commands::MoveToColorTemperature::DecodableType & commandData)
 {
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue(commandData.colorTemperatureMireds <= kMaxColorTemperatureMireds, Status::ConstraintError);
-    VerifyOrReturnValue(commandData.transitionTime <= kMaxTransitionTime, Status::ConstraintError);
+    if (!shouldExecuteIfOff(commandPath.mEndpointId, commandData.optionsMask, commandData.optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
-
-    Status status = moveToColorTemp(endpoint, commandData.colorTemperatureMireds, commandData.transitionTime);
+    Status status = moveToColorTemp(commandPath.mEndpointId, commandData.colorTemperatureMireds, commandData.transitionTime);
 #ifdef MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(endpoint);
+    ScenesManagement::ScenesServer::Instance().MakeSceneInvalidForAllFabrics(commandPath.mEndpointId);
 #endif // MATTER_DM_PLUGIN_SCENES_MANAGEMENT
-    return status;
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
-/**
- * @brief Executes step color temp command.
- * @param endpoint EndpointId of the recipient Color control cluster.
- * @param commandData Struct containing the parameters of the command
- * @return Status::Success when successful,
- *         Status::InvalidCommand when stepSize is 0 or an unknown stepMode is provided
- *         Status::UnsupportedEndpoint when the provided endpoint doesn't correspond with a color temp transition state,
- *         Status::ConstraintError when a command parameter is outside its defined value range.
- */
-Status ColorControlServer::stepColorTempCommand(EndpointId endpoint,
-                                                const Commands::StepColorTemperature::DecodableType & commandData)
+bool ColorControlServer::stepColorTempCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
+                                              const Commands::StepColorTemperature::DecodableType & commandData)
 {
-    // Command Parameters constraint checks:
-    VerifyOrReturnValue(commandData.transitionTime <= kMaxTransitionTime, Status::ConstraintError);
-    VerifyOrReturnValue(commandData.colorTemperatureMinimumMireds <= kMaxColorTemperatureMireds, Status::ConstraintError);
-    VerifyOrReturnValue(commandData.colorTemperatureMaximumMireds <= kMaxColorTemperatureMireds, Status::ConstraintError);
-
-    // Confirm validity of the step mode and step size received
-    VerifyOrReturnValue(commandData.stepMode != HueStepMode::kUnknownEnumValue, Status::InvalidCommand);
-    VerifyOrReturnValue(commandData.stepSize != 0, Status::InvalidCommand);
+    auto stepMode                          = commandData.stepMode;
+    uint16_t stepSize                      = commandData.stepSize;
+    uint16_t transitionTime                = commandData.transitionTime;
+    uint16_t colorTemperatureMinimum       = commandData.colorTemperatureMinimumMireds;
+    uint16_t colorTemperatureMaximum       = commandData.colorTemperatureMaximumMireds;
+    BitMask<OptionsBitmap> optionsMask     = commandData.optionsMask;
+    BitMask<OptionsBitmap> optionsOverride = commandData.optionsOverride;
+    EndpointId endpoint                    = commandPath.mEndpointId;
+    Status status                          = Status::Success;
+    uint16_t tempPhysicalMin               = MIN_TEMPERATURE_VALUE;
+    uint16_t tempPhysicalMax               = MAX_TEMPERATURE_VALUE;
 
     Color16uTransitionState * colorTempTransitionState = getTempTransitionState(endpoint);
-    VerifyOrReturnValue(colorTempTransitionState != nullptr, Status::UnsupportedEndpoint);
+    VerifyOrExit(colorTempTransitionState != nullptr, status = Status::UnsupportedEndpoint);
 
-    VerifyOrReturnValue(shouldExecuteIfOff(endpoint, commandData.optionsMask, commandData.optionsOverride), Status::Success);
+    // Confirm validity of the step mode and step size received
+    if (stepMode == HueStepMode::kUnknownEnumValue || stepSize == 0)
+    {
+        commandObj->AddStatus(commandPath, Status::InvalidCommand);
+        return true;
+    }
+
+    if (!shouldExecuteIfOff(endpoint, optionsMask, optionsOverride))
+    {
+        commandObj->AddStatus(commandPath, Status::Success);
+        return true;
+    }
 
     // New command.  Need to stop any active transitions.
     stopAllColorTransitions(endpoint);
 
-    uint16_t tempPhysicalMin = MIN_TEMPERATURE_VALUE;
-    uint16_t tempPhysicalMax = MAX_TEMPERATURE_VALUE;
     Attributes::ColorTempPhysicalMinMireds::Get(endpoint, &tempPhysicalMin);
     Attributes::ColorTempPhysicalMaxMireds::Get(endpoint, &tempPhysicalMax);
 
@@ -2836,7 +2944,6 @@ Status ColorControlServer::stepColorTempCommand(EndpointId endpoint,
 
     // Per spec, colorTemperatureMinimumMireds field is limited to ColorTempPhysicalMinMireds and
     // when colorTemperatureMinimumMireds field is 0, ColorTempPhysicalMinMireds shall be used (always > 0)
-    uint16_t colorTemperatureMinimum = commandData.colorTemperatureMinimumMireds;
     if (colorTemperatureMinimum < tempPhysicalMin)
     {
         colorTemperatureMinimum = tempPhysicalMin;
@@ -2844,7 +2951,6 @@ Status ColorControlServer::stepColorTempCommand(EndpointId endpoint,
 
     // Per spec, colorTemperatureMaximumMireds field is limited to ColorTempPhysicalMaxMireds and
     // when colorTemperatureMaximumMireds field is 0, ColorTempPhysicalMaxMireds shall be used
-    uint16_t colorTemperatureMaximum = commandData.colorTemperatureMaximumMireds;
     if ((colorTemperatureMaximum == 0) || (colorTemperatureMaximum > tempPhysicalMax))
     {
         colorTemperatureMaximum = tempPhysicalMax;
@@ -2860,10 +2966,9 @@ Status ColorControlServer::stepColorTempCommand(EndpointId endpoint,
 
     colorTempTransitionState->currentValue = colorTempTransitionState->initialValue;
 
-    if (commandData.stepMode == HueStepMode::kUp)
+    if (stepMode == HueStepMode::kUp)
     {
-        uint32_t finalValue32u =
-            static_cast<uint32_t>(colorTempTransitionState->initialValue) + static_cast<uint32_t>(commandData.stepSize);
+        uint32_t finalValue32u = static_cast<uint32_t>(colorTempTransitionState->initialValue) + static_cast<uint32_t>(stepSize);
         if (finalValue32u > UINT16_MAX)
         {
             colorTempTransitionState->finalValue = UINT16_MAX;
@@ -2873,10 +2978,9 @@ Status ColorControlServer::stepColorTempCommand(EndpointId endpoint,
             colorTempTransitionState->finalValue = static_cast<uint16_t>(finalValue32u);
         }
     }
-    else if (commandData.stepMode == HueStepMode::kDown)
+    else if (stepMode == HueStepMode::kDown)
     {
-        uint32_t finalValue32u =
-            static_cast<uint32_t>(colorTempTransitionState->initialValue) - static_cast<uint32_t>(commandData.stepSize);
+        uint32_t finalValue32u = static_cast<uint32_t>(colorTempTransitionState->initialValue) - static_cast<uint32_t>(stepSize);
         if (finalValue32u > UINT16_MAX)
         {
             colorTempTransitionState->finalValue = 0;
@@ -2886,20 +2990,22 @@ Status ColorControlServer::stepColorTempCommand(EndpointId endpoint,
             colorTempTransitionState->finalValue = static_cast<uint16_t>(finalValue32u);
         }
     }
-    colorTempTransitionState->stepsRemaining = std::max<uint16_t>(commandData.transitionTime, 1);
+    colorTempTransitionState->stepsRemaining = max<uint16_t>(transitionTime, 1);
     colorTempTransitionState->stepsTotal     = colorTempTransitionState->stepsRemaining;
-    colorTempTransitionState->timeRemaining  = commandData.transitionTime;
-    colorTempTransitionState->transitionTime = commandData.transitionTime;
+    colorTempTransitionState->timeRemaining  = transitionTime;
+    colorTempTransitionState->transitionTime = transitionTime;
     colorTempTransitionState->endpoint       = endpoint;
     colorTempTransitionState->lowLimit       = colorTemperatureMinimum;
     colorTempTransitionState->highLimit      = colorTemperatureMaximum;
 
-    SetQuietReportRemainingTime(endpoint, commandData.transitionTime, true /* isNewTransition */);
+    SetQuietReportRemainingTime(endpoint, transitionTime, true /* isNewTransition */);
 
     // kick off the state machine:
-    scheduleTimerCallbackMs(configureTempEventControl(endpoint),
-                            commandData.transitionTime ? TRANSITION_UPDATE_TIME_MS.count() : 0);
-    return Status::Success;
+    scheduleTimerCallbackMs(configureTempEventControl(endpoint), transitionTime ? TRANSITION_UPDATE_TIME_MS.count() : 0);
+
+exit:
+    commandObj->AddStatus(commandPath, status);
+    return true;
 }
 
 void ColorControlServer::levelControlColorTempChangeCommand(EndpointId endpoint)
@@ -3095,119 +3201,96 @@ Status ColorControlServer::SetQuietReportRemainingTime(EndpointId endpoint, uint
 bool emberAfColorControlClusterMoveHueCallback(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
                                                const Commands::MoveHue::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveHueCommand(commandPath.mEndpointId, commandData.moveMode, commandData.rate,
-                                                                  commandData.optionsMask, commandData.optionsOverride, false);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveHueCommand(commandObj, commandPath, commandData.moveMode, commandData.rate,
+                                                         commandData.optionsMask, commandData.optionsOverride, false);
 }
 
 bool emberAfColorControlClusterMoveSaturationCallback(app::CommandHandler * commandObj,
                                                       const app::ConcreteCommandPath & commandPath,
                                                       const Commands::MoveSaturation::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveSaturationCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+
+    return ColorControlServer::Instance().moveSaturationCommand(commandObj, commandPath, commandData);
 }
 
 bool emberAfColorControlClusterMoveToHueCallback(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
                                                  const Commands::MoveToHue::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveToHueCommand(commandPath.mEndpointId, commandData.hue, commandData.direction,
-                                                                    commandData.transitionTime, commandData.optionsMask,
-                                                                    commandData.optionsOverride, false);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveToHueCommand(commandObj, commandPath, commandData.hue, commandData.direction,
+                                                           commandData.transitionTime, commandData.optionsMask,
+                                                           commandData.optionsOverride, false);
 }
 
 bool emberAfColorControlClusterMoveToSaturationCallback(app::CommandHandler * commandObj,
                                                         const app::ConcreteCommandPath & commandPath,
                                                         const Commands::MoveToSaturation::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveToSaturationCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveToSaturationCommand(commandObj, commandPath, commandData);
 }
 
 bool emberAfColorControlClusterMoveToHueAndSaturationCallback(app::CommandHandler * commandObj,
                                                               const app::ConcreteCommandPath & commandPath,
                                                               const Commands::MoveToHueAndSaturation::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveToHueAndSaturationCommand(
-        commandPath.mEndpointId, commandData.hue, commandData.saturation, commandData.transitionTime, commandData.optionsMask,
+    return ColorControlServer::Instance().moveToHueAndSaturationCommand(
+        commandObj, commandPath, commandData.hue, commandData.saturation, commandData.transitionTime, commandData.optionsMask,
         commandData.optionsOverride, false);
-    commandObj->AddStatus(commandPath, status);
-    return true;
 }
 
 bool emberAfColorControlClusterStepHueCallback(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
                                                const Commands::StepHue::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().stepHueCommand(commandPath.mEndpointId, commandData.stepMode,
-                                                                  commandData.stepSize, commandData.transitionTime,
-                                                                  commandData.optionsMask, commandData.optionsOverride, false);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().stepHueCommand(commandObj, commandPath, commandData.stepMode, commandData.stepSize,
+                                                         commandData.transitionTime, commandData.optionsMask,
+                                                         commandData.optionsOverride, false);
 }
 
 bool emberAfColorControlClusterStepSaturationCallback(app::CommandHandler * commandObj,
                                                       const app::ConcreteCommandPath & commandPath,
                                                       const Commands::StepSaturation::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().stepSaturationCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().stepSaturationCommand(commandObj, commandPath, commandData);
 }
 
 bool emberAfColorControlClusterEnhancedMoveHueCallback(app::CommandHandler * commandObj,
                                                        const app::ConcreteCommandPath & commandPath,
                                                        const Commands::EnhancedMoveHue::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveHueCommand(commandPath.mEndpointId, commandData.moveMode, commandData.rate,
-                                                                  commandData.optionsMask, commandData.optionsOverride, true);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveHueCommand(commandObj, commandPath, commandData.moveMode, commandData.rate,
+                                                         commandData.optionsMask, commandData.optionsOverride, true);
 }
 
 bool emberAfColorControlClusterEnhancedMoveToHueCallback(app::CommandHandler * commandObj,
                                                          const app::ConcreteCommandPath & commandPath,
                                                          const Commands::EnhancedMoveToHue::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveToHueCommand(commandPath.mEndpointId, commandData.enhancedHue,
-                                                                    commandData.direction, commandData.transitionTime,
-                                                                    commandData.optionsMask, commandData.optionsOverride, true);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveToHueCommand(commandObj, commandPath, commandData.enhancedHue, commandData.direction,
+                                                           commandData.transitionTime, commandData.optionsMask,
+                                                           commandData.optionsOverride, true);
 }
 
 bool emberAfColorControlClusterEnhancedMoveToHueAndSaturationCallback(
     app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
     const Commands::EnhancedMoveToHueAndSaturation::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveToHueAndSaturationCommand(
-        commandPath.mEndpointId, commandData.enhancedHue, commandData.saturation, commandData.transitionTime,
-        commandData.optionsMask, commandData.optionsOverride, true);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveToHueAndSaturationCommand(commandObj, commandPath, commandData.enhancedHue,
+                                                                        commandData.saturation, commandData.transitionTime,
+                                                                        commandData.optionsMask, commandData.optionsOverride, true);
 }
 
 bool emberAfColorControlClusterEnhancedStepHueCallback(app::CommandHandler * commandObj,
                                                        const app::ConcreteCommandPath & commandPath,
                                                        const Commands::EnhancedStepHue::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().stepHueCommand(commandPath.mEndpointId, commandData.stepMode,
-                                                                  commandData.stepSize, commandData.transitionTime,
-                                                                  commandData.optionsMask, commandData.optionsOverride, true);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().stepHueCommand(commandObj, commandPath, commandData.stepMode, commandData.stepSize,
+                                                         commandData.transitionTime, commandData.optionsMask,
+                                                         commandData.optionsOverride, true);
 }
 
 bool emberAfColorControlClusterColorLoopSetCallback(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
                                                     const Commands::ColorLoopSet::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().colorLoopCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().colorLoopCommand(commandObj, commandPath, commandData);
 }
 
 #endif // MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_HSV
@@ -3217,25 +3300,19 @@ bool emberAfColorControlClusterColorLoopSetCallback(app::CommandHandler * comman
 bool emberAfColorControlClusterMoveToColorCallback(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
                                                    const Commands::MoveToColor::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveToColorCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveToColorCommand(commandObj, commandPath, commandData);
 }
 
 bool emberAfColorControlClusterMoveColorCallback(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
                                                  const Commands::MoveColor::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveColorCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveColorCommand(commandObj, commandPath, commandData);
 }
 
 bool emberAfColorControlClusterStepColorCallback(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
                                                  const Commands::StepColor::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().stepColorCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().stepColorCommand(commandObj, commandPath, commandData);
 }
 
 #endif // MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_XY
@@ -3246,27 +3323,21 @@ bool emberAfColorControlClusterMoveToColorTemperatureCallback(app::CommandHandle
                                                               const app::ConcreteCommandPath & commandPath,
                                                               const Commands::MoveToColorTemperature::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveToColorTempCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveToColorTempCommand(commandObj, commandPath, commandData);
 }
 
 bool emberAfColorControlClusterMoveColorTemperatureCallback(app::CommandHandler * commandObj,
                                                             const app::ConcreteCommandPath & commandPath,
                                                             const Commands::MoveColorTemperature::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().moveColorTempCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().moveColorTempCommand(commandObj, commandPath, commandData);
 }
 
 bool emberAfColorControlClusterStepColorTemperatureCallback(app::CommandHandler * commandObj,
                                                             const app::ConcreteCommandPath & commandPath,
                                                             const Commands::StepColorTemperature::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().stepColorTempCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().stepColorTempCommand(commandObj, commandPath, commandData);
 }
 
 void emberAfPluginLevelControlCoupledColorTempChangeCallback(EndpointId endpoint)
@@ -3279,9 +3350,8 @@ void emberAfPluginLevelControlCoupledColorTempChangeCallback(EndpointId endpoint
 bool emberAfColorControlClusterStopMoveStepCallback(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath,
                                                     const Commands::StopMoveStep::DecodableType & commandData)
 {
-    Status status = ColorControlServer::Instance().stopMoveStepCommand(commandPath.mEndpointId, commandData);
-    commandObj->AddStatus(commandPath, status);
-    return true;
+    return ColorControlServer::Instance().stopMoveStepCommand(commandObj, commandPath, commandData.optionsMask,
+                                                              commandData.optionsOverride);
 }
 
 void emberAfColorControlClusterServerInitCallback(EndpointId endpoint)
@@ -3339,4 +3409,3 @@ void emberAfPluginColorControlServerHueSatTransitionEventHandler(EndpointId endp
 #endif // MATTER_DM_PLUGIN_COLOR_CONTROL_SERVER_HSV
 
 void MatterColorControlPluginServerInitCallback() {}
-void MatterColorControlPluginServerShutdownCallback() {}

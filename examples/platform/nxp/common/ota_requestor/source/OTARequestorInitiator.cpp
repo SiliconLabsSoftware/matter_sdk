@@ -1,7 +1,7 @@
 /*
  *
  *    Copyright (c) 2022 Project CHIP Authors
- *    Copyright 2023-2025 NXP
+ *    Copyright 2023-2024 NXP
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,6 @@
  */
 
 #include "OTARequestorInitiator.h"
-#include "OtaSupport.h"
 
 extern "C" {
 #include "mflash_drv.h"
@@ -27,19 +26,29 @@ using namespace chip;
 
 void chip::NXP::App::OTARequestorInitiator::HandleSelfTest()
 {
-    /*
-     * If the application running is in test state after an OTA update,
-     * and since we have arrived this far, the image can be marked as valid
-     * and the update state can be switched to permanent.
-     */
+    /* If application is in test mode after an OTA update
+       mark image as "ok" to switch the update state to permanent
+       (if we have arrived this far, the bootloader had validated the image) */
 
-    otaResult_t status;
-    status = OTA_Initialize();
+    mflash_drv_init();
 
-    if (status != gOtaSuccess_c)
+    OtaImgState_t update_state;
+
+    /* Retrieve current update state */
+    update_state = OTA_GetImgState();
+
+    if (update_state == OtaImgState_RunCandidate)
     {
-        ChipLogError(SoftwareUpdate, "Self-testing : Failed to transition the image to permanent state");
+        if (OTA_UpdateImgState(OtaImgState_Permanent) != gOtaSuccess_c)
+        {
+            ChipLogError(SoftwareUpdate, "Self-testing : Failed to switch update state to permanent");
+            return;
+        }
+
+        ChipLogProgress(SoftwareUpdate, "Successful software update... applied permanently");
     }
+
+    OTA_Initialize();
 
     /* If the image is not marked ok, the bootloader will automatically revert back to primary application at next reboot */
 }

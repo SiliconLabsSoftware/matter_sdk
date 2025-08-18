@@ -17,8 +17,6 @@
 
 #include "core/Types.h"
 
-#include <data-model-providers/codegen/Instance.h>
-
 #ifndef MCCommonCaseDeviceServerInitParamsProvider_h
 #define MCCommonCaseDeviceServerInitParamsProvider_h
 
@@ -37,8 +35,6 @@ public:
         CHIP_ERROR err = serverInitParams.InitializeStaticResourcesBeforeServerInit();
         VerifyOrReturnValue(err == CHIP_NO_ERROR, nullptr,
                             ChipLogError(AppServer, "Initialization of ServerInitParams failed %" CHIP_ERROR_FORMAT, err.Format()));
-        serverInitParams.dataModelProvider =
-            chip::app::CodegenDataModelProviderInstance(serverInitParams.persistentStorageDelegate);
         return &serverInitParams;
     }
 };

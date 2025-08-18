@@ -26,9 +26,8 @@
 class ReportCommand : public InteractionModelReports, public ModelCommand, public chip::app::ReadClient::Callback
 {
 public:
-    ReportCommand(const char * commandName, CredentialIssuerCommands * credsIssuerConfig, const char * helpText = nullptr) :
-        InteractionModelReports(this),
-        ModelCommand(commandName, credsIssuerConfig, /* supportsMultipleEndpoints = */ true, helpText)
+    ReportCommand(const char * commandName, CredentialIssuerCommands * credsIssuerConfig) :
+        InteractionModelReports(this), ModelCommand(commandName, credsIssuerConfig, /* supportsMultipleEndpoints = */ true)
     {}
 
     /////////// ReadClient Callback Interface /////////
@@ -134,8 +133,8 @@ protected:
 class ReadCommand : public ReportCommand
 {
 protected:
-    ReadCommand(const char * commandName, CredentialIssuerCommands * credsIssuerConfig, const char * helpText = nullptr) :
-        ReportCommand(commandName, credsIssuerConfig, helpText)
+    ReadCommand(const char * commandName, CredentialIssuerCommands * credsIssuerConfig) :
+        ReportCommand(commandName, credsIssuerConfig)
     {}
 
     void OnDone(chip::app::ReadClient * aReadClient) override
@@ -148,8 +147,8 @@ protected:
 class SubscribeCommand : public ReportCommand
 {
 protected:
-    SubscribeCommand(const char * commandName, CredentialIssuerCommands * credsIssuerConfig, const char * helpText = nullptr) :
-        ReportCommand(commandName, credsIssuerConfig, helpText)
+    SubscribeCommand(const char * commandName, CredentialIssuerCommands * credsIssuerConfig) :
+        ReportCommand(commandName, credsIssuerConfig)
     {}
 
     void OnSubscriptionEstablished(chip::SubscriptionId subscriptionId) override
@@ -188,8 +187,7 @@ private:
 class ReadAttribute : public ReadCommand
 {
 public:
-    ReadAttribute(CredentialIssuerCommands * credsIssuerConfig) :
-        ReadCommand("read-by-id", credsIssuerConfig, "Read attributes for the given attribute path (which may include wildcards).")
+    ReadAttribute(CredentialIssuerCommands * credsIssuerConfig) : ReadCommand("read-by-id", credsIssuerConfig)
     {
         AddArgument("cluster-ids", 0, UINT32_MAX, &mClusterIds,
                     "Comma-separated list of cluster ids to read from (e.g. \"6\" or \"8,0x201\").\n  Allowed to be 0xFFFFFFFF to "
@@ -200,8 +198,7 @@ public:
     }
 
     ReadAttribute(chip::ClusterId clusterId, CredentialIssuerCommands * credsIssuerConfig) :
-        ReadCommand("read-by-id", credsIssuerConfig, "Read attributes from this cluster; allows wildcard endpoint and attribute."),
-        mClusterIds(1, clusterId)
+        ReadCommand("read-by-id", credsIssuerConfig), mClusterIds(1, clusterId)
     {
         AddAttributeIdArgument();
         AddCommonArguments();
@@ -248,9 +245,7 @@ private:
 class SubscribeAttribute : public SubscribeCommand
 {
 public:
-    SubscribeAttribute(CredentialIssuerCommands * credsIssuerConfig) :
-        SubscribeCommand("subscribe-by-id", credsIssuerConfig,
-                         "Subscribe to attributes for the given attribute path (which may include wildcards).")
+    SubscribeAttribute(CredentialIssuerCommands * credsIssuerConfig) : SubscribeCommand("subscribe-by-id", credsIssuerConfig)
     {
         AddArgument("cluster-ids", 0, UINT32_MAX, &mClusterIds,
                     "Comma-separated list of cluster ids to subscribe to (e.g. \"6\" or \"8,0x201\").\n  Allowed to be 0xFFFFFFFF "
@@ -261,9 +256,7 @@ public:
     }
 
     SubscribeAttribute(chip::ClusterId clusterId, CredentialIssuerCommands * credsIssuerConfig) :
-        SubscribeCommand("subscribe-by-id", credsIssuerConfig,
-                         "Subscribe to attributes from this cluster; allows wildcard endpoint and attribute."),
-        mClusterIds(1, clusterId)
+        SubscribeCommand("subscribe-by-id", credsIssuerConfig), mClusterIds(1, clusterId)
     {
         AddAttributeIdArgument();
         AddCommonArguments();
@@ -319,8 +312,7 @@ private:
 class ReadEvent : public ReadCommand
 {
 public:
-    ReadEvent(CredentialIssuerCommands * credsIssuerConfig) :
-        ReadCommand("read-event-by-id", credsIssuerConfig, "Read events for the given event path (which may include wildcards).")
+    ReadEvent(CredentialIssuerCommands * credsIssuerConfig) : ReadCommand("read-event-by-id", credsIssuerConfig)
     {
         AddArgument("cluster-id", 0, UINT32_MAX, &mClusterIds);
         AddArgument("event-id", 0, UINT32_MAX, &mEventIds);
@@ -330,8 +322,7 @@ public:
     }
 
     ReadEvent(chip::ClusterId clusterId, CredentialIssuerCommands * credsIssuerConfig) :
-        ReadCommand("read-event-by-id", credsIssuerConfig, "Read events from this cluster; allows wildcard endpoint and event."),
-        mClusterIds(1, clusterId)
+        ReadCommand("read-event-by-id", credsIssuerConfig), mClusterIds(1, clusterId)
     {
         AddArgument("event-id", 0, UINT32_MAX, &mEventIds);
         AddArgument("fabric-filtered", 0, 1, &mFabricFiltered);
@@ -365,9 +356,7 @@ private:
 class SubscribeEvent : public SubscribeCommand
 {
 public:
-    SubscribeEvent(CredentialIssuerCommands * credsIssuerConfig) :
-        SubscribeCommand("subscribe-event-by-id", credsIssuerConfig,
-                         "Subscribe to events for the given event path (which may include wildcards).")
+    SubscribeEvent(CredentialIssuerCommands * credsIssuerConfig) : SubscribeCommand("subscribe-event-by-id", credsIssuerConfig)
     {
         AddArgument("cluster-id", 0, UINT32_MAX, &mClusterIds);
         AddArgument("event-id", 0, UINT32_MAX, &mEventIds);
@@ -376,9 +365,7 @@ public:
     }
 
     SubscribeEvent(chip::ClusterId clusterId, CredentialIssuerCommands * credsIssuerConfig) :
-        SubscribeCommand("subscribe-event-by-id", credsIssuerConfig,
-                         "Subscribe to events from this cluster; allows wildcard endpoint and event."),
-        mClusterIds(1, clusterId)
+        SubscribeCommand("subscribe-event-by-id", credsIssuerConfig), mClusterIds(1, clusterId)
     {
         AddArgument("event-id", 0, UINT32_MAX, &mEventIds);
         AddCommonArguments();
@@ -460,8 +447,7 @@ public:
 class ReadAll : public ReadCommand
 {
 public:
-    ReadAll(CredentialIssuerCommands * credsIssuerConfig) :
-        ReadCommand("read-all", credsIssuerConfig, "Read attributes and events for the given paths (which may include wildcards).")
+    ReadAll(CredentialIssuerCommands * credsIssuerConfig) : ReadCommand("read-all", credsIssuerConfig)
     {
         AddArgument("cluster-ids", 0, UINT32_MAX, &mClusterIds,
                     "Comma-separated list of cluster ids to read from (e.g. \"6\" or \"8,0x201\").\n  Allowed to be 0xFFFFFFFF to "
@@ -527,9 +513,7 @@ public:
 class SubscribeAll : public SubscribeCommand
 {
 public:
-    SubscribeAll(CredentialIssuerCommands * credsIssuerConfig) :
-        SubscribeCommand("subscribe-all", credsIssuerConfig,
-                         "Subscribe to attributes and events for the given paths (which may include wildcards).")
+    SubscribeAll(CredentialIssuerCommands * credsIssuerConfig) : SubscribeCommand("subscribe-all", credsIssuerConfig)
     {
         AddArgument("cluster-ids", 0, UINT32_MAX, &mClusterIds,
                     "Comma-separated list of cluster ids to read from (e.g. \"6\" or \"8,0x201\").\n  Allowed to be 0xFFFFFFFF to "

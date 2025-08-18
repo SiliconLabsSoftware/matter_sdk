@@ -1,5 +1,4 @@
 {{indent extraIndent~}}
-{{#if has_more_than_one_cluster~}} shared {{/if~}}
 {{#if isFabricScoped~}} fabric_scoped {{/if~}}
 struct {{name}} {
 {{#if has_no_clusters}}

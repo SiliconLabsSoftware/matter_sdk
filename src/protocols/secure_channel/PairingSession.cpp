@@ -81,7 +81,8 @@ void PairingSession::Finish()
     if (err == CHIP_NO_ERROR)
     {
         VerifyOrDie(mSecureSessionHolder);
-        DeviceLayer::ChipDeviceEvent event{ .Type = DeviceLayer::DeviceEventType::kSecureSessionEstablished };
+        DeviceLayer::ChipDeviceEvent event;
+        event.Type                                   = DeviceLayer::DeviceEventType::kSecureSessionEstablished;
         event.SecureSessionEstablished.TransportType = to_underlying(address.GetTransportType());
         event.SecureSessionEstablished.SecureSessionType =
             to_underlying(mSecureSessionHolder->AsSecureSession()->GetSecureSessionType());
@@ -144,8 +145,7 @@ CHIP_ERROR PairingSession::EncodeSessionParameters(TLV::Tag tag, const ReliableM
     return tlvWriter.EndContainer(mrpParamsContainer);
 }
 
-CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag, TLV::ContiguousBufferTLVReader & tlvReader,
-                                                            SessionParameters & outSessionParameters)
+CHIP_ERROR PairingSession::DecodeMRPParametersIfPresent(TLV::Tag expectedTag, TLV::ContiguousBufferTLVReader & tlvReader)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
 
@@ -168,7 +168,7 @@ CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag
     {
         uint32_t idleRetransTimeout;
         ReturnErrorOnFailure(tlvReader.Get(idleRetransTimeout));
-        outSessionParameters.SetMRPIdleRetransTimeout(System::Clock::Milliseconds32(idleRetransTimeout));
+        mRemoteSessionParams.SetMRPIdleRetransTimeout(System::Clock::Milliseconds32(idleRetransTimeout));
 
         // The next element is optional. If it's not present, return CHIP_NO_ERROR.
         SuccessOrExit(err = tlvReader.Next());
@@ -178,7 +178,7 @@ CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag
     {
         uint32_t activeRetransTimeout;
         ReturnErrorOnFailure(tlvReader.Get(activeRetransTimeout));
-        outSessionParameters.SetMRPActiveRetransTimeout(System::Clock::Milliseconds32(activeRetransTimeout));
+        mRemoteSessionParams.SetMRPActiveRetransTimeout(System::Clock::Milliseconds32(activeRetransTimeout));
 
         // The next element is optional. If it's not present, return CHIP_NO_ERROR.
         SuccessOrExit(err = tlvReader.Next());
@@ -188,7 +188,7 @@ CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag
     {
         uint16_t activeThresholdTime;
         ReturnErrorOnFailure(tlvReader.Get(activeThresholdTime));
-        outSessionParameters.SetMRPActiveThresholdTime(System::Clock::Milliseconds16(activeThresholdTime));
+        mRemoteSessionParams.SetMRPActiveThresholdTime(System::Clock::Milliseconds16(activeThresholdTime));
 
         // The next element is optional. If it's not present, return CHIP_NO_ERROR.
         SuccessOrExit(err = tlvReader.Next());
@@ -198,7 +198,7 @@ CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag
     {
         uint16_t dataModelRevision;
         ReturnErrorOnFailure(tlvReader.Get(dataModelRevision));
-        outSessionParameters.SetDataModelRevision(dataModelRevision);
+        mRemoteSessionParams.SetDataModelRevision(dataModelRevision);
 
         // The next element is optional. If it's not present, return CHIP_NO_ERROR.
         SuccessOrExit(err = tlvReader.Next());
@@ -208,7 +208,7 @@ CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag
     {
         uint16_t interactionModelRevision;
         ReturnErrorOnFailure(tlvReader.Get(interactionModelRevision));
-        outSessionParameters.SetInteractionModelRevision(interactionModelRevision);
+        mRemoteSessionParams.SetInteractionModelRevision(interactionModelRevision);
 
         // The next element is optional. If it's not present, return CHIP_NO_ERROR.
         SuccessOrExit(err = tlvReader.Next());
@@ -218,7 +218,7 @@ CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag
     {
         uint32_t specificationVersion;
         ReturnErrorOnFailure(tlvReader.Get(specificationVersion));
-        outSessionParameters.SetSpecificationVersion(specificationVersion);
+        mRemoteSessionParams.SetSpecificationVersion(specificationVersion);
 
         // The next element is optional. If it's not present, return CHIP_NO_ERROR.
         SuccessOrExit(err = tlvReader.Next());
@@ -228,7 +228,7 @@ CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag
     {
         uint16_t maxPathsPerInvoke;
         ReturnErrorOnFailure(tlvReader.Get(maxPathsPerInvoke));
-        outSessionParameters.SetMaxPathsPerInvoke(maxPathsPerInvoke);
+        mRemoteSessionParams.SetMaxPathsPerInvoke(maxPathsPerInvoke);
 
         // The next element is optional. If it's not present, return CHIP_NO_ERROR.
         SuccessOrExit(err = tlvReader.Next());
@@ -236,7 +236,7 @@ CHIP_ERROR PairingSession::DecodeSessionParametersIfPresent(TLV::Tag expectedTag
 
     // Future proofing - Don't error out if there are other tags
 exit:
-    if (err == CHIP_END_OF_TLV || err == CHIP_NO_ERROR)
+    if (err == CHIP_END_OF_TLV)
     {
         return tlvReader.ExitContainer(containerType);
     }

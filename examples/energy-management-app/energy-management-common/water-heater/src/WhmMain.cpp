@@ -24,6 +24,8 @@
 #include <app/clusters/water-heater-management-server/water-heater-management-server.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+static constexpr int WHM_ENDPOINT = 1;
+
 using namespace chip;
 using namespace chip::app;
 using namespace chip::app::DataModel;
@@ -51,7 +53,7 @@ WhmManufacturer * GetWhmManufacturer()
  * create the Delegate first, then wrap it in the Instance
  * Then call the Instance->Init() to register the attribute and command handlers
  */
-CHIP_ERROR WhmInit(EndpointId endpointId)
+CHIP_ERROR WhmInit()
 {
     CHIP_ERROR err;
 
@@ -61,7 +63,7 @@ CHIP_ERROR WhmInit(EndpointId endpointId)
         return CHIP_ERROR_INCORRECT_STATE;
     }
 
-    gWhmDelegate = std::make_unique<WaterHeaterManagementDelegate>(endpointId);
+    gWhmDelegate = std::make_unique<WaterHeaterManagementDelegate>(WHM_ENDPOINT);
     if (!gWhmDelegate)
     {
         ChipLogError(AppServer, "Failed to allocate memory for WaterHeaterManagementDelegate");
@@ -70,7 +72,7 @@ CHIP_ERROR WhmInit(EndpointId endpointId)
 
     /* Manufacturer may optionally not support all features, commands & attributes */
     gWhmInstance = std::make_unique<WaterHeaterManagementInstance>(
-        EndpointId(endpointId), *gWhmDelegate, BitMask<Feature>(Feature::kEnergyManagement, Feature::kTankPercent));
+        EndpointId(WHM_ENDPOINT), *gWhmDelegate, BitMask<Feature>(Feature::kEnergyManagement, Feature::kTankPercent));
     if (!gWhmInstance)
     {
         ChipLogError(AppServer, "Failed to allocate memory for WaterHeaterManagementInstance");
@@ -165,9 +167,9 @@ CHIP_ERROR WhmManufacturerShutdown()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR WhmApplicationInit(EndpointId endpointId)
+CHIP_ERROR WhmApplicationInit()
 {
-    ReturnErrorOnFailure(WhmInit(endpointId));
+    ReturnErrorOnFailure(WhmInit());
 
     /* Do this last so that the instances for other clusters can be wrapped inside */
     ReturnErrorOnFailure(WhmManufacturerInit());

@@ -17,15 +17,8 @@
  */
 
 #pragma once
-#if defined(__cplusplus)
-extern "C" {
-#endif
-#include "ELSFactoryData.h"
-#if defined(__cplusplus)
-}
-#endif /* __cplusplus */
 
-#include <platform/nxp/common/factory_data/legacy/FactoryDataProvider.h>
+#include <platform/nxp/common/factory_data/FactoryDataProvider.h>
 
 #define FACTORY_DATA_MAX_SIZE 4096
 
@@ -46,42 +39,49 @@ class FactoryDataProviderImpl : public FactoryDataProvider
 public:
     static FactoryDataProviderImpl sInstance;
 
-    FactoryDataProviderImpl();
-    ~FactoryDataProviderImpl(){};
-
     CHIP_ERROR Init(void);
-    CHIP_ERROR SignWithDacKey(const ByteSpan & digestToSign, MutableByteSpan & outSignBuffer);
-
     CHIP_ERROR SearchForId(uint8_t searchedType, uint8_t * pBuf, size_t bufLength, uint16_t & length,
                            uint32_t * contentAddr = NULL);
     CHIP_ERROR LoadKeypairFromRaw(ByteSpan privateKey, ByteSpan publicKey, Crypto::P256Keypair & keypair);
+    CHIP_ERROR SignWithDacKey(const ByteSpan & digestToSign, MutableByteSpan & outSignBuffer);
 
-    CHIP_ERROR EncryptFactoryData(uint8_t * FactoryDataBuff);
-    CHIP_ERROR DecryptFactoryData(uint8_t * FactoryDataBuff);
-
-    CHIP_ERROR Validate();
+    CHIP_ERROR SetAes256Key(const uint8_t * keyAes256);
     CHIP_ERROR SetEncryptionMode(EncryptionMode mode);
 
 private:
-    enum ElsOperation
+    struct Header
     {
-        kDecrypt = 0U,
-        kEncrypt = 1U,
+        uint32_t hashId;
+        uint32_t size;
+        uint8_t hash[4];
     };
-    CHIP_ERROR EncryptDecryptFactoryData(uint8_t * FactoryDataBuff, ElsOperation operation);
     uint8_t factoryDataRamBuffer[FACTORY_DATA_MAX_SIZE];
+    Header mHeader;
+
+    /* TLV offset */
+    static constexpr uint32_t kLengthOffset = 1;
+    static constexpr uint32_t kValueOffset  = 3;
 
     CHIP_ERROR ELS_ExportBlob(uint8_t * data, size_t * dataLen);
     CHIP_ERROR ELS_SaveAesKeyBlob();
 
     CHIP_ERROR ReadAndCheckFactoryDataInFlash(void);
     CHIP_ERROR DecryptAndCheckFactoryData(void);
-    CHIP_ERROR ELS_ImportWrappedKey(MutableByteSpan & key);
+    CHIP_ERROR ELS_ImportWrappedKeyAndDecrypt(MutableByteSpan & key, uint8_t * encrypt, uint16_t size, uint8_t * decrypt);
 
-    mcuxClEls_KeyIndex_t key_index = MCUXCLELS_KEY_SLOTS;
+    const uint8_t * pAesKey    = nullptr;
+    EncryptionMode encryptMode = encrypt_ecb;
 };
 
-FactoryDataProvider & FactoryDataPrvdImpl();
+inline FactoryDataProvider & FactoryDataPrvd()
+{
+    return FactoryDataProviderImpl::sInstance;
+}
+
+inline FactoryDataProviderImpl & FactoryDataPrvdImpl()
+{
+    return FactoryDataProviderImpl::sInstance;
+}
 
 } // namespace DeviceLayer
 } // namespace chip

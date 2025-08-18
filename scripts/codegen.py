@@ -24,10 +24,16 @@ try:
 except ImportError:
     _has_coloredlogs = False
 
-from matter.idl.generators.path_resolution import expand_path_for_idl
-from matter.idl.generators.registry import GENERATORS, CodeGenerator
-from matter.idl.generators.storage import FileSystemGeneratorStorage, GeneratorStorage
-from matter.idl.matter_idl_parser import CreateParser
+try:
+    from matter_idl.matter_idl_parser import CreateParser
+except ImportError:
+    import os
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'py_matter_idl')))
+    from matter_idl.matter_idl_parser import CreateParser
+
+# isort: off
+from matter_idl.generators import FileSystemGeneratorStorage, GeneratorStorage
+from matter_idl.generators.registry import CodeGenerator, GENERATORS
 
 
 class ListGeneratedFilesStorage(GeneratorStorage):
@@ -116,7 +122,7 @@ def main(log_level, generator, option, output_dir, dry_run, name_only, expected_
         storage = FileSystemGeneratorStorage(output_dir)
 
     logging.info("Parsing idl from %s" % idl_path)
-    idl_tree = CreateParser().parse(open(idl_path, "rt").read(), file_name=idl_path)
+    idl_tree = CreateParser().parse(open(idl_path, "rt").read())
 
     plugin_module = None
     if generator.startswith('custom:'):
@@ -148,8 +154,8 @@ def main(log_level, generator, option, output_dir, dry_run, name_only, expected_
             expected = set()
             for line in fin.readlines():
                 line = line.strip()
-                for expanded_path in expand_path_for_idl(idl_tree, line):
-                    expected.add(expanded_path)
+                if line:
+                    expected.add(line)
 
             if expected != storage.generated_paths:
                 logging.fatal("expected and generated files do not match.")

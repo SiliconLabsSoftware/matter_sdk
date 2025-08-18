@@ -17,8 +17,8 @@
 import ctypes
 from ctypes import c_bool, c_char_p, c_uint32, c_void_p, py_object
 
-from ..native import GetLibraryHandle, NativeLibraryHandleMethodArguments
-from .types import DeviceScannedCallback, ScanDoneCallback, ScanErrorCallback
+import chip.native
+from chip.ble.types import DeviceScannedCallback, ScanDoneCallback, ScanErrorCallback
 
 
 # This prevents python auto-casting c_void_p to integers and
@@ -32,16 +32,16 @@ class VoidPointer(c_void_p):
 def _GetBleLibraryHandle() -> ctypes.CDLL:
     """ Get the native library handle with BLE method initialization.
 
-      Retrieves the CHIP native library handle and attaches signatures to
+      Retreives the CHIP native library handle and attaches signatures to
       native methods.
       """
 
-    handle = GetLibraryHandle()
+    handle = chip.native.GetLibraryHandle()
 
     # Uses one of the type decorators as an indicator for everything being
     # initialized. Native methods default to c_int return types
     if handle.pychip_ble_adapter_list_new.restype != VoidPointer:
-        setter = NativeLibraryHandleMethodArguments(handle)
+        setter = chip.native.NativeLibraryHandleMethodArguments(handle)
 
         setter.Set('pychip_ble_adapter_list_new', VoidPointer, [])
         setter.Set('pychip_ble_adapter_list_next', c_bool, [VoidPointer])

@@ -59,7 +59,6 @@ public:
 
     CHIP_ERROR HandleEventTrigger(uint64_t eventTrigger) override
     {
-        eventTrigger = clearEndpointInEventTrigger(eventTrigger);
         if (HandleEnergyReportingTestEventTrigger(eventTrigger))
         {
             return CHIP_NO_ERROR;

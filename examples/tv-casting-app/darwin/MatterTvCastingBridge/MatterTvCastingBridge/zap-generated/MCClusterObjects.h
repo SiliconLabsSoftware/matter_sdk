@@ -99,6 +99,11 @@
 - (MCOnOffClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
 
 /**
+ * @brief Returns non-nil pointer to MCOnOffClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCOnOffClusterEventListAttribute * _Nullable)eventListAttribute;
+
+/**
  * @brief Returns non-nil pointer to MCOnOffClusterAttributeListAttribute if supported, nil otherwise.
  */
 - (MCOnOffClusterAttributeListAttribute * _Nullable)attributeListAttribute;
@@ -248,6 +253,11 @@
 - (MCLevelControlClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
 
 /**
+ * @brief Returns non-nil pointer to MCLevelControlClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCLevelControlClusterEventListAttribute * _Nullable)eventListAttribute;
+
+/**
  * @brief Returns non-nil pointer to MCLevelControlClusterAttributeListAttribute if supported, nil otherwise.
  */
 - (MCLevelControlClusterAttributeListAttribute * _Nullable)attributeListAttribute;
@@ -290,6 +300,11 @@
  * @brief Returns non-nil pointer to MCWakeOnLanClusterAcceptedCommandListAttribute if supported, nil otherwise.
  */
 - (MCWakeOnLanClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
+
+/**
+ * @brief Returns non-nil pointer to MCWakeOnLanClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCWakeOnLanClusterEventListAttribute * _Nullable)eventListAttribute;
 
 /**
  * @brief Returns non-nil pointer to MCWakeOnLanClusterAttributeListAttribute if supported, nil otherwise.
@@ -339,6 +354,11 @@
  * @brief Returns non-nil pointer to MCTargetNavigatorClusterAcceptedCommandListAttribute if supported, nil otherwise.
  */
 - (MCTargetNavigatorClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
+
+/**
+ * @brief Returns non-nil pointer to MCTargetNavigatorClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCTargetNavigatorClusterEventListAttribute * _Nullable)eventListAttribute;
 
 /**
  * @brief Returns non-nil pointer to MCTargetNavigatorClusterAttributeListAttribute if supported, nil otherwise.
@@ -500,6 +520,11 @@
 - (MCMediaPlaybackClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
 
 /**
+ * @brief Returns non-nil pointer to MCMediaPlaybackClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCMediaPlaybackClusterEventListAttribute * _Nullable)eventListAttribute;
+
+/**
  * @brief Returns non-nil pointer to MCMediaPlaybackClusterAttributeListAttribute if supported, nil otherwise.
  */
 - (MCMediaPlaybackClusterAttributeListAttribute * _Nullable)attributeListAttribute;
@@ -537,6 +562,11 @@
  * @brief Returns non-nil pointer to MCKeypadInputClusterAcceptedCommandListAttribute if supported, nil otherwise.
  */
 - (MCKeypadInputClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
+
+/**
+ * @brief Returns non-nil pointer to MCKeypadInputClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCKeypadInputClusterEventListAttribute * _Nullable)eventListAttribute;
 
 /**
  * @brief Returns non-nil pointer to MCKeypadInputClusterAttributeListAttribute if supported, nil otherwise.
@@ -591,6 +621,11 @@
  * @brief Returns non-nil pointer to MCContentLauncherClusterAcceptedCommandListAttribute if supported, nil otherwise.
  */
 - (MCContentLauncherClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
+
+/**
+ * @brief Returns non-nil pointer to MCContentLauncherClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCContentLauncherClusterEventListAttribute * _Nullable)eventListAttribute;
 
 /**
  * @brief Returns non-nil pointer to MCContentLauncherClusterAttributeListAttribute if supported, nil otherwise.
@@ -650,6 +685,11 @@
  * @brief Returns non-nil pointer to MCApplicationLauncherClusterAcceptedCommandListAttribute if supported, nil otherwise.
  */
 - (MCApplicationLauncherClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
+
+/**
+ * @brief Returns non-nil pointer to MCApplicationLauncherClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCApplicationLauncherClusterEventListAttribute * _Nullable)eventListAttribute;
 
 /**
  * @brief Returns non-nil pointer to MCApplicationLauncherClusterAttributeListAttribute if supported, nil otherwise.
@@ -724,6 +764,11 @@
  * @brief Returns non-nil pointer to MCApplicationBasicClusterAcceptedCommandListAttribute if supported, nil otherwise.
  */
 - (MCApplicationBasicClusterAcceptedCommandListAttribute * _Nullable)acceptedCommandListAttribute;
+
+/**
+ * @brief Returns non-nil pointer to MCApplicationBasicClusterEventListAttribute if supported, nil otherwise.
+ */
+- (MCApplicationBasicClusterEventListAttribute * _Nullable)eventListAttribute;
 
 /**
  * @brief Returns non-nil pointer to MCApplicationBasicClusterAttributeListAttribute if supported, nil otherwise.

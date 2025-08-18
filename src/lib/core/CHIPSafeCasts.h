@@ -26,6 +26,7 @@
 #pragma once
 
 #include <limits.h>
+#include <nlassert.h>
 #include <stdint.h>
 
 namespace chip {
@@ -41,7 +42,7 @@ namespace Uint8 {
  */
 inline uint8_t * from_uchar(unsigned char * in)
 {
-    static_assert(CHAR_BIT == 8, "Can't type cast unsigned char array as uint8_t array");
+    nlSTATIC_ASSERT_PRINT(CHAR_BIT == 8, "Can't type cast unsigned char array as uint8_t array");
 #ifdef __cplusplus
     return reinterpret_cast<uint8_t *>(in);
 #else
@@ -58,7 +59,7 @@ inline uint8_t * from_uchar(unsigned char * in)
  */
 inline const uint8_t * from_const_uchar(const unsigned char * in)
 {
-    static_assert(CHAR_BIT == 8, "Can't type cast unsigned char array as uint8_t array");
+    nlSTATIC_ASSERT_PRINT(CHAR_BIT == 8, "Can't type cast unsigned char array as uint8_t array");
 #ifdef __cplusplus
     return reinterpret_cast<const uint8_t *>(in);
 #else
@@ -75,7 +76,7 @@ inline const uint8_t * from_const_uchar(const unsigned char * in)
  */
 inline uint8_t * from_char(char * in)
 {
-    static_assert(CHAR_BIT == 8, "Can't type cast char array as uint8_t array");
+    nlSTATIC_ASSERT_PRINT(CHAR_BIT == 8, "Can't type cast char array as uint8_t array");
 #ifdef __cplusplus
     return reinterpret_cast<uint8_t *>(in);
 #else
@@ -92,7 +93,7 @@ inline uint8_t * from_char(char * in)
  */
 inline const uint8_t * from_const_char(const char * in)
 {
-    static_assert(CHAR_BIT == 8, "Can't type cast char array as uint8_t array");
+    nlSTATIC_ASSERT_PRINT(CHAR_BIT == 8, "Can't type cast char array as uint8_t array");
 #ifdef __cplusplus
     return reinterpret_cast<const uint8_t *>(in);
 #else
@@ -109,7 +110,7 @@ inline const uint8_t * from_const_char(const char * in)
  */
 inline unsigned char * to_uchar(uint8_t * in)
 {
-    static_assert(CHAR_BIT == 8, "Can't type cast uint8_t array to unsigned char array");
+    nlSTATIC_ASSERT_PRINT(CHAR_BIT == 8, "Can't type cast uint8_t array to unsigned char array");
 #ifdef __cplusplus
     return reinterpret_cast<unsigned char *>(in);
 #else
@@ -126,7 +127,7 @@ inline unsigned char * to_uchar(uint8_t * in)
  */
 inline const unsigned char * to_const_uchar(const uint8_t * in)
 {
-    static_assert(CHAR_BIT == 8, "Can't type cast uint8_t array to unsigned char array");
+    nlSTATIC_ASSERT_PRINT(CHAR_BIT == 8, "Can't type cast uint8_t array to unsigned char array");
 #ifdef __cplusplus
     return reinterpret_cast<const unsigned char *>(in);
 #else
@@ -143,7 +144,7 @@ inline const unsigned char * to_const_uchar(const uint8_t * in)
  */
 inline char * to_char(uint8_t * in)
 {
-    static_assert(CHAR_BIT == 8, "Can't type cast uint8_t array to char array");
+    nlSTATIC_ASSERT_PRINT(CHAR_BIT == 8, "Can't type cast uint8_t array to char array");
 #ifdef __cplusplus
     return reinterpret_cast<char *>(in);
 #else
@@ -160,7 +161,7 @@ inline char * to_char(uint8_t * in)
  */
 inline const char * to_const_char(const uint8_t * in)
 {
-    static_assert(CHAR_BIT == 8, "Can't type cast uint8_t array to char array");
+    nlSTATIC_ASSERT_PRINT(CHAR_BIT == 8, "Can't type cast uint8_t array to char array");
 #ifdef __cplusplus
     return reinterpret_cast<const char *>(in);
 #else

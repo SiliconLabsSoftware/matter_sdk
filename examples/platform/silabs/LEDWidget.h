@@ -31,16 +31,11 @@ public:
     void Blink(uint32_t changeRateMS);
     void Blink(uint32_t onTimeMS, uint32_t offTimeMS);
     void Animate();
-    uint8_t GetLED();
-    bool GetLEDStatus(uint8_t led);
-    void SetLevel(uint8_t aLevel);
-    uint8_t GetLevel();
 
 private:
-    uint8_t mLed;
-    uint8_t mLevel;
-    bool mLedStatus;
     uint64_t mLastChangeTimeMS;
     uint32_t mBlinkOnTimeMS;
     uint32_t mBlinkOffTimeMS;
+    uint8_t mLed;
+    bool mLedStatus;
 };

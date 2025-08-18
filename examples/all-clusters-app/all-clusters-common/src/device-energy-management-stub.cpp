@@ -70,13 +70,3 @@ void emberAfDeviceEnergyManagementClusterInitCallback(chip::EndpointId endpointI
         return;
     }
 }
-
-void emberAfDeviceEnergyManagementClusterShutdownCallback(chip::EndpointId endpointId)
-{
-    if (gInstance)
-    {
-        gInstance->Shutdown();
-    }
-    gInstance = nullptr;
-    gDelegate = nullptr;
-}

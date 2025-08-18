@@ -20,13 +20,11 @@
 
 #include <app/util/attribute-storage.h>
 
-#include <cstdint>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include <functional>
 #include <string>
-#include <sys/types.h>
 #include <vector>
 
 class Device
@@ -37,11 +35,10 @@ public:
 
     enum Changed_t
     {
-        kChanged_Reachable            = 1u << 0,
-        kChanged_Location             = 1u << 1,
-        kChanged_Name                 = 1u << 2,
-        kChanged_ConfigurationVersion = 1u << 3,
-        kChanged_Last                 = kChanged_ConfigurationVersion,
+        kChanged_Reachable = 1u << 0,
+        kChanged_Location  = 1u << 1,
+        kChanged_Name      = 1u << 2,
+        kChanged_Last      = kChanged_Name,
     } Changed;
 
     Device(const char * szDeviceName, std::string szLocation);
@@ -53,8 +50,6 @@ public:
     void SetUniqueId(const char * szDeviceUniqueId);
     void SetLocation(std::string szLocation);
     void GenerateUniqueId();
-    uint32_t GetConfigurationVersion();
-    void SetConfigurationVersion(uint32_t configurationVersion);
     inline void SetEndpointId(chip::EndpointId id) { mEndpointId = id; };
     inline chip::EndpointId GetEndpointId() { return mEndpointId; };
     inline void SetParentEndpointId(chip::EndpointId id) { mParentEndpointId = id; };
@@ -72,7 +67,6 @@ protected:
     bool mReachable                         = false;
     char mName[kDeviceNameSize + 1]         = { 0 };
     char mUniqueId[kDeviceUniqueIdSize + 1] = { 0 };
-    uint32_t mConfigurationVersion;
     std::string mLocation;
     chip::EndpointId mEndpointId;
     chip::EndpointId mParentEndpointId;

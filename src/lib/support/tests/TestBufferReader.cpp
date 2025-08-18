@@ -30,21 +30,21 @@
 #include <lib/support/BufferReader.h>
 
 using namespace chip;
-using namespace chip::Encoding;
+using namespace chip::Encoding::LittleEndian;
 
 static const uint8_t test_buffer[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 };
 
-struct LittleEndianTestReader : public LittleEndian::Reader
+struct TestReader : public Reader
 {
-    LittleEndianTestReader() : LittleEndian::Reader(test_buffer, std::extent<decltype(test_buffer)>::value) {}
+    TestReader() : Reader(test_buffer, std::extent<decltype(test_buffer)>::value) {}
 };
 
-struct LittleEndianTestSpanReader : public LittleEndian::Reader
+struct TestSpanReader : public Reader
 {
-    LittleEndianTestSpanReader() : LittleEndian::Reader(ByteSpan{ test_buffer, std::extent<decltype(test_buffer)>::value }) {}
+    TestSpanReader() : Reader(ByteSpan{ test_buffer, std::extent<decltype(test_buffer)>::value }) {}
 };
 
-static void TestBufferReader_BasicImpl(LittleEndian::Reader & reader)
+static void TestBufferReader_BasicImpl(Reader & reader)
 {
     uint8_t first;
     uint16_t second;
@@ -75,21 +75,21 @@ static void TestBufferReader_BasicImpl(LittleEndian::Reader & reader)
 
 TEST(TestBufferReader, TestBufferReader_Basic)
 {
-    LittleEndianTestReader reader;
+    TestReader reader;
 
     TestBufferReader_BasicImpl(reader);
 }
 
 TEST(TestBufferReader, TestBufferReader_BasicSpan)
 {
-    LittleEndianTestSpanReader reader;
+    TestSpanReader reader;
 
     TestBufferReader_BasicImpl(reader);
 }
 
 TEST(TestBufferReader, TestBufferReader_Saturation)
 {
-    LittleEndianTestReader reader;
+    TestReader reader;
     uint64_t temp;
     // Read some bytes out so we can get to the end of the buffer.
     CHIP_ERROR err = reader.Read64(&temp).StatusCode();
@@ -113,13 +113,12 @@ TEST(TestBufferReader, TestBufferReader_Saturation)
 
 TEST(TestBufferReader, TestBufferReader_Skip)
 {
-    LittleEndianTestReader reader;
+    TestReader reader;
     uint8_t temp          = 0;
     uint16_t firstSkipLen = 2;
 
     // Verify Skip() advances the start pointer the correct amount.
-    reader.Skip(firstSkipLen);
-    CHIP_ERROR err = reader.Read8(&temp).StatusCode();
+    CHIP_ERROR err = reader.Skip(firstSkipLen).Read8(&temp).StatusCode();
     EXPECT_EQ(err, CHIP_NO_ERROR);
     EXPECT_EQ(temp, test_buffer[firstSkipLen]);
     EXPECT_EQ(reader.OctetsRead(), (firstSkipLen + 1u));
@@ -176,8 +175,7 @@ TEST(TestBufferReader, TestBufferReader_LittleEndianScalars)
 
         uint32_t val1 = 0;
         uint32_t val2 = 0;
-        reader.Skip(1);
-        EXPECT_TRUE(reader.Read32(&val1).Read32(&val2).IsSuccess());
+        EXPECT_TRUE(reader.Skip(1).Read32(&val1).Read32(&val2).IsSuccess());
         EXPECT_EQ(reader.Remaining(), 1u);
         EXPECT_EQ(val1, static_cast<uint32_t>(0xfffffffeUL));
         EXPECT_EQ(val2, static_cast<uint32_t>(0xffffffffUL));
@@ -229,8 +227,7 @@ TEST(TestBufferReader, TestBufferReader_LittleEndianScalars)
 
         int32_t val1 = 0;
         int32_t val2 = 0;
-        reader.Skip(1);
-        EXPECT_TRUE(reader.ReadSigned32(&val1).ReadSigned32(&val2).IsSuccess());
+        EXPECT_TRUE(reader.Skip(1).ReadSigned32(&val1).ReadSigned32(&val2).IsSuccess());
         EXPECT_EQ(reader.Remaining(), 1u);
         EXPECT_EQ(val1, static_cast<int32_t>(-2L));
         EXPECT_EQ(val2, static_cast<int32_t>(-1L));
@@ -274,24 +271,4 @@ TEST(TestBufferReader, TestBufferReader_LittleEndianScalars)
         EXPECT_EQ(val2, '\0');
         EXPECT_EQ(val3, '\xff');
     }
-}
-
-TEST(TestBigEndianBufferReader, GenericTests)
-{
-    uint8_t test_buf[] = { 0x12, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xBC, 1, 2, 3 };
-
-    chip::Encoding::BigEndian::Reader reader{ ByteSpan{ test_buf } };
-
-    uint16_t v1;
-    uint32_t v2;
-    uint8_t v3;
-
-    EXPECT_TRUE(reader.Read16(&v1).Read32(&v2).Read8(&v3).IsSuccess());
-    EXPECT_EQ(reader.Remaining(), 3u);
-    EXPECT_EQ(v1, 0x1223u);
-    EXPECT_EQ(v2, 0x456789ABu);
-    EXPECT_EQ(v3, 0xBCu);
-
-    // Insufficient buffer after that
-    EXPECT_FALSE(reader.Read32(&v2).IsSuccess());
 }

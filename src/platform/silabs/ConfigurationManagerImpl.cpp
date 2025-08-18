@@ -22,7 +22,6 @@
  *          for Silabs platforms using the Silicon Labs SDK.
  */
 /* this file behaves like a config.h, comes first */
-#include <cmsis_os2.h>
 #include <platform/ConfigurationManager.h>
 #include <platform/DiagnosticDataProvider.h>
 #include <platform/internal/CHIPDeviceLayerInternal.h>
@@ -31,7 +30,7 @@
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-#include <platform/silabs/wifi/WifiInterface.h>
+#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 #endif
 
 #include "sl_component_catalog.h"
@@ -50,7 +49,6 @@ namespace chip {
 namespace DeviceLayer {
 
 using namespace ::chip::DeviceLayer::Internal;
-using namespace ::chip ::DeviceLayer ::Silabs;
 
 ConfigurationManagerImpl & ConfigurationManagerImpl::GetDefaultInstance()
 {
@@ -295,14 +293,14 @@ void ConfigurationManagerImpl::ClearThreadStack()
 
 void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
 {
-    CHIP_ERROR error = CHIP_NO_ERROR;
+    CHIP_ERROR err;
 
     ChipLogProgress(DeviceLayer, "Performing factory reset");
 
-    error = SilabsConfig::FactoryResetConfig();
-    if (error != CHIP_NO_ERROR)
+    err = SilabsConfig::FactoryResetConfig();
+    if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "FactoryResetConfig() failed: %s", chip::ErrorStr(error));
+        ChipLogError(DeviceLayer, "FactoryResetConfig() failed: %s", chip::ErrorStr(err));
     }
 
     GetDefaultInstance().ClearThreadStack();
@@ -313,14 +311,13 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
     PersistedStorage::KeyValueStoreMgrImpl().ErasePartition();
 
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-    error = WifiInterface::GetInstance().TriggerDisconnection();
-    if (error != CHIP_NO_ERROR)
+    sl_status_t status = sl_matter_wifi_disconnect();
+    if (status != SL_STATUS_OK)
     {
-        ChipLogError(DeviceLayer, "TriggerDisconnection() failed: %s", chip::ErrorStr(error));
+        ChipLogError(DeviceLayer, "sl_matter_wifi_disconnect() failed: %lx", status);
     }
-
     ChipLogProgress(DeviceLayer, "Clearing WiFi provision");
-    WifiInterface::GetInstance().ClearWifiCredentials();
+    wfx_clear_wifi_provision();
 #endif // CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
 
     // Restart the system.
@@ -329,7 +326,7 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
     // When called from an RPC, the following reset occurs before the RPC can respond,
     // which breaks tests (because it looks like the RPC hasn't successfully completed).
     // Block the task for 500 ms before the reset occurs to allow RPC response to be sent
-    osDelay(pdMS_TO_TICKS(500));
+    vTaskDelay(pdMS_TO_TICKS(500));
 
     Silabs::GetPlatform().SoftwareReset();
 }
@@ -337,10 +334,11 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
 #ifdef SL_WIFI
 CHIP_ERROR ConfigurationManagerImpl::GetPrimaryWiFiMACAddress(uint8_t * buf)
 {
-    VerifyOrReturnError(buf != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    sl_wfx_mac_address_t macaddr;
+    wfx_get_wifi_mac_addr(SL_WFX_STA_INTERFACE, &macaddr);
+    memcpy(buf, &macaddr.octet[0], sizeof(macaddr.octet));
 
-    MutableByteSpan byteSpan(buf, kPrimaryMACAddressLength);
-    return WifiInterface::GetInstance().GetMacAddress(SL_WFX_STA_INTERFACE, byteSpan);
+    return CHIP_NO_ERROR;
 }
 #endif
 

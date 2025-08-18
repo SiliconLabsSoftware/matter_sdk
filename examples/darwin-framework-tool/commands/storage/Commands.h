@@ -25,10 +25,7 @@ void registerCommandsStorage(Commands & commands)
 {
     const char * clusterName = "storage";
 
-    commands_list clusterCommands = {
-        make_unique<StorageViewAll>(),  //
-        make_unique<StorageClearAll>(), //
-    };
+    commands_list clusterCommands = { make_unique<StorageClearAll>() };
 
     commands.RegisterCommandSet(clusterName, clusterCommands,
                                 "Commands for managing persistent data stored by darwin-framework-tool.");

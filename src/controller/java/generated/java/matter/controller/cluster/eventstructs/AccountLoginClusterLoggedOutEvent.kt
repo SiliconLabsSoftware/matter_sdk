@@ -23,11 +23,10 @@ import matter.tlv.Tag
 import matter.tlv.TlvReader
 import matter.tlv.TlvWriter
 
-class AccountLoginClusterLoggedOutEvent(val node: Optional<ULong>, val fabricIndex: UByte) {
+class AccountLoginClusterLoggedOutEvent(val node: Optional<ULong>) {
   override fun toString(): String = buildString {
     append("AccountLoginClusterLoggedOutEvent {\n")
     append("\tnode : $node\n")
-    append("\tfabricIndex : $fabricIndex\n")
     append("}\n")
   }
 
@@ -38,14 +37,12 @@ class AccountLoginClusterLoggedOutEvent(val node: Optional<ULong>, val fabricInd
         val optnode = node.get()
         put(ContextSpecificTag(TAG_NODE), optnode)
       }
-      put(ContextSpecificTag(TAG_FABRIC_INDEX), fabricIndex)
       endStructure()
     }
   }
 
   companion object {
     private const val TAG_NODE = 0
-    private const val TAG_FABRIC_INDEX = 254
 
     fun fromTlv(tlvTag: Tag, tlvReader: TlvReader): AccountLoginClusterLoggedOutEvent {
       tlvReader.enterStructure(tlvTag)
@@ -55,11 +52,10 @@ class AccountLoginClusterLoggedOutEvent(val node: Optional<ULong>, val fabricInd
         } else {
           Optional.empty()
         }
-      val fabricIndex = tlvReader.getUByte(ContextSpecificTag(TAG_FABRIC_INDEX))
 
       tlvReader.exitContainer()
 
-      return AccountLoginClusterLoggedOutEvent(node, fabricIndex)
+      return AccountLoginClusterLoggedOutEvent(node)
     }
   }
 }

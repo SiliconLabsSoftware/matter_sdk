@@ -21,6 +21,11 @@
 
 using chip::Protocols::InteractionModel::Status;
 
+void MatterReportingAttributeChangeCallback(const chip::app::ConcreteAttributePath & aPath)
+{
+    // NOOP currently, exists to satisfy linker only
+}
+
 Status emAfReadOrWriteAttribute(const EmberAfAttributeSearchRecord * attRecord, const EmberAfAttributeMetadata ** metadata,
                                 uint8_t * buffer, uint16_t readLength, bool write)
 {

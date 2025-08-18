@@ -566,9 +566,8 @@ void UserDirectedCommissioningServer::PrintUDCClients()
             Encoding::BytesToUppercaseHexString(state->GetRotatingId(), chip::Dnssd::kMaxRotatingIdLen, rotatingIdString,
                                                 sizeof(rotatingIdString));
 
-            ChipLogProgress(AppServer,
-                            "PrintUDCClients() UDC Client[%d] instance=%s deviceName=%s address=%s, vid/pid=%d/%d disc=%d rid=%s",
-                            i, state->GetInstanceName(), state->GetDeviceName(), addrBuffer, state->GetVendorId(),
+            ChipLogProgress(AppServer, "UDC Client[%d] instance=%s deviceName=%s address=%s, vid/pid=%d/%d disc=%d rid=%s", i,
+                            state->GetInstanceName(), state->GetDeviceName(), addrBuffer, state->GetVendorId(),
                             state->GetProductId(), state->GetLongDiscriminator(), rotatingIdString);
         }
     }

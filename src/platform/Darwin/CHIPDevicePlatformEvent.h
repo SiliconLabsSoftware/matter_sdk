@@ -44,7 +44,9 @@ enum PublicPlatformSpecificEventTypes
  */
 enum InternalPlatformSpecificEventTypes
 {
-    /* None currently defined */
+    kPlatformDarwinEvent = kRange_InternalPlatformSpecific,
+    kPlatformDarwinBleC1WriteEvent,
+    kPlatformDarwinBleOutOfBuffersEvent,
 };
 
 } // namespace DeviceEventType
@@ -54,6 +56,14 @@ enum InternalPlatformSpecificEventTypes
  */
 struct ChipDevicePlatformEvent final
 {
+    union
+    {
+        struct
+        {
+            uint16_t ConnId;
+            ::chip::System::PacketBuffer * Data;
+        } BleC1WriteEvent;
+    };
 };
 
 } // namespace DeviceLayer

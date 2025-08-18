@@ -17,7 +17,6 @@
  */
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/util/config.h>
-#include <chef-dishwasher-mode-delegate-impl.h>
 
 using namespace chip;
 using namespace chip::app;
@@ -46,7 +45,7 @@ void DishwasherModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Comma
 
 CHIP_ERROR DishwasherModeDelegate::GetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label)
 {
-    if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
+    if (modeIndex >= ArraySize(kModeOptions))
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -55,7 +54,7 @@ CHIP_ERROR DishwasherModeDelegate::GetModeLabelByIndex(uint8_t modeIndex, chip::
 
 CHIP_ERROR DishwasherModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
 {
-    if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
+    if (modeIndex >= ArraySize(kModeOptions))
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -65,7 +64,7 @@ CHIP_ERROR DishwasherModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_
 
 CHIP_ERROR DishwasherModeDelegate::GetModeTagsByIndex(uint8_t modeIndex, List<ModeTagStructType> & tags)
 {
-    if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
+    if (modeIndex >= ArraySize(kModeOptions))
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -153,8 +152,8 @@ void emberAfDishwasherModeClusterInitCallback(chip::EndpointId endpointId)
     VerifyOrDie(!gDishwasherModeDelegate && !gDishwasherModeInstance);
 
     gDishwasherModeDelegate = std::make_unique<DishwasherModeDelegate>();
-    gDishwasherModeInstance =
-        std::make_unique<ModeBase::Instance>(gDishwasherModeDelegate.get(), endpointId, DishwasherMode::Id, 0);
+    gDishwasherModeInstance = std::make_unique<ModeBase::Instance>(gDishwasherModeDelegate.get(), endpointId, DishwasherMode::Id,
+                                                                   chip::to_underlying(Feature::kOnOff));
     gDishwasherModeInstance->Init();
 }
 #endif // MATTER_DM_PLUGIN_DISHWASHER_MODE_SERVER

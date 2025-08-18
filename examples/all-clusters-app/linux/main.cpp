@@ -31,6 +31,8 @@ int main(int argc, char * argv[])
         ChipLinuxAppInit(argc, argv, AppOptions::GetOptions(), chip::MakeOptional(kNetworkCommissioningEndpointSecondary)) == 0);
     VerifyOrDie(InitBindingHandlers() == CHIP_NO_ERROR);
 
+    LinuxDeviceOptions::GetInstance().dacProvider = AppOptions::GetDACProvider();
+
     ChipLinuxAppMainLoop();
 
     return 0;

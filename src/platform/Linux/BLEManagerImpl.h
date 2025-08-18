@@ -199,6 +199,7 @@ private:
     BluezEndpoint mEndpoint{ mBluezObjectManager };
 
     BluezAdvertisement mBLEAdvertisement{ mEndpoint };
+    const char * mpBLEAdvUUID = nullptr;
 
     ChipDeviceScanner mDeviceScanner{ mBluezObjectManager };
     BLEScanConfig mBLEScanConfig;

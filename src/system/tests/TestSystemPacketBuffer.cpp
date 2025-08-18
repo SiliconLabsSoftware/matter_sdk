@@ -100,9 +100,6 @@ public:
     {
         chip::DeviceLayer::PlatformMgr().Shutdown();
         chip::Platform::MemoryShutdown();
-
-        // Deregister the layer error formatter
-        DeregisterCHIPLayerErrorFormatter();
     }
 
     void SetUp()

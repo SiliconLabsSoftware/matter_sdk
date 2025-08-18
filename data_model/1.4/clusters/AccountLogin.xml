@@ -72,12 +72,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="TempAccountIdentifier" type="string">
         <mandatoryConform/>
-        <constraint>
-          <lengthBetween>
-            <from value="16"/>
-            <to value="100"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="16" to="100"/>
       </field>
     </command>
     <command id="0x01" name="GetSetupPINResponse" direction="responseFromServer">
@@ -85,9 +80,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="SetupPIN" type="string">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x02" name="Login" direction="commandToServer" response="Y">
@@ -95,18 +88,11 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="TempAccountIdentifier" type="string">
         <mandatoryConform/>
-        <constraint>
-          <lengthBetween>
-            <from value="16"/>
-            <to value="100"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="16" to="100"/>
       </field>
       <field id="1" name="SetupPIN" type="string">
         <mandatoryConform/>
-        <constraint>
-          <minLength value="8"/>
-        </constraint>
+        <constraint type="minLength" value="8"/>
       </field>
       <field id="2" name="Node" type="node-id">
         <optionalConform/>

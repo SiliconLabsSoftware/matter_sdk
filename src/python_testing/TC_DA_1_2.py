@@ -19,32 +19,21 @@
 # for details about the block below.
 #
 # === BEGIN CI TEST ARGUMENTS ===
-# test-runner-runs:
-#   run1:
-#     app: ${ALL_CLUSTERS_APP}
-#     app-args: --discriminator 1234 --KVS kvs1 --trace-to json:${TRACE_APP}.json
-#     script-args: >
-#       --storage-path admin_storage.json
-#       --commissioning-method on-network
-#       --discriminator 1234
-#       --passcode 20202021
-#       --PICS src/app/tests/suites/certification/ci-pics-values
-#       --trace-to json:${TRACE_TEST_JSON}.json
-#       --trace-to perfetto:${TRACE_TEST_PERFETTO}.perfetto
-#     factory-reset: true
-#     quiet: true
+# test-runner-runs: run1
+# test-runner-run/run1/app: ${ALL_CLUSTERS_APP}
+# test-runner-run/run1/factoryreset: True
+# test-runner-run/run1/quiet: True
+# test-runner-run/run1/app-args: --discriminator 1234 --KVS kvs1 --trace-to json:${TRACE_APP}.json
+# test-runner-run/run1/script-args: --storage-path admin_storage.json --commissioning-method on-network --discriminator 1234 --passcode 20202021 --PICS src/app/tests/suites/certification/ci-pics-values --trace-to json:${TRACE_TEST_JSON}.json --trace-to perfetto:${TRACE_TEST_PERFETTO}.perfetto
 # === END CI TEST ARGUMENTS ===
 
-import logging
 import os
 import random
 import re
 
 import chip.clusters as Clusters
+from basic_composition_support import BasicCompositionTests
 from chip.interaction_model import InteractionModelError, Status
-from chip.testing.basic_composition import BasicCompositionTests
-from chip.testing.conversions import hex_from_bytes
-from chip.testing.matter_testing import MatterBaseTest, TestStep, async_test_body, default_matter_test_main, type_matches
 from chip.tlv import TLVReader
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -52,6 +41,7 @@ from cryptography.hazmat._oid import ExtensionOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 from ecdsa.curves import curve_by_name
+from matter_testing_support import MatterBaseTest, TestStep, async_test_body, default_matter_test_main, hex_from_bytes, type_matches
 from mobly import asserts
 from pyasn1.codec.der.decoder import decode as der_decoder
 from pyasn1.error import PyAsn1Error
@@ -190,8 +180,7 @@ class TC_DA_1_2(MatterBaseTest, BasicCompositionTests):
 
         do_test_over_pase = self.user_params.get("use_pase_only", False)
         if do_test_over_pase:
-            setupCode = self.matter_test_config.qr_code_content or self.matter_test_config.manual_code
-            await self.default_controller.FindOrEstablishPASESession(setupCode[0], self.dut_node_id)
+            self.connect_over_pase(self.default_controller)
 
         # Commissioning - done
         self.step(0)
@@ -393,12 +382,7 @@ class TC_DA_1_2(MatterBaseTest, BasicCompositionTests):
             if '.der' not in filename:
                 continue
             with open(os.path.join(cd_cert_dir, filename), 'rb') as f:
-                logging.info(f'Parsing CD signing certificate file: {filename}')
-                try:
-                    cert = x509.load_der_x509_certificate(f.read())
-                except ValueError:
-                    logging.info(f'File {filename} is not a valid certificate, skipping')
-                    pass
+                cert = x509.load_der_x509_certificate(f.read())
                 pub = cert.public_key()
                 ski = x509.SubjectKeyIdentifier.from_public_key(pub).digest
                 certs[ski] = pub

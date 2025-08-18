@@ -28,13 +28,9 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#include "diagnostic_logs/DiagnosticLogsProviderDelegateImpl.h"
-#include <app/clusters/diagnostic-logs-server/diagnostic-logs-server.h>
-
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
 using namespace ::chip::app::Clusters::DoorLock;
-using namespace ::chip::app::Clusters::DiagnosticLogs;
 using ::chip::app::DataModel::Nullable;
 
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & path, uint8_t type, uint16_t size, uint8_t * value)
@@ -136,12 +132,4 @@ void emberAfPluginDoorLockOnAutoRelock(chip::EndpointId endpointId)
 {
     // Apply the relock state in the application control
     BoltLockMgr().InitiateAction(AppEvent::kEventType_Timer, BoltLockManager::LOCK_ACTION);
-}
-
-void emberAfDiagnosticLogsClusterInitCallback(chip::EndpointId endpoint)
-{
-    ChipLogProgress(NotSpecified, "Setting log provider.");
-
-    auto & logProvider = LogProvider::GetInstance();
-    DiagnosticLogsServer::Instance().SetDiagnosticLogsProviderDelegate(endpoint, &logProvider);
 }

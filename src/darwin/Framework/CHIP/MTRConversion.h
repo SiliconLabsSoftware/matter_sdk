@@ -18,7 +18,6 @@
 #import "NSStringSpanConversion.h"
 
 #import <Foundation/Foundation.h>
-#import <dispatch/time.h>
 
 #include <chrono>
 #include <lib/core/CASEAuthTag.h>
@@ -39,15 +38,7 @@ AsNumber(chip::Optional<T> optional)
 
 inline NSDate * MatterEpochSecondsAsDate(uint32_t matterEpochSeconds)
 {
-    const auto interval = static_cast<uint64_t>(chip::kChipEpochSecondsSinceUnixEpoch) + static_cast<uint64_t>(matterEpochSeconds);
-    return [NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) interval];
-}
-
-inline NSDate * MatterEpochMicrosecondsAsDate(uint64_t matterEpochMicroseconds)
-{
-    const auto microseconds = static_cast<uint64_t>(chip::kChipEpochSecondsSinceUnixEpoch) * USEC_PER_SEC + matterEpochMicroseconds;
-    const auto interval = static_cast<NSTimeInterval>(microseconds) / USEC_PER_SEC;
-    return [NSDate dateWithTimeIntervalSince1970:interval];
+    return [NSDate dateWithTimeIntervalSince1970:(chip::kChipEpochSecondsSinceUnixEpoch + (NSTimeInterval) matterEpochSeconds)];
 }
 
 template <typename Rep, typename Period>

@@ -18,13 +18,12 @@
 
 #include <controller/AutoCommissioner.h>
 
+#include <cstring>
+
 #include <app/InteractionModelTimeout.h>
 #include <controller/CHIPDeviceController.h>
 #include <credentials/CHIPCert.h>
 #include <lib/support/SafeInt.h>
-
-#include <cstring>
-#include <type_traits>
 
 namespace chip {
 namespace Controller {
@@ -39,11 +38,34 @@ AutoCommissioner::AutoCommissioner()
     SetCommissioningParameters(CommissioningParameters());
 }
 
-AutoCommissioner::~AutoCommissioner() {}
+AutoCommissioner::~AutoCommissioner()
+{
+    ReleaseDAC();
+    ReleasePAI();
+}
 
 void AutoCommissioner::SetOperationalCredentialsDelegate(OperationalCredentialsDelegate * operationalCredentialsDelegate)
 {
     mOperationalCredentialsDelegate = operationalCredentialsDelegate;
+}
+
+// Returns true if maybeUnsafeSpan is pointing to a buffer that we're not sure
+// will live for long enough.  knownSafeSpan, if it has a value, points to a
+// buffer that we _are_ sure will live for long enough.
+template <typename SpanType>
+static bool IsUnsafeSpan(const Optional<SpanType> & maybeUnsafeSpan, const Optional<SpanType> & knownSafeSpan)
+{
+    if (!maybeUnsafeSpan.HasValue())
+    {
+        return false;
+    }
+
+    if (!knownSafeSpan.HasValue())
+    {
+        return true;
+    }
+
+    return maybeUnsafeSpan.Value().data() != knownSafeSpan.Value().data();
 }
 
 CHIP_ERROR AutoCommissioner::VerifyICDRegistrationInfo(const CommissioningParameters & params)
@@ -79,16 +101,44 @@ CHIP_ERROR AutoCommissioner::VerifyICDRegistrationInfo(const CommissioningParame
 
 CHIP_ERROR AutoCommissioner::SetCommissioningParameters(const CommissioningParameters & params)
 {
-    // Our logic below assumes that we can modify mParams without affecting params.
-    VerifyOrReturnError(&params != &mParams, CHIP_NO_ERROR);
+    // Make sure any members that point to buffers that we are not pointing to
+    // our own buffers are not going to dangle.  We can skip this step if all
+    // the buffers pointers that we don't plan to re-point to our own buffers
+    // below are already pointing to the same things as our own buffer pointers
+    // (so that we know they have to be safe somehow).
+    //
+    // The checks are a bit painful, because Span does not have a usable
+    // operator==, and in any case, we want to compare for pointer equality, not
+    // data equality.
+    bool haveMaybeDanglingBufferPointers =
+        ((params.GetNOCChainGenerationParameters().HasValue() &&
+          (!mParams.GetNOCChainGenerationParameters().HasValue() ||
+           params.GetNOCChainGenerationParameters().Value().nocsrElements.data() !=
+               mParams.GetNOCChainGenerationParameters().Value().nocsrElements.data() ||
+           params.GetNOCChainGenerationParameters().Value().signature.data() !=
+               mParams.GetNOCChainGenerationParameters().Value().signature.data())) ||
+         IsUnsafeSpan(params.GetRootCert(), mParams.GetRootCert()) || IsUnsafeSpan(params.GetNoc(), mParams.GetNoc()) ||
+         IsUnsafeSpan(params.GetIcac(), mParams.GetIcac()) || IsUnsafeSpan(params.GetIpk(), mParams.GetIpk()) ||
+         IsUnsafeSpan(params.GetAttestationElements(), mParams.GetAttestationElements()) ||
+         IsUnsafeSpan(params.GetAttestationSignature(), mParams.GetAttestationSignature()) ||
+         IsUnsafeSpan(params.GetPAI(), mParams.GetPAI()) || IsUnsafeSpan(params.GetDAC(), mParams.GetDAC()) ||
+         IsUnsafeSpan(params.GetTimeZone(), mParams.GetTimeZone()) ||
+         IsUnsafeSpan(params.GetDSTOffsets(), mParams.GetDSTOffsets()) ||
+         IsUnsafeSpan(params.GetICDSymmetricKey(), mParams.GetICDSymmetricKey()) ||
+         (params.GetDefaultNTP().HasValue() && !params.GetDefaultNTP().Value().IsNull() &&
+          params.GetDefaultNTP().Value().Value().data() != mDefaultNtp));
 
-    // Copy the whole struct (scalars and pointers), but clear any members that might point to
-    // external buffers. For those members we have to copy the data over into our own buffers below.
-    // Note that all of the copy operations use memmove() instead of memcpy(), because the caller
-    // may be passing a modified shallow copy of our CommissioningParmeters, i.e. where various spans
-    // already point into the buffers we're copying into, and memcpy() with overlapping buffers is UB.
     mParams = params;
-    mParams.ClearExternalBufferDependentValues();
+
+    mNeedIcdRegistration = false;
+
+    if (haveMaybeDanglingBufferPointers)
+    {
+        mParams.ClearExternalBufferDependentValues();
+    }
+
+    // For members of params that point to some sort of buffer, we have to copy
+    // the data over into our own buffers.
 
     if (params.GetThreadOperationalDataset().HasValue())
     {
@@ -96,9 +146,11 @@ CHIP_ERROR AutoCommissioner::SetCommissioningParameters(const CommissioningParam
         if (dataset.size() > CommissioningParameters::kMaxThreadDatasetLen)
         {
             ChipLogError(Controller, "Thread operational data set is too large");
+            // Make sure our buffer pointers don't dangle.
+            mParams.ClearExternalBufferDependentValues();
             return CHIP_ERROR_INVALID_ARGUMENT;
         }
-        memmove(mThreadOperationalDataset, dataset.data(), dataset.size());
+        memcpy(mThreadOperationalDataset, dataset.data(), dataset.size());
         ChipLogProgress(Controller, "Setting thread operational dataset from parameters");
         mParams.SetThreadOperationalDataset(ByteSpan(mThreadOperationalDataset, dataset.size()));
     }
@@ -110,10 +162,12 @@ CHIP_ERROR AutoCommissioner::SetCommissioningParameters(const CommissioningParam
             creds.credentials.size() > CommissioningParameters::kMaxCredentialsLen)
         {
             ChipLogError(Controller, "Wifi credentials are too large");
+            // Make sure our buffer pointers don't dangle.
+            mParams.ClearExternalBufferDependentValues();
             return CHIP_ERROR_INVALID_ARGUMENT;
         }
-        memmove(mSsid, creds.ssid.data(), creds.ssid.size());
-        memmove(mCredentials, creds.credentials.data(), creds.credentials.size());
+        memcpy(mSsid, creds.ssid.data(), creds.ssid.size());
+        memcpy(mCredentials, creds.credentials.data(), creds.credentials.size());
         ChipLogProgress(Controller, "Setting wifi credentials from parameters");
         mParams.SetWiFiCredentials(
             WiFiCredentials(ByteSpan(mSsid, creds.ssid.size()), ByteSpan(mCredentials, creds.credentials.size())));
@@ -130,6 +184,8 @@ CHIP_ERROR AutoCommissioner::SetCommissioningParameters(const CommissioningParam
         else
         {
             ChipLogError(Controller, "Country code is too large: %u", static_cast<unsigned>(code.size()));
+            // Make sure our buffer pointers don't dangle.
+            mParams.ClearExternalBufferDependentValues();
             return CHIP_ERROR_INVALID_ARGUMENT;
         }
     }
@@ -139,7 +195,7 @@ CHIP_ERROR AutoCommissioner::SetCommissioningParameters(const CommissioningParam
     {
         ChipLogProgress(Controller, "Setting attestation nonce from parameters");
         VerifyOrReturnError(params.GetAttestationNonce().Value().size() == sizeof(mAttestationNonce), CHIP_ERROR_INVALID_ARGUMENT);
-        memmove(mAttestationNonce, params.GetAttestationNonce().Value().data(), params.GetAttestationNonce().Value().size());
+        memcpy(mAttestationNonce, params.GetAttestationNonce().Value().data(), params.GetAttestationNonce().Value().size());
     }
     else
     {
@@ -152,7 +208,7 @@ CHIP_ERROR AutoCommissioner::SetCommissioningParameters(const CommissioningParam
     {
         ChipLogProgress(Controller, "Setting CSR nonce from parameters");
         VerifyOrReturnError(params.GetCSRNonce().Value().size() == sizeof(mCSRNonce), CHIP_ERROR_INVALID_ARGUMENT);
-        memmove(mCSRNonce, params.GetCSRNonce().Value().data(), params.GetCSRNonce().Value().size());
+        memcpy(mCSRNonce, params.GetCSRNonce().Value().data(), params.GetCSRNonce().Value().size());
     }
     else
     {
@@ -215,37 +271,11 @@ CHIP_ERROR AutoCommissioner::SetCommissioningParameters(const CommissioningParam
         ReturnErrorOnFailure(VerifyICDRegistrationInfo(params));
 
         // The values must be valid now.
-        memmove(mICDSymmetricKey, params.GetICDSymmetricKey().Value().data(), params.GetICDSymmetricKey().Value().size());
+        memcpy(mICDSymmetricKey, params.GetICDSymmetricKey().Value().data(), params.GetICDSymmetricKey().Value().size());
         mParams.SetICDSymmetricKey(ByteSpan(mICDSymmetricKey));
         mParams.SetICDCheckInNodeId(params.GetICDCheckInNodeId().Value());
         mParams.SetICDMonitoredSubject(params.GetICDMonitoredSubject().Value());
         mParams.SetICDClientType(params.GetICDClientType().Value());
-    }
-
-    auto extraReadPaths = params.GetExtraReadPaths();
-    if (extraReadPaths.size() > 0)
-    {
-        using ReadPath = std::remove_pointer_t<decltype(extraReadPaths.data())>;
-        static_assert(std::is_trivially_copyable_v<ReadPath>, "can't use memmove / memcpy, not trivially copyable");
-
-        if (mExtraReadPaths.AllocatedSize() == extraReadPaths.size())
-        {
-            memmove(mExtraReadPaths.Get(), extraReadPaths.data(), extraReadPaths.size() * sizeof(ReadPath));
-        }
-        else
-        {
-            // We can't reallocate mExtraReadPaths yet as this would free the old buffer,
-            // and the caller might be passing a sub-span of the old paths.
-            decltype(mExtraReadPaths) oldReadPaths(std::move(mExtraReadPaths));
-            VerifyOrReturnError(mExtraReadPaths.Alloc(extraReadPaths.size()), CHIP_ERROR_NO_MEMORY);
-            memcpy(mExtraReadPaths.Get(), extraReadPaths.data(), extraReadPaths.size() * sizeof(ReadPath));
-        }
-
-        mParams.SetExtraReadPaths(mExtraReadPaths.Span());
-    }
-    else
-    {
-        mExtraReadPaths.Free();
     }
 
     return CHIP_NO_ERROR;
@@ -329,6 +359,8 @@ CommissioningStage AutoCommissioner::GetNextCommissioningStageInternal(Commissio
             // Per the spec, we restart from after adding the NOC.
             return GetNextCommissioningStage(CommissioningStage::kSendNOC, lastErr);
         }
+        return CommissioningStage::kReadCommissioningInfo2;
+    case CommissioningStage::kReadCommissioningInfo2:
         return CommissioningStage::kArmFailsafe;
     case CommissioningStage::kArmFailsafe:
         return CommissioningStage::kConfigRegulatory;
@@ -382,16 +414,6 @@ CommissioningStage AutoCommissioner::GetNextCommissioningStageInternal(Commissio
     case CommissioningStage::kAttestationVerification:
         return CommissioningStage::kAttestationRevocationCheck;
     case CommissioningStage::kAttestationRevocationCheck:
-#if CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-        if (mParams.GetExecuteJCM().ValueOr(false))
-        {
-            return CommissioningStage::kJFValidateNOC;
-        }
-#endif // CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-        return CommissioningStage::kSendOpCertSigningRequest;
-    case CommissioningStage::kJFValidateNOC:
-        return CommissioningStage::kSendVIDVerificationRequest;
-    case CommissioningStage::kSendVIDVerificationRequest:
         return CommissioningStage::kSendOpCertSigningRequest;
     case CommissioningStage::kSendOpCertSigningRequest:
         return CommissioningStage::kValidateCSR;
@@ -583,9 +605,6 @@ CHIP_ERROR AutoCommissioner::StartCommissioning(DeviceCommissioner * commissione
     auto transportType =
         mCommissioneeDeviceProxy->GetSecureSession().Value()->AsSecureSession()->GetPeerAddress().GetTransportType();
     mNeedsNetworkSetup = (transportType == Transport::Type::kBle);
-#if CHIP_DEVICE_CONFIG_ENABLE_NFC_BASED_COMMISSIONING
-    mNeedsNetworkSetup = mNeedsNetworkSetup || (transportType == Transport::Type::kNfc);
-#endif
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFIPAF
     mNeedsNetworkSetup = mNeedsNetworkSetup || (transportType == Transport::Type::kWiFiPAF);
 #endif
@@ -747,7 +766,9 @@ CHIP_ERROR AutoCommissioner::CommissioningStepFinished(CHIP_ERROR err, Commissio
         ChipLogProgress(Controller, "Successfully finished commissioning step '%s'", StageToString(report.stageCompleted));
         switch (report.stageCompleted)
         {
-        case CommissioningStage::kReadCommissioningInfo: {
+        case CommissioningStage::kReadCommissioningInfo:
+            break;
+        case CommissioningStage::kReadCommissioningInfo2: {
             mDeviceCommissioningInfo = report.Get<ReadCommissioningInfo>();
 
             if (!mParams.GetFailsafeTimerSeconds().HasValue() && mDeviceCommissioningInfo.general.recommendedFailsafe > 0)
@@ -772,7 +793,6 @@ CHIP_ERROR AutoCommissioner::CommissioningStepFinished(CHIP_ERROR err, Commissio
                 }
             }
 
-            mNeedIcdRegistration = false;
             if (mParams.GetICDRegistrationStrategy() != ICDRegistrationStrategy::kIgnore)
             {
                 if (mDeviceCommissioningInfo.icd.isLIT && mDeviceCommissioningInfo.icd.checkInProtocolSupport)
@@ -786,46 +806,17 @@ CHIP_ERROR AutoCommissioner::CommissioningStepFinished(CHIP_ERROR err, Commissio
                     mParams.ClearICDStayActiveDurationMsec();
                 }
             }
-
-#if CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-            if (mParams.GetExecuteJCM().ValueOr(false) &&
-                (mDeviceCommissioningInfo.JFAdministratorFabricIndex != kUndefinedFabricIndex))
-            {
-                ReturnErrorOnFailure(AllocateMemoryAndCopySpan(mJFAdminRCAC, mDeviceCommissioningInfo.JFAdminRCAC));
-                mParams.SetJFAdminRCAC(mJFAdminRCAC.Span());
-
-                ReturnErrorOnFailure(AllocateMemoryAndCopySpan(mJFAdminICAC, mDeviceCommissioningInfo.JFAdminICAC));
-                mParams.SetJFAdminICAC(mJFAdminICAC.Span());
-
-                ReturnErrorOnFailure(AllocateMemoryAndCopySpan(mJFAdminNOC, mDeviceCommissioningInfo.JFAdminNOC));
-                mParams.SetJFAdminNOC(mJFAdminNOC.Span());
-
-                mParams.SetJFAdminEndpointId(mDeviceCommissioningInfo.JFAdminEndpointId)
-                    .SetJFAdministratorFabricIndex(mDeviceCommissioningInfo.JFAdministratorFabricIndex)
-                    .SetJFAdminFabricId(mDeviceCommissioningInfo.JFAdminFabricTable.fabricId)
-                    .SetJFAdminVendorId(mDeviceCommissioningInfo.JFAdminFabricTable.vendorId);
-            }
-#endif // CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-
             break;
         }
         case CommissioningStage::kConfigureTimeZone:
             mNeedsDST = report.Get<TimeZoneResponseInfo>().requiresDSTOffsets;
             break;
-        case CommissioningStage::kSendPAICertificateRequest: {
-            auto reportPAISpan = report.Get<RequestedCertificate>().certificate;
-
-            ReturnErrorOnFailure(AllocateMemoryAndCopySpan(mPAI, reportPAISpan));
-            mParams.SetPAI(mPAI.Span());
+        case CommissioningStage::kSendPAICertificateRequest:
+            SetPAI(report.Get<RequestedCertificate>().certificate);
             break;
-        }
-        case CommissioningStage::kSendDACCertificateRequest: {
-            auto reportDACSpan = report.Get<RequestedCertificate>().certificate;
-
-            ReturnErrorOnFailure(AllocateMemoryAndCopySpan(mDAC, reportDACSpan));
-            mParams.SetDAC(ByteSpan(mDAC.Span()));
+        case CommissioningStage::kSendDACCertificateRequest:
+            SetDAC(report.Get<RequestedCertificate>().certificate);
             break;
-        }
         case CommissioningStage::kSendAttestationRequest: {
             auto & elements  = report.Get<AttestationResponse>().attestationElements;
             auto & signature = report.Get<AttestationResponse>().signature;
@@ -891,13 +882,8 @@ CHIP_ERROR AutoCommissioner::CommissioningStepFinished(CHIP_ERROR err, Commissio
             {
                 ResetTryingSecondaryNetwork();
             }
-            mPAI.Free();
-            mDAC.Free();
-#if CHIP_DEVICE_CONFIG_ENABLE_JOINT_FABRIC
-            mJFAdminRCAC.Free();
-            mJFAdminICAC.Free();
-            mJFAdminNOC.Free();
-#endif
+            ReleasePAI();
+            ReleaseDAC();
             mCommissioneeDeviceProxy = nullptr;
             mOperationalDeviceProxy  = OperationalDeviceProxy();
             mDeviceCommissioningInfo = ReadCommissioningInfo();
@@ -970,19 +956,77 @@ CHIP_ERROR AutoCommissioner::PerformStep(CommissioningStage nextStage)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR AutoCommissioner::AllocateMemoryAndCopySpan(Platform::ScopedMemoryBufferWithSize<uint8_t> & scopedBuffer, ByteSpan span)
+void AutoCommissioner::ReleaseDAC()
 {
-    if (!span.size())
+    if (mDAC != nullptr)
     {
-        return CHIP_ERROR_INVALID_MESSAGE_LENGTH;
+        Platform::MemoryFree(mDAC);
+    }
+    mDACLen = 0;
+    mDAC    = nullptr;
+}
+
+CHIP_ERROR AutoCommissioner::SetDAC(const ByteSpan & dac)
+{
+    if (dac.size() == 0)
+    {
+        ReleaseDAC();
+        return CHIP_NO_ERROR;
     }
 
-    if (!scopedBuffer.Alloc(span.size()))
+    VerifyOrReturnError(dac.size() <= Credentials::kMaxDERCertLength, CHIP_ERROR_INVALID_ARGUMENT);
+    if (mDACLen != 0)
     {
-        ChipLogError(Controller, "AutoCommissioner: AllocateMemoryAndCopySpan failed");
-        return CHIP_ERROR_NO_MEMORY;
+        ReleaseDAC();
     }
-    memcpy(scopedBuffer.Get(), span.data(), scopedBuffer.AllocatedSize());
+
+    VerifyOrReturnError(CanCastTo<uint16_t>(dac.size()), CHIP_ERROR_INVALID_ARGUMENT);
+    if (mDAC == nullptr)
+    {
+        mDAC = static_cast<uint8_t *>(chip::Platform::MemoryAlloc(dac.size()));
+    }
+    VerifyOrReturnError(mDAC != nullptr, CHIP_ERROR_NO_MEMORY);
+    mDACLen = static_cast<uint16_t>(dac.size());
+    memcpy(mDAC, dac.data(), mDACLen);
+    mParams.SetDAC(ByteSpan(mDAC, mDACLen));
+
+    return CHIP_NO_ERROR;
+}
+
+void AutoCommissioner::ReleasePAI()
+{
+    if (mPAI != nullptr)
+    {
+        chip::Platform::MemoryFree(mPAI);
+    }
+    mPAILen = 0;
+    mPAI    = nullptr;
+}
+
+CHIP_ERROR AutoCommissioner::SetPAI(const chip::ByteSpan & pai)
+{
+    if (pai.size() == 0)
+    {
+        ReleasePAI();
+        return CHIP_NO_ERROR;
+    }
+
+    VerifyOrReturnError(pai.size() <= Credentials::kMaxDERCertLength, CHIP_ERROR_INVALID_ARGUMENT);
+    if (mPAILen != 0)
+    {
+        ReleasePAI();
+    }
+
+    VerifyOrReturnError(CanCastTo<uint16_t>(pai.size()), CHIP_ERROR_INVALID_ARGUMENT);
+    if (mPAI == nullptr)
+    {
+        mPAI = static_cast<uint8_t *>(chip::Platform::MemoryAlloc(pai.size()));
+    }
+    VerifyOrReturnError(mPAI != nullptr, CHIP_ERROR_NO_MEMORY);
+    mPAILen = static_cast<uint16_t>(pai.size());
+    memcpy(mPAI, pai.data(), mPAILen);
+    mParams.SetPAI(ByteSpan(mPAI, mPAILen));
+
     return CHIP_NO_ERROR;
 }
 

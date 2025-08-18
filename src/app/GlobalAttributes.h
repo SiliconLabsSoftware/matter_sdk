@@ -17,13 +17,8 @@
 
 #pragma once
 
+#include <app-common/zap-generated/ids/Attributes.h>
 #include <app/AppConfig.h>
-#include <app/AttributeValueEncoder.h>
-#include <app/ConcreteAttributePath.h>
-#include <app/data-model-provider/ActionReturnStatus.h>
-#include <app/data-model-provider/Provider.h>
-#include <clusters/shared/GlobalIds.h>
-#include <lib/core/DataModelTypes.h>
 #include <lib/support/CodeUtils.h>
 
 namespace chip {
@@ -42,17 +37,18 @@ constexpr AttributeId GlobalAttributesNotInMetadata[] = {
 
 static_assert(ArrayIsSorted(GlobalAttributesNotInMetadata), "Array of global attribute ids must be sorted");
 
-bool IsSupportedGlobalAttributeNotInMetadata(AttributeId attributeId);
+inline bool IsSupportedGlobalAttributeNotInMetadata(AttributeId attributeId)
+{
+    for (auto & attr : GlobalAttributesNotInMetadata)
+    {
+        if (attr == attributeId)
+        {
+            return true;
+        }
+    }
 
-/**
- * Reads a `IsSupportedGlobalAttributeNotInMetadata` attribute into `encoder`.
- *
- * Preconditions:
- *   - `path` MUST be a valid cluster path inside `provider` and its mAttributeID
- *     MUST be `IsSupportedGlobalAttributeNotInMetadata`
- */
-DataModel::ActionReturnStatus ReadGlobalAttributeFromMetadata(DataModel::Provider * provider, const ConcreteAttributePath & path,
-                                                              AttributeValueEncoder & encoder);
+    return false;
+}
 
 } // namespace app
 } // namespace chip

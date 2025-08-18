@@ -18,18 +18,16 @@
 
 #pragma once
 
-#include <DeviceEnergyManagementDelegateImpl.h>
-#include <DeviceEnergyManagementManager.h>
-#include <ElectricalPowerMeasurementDelegate.h>
-#include <PowerTopologyDelegate.h>
 #include <lib/core/CHIPError.h>
 
-CHIP_ERROR EnergyEvseInit(chip::EndpointId endpointId);
-CHIP_ERROR EnergyEvseShutdown();
+void EvseApplicationInit();
+void EvseApplicationShutdown();
 
-CHIP_ERROR EVSEManufacturerInit(chip::EndpointId powerSourceEndpointId,
-                                chip::app::Clusters::ElectricalPowerMeasurement::ElectricalPowerMeasurementInstance & epmInstance,
-                                chip::app::Clusters::PowerTopology::PowerTopologyInstance & ptInstance,
-                                chip::app::Clusters::DeviceEnergyManagementManager & demInstance,
-                                chip::app::Clusters::DeviceEnergyManagement::DeviceEnergyManagementDelegate & demDelegate);
-CHIP_ERROR EVSEManufacturerShutdown();
+CHIP_ERROR DeviceEnergyManagementInit();
+CHIP_ERROR DeviceEnergyManagementShutdown();
+
+CHIP_ERROR EnergyMeterInit();
+CHIP_ERROR EnergyMeterShutdown();
+
+CHIP_ERROR PowerTopologyInit();
+CHIP_ERROR PowerTopologyShutdown();

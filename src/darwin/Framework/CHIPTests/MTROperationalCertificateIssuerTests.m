@@ -18,10 +18,11 @@
 #import <Matter/Matter.h>
 
 #import "MTRErrorTestUtils.h"
-#import "MTRTestCase+ServerAppRunner.h"
-#import "MTRTestCase.h"
 #import "MTRTestKeys.h"
 #import "MTRTestStorage.h"
+
+// system dependencies
+#import <XCTest/XCTest.h>
 
 static const uint16_t kPairingTimeoutInSeconds = 30;
 static const uint64_t kDeviceId = 0x12344321;
@@ -109,7 +110,7 @@ static MTRTestKeys * sTestKeys = nil;
 
 @end
 
-@interface MTROperationalCertificateIssuerTests : MTRTestCase
+@interface MTROperationalCertificateIssuerTests : XCTestCase
 @end
 
 @implementation MTROperationalCertificateIssuerTests
@@ -122,11 +123,6 @@ static MTRTestKeys * sTestKeys = nil;
 
 - (void)testFailedCertificateIssuance
 {
-    BOOL started = [self startAppWithName:@"all-clusters"
-                                arguments:@[]
-                                  payload:kOnboardingPayload];
-    XCTAssertTrue(started);
-
     XCTestExpectation * expectation = [self expectationWithDescription:@"Pairing Complete"];
 
     __auto_type * factory = [MTRDeviceControllerFactory sharedInstance];

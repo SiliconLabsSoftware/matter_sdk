@@ -218,7 +218,7 @@ void Engine::RunMainLoop()
 {
     streamer_printf(streamer_get(), kShellPrompt);
 
-    while (mRunning)
+    while (true)
     {
         char * line = static_cast<char *>(Platform::MemoryAlloc(CHIP_SHELL_MAX_LINE_SIZE));
         ReadLine(line, CHIP_SHELL_MAX_LINE_SIZE);

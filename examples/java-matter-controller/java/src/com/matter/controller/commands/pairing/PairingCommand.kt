@@ -92,10 +92,6 @@ abstract class PairingCommand(
         addArgument("device-remote-ip", remoteAddr, false)
         addArgument("device-remote-port", 0.toShort(), Short.MAX_VALUE, remotePort, null, false)
       }
-      PairingModeType.NFC -> {
-        addArgument("setup-pin-code", 0, 134217727, setupPINCode, null, false)
-        addArgument("discriminator", 0.toShort(), 4096.toShort(), discriminator, null, false)
-      }
       PairingModeType.ALREADY_DISCOVERED -> {
         addArgument("setup-pin-code", 0, 134217727, setupPINCode, null, false)
         addArgument("device-remote-ip", remoteAddr, false)
@@ -187,9 +183,7 @@ abstract class PairingCommand(
   override fun onICDRegistrationInfoRequired() {
     logger.log(Level.INFO, "onICDRegistrationInfoRequired")
     currentCommissioner()
-      .updateCommissioningICDRegistrationInfo(
-        ICDRegistrationInfo.newBuilder().setICDStayActiveDurationMsec(30000L).build()
-      )
+      .updateCommissioningICDRegistrationInfo(ICDRegistrationInfo.newBuilder().build())
   }
 
   override fun onICDRegistrationComplete(errorCode: Long, icdDeviceInfo: ICDDeviceInfo) {

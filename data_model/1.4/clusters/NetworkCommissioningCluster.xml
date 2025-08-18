@@ -176,12 +176,7 @@ Davis, CA 95616, USA
     <struct name="NetworkInfoStruct">
       <field id="0" name="NetworkID" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <lengthBetween>
-            <from value="1"/>
-            <to value="32"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="1" to="32"/>
       </field>
       <field id="1" name="Connected" type="bool">
         <mandatoryConform/>
@@ -192,9 +187,7 @@ Davis, CA 95616, USA
         <mandatoryConform>
           <feature name="TH"/>
         </mandatoryConform>
-        <constraint>
-          <max value="65534"/>
-        </constraint>
+        <constraint type="max" value="65534"/>
       </field>
       <field id="1" name="ExtendedPanId" type="uint64">
         <mandatoryConform>
@@ -205,12 +198,7 @@ Davis, CA 95616, USA
         <mandatoryConform>
           <feature name="TH"/>
         </mandatoryConform>
-        <constraint>
-          <lengthBetween>
-            <from value="1"/>
-            <to value="16"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="1" to="16"/>
       </field>
       <field id="3" name="Channel" type="uint16">
         <mandatoryConform>
@@ -226,12 +214,8 @@ Davis, CA 95616, USA
         <mandatoryConform>
           <feature name="TH"/>
         </mandatoryConform>
-        <constraint>
-          <allowed value="6"/>
-        </constraint>
-        <constraint>
-          <allowed value="8"/>
-        </constraint>
+        <constraint type="allowed" value="6"/>
+        <constraint type="allowed" value="8"/>
       </field>
       <field id="6" name="RSSI" type="int8">
         <mandatoryConform>
@@ -254,17 +238,13 @@ Davis, CA 95616, USA
         <mandatoryConform>
           <feature name="WI"/>
         </mandatoryConform>
-        <constraint>
-          <maxLength value="32"/>
-        </constraint>
+        <constraint type="maxLength" value="32"/>
       </field>
       <field id="2" name="BSSID" type="octstr">
         <mandatoryConform>
           <feature name="WI"/>
         </mandatoryConform>
-        <constraint>
-          <allowed value="6"/>
-        </constraint>
+        <constraint type="allowed" value="6"/>
       </field>
       <field id="3" name="Channel" type="uint16">
         <mandatoryConform>
@@ -288,18 +268,14 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="admin"/>
       <quality persistence="fixed"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="1"/>
-      </constraint>
+      <constraint type="min" value="1"/>
     </attribute>
     <attribute id="0x0001" name="Networks" type="list" default="empty">
       <entry type="NetworkInfoStruct"/>
       <access read="true" readPrivilege="admin"/>
       <mandatoryConform/>
-      <constraint>
-        <maxCount>
-          <attribute name="MaxNetworks"/>
-        </maxCount>
+      <constraint type="maxCount">
+        <value attribute="MaxNetworks"/>
       </constraint>
     </attribute>
     <attribute id="0x0002" name="ScanMaxTimeSeconds" type="uint8">
@@ -311,9 +287,7 @@ Davis, CA 95616, USA
           <feature name="TH"/>
         </orTerm>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0003" name="ConnectMaxTimeSeconds" type="uint8">
       <access read="true" readPrivilege="view"/>
@@ -324,9 +298,7 @@ Davis, CA 95616, USA
           <feature name="TH"/>
         </orTerm>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0004" name="InterfaceEnabled" type="bool" default="true">
       <access read="true" write="true" readPrivilege="view" writePrivilege="admin"/>
@@ -342,12 +314,7 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="admin"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint>
-        <lengthBetween>
-          <from value="1"/>
-          <to value="32"/>
-        </lengthBetween>
-      </constraint>
+      <constraint type="lengthBetween" from="1" to="32"/>
     </attribute>
     <attribute id="0x0007" name="LastConnectErrorValue" type="int32" default="null">
       <access read="true" readPrivilege="admin"/>
@@ -361,9 +328,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="WI"/>
       </mandatoryConform>
-      <constraint>
-        <minCount value="1"/>
-      </constraint>
+      <constraint type="minCount" value="1"/>
     </attribute>
     <attribute id="0x0009" name="SupportedThreadFeatures" type="ThreadCapabilitiesBitmap" default="MS">
       <access read="true" readPrivilege="view"/>
@@ -394,12 +359,7 @@ Davis, CA 95616, USA
         <optionalConform>
           <feature name="WI"/>
         </optionalConform>
-        <constraint>
-          <lengthBetween>
-            <from value="1"/>
-            <to value="32"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="1" to="32"/>
       </field>
       <field id="1" name="Breadcrumb" type="uint64">
         <optionalConform/>
@@ -414,33 +374,25 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="NetworkingStatus" type="NetworkCommissioningStatusEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="DebugText" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="512"/>
-        </constraint>
+        <constraint type="maxLength" value="512"/>
       </field>
       <field id="2" name="WiFiScanResults" type="list">
         <entry type="WiFiInterfaceScanResultStruct"/>
         <mandatoryConform>
           <feature name="WI"/>
         </mandatoryConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="3" name="ThreadScanResults" type="list">
         <entry type="ThreadInterfaceScanResultStruct"/>
         <mandatoryConform>
           <feature name="TH"/>
         </mandatoryConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x02" name="AddOrUpdateWiFiNetwork" direction="commandToServer" response="NetworkConfigResponse">
@@ -450,15 +402,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="SSID" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="32"/>
-        </constraint>
+        <constraint type="maxLength" value="32"/>
       </field>
       <field id="1" name="Credentials" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="64"/>
-        </constraint>
+        <constraint type="maxLength" value="64"/>
       </field>
       <field id="2" name="Breadcrumb" type="uint64">
         <optionalConform/>
@@ -471,9 +419,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="OperationalDataset" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="254"/>
-        </constraint>
+        <constraint type="maxLength" value="254"/>
       </field>
       <field id="1" name="Breadcrumb" type="uint64">
         <optionalConform/>
@@ -489,12 +435,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="NetworkID" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <lengthBetween>
-            <from value="1"/>
-            <to value="32"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="1" to="32"/>
       </field>
       <field id="1" name="Breadcrumb" type="uint64">
         <optionalConform/>
@@ -509,21 +450,15 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="NetworkingStatus" type="NetworkCommissioningStatusEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="DebugText" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="512"/>
-        </constraint>
+        <constraint type="maxLength" value="512"/>
       </field>
       <field id="2" name="NetworkIndex" type="uint8">
         <optionalConform/>
-        <constraint>
-          <max value="MaxNetworks - 1"/>
-        </constraint>
+        <constraint type="max" value="MaxNetworks - 1"/>
       </field>
     </command>
     <command id="0x06" name="ConnectNetwork" direction="commandToServer" response="ConnectNetworkResponse">
@@ -536,12 +471,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="NetworkID" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <lengthBetween>
-            <from value="1"/>
-            <to value="32"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="1" to="32"/>
       </field>
       <field id="1" name="Breadcrumb" type="uint64">
         <optionalConform/>
@@ -575,18 +505,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="NetworkID" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <lengthBetween>
-            <from value="1"/>
-            <to value="32"/>
-          </lengthBetween>
-        </constraint>
+        <constraint type="lengthBetween" from="1" to="32"/>
       </field>
       <field id="1" name="NetworkIndex" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="Breadcrumb" type="uint64">
         <optionalConform/>

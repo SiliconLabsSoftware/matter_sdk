@@ -24,52 +24,42 @@
 #include <lib/support/Span.h>
 
 #import <Foundation/Foundation.h>
+#import <dispatch/dispatch.h>
 
 namespace chip {
 namespace Logging {
     namespace Platform {
 
-        // GetModuleName() returns 3 character acronyms that are not very readable, define a
-        // separate array containing the full module names (replacing "NotSpecified" with "Default").
-        constexpr char const * gLoggerNames[kLogModule_Max] = {
-#define _CHIP_LOGMODULE_FULLNAME(MOD, ...) (kLogModule_##MOD == kLogModule_NotSpecified ? "Default" : #MOD),
-            CHIP_LOGMODULES_ENUMERATE(_CHIP_LOGMODULE_FULLNAME)
-        };
-
-        struct CachedLogger {
-            dispatch_once_t once = 0;
-            void * /* os_log_t */ handle = nullptr; // void * to avoid a destructor that requires a static initializer
-        };
-        CachedLogger gLoggers[kLogModule_Max] {};
-
-        void CreateLogger(void * context)
+        struct os_log_s * LoggerForModule(chip::Logging::LogModule moduleID, char const * moduleName)
         {
-            auto entry = static_cast<CachedLogger *>(context);
-            auto moduleId = entry - gLoggers;
-            entry->handle = (__bridge_retained void *) os_log_create("com.csa.matter", gLoggerNames[moduleId]);
-        }
-
-        void * LoggerForModule(LogModule moduleID)
-        {
-            if (moduleID < kLogModule_NotSpecified || kLogModule_Max <= moduleID) {
+            if (moduleID <= kLogModule_NotSpecified || kLogModule_Max <= moduleID) {
                 moduleID = kLogModule_NotSpecified;
+                moduleName = "Default";
             }
-            auto entry = &gLoggers[moduleID];
-            dispatch_once_f(&entry->once, entry, CreateLogger);
-            return entry->handle;
+
+            static struct {
+                dispatch_once_t onceToken;
+                struct os_log_s * logger;
+            } cache[kLogModule_Max];
+            auto & entry = cache[moduleID];
+            dispatch_once(&entry.onceToken, ^{
+                entry.logger = (__bridge_retained struct os_log_s *) os_log_create("com.csa.matter", moduleName);
+            });
+            return entry.logger;
         }
 
-        void LogByteSpan(LogModule moduleId, os_log_type_t type, const chip::ByteSpan & span)
+        void LogByteSpan(
+            chip::Logging::LogModule moduleId, char const * moduleName, os_log_type_t type, const chip::ByteSpan & span)
         {
-            auto logger = LoggerForModule(moduleId);
-            if (ChipPlatformLogEnabled(logger, type)) {
+            auto * logger = LoggerForModule(moduleId, moduleName);
+            if (os_log_type_enabled(ChipPlatformLogger(logger), type)) {
                 auto size = span.size();
                 auto data = span.data();
                 NSMutableString * string = [[NSMutableString alloc] initWithCapacity:(size * 6)]; // 6 characters per byte
                 for (size_t i = 0; i < size; i++) {
                     [string appendFormat:((i % 8 != 7) ? @"0x%02x, " : @"0x%02x,\n"), data[i]];
                 }
-                ChipPlatformLogImpl(logger, type, "%@", string);
+                os_log_with_type(ChipPlatformLogger(logger), type, "%@", string);
             }
         }
 

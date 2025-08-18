@@ -16,21 +16,15 @@
  *    limitations under the License.
  */
 
-#include <app-common/zap-generated/attributes/Accessors.h>
-#include <app/AttributeValueEncoder.h>
 #include <app/util/config.h>
-#include <map>
-
 #ifdef MATTER_DM_PLUGIN_AUDIO_OUTPUT_SERVER
 #include "AudioOutputManager.h"
 
-using namespace chip;
 using namespace chip::app;
 using namespace chip::app::Clusters::AudioOutput;
 using chip::app::AttributeValueEncoder;
-using chip::Protocols::InteractionModel::Status;
 
-AudioOutputManager::AudioOutputManager(chip::EndpointId endpoint) : mEndpoint(endpoint)
+AudioOutputManager::AudioOutputManager()
 {
     struct OutputData outputData1(1, chip::app::Clusters::AudioOutput::OutputTypeEnum::kHdmi, "HDMI 1");
     mOutputs.push_back(outputData1);
@@ -38,17 +32,13 @@ AudioOutputManager::AudioOutputManager(chip::EndpointId endpoint) : mEndpoint(en
     mOutputs.push_back(outputData2);
     struct OutputData outputData3(3, chip::app::Clusters::AudioOutput::OutputTypeEnum::kHdmi, "HDMI 3");
     mOutputs.push_back(outputData3);
+
+    mCurrentOutput = 1;
 }
 
 uint8_t AudioOutputManager::HandleGetCurrentOutput()
 {
-    uint8_t currentOutput = 1;
-    Status status         = Attributes::CurrentOutput::Get(mEndpoint, &currentOutput);
-    if (Status::Success != status)
-    {
-        ChipLogError(Zcl, "Unable to get CurrentOutput attribute, err:0x%x", to_underlying(status));
-    }
-    return currentOutput;
+    return mCurrentOutput;
 }
 
 CHIP_ERROR AudioOutputManager::HandleGetOutputList(AttributeValueEncoder & aEncoder)
@@ -82,27 +72,11 @@ bool AudioOutputManager::HandleSelectOutput(const uint8_t & index)
     {
         if (outputData.index == index)
         {
-            // Sync the CurrentOutput to attribute storage while reporting changes
-            Status status = Attributes::CurrentOutput::Set(mEndpoint, index);
-            if (Status::Success != status)
-            {
-                ChipLogError(Zcl, "CurrentOutput is not stored successfully, err:0x%x", to_underlying(status));
-            }
+            mCurrentOutput = index;
             return true;
         }
     }
 
     return false;
-}
-
-static std::map<chip::EndpointId, std::unique_ptr<AudioOutputManager>> gAudioOutputManagerInstance{};
-
-void emberAfAudioOutputClusterInitCallback(EndpointId endpoint)
-{
-    ChipLogProgress(Zcl, "TV Linux App: AudioOutput::SetDefaultDelegate, endpoint=%x", endpoint);
-
-    gAudioOutputManagerInstance[endpoint] = std::make_unique<AudioOutputManager>(endpoint);
-
-    SetDefaultDelegate(endpoint, gAudioOutputManagerInstance[endpoint].get());
 }
 #endif // MATTER_DM_PLUGIN_AUDIO_OUTPUT_SERVER

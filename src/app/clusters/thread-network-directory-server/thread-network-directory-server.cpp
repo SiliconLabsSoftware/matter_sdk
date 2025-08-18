@@ -316,4 +316,3 @@ exit:
 } // namespace chip
 
 void MatterThreadNetworkDirectoryPluginServerInitCallback() {}
-void MatterThreadNetworkDirectoryPluginServerShutdownCallback() {}

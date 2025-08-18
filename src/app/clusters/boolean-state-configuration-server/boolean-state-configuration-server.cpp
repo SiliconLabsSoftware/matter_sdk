@@ -455,8 +455,3 @@ void MatterBooleanStateConfigurationPluginServerInitCallback()
 {
     AttributeAccessInterfaceRegistry::Instance().Register(&gAttrAccess);
 }
-
-void MatterBooleanStateConfigurationPluginServerShutdownCallback()
-{
-    AttributeAccessInterfaceRegistry::Instance().Unregister(&gAttrAccess);
-}

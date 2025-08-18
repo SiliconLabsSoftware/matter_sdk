@@ -124,9 +124,7 @@ Davis, CA 95616, USA
     <attribute id="0x0001" name="IdentifyType" type="IdentifyTypeEnum" default="MS">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
   </attributes>
   <commands>
@@ -142,15 +140,11 @@ Davis, CA 95616, USA
       <optionalConform/>
       <field id="0" name="EffectIdentifier" type="EffectIdentifierEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="EffectVariant" type="EffectVariantEnum">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
   </commands>

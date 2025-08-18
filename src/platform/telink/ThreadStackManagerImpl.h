@@ -62,7 +62,6 @@ public:
     void SetRadioBlocked(bool state) { mRadioBlocked = state; }
     bool IsReadyToAttach(void) const { return mReadyToAttach; }
     void Finalize(void);
-    CHIP_ERROR CommitConfiguration(void);
 
 protected:
     // ===== Methods that implement the ThreadStackManager abstract interface.

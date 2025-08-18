@@ -65,12 +65,6 @@ bool ThreadStackManagerImpl::IsInitialized()
     return sInstance.mThreadStackLock != NULL;
 }
 
-void ThreadStackManagerImpl::FactoryResetThreadStack(void)
-{
-    VerifyOrReturn(ThreadStackMgrImpl().OTInstance() != NULL);
-    otInstanceFactoryReset(ThreadStackMgrImpl().OTInstance());
-}
-
 } // namespace DeviceLayer
 } // namespace chip
 

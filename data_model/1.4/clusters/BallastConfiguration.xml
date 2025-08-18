@@ -89,47 +89,33 @@ Davis, CA 95616, USA
     <attribute id="0x0000" name="PhysicalMinLevel" type="uint8" default="1">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <between>
-          <from value="1"/>
-          <to value="254"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="1" to="254"/>
     </attribute>
     <attribute id="0x0001" name="PhysicalMaxLevel" type="uint8" default="254">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <between>
-          <from value="1"/>
-          <to value="254"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="1" to="254"/>
     </attribute>
     <attribute id="0x0002" name="BallastStatus" type="BallastStatusBitmap" default="0">
       <access read="true" readPrivilege="view"/>
       <optionalConform/>
     </attribute>
     <attribute id="0x0010" name="MinLevel" type="uint8">
-      <attribute name="PhysicalMinLevel"/>
+      <default attribute="PhysicalMinLevel"/>
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <mandatoryConform/>
-      <constraint>
-        <between>
-          <attribute name="PhysicalMinLevel"/>
-          <attribute name="MaxLevel"/>
-        </between>
+      <constraint type="between">
+        <from attribute="PhysicalMinLevel"/>
+        <to attribute="MaxLevel"/>
       </constraint>
     </attribute>
     <attribute id="0x0011" name="MaxLevel" type="uint8">
-      <attribute name="PhysicalMaxLevel"/>
+      <default attribute="PhysicalMaxLevel"/>
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <mandatoryConform/>
-      <constraint>
-        <between>
-          <attribute name="MinLevel"/>
-          <attribute name="PhysicalMaxLevel"/>
-        </between>
+      <constraint type="between">
+        <from attribute="MinLevel"/>
+        <to attribute="PhysicalMaxLevel"/>
       </constraint>
     </attribute>
     <attribute id="0x0012" name="PowerOnLevel">
@@ -147,12 +133,7 @@ Davis, CA 95616, USA
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality nullable="true"/>
       <optionalConform/>
-      <constraint>
-        <between>
-          <from value="100"/>
-          <to value="MS"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="100" to="MS"/>
     </attribute>
     <attribute id="0x0020" name="LampQuantity" type="uint8">
       <access read="true" readPrivilege="view"/>
@@ -161,16 +142,12 @@ Davis, CA 95616, USA
     <attribute id="0x0030" name="LampType" type="string" default="&quot;&quot;">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="16"/>
-      </constraint>
+      <constraint type="maxLength" value="16"/>
     </attribute>
     <attribute id="0x0031" name="LampManufacturer" type="string" default="&quot;&quot;">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <optionalConform/>
-      <constraint>
-        <maxLength value="16"/>
-      </constraint>
+      <constraint type="maxLength" value="16"/>
     </attribute>
     <attribute id="0x0032" name="LampRatedHours" type="uint24" default="null">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>

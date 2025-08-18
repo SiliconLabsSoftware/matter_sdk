@@ -119,7 +119,6 @@ void SmokeCoAlarmManager::EndSelfTestingEventHandler(AppEvent * aEvent)
 
 CHIP_ERROR SmokeCoAlarmManager::HandleEventTrigger(uint64_t eventTrigger)
 {
-    eventTrigger           = clearEndpointInEventTrigger(eventTrigger);
     SmokeCOTrigger trigger = static_cast<SmokeCOTrigger>(eventTrigger);
 
     switch (trigger)

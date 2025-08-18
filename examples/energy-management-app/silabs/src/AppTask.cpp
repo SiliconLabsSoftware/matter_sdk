@@ -21,19 +21,23 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "LEDWidget.h"
-#include <EnergyManagementAppCommonMain.h>
+#if SL_MATTER_CONFIG_ENABLE_EXAMPLE_EVSE_DEVICE
+#include <EnergyEvseMain.h>
+#endif
+#if SL_CONFIG_ENABLE_EXAMPLE_WATER_HEATER_DEVICE
+#include <WaterHeaterMain.h>
+#endif
 #include <app-common/zap-generated/cluster-enums.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/clusters/network-commissioning/network-commissioning.h>
+#include <app/server/OnboardingCodesUtil.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
-#include <app/util/endpoint-config-api.h>
 #include <assert.h>
 #include <lib/support/BitMask.h>
-#include <setup_payload/OnboardingCodesUtil.h>
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
@@ -42,7 +46,6 @@
 
 #include <lib/support/CodeUtils.h>
 
-#include <EnergyManagementAppCmdLineOptions.h>
 #include <platform/CHIPDeviceLayer.h>
 
 #ifdef SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
@@ -73,12 +76,8 @@
 #define APP_EVSE_SWITCH 1
 
 namespace {
-
 LEDWidget sEnergyManagementLED;
-constexpr chip::EndpointId kEvseEndpoint        = 1;
-constexpr chip::EndpointId kWaterHeaterEndpoint = 2;
-
-} // namespace
+}
 
 using namespace chip;
 using namespace chip::app;
@@ -131,15 +130,6 @@ chip::BitMask<Feature> GetFeatureMapFromCmdLine()
 
 AppTask AppTask::sAppTask;
 
-EndpointId GetEnergyDeviceEndpointId()
-{
-#if SL_CONFIG_ENABLE_EXAMPLE_WATER_HEATER_DEVICE
-    return kWaterHeaterEndpoint;
-#else
-    return kEvseEndpoint;
-#endif
-}
-
 void ApplicationInit()
 {
     chip::DeviceLayer::PlatformMgr().LockChipStack();
@@ -148,16 +138,12 @@ void ApplicationInit()
     SILABS_LOG("energy-management-example EVSE starting. featureMap 0x%08lx", DeviceEnergyManagement::sFeatureMap.Raw());
 
     EvseApplicationInit();
-    // Disable Water Heater Endpoint
-    emberAfEndpointEnableDisable(kWaterHeaterEndpoint, false);
 #endif // CONFIG_ENABLE_EXAMPLE_EVSE_DEVICE
 
 #if SL_CONFIG_ENABLE_EXAMPLE_WATER_HEATER_DEVICE
     SILABS_LOG("energy-management-example WaterHeater starting. featureMap 0x%08lx", DeviceEnergyManagement::sFeatureMap.Raw());
 
-    WaterHeaterApplicationInit();
-    // Disable EVSE Endpoint
-    emberAfEndpointEnableDisable(kEvseEndpoint, false);
+    FullWhmApplicationInit();
 #endif // CONFIG_ENABLE_EXAMPLE_WATER_HEATER_DEVICE
     SILABS_LOG("==================================================");
 
@@ -172,7 +158,7 @@ void ApplicationShutdown()
 #endif // CONFIG_ENABLE_EXAMPLE_EVSE_DEVICE
 
 #if SL_CONFIG_ENABLE_EXAMPLE_WATER_HEATER_DEVICE
-    WaterHeaterApplicationShutdown();
+    FullWhmApplicationShutdown();
 #endif // CONFIG_ENABLE_EXAMPLE_WATER_HEATER_DEVICE
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 }

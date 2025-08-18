@@ -19,7 +19,6 @@
 #include "DeviceCallbacks.h"
 #include <common/CHIPDeviceManager.h>
 #include <common/Esp32AppServer.h>
-#include <common/Esp32ThreadInit.h>
 
 #include "AppTask.h"
 #include "BindingHandler.h"
@@ -31,10 +30,10 @@
 #include "nvs_flash.h"
 #include "shell_extension/launch.h"
 
+#include <app/server/OnboardingCodesUtil.h>
 #include <credentials/DeviceAttestationCredsProvider.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
 #include <platform/ESP32/ESP32Utils.h>
-#include <setup_payload/OnboardingCodesUtil.h>
 
 #if CONFIG_ENABLE_ESP32_FACTORY_DATA_PROVIDER
 #include <platform/ESP32/ESP32FactoryDataProvider.h>
@@ -135,6 +134,19 @@ extern "C" void app_main()
 #else
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
 #endif // CONFIG_ENABLE_ESP32_FACTORY_DATA_PROVIDER
+
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
+    if (DeviceLayer::ThreadStackMgr().InitThreadStack() != CHIP_NO_ERROR)
+    {
+        ESP_LOGE(TAG, "Failed to initialize Thread stack");
+        return;
+    }
+    if (DeviceLayer::ThreadStackMgr().StartThreadTask() != CHIP_NO_ERROR)
+    {
+        ESP_LOGE(TAG, "Failed to launch Thread task");
+        return;
+    }
+#endif
 
     chip::DeviceLayer::PlatformMgr().ScheduleWork(InitServer, reinterpret_cast<intptr_t>(nullptr));
 

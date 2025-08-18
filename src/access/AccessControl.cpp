@@ -98,8 +98,6 @@ char GetAuthModeStringForLogging(AuthMode authMode)
     {
     case AuthMode::kNone:
         return 'n';
-    case AuthMode::kInternalDeviceAccess:
-        return 'i';
     case AuthMode::kPase:
         return 'p';
     case AuthMode::kCase:

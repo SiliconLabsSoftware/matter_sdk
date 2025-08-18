@@ -100,7 +100,7 @@ gboolean WiFiIPChangeListener(GIOChannel * ch, GIOCondition /* condition */, voi
                 {
                     if (routeInfo->rta_type == IFA_LOCAL)
                     {
-                        char name[Inet::InterfaceId::kMaxIfNameLength];
+                        char name[IFNAMSIZ];
                         if (if_indextoname(addressMessage->ifa_index, name) == nullptr)
                         {
                             ChipLogError(DeviceLayer, "Error %d when getting the interface name at index: %d", errno,
@@ -108,19 +108,14 @@ gboolean WiFiIPChangeListener(GIOChannel * ch, GIOCondition /* condition */, voi
                             continue;
                         }
 
-                        ChipLogDetail(DeviceLayer, "Got IP address on interface: %s", name);
-
-                        const char * wifiIfName = ConnectivityMgrImpl().GetWiFiIfName();
-                        if (wifiIfName == nullptr)
+                        if (ConnectivityMgrImpl().GetWiFiIfName() == nullptr)
                         {
-                            ChipLogDetail(DeviceLayer, "Ignoring IP update event: No WiFi interface name configured");
+                            ChipLogDetail(DeviceLayer, "No wifi interface name. Ignoring IP update event.");
                             continue;
                         }
 
-                        if (strcmp(name, wifiIfName) != 0)
+                        if (strcmp(name, ConnectivityMgrImpl().GetWiFiIfName()) != 0)
                         {
-                            ChipLogDetail(DeviceLayer, "Ignoring IP update event: Interface name mismatch: %s != %s", name,
-                                          wifiIfName);
                             continue;
                         }
 
@@ -279,13 +274,9 @@ void PlatformManagerImpl::_Shutdown()
     Internal::GenericPlatformManagerImpl_POSIX<PlatformManagerImpl>::_Shutdown();
 
 #if CHIP_DEVICE_CONFIG_WITH_GLIB_MAIN_LOOP
-    if (mGLibMainLoop != nullptr)
-    {
-        g_main_loop_quit(mGLibMainLoop);
-        g_thread_join(mGLibMainLoopThread);
-        g_main_loop_unref(mGLibMainLoop);
-        mGLibMainLoop = nullptr;
-    }
+    g_main_loop_quit(mGLibMainLoop);
+    g_thread_join(mGLibMainLoopThread);
+    g_main_loop_unref(mGLibMainLoop);
 #endif
 }
 

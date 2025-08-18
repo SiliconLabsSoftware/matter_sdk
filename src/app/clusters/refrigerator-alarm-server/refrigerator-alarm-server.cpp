@@ -196,4 +196,3 @@ void RefrigeratorAlarmServer::SendNotifyEvent(EndpointId endpointId, BitMask<Ala
  *********************************************************/
 
 void MatterRefrigeratorAlarmPluginServerInitCallback() {}
-void MatterRefrigeratorAlarmPluginServerShutdownCallback() {}

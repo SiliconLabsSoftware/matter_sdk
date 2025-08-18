@@ -115,6 +115,12 @@
     return cppAttribute != nil ? [[MCOnOffClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::OnOff::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCOnOffClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
 - (id)attributeListAttribute
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::OnOff::Attributes::AttributeList::Id);
@@ -292,6 +298,12 @@
     return cppAttribute != nil ? [[MCLevelControlClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::LevelControl::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCLevelControlClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
 - (id)attributeListAttribute
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::LevelControl::Attributes::AttributeList::Id);
@@ -341,6 +353,12 @@
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::WakeOnLan::Attributes::AcceptedCommandList::Id);
     return cppAttribute != nil ? [[MCWakeOnLanClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::WakeOnLan::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCWakeOnLanClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
 - (id)attributeListAttribute
@@ -398,6 +416,12 @@
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::TargetNavigator::Attributes::AcceptedCommandList::Id);
     return cppAttribute != nil ? [[MCTargetNavigatorClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::TargetNavigator::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCTargetNavigatorClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
 - (id)attributeListAttribute
@@ -589,6 +613,12 @@
     return cppAttribute != nil ? [[MCMediaPlaybackClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::MediaPlayback::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCMediaPlaybackClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
 - (id)attributeListAttribute
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::MediaPlayback::Attributes::AttributeList::Id);
@@ -632,6 +662,12 @@
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::KeypadInput::Attributes::AcceptedCommandList::Id);
     return cppAttribute != nil ? [[MCKeypadInputClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::KeypadInput::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCKeypadInputClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
 - (id)attributeListAttribute
@@ -695,6 +731,12 @@
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::ContentLauncher::Attributes::AcceptedCommandList::Id);
     return cppAttribute != nil ? [[MCContentLauncherClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::ContentLauncher::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCContentLauncherClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
 - (id)attributeListAttribute
@@ -764,6 +806,12 @@
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::ApplicationLauncher::Attributes::AcceptedCommandList::Id);
     return cppAttribute != nil ? [[MCApplicationLauncherClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::ApplicationLauncher::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCApplicationLauncherClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
 - (id)attributeListAttribute
@@ -851,6 +899,12 @@
 {
     void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::ApplicationBasic::Attributes::AcceptedCommandList::Id);
     return cppAttribute != nil ? [[MCApplicationBasicClusterAcceptedCommandListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
+}
+
+- (id)eventListAttribute
+{
+    void * cppAttribute = self.cppCluster->GetAttribute(chip::app::Clusters::ApplicationBasic::Attributes::EventList::Id);
+    return cppAttribute != nil ? [[MCApplicationBasicClusterEventListAttribute alloc] initWithCppAttribute:cppAttribute] : nil;
 }
 
 - (id)attributeListAttribute

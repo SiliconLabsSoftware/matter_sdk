@@ -162,7 +162,7 @@ void BDXDiagnosticLogsProvider::OnMsgToSend(TransferSession::OutputEvent & event
     auto err =
         mBDXTransferExchangeCtx->SendMessage(msgTypeData.ProtocolId, msgTypeData.MessageType, std::move(event.MsgData), sendFlags);
 
-    VerifyOrDo(CHIP_NO_ERROR == err, Reset(err));
+    VerifyOrDo(CHIP_NO_ERROR == err, Reset());
 }
 
 void BDXDiagnosticLogsProvider::OnAcceptReceived()
@@ -191,7 +191,7 @@ void BDXDiagnosticLogsProvider::OnAckReceived()
     // If the buffer has empty space, end the log collection session.
     if (isEndOfLog)
     {
-        mDelegate->EndLogCollection(mLogSessionHandle, CHIP_ERROR_INTERNAL);
+        mDelegate->EndLogCollection(mLogSessionHandle);
         mLogSessionHandle = kInvalidLogSessionHandle;
     }
 
@@ -213,7 +213,7 @@ void BDXDiagnosticLogsProvider::OnAckEOFReceived()
 {
     ChipLogProgress(BDX, "Diagnostic logs transfer: Success");
 
-    Reset(CHIP_NO_ERROR);
+    Reset();
 }
 
 void BDXDiagnosticLogsProvider::OnStatusReceived(TransferSession::OutputEvent & event)
@@ -223,21 +223,21 @@ void BDXDiagnosticLogsProvider::OnStatusReceived(TransferSession::OutputEvent & 
     // If a failure StatusReport is received in response to the SendInit message, the Node SHALL send a RetrieveLogsResponse command
     // with a Status of Denied.
     VerifyOrDo(mIsAcceptReceived, SendCommandResponse(StatusEnum::kDenied));
-    Reset(CHIP_ERROR_INCORRECT_STATE);
+    Reset();
 }
 
 void BDXDiagnosticLogsProvider::OnInternalError()
 {
     ChipLogError(BDX, "Internal Error");
     VerifyOrDo(mIsAcceptReceived, SendCommandResponse(StatusEnum::kDenied));
-    Reset(CHIP_ERROR_INTERNAL);
+    Reset();
 }
 
 void BDXDiagnosticLogsProvider::OnTimeout()
 {
     ChipLogError(BDX, "Timeout");
     VerifyOrDo(mIsAcceptReceived, SendCommandResponse(StatusEnum::kDenied));
-    Reset(CHIP_ERROR_TIMEOUT);
+    Reset();
 }
 
 void BDXDiagnosticLogsProvider::SendCommandResponse(StatusEnum status)
@@ -264,7 +264,7 @@ void BDXDiagnosticLogsProvider::SendCommandResponse(StatusEnum status)
     commandHandle->AddResponse(mRequestPath, response);
 }
 
-void BDXDiagnosticLogsProvider::Reset(CHIP_ERROR error)
+void BDXDiagnosticLogsProvider::Reset()
 {
     assertChipStackLockedByCurrentThread();
 
@@ -279,7 +279,7 @@ void BDXDiagnosticLogsProvider::Reset(CHIP_ERROR error)
 
     if (mDelegate != nullptr)
     {
-        mDelegate->EndLogCollection(mLogSessionHandle, error);
+        mDelegate->EndLogCollection(mLogSessionHandle);
         mDelegate = nullptr;
     }
 

@@ -17,7 +17,7 @@
 
 from abc import ABC, abstractmethod
 
-from .. import clusters as Clusters
+import chip.clusters as Clusters
 
 
 def _case_insensitive_getattr(object, attr_name, default):

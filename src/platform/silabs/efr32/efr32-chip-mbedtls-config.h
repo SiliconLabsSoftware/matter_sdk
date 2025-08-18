@@ -95,8 +95,6 @@
 #define MBEDTLS_ECDSA_DETERMINISTIC
 #endif // SL_MATTER_PROVISION_FLASH
 
-// If defining snprintf we are also responsible for including its declaration
-#include <stdio.h>
 #define MBEDTLS_PLATFORM_SNPRINTF_MACRO snprintf
 
 #define MBEDTLS_AES_ROM_TABLES

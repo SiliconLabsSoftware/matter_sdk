@@ -32,6 +32,5 @@
 - (void)controller:(MTRDeviceController *)controller commissioningSessionEstablishmentDone:(NSError *)error;
 - (void)controller:(MTRDeviceController *)controller commissioningComplete:(NSError *)error;
 - (void)controller:(MTRDeviceController *)controller commissioningComplete:(NSError *)error nodeID:(NSNumber *)nodeID metrics:(MTRMetrics *)metrics;
-- (void)controller:(MTRDeviceController *)controller commissioneeHasReceivedNetworkCredentials:(NSNumber *)nodeID;
 
 @end

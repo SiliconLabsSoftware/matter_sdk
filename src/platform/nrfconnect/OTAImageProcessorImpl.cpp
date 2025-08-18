@@ -31,8 +31,6 @@
 #include <zephyr/settings/settings.h>
 #endif
 
-#include "DFUSync.h"
-
 #include <dfu/dfu_multi_image.h>
 #include <dfu/dfu_target.h>
 #include <dfu/dfu_target_mcuboot.h>
@@ -68,22 +66,9 @@ CHIP_ERROR OTAImageProcessorImpl::PrepareDownload()
 {
     VerifyOrReturnError(mDownloader != nullptr, CHIP_ERROR_INCORRECT_STATE);
 
-    if (DFUSync::GetInstance().Take(mDfuSyncMutexId) != CHIP_NO_ERROR)
-    {
-        ChipLogError(SoftwareUpdate, "Cannot start Matter OTA, another DFU in progress.");
-        return CHIP_ERROR_BUSY;
-    }
-
     TriggerFlashAction(ExternalFlashManager::Action::WAKE_UP);
 
-    return DeviceLayer::SystemLayer().ScheduleLambda([this] {
-        CHIP_ERROR err = PrepareDownloadImpl();
-        if (err != CHIP_NO_ERROR)
-        {
-            DFUSync::GetInstance().Free(mDfuSyncMutexId);
-        }
-        mDownloader->OnPreparedForDownload(err);
-    });
+    return DeviceLayer::SystemLayer().ScheduleLambda([this] { mDownloader->OnPreparedForDownload(PrepareDownloadImpl()); });
 }
 
 CHIP_ERROR OTAImageProcessorImpl::PrepareDownloadImpl()
@@ -127,7 +112,6 @@ CHIP_ERROR OTAImageProcessorImpl::PrepareDownloadImpl()
 CHIP_ERROR OTAImageProcessorImpl::Finalize()
 {
     PostOTAStateChangeEvent(DeviceLayer::kOtaDownloadComplete);
-    DFUSync::GetInstance().Free(mDfuSyncMutexId);
     return System::MapErrorZephyr(dfu_multi_image_done(true));
 }
 
@@ -135,7 +119,6 @@ CHIP_ERROR OTAImageProcessorImpl::Abort()
 {
     CHIP_ERROR error = System::MapErrorZephyr(dfu_multi_image_done(false));
 
-    DFUSync::GetInstance().Free(mDfuSyncMutexId);
     TriggerFlashAction(ExternalFlashManager::Action::SLEEP);
     PostOTAStateChangeEvent(DeviceLayer::kOtaDownloadAborted);
 
@@ -212,10 +195,10 @@ CHIP_ERROR OTAImageProcessorImpl::ProcessBlock(ByteSpan & aBlock)
 bool OTAImageProcessorImpl::IsFirstImageRun()
 {
     OTARequestorInterface * requestor = GetRequestorInstance();
-    VerifyOrReturnError(requestor != nullptr, false);
+    ReturnErrorCodeIf(requestor == nullptr, false);
 
     uint32_t currentVersion;
-    VerifyOrReturnError(ConfigurationMgr().GetSoftwareVersion(currentVersion) == CHIP_NO_ERROR, false);
+    ReturnErrorCodeIf(ConfigurationMgr().GetSoftwareVersion(currentVersion) != CHIP_NO_ERROR, false);
 
     return requestor->GetCurrentUpdateState() == OTARequestorInterface::OTAUpdateStateEnum::kApplying &&
         requestor->GetTargetVersion() == currentVersion;
@@ -235,7 +218,7 @@ CHIP_ERROR OTAImageProcessorImpl::ProcessHeader(ByteSpan & aBlock)
         CHIP_ERROR error = mHeaderParser.AccumulateAndDecode(aBlock, header);
 
         // Needs more data to decode the header
-        VerifyOrReturnError(error != CHIP_ERROR_BUFFER_TOO_SMALL, CHIP_NO_ERROR);
+        ReturnErrorCodeIf(error == CHIP_ERROR_BUFFER_TOO_SMALL, CHIP_NO_ERROR);
         ReturnErrorOnFailure(error);
 
         mParams.totalFileBytes = header.mPayloadSize;

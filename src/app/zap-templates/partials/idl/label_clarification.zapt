@@ -1,5 +1,0 @@
-{{~#unless (isStrEqual (asUpperCamelCase label) (asUpperCamelCase label preserveAcronyms=true)) ~}}
-
-{{!-- space --}} [spec_name = "{{label}}"]
-
-{{~/unless~}}

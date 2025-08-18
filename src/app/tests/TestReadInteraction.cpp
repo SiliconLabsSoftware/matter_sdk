@@ -15,15 +15,13 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#include <pw_unit_test/framework.h>
-
 #include <access/examples/PermissiveAccessControlDelegate.h>
 #include <app/AttributeValueEncoder.h>
-#include <app/ConcreteAttributePath.h>
 #include <app/InteractionModelEngine.h>
 #include <app/InteractionModelHelper.h>
 #include <app/MessageDef/AttributeReportIBs.h>
 #include <app/MessageDef/EventDataIB.h>
+#include <app/codegen-data-model-provider/Instance.h>
 #include <app/icd/server/ICDServerConfig.h>
 #include <app/reporting/tests/MockReportScheduler.h>
 #include <app/tests/AppTestContext.h>
@@ -31,9 +29,7 @@
 #include <app/util/basic-types.h>
 #include <app/util/mock/Constants.h>
 #include <app/util/mock/Functions.h>
-#include <data-model-providers/codegen/Instance.h>
 #include <lib/core/CHIPCore.h>
-#include <lib/core/DataModelTypes.h>
 #include <lib/core/ErrorStr.h>
 #include <lib/core/StringBuilderAdapters.h>
 #include <lib/core/TLV.h>
@@ -41,19 +37,13 @@
 #include <lib/core/TLVUtilities.h>
 #include <lib/support/CHIPCounter.h>
 #include <lib/support/CHIPMem.h>
-#include <lib/support/Span.h>
-#include <lib/support/StringBuilder.h>
-#include <lib/support/logging/TextOnlyLogging.h>
 #include <lib/support/tests/ExtraPwTestMacros.h>
 #include <messaging/ExchangeContext.h>
 #include <messaging/Flags.h>
 #include <protocols/interaction_model/Constants.h>
-
-#include <optional>
+#include <pw_unit_test/framework.h>
 
 namespace {
-using namespace chip::app::Clusters::Globals::Attributes;
-
 uint8_t gDebugEventBuffer[128];
 uint8_t gInfoEventBuffer[128];
 uint8_t gCritEventBuffer[128];
@@ -81,6 +71,7 @@ static bool sUsingSubSync = false;
 const chip::Test::MockNodeConfig & TestMockNodeConfig()
 {
     using namespace chip::app;
+    using namespace chip::app::Clusters::Globals::Attributes;
     using namespace chip::Test;
 
     // clang-format off
@@ -176,36 +167,6 @@ void GenerateEvents()
     EXPECT_EQ(logMgmt.LogEvent(&testEventGenerator, options2, eid2), CHIP_NO_ERROR);
 }
 
-/// Represents an expected attribute capture
-class AttributeCaptureAssertion
-{
-public:
-    constexpr AttributeCaptureAssertion(chip::EndpointId ep, chip::ClusterId cl, chip::AttributeId at,
-                                        std::optional<unsigned> listSize = std::nullopt) :
-        mEndpoint(ep),
-        mCluster(cl), mAttribute(at), mListSize(listSize)
-    {}
-
-    chip::app::ConcreteAttributePath Path() const { return chip::app::ConcreteAttributePath(mEndpoint, mCluster, mAttribute); }
-
-    chip::EndpointId Endpoint() const { return mEndpoint; }
-    chip::ClusterId Cluster() const { return mCluster; }
-    chip::AttributeId Attribute() const { return mAttribute; }
-    std::optional<unsigned> ListSize() const { return mListSize; }
-
-    bool Matches(const chip::app::ConcreteAttributePath & path, const std::optional<unsigned> & listSize) const
-    {
-        return (Path() == path) && (mListSize == listSize);
-    }
-
-private:
-    // this is split out because ConcreteAttributePath is NOT constexpr
-    const chip::EndpointId mEndpoint;
-    const chip::ClusterId mCluster;
-    const chip::AttributeId mAttribute;
-    const std::optional<unsigned> mListSize;
-};
-
 class MockInteractionModelApp : public chip::app::ReadClient::Callback
 {
 public:
@@ -230,19 +191,13 @@ public:
     {
         if (status.mStatus == chip::Protocols::InteractionModel::Status::Success)
         {
-            ChipLogProgress(Test, "Attribute data received 0x%X/" ChipLogFormatMEI "/" ChipLogFormatMEI " Success: LIST: %s",
-                            aPath.mEndpointId, ChipLogValueMEI(aPath.mClusterId), ChipLogValueMEI(aPath.mAttributeId),
-                            aPath.IsListOperation() ? "true" : "false");
             mReceivedAttributePaths.push_back(aPath);
             mNumAttributeResponse++;
             mGotReport = true;
 
-            std::optional<unsigned> listSize = std::nullopt;
-
             if (aPath.IsListItemOperation())
             {
                 mNumArrayItems++;
-                listSize = 1;
             }
             else if (aPath.IsListOperation())
             {
@@ -253,18 +208,10 @@ public:
                     size_t count = 0;
                     if (chip::TLV::Utilities::Count(*apData, count, /* aRecurse = */ false) == CHIP_NO_ERROR)
                     {
-                        listSize = static_cast<unsigned>(count);
                         mNumArrayItems += static_cast<int>(count);
-                        ChipLogProgress(Test, "   List count: %u", static_cast<unsigned>(count));
                     }
                 }
             }
-            mReceivedListSizes.push_back(listSize);
-        }
-        else
-        {
-            ChipLogError(NotSpecified, "ERROR status for 0x%X/" ChipLogFormatMEI "/" ChipLogFormatMEI, aPath.mEndpointId,
-                         ChipLogValueMEI(aPath.mClusterId), ChipLogValueMEI(aPath.mAttributeId));
         }
         mLastStatusReceived = status;
     }
@@ -295,132 +242,6 @@ public:
         }
     }
 
-    // Log the current captures in a code-like format, to more easily update tests
-    void LogCaptures(const char * heading)
-    {
-        ChipLogProgress(Test, "Captured attributes (%s):", heading);
-
-        for (unsigned i = 0; i < mReceivedAttributePaths.size(); i++)
-        {
-            const auto & path = mReceivedAttributePaths[i];
-            chip::StringBuilder<128> argsBuffer;
-
-            if (path.mEndpointId >= 0xff)
-            {
-                argsBuffer.AddFormat("0x%X, ", path.mEndpointId);
-            }
-            else
-            {
-                argsBuffer.AddFormat("%u, ", path.mEndpointId);
-            }
-
-            if (path.mClusterId >= 0xff)
-            {
-                argsBuffer.AddFormat("0x%lX, ", static_cast<unsigned long>(path.mClusterId));
-            }
-            else
-            {
-                argsBuffer.AddFormat("%lu, ", static_cast<unsigned long>(path.mClusterId));
-            }
-
-            switch (path.mAttributeId)
-            {
-            case ClusterRevision::Id:
-                argsBuffer.Add("ClusterRevision::Id");
-                break;
-            case FeatureMap::Id:
-                argsBuffer.Add("FeatureMap::Id");
-                break;
-            case GeneratedCommandList::Id:
-                argsBuffer.Add("GeneratedCommandList::Id");
-                break;
-            case AcceptedCommandList::Id:
-                argsBuffer.Add("AcceptedCommandList::Id");
-                break;
-            case AttributeList::Id:
-                argsBuffer.Add("AttributeList::Id");
-                break;
-            default:
-                if (path.mAttributeId >= 0xff)
-                {
-                    argsBuffer.AddFormat("0x%lX", static_cast<unsigned long>(path.mAttributeId));
-                }
-                else
-                {
-                    argsBuffer.AddFormat("%lu", static_cast<unsigned long>(path.mAttributeId));
-                }
-                break;
-            }
-
-            auto listSize = mReceivedListSizes[i];
-            if (listSize.has_value())
-            {
-                argsBuffer.AddFormat(", /* listSize = */ %u", listSize.value());
-            }
-
-            ChipLogProgress(Test, "  AttributeCaptureAssertion(%s),", argsBuffer.c_str());
-        }
-    }
-
-    void Reset()
-    {
-        mNumDataElementIndex               = 0;
-        mGotEventResponse                  = false;
-        mNumReadEventFailureStatusReceived = 0;
-        mNumAttributeResponse              = 0;
-        mNumArrayItems                     = 0;
-        mGotReport                         = false;
-        mReadError                         = false;
-        mError                             = CHIP_NO_ERROR;
-        mReceivedAttributePaths.clear();
-        mReceivedListSizes.clear();
-    }
-
-    bool CapturesMatchExactly(chip::Span<const AttributeCaptureAssertion> captures)
-    {
-        if (captures.size() != mReceivedAttributePaths.size())
-        {
-            ChipLogError(Test, "Captures do not match: expected %u, got %u instead", static_cast<unsigned>(captures.size()),
-                         static_cast<unsigned>(mReceivedAttributePaths.size()));
-            return false;
-        }
-
-        for (unsigned i = 0; i < mReceivedAttributePaths.size(); i++)
-        {
-            if (captures[i].Matches(mReceivedAttributePaths[i], mReceivedListSizes[i]))
-            {
-                continue;
-            }
-
-            ChipLogError(Test, "Failure on expected capture index %u:", i);
-
-            chip::StringBuilder<128> buffer;
-            buffer.AddFormat("0x%X/" ChipLogFormatMEI "/" ChipLogFormatMEI "", captures[i].Endpoint(),
-                             ChipLogValueMEI(captures[i].Cluster()), ChipLogValueMEI(captures[i].Attribute()));
-            auto listSize = captures[i].ListSize();
-            if (listSize.has_value())
-            {
-                buffer.AddFormat(" - list of %u items", *listSize);
-            }
-
-            ChipLogError(Test, "  Expected: %s", buffer.c_str());
-
-            buffer.Reset();
-            buffer.AddFormat("0x%X/" ChipLogFormatMEI "/" ChipLogFormatMEI "", mReceivedAttributePaths[i].mEndpointId,
-                             ChipLogValueMEI(mReceivedAttributePaths[i].mClusterId),
-                             ChipLogValueMEI(mReceivedAttributePaths[i].mEndpointId));
-            listSize = mReceivedListSizes[i];
-            if (listSize.has_value())
-            {
-                buffer.AddFormat(" - list of %u items", *listSize);
-            }
-            ChipLogError(Test, "  Actual:   %s", buffer.c_str());
-            return false;
-        }
-
-        return true;
-    }
-
     int mNumDataElementIndex               = 0;
     bool mGotEventResponse                 = false;
     int mNumReadEventFailureStatusReceived = 0;
@@ -432,11 +253,6 @@ public:
     chip::app::StatusIB mLastStatusReceived;
     CHIP_ERROR mError = CHIP_NO_ERROR;
     std::vector<chip::app::ConcreteAttributePath> mReceivedAttributePaths;
-
-    // For every received attribute path, report the size of the underlying list
-    //   - nullopt if NOT a list
-    //   - list size (including 0) if a list
-    std::vector<std::optional<unsigned>> mReceivedListSizes;
 };
 
 //
@@ -470,23 +286,28 @@ namespace app {
 using Seconds16      = System::Clock::Seconds16;
 using Milliseconds32 = System::Clock::Milliseconds32;
 
+// TODO: Add support for a 2nd Test Context by making sSyncScheduler = true (this was not ported from NL Tests yet)
 class TestReadInteraction : public chip::Test::AppContext
 {
+
 public:
-    static void SetUpTestSuiteCommon(bool syncScheduler = false)
+    static void SetUpTestSuite()
     {
         AppContext::SetUpTestSuite();
 
         gRealClock = &chip::System::SystemClock();
         chip::System::Clock::Internal::SetSystemClockForTesting(&gMockClock);
 
-        sUsingSubSync    = syncScheduler;
-        gReportScheduler = syncScheduler ? chip::app::reporting::GetSynchronizedReportScheduler()
-                                         : chip::app::reporting::GetDefaultReportScheduler();
+        if (sSyncScheduler)
+        {
+            gReportScheduler = chip::app::reporting::GetSynchronizedReportScheduler();
+            sUsingSubSync    = true;
+        }
+        else
+        {
+            gReportScheduler = chip::app::reporting::GetDefaultReportScheduler();
+        }
     }
-
-    static void SetUpTestSuite() { SetUpTestSuiteCommon(false); }
-
     static void TearDownTestSuite()
     {
         chip::System::Clock::Internal::SetSystemClockForTesting(gRealClock);
@@ -505,13 +326,12 @@ public:
         AppContext::SetUp();
 
         ASSERT_EQ(mEventCounter.Init(0), CHIP_NO_ERROR);
-        chip::app::EventManagement::CreateEventManagement(&GetExchangeManager(), MATTER_ARRAY_SIZE(logStorageResources),
+        chip::app::EventManagement::CreateEventManagement(&GetExchangeManager(), ArraySize(logStorageResources),
                                                           gCircularEventBuffer, logStorageResources, &mEventCounter);
         mOldProvider = InteractionModelEngine::GetInstance()->SetDataModelProvider(&TestImCustomDataModel::Instance());
         chip::Test::SetMockNodeConfig(TestMockNodeConfig());
         chip::Test::SetVersionTo(chip::Test::kTestDataVersion1);
     }
-
     void TearDown() override
     {
         chip::Test::ResetMockNodeConfig();
@@ -520,66 +340,43 @@ public:
         AppContext::TearDown();
     }
 
-    void TestICDProcessSubscribeRequestInfMaxIntervalCeiling();
-    void TestICDProcessSubscribeRequestInvalidIdleModeDuration();
-    void TestICDProcessSubscribeRequestMaxMinInterval();
-    void TestICDProcessSubscribeRequestSupMaxIntervalCeiling();
-    void TestICDProcessSubscribeRequestSupMinInterval();
-    void TestPostSubscribeRoundtripChunkReport();
-    void TestPostSubscribeRoundtripChunkReportTimeout();
-    void TestPostSubscribeRoundtripChunkStatusReportTimeout();
-    void TestPostSubscribeRoundtripStatusReportTimeout();
-    void TestProcessSubscribeRequest();
-    void TestReadChunking();
-    void TestReadChunkingInvalidSubscriptionId();
-    void TestReadChunkingStatusReportTimeout();
     void TestReadClient();
+    void TestReadUnexpectedSubscriptionId();
+    void TestReadHandler();
+    void TestReadHandlerSetMaxReportingInterval();
     void TestReadClientGenerateAttributePathList();
     void TestReadClientGenerateInvalidAttributePathList();
+    void TestReadClientInvalidReport();
+    void TestReadClientInvalidAttributeId();
+    void TestReadHandlerInvalidAttributePath();
     void TestReadClientGenerateOneEventPaths();
     void TestReadClientGenerateTwoEventPaths();
-    void TestReadClientInvalidAttributeId();
-    void TestReadClientInvalidReport();
+    void TestProcessSubscribeRequest();
+    void TestICDProcessSubscribeRequestSupMaxIntervalCeiling();
+    void TestICDProcessSubscribeRequestInfMaxIntervalCeiling();
+    void TestICDProcessSubscribeRequestSupMinInterval();
+    void TestICDProcessSubscribeRequestMaxMinInterval();
+    void TestICDProcessSubscribeRequestInvalidIdleModeDuration();
+    void TestSubscribeRoundtrip();
+    void TestSubscribeEarlyReport();
+    void TestSubscribeUrgentWildcardEvent();
+    void TestSubscribeInvalidAttributePathRoundtrip();
+    void TestPostSubscribeRoundtripStatusReportTimeout();
     void TestReadClientReceiveInvalidMessage();
-    void TestReadHandler();
-    void TestReadHandlerInvalidAttributePath();
-    void TestReadHandlerInvalidSubscribeRequest();
+    void TestSubscribeClientReceiveInvalidStatusResponse();
+    void TestSubscribeClientReceiveWellFormedStatusResponse();
+    void TestSubscribeClientReceiveInvalidReportMessage();
+    void TestSubscribeClientReceiveUnsolicitedInvalidReportMessage();
+    void TestSubscribeClientReceiveInvalidSubscribeResponseMessage();
+    void TestSubscribeClientReceiveUnsolicitedReportMessageWithInvalidSubscriptionId();
+    void TestReadChunkingInvalidSubscriptionId();
+    void TestReadHandlerMalformedSubscribeRequest();
     void TestReadHandlerMalformedReadRequest1();
     void TestReadHandlerMalformedReadRequest2();
-    void TestReadHandlerMalformedSubscribeRequest();
-    void TestReadHandlerSetMaxReportingInterval();
-    void TestReadInvalidAttributePathRoundtrip();
-    void TestReadReportFailure();
-    void TestReadRoundtrip();
-    void TestReadRoundtripWithDataVersionFilter();
-    void TestReadRoundtripWithMultiSamePathDifferentDataVersionFilter();
-    void TestReadRoundtripWithNoMatchPathDataVersionFilter();
-    void TestReadRoundtripWithSameDifferentPathsDataVersionFilter();
-    void TestReadShutdown();
-    void TestReadUnexpectedSubscriptionId();
-    void TestReadWildcard();
-    void TestSetDirtyBetweenChunks();
-    void TestShutdownSubscription();
-    void TestSubscribeClientReceiveInvalidReportMessage();
-    void TestSubscribeClientReceiveInvalidStatusResponse();
-    void TestSubscribeClientReceiveInvalidSubscribeResponseMessage();
-    void TestSubscribeClientReceiveUnsolicitedInvalidReportMessage();
-    void TestSubscribeClientReceiveUnsolicitedReportMessageWithInvalidSubscriptionId();
-    void TestSubscribeClientReceiveWellFormedStatusResponse();
-    void TestSubscribeEarlyReport();
-    void TestSubscribeEarlyShutdown();
-    void TestSubscribeInvalidateFabric();
-    void TestSubscribeInvalidAttributePathRoundtrip();
-    void TestSubscribeInvalidInterval();
-    void TestSubscribePartialOverlap();
-    void TestSubscribeRoundtrip();
-    void TestSubscribeRoundtripChunkStatusReportTimeout();
-    void TestSubscribeRoundtripStatusReportTimeout();
-    void TestSubscribeSendInvalidStatusReport();
     void TestSubscribeSendUnknownMessage();
-    void TestSubscribeSetDirtyFullyOverlap();
-    void TestSubscribeUrgentWildcardEvent();
-    void TestSubscribeWildcard();
+    void TestSubscribeSendInvalidStatusReport();
+    void TestReadHandlerInvalidSubscribeRequest();
+    void TestShutdownSubscription();
     void TestSubscriptionReportWithDefunctSession();
 
     enum class ReportType : uint8_t
@@ -588,23 +385,16 @@ public:
         kInvalidNoAttributeId,
         kInvalidOutOfRangeAttributeId,
     };
-
     static void GenerateReportData(System::PacketBufferHandle & aPayload, ReportType aReportType, bool aSuppressResponse,
                                    bool aHasSubscriptionId);
 
 protected:
     chip::MonotonicallyIncreasingCounter<chip::EventNumber> mEventCounter;
+    static bool sSyncScheduler;
     chip::app::DataModel::Provider * mOldProvider = nullptr;
 };
 
-class TestReadInteractionSync : public TestReadInteraction
-{
-public:
-    static void SetUpTestSuite() { TestReadInteraction::SetUpTestSuiteCommon(true); }
-    static void TearDownTestSuite() { TestReadInteraction::TearDownTestSuite(); }
-    void SetUp() { TestReadInteraction::SetUp(); }
-    void TearDown() { TestReadInteraction::TearDown(); }
-};
+bool TestReadInteraction::sSyncScheduler = false;
 
 void TestReadInteraction::GenerateReportData(System::PacketBufferHandle & aPayload, ReportType aReportType, bool aSuppressResponse,
                                              bool aHasSubscriptionId = false)
@@ -686,9 +476,7 @@ void TestReadInteraction::GenerateReportData(System::PacketBufferHandle & aPaylo
     EXPECT_EQ(writer.Finalize(&aPayload), CHIP_NO_ERROR);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClient)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClient)
-void TestReadInteraction::TestReadClient()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClient)
 {
     MockInteractionModelApp delegate;
     app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &GetExchangeManager(), delegate,
@@ -709,9 +497,7 @@ void TestReadInteraction::TestReadClient()
     EXPECT_EQ(readClient.ProcessReportData(std::move(buf), ReadClient::ReportType::kContinuingTransaction), CHIP_NO_ERROR);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadUnexpectedSubscriptionId)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadUnexpectedSubscriptionId)
-void TestReadInteraction::TestReadUnexpectedSubscriptionId()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadUnexpectedSubscriptionId)
 {
     MockInteractionModelApp delegate;
     app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &GetExchangeManager(), delegate,
@@ -734,9 +520,7 @@ void TestReadInteraction::TestReadUnexpectedSubscriptionId()
               CHIP_ERROR_INVALID_ARGUMENT);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadHandler)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadHandler)
-void TestReadInteraction::TestReadHandler()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadHandler)
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle reportDatabuf  = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -749,7 +533,8 @@ void TestReadInteraction::TestReadHandler()
 
     {
         Messaging::ExchangeContext * exchangeCtx = NewExchangeToAlice(nullptr, false);
-        ReadHandler readHandler(nullCallback, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(nullCallback, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         GenerateReportData(reportDatabuf, ReportType::kValid, false /* aSuppressResponse*/);
         EXPECT_EQ(readHandler.SendReportData(std::move(reportDatabuf), false), CHIP_ERROR_INCORRECT_STATE);
@@ -784,9 +569,7 @@ void TestReadInteraction::TestReadHandler()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadHandlerSetMaxReportingInterval)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadHandlerSetMaxReportingInterval)
-void TestReadInteraction::TestReadHandlerSetMaxReportingInterval()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadHandlerSetMaxReportingInterval)
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle subscribeRequestbuf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -807,7 +590,8 @@ void TestReadInteraction::TestReadHandlerSetMaxReportingInterval()
         uint16_t maxInterval;
 
         // Configure ReadHandler
-        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         writer.Init(std::move(subscribeRequestbuf));
         EXPECT_EQ(subscribeRequestBuilder.Init(&writer), CHIP_NO_ERROR);
@@ -894,9 +678,7 @@ void TestReadInteraction::TestReadHandlerSetMaxReportingInterval()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClientGenerateAttributePathList)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClientGenerateAttributePathList)
-void TestReadInteraction::TestReadClientGenerateAttributePathList()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClientGenerateAttributePathList)
 {
     MockInteractionModelApp delegate;
     System::PacketBufferHandle msgBuf;
@@ -921,9 +703,7 @@ void TestReadInteraction::TestReadClientGenerateAttributePathList()
     EXPECT_EQ(readClient.GenerateAttributePaths(attributePathListBuilder, attributePaths), CHIP_NO_ERROR);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClientGenerateInvalidAttributePathList)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClientGenerateInvalidAttributePathList)
-void TestReadInteraction::TestReadClientGenerateInvalidAttributePathList()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClientGenerateInvalidAttributePathList)
 {
     MockInteractionModelApp delegate;
     System::PacketBufferHandle msgBuf;
@@ -949,9 +729,7 @@ void TestReadInteraction::TestReadClientGenerateInvalidAttributePathList()
               CHIP_ERROR_IM_MALFORMED_ATTRIBUTE_PATH_IB);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClientInvalidReport)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClientInvalidReport)
-void TestReadInteraction::TestReadClientInvalidReport()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClientInvalidReport)
 {
     MockInteractionModelApp delegate;
 
@@ -975,9 +753,7 @@ void TestReadInteraction::TestReadClientInvalidReport()
               CHIP_ERROR_IM_MALFORMED_ATTRIBUTE_PATH_IB);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClientInvalidAttributeId)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClientInvalidAttributeId)
-void TestReadInteraction::TestReadClientInvalidAttributeId()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClientInvalidAttributeId)
 {
     MockInteractionModelApp delegate;
 
@@ -1007,9 +783,7 @@ void TestReadInteraction::TestReadClientInvalidAttributeId()
     EXPECT_FALSE(delegate.mReadError);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadHandlerInvalidAttributePath)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadHandlerInvalidAttributePath)
-void TestReadInteraction::TestReadHandlerInvalidAttributePath()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadHandlerInvalidAttributePath)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
 
@@ -1024,7 +798,8 @@ void TestReadInteraction::TestReadHandlerInvalidAttributePath()
 
     {
         Messaging::ExchangeContext * exchangeCtx = NewExchangeToAlice(nullptr, false);
-        ReadHandler readHandler(nullCallback, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(nullCallback, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         GenerateReportData(reportDatabuf, ReportType::kValid, false /* aSuppressResponse*/);
         EXPECT_EQ(readHandler.SendReportData(std::move(reportDatabuf), false), CHIP_ERROR_INCORRECT_STATE);
@@ -1065,9 +840,7 @@ void TestReadInteraction::TestReadHandlerInvalidAttributePath()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClientGenerateOneEventPaths)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClientGenerateOneEventPaths)
-void TestReadInteraction::TestReadClientGenerateOneEventPaths()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClientGenerateOneEventPaths)
 {
     MockInteractionModelApp delegate;
     System::PacketBufferHandle msgBuf;
@@ -1108,9 +881,7 @@ void TestReadInteraction::TestReadClientGenerateOneEventPaths()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClientGenerateTwoEventPaths)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClientGenerateTwoEventPaths)
-void TestReadInteraction::TestReadClientGenerateTwoEventPaths()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClientGenerateTwoEventPaths)
 {
     MockInteractionModelApp delegate;
     System::PacketBufferHandle msgBuf;
@@ -1155,9 +926,7 @@ void TestReadInteraction::TestReadClientGenerateTwoEventPaths()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadRoundtrip)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadRoundtrip)
-void TestReadInteraction::TestReadRoundtrip()
+TEST_F(TestReadInteraction, TestReadRoundtrip)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1234,9 +1003,7 @@ void TestReadInteraction::TestReadRoundtrip()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadRoundtripWithDataVersionFilter)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadRoundtripWithDataVersionFilter)
-void TestReadInteraction::TestReadRoundtripWithDataVersionFilter()
+TEST_F(TestReadInteraction, TestReadRoundtripWithDataVersionFilter)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1288,9 +1055,7 @@ void TestReadInteraction::TestReadRoundtripWithDataVersionFilter()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadRoundtripWithNoMatchPathDataVersionFilter)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadRoundtripWithNoMatchPathDataVersionFilter)
-void TestReadInteraction::TestReadRoundtripWithNoMatchPathDataVersionFilter()
+TEST_F(TestReadInteraction, TestReadRoundtripWithNoMatchPathDataVersionFilter)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1346,9 +1111,7 @@ void TestReadInteraction::TestReadRoundtripWithNoMatchPathDataVersionFilter()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadRoundtripWithMultiSamePathDifferentDataVersionFilter)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadRoundtripWithMultiSamePathDifferentDataVersionFilter)
-void TestReadInteraction::TestReadRoundtripWithMultiSamePathDifferentDataVersionFilter()
+TEST_F(TestReadInteraction, TestReadRoundtripWithMultiSamePathDifferentDataVersionFilter)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1405,9 +1168,7 @@ void TestReadInteraction::TestReadRoundtripWithMultiSamePathDifferentDataVersion
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadRoundtripWithSameDifferentPathsDataVersionFilter)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadRoundtripWithSameDifferentPathsDataVersionFilter)
-void TestReadInteraction::TestReadRoundtripWithSameDifferentPathsDataVersionFilter()
+TEST_F(TestReadInteraction, TestReadRoundtripWithSameDifferentPathsDataVersionFilter)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1464,9 +1225,7 @@ void TestReadInteraction::TestReadRoundtripWithSameDifferentPathsDataVersionFilt
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadWildcard)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadWildcard)
-void TestReadInteraction::TestReadWildcard()
+TEST_F(TestReadInteraction, TestReadWildcard)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1498,16 +1257,7 @@ void TestReadInteraction::TestReadWildcard()
         EXPECT_EQ(readClient.SendRequest(readPrepareParams), CHIP_NO_ERROR);
 
         DrainAndServiceIO();
-        // Expected attributes:
-        //    - 0xFFFD Cluster revision
-        //    - 0xFFFC Feature map
-        //    - 0xFFF10001
-        //    - 0xFFF10002
-        //    - 0xFFF10003
-        //    - 0xFFF8 / GeneratedCommandList
-        //    - 0xFFF9 / AcceptedCommandList
-        //    - 0xFFFB / AttributeList
-        EXPECT_EQ(delegate.mNumAttributeResponse, 8);
+        EXPECT_EQ(delegate.mNumAttributeResponse, 5);
         EXPECT_TRUE(delegate.mGotReport);
         EXPECT_FALSE(delegate.mReadError);
         // By now we should have closed all exchanges and sent all pending acks, so
@@ -1521,9 +1271,7 @@ void TestReadInteraction::TestReadWildcard()
 }
 
 // TestReadChunking will try to read a few large attributes, the report won't fit into the MTU and result in chunking.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadChunking)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadChunking)
-void TestReadInteraction::TestReadChunking()
+TEST_F(TestReadInteraction, TestReadChunking)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1558,14 +1306,11 @@ void TestReadInteraction::TestReadChunking()
 
         DrainAndServiceIO();
 
-        delegate.LogCaptures("TestReadChunking:");
-
-        constexpr AttributeCaptureAssertion kExpectedResponses[] = {
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 4),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-        };
-        ASSERT_TRUE(delegate.CapturesMatchExactly(chip::Span<const AttributeCaptureAssertion>(kExpectedResponses)));
+        // We get one chunk with 4 array elements, and then one chunk per
+        // element, and the total size of the array is
+        // kMockAttribute4ListLength.
+        EXPECT_EQ(delegate.mNumAttributeResponse, 1 + (kMockAttribute4ListLength - 4));
+        EXPECT_EQ(delegate.mNumArrayItems, 6);
         EXPECT_TRUE(delegate.mGotReport);
         EXPECT_FALSE(delegate.mReadError);
         // By now we should have closed all exchanges and sent all pending acks, so
@@ -1578,9 +1323,7 @@ void TestReadInteraction::TestReadChunking()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSetDirtyBetweenChunks)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSetDirtyBetweenChunks)
-void TestReadInteraction::TestSetDirtyBetweenChunks()
+TEST_F(TestReadInteraction, TestSetDirtyBetweenChunks)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1729,9 +1472,7 @@ void TestReadInteraction::TestSetDirtyBetweenChunks()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadInvalidAttributePathRoundtrip)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadInvalidAttributePathRoundtrip)
-void TestReadInteraction::TestReadInvalidAttributePathRoundtrip()
+TEST_F(TestReadInteraction, TestReadInvalidAttributePathRoundtrip)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -1772,9 +1513,7 @@ void TestReadInteraction::TestReadInvalidAttributePathRoundtrip()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestProcessSubscribeRequest)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestProcessSubscribeRequest)
-void TestReadInteraction::TestProcessSubscribeRequest()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestProcessSubscribeRequest)
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle subscribeRequestbuf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -1785,7 +1524,8 @@ void TestReadInteraction::TestProcessSubscribeRequest()
     Messaging::ExchangeContext * exchangeCtx = NewExchangeToAlice(nullptr, false);
 
     {
-        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         writer.Init(std::move(subscribeRequestbuf));
         EXPECT_EQ(subscribeRequestBuilder.Init(&writer), CHIP_NO_ERROR);
@@ -1830,9 +1570,7 @@ void TestReadInteraction::TestProcessSubscribeRequest()
  * @brief Test validates that an ICD will choose its IdleModeDuration (GetPublisherSelectedIntervalLimit)
  *        as MaxInterval when the MaxIntervalCeiling is superior.
  */
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestICDProcessSubscribeRequestSupMaxIntervalCeiling)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestICDProcessSubscribeRequestSupMaxIntervalCeiling)
-void TestReadInteraction::TestICDProcessSubscribeRequestSupMaxIntervalCeiling()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestICDProcessSubscribeRequestSupMaxIntervalCeiling)
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle subscribeRequestbuf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -1846,7 +1584,8 @@ void TestReadInteraction::TestICDProcessSubscribeRequestSupMaxIntervalCeiling()
     Messaging::ExchangeContext * exchangeCtx = NewExchangeToAlice(nullptr, false);
 
     {
-        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         writer.Init(std::move(subscribeRequestbuf));
         EXPECT_EQ(subscribeRequestBuilder.Init(&writer), CHIP_NO_ERROR);
@@ -1899,9 +1638,7 @@ void TestReadInteraction::TestICDProcessSubscribeRequestSupMaxIntervalCeiling()
  * @brief Test validates that an ICD will choose its IdleModeDuration (GetPublisherSelectedIntervalLimit)
  *        as MaxInterval when the MaxIntervalCeiling is inferior.
  */
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestICDProcessSubscribeRequestInfMaxIntervalCeiling)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestICDProcessSubscribeRequestInfMaxIntervalCeiling)
-void TestReadInteraction::TestICDProcessSubscribeRequestInfMaxIntervalCeiling()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestICDProcessSubscribeRequestInfMaxIntervalCeiling)
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle subscribeRequestbuf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -1915,7 +1652,8 @@ void TestReadInteraction::TestICDProcessSubscribeRequestInfMaxIntervalCeiling()
     Messaging::ExchangeContext * exchangeCtx = NewExchangeToAlice(nullptr, false);
 
     {
-        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         writer.Init(std::move(subscribeRequestbuf));
         EXPECT_EQ(subscribeRequestBuilder.Init(&writer), CHIP_NO_ERROR);
@@ -1968,9 +1706,7 @@ void TestReadInteraction::TestICDProcessSubscribeRequestInfMaxIntervalCeiling()
  * @brief Test validates that an ICD will choose a multiple of its IdleModeDuration (GetPublisherSelectedIntervalLimit)
  *        as MaxInterval when the MinInterval > IdleModeDuration.
  */
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestICDProcessSubscribeRequestSupMinInterval)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestICDProcessSubscribeRequestSupMinInterval)
-void TestReadInteraction::TestICDProcessSubscribeRequestSupMinInterval()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestICDProcessSubscribeRequestSupMinInterval)
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle subscribeRequestbuf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -1984,7 +1720,8 @@ void TestReadInteraction::TestICDProcessSubscribeRequestSupMinInterval()
     Messaging::ExchangeContext * exchangeCtx = NewExchangeToAlice(nullptr, false);
 
     {
-        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         writer.Init(std::move(subscribeRequestbuf));
         EXPECT_EQ(subscribeRequestBuilder.Init(&writer), CHIP_NO_ERROR);
@@ -2037,9 +1774,7 @@ void TestReadInteraction::TestICDProcessSubscribeRequestSupMinInterval()
  * @brief Test validates that an ICD will choose a maximal value for an uint16 if the multiple of the IdleModeDuration
  *        is greater than variable size.
  */
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestICDProcessSubscribeRequestMaxMinInterval)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestICDProcessSubscribeRequestMaxMinInterval)
-void TestReadInteraction::TestICDProcessSubscribeRequestMaxMinInterval()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestICDProcessSubscribeRequestMaxMinInterval)
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle subscribeRequestbuf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -2053,7 +1788,8 @@ void TestReadInteraction::TestICDProcessSubscribeRequestMaxMinInterval()
     Messaging::ExchangeContext * exchangeCtx = NewExchangeToAlice(nullptr, false);
 
     {
-        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         writer.Init(std::move(subscribeRequestbuf));
         EXPECT_EQ(subscribeRequestBuilder.Init(&writer), CHIP_NO_ERROR);
@@ -2104,9 +1840,7 @@ void TestReadInteraction::TestICDProcessSubscribeRequestMaxMinInterval()
  * @brief Test validates that an ICD will choose the MaxIntervalCeiling as MaxInterval if the next multiple after the MinInterval
  *        is greater than the IdleModeDuration and MaxIntervalCeiling
  */
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestICDProcessSubscribeRequestInvalidIdleModeDuration)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestICDProcessSubscribeRequestInvalidIdleModeDuration)
-void TestReadInteraction::TestICDProcessSubscribeRequestInvalidIdleModeDuration()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestICDProcessSubscribeRequestInvalidIdleModeDuration)
 {
     System::PacketBufferTLVWriter writer;
     System::PacketBufferHandle subscribeRequestbuf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
@@ -2120,7 +1854,8 @@ void TestReadInteraction::TestICDProcessSubscribeRequestInvalidIdleModeDuration(
     Messaging::ExchangeContext * exchangeCtx = NewExchangeToAlice(nullptr, false);
 
     {
-        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler);
+        ReadHandler readHandler(*engine, exchangeCtx, chip::app::ReadHandler::InteractionType::Read, gReportScheduler,
+                                CodegenDataModelProviderInstance());
 
         writer.Init(std::move(subscribeRequestbuf));
         EXPECT_EQ(subscribeRequestBuilder.Init(&writer), CHIP_NO_ERROR);
@@ -2169,9 +1904,7 @@ void TestReadInteraction::TestICDProcessSubscribeRequestInvalidIdleModeDuration(
 
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeRoundtrip)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeRoundtrip)
-void TestReadInteraction::TestSubscribeRoundtrip()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeRoundtrip)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -2366,9 +2099,7 @@ void TestReadInteraction::TestSubscribeRoundtrip()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeEarlyReport)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeEarlyReport)
-void TestReadInteraction::TestSubscribeEarlyReport()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeEarlyReport)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -2529,9 +2260,7 @@ void TestReadInteraction::TestSubscribeEarlyReport()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeUrgentWildcardEvent)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeUrgentWildcardEvent)
-void TestReadInteraction::TestSubscribeUrgentWildcardEvent()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeUrgentWildcardEvent)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -2775,9 +2504,7 @@ void TestReadInteraction::TestSubscribeUrgentWildcardEvent()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeWildcard)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeWildcard)
-void TestReadInteraction::TestSubscribeWildcard()
+TEST_F(TestReadInteraction, TestSubscribeWildcard)
 {
     // This test in particular is completely tied to the DefaultMockConfig in the mock
     // attribute storage, so reset to that (figuring out chunking location is extra hard to
@@ -2798,10 +2525,10 @@ void TestReadInteraction::TestSubscribeWildcard()
     ReadPrepareParams readPrepareParams(GetSessionBobToAlice());
     readPrepareParams.mEventPathParamsListSize = 0;
 
-    readPrepareParams.mAttributePathParamsListSize = 2;
-    auto attributePathParams = std::make_unique<chip::app::AttributePathParams[]>(readPrepareParams.mAttributePathParamsListSize);
+    std::unique_ptr<chip::app::AttributePathParams[]> attributePathParams(new chip::app::AttributePathParams[2]);
     // Subscribe to full wildcard paths, repeat twice to ensure chunking.
-    readPrepareParams.mpAttributePathParamsList = attributePathParams.get();
+    readPrepareParams.mpAttributePathParamsList    = attributePathParams.get();
+    readPrepareParams.mAttributePathParamsListSize = 2;
 
     readPrepareParams.mMinIntervalFloorSeconds   = 0;
     readPrepareParams.mMaxIntervalCeilingSeconds = 1;
@@ -2823,154 +2550,33 @@ void TestReadInteraction::TestSubscribeWildcard()
         // Mock attribute storage that is reset and resides in src/app/util/mock/attribute-storage.cpp
         // has the following items:
         // - Endpoint 0xFFFE
-        //    - cluster 0xFFF1'FC01 (2 attributes + 3 GlobalNotInMetadata)
-        //    - cluster 0xFFF1'FC02 (3 attributes + 3 GlobalNotInMetadata)
+        //    - cluster 0xFFF1'FC01 (2 attributes)
+        //    - cluster 0xFFF1'FC02 (3 attributes)
         // - Endpoint 0xFFFD
-        //    - cluster 0xFFF1'FC01 (2 attributes + 3 GlobalNotInMetadata)
-        //    - cluster 0xFFF1'FC02 (4 attributes + 3 GlobalNotInMetadata)
-        //    - cluster 0xFFF1'FC03 (5 attributes + 3 GlobalNotInMetadata)
+        //    - cluster 0xFFF1'FC01 (2 attributes)
+        //    - cluster 0xFFF1'FC02 (4 attributes)
+        //    - cluster 0xFFF1'FC03 (5 attributes)
         // - Endpoint 0xFFFC
-        //    - cluster 0xFFF1'FC01 (3 attributes + 3 GlobalNotInMetadata)
-        //    - cluster 0xFFF1'FC02 (6 attributes + 3 GlobalNotInMetadata)
-        //    - cluster 0xFFF1'FC03 (2 attributes + 3 GlobalNotInMetadata)
-        //    - cluster 0xFFF1'FC04 (2 attributes + 3 GlobalNotInMetadata)
+        //    - cluster 0xFFF1'FC01 (3 attributes)
+        //    - cluster 0xFFF1'FC02 (6 attributes)
+        //    - cluster 0xFFF1'FC03 (2 attributes)
+        //    - cluster 0xFFF1'FC04 (2 attributes)
         //
+        // For at total of 29 attributes. There are two wildcard subscription
+        // paths, for a total of 58 attributes.
         //
-        // Actual chunk placement is execution defined, however generally
         // Attribute 0xFFFC::0xFFF1'FC02::0xFFF1'0004 (kMockEndpoint3::MockClusterId(2)::MockAttributeId(4))
-        // is a list of kMockAttribute4ListLength of size 256 bytes each, which cannot fit
-        // in a single packet, so chunking is applied (we get a list and then individual elements as
-        // single items)
+        // is a list of kMockAttribute4ListLength elements of size 256 bytes each, which cannot fit in a single
+        // packet, so gets list chunking applied to it.
         //
-        // The assertions below expect a specific order verified as ok (updates should verify
-        // that the updates make sense)
-
-        delegate.LogCaptures("TestSubscribeWildcard: initial subscription");
-
-        constexpr AttributeCaptureAssertion kExpectedResponses[] = {
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, AttributeList::Id, /* listSize = */ 5),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, AttributeList::Id, /* listSize = */ 6),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, AttributeList::Id, /* listSize = */ 5),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, 0xFFF10002),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, AttributeList::Id, /* listSize = */ 7),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, 0xFFF10002),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, 0xFFF10003),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, AttributeList::Id, /* listSize = */ 8),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, AttributeList::Id, /* listSize = */ 6),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10002),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10003),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 3),
-            // Chunking here
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, AttributeList::Id, /* listSize = */ 9),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, AttributeList::Id, /* listSize = */ 5),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, AttributeList::Id, /* listSize = */ 5),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC01, AttributeList::Id, /* listSize = */ 5),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFE, 0xFFF1FC02, AttributeList::Id, /* listSize = */ 6),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC01, AttributeList::Id, /* listSize = */ 5),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, 0xFFF10002),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC02, AttributeList::Id, /* listSize = */ 7),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, 0xFFF10002),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, 0xFFF10003),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFD, 0xFFF1FC03, AttributeList::Id, /* listSize = */ 8),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, AttributeList::Id, /* listSize = */ 6),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10001),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10002),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10003),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 3),
-            // Chunking here
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, AttributeList::Id, /* listSize = */ 9),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, AttributeList::Id, /* listSize = */ 5),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, ClusterRevision::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, FeatureMap::Id),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, GeneratedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, AcceptedCommandList::Id, /* listSize = */ 0),
-            AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, AttributeList::Id, /* listSize = */ 5),
-        };
-
-        ASSERT_TRUE(delegate.CapturesMatchExactly(chip::Span<const AttributeCaptureAssertion>(kExpectedResponses)));
+        // Because delegate.mNumAttributeResponse counts AttributeDataIB instances, not attributes,
+        // the count will depend on exactly how the list for attribute
+        // 0xFFFC::0xFFF1'FC02::0xFFF1'0004 is chunked.  For each of the two instances of that attribute
+        // in the response, there will be one AttributeDataIB for the start of the list (which will include
+        // some number of 256-byte elements), then one AttributeDataIB for each of the remaining elements.
+        constexpr size_t kExpectedAttributeResponse = 29 * 2 + (kMockAttribute4ListLength - 4) + (kMockAttribute4ListLength - 4);
+        EXPECT_EQ((unsigned) delegate.mNumAttributeResponse, kExpectedAttributeResponse);
+        EXPECT_EQ(delegate.mNumArrayItems, 12);
         EXPECT_EQ(engine->GetNumActiveReadHandlers(ReadHandler::InteractionType::Subscribe), 1u);
         ASSERT_NE(engine->ActiveHandlerAt(0), nullptr);
         delegate.mpReadHandler = engine->ActiveHandlerAt(0);
@@ -2995,9 +2601,10 @@ void TestReadInteraction::TestSubscribeWildcard()
         }
 
         // Set a endpoint dirty
-        ChipLogProgress(NotSpecified, "Testing updates after dirty path setting");
         {
-            delegate.Reset();
+            delegate.mGotReport            = false;
+            delegate.mNumAttributeResponse = 0;
+            delegate.mNumArrayItems        = 0;
 
             AttributePathParams dirtyPath;
             dirtyPath.mEndpointId = chip::Test::kMockEndpoint3;
@@ -3016,69 +2623,16 @@ void TestReadInteraction::TestSubscribeWildcard()
             } while (last != delegate.mNumAttributeResponse);
 
             // Mock endpoint3 has 13 attributes in total, and we subscribed twice.
-            delegate.LogCaptures("TestSubscribeWildcard: after dirty");
-            constexpr AttributeCaptureAssertion kExpectedResponsesAfterDirty[] = {
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, ClusterRevision::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, FeatureMap::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, 0xFFF10001),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, GeneratedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, AcceptedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, AttributeList::Id, /* listSize = */ 6),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, ClusterRevision::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, FeatureMap::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10001),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10002),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10003),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 3),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, GeneratedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, AcceptedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, AttributeList::Id, /* listSize = */ 9),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, ClusterRevision::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, FeatureMap::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, GeneratedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, AcceptedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, AttributeList::Id, /* listSize = */ 5),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, ClusterRevision::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, FeatureMap::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, GeneratedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, AcceptedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, AttributeList::Id, /* listSize = */ 5),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, ClusterRevision::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, FeatureMap::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, 0xFFF10001),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, GeneratedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, AcceptedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC01, AttributeList::Id, /* listSize = */ 6),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, ClusterRevision::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, FeatureMap::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10001),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10002),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10003),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 2),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, 0xFFF10004, /* listSize = */ 1),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, GeneratedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, AcceptedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC02, AttributeList::Id, /* listSize = */ 9),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, ClusterRevision::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, FeatureMap::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, GeneratedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, AcceptedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC03, AttributeList::Id, /* listSize = */ 5),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, ClusterRevision::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, FeatureMap::Id),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, GeneratedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, AcceptedCommandList::Id, /* listSize = */ 0),
-                AttributeCaptureAssertion(0xFFFC, 0xFFF1FC04, AttributeList::Id, /* listSize = */ 5),
-
-            };
-
-            ASSERT_TRUE(delegate.CapturesMatchExactly(chip::Span<const AttributeCaptureAssertion>(kExpectedResponsesAfterDirty)));
+            // And attribute 3/2/4 is a list with 6 elements and list chunking
+            // is applied to it, but the way the packet boundaries fall we get two of
+            // its items as a single list, followed by 4 more items for one
+            // of our subscriptions, and 3 items as a single list followed by 3
+            // more items for the other.
+            //
+            // Thus we should receive 13*2 + 4 + 3 = 33 attribute data in total.
+            ChipLogError(DataManagement, "RESPO: %d\n", delegate.mNumAttributeResponse);
+            EXPECT_EQ(delegate.mNumAttributeResponse, 33);
+            EXPECT_EQ(delegate.mNumArrayItems, 12);
         }
     }
 
@@ -3088,9 +2642,7 @@ void TestReadInteraction::TestSubscribeWildcard()
 }
 
 // Subscribe (wildcard, C3, A1), then setDirty (E2, C3, wildcard), receive one attribute after setDirty
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribePartialOverlap)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribePartialOverlap)
-void TestReadInteraction::TestSubscribePartialOverlap()
+TEST_F(TestReadInteraction, TestSubscribePartialOverlap)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3105,11 +2657,11 @@ void TestReadInteraction::TestSubscribePartialOverlap()
     ReadPrepareParams readPrepareParams(GetSessionBobToAlice());
     readPrepareParams.mEventPathParamsListSize = 0;
 
+    std::unique_ptr<chip::app::AttributePathParams[]> attributePathParams(new chip::app::AttributePathParams[2]);
+    attributePathParams[0].mClusterId              = chip::Test::MockClusterId(3);
+    attributePathParams[0].mAttributeId            = chip::Test::MockAttributeId(1);
+    readPrepareParams.mpAttributePathParamsList    = attributePathParams.get();
     readPrepareParams.mAttributePathParamsListSize = 1;
-    auto attributePathParams = std::make_unique<chip::app::AttributePathParams[]>(readPrepareParams.mAttributePathParamsListSize);
-    attributePathParams[0].mClusterId           = chip::Test::MockClusterId(3);
-    attributePathParams[0].mAttributeId         = chip::Test::MockAttributeId(1);
-    readPrepareParams.mpAttributePathParamsList = attributePathParams.get();
 
     readPrepareParams.mMinIntervalFloorSeconds   = 0;
     readPrepareParams.mMaxIntervalCeilingSeconds = 1;
@@ -3160,9 +2712,7 @@ void TestReadInteraction::TestSubscribePartialOverlap()
 }
 
 // Subscribe (E2, C3, A1), then setDirty (wildcard, wildcard, wildcard), receive one attribute after setDirty
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeSetDirtyFullyOverlap)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeSetDirtyFullyOverlap)
-void TestReadInteraction::TestSubscribeSetDirtyFullyOverlap()
+TEST_F(TestReadInteraction, TestSubscribeSetDirtyFullyOverlap)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3177,12 +2727,12 @@ void TestReadInteraction::TestSubscribeSetDirtyFullyOverlap()
     ReadPrepareParams readPrepareParams(GetSessionBobToAlice());
     readPrepareParams.mEventPathParamsListSize = 0;
 
+    std::unique_ptr<chip::app::AttributePathParams[]> attributePathParams(new chip::app::AttributePathParams[1]);
+    attributePathParams[0].mClusterId              = chip::Test::kMockEndpoint2;
+    attributePathParams[0].mClusterId              = chip::Test::MockClusterId(3);
+    attributePathParams[0].mAttributeId            = chip::Test::MockAttributeId(1);
+    readPrepareParams.mpAttributePathParamsList    = attributePathParams.get();
     readPrepareParams.mAttributePathParamsListSize = 1;
-    auto attributePathParams = std::make_unique<chip::app::AttributePathParams[]>(readPrepareParams.mAttributePathParamsListSize);
-    attributePathParams[0].mEndpointId          = chip::Test::kMockEndpoint2;
-    attributePathParams[0].mClusterId           = chip::Test::MockClusterId(3);
-    attributePathParams[0].mAttributeId         = chip::Test::MockAttributeId(1);
-    readPrepareParams.mpAttributePathParamsList = attributePathParams.get();
 
     readPrepareParams.mMinIntervalFloorSeconds   = 0;
     readPrepareParams.mMaxIntervalCeilingSeconds = 1;
@@ -3231,9 +2781,7 @@ void TestReadInteraction::TestSubscribeSetDirtyFullyOverlap()
 
 // Verify that subscription can be shut down just after receiving SUBSCRIBE RESPONSE,
 // before receiving any subsequent REPORT DATA.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeEarlyShutdown)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeEarlyShutdown)
-void TestReadInteraction::TestSubscribeEarlyShutdown()
+TEST_F(TestReadInteraction, TestSubscribeEarlyShutdown)
 {
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
     InteractionModelEngine & engine    = *InteractionModelEngine::GetInstance();
@@ -3282,9 +2830,7 @@ void TestReadInteraction::TestSubscribeEarlyShutdown()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeInvalidAttributePathRoundtrip)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeInvalidAttributePathRoundtrip)
-void TestReadInteraction::TestSubscribeInvalidAttributePathRoundtrip()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeInvalidAttributePathRoundtrip)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3350,9 +2896,7 @@ void TestReadInteraction::TestSubscribeInvalidAttributePathRoundtrip()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadShutdown)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadShutdown)
-void TestReadInteraction::TestReadShutdown()
+TEST_F(TestReadInteraction, TestReadShutdown)
 {
     auto * engine = chip::app::InteractionModelEngine::GetInstance();
     app::ReadClient * pClients[4];
@@ -3389,9 +2933,7 @@ void TestReadInteraction::TestReadShutdown()
     Platform::Delete(pClients[2]);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeInvalidInterval)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeInvalidInterval)
-void TestReadInteraction::TestSubscribeInvalidInterval()
+TEST_F(TestReadInteraction, TestSubscribeInvalidInterval)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3435,9 +2977,7 @@ void TestReadInteraction::TestSubscribeInvalidInterval()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestPostSubscribeRoundtripStatusReportTimeout)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestPostSubscribeRoundtripStatusReportTimeout)
-void TestReadInteraction::TestPostSubscribeRoundtripStatusReportTimeout()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestPostSubscribeRoundtripStatusReportTimeout)
 {
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
     // Shouldn't have anything in the retransmit table when starting the test.
@@ -3554,9 +3094,7 @@ void TestReadInteraction::TestPostSubscribeRoundtripStatusReportTimeout()
     CreateSessionBobToAlice();
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeRoundtripStatusReportTimeout)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeRoundtripStatusReportTimeout)
-void TestReadInteraction::TestSubscribeRoundtripStatusReportTimeout()
+TEST_F(TestReadInteraction, TestSubscribeRoundtripStatusReportTimeout)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3629,9 +3167,7 @@ void TestReadInteraction::TestSubscribeRoundtripStatusReportTimeout()
     CreateSessionBobToAlice();
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadChunkingStatusReportTimeout)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadChunkingStatusReportTimeout)
-void TestReadInteraction::TestReadChunkingStatusReportTimeout()
+TEST_F(TestReadInteraction, TestReadChunkingStatusReportTimeout)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3683,9 +3219,7 @@ void TestReadInteraction::TestReadChunkingStatusReportTimeout()
 // ReadClient sends the read request, but handler fails to send the one report (SendMessage returns an error).
 // Since this is an un-chunked read, we are not in the AwaitingReportResponse state, so the "reports in flight"
 // counter should not increase.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadReportFailure)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadReportFailure)
-void TestReadInteraction::TestReadReportFailure()
+TEST_F(TestReadInteraction, TestReadReportFailure)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3729,9 +3263,7 @@ void TestReadInteraction::TestReadReportFailure()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeRoundtripChunkStatusReportTimeout)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeRoundtripChunkStatusReportTimeout)
-void TestReadInteraction::TestSubscribeRoundtripChunkStatusReportTimeout()
+TEST_F(TestReadInteraction, TestSubscribeRoundtripChunkStatusReportTimeout)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3799,9 +3331,7 @@ void TestReadInteraction::TestSubscribeRoundtripChunkStatusReportTimeout()
     CreateSessionBobToAlice();
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestPostSubscribeRoundtripChunkStatusReportTimeout)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestPostSubscribeRoundtripChunkStatusReportTimeout)
-void TestReadInteraction::TestPostSubscribeRoundtripChunkStatusReportTimeout()
+TEST_F(TestReadInteraction, TestPostSubscribeRoundtripChunkStatusReportTimeout)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -3900,9 +3430,7 @@ void TestReadInteraction::TestPostSubscribeRoundtripChunkStatusReportTimeout()
     CreateSessionBobToAlice();
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestPostSubscribeRoundtripChunkReportTimeout)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestPostSubscribeRoundtripChunkReportTimeout)
-void TestReadInteraction::TestPostSubscribeRoundtripChunkReportTimeout()
+TEST_F(TestReadInteraction, TestPostSubscribeRoundtripChunkReportTimeout)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4000,9 +3528,7 @@ void TestReadInteraction::TestPostSubscribeRoundtripChunkReportTimeout()
     CreateSessionBobToAlice();
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestPostSubscribeRoundtripChunkReport)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestPostSubscribeRoundtripChunkReport)
-void TestReadInteraction::TestPostSubscribeRoundtripChunkReport()
+TEST_F(TestReadInteraction, TestPostSubscribeRoundtripChunkReport)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4115,9 +3641,7 @@ void CheckForInvalidAction(Test::MessageCapturer & messageLog)
 
 // Read Client sends the read request, Read Handler drops the response, then test injects unknown status reponse message for
 // Read Client.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadClientReceiveInvalidMessage)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadClientReceiveInvalidMessage)
-void TestReadInteraction::TestReadClientReceiveInvalidMessage()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadClientReceiveInvalidMessage)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4202,9 +3726,7 @@ void TestReadInteraction::TestReadClientReceiveInvalidMessage()
 
 // Read Client sends the subscribe request, Read Handler drops the response, then test injects unknown status response message
 // for Read Client.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeClientReceiveInvalidStatusResponse)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeClientReceiveInvalidStatusResponse)
-void TestReadInteraction::TestSubscribeClientReceiveInvalidStatusResponse()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeClientReceiveInvalidStatusResponse)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4295,9 +3817,7 @@ void TestReadInteraction::TestSubscribeClientReceiveInvalidStatusResponse()
 
 // Read Client sends the subscribe request, Read Handler drops the response, then test injects well-formed status response
 // message with Success for Read Client, we expect the error with CHIP_ERROR_INVALID_MESSAGE_TYPE
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeClientReceiveWellFormedStatusResponse)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeClientReceiveWellFormedStatusResponse)
-void TestReadInteraction::TestSubscribeClientReceiveWellFormedStatusResponse()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeClientReceiveWellFormedStatusResponse)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4387,9 +3907,7 @@ void TestReadInteraction::TestSubscribeClientReceiveWellFormedStatusResponse()
 
 // Read Client sends the subscribe request, Read Handler drops the response, then test injects invalid report message for Read
 // Client.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeClientReceiveInvalidReportMessage)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeClientReceiveInvalidReportMessage)
-void TestReadInteraction::TestSubscribeClientReceiveInvalidReportMessage()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeClientReceiveInvalidReportMessage)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4479,9 +3997,7 @@ void TestReadInteraction::TestSubscribeClientReceiveInvalidReportMessage()
 
 // Read Client create the subscription, handler sends unsolicited malformed report to client,
 // InteractionModelEngine::OnUnsolicitedReportData would process this malformed report and sends out status report
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeClientReceiveUnsolicitedInvalidReportMessage)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeClientReceiveUnsolicitedInvalidReportMessage)
-void TestReadInteraction::TestSubscribeClientReceiveUnsolicitedInvalidReportMessage()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeClientReceiveUnsolicitedInvalidReportMessage)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4552,9 +4068,7 @@ void TestReadInteraction::TestSubscribeClientReceiveUnsolicitedInvalidReportMess
 
 // Read Client sends the subscribe request, Read Handler drops the subscribe response, then test injects invalid subscribe
 // response message
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeClientReceiveInvalidSubscribeResponseMessage)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeClientReceiveInvalidSubscribeResponseMessage)
-void TestReadInteraction::TestSubscribeClientReceiveInvalidSubscribeResponseMessage()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeClientReceiveInvalidSubscribeResponseMessage)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4645,9 +4159,7 @@ void TestReadInteraction::TestSubscribeClientReceiveInvalidSubscribeResponseMess
 
 // Read Client create the subscription, handler sends unsolicited malformed report with invalid subscription id to client,
 // InteractionModelEngine::OnUnsolicitedReportData would process this malformed report and sends out status report
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeClientReceiveUnsolicitedReportMessageWithInvalidSubscriptionId)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeClientReceiveUnsolicitedReportMessageWithInvalidSubscriptionId)
-void TestReadInteraction::TestSubscribeClientReceiveUnsolicitedReportMessageWithInvalidSubscriptionId()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeClientReceiveUnsolicitedReportMessageWithInvalidSubscriptionId)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4723,9 +4235,7 @@ void TestReadInteraction::TestSubscribeClientReceiveUnsolicitedReportMessageWith
 // TestReadChunkingInvalidSubscriptionId will try to read a few large attributes, the report won't fit into the MTU and result
 // in chunking, second report has different subscription id from the first one, read client sends out the status report with
 // invalid subscription
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadChunkingInvalidSubscriptionId)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadChunkingInvalidSubscriptionId)
-void TestReadInteraction::TestReadChunkingInvalidSubscriptionId()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadChunkingInvalidSubscriptionId)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4815,9 +4325,7 @@ void TestReadInteraction::TestReadChunkingInvalidSubscriptionId()
 
 // Read Client sends a malformed subscribe request, interaction model engine fails to parse the request and generates a status
 // report to client, and client is closed.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadHandlerMalformedSubscribeRequest)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadHandlerMalformedSubscribeRequest)
-void TestReadInteraction::TestReadHandlerMalformedSubscribeRequest()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadHandlerMalformedSubscribeRequest)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4861,9 +4369,7 @@ void TestReadInteraction::TestReadHandlerMalformedSubscribeRequest()
 
 // Read Client sends a malformed read request, interaction model engine fails to parse the request and generates a status report
 // to client, and client is closed.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadHandlerMalformedReadRequest1)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadHandlerMalformedReadRequest1)
-void TestReadInteraction::TestReadHandlerMalformedReadRequest1()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadHandlerMalformedReadRequest1)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4905,9 +4411,7 @@ void TestReadInteraction::TestReadHandlerMalformedReadRequest1()
 
 // Read Client sends a malformed read request, read handler fails to parse the request and generates a status report to client,
 // and client is closed.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadHandlerMalformedReadRequest2)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadHandlerMalformedReadRequest2)
-void TestReadInteraction::TestReadHandlerMalformedReadRequest2()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadHandlerMalformedReadRequest2)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -4950,9 +4454,7 @@ void TestReadInteraction::TestReadHandlerMalformedReadRequest2()
 
 // Read Client creates a subscription with the server, server sends chunked reports, after the handler sends out the first
 // chunked report, client sends out invalid write request message, handler sends status report with invalid action and closes
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeSendUnknownMessage)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeSendUnknownMessage)
-void TestReadInteraction::TestSubscribeSendUnknownMessage()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeSendUnknownMessage)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -5026,9 +4528,7 @@ void TestReadInteraction::TestSubscribeSendUnknownMessage()
 
 // Read Client creates a subscription with the server, server sends chunked reports, after the handler sends out invalid status
 // report, client sends out invalid status report message, handler sends status report with invalid action and close
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeSendInvalidStatusReport)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeSendInvalidStatusReport)
-void TestReadInteraction::TestSubscribeSendInvalidStatusReport()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscribeSendInvalidStatusReport)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -5099,9 +4599,7 @@ void TestReadInteraction::TestSubscribeSendInvalidStatusReport()
 
 // Read Client sends a malformed subscribe request, the server fails to parse the request and generates a status report to the
 // client, and client closes itself.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestReadHandlerInvalidSubscribeRequest)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestReadHandlerInvalidSubscribeRequest)
-void TestReadInteraction::TestReadHandlerInvalidSubscribeRequest()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestReadHandlerInvalidSubscribeRequest)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -5143,9 +4641,7 @@ void TestReadInteraction::TestReadHandlerInvalidSubscribeRequest()
 
 // Create the subscription, then remove the corresponding fabric in client and handler, the corresponding
 // client and handler would be released as well.
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscribeInvalidateFabric)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscribeInvalidateFabric)
-void TestReadInteraction::TestSubscribeInvalidateFabric()
+TEST_F(TestReadInteraction, TestSubscribeInvalidateFabric)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -5159,13 +4655,12 @@ void TestReadInteraction::TestSubscribeInvalidateFabric()
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), gReportScheduler), CHIP_NO_ERROR);
 
     ReadPrepareParams readPrepareParams(GetSessionBobToAlice());
-
+    readPrepareParams.mpAttributePathParamsList    = new chip::app::AttributePathParams[1];
     readPrepareParams.mAttributePathParamsListSize = 1;
-    auto attributePathParams = std::make_unique<chip::app::AttributePathParams[]>(readPrepareParams.mAttributePathParamsListSize);
-    attributePathParams[0].mEndpointId          = chip::Test::kMockEndpoint3;
-    attributePathParams[0].mClusterId           = chip::Test::MockClusterId(2);
-    attributePathParams[0].mAttributeId         = chip::Test::MockAttributeId(1);
-    readPrepareParams.mpAttributePathParamsList = attributePathParams.get();
+
+    readPrepareParams.mpAttributePathParamsList[0].mEndpointId  = chip::Test::kMockEndpoint3;
+    readPrepareParams.mpAttributePathParamsList[0].mClusterId   = chip::Test::MockClusterId(2);
+    readPrepareParams.mpAttributePathParamsList[0].mAttributeId = chip::Test::MockAttributeId(1);
 
     readPrepareParams.mMinIntervalFloorSeconds   = 0;
     readPrepareParams.mMaxIntervalCeilingSeconds = 0;
@@ -5176,7 +4671,6 @@ void TestReadInteraction::TestSubscribeInvalidateFabric()
 
         delegate.mGotReport = false;
 
-        attributePathParams.release();
         EXPECT_EQ(readClient.SendAutoResubscribeRequest(std::move(readPrepareParams)), CHIP_NO_ERROR);
 
         DrainAndServiceIO();
@@ -5202,9 +4696,7 @@ void TestReadInteraction::TestSubscribeInvalidateFabric()
     EXPECT_EQ(GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestShutdownSubscription)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestShutdownSubscription)
-void TestReadInteraction::TestShutdownSubscription()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestShutdownSubscription)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();
@@ -5218,13 +4710,12 @@ void TestReadInteraction::TestShutdownSubscription()
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), gReportScheduler), CHIP_NO_ERROR);
 
     ReadPrepareParams readPrepareParams(GetSessionBobToAlice());
-
+    readPrepareParams.mpAttributePathParamsList    = new chip::app::AttributePathParams[1];
     readPrepareParams.mAttributePathParamsListSize = 1;
-    auto attributePathParams = std::make_unique<chip::app::AttributePathParams[]>(readPrepareParams.mAttributePathParamsListSize);
-    attributePathParams[0].mEndpointId          = chip::Test::kMockEndpoint3;
-    attributePathParams[0].mClusterId           = chip::Test::MockClusterId(2);
-    attributePathParams[0].mAttributeId         = chip::Test::MockAttributeId(1);
-    readPrepareParams.mpAttributePathParamsList = attributePathParams.get();
+
+    readPrepareParams.mpAttributePathParamsList[0].mEndpointId  = chip::Test::kMockEndpoint3;
+    readPrepareParams.mpAttributePathParamsList[0].mClusterId   = chip::Test::MockClusterId(2);
+    readPrepareParams.mpAttributePathParamsList[0].mAttributeId = chip::Test::MockAttributeId(1);
 
     readPrepareParams.mMinIntervalFloorSeconds   = 0;
     readPrepareParams.mMaxIntervalCeilingSeconds = 0;
@@ -5235,7 +4726,6 @@ void TestReadInteraction::TestShutdownSubscription()
 
         delegate.mGotReport = false;
 
-        attributePathParams.release();
         EXPECT_EQ(readClient.SendAutoResubscribeRequest(std::move(readPrepareParams)), CHIP_NO_ERROR);
 
         DrainAndServiceIO();
@@ -5257,9 +4747,7 @@ void TestReadInteraction::TestShutdownSubscription()
  * session it has is defunct.  Makes sure we correctly tear down the ReadHandler
  * and don't increment the "reports in flight" count.
  */
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteraction, TestSubscriptionReportWithDefunctSession)
-TEST_F_FROM_FIXTURE_NO_BODY(TestReadInteractionSync, TestSubscriptionReportWithDefunctSession)
-void TestReadInteraction::TestSubscriptionReportWithDefunctSession()
+TEST_F_FROM_FIXTURE(TestReadInteraction, TestSubscriptionReportWithDefunctSession)
 {
 
     Messaging::ReliableMessageMgr * rm = GetExchangeManager().GetReliableMessageMgr();

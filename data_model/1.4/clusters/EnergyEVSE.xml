@@ -237,17 +237,13 @@ Davis, CA 95616, USA
       <field id="1" name="ChargingTargets" type="list">
         <entry type="ChargingTargetStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="10"/>
-        </constraint>
+        <constraint type="maxCount" value="10"/>
       </field>
     </struct>
     <struct name="ChargingTargetStruct">
       <field id="0" name="TargetTimeMinutesPastMidnight" type="uint16" default="0">
         <mandatoryConform/>
-        <constraint>
-          <max value="1439"/>
-        </constraint>
+        <constraint type="max" value="1439"/>
       </field>
       <field id="1" name="TargetSoC" type="percent" default="0">
         <otherwiseConform>
@@ -264,9 +260,7 @@ Davis, CA 95616, USA
           </optionalConform>
           <optionalConform choice="a" more="true" min="1"/>
         </otherwiseConform>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
     </struct>
   </dataTypes>
@@ -300,25 +294,19 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality persistence="nonVolatile"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="0"/>
-      </constraint>
+      <constraint type="min" value="0"/>
     </attribute>
     <attribute id="0x0006" name="MinimumChargeCurrent" type="amperage-mA" default="6000">
       <access read="true" readPrivilege="view"/>
       <quality persistence="nonVolatile"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="0"/>
-      </constraint>
+      <constraint type="min" value="0"/>
     </attribute>
     <attribute id="0x0007" name="MaximumChargeCurrent" type="amperage-mA" default="0">
       <access read="true" readPrivilege="view"/>
       <quality persistence="nonVolatile"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="0"/>
-      </constraint>
+      <constraint type="min" value="0"/>
     </attribute>
     <attribute id="0x0008" name="MaximumDischargeCurrent" type="amperage-mA" default="0">
       <access read="true" readPrivilege="view"/>
@@ -326,25 +314,19 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="V2X"/>
       </mandatoryConform>
-      <constraint>
-        <min value="0"/>
-      </constraint>
+      <constraint type="min" value="0"/>
     </attribute>
     <attribute id="0x0009" name="UserMaximumChargeCurrent" type="amperage-mA" default="0">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x000A" name="RandomizationDelayWindow" type="elapsed-s" default="600">
       <access read="true" write="true" readPrivilege="view" writePrivilege="manage"/>
       <quality persistence="nonVolatile"/>
       <optionalConform/>
-      <constraint>
-        <max value="86400"/>
-      </constraint>
+      <constraint type="max" value="86400"/>
     </attribute>
     <attribute id="0x0023" name="NextChargeStartTime" type="epoch-s" default="null">
       <access read="true" readPrivilege="view"/>
@@ -366,9 +348,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="PREF"/>
       </mandatoryConform>
-      <constraint>
-        <min value="0"/>
-      </constraint>
+      <constraint type="min" value="0"/>
     </attribute>
     <attribute id="0x0026" name="NextChargeTargetSoC" type="percent" default="null">
       <access read="true" readPrivilege="view"/>
@@ -383,9 +363,7 @@ Davis, CA 95616, USA
       <optionalConform>
         <feature name="PREF"/>
       </optionalConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0030" name="StateOfCharge" type="percent" default="null">
       <access read="true" readPrivilege="view"/>
@@ -400,9 +378,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SOC"/>
       </mandatoryConform>
-      <constraint>
-        <min value="0"/>
-      </constraint>
+      <constraint type="min" value="0"/>
     </attribute>
     <attribute id="0x0032" name="VehicleID" type="string" default="null">
       <access read="true" readPrivilege="view"/>
@@ -410,9 +386,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="PNC"/>
       </mandatoryConform>
-      <constraint>
-        <maxLength value="32"/>
-      </constraint>
+      <constraint type="maxLength" value="32"/>
     </attribute>
     <attribute id="0x0040" name="SessionID" type="uint32" default="null">
       <access read="true" readPrivilege="view"/>
@@ -428,9 +402,7 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true" persistence="nonVolatile" quieterReporting="true"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="0"/>
-      </constraint>
+      <constraint type="min" value="0"/>
     </attribute>
     <attribute id="0x0043" name="SessionEnergyDischarged" type="energy-mWh" default="null">
       <access read="true" readPrivilege="view"/>
@@ -438,9 +410,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="V2X"/>
       </mandatoryConform>
-      <constraint>
-        <min value="0"/>
-      </constraint>
+      <constraint type="min" value="0"/>
     </attribute>
   </attributes>
   <commands>
@@ -451,9 +421,7 @@ Davis, CA 95616, USA
       <field id="0" name="ChargingTargetSchedules" type="list">
         <entry type="ChargingTargetScheduleStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="7"/>
-        </constraint>
+        <constraint type="maxCount" value="7"/>
       </field>
     </command>
     <command id="0x01" name="Disable" direction="commandToServer" response="Y">
@@ -469,15 +437,11 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="MinimumChargeCurrent" type="amperage-mA">
         <mandatoryConform/>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
       <field id="2" name="MaximumChargeCurrent" type="amperage-mA">
         <mandatoryConform/>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
     </command>
     <command id="0x03" name="EnableDischarging" direction="commandToServer" response="Y">
@@ -491,9 +455,7 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="MaximumDischargeCurrent" type="amperage-mA">
         <mandatoryConform/>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
     </command>
     <command id="0x04" name="StartDiagnostics" direction="commandToServer" response="Y">
@@ -508,9 +470,7 @@ Davis, CA 95616, USA
       <field id="0" name="ChargingTargetSchedules" type="list">
         <entry type="ChargingTargetScheduleStruct"/>
         <mandatoryConform/>
-        <constraint>
-          <maxCount value="7"/>
-        </constraint>
+        <constraint type="maxCount" value="7"/>
       </field>
     </command>
     <command id="0x06" name="GetTargets" direction="commandToServer" response="GetTargetsResponse">
@@ -548,17 +508,13 @@ Davis, CA 95616, USA
       </field>
       <field id="3" name="SessionEnergyCharged" type="energy-mWh">
         <mandatoryConform/>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
       <field id="4" name="SessionEnergyDischarged" type="energy-mWh">
         <mandatoryConform>
           <feature name="V2X"/>
         </mandatoryConform>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
     </event>
     <event id="0x02" name="EnergyTransferStarted" priority="info">
@@ -572,17 +528,13 @@ Davis, CA 95616, USA
       </field>
       <field id="2" name="MaximumCurrent" type="amperage-mA">
         <mandatoryConform/>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
       <field id="3" name="MaximumDischargeCurrent" type="amperage-mA">
         <mandatoryConform>
           <feature name="V2X"/>
         </mandatoryConform>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
     </event>
     <event id="0x03" name="EnergyTransferStopped" priority="info">
@@ -599,17 +551,13 @@ Davis, CA 95616, USA
       </field>
       <field id="4" name="EnergyTransferred" type="energy-mWh">
         <mandatoryConform/>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
       <field id="5" name="EnergyDischarged" type="energy-mWh">
         <mandatoryConform>
           <feature name="V2X"/>
         </mandatoryConform>
-        <constraint>
-          <min value="0"/>
-        </constraint>
+        <constraint type="min" value="0"/>
       </field>
     </event>
     <event id="0x04" name="Fault" priority="critical">
@@ -636,9 +584,7 @@ Davis, CA 95616, USA
       </optionalConform>
       <field id="0" name="UID" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="10"/>
-        </constraint>
+        <constraint type="maxLength" value="10"/>
       </field>
     </event>
   </events>

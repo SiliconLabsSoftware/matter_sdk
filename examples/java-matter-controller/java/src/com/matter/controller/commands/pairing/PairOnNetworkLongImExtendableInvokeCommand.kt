@@ -28,7 +28,6 @@ import com.matter.controller.commands.common.CredentialsIssuer
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.UShort
-import matter.jsontlv.fromJsonString
 import matter.tlv.AnonymousTag
 import matter.tlv.ContextSpecificTag
 import matter.tlv.TlvWriter
@@ -76,7 +75,6 @@ class PairOnNetworkLongImExtendableInvokeCommand(
         ) {
           setFailure("invoke failure with incorrect status")
         }
-        responseCount++
       }
 
       if (clusterId == CLUSTER_ID_TEST && commandId == TEST_ADD_ARGUMENT_RSP_COMMAND) {
@@ -91,8 +89,8 @@ class PairOnNetworkLongImExtendableInvokeCommand(
         if (status != null) {
           setFailure("invoke failure with incorrect status")
         }
-        responseCount++
       }
+      responseCount++
     }
 
     override fun onNoResponse(noInvokeResponseData: NoInvokeResponseData) {
@@ -128,26 +126,25 @@ class PairOnNetworkLongImExtendableInvokeCommand(
 
     val element1: InvokeElement =
       InvokeElement.newInstance(
-        /* endpointId= */ 1,
+        /* endpointId= */ 0,
         CLUSTER_ID_IDENTIFY,
         IDENTIFY_COMMAND,
         tlvWriter1.getEncoded(),
         null
       )
 
-    val json2 = """
-      {
-        "0:UINT" : 1,
-        "1:UINT" : 1
-      }
-      """
+    val tlvWriter2 = TlvWriter()
+    tlvWriter2.startStructure(AnonymousTag)
+    tlvWriter2.put(ContextSpecificTag(0), number)
+    tlvWriter2.put(ContextSpecificTag(1), number)
+    tlvWriter2.endStructure()
 
     val element2: InvokeElement =
       InvokeElement.newInstance(
         /* endpointId= */ 1,
         CLUSTER_ID_TEST,
         TEST_ADD_ARGUMENT_COMMAND,
-        TlvWriter().fromJsonString(json2),
+        tlvWriter2.getEncoded(),
         null
       )
 

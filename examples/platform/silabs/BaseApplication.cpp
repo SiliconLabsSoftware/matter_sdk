@@ -44,6 +44,8 @@
 #endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
+#include <app/server/OnboardingCodesUtil.h>
+
 #if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 #include <platform/internal/BLEManager.h>
 #include <platform/silabs/efr32/BLEChannelImpl.h>
@@ -57,7 +59,6 @@
 #include <headers/ProvisionManager.h>
 #include <lib/support/CodeUtils.h>
 #include <platform/CHIPDeviceLayer.h>
-#include <setup_payload/OnboardingCodesUtil.h>
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
 #include <sl_cmsis_os2_common.h>
@@ -72,8 +73,9 @@
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #ifdef SL_WIFI
+#include <app/clusters/network-commissioning/network-commissioning.h>
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
-#include <platform/silabs/wifi/WifiInterface.h>
+#include <platform/silabs/wifi/WifiInterfaceAbstraction.h>
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #include <platform/silabs/wifi/icd/WifiSleepManager.h> // nogncheck
@@ -150,6 +152,11 @@ osMessageQueueId_t sAppEventQueue;
 LEDWidget sStatusLED;
 #endif // ENABLE_WSTK_LEDS
 
+#ifdef SL_WIFI
+app::Clusters::NetworkCommissioning::Instance
+    sWiFiNetworkCommissioningInstance(0 /* Endpoint Id */, &(NetworkCommissioning::SlWiFiDriver::GetInstance()));
+#endif /* SL_WIFI */
+
 bool sIsEnabled  = false;
 bool sIsAttached = false;
 
@@ -210,6 +217,8 @@ void BaseApplicationDelegate::OnCommissioningSessionStarted()
 
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
     WifiSleepManager::GetInstance().HandleCommissioningSessionStarted();
+    // Setting the device to high power mode during commissioning
+    WifiSleepManager::GetInstance().RequestHighPerformance();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
@@ -219,6 +228,8 @@ void BaseApplicationDelegate::OnCommissioningSessionStopped()
 
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
     WifiSleepManager::GetInstance().HandleCommissioningSessionStopped();
+    // Removing the high power mode request on session stopped
+    WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
@@ -228,6 +239,8 @@ void BaseApplicationDelegate::OnCommissioningSessionEstablishmentError(CHIP_ERRO
 
 #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
     WifiSleepManager::GetInstance().HandleCommissioningSessionStopped();
+    // Removing the high power mode request on failed commissioning
+    WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
@@ -243,6 +256,7 @@ void BaseApplicationDelegate::OnCommissioningWindowClosed()
 #if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
     app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowClosed();
 #endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
     if (BaseApplication::GetProvisionStatus())
     {
         // After the device is provisioned and the commissioning passed
@@ -337,11 +351,17 @@ CHIP_ERROR BaseApplication::BaseInit()
      * Wait for the WiFi to be initialized
      */
     ChipLogProgress(AppServer, "APP: Wait WiFi Init");
-    while (!WifiInterface::GetInstance().IsStationReady())
+    while (!wfx_hw_ready())
     {
-        osDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
     ChipLogProgress(AppServer, "APP: Done WiFi Init");
+    /* We will init server when we get IP */
+
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    sWiFiNetworkCommissioningInstance.Init();
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
 #endif
 
     // Create cmsis os sw timer for Function Selection.
@@ -649,6 +669,7 @@ void BaseApplication::ButtonHandler(AppEvent * aEvent)
                 PlatformMgr().ScheduleWork([](intptr_t) { ICDNotifier::GetInstance().NotifyNetworkActivityNotification(); });
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
             }
+
             // Print the QR Code
             OutputQrCode(false);
 #ifdef DISPLAY_ENABLED
@@ -993,7 +1014,6 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
         {
 #if SL_WIFI
             chip::app::DnssdServer::Instance().StartServer();
-
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
             WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kConnectivityChange);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER

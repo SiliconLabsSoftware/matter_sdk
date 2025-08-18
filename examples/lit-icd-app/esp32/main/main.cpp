@@ -130,6 +130,7 @@ extern "C" void app_main()
 #else
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
 #endif // CONFIG_ENABLE_ESP32_FACTORY_DATA_PROVIDER
+    ESPOpenThreadInit();
     static UatButton sButton;
     sButton.Init(UAT_GPIO, ESP_EXT1_WAKEUP_ANY_LOW);
     sButton.SetUatButtonPressCallback(UatButtonHandler);

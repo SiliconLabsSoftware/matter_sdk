@@ -18,8 +18,4 @@
 
 #pragma once
 
-namespace bridge {
-
 void InitRpcServer(uint16_t rpcServerPort);
-
-} // namespace bridge

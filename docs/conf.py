@@ -12,7 +12,7 @@ sys.path.insert(0, str(MATTER_BASE / "docs" / "_extensions"))
 # -- Project information -----------------------------------------------------
 
 project = "Matter"
-copyright = "2020-2025, Matter Contributors"
+copyright = "2020-2023, Matter Contributors"
 author = "Matter Contributors"
 version = "1.0.0"
 
@@ -24,10 +24,8 @@ extensions = [
 ]
 exclude_patterns = [
     "_build",
-    ".venv",
     "examples/android/*",
     "**/nxp/linux-imx/imx8m/README.md",
-    "**/esp32/managed_components",
     "examples/ota-requestor-app/efr32/README.md",
     "**/android/App/app/libs*",
     "examples/providers/README.md",
@@ -58,7 +56,6 @@ myst_heading_anchors = 6
 suppress_warnings = [
     "myst.header",
     "myst.anchor",
-    "myst.xref_missing",
 ]
 myst_enable_extensions = ["html_image"]
 
@@ -75,7 +72,6 @@ external_content_contents = [
     (MATTER_BASE, "examples/**/*.JPG"),
     (MATTER_BASE, "src/tools/**/*.md"),
     (MATTER_BASE, "scripts/tools/**/*.md"),
-    (MATTER_BASE, "scripts/tools/**/*.png"),
 ]
 external_content_link_prefixes = [
     "src/",
@@ -87,4 +83,3 @@ external_content_link_prefixes = [
     "data_model/",
 ]
 external_content_link_extensions = [".md", ".png", ".jpg", ".svg"]
-external_content_keep = ['**/ChipDeviceCtrlAPI.md']

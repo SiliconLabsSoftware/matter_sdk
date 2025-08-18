@@ -149,11 +149,8 @@ CHIP_ERROR DnssdServer::SetEphemeralDiscriminator(Optional<uint16_t> discriminat
 template <class AdvertisingParams>
 void DnssdServer::AddICDKeyToAdvertisement(AdvertisingParams & advParams)
 {
-    if (mICDManager == nullptr)
-    {
-        ChipLogError(Discovery, "Invalid pointer to the ICDManager which is required for adding Dnssd advertisement key");
-        return;
-    }
+    VerifyOrDieWithMsg(mICDManager != nullptr, Discovery,
+                       "Invalid pointer to the ICDManager which is required for the LIT operating mode");
 
     Dnssd::ICDModeAdvertise ICDModeToAdvertise = Dnssd::ICDModeAdvertise::kNone;
     // Only advertise the ICD key if the device can operate as a LIT
@@ -173,7 +170,7 @@ void DnssdServer::AddICDKeyToAdvertisement(AdvertisingParams & advParams)
 }
 #endif
 
-void DnssdServer::GetPrimaryOrFallbackMACAddress(MutableByteSpan & mac)
+void DnssdServer::GetPrimaryOrFallbackMACAddress(chip::MutableByteSpan mac)
 {
     if (ConfigurationMgr().GetPrimaryMACAddress(mac) != CHIP_NO_ERROR)
     {
@@ -210,15 +207,14 @@ CHIP_ERROR DnssdServer::AdvertiseOperational()
                                        .SetPort(GetSecuredPort())
                                        .SetInterfaceId(GetInterfaceId())
                                        .SetLocalMRPConfig(GetLocalMRPConfig().std_optional())
-                                       .EnableIpV4(SecuredIPv4PortMatchesIPv6Port());
+                                       .EnableIpV4(true);
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
         AddICDKeyToAdvertisement(advertiseParameters);
 #endif
 
 #if INET_CONFIG_ENABLE_TCP_ENDPOINT
-        advertiseParameters.SetTCPSupportModes(mTCPServerEnabled ? chip::Dnssd::TCPModeAdvertise::kTCPClientServer
-                                                                 : chip::Dnssd::TCPModeAdvertise::kTCPClient);
+        advertiseParameters.SetTCPSupportModes(chip::Dnssd::TCPModeAdvertise::kTCPClientServer);
 #endif
         auto & mdnsAdvertiser = chip::Dnssd::ServiceAdvertiser::Instance();
 
@@ -237,7 +233,7 @@ CHIP_ERROR DnssdServer::Advertise(bool commissionableNode, chip::Dnssd::Commissi
     auto advertiseParameters = chip::Dnssd::CommissionAdvertisingParameters()
                                    .SetPort(commissionableNode ? GetSecuredPort() : GetUnsecuredPort())
                                    .SetInterfaceId(GetInterfaceId())
-                                   .EnableIpV4(!commissionableNode || SecuredIPv4PortMatchesIPv6Port());
+                                   .EnableIpV4(true);
     advertiseParameters.SetCommissionAdvertiseMode(commissionableNode ? chip::Dnssd::CommssionAdvertiseMode::kCommissionableNode
                                                                       : chip::Dnssd::CommssionAdvertiseMode::kCommissioner);
 
@@ -309,7 +305,7 @@ CHIP_ERROR DnssdServer::Advertise(bool commissionableNode, chip::Dnssd::Commissi
 
 #if CHIP_ENABLE_ROTATING_DEVICE_ID && defined(CHIP_DEVICE_CONFIG_ROTATING_DEVICE_ID_UNIQUE_ID)
         char rotatingDeviceIdHexBuffer[RotatingDeviceId::kHexMaxLength];
-        ReturnErrorOnFailure(GenerateRotatingDeviceId(rotatingDeviceIdHexBuffer, MATTER_ARRAY_SIZE(rotatingDeviceIdHexBuffer)));
+        ReturnErrorOnFailure(GenerateRotatingDeviceId(rotatingDeviceIdHexBuffer, ArraySize(rotatingDeviceIdHexBuffer)));
         advertiseParameters.SetRotatingDeviceId(std::make_optional<const char *>(rotatingDeviceIdHexBuffer));
 #endif
 

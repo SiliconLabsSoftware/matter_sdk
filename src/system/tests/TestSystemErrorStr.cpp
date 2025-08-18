@@ -69,7 +69,4 @@ TEST(TestSystemErrorStr, CheckSystemErrorStr)
         EXPECT_NE(strchr(errStr, ':'), nullptr);
 #endif // !CHIP_CONFIG_SHORT_ERROR_STR
     }
-
-    // Deregister the layer error formatter
-    DeregisterCHIPLayerErrorFormatter();
 }

@@ -284,15 +284,8 @@ void ExchangeManager::OnMessageReceived(const PacketHeader & packetHeader, const
     }
     else
     {
-        if (packetHeader.GetDestinationGroupId().HasValue())
-        {
-            ChipLogProgress(ExchangeManager, "Received Groupcast Message with GroupId 0x%04X (%d)",
-                            packetHeader.GetDestinationGroupId().Value(), packetHeader.GetDestinationGroupId().Value());
-        }
-        else
-        {
-            ChipLogProgress(ExchangeManager, "Received Groupcast Message without GroupId");
-        }
+        ChipLogProgress(ExchangeManager, "Received Groupcast Message with GroupId 0x%04X (%d)",
+                        packetHeader.GetDestinationGroupId().Value(), packetHeader.GetDestinationGroupId().Value());
     }
 
     // Do not handle messages that don't match an existing exchange on an

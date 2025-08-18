@@ -16,11 +16,11 @@
  */
 #pragma once
 
+#include "lib/core/DataModelTypes.h"
 #include <app/AttributeValueDecoder.h>
 #include <app/data-model-provider/OperationTypes.h>
 #include <app/data-model-provider/tests/TestConstants.h>
 #include <app/data-model/Encode.h>
-#include <lib/core/DataModelTypes.h>
 #include <lib/core/TLVReader.h>
 
 namespace chip {
@@ -47,7 +47,7 @@ public:
     WriteOperation(const ConcreteDataAttributePath & path)
     {
         mRequest.path              = path;
-        mRequest.subjectDescriptor = &kDenySubjectDescriptor;
+        mRequest.subjectDescriptor = kDenySubjectDescriptor;
     }
 
     WriteOperation(EndpointId endpoint, ClusterId cluster, AttributeId attribute) :
@@ -56,7 +56,13 @@ public:
 
     WriteOperation & SetSubjectDescriptor(const chip::Access::SubjectDescriptor & descriptor)
     {
-        mRequest.subjectDescriptor = &descriptor;
+        mRequest.subjectDescriptor = descriptor;
+        return *this;
+    }
+
+    WriteOperation & SetPreviousSuccessPath(std::optional<ConcreteAttributePath> path)
+    {
+        mRequest.previousSuccessPath = path;
         return *this;
     }
 
@@ -117,11 +123,7 @@ public:
     AttributeValueDecoder DecoderFor(const T & value)
     {
         mTLVReader = ReadEncodedValue(value);
-        if (mRequest.subjectDescriptor == nullptr)
-        {
-            AttributeValueDecoder(mTLVReader, kDenySubjectDescriptor);
-        }
-        return AttributeValueDecoder(mTLVReader, *mRequest.subjectDescriptor);
+        return AttributeValueDecoder(mTLVReader, mRequest.subjectDescriptor.value_or(kDenySubjectDescriptor));
     }
 
 private:

@@ -28,11 +28,10 @@
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include <platform/OpenThread/GenericThreadStackManagerImpl_OpenThread.h>
 #endif
+#include "FreeRTOS.h"
 #include "sl_memory_manager.h"
-#include <cmsis_os2.h>
 #include <inet/InetInterface.h>
 #include <lib/support/CHIPMemString.h>
-#include <sl_cmsis_os2_common.h>
 
 using namespace ::chip::app::Clusters::GeneralDiagnostics;
 
@@ -98,24 +97,31 @@ CHIP_ERROR DiagnosticDataProviderImpl::ResetWatermarks()
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetThreadMetrics(ThreadMetrics ** threadMetricsOut)
 {
+    /* Obtain all available task information */
+    TaskStatus_t * taskStatusArray;
     ThreadMetrics * head = nullptr;
+    uint32_t arraySize, x, dummy;
 
-    uint32_t threadCount         = osThreadGetCount();
-    osThreadId_t * threadIdTable = static_cast<osThreadId_t *>(chip::Platform::MemoryCalloc(threadCount, sizeof(osThreadId_t)));
+    arraySize = uxTaskGetNumberOfTasks();
 
-    if (threadIdTable != nullptr)
+    taskStatusArray = static_cast<TaskStatus_t *>(chip::Platform::MemoryCalloc(arraySize, sizeof(TaskStatus_t)));
+
+    if (taskStatusArray != NULL)
     {
-        osThreadEnumerate(threadIdTable, threadCount);
-        for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
+        /* Generate raw status information about each task. */
+        arraySize = uxTaskGetSystemState(taskStatusArray, arraySize, &dummy);
+        /* For each populated position in the taskStatusArray array,
+           format the raw data as human readable ASCII data. */
+
+        for (x = 0; x < arraySize; x++)
         {
-            osThreadId_t tId       = threadIdTable[tIdIndex];
             ThreadMetrics * thread = new ThreadMetrics();
             if (thread)
             {
-                thread->id = tIdIndex;
-                thread->stackFreeMinimum.Emplace(osThreadGetStackSpace(tId));
-                Platform::CopyString(thread->NameBuf, osThreadGetName(tId));
+                Platform::CopyString(thread->NameBuf, taskStatusArray[x].pcTaskName);
                 thread->name.Emplace(CharSpan::fromCharString(thread->NameBuf));
+                thread->id = taskStatusArray[x].xTaskNumber;
+                thread->stackFreeMinimum.Emplace(taskStatusArray[x].usStackHighWaterMark);
 
                 /* Unsupported metrics */
                 // thread->stackSize
@@ -128,7 +134,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetThreadMetrics(ThreadMetrics ** threadM
 
         *threadMetricsOut = head;
         /* The array is no longer needed, free the memory it consumes. */
-        chip::Platform::MemoryFree(threadIdTable);
+        chip::Platform::MemoryFree(taskStatusArray);
     }
 
     return CHIP_NO_ERROR;
@@ -148,30 +154,30 @@ void DiagnosticDataProviderImpl::ReleaseThreadMetrics(ThreadMetrics * threadMetr
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetRebootCount(uint16_t & rebootCount)
 {
-    uint32_t count   = 0;
-    CHIP_ERROR error = ConfigurationMgr().GetRebootCount(count);
+    uint32_t count = 0;
+    CHIP_ERROR err = ConfigurationMgr().GetRebootCount(count);
 
-    if (error == CHIP_NO_ERROR)
+    if (err == CHIP_NO_ERROR)
     {
         VerifyOrReturnError(count <= UINT16_MAX, CHIP_ERROR_INVALID_INTEGER_VALUE);
         rebootCount = static_cast<uint16_t>(count);
     }
 
-    return error;
+    return err;
 }
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetBootReason(BootReasonType & bootReason)
 {
-    uint32_t reason  = 0;
-    CHIP_ERROR error = ConfigurationMgr().GetBootReason(reason);
+    uint32_t reason = 0;
+    CHIP_ERROR err  = ConfigurationMgr().GetBootReason(reason);
 
-    if (error == CHIP_NO_ERROR)
+    if (err == CHIP_NO_ERROR)
     {
         VerifyOrReturnError(reason <= UINT8_MAX, CHIP_ERROR_INVALID_INTEGER_VALUE);
         bootReason = static_cast<BootReasonType>(reason);
     }
 
-    return error;
+    return err;
 }
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetUpTime(uint64_t & upTime)
@@ -267,8 +273,8 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetNetworkInterfaces(NetworkInterface ** 
         ifp->name          = CharSpan::fromCharString(ifp->Name);
         ifp->isOperational = true;
         Inet::InterfaceType interfaceType;
-        CHIP_ERROR error = interfaceIterator.GetInterfaceType(interfaceType);
-        if (error == CHIP_NO_ERROR || error == CHIP_ERROR_NOT_IMPLEMENTED)
+        CHIP_ERROR err = interfaceIterator.GetInterfaceType(interfaceType);
+        if (err == CHIP_NO_ERROR || err == CHIP_ERROR_NOT_IMPLEMENTED)
         {
             switch (interfaceType)
             {
@@ -351,17 +357,16 @@ void DiagnosticDataProviderImpl::ReleaseNetworkInterfaces(NetworkInterface * net
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiBssId(MutableByteSpan & BssId)
 {
     constexpr size_t bssIdSize = 6;
-    wfx_wifi_scan_result_t ap  = { 0 };
-
     VerifyOrReturnError(BssId.size() >= bssIdSize, CHIP_ERROR_BUFFER_TOO_SMALL);
 
-    if (Silabs::WifiInterface::GetInstance().GetAccessPointInfo(ap) == CHIP_NO_ERROR)
+    wfx_wifi_scan_result_t ap;
+    int32_t err = wfx_get_ap_info(&ap);
+    if (err == 0)
     {
         memcpy(BssId.data(), ap.bssid, bssIdSize);
         BssId.reduce_size(bssIdSize);
         return CHIP_NO_ERROR;
     }
-
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
 
@@ -369,9 +374,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiSecurityType(app::Clusters::WiFiNe
 {
     using app::Clusters::WiFiNetworkDiagnostics::SecurityTypeEnum;
 
-    wfx_wifi_scan_result_t ap = { 0 };
-    CHIP_ERROR error          = Silabs::WifiInterface::GetInstance().GetAccessPointInfo(ap);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_result_t ap;
+    int32_t err = wfx_get_ap_info(&ap);
+    if (err == 0)
     {
         // TODO: Is this actually right?  Do the wfx_wifi_scan_result_t values
         // match the Matter spec ones?
@@ -389,9 +394,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiVersion(app::Clusters::WiFiNetwork
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiChannelNumber(uint16_t & channelNumber)
 {
-    wfx_wifi_scan_result_t ap = { 0 };
-    CHIP_ERROR error          = Silabs::WifiInterface::GetInstance().GetAccessPointInfo(ap);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_result_t ap;
+    int32_t err = wfx_get_ap_info(&ap);
+    if (err == 0)
     {
         channelNumber = ap.chan;
         return CHIP_NO_ERROR;
@@ -401,9 +406,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiChannelNumber(uint16_t & channelNu
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiRssi(int8_t & rssi)
 {
-    wfx_wifi_scan_result_t ap = { 0 };
-    CHIP_ERROR error          = Silabs::WifiInterface::GetInstance().GetAccessPointInfo(ap);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_result_t ap;
+    int32_t err = wfx_get_ap_info(&ap);
+    if (err == 0)
     {
         rssi = ap.rssi;
         return CHIP_NO_ERROR;
@@ -413,9 +418,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiRssi(int8_t & rssi)
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiBeaconLostCount(uint32_t & beaconLostCount)
 {
-    wfx_wifi_scan_ext_t extra_info = { 0 };
-    CHIP_ERROR error               = Silabs::WifiInterface::GetInstance().GetAccessPointExtendedInfo(extra_info);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_ext_t extra_info;
+    int32_t err = wfx_get_ap_ext(&extra_info);
+    if (err == 0)
     {
         beaconLostCount = extra_info.beacon_lost_count;
         return CHIP_NO_ERROR;
@@ -430,9 +435,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiCurrentMaxRate(uint64_t & currentM
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiPacketMulticastRxCount(uint32_t & packetMulticastRxCount)
 {
-    wfx_wifi_scan_ext_t extra_info = { 0 };
-    CHIP_ERROR error               = Silabs::WifiInterface::GetInstance().GetAccessPointExtendedInfo(extra_info);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_ext_t extra_info;
+    int32_t err = wfx_get_ap_ext(&extra_info);
+    if (err == 0)
     {
         packetMulticastRxCount = extra_info.mcast_rx_count;
         return CHIP_NO_ERROR;
@@ -442,9 +447,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiPacketMulticastRxCount(uint32_t & 
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiPacketMulticastTxCount(uint32_t & packetMulticastTxCount)
 {
-    wfx_wifi_scan_ext_t extra_info = { 0 };
-    CHIP_ERROR error               = Silabs::WifiInterface::GetInstance().GetAccessPointExtendedInfo(extra_info);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_ext_t extra_info;
+    int32_t err = wfx_get_ap_ext(&extra_info);
+    if (err == 0)
     {
         packetMulticastTxCount = extra_info.mcast_tx_count;
         return CHIP_NO_ERROR;
@@ -454,9 +459,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiPacketMulticastTxCount(uint32_t & 
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiPacketUnicastRxCount(uint32_t & packetUnicastRxCount)
 {
-    wfx_wifi_scan_ext_t extra_info = { 0 };
-    CHIP_ERROR error               = Silabs::WifiInterface::GetInstance().GetAccessPointExtendedInfo(extra_info);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_ext_t extra_info;
+    int32_t err = wfx_get_ap_ext(&extra_info);
+    if (err == 0)
     {
         packetUnicastRxCount = extra_info.ucast_rx_count;
         return CHIP_NO_ERROR;
@@ -466,9 +471,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiPacketUnicastRxCount(uint32_t & pa
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiPacketUnicastTxCount(uint32_t & packetUnicastTxCount)
 {
-    wfx_wifi_scan_ext_t extra_info = { 0 };
-    CHIP_ERROR error               = Silabs::WifiInterface::GetInstance().GetAccessPointExtendedInfo(extra_info);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_ext_t extra_info;
+    int32_t err = wfx_get_ap_ext(&extra_info);
+    if (err == 0)
     {
         packetUnicastTxCount = extra_info.ucast_tx_count;
         return CHIP_NO_ERROR;
@@ -478,9 +483,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiPacketUnicastTxCount(uint32_t & pa
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiOverrunCount(uint64_t & overrunCount)
 {
-    wfx_wifi_scan_ext_t extra_info = { 0 };
-    CHIP_ERROR error               = Silabs::WifiInterface::GetInstance().GetAccessPointExtendedInfo(extra_info);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_ext_t extra_info;
+    int32_t err = wfx_get_ap_ext(&extra_info);
+    if (err == 0)
     {
         overrunCount = extra_info.overrun_count;
         return CHIP_NO_ERROR;
@@ -490,9 +495,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiOverrunCount(uint64_t & overrunCou
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiBeaconRxCount(uint32_t & beaconRxCount)
 {
-    wfx_wifi_scan_ext_t extra_info = { 0 };
-    CHIP_ERROR error               = Silabs::WifiInterface::GetInstance().GetAccessPointExtendedInfo(extra_info);
-    if (error == CHIP_NO_ERROR)
+    wfx_wifi_scan_ext_t extra_info;
+    int32_t err = wfx_get_ap_ext(&extra_info);
+    if (err == 0)
     {
         beaconRxCount = extra_info.beacon_rx_count;
         return CHIP_NO_ERROR;
@@ -502,7 +507,12 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiBeaconRxCount(uint32_t & beaconRxC
 
 CHIP_ERROR DiagnosticDataProviderImpl::ResetWiFiNetworkDiagnosticsCounts()
 {
-    return Silabs::WifiInterface::GetInstance().ResetCounters();
+    int32_t err = wfx_reset_counts();
+    if (err == 0)
+    {
+        return CHIP_NO_ERROR;
+    }
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
 #endif // SL_WIFI
 

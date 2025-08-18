@@ -27,7 +27,7 @@ import sys
 import intelhex
 
 oad_bin_file = sys.argv[1]
-mcuboot_hex_file = sys.argv[2]
+bim_hex_file = sys.argv[2]
 combined_hex = sys.argv[3]
 
 # merge binary executable with bim hex file
@@ -38,10 +38,9 @@ if (oad_bin_file.endswith('hex')):
 else:
     ota_image.fromfile(oad_bin_file, format='bin')
 
-mcuboot_hex = intelhex.IntelHex()
-mcuboot_hex.fromfile(mcuboot_hex_file, format='hex')
+bim_hex = intelhex.IntelHex()
+bim_hex.fromfile(bim_hex_file, format='hex')
 
-# MCUBoot image has a very large address range due to the CCFG - we can allow the Matter Image to overlap with the MCUBoot image
-ota_image.merge(mcuboot_hex, overlap='ignore')
+ota_image.merge(bim_hex)
 
 ota_image.tofile(combined_hex, format='hex')

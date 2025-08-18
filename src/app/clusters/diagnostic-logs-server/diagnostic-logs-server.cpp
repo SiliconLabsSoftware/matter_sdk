@@ -49,9 +49,8 @@ DiagnosticLogsProviderDelegate * gDiagnosticLogsProviderDelegateTable[kDiagnosti
 
 DiagnosticLogsProviderDelegate * GetDiagnosticLogsProviderDelegate(EndpointId endpoint)
 {
-    uint16_t ep = emberAfGetClusterServerEndpointIndex(endpoint, Id, MATTER_DM_DIAGNOSTIC_LOGS_CLUSTER_SERVER_ENDPOINT_COUNT);
-    auto delegate =
-        (ep >= MATTER_ARRAY_SIZE(gDiagnosticLogsProviderDelegateTable) ? nullptr : gDiagnosticLogsProviderDelegateTable[ep]);
+    uint16_t ep   = emberAfGetClusterServerEndpointIndex(endpoint, Id, MATTER_DM_DIAGNOSTIC_LOGS_CLUSTER_SERVER_ENDPOINT_COUNT);
+    auto delegate = (ep >= ArraySize(gDiagnosticLogsProviderDelegateTable) ? nullptr : gDiagnosticLogsProviderDelegateTable[ep]);
 
     if (delegate == nullptr)
     {
@@ -194,5 +193,4 @@ bool emberAfDiagnosticLogsClusterRetrieveLogsRequestCallback(chip::app::CommandH
 }
 
 void MatterDiagnosticLogsPluginServerInitCallback() {}
-void MatterDiagnosticLogsPluginServerShutdownCallback() {}
 #endif // #ifdef MATTER_DM_DIAGNOSTIC_LOGS_CLUSTER_SERVER_ENDPOINT_COUNT

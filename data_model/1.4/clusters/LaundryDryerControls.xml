@@ -86,20 +86,13 @@ Davis, CA 95616, USA
       <entry type="DrynessLevelEnum"/>
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <countBetween>
-          <from value="1"/>
-          <to value="4"/>
-        </countBetween>
-      </constraint>
+      <constraint type="countBetween" from="1" to="4"/>
     </attribute>
     <attribute id="0x0001" name="SelectedDrynessLevel" type="DrynessLevelEnum" default="desc">
       <access read="true" write="true" readPrivilege="view" writePrivilege="operate"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
   </attributes>
 </cluster>

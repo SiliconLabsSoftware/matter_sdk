@@ -244,10 +244,10 @@ template <size_t N>
 CHIP_ERROR extractProtocol(const char * serviceType, char (&outServiceName)[N], DnssdServiceProtocol & outProtocol)
 {
     const char * dotPos = strrchr(serviceType, '.');
-    VerifyOrReturnError(dotPos != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorCodeIf(dotPos == nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
     size_t lengthWithoutProtocol = static_cast<size_t>(dotPos - serviceType);
-    VerifyOrReturnError(lengthWithoutProtocol + 1 <= N, CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorCodeIf(lengthWithoutProtocol + 1 > N, CHIP_ERROR_INVALID_ARGUMENT);
 
     memcpy(outServiceName, serviceType, lengthWithoutProtocol);
     outServiceName[lengthWithoutProtocol] = '\0'; // Set a null terminator
@@ -267,7 +267,7 @@ CHIP_ERROR extractProtocol(const char * serviceType, char (&outServiceName)[N], 
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
-    VerifyOrReturnError(outProtocol != DnssdServiceProtocol::kDnssdProtocolUnknown, CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorCodeIf(outProtocol == DnssdServiceProtocol::kDnssdProtocolUnknown, CHIP_ERROR_INVALID_ARGUMENT);
 
     return CHIP_NO_ERROR;
 }

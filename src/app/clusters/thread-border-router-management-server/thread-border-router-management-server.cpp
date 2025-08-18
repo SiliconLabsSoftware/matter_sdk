@@ -67,13 +67,11 @@ Status ServerInstance::HandleGetDatasetRequest(CommandHandlerInterface::HandlerC
     VerifyOrReturnValue(IsCommandOverCASESession(ctx), Status::UnsupportedAccess);
 
     CHIP_ERROR err = mDelegate->GetDataset(dataset, type);
-    if (err == CHIP_ERROR_NOT_FOUND)
+    if (err != CHIP_NO_ERROR)
     {
-        // The spec mandates that we return an empty dataset, NOT a NotFound status.
-        dataset.Init(ByteSpan());
-        return Status::Success;
+        return err == CHIP_IM_GLOBAL_STATUS(NotFound) ? StatusIB(err).mStatus : Status::Failure;
     }
-    return StatusIB(err).mStatus;
+    return Status::Success;
 }
 
 Status ServerInstance::HandleSetActiveDatasetRequest(CommandHandlerInterface::HandlerContext & ctx,
@@ -128,7 +126,7 @@ Status ServerInstance::HandleSetPendingDatasetRequest(CommandHandlerInterface::H
     Thread::OperationalDataset pendingDataset;
     // If any of the parameters in the PendingDataset is invalid, the command SHALL fail with a status code
     // of INVALID_COMMAND.
-    VerifyOrReturnError(pendingDataset.Init(req.pendingDataset) == CHIP_NO_ERROR, Status::InvalidCommand);
+    ReturnErrorCodeIf(pendingDataset.Init(req.pendingDataset) != CHIP_NO_ERROR, Status::InvalidCommand);
     CHIP_ERROR err = mDelegate->SetPendingDataset(pendingDataset);
     return StatusIB(err).mStatus;
 }
@@ -365,7 +363,7 @@ void ServerInstance::OnPlatformEventHandler(const DeviceLayer::ChipDeviceEvent *
 
 CHIP_ERROR ServerInstance::Init()
 {
-    VerifyOrReturnError(mDelegate, CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorCodeIf(!mDelegate, CHIP_ERROR_INVALID_ARGUMENT);
     ReturnErrorOnFailure(CommandHandlerInterfaceRegistry::Instance().RegisterCommandHandler(this));
     VerifyOrReturnError(chip::app::AttributeAccessInterfaceRegistry::Instance().Register(this), CHIP_ERROR_INCORRECT_STATE);
     ReturnErrorOnFailure(DeviceLayer::PlatformMgrImpl().AddEventHandler(OnPlatformEventHandler, reinterpret_cast<intptr_t>(this)));
@@ -381,4 +379,3 @@ void MatterThreadBorderRouterManagementPluginServerInitCallback()
 {
     // Nothing to do, the server init routine will be done in Instance::Init()
 }
-void MatterThreadBorderRouterManagementPluginServerShutdownCallback() {}

@@ -20,7 +20,6 @@
 
 #if CONFIG_ENABLE_PW_RPC
 #include "PigweedLoggerMutex.h"
-#include "Rpc.h"
 #include "RpcService.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
@@ -29,10 +28,6 @@
 #include "pw_rpc/server.h"
 #include "pw_sys_io/sys_io.h"
 #include "support/CodeUtils.h"
-
-#if defined(PW_RPC_ACTIONS_SERVICE) && PW_RPC_ACTIONS_SERVICE
-#include "pigweed/rpc_services/Actions.h"
-#endif // defined(PW_RPC_ACTIONS_SERVICE) && PW_RPC_ACTIONS_SERVICE
 
 #if defined(PW_RPC_ATTRIBUTE_SERVICE) && PW_RPC_ATTRIBUTE_SERVICE
 #include "pigweed/rpc_services/Attributes.h"
@@ -397,7 +392,7 @@ void Init()
     PigweedLogger::init();
 
     // Start App task.
-    sRpcTaskHandle = xTaskCreateStatic(RunRpcService, "RPC_TASK", MATTER_ARRAY_SIZE(sRpcTaskStack), nullptr, RPC_TASK_PRIORITY,
+    sRpcTaskHandle = xTaskCreateStatic(RunRpcService, "RPC_TASK", ArraySize(sRpcTaskStack), nullptr, RPC_TASK_PRIORITY,
                                        sRpcTaskStack, &sRpcTaskBuffer);
 }
 

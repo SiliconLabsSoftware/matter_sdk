@@ -114,6 +114,7 @@ private:
     bool _IsWiFiStationConnected(void);
     bool _IsWiFiStationProvisioned(void);
     void _ClearWiFiStationProvision(void);
+    bool _CanStartWiFiScan();
     void _OnWiFiScanDone();
     void _OnWiFiStationProvisionChange();
     System::Clock::Timeout _GetWiFiStationReconnectInterval(void);
@@ -199,6 +200,11 @@ inline bool ConnectivityManagerImpl::_IsWiFiStationConnected(void)
 inline System::Clock::Timeout ConnectivityManagerImpl::_GetWiFiStationReconnectInterval(void)
 {
     return mWiFiStationReconnectInterval;
+}
+
+inline bool ConnectivityManagerImpl::_CanStartWiFiScan()
+{
+    return mWiFiStationState != kWiFiStationState_Connecting;
 }
 #endif
 

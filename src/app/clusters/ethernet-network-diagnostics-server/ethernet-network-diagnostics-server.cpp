@@ -36,11 +36,11 @@ using chip::DeviceLayer::DiagnosticDataProvider;
 
 namespace {
 
-class EthernetDiagnosticsAttrAccess : public AttributeAccessInterface
+class EthernetDiagosticsAttrAccess : public AttributeAccessInterface
 {
 public:
     // Register for the EthernetNetworkDiagnostics cluster on all endpoints.
-    EthernetDiagnosticsAttrAccess() : AttributeAccessInterface(Optional<EndpointId>::Missing(), EthernetNetworkDiagnostics::Id) {}
+    EthernetDiagosticsAttrAccess() : AttributeAccessInterface(Optional<EndpointId>::Missing(), EthernetNetworkDiagnostics::Id) {}
 
     CHIP_ERROR Read(const ConcreteReadAttributePath & aPath, AttributeValueEncoder & aEncoder) override;
 
@@ -54,8 +54,8 @@ private:
 };
 
 template <typename T>
-CHIP_ERROR EthernetDiagnosticsAttrAccess::ReadIfSupported(CHIP_ERROR (DiagnosticDataProvider::*getter)(T &),
-                                                          AttributeValueEncoder & aEncoder)
+CHIP_ERROR EthernetDiagosticsAttrAccess::ReadIfSupported(CHIP_ERROR (DiagnosticDataProvider::*getter)(T &),
+                                                         AttributeValueEncoder & aEncoder)
 {
     T data;
     CHIP_ERROR err = (DeviceLayer::GetDiagnosticDataProvider().*getter)(data);
@@ -71,7 +71,7 @@ CHIP_ERROR EthernetDiagnosticsAttrAccess::ReadIfSupported(CHIP_ERROR (Diagnostic
     return aEncoder.Encode(data);
 }
 
-CHIP_ERROR EthernetDiagnosticsAttrAccess::ReadPHYRate(AttributeValueEncoder & aEncoder)
+CHIP_ERROR EthernetDiagosticsAttrAccess::ReadPHYRate(AttributeValueEncoder & aEncoder)
 {
     Attributes::PHYRate::TypeInfo::Type pHYRate;
     auto value = app::Clusters::EthernetNetworkDiagnostics::PHYRateEnum::kRate10M;
@@ -90,7 +90,7 @@ CHIP_ERROR EthernetDiagnosticsAttrAccess::ReadPHYRate(AttributeValueEncoder & aE
     return aEncoder.Encode(pHYRate);
 }
 
-CHIP_ERROR EthernetDiagnosticsAttrAccess::ReadFullDuplex(AttributeValueEncoder & aEncoder)
+CHIP_ERROR EthernetDiagosticsAttrAccess::ReadFullDuplex(AttributeValueEncoder & aEncoder)
 {
     Attributes::FullDuplex::TypeInfo::Type fullDuplex;
     bool value = false;
@@ -108,7 +108,7 @@ CHIP_ERROR EthernetDiagnosticsAttrAccess::ReadFullDuplex(AttributeValueEncoder &
     return aEncoder.Encode(fullDuplex);
 }
 
-CHIP_ERROR EthernetDiagnosticsAttrAccess::ReadCarrierDetect(AttributeValueEncoder & aEncoder)
+CHIP_ERROR EthernetDiagosticsAttrAccess::ReadCarrierDetect(AttributeValueEncoder & aEncoder)
 {
     Attributes::CarrierDetect::TypeInfo::Type carrierDetect;
     bool value = false;
@@ -127,9 +127,9 @@ CHIP_ERROR EthernetDiagnosticsAttrAccess::ReadCarrierDetect(AttributeValueEncode
     return aEncoder.Encode(carrierDetect);
 }
 
-EthernetDiagnosticsAttrAccess gAttrAccess;
+EthernetDiagosticsAttrAccess gAttrAccess;
 
-CHIP_ERROR EthernetDiagnosticsAttrAccess::Read(const ConcreteReadAttributePath & aPath, AttributeValueEncoder & aEncoder)
+CHIP_ERROR EthernetDiagosticsAttrAccess::Read(const ConcreteReadAttributePath & aPath, AttributeValueEncoder & aEncoder)
 {
     if (aPath.mClusterId != EthernetNetworkDiagnostics::Id)
     {
@@ -187,9 +187,4 @@ bool emberAfEthernetNetworkDiagnosticsClusterResetCountsCallback(app::CommandHan
 void MatterEthernetNetworkDiagnosticsPluginServerInitCallback()
 {
     AttributeAccessInterfaceRegistry::Instance().Register(&gAttrAccess);
-}
-
-void MatterEthernetNetworkDiagnosticsPluginServerShutdownCallback()
-{
-    AttributeAccessInterfaceRegistry::Instance().Unregister(&gAttrAccess);
 }

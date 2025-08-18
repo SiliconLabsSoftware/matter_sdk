@@ -27,9 +27,6 @@
 
 #include "chip-cert.h"
 
-#include <memory>
-#include <utility>
-
 #include <errno.h>
 #include <lib/core/CHIPEncoding.h>
 #include <lib/support/BytesToHex.h>
@@ -43,7 +40,6 @@ using namespace chip::ASN1;
 int gNIDChipNodeId;
 int gNIDChipFirmwareSigningId;
 int gNIDChipICAId;
-int gNIDChipVidVerificationSignerId;
 int gNIDChipRootId;
 int gNIDChipFabricId;
 int gNIDChipCASEAuthenticatedTag;
@@ -60,7 +56,6 @@ bool InitOpenSSL()
     ERR_load_crypto_strings();
     OpenSSL_add_all_algorithms();
 
-    // TODO(#39306) Rename a lot of ChipXxx to MatterXxx.
     gNIDChipNodeId = OBJ_create("1.3.6.1.4.1.37244.1.1", "ChipNodeId", "ChipNodeId");
     if (gNIDChipNodeId == 0)
     {
@@ -80,7 +75,7 @@ bool InitOpenSSL()
     }
 
     gNIDChipRootId = OBJ_create("1.3.6.1.4.1.37244.1.4", "ChipRootId", "ChipRootId");
-    if (gNIDChipRootId == 0)
+    if (gNIDChipICAId == 0)
     {
         ReportOpenSSLErrorAndExit("OBJ_create", res = false);
     }
@@ -93,13 +88,6 @@ bool InitOpenSSL()
 
     gNIDChipCASEAuthenticatedTag = OBJ_create("1.3.6.1.4.1.37244.1.6", "ChipCASEAuthenticatedTag", "ChipCASEAuthenticatedTag");
     if (gNIDChipCASEAuthenticatedTag == 0)
-    {
-        ReportOpenSSLErrorAndExit("OBJ_create", res = false);
-    }
-
-    gNIDChipVidVerificationSignerId =
-        OBJ_create("1.3.6.1.4.1.37244.1.7", "ChipVidVerificationSignerId", "ChipVidVerificationSignerId");
-    if (gNIDChipVidVerificationSignerId == 0)
     {
         ReportOpenSSLErrorAndExit("OBJ_create", res = false);
     }
@@ -119,7 +107,6 @@ bool InitOpenSSL()
     ASN1_STRING_TABLE_add(gNIDChipNodeId, 16, 16, B_ASN1_UTF8STRING, 0);
     ASN1_STRING_TABLE_add(gNIDChipFirmwareSigningId, 16, 16, B_ASN1_UTF8STRING, 0);
     ASN1_STRING_TABLE_add(gNIDChipICAId, 16, 16, B_ASN1_UTF8STRING, 0);
-    ASN1_STRING_TABLE_add(gNIDChipVidVerificationSignerId, 16, 16, B_ASN1_UTF8STRING, 0);
     ASN1_STRING_TABLE_add(gNIDChipRootId, 16, 16, B_ASN1_UTF8STRING, 0);
     ASN1_STRING_TABLE_add(gNIDChipFabricId, 16, 16, B_ASN1_UTF8STRING, 0);
     ASN1_STRING_TABLE_add(gNIDChipCASEAuthenticatedTag, 8, 8, B_ASN1_UTF8STRING, 0);
@@ -323,7 +310,7 @@ bool WriteDataIntoFile(const char * fileName, const uint8_t * data, size_t dataL
     {
         VerifyOrExit(CanCastTo<uint32_t>(BASE64_ENCODED_LEN(dataLen)), res = false);
         dataToWriteLen = static_cast<uint32_t>(BASE64_ENCODED_LEN(dataLen));
-        dataBuf        = std::make_unique<uint8_t[]>(dataToWriteLen);
+        dataBuf        = std::unique_ptr<uint8_t[]>(new uint8_t[dataToWriteLen]);
         dataToWrite    = dataBuf.get();
 
         VerifyOrExit(Base64Encode(data, static_cast<uint32_t>(dataLen), dataBuf.get(), dataToWriteLen, dataToWriteLen),
@@ -333,7 +320,7 @@ bool WriteDataIntoFile(const char * fileName, const uint8_t * data, size_t dataL
     {
         VerifyOrExit(CanCastTo<uint32_t>(HEX_ENCODED_LENGTH(dataLen)), res = false);
         dataToWriteLen = static_cast<uint32_t>(HEX_ENCODED_LENGTH(dataLen));
-        dataBuf        = std::make_unique<uint8_t[]>(dataToWriteLen);
+        dataBuf        = std::unique_ptr<uint8_t[]>(new uint8_t[dataToWriteLen]);
         dataToWrite    = dataBuf.get();
 
         VerifyOrExit(BytesToHex(data, dataLen, Uint8::to_char(dataBuf.get()), dataToWriteLen, HexFlags::kUppercase) ==

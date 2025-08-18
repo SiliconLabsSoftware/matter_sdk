@@ -76,15 +76,11 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="NumAttributePaths" type="uint16">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="NumEventPaths" type="uint16">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x01" name="ProxyDiscoverResponse" direction="responseFromServer">
@@ -94,15 +90,11 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="NumHopsToSource" type="uint16">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="AvailableCapacity" type="uint16">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
   </commands>

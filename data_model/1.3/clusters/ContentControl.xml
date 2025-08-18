@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright (C) Connectivity Standards Alliance (2025). All rights reserved.
+Copyright (C) Connectivity Standards Alliance (2021). All rights reserved.
 The information within this document is the property of the Connectivity
 Standards Alliance and its use and disclosure are restricted, except as
 expressly set forth herein.
@@ -54,8 +54,6 @@ This notice and disclaimer must be included on all copies of this document.
 Connectivity Standards Alliance
 508 Second Street, Suite 206
 Davis, CA 95616, USA
-
-:xrefstyle: basic
 -->
 <cluster xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="types types.xsd cluster cluster.xsd" id="0x050F" name="Content Control Cluster" revision="1">
   <revisionHistory>
@@ -94,38 +92,30 @@ Davis, CA 95616, USA
     </feature>
   </features>
   <dataTypes>
-    <enum name="StatusCodeEnum">
-      <item value="0x02" name="InvalidPINCode" summary="Provided PIN Code does not match the current PIN code.">
+    <enum name="Status Codes" type="status"/>
+    <bitmap name="DayOfWeekBitmap type">
+      <bitfield name="Sunday" bit="0" summary="Sunday">
         <mandatoryConform/>
-      </item>
-      <item value="0x03" name="InvalidRating" summary="Provided Rating is out of scope of the corresponding Rating list.">
+      </bitfield>
+      <bitfield name="Monday" bit="1" summary="Monday">
         <mandatoryConform/>
-      </item>
-      <item value="0x04" name="InvalidChannel" summary="Provided Channel(s) is invalid.">
+      </bitfield>
+      <bitfield name="Tuesday" bit="2" summary="Tuesday">
         <mandatoryConform/>
-      </item>
-      <item value="0x05" name="ChannelAlreadyExist" summary="Provided Channel(s) already exists.">
+      </bitfield>
+      <bitfield name="Wednesday" bit="3" summary="Wednesday">
         <mandatoryConform/>
-      </item>
-      <item value="0x06" name="ChannelNotExist" summary="Provided Channel(s) doesn&apos;t exist in BlockChannelList attribute.">
+      </bitfield>
+      <bitfield name="Thursday" bit="4" summary="Thursday">
         <mandatoryConform/>
-      </item>
-      <item value="0x07" name="UnidentifiableApplication" summary="Provided Application(s) is not identified.">
+      </bitfield>
+      <bitfield name="Friday" bit="5" summary="Friday">
         <mandatoryConform/>
-      </item>
-      <item value="0x08" name="ApplicationAlreadyExist" summary="Provided Application(s) already exists.">
+      </bitfield>
+      <bitfield name="Saturday" bit="6" summary="Saturday">
         <mandatoryConform/>
-      </item>
-      <item value="0x09" name="ApplicationNotExist" summary="Provided Application(s) doesn&apos;t exist in BlockApplicationList attribute.">
-        <mandatoryConform/>
-      </item>
-      <item value="0x0A" name="TimeWindowAlreadyExist" summary="Provided time Window already exists in BlockContentTimeWindow attribute.">
-        <mandatoryConform/>
-      </item>
-      <item value="0x0B" name="TimeWindowNotExist" summary="Provided time window doesn&apos;t exist in BlockContentTimeWindow attribute.">
-        <mandatoryConform/>
-      </item>
-    </enum>
+      </bitfield>
+    </bitmap>
     <struct name="AppInfoStruct">
       <field id="0" name="CatalogVendorID" type="uint16">
         <mandatoryConform/>
@@ -152,53 +142,29 @@ Davis, CA 95616, USA
     <struct name="RatingNameStruct">
       <field id="0" name="RatingName" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="8"/>
-        </constraint>
+        <constraint type="maxLength" value="8"/>
       </field>
       <field id="1" name="RatingNameDesc" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="64"/>
-        </constraint>
+        <constraint type="maxLength" value="64"/>
       </field>
     </struct>
-    <struct name="TimePeriodStruct">
+    <struct name="TimePeriodStruct type">
       <field id="0" name="StartHour" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="23"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="23"/>
       </field>
       <field id="1" name="StartMinute" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="59"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="59"/>
       </field>
       <field id="2" name="EndHour" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="23"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="23"/>
       </field>
       <field id="3" name="EndMinute" type="uint8">
         <mandatoryConform/>
-        <constraint>
-          <between>
-            <from value="0"/>
-            <to value="59"/>
-          </between>
-        </constraint>
+        <constraint type="between" from="0" to="59"/>
       </field>
     </struct>
     <struct name="TimeWindowStruct">
@@ -206,18 +172,14 @@ Davis, CA 95616, USA
         <quality nullable="true"/>
         <mandatoryConform/>
       </field>
-      <field id="1" name="DayOfWeek" type="">
+      <field id="1" name="DayOfWeek" type="DayOfWeekBitmap type">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="TimePeriod" type="list">
-        <entry type="TimePeriodStruct"/>
+        <entry type="TimePeriodStruct type"/>
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </struct>
   </dataTypes>
@@ -238,9 +200,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="OCR"/>
       </mandatoryConform>
-      <constraint>
-        <maxLength value="8"/>
-      </constraint>
+      <constraint type="maxLength" value="8"/>
     </attribute>
     <attribute id="0x0003" name="ScheduledContentRatings" type="list">
       <entry type="RatingNameStruct"/>
@@ -254,27 +214,21 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="SCR"/>
       </mandatoryConform>
-      <constraint>
-        <maxLength value="8"/>
-      </constraint>
+      <constraint type="maxLength" value="8"/>
     </attribute>
     <attribute id="0x0005" name="ScreenDailyTime" type="elapsed-s">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform>
         <feature name="ST"/>
       </mandatoryConform>
-      <constraint>
-        <max value="86400"/>
-      </constraint>
+      <constraint type="max" value="86400"/>
     </attribute>
     <attribute id="0x0006" name="RemainingScreenTime" type="elapsed-s">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform>
         <feature name="ST"/>
       </mandatoryConform>
-      <constraint>
-        <max value="86400"/>
-      </constraint>
+      <constraint type="max" value="86400"/>
     </attribute>
     <attribute id="0x0007" name="BlockUnrated" type="bool">
       <access read="true" readPrivilege="view"/>
@@ -302,9 +256,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="BTW"/>
       </mandatoryConform>
-      <constraint>
-        <maxCount value="7"/>
-      </constraint>
+      <constraint type="maxCount" value="7"/>
     </attribute>
   </attributes>
   <commands>
@@ -315,15 +267,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="OldPIN" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="6"/>
-        </constraint>
+        <constraint type="maxLength" value="6"/>
       </field>
       <field id="1" name="NewPIN" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="6"/>
-        </constraint>
+        <constraint type="maxLength" value="6"/>
       </field>
     </command>
     <command id="0x01" name="ResetPIN" direction="commandToServer" response="ResetPINResponse">
@@ -338,9 +286,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="PINCode" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="6"/>
-        </constraint>
+        <constraint type="maxLength" value="6"/>
       </field>
     </command>
     <command id="0x03" name="Enable" direction="commandToServer" response="Y">
@@ -358,15 +304,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="PINCode" type="string">
         <optionalConform/>
-        <constraint>
-          <maxLength value="6"/>
-        </constraint>
+        <constraint type="maxLength" value="6"/>
       </field>
-      <field id="1" name="BonusTime" type="elapsed-s" default="300">
+      <field id="1" name="BonusTime" type="elapsed-s" default="300s">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x06" name="SetScreenDailyTime" direction="commandToServer" response="Y">
@@ -376,9 +318,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="ScreenTime" type="elapsed-s">
         <mandatoryConform/>
-        <constraint>
-          <max value="86400"/>
-        </constraint>
+        <constraint type="max" value="86400"/>
       </field>
     </command>
     <command id="0x07" name="BlockUnratedContent" direction="commandToServer" response="Y">
@@ -400,9 +340,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Rating" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="8"/>
-        </constraint>
+        <constraint type="maxLength" value="8"/>
       </field>
     </command>
     <command id="0x0A" name="SetScheduledContentRatingThreshold" direction="commandToServer" response="Y">
@@ -412,9 +350,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Rating" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="8"/>
-        </constraint>
+        <constraint type="maxLength" value="8"/>
       </field>
     </command>
     <command id="0x0B" name="AddBlockChannels" direction="commandToServer" response="Y">

@@ -27,7 +27,6 @@ to gn.
 """
 import logging
 import os
-import re
 import sys
 from pathlib import Path, PurePath
 from typing import Dict, Set
@@ -88,9 +87,7 @@ class OrphanChecker:
             if not data:
                 continue
 
-            # Search for the full file name
-            # e.g. `cluster-config.h` should not match `config.h`
-            if re.search("(^|\\s|[/'\"])" + re.escape(file.name) + r"\W", data):
+            if file.name in data:
                 logging.debug("%s found in BUILD.gn for %s", file, p)
                 return
 

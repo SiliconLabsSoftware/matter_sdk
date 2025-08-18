@@ -21,7 +21,6 @@
 #include <lib/support/logging/Constants.h>
 
 #include <mutex>
-#include <stdio.h>
 #include <syslog.h>
 
 #ifndef CHIP_SYSLOG_IDENT

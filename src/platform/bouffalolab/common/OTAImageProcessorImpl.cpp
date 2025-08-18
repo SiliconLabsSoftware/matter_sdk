@@ -19,19 +19,13 @@
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 
 extern "C" {
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-#include <bflb_ota.h>
-#include <bl_sys.h>
-#else
 #include <hal_sys.h>
 #include <hosal_ota.h>
-#endif
-}
-#include "OTAImageProcessorImpl.h"
 
-#if CHIP_DEVICE_LAYER_TARGET_BL602 || CHIP_DEVICE_LAYER_TARGET_BL702 || CHIP_DEVICE_LAYER_TARGET_BL702L
-extern "C" void hal_reboot(void);
-#endif
+extern void hal_reboot(void);
+}
+
+#include "OTAImageProcessorImpl.h"
 
 using namespace chip::System;
 
@@ -142,11 +136,7 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
         return;
     }
 
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-    if (bflb_ota_check() < 0)
-#else
     if (hosal_ota_check() < 0)
-#endif
     {
         imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
         ChipLogProgress(SoftwareUpdate, "OTA image verification error");
@@ -168,20 +158,12 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         return;
     }
 
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-    bflb_ota_apply();
-#else
     hosal_ota_apply(0);
-#endif
     DeviceLayer::SystemLayer().StartTimer(
         System::Clock::Seconds32(OTA_AUTO_REBOOT_DELAY),
         [](Layer *, void *) {
             ChipLogProgress(SoftwareUpdate, "Rebooting...");
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-            bl_sys_reset_por();
-#else
             hal_reboot();
-#endif
         },
         nullptr);
 }
@@ -194,11 +176,7 @@ void OTAImageProcessorImpl::HandleAbort(intptr_t context)
         return;
     }
 
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-    bflb_ota_abort();
-#else
     hosal_ota_abort();
-#endif
 
     imageProcessor->ReleaseBlock();
 }
@@ -241,11 +219,7 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
         imageProcessor->mParams.totalFileBytes = header.mPayloadSize;
         imageProcessor->mHeaderParser.Clear();
 
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-        if (bflb_ota_start(header.mPayloadSize) < 0)
-#else
         if (hosal_ota_start(header.mPayloadSize) < 0)
-#endif
         {
             imageProcessor->mDownloader->EndDownload(CHIP_ERROR_OPEN_FAILED);
             return;
@@ -254,13 +228,8 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
 
     if (imageProcessor->mParams.totalFileBytes)
     {
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-        if (bflb_ota_update(imageProcessor->mParams.totalFileBytes, imageProcessor->mParams.downloadedBytes,
-                            (uint8_t *) block.data(), block.size()) < 0)
-#else
         if (hosal_ota_update(imageProcessor->mParams.totalFileBytes, imageProcessor->mParams.downloadedBytes,
                              (uint8_t *) block.data(), block.size()) < 0)
-#endif
         {
             imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
             return;

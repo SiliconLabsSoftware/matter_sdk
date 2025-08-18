@@ -873,16 +873,17 @@ CHIP_ERROR MdnsAvahi::Resolve(const char * name, const char * type, DnssdService
     resolveContext->mAddressType = ToAvahiProtocol(addressType);
     resolveContext->mFullType    = GetFullType(type, protocol);
 
-    resolveContext->mResolver =
+    AvahiServiceResolver * resolver =
         avahi_service_resolver_new(mClient, avahiInterface, resolveContext->mTransport, name, resolveContext->mFullType.c_str(),
                                    nullptr, resolveContext->mAddressType, static_cast<AvahiLookupFlags>(0), HandleResolve,
                                    reinterpret_cast<void *>(resolveContext->mNumber));
     // Otherwise the resolver will be freed in the callback
-    if (resolveContext->mResolver == nullptr)
+    if (resolver == nullptr)
     {
         error = CHIP_ERROR_INTERNAL;
-        FreeResolveContext(resolveContext->mNumber);
+        chip::Platform::Delete(resolveContext);
     }
+    resolveContext->mResolver = resolver;
 
     return error;
 }

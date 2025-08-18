@@ -28,7 +28,7 @@ using namespace ::chip::DeviceLayer::Internal;
 static chip::OTAMultiImageProcessorImpl gImageProcessor;
 
 #if SL_WIFI && !SLI_SI91X_MCU_INTERFACE
-#include <platform/silabs/wifi/ncp/spi_multiplex.h>
+#include <platform/silabs/wifi/wf200/platform/spi_multiplex.h>
 #endif // SL_WIFI
 
 extern "C" {
@@ -46,7 +46,7 @@ namespace chip {
 
 CHIP_ERROR OTAMultiImageProcessorImpl::Init(OTADownloader * downloader)
 {
-    VerifyOrReturnError(downloader != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorCodeIf(downloader == nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
     gImageProcessor.SetOTADownloader(downloader);
 
@@ -305,7 +305,7 @@ CHIP_ERROR OTAMultiImageProcessorImpl::ConfirmCurrentImage()
     uint32_t targetVersion;
 
     OTARequestorInterface * requestor = chip::GetRequestorInstance();
-    VerifyOrReturnError(requestor != nullptr, CHIP_ERROR_INTERNAL);
+    ReturnErrorCodeIf(requestor == nullptr, CHIP_ERROR_INTERNAL);
 
     targetVersion = requestor->GetTargetVersion();
     ReturnErrorOnFailure(DeviceLayer::ConfigurationMgr().GetSoftwareVersion(currentVersion));

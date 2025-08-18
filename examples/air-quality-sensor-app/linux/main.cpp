@@ -36,6 +36,7 @@ using namespace chip::app;
 using namespace chip::app::Clusters;
 
 namespace {
+constexpr char kChipEventFifoPathPrefix[] = "/tmp/chip_air_quality_fifo_";
 NamedPipeCommands sChipNamedPipeCommands;
 AirQualitySensorAppAttrUpdateDelegate sAirQualitySensorAppCommandDelegate;
 } // namespace
@@ -51,9 +52,9 @@ int main(int argc, char * argv[])
 {
     VerifyOrDie(ChipLinuxAppInit(argc, argv) == 0);
 
-    std::string path = std::string(LinuxDeviceOptions::GetInstance().app_pipe);
+    std::string path = kChipEventFifoPathPrefix + std::to_string(getpid());
 
-    if ((!path.empty()) and (sChipNamedPipeCommands.Start(path, &sAirQualitySensorAppCommandDelegate) != CHIP_NO_ERROR))
+    if (sChipNamedPipeCommands.Start(path, &sAirQualitySensorAppCommandDelegate) != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "Failed to start CHIP NamedPipeCommands");
         sChipNamedPipeCommands.Stop();

@@ -84,11 +84,9 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="TN"/>
       </mandatoryConform>
-      <constraint>
-        <between>
-          <attribute name="MinTemperature"/>
-          <attribute name="MaxTemperature"/>
-        </between>
+      <constraint type="between">
+        <from attribute="MinTemperature"/>
+        <to attribute="MaxTemperature"/>
       </constraint>
     </attribute>
     <attribute id="0x0001" name="MinTemperature" type="temperature">
@@ -97,9 +95,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="TN"/>
       </mandatoryConform>
-      <constraint>
-        <max value="MaxTemperature - 1"/>
-      </constraint>
+      <constraint type="max" value="MaxTemperature - 1"/>
     </attribute>
     <attribute id="0x0002" name="MaxTemperature" type="temperature">
       <access read="true" readPrivilege="view"/>
@@ -107,9 +103,7 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="TN"/>
       </mandatoryConform>
-      <constraint>
-        <desc/>
-      </constraint>
+      <constraint type="desc"/>
     </attribute>
     <attribute id="0x0003" name="Step" type="temperature">
       <access read="true" readPrivilege="view"/>
@@ -117,32 +111,24 @@ Davis, CA 95616, USA
       <mandatoryConform>
         <feature name="STEP"/>
       </mandatoryConform>
-      <constraint>
-        <max value="MaxTemperature - MinTemperature"/>
-      </constraint>
+      <constraint type="max" value="MaxTemperature - MinTemperature"/>
     </attribute>
     <attribute id="0x0004" name="SelectedTemperatureLevel" type="uint8">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform>
         <feature name="TL"/>
       </mandatoryConform>
-      <constraint>
-        <max value="31"/>
-      </constraint>
+      <constraint type="max" value="31"/>
     </attribute>
     <attribute id="0x0005" name="SupportedTemperatureLevels" type="list">
       <entry type="string">
-        <constraint>
-          <maxLength value="16"/>
-        </constraint>
+        <constraint type="maxLength" value="16"/>
       </entry>
       <access read="true" readPrivilege="view"/>
       <mandatoryConform>
         <feature name="TL"/>
       </mandatoryConform>
-      <constraint>
-        <maxCount value="32"/>
-      </constraint>
+      <constraint type="maxCount" value="32"/>
     </attribute>
   </attributes>
   <commands>
@@ -153,17 +139,13 @@ Davis, CA 95616, USA
         <mandatoryConform>
           <feature name="TN"/>
         </mandatoryConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="TargetTemperatureLevel" type="uint8">
         <mandatoryConform>
           <feature name="TL"/>
         </mandatoryConform>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
   </commands>

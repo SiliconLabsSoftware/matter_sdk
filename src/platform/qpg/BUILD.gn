@@ -49,11 +49,7 @@ static_library("qpg") {
     "qpgConfig.h",
   ]
 
-  deps = [
-    "${chip_root}/src/app:app_config",
-    "${chip_root}/src/app/common:ids",
-    "${chip_root}/src/platform/logging:headers",
-  ]
+  deps = [ "${chip_root}/src/platform/logging:headers" ]
 
   public = [ "${chip_root}/src/credentials/DeviceAttestationCredsProvider.h" ]
 
@@ -67,7 +63,11 @@ static_library("qpg") {
   ]
 
   if (chip_enable_openthread) {
-    public_deps += [ "${chip_root}/third_party/openthread:openthread" ]
+    if (chip_openthread_ftd) {
+      public_deps += [ "${openthread_root}:libopenthread-ftd" ]
+    } else {
+      public_deps += [ "${openthread_root}:libopenthread-mtd" ]
+    }
 
     public_configs += [
       "${chip_root}/third_party/openthread/platforms/qpg:openthread_qpg_config",
@@ -78,7 +78,6 @@ static_library("qpg") {
       "ThreadStackManagerImpl.cpp",
       "ThreadStackManagerImpl.h",
     ]
-    deps += [ "${chip_root}/src/app:app_config" ]
 
     if (chip_mdns == "platform") {
       sources += [

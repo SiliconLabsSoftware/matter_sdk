@@ -33,18 +33,10 @@ namespace Dnssd {
 
 CHIP_ERROR ChipDnssdInit(DnssdAsyncReturnCallback initCallback, DnssdAsyncReturnCallback errorCallback, void * context)
 {
-    CHIP_ERROR error = CHIP_ERROR_INCORRECT_STATE;
+    NxpChipDnssdInit(initCallback, errorCallback, context);
+    OpenThreadDnssdInit(initCallback, errorCallback, context);
 
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
-    {
-        error = NxpChipDnssdInit(initCallback, errorCallback, context);
-    }
-    else if (ConnectivityMgr().IsThreadProvisioned())
-    {
-        error = OpenThreadDnssdInit(initCallback, errorCallback, context);
-    }
-
-    return error;
+    return CHIP_NO_ERROR;
 }
 
 void ChipDnssdShutdown()
@@ -54,7 +46,7 @@ void ChipDnssdShutdown()
 
 CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCallback callback, void * context)
 {
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
+    if (ConnectivityMgr().IsWiFiStationConnected())
     {
         ReturnErrorOnFailure(NxpChipDnssdPublishService(service, callback, context));
     }
@@ -68,7 +60,7 @@ CHIP_ERROR ChipDnssdPublishService(const DnssdService * service, DnssdPublishCal
 
 CHIP_ERROR ChipDnssdRemoveServices()
 {
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
+    if (ConnectivityMgr().IsWiFiStationConnected())
     {
         ReturnErrorOnFailure(NxpChipDnssdRemoveServices());
     }
@@ -82,7 +74,7 @@ CHIP_ERROR ChipDnssdRemoveServices()
 
 CHIP_ERROR ChipDnssdFinalizeServiceUpdate()
 {
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
+    if (ConnectivityMgr().IsWiFiStationConnected())
     {
         ReturnErrorOnFailure(NxpChipDnssdFinalizeServiceUpdate());
     }
@@ -97,7 +89,7 @@ CHIP_ERROR ChipDnssdBrowse(const char * type, DnssdServiceProtocol protocol, chi
                            chip::Inet::InterfaceId interface, DnssdBrowseCallback callback, void * context,
                            intptr_t * browseIdentifier)
 {
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
+    if (ConnectivityMgr().IsWiFiStationConnected()) //|| ESP32Utils::HasIPv6LinkLocalAddress(ESP32Utils::kDefaultEthernetNetifKey))
     {
         ReturnErrorOnFailure(NxpChipDnssdBrowse(type, protocol, addressType, interface, callback, context, browseIdentifier));
     }
@@ -117,7 +109,7 @@ CHIP_ERROR ChipDnssdStopBrowse(intptr_t browseIdentifier)
 CHIP_ERROR ChipDnssdResolve(DnssdService * service, chip::Inet::InterfaceId interface, DnssdResolveCallback callback,
                             void * context)
 {
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
+    if (ConnectivityMgr().IsWiFiStationConnected()) //|| ESP32Utils::HasIPv6LinkLocalAddress(ESP32Utils::kDefaultEthernetNetifKey))
     {
         ReturnErrorOnFailure(NxpChipDnssdResolve(service, interface, callback, context));
     }

@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2024-2025 Project CHIP Authors
+ *    Copyright (c) 2024 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 #include "DiagnosticDataProviderImplNxp.h"
 
 #ifdef CONFIG_WIFI_NXP
-#include <platform/Zephyr/InetUtils.h>
 #include <platform/Zephyr/wifi/WiFiManager.h>
 #endif
 
@@ -47,7 +46,7 @@ CHIP_ERROR DiagnosticDataProviderImplNxp::GetWiFiBssId(MutableByteSpan & value)
 {
     WiFiManager::WiFiInfo info;
     ReturnErrorOnFailure(WiFiManager::Instance().GetWiFiInfo(info));
-    VerifyOrReturnError(sizeof(info.mBssId) < value.size(), CHIP_ERROR_BUFFER_TOO_SMALL);
+    ReturnErrorCodeIf(sizeof(info.mBssId) >= value.size(), CHIP_ERROR_BUFFER_TOO_SMALL);
 
     memcpy(value.data(), info.mBssId, sizeof(info.mBssId));
     value.reduce_size(sizeof(info.mBssId));
@@ -87,15 +86,6 @@ CHIP_ERROR DiagnosticDataProviderImplNxp::GetWiFiRssi(int8_t & rssi)
     WiFiManager::WiFiInfo info;
     CHIP_ERROR err = WiFiManager::Instance().GetWiFiInfo(info);
     rssi           = info.mRssi;
-    return err;
-}
-
-CHIP_ERROR DiagnosticDataProviderImplNxp::GetWiFiCurrentMaxRate(uint64_t & currentMaxRate)
-{
-    WiFiManager::WiFiInfo info;
-    CHIP_ERROR err = WiFiManager::Instance().GetWiFiInfo(info);
-    // mCurrentPhyRate Value in MB
-    currentMaxRate = info.mCurrentPhyRate * 1000000;
     return err;
 }
 
@@ -147,26 +137,19 @@ CHIP_ERROR DiagnosticDataProviderImplNxp::GetWiFiPacketUnicastTxCount(uint32_t &
     return err;
 }
 
+CHIP_ERROR DiagnosticDataProviderImplNxp::GetWiFiCurrentMaxRate(uint64_t & currentMaxRate)
+{
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
+}
+
 CHIP_ERROR DiagnosticDataProviderImplNxp::GetWiFiOverrunCount(uint64_t & overrunCount)
 {
-    WiFiManager::NetworkStatistics stats;
-    CHIP_ERROR err = WiFiManager::Instance().GetNetworkStatistics(stats);
-    overrunCount   = static_cast<uint64_t>(stats.mOverRunCount);
-    return err;
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
 
 CHIP_ERROR DiagnosticDataProviderImplNxp::ResetWiFiNetworkDiagnosticsCounts()
 {
-    net_if * iface = InetUtils::GetWiFiInterface();
-    VerifyOrReturnError(iface != nullptr, INET_ERROR_UNKNOWN_INTERFACE);
-
-    if (net_mgmt(NET_REQUEST_STATS_RESET_WIFI, iface, NULL, 0))
-    {
-        ChipLogError(DeviceLayer, "WiFi statistics reset failed");
-        return CHIP_ERROR_INTERNAL;
-    }
-
-    return CHIP_NO_ERROR;
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
 #endif
 

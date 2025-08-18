@@ -120,6 +120,3 @@
  *
  */
 #define CHIP_CONFIG_MRP_LOCAL_ACTIVE_RETRY_INTERVAL (2000_ms32)
-
-// Needed for Door Lock samples
-#define CHIP_CONFIG_ENABLE_ACL_EXTENSIONS 1

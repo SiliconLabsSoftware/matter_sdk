@@ -263,8 +263,3 @@ void MatterAccountLoginPluginServerInitCallback()
 {
     app::AttributeAccessInterfaceRegistry::Instance().Register(&gAccountLoginAttrAccess);
 }
-
-void MatterAccountLoginPluginServerShutdownCallback()
-{
-    app::AttributeAccessInterfaceRegistry::Instance().Unregister(&gAccountLoginAttrAccess);
-}

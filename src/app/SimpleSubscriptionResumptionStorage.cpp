@@ -143,7 +143,7 @@ CHIP_ERROR SimpleSubscriptionResumptionStorage::Load(uint16_t subscriptionIndex,
 {
     Platform::ScopedMemoryBuffer<uint8_t> backingBuffer;
     backingBuffer.Calloc(MaxSubscriptionSize());
-    VerifyOrReturnError(backingBuffer.Get() != nullptr, CHIP_ERROR_NO_MEMORY);
+    ReturnErrorCodeIf(backingBuffer.Get() == nullptr, CHIP_ERROR_NO_MEMORY);
 
     uint16_t len = static_cast<uint16_t>(MaxSubscriptionSize());
     ReturnErrorOnFailure(mStorage->SyncGetKeyValue(DefaultStorageKeyAllocator::SubscriptionResumption(subscriptionIndex).KeyName(),
@@ -193,7 +193,7 @@ CHIP_ERROR SimpleSubscriptionResumptionStorage::Load(uint16_t subscriptionIndex,
     if (pathCount)
     {
         subscriptionInfo.mAttributePaths.Calloc(pathCount);
-        VerifyOrReturnError(subscriptionInfo.mAttributePaths.Get() != nullptr, CHIP_ERROR_NO_MEMORY);
+        ReturnErrorCodeIf(subscriptionInfo.mAttributePaths.Get() == nullptr, CHIP_ERROR_NO_MEMORY);
         for (size_t pathIndex = 0; pathIndex < pathCount; pathIndex++)
         {
             ReturnErrorOnFailure(reader.Next(TLV::kTLVType_Structure, kAttributePathTag));
@@ -226,7 +226,7 @@ CHIP_ERROR SimpleSubscriptionResumptionStorage::Load(uint16_t subscriptionIndex,
     if (pathCount)
     {
         subscriptionInfo.mEventPaths.Calloc(pathCount);
-        VerifyOrReturnError(subscriptionInfo.mEventPaths.Get() != nullptr, CHIP_ERROR_NO_MEMORY);
+        ReturnErrorCodeIf(subscriptionInfo.mEventPaths.Get() == nullptr, CHIP_ERROR_NO_MEMORY);
         for (size_t pathIndex = 0; pathIndex < pathCount; pathIndex++)
         {
             ReturnErrorOnFailure(reader.Next(TLV::kTLVType_Structure, kEventPathTag));
@@ -371,7 +371,7 @@ CHIP_ERROR SimpleSubscriptionResumptionStorage::Save(SubscriptionInfo & subscrip
     // Now construct subscription state and save
     Platform::ScopedMemoryBuffer<uint8_t> backingBuffer;
     backingBuffer.Calloc(MaxSubscriptionSize());
-    VerifyOrReturnError(backingBuffer.Get() != nullptr, CHIP_ERROR_NO_MEMORY);
+    ReturnErrorCodeIf(backingBuffer.Get() == nullptr, CHIP_ERROR_NO_MEMORY);
 
     TLV::ScopedBufferTLVWriter writer(std::move(backingBuffer), MaxSubscriptionSize());
 

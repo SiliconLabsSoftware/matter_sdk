@@ -282,40 +282,74 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiVersion(app::Clusters::WiFiNetwork
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetWiFiSecurityType(app::Clusters::WiFiNetworkDiagnostics::SecurityTypeEnum & securityType)
 {
-    using app::Clusters::WiFiNetworkDiagnostics::SecurityTypeEnum;
     CHIP_ERROR err;
     int32_t error;
-    uint32_t wifi_security = 0;
 
-    error = matter_wifi_get_security_type(WLAN0_IDX, &wifi_security);
+    using app::Clusters::WiFiNetworkDiagnostics::SecurityTypeEnum;
+
+    unsigned int _auth_type;
+    unsigned short security = 0;
+    rtw_wifi_setting_t setting;
+
+    error = matter_wifi_get_security_type(WLAN0_IDX, &security, &setting.key_idx, setting.password);
     err   = AmebaUtils::MapError(error, AmebaErrorType::kWiFiError);
     if (err != CHIP_NO_ERROR)
     {
         securityType = SecurityTypeEnum::kUnspecified;
     }
+#ifdef CONFIG_PLATFORM_8721D
     else
     {
-        if (wifi_security & WPA3_SECURITY)
+        switch (security)
         {
-            securityType = SecurityTypeEnum::kWpa3;
-        }
-        else if (wifi_security & WPA2_SECURITY)
-        {
-            securityType = SecurityTypeEnum::kWpa2;
-        }
-        else if (wifi_security & WPA_SECURITY)
-        {
-            securityType = SecurityTypeEnum::kWpa;
-        }
-        else if (wifi_security & WEP_ENABLED)
-        {
-            securityType = SecurityTypeEnum::kWep;
-        }
-        else
-        {
+        case IW_ENCODE_ALG_NONE:
             securityType = SecurityTypeEnum::kNone;
+            break;
+        case IW_ENCODE_ALG_WEP:
+            securityType = SecurityTypeEnum::kWep;
+            break;
+        case IW_ENCODE_ALG_TKIP:
+            securityType = SecurityTypeEnum::kWpa;
+            break;
+        case IW_ENCODE_ALG_CCMP:
+            securityType = SecurityTypeEnum::kWpa2;
+            break;
+        default:
+            securityType = SecurityTypeEnum::kUnspecified;
+            break;
         }
     }
+#else
+    else
+    {
+        switch (security)
+        {
+        case IW_ENCODE_ALG_NONE:
+            securityType = SecurityTypeEnum::kNone;
+            break;
+        case IW_ENCODE_ALG_WEP:
+            securityType = SecurityTypeEnum::kWep;
+            break;
+        case IW_ENCODE_ALG_TKIP:
+            if (_auth_type == WPA_SECURITY)
+                securityType = SecurityTypeEnum::kWpa;
+            else if (_auth_type == WPA2_SECURITY)
+                securityType = SecurityTypeEnum::kWpa2;
+            break;
+        case IW_ENCODE_ALG_CCMP:
+            if (_auth_type == WPA_SECURITY)
+                securityType = SecurityTypeEnum::kWpa;
+            else if (_auth_type == WPA2_SECURITY)
+                securityType = SecurityTypeEnum::kWpa2;
+            else if (_auth_type == WPA3_SECURITY)
+                securityType = SecurityTypeEnum::kWpa3;
+            break;
+        default:
+            securityType = SecurityTypeEnum::kUnspecified;
+            break;
+        }
+    }
+#endif
 
     return err;
 }

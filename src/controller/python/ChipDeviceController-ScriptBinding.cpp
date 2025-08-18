@@ -54,7 +54,6 @@
 #include <controller/CurrentFabricRemover.h>
 #include <controller/ExampleOperationalCredentialsIssuer.h>
 #include <controller/SetUpCodePairer.h>
-#include <data-model-providers/codegen/Instance.h>
 
 #include <controller/python/ChipDeviceController-ScriptDevicePairingDelegate.h>
 #include <controller/python/ChipDeviceController-ScriptPairingDeviceDiscoveryDelegate.h>
@@ -137,8 +136,6 @@ PyChipError pychip_DeviceController_GetAddressAndPort(chip::Controller::DeviceCo
                                                       char * outAddress, uint64_t maxAddressLen, uint16_t * outPort);
 PyChipError pychip_DeviceController_GetCompressedFabricId(chip::Controller::DeviceCommissioner * devCtrl, uint64_t * outFabricId);
 PyChipError pychip_DeviceController_GetFabricId(chip::Controller::DeviceCommissioner * devCtrl, uint64_t * outFabricId);
-PyChipError pychip_DeviceController_GetRootPublicKeyBytes(chip::Controller::DeviceCommissioner * devCtrl, uint8_t * buf,
-                                                          size_t * size);
 PyChipError pychip_DeviceController_GetFabricIndex(chip::Controller::DeviceCommissioner * devCtrl, uint8_t * outFabricIndex);
 PyChipError pychip_DeviceController_GetNodeId(chip::Controller::DeviceCommissioner * devCtrl, uint64_t * outNodeId);
 
@@ -161,9 +158,7 @@ PyChipError pychip_DeviceController_SetCheckMatchingFabric(bool check);
 struct IcdRegistrationParameters;
 PyChipError pychip_DeviceController_SetIcdRegistrationParameters(bool enabled, const IcdRegistrationParameters * params);
 PyChipError pychip_DeviceController_ResetCommissioningParameters();
-PyChipError pychip_DeviceController_MarkSessionDefunct(chip::Controller::DeviceCommissioner * devCtrl, chip::NodeId nodeid);
-PyChipError pychip_DeviceController_MarkSessionForEviction(chip::Controller::DeviceCommissioner * devCtrl, chip::NodeId nodeid);
-PyChipError pychip_DeviceController_DeleteAllSessionResumption(chip::Controller::DeviceCommissioner * devCtrl);
+PyChipError pychip_DeviceController_CloseSession(chip::Controller::DeviceCommissioner * devCtrl, chip::NodeId nodeid);
 PyChipError pychip_DeviceController_EstablishPASESessionIP(chip::Controller::DeviceCommissioner * devCtrl, const char * peerAddrStr,
                                                            uint32_t setupPINCode, chip::NodeId nodeid, uint16_t port);
 PyChipError pychip_DeviceController_EstablishPASESessionBLE(chip::Controller::DeviceCommissioner * devCtrl, uint32_t setupPINCode,
@@ -280,7 +275,6 @@ PyChipError pychip_DeviceController_StackInit(Controller::Python::StorageAdapter
 
     factoryParams.fabricIndependentStorage = storageAdapter;
     factoryParams.sessionKeystore          = &sSessionKeystore;
-    factoryParams.dataModelProvider        = app::CodegenDataModelProviderInstance(storageAdapter);
 
     sICDClientStorage.Init(storageAdapter, &sSessionKeystore);
 
@@ -387,24 +381,6 @@ const char * pychip_DeviceController_StatusReportToString(uint32_t profileId, ui
 {
     // return chip::StatusReportStr(profileId, statusCode);
     return nullptr;
-}
-
-PyChipError pychip_DeviceController_GetRootPublicKeyBytes(chip::Controller::DeviceCommissioner * devCtrl, uint8_t * buf,
-                                                          size_t * size)
-{
-    chip::Crypto::P256PublicKey rootPublicKey;
-    VerifyOrReturnError(*size >= rootPublicKey.Length(), ToPyChipError(CHIP_ERROR_INVALID_ARGUMENT));
-
-    CHIP_ERROR err = devCtrl->GetRootPublicKey(rootPublicKey);
-    if (err != CHIP_NO_ERROR)
-    {
-        return ToPyChipError(err);
-    }
-
-    memcpy(buf, rootPublicKey.ConstBytes(), rootPublicKey.Length());
-    *size = rootPublicKey.Length();
-
-    return ToPyChipError(CHIP_NO_ERROR);
 }
 
 PyChipError pychip_DeviceController_ConnectBLE(chip::Controller::DeviceCommissioner * devCtrl, uint16_t discriminator,
@@ -540,7 +516,7 @@ PyChipError pychip_DeviceController_OnNetworkCommission(chip::Controller::Device
 
 PyChipError pychip_DeviceController_SetThreadOperationalDataset(const char * threadOperationalDataset, uint32_t size)
 {
-    VerifyOrReturnError(sThreadBuf.Alloc(size), ToPyChipError(CHIP_ERROR_NO_MEMORY));
+    ReturnErrorCodeIf(!sThreadBuf.Alloc(size), ToPyChipError(CHIP_ERROR_NO_MEMORY));
     memcpy(sThreadBuf.Get(), threadOperationalDataset, size);
     sCommissioningParameters.SetThreadOperationalDataset(ByteSpan(sThreadBuf.Get(), size));
     return ToPyChipError(CHIP_NO_ERROR);
@@ -548,11 +524,11 @@ PyChipError pychip_DeviceController_SetThreadOperationalDataset(const char * thr
 PyChipError pychip_DeviceController_SetWiFiCredentials(const char * ssid, const char * credentials)
 {
     size_t ssidSize = strlen(ssid);
-    VerifyOrReturnError(sSsidBuf.Alloc(ssidSize), ToPyChipError(CHIP_ERROR_NO_MEMORY));
+    ReturnErrorCodeIf(!sSsidBuf.Alloc(ssidSize), ToPyChipError(CHIP_ERROR_NO_MEMORY));
     memcpy(sSsidBuf.Get(), ssid, ssidSize);
 
     size_t credsSize = strlen(credentials);
-    VerifyOrReturnError(sCredsBuf.Alloc(credsSize), ToPyChipError(CHIP_ERROR_NO_MEMORY));
+    ReturnErrorCodeIf(!sCredsBuf.Alloc(credsSize), ToPyChipError(CHIP_ERROR_NO_MEMORY));
     memcpy(sCredsBuf.Get(), credentials, credsSize);
 
     sCommissioningParameters.SetWiFiCredentials(
@@ -572,7 +548,7 @@ PyChipError pychip_DeviceController_SetTimeZone(int32_t offset, uint64_t validAt
     else
     {
         size_t len = strlen(name);
-        VerifyOrReturnError(sTimeZoneNameBuf.Alloc(len), ToPyChipError(CHIP_ERROR_NO_MEMORY));
+        ReturnErrorCodeIf(!sTimeZoneNameBuf.Alloc(len), ToPyChipError(CHIP_ERROR_NO_MEMORY));
         memcpy(sTimeZoneNameBuf.Get(), name, len);
         sTimeZoneBuf.name.SetValue(CharSpan(sTimeZoneNameBuf.Get(), len));
     }
@@ -592,7 +568,7 @@ PyChipError pychip_DeviceController_SetDSTOffset(int32_t offset, uint64_t validS
 PyChipError pychip_DeviceController_SetDefaultNtp(const char * defaultNTP)
 {
     size_t len = strlen(defaultNTP);
-    VerifyOrReturnError(sDefaultNTPBuf.Alloc(len), ToPyChipError(CHIP_ERROR_NO_MEMORY));
+    ReturnErrorCodeIf(!sDefaultNTPBuf.Alloc(len), ToPyChipError(CHIP_ERROR_NO_MEMORY));
     memcpy(sDefaultNTPBuf.Get(), defaultNTP, len);
     sCommissioningParameters.SetDefaultNTP(chip::app::DataModel::MakeNullable(CharSpan(sDefaultNTPBuf.Get(), len)));
     return ToPyChipError(CHIP_NO_ERROR);
@@ -683,7 +659,7 @@ PyChipError pychip_DeviceController_ResetCommissioningParameters()
     return ToPyChipError(CHIP_NO_ERROR);
 }
 
-PyChipError pychip_DeviceController_MarkSessionDefunct(chip::Controller::DeviceCommissioner * devCtrl, chip::NodeId nodeid)
+PyChipError pychip_DeviceController_CloseSession(chip::Controller::DeviceCommissioner * devCtrl, chip::NodeId nodeid)
 {
     //
     // Since we permit multiple controllers per fabric and each is associated with a unique fabric index, closing a session
@@ -696,29 +672,6 @@ PyChipError pychip_DeviceController_MarkSessionDefunct(chip::Controller::DeviceC
                                                                          session->MarkAsDefunct();
                                                                      }
                                                                  });
-
-    return ToPyChipError(CHIP_NO_ERROR);
-}
-
-PyChipError pychip_DeviceController_MarkSessionForEviction(chip::Controller::DeviceCommissioner * devCtrl, chip::NodeId nodeid)
-{
-    devCtrl->SessionMgr()->ForEachMatchingSessionOnLogicalFabric(ScopedNodeId(nodeid, devCtrl->GetFabricIndex()),
-                                                                 [](auto * session) {
-                                                                     if (session->IsActiveSession())
-                                                                     {
-                                                                         session->MarkForEviction();
-                                                                     }
-                                                                 });
-
-    return ToPyChipError(CHIP_NO_ERROR);
-}
-
-PyChipError pychip_DeviceController_DeleteAllSessionResumption(chip::Controller::DeviceCommissioner * devCtrl)
-{
-    FabricIndex fabricIndex = devCtrl->GetFabricIndex();
-
-    PyReturnErrorOnFailure(ToPyChipError(
-        DeviceControllerFactory::GetInstance().GetSystemState()->GetSessionResumptionStorage()->DeleteAll(fabricIndex)));
 
     return ToPyChipError(CHIP_NO_ERROR);
 }

@@ -73,38 +73,27 @@ Davis, CA 95616, USA
       <access read="true" readPrivilege="view"/>
       <quality nullable="true" reportable="true"/>
       <mandatoryConform/>
-      <constraint>
-        <between>
-          <attribute name="MinMeasuredValue"/>
-          <attribute name="MaxMeasuredValue"/>
-        </between>
+      <constraint type="between">
+        <from attribute="MinMeasuredValue"/>
+        <to attribute="MaxMeasuredValue"/>
       </constraint>
     </attribute>
     <attribute id="0x0001" name="MinMeasuredValue" type="temperature">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint>
-        <between>
-          <from value="-27315"/>
-          <to value="32766"/>
-        </between>
-      </constraint>
+      <constraint type="between" from="-27315" to="32766"/>
     </attribute>
     <attribute id="0x0002" name="MaxMeasuredValue" type="temperature">
       <access read="true" readPrivilege="view"/>
       <quality nullable="true"/>
       <mandatoryConform/>
-      <constraint>
-        <min value="MinMeasuredValue + 1"/>
-      </constraint>
+      <constraint type="min" value="MinMeasuredValue + 1"/>
     </attribute>
     <attribute id="0x0003" name="Tolerance" type="uint16" default="0">
       <access read="true" readPrivilege="view"/>
       <optionalConform/>
-      <constraint>
-        <max value="2048"/>
-      </constraint>
+      <constraint type="max" value="2048"/>
     </attribute>
   </attributes>
 </cluster>

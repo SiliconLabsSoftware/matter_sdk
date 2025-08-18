@@ -33,7 +33,7 @@
 #       --disable-test ClusterObjectTests.TestTimedRequestTimeout
 #       --trace-to json:${TRACE_TEST_JSON}.json
 #       --trace-to perfetto:${TRACE_TEST_PERFETTO}.perfetto
-#     factory-reset: true
+#     factoryreset: true
 #     quiet: true
 # === END CI TEST ARGUMENTS ===
 
@@ -266,11 +266,8 @@ def do_tests(controller_nodeid, device_nodeid, address, timeout, discriminator, 
               type=int,
               default=0,
               help="The PID of the app against which the test is going to run")
-@click.option('--fail-on-skipped',
-              is_flag=True,
-              help="Fail the test if any test cases are skipped")
 def run(controller_nodeid, device_nodeid, address, timeout, discriminator, setup_pin, enable_test, disable_test, log_level,
-        log_format, print_test_list, paa_trust_store_path, trace_to, app_pid, fail_on_skipped):
+        log_format, print_test_list, paa_trust_store_path, trace_to, app_pid):
     coloredlogs.install(level=log_level, fmt=log_format, logger=logger)
 
     if print_test_list:

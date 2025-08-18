@@ -26,9 +26,6 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/core/Optional.h>
 
-// MTRDeviceController_Concrete.h imports this header, so we can't import it.
-@class MTRDeviceController_Concrete;
-
 namespace chip {
 class FabricTable;
 
@@ -160,7 +157,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Initialize for controller bringup with per-controller storage.
  */
-- (instancetype)initForNewController:(MTRDeviceController_Concrete *)controller
+- (instancetype)initForNewController:(MTRDeviceController *)controller
                          fabricTable:(chip::FabricTable *)fabricTable
                             keystore:(chip::Crypto::OperationalKeystore *)keystore
                 advertiseOperational:(BOOL)advertiseOperational

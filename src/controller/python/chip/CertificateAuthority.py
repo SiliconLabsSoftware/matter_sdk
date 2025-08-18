@@ -21,17 +21,14 @@ from __future__ import annotations
 import ctypes
 import logging
 from ctypes import c_void_p
-from datetime import timedelta
 from typing import List, Optional
 
-from . import ChipStack, FabricAdmin
-from .native import GetLibraryHandle, PyChipError
-from .storage import PersistentStorage
+import chip.exceptions
+from chip import ChipStack, FabricAdmin
+from chip.native import PyChipError
+from chip.storage import PersistentStorage
 
 LOGGER = logging.getLogger(__name__)
-
-# By default, let's set certificate validity to 10 years.
-CERTIFICATE_VALIDITY_PERIOD_SEC = int(timedelta(days=10*365).total_seconds())
 
 
 class CertificateAuthority:
@@ -52,7 +49,7 @@ class CertificateAuthority:
     '''
     @classmethod
     def _Handle(cls):
-        return GetLibraryHandle()
+        return chip.native.GetLibraryHandle()
 
     @classmethod
     def logger(cls):
@@ -80,19 +77,11 @@ class CertificateAuthority:
         self._Handle().pychip_OpCreds_SetMaximallyLargeCertsUsed.restype = PyChipError
         self._Handle().pychip_OpCreds_SetMaximallyLargeCertsUsed.argtypes = [ctypes.c_void_p, ctypes.c_bool]
 
-        self._Handle().pychip_OpCreds_SetAlwaysOmitIcac.restype = PyChipError
-        self._Handle().pychip_OpCreds_SetAlwaysOmitIcac.argtypes = [ctypes.c_void_p, ctypes.c_bool]
-
-        self._Handle().pychip_OpCreds_SetCertificateValidityPeriod.restype = PyChipError
-        self._Handle().pychip_OpCreds_SetCertificateValidityPeriod.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
-
         if (persistentStorage is None):
             persistentStorage = self._chipStack.GetStorageManager()
 
         self._persistentStorage = persistentStorage
         self._maximizeCertChains = False
-        self._alwaysOmitIcac = False
-        self._certificateValidityPeriodSec = CERTIFICATE_VALIDITY_PERIOD_SEC
 
         self._closure = self._chipStack.Call(
             lambda: self._Handle().pychip_OpCreds_InitializeDelegate(
@@ -200,14 +189,6 @@ class CertificateAuthority:
     def maximizeCertChains(self) -> bool:
         return self._maximizeCertChains
 
-    @property
-    def alwaysOmitIcac(self) -> bool:
-        return self._alwaysOmitIcac
-
-    @property
-    def certificateValidityPeriodSec(self) -> int:
-        return self._certificateValidityPeriodSec
-
     @maximizeCertChains.setter
     def maximizeCertChains(self, enabled: bool):
         self._chipStack.Call(
@@ -215,25 +196,6 @@ class CertificateAuthority:
         ).raise_on_error()
 
         self._maximizeCertChains = enabled
-
-    @alwaysOmitIcac.setter
-    def alwaysOmitIcac(self, enabled: bool):
-        self._chipStack.Call(
-            lambda: self._Handle().pychip_OpCreds_SetAlwaysOmitIcac(ctypes.c_void_p(self._closure), ctypes.c_bool(enabled))
-        ).raise_on_error()
-
-        self._alwaysOmitIcac = enabled
-
-    @certificateValidityPeriodSec.setter
-    def certificateValidityPeriodSec(self, validity: int):
-        if validity < 0:
-            raise ValueError("Validity period must be a non-negative integer")
-
-        self._chipStack.Call(
-            lambda: self._Handle().pychip_OpCreds_SetCertificateValidityPeriod(ctypes.c_void_p(self._closure), ctypes.c_uint32(validity))
-        ).raise_on_error()
-
-        self._certificateValidityPeriodSec = validity
 
     def __del__(self):
         self.Shutdown()
@@ -244,7 +206,7 @@ class CertificateAuthorityManager:
     '''
     @classmethod
     def _Handle(cls):
-        return GetLibraryHandle()
+        return chip.native.GetLibraryHandle()
 
     @classmethod
     def logger(cls):
@@ -296,7 +258,7 @@ class CertificateAuthorityManager:
             ca = self.NewCertificateAuthority(int(caIndex))
             ca.LoadFabricAdminsFromStorage()
 
-    def NewCertificateAuthority(self, caIndex: Optional[int] = None, maximizeCertChains: bool = False, certificateValidityPeriodSec: Optional[int] = None):
+    def NewCertificateAuthority(self, caIndex: Optional[int] = None, maximizeCertChains: bool = False):
         ''' Creates a new CertificateAuthority instance with the provided CA Index and the PersistentStorage
             instance previously setup in the constructor.
 
@@ -320,12 +282,8 @@ class CertificateAuthorityManager:
             caList[str(caIndex)] = []
             self._persistentStorage.SetReplKey(key='caList', value=caList)
 
-        if certificateValidityPeriodSec is None:
-            certificateValidityPeriodSec = CERTIFICATE_VALIDITY_PERIOD_SEC
-
         ca = CertificateAuthority(chipStack=self._chipStack, caIndex=caIndex, persistentStorage=self._persistentStorage)
         ca.maximizeCertChains = maximizeCertChains
-        ca.certificateValidityPeriodSec = certificateValidityPeriodSec
         self._activeCaList.append(ca)
 
         return ca

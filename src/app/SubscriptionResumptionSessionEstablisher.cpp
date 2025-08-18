@@ -17,6 +17,7 @@
 
 #include <app/InteractionModelEngine.h>
 #include <app/SubscriptionResumptionSessionEstablisher.h>
+#include <app/codegen-data-model-provider/Instance.h>
 
 namespace chip {
 namespace app {
@@ -103,7 +104,8 @@ void SubscriptionResumptionSessionEstablisher::HandleDeviceConnected(void * cont
         ChipLogProgress(InteractionModel, "no resource for subscription resumption");
         return;
     }
-    ReadHandler * readHandler = imEngine->mReadHandlers.CreateObject(*imEngine, imEngine->GetReportScheduler());
+    ReadHandler * readHandler =
+        imEngine->mReadHandlers.CreateObject(*imEngine, imEngine->GetReportScheduler(), imEngine->GetDataModelProvider());
     if (readHandler == nullptr)
     {
         // TODO - Should we keep the subscription here?
@@ -113,8 +115,7 @@ void SubscriptionResumptionSessionEstablisher::HandleDeviceConnected(void * cont
     readHandler->OnSubscriptionResumed(sessionHandle, *establisher);
 #if CHIP_CONFIG_SUBSCRIPTION_TIMEOUT_RESUMPTION
     // Reset the resumption retries to 0 if subscription is resumed
-    subscriptionInfo.mResumptionRetries = 0;
-    imEngine->ResetNumSubscriptionsRetries();
+    subscriptionInfo.mResumptionRetries  = 0;
     auto * subscriptionResumptionStorage = InteractionModelEngine::GetInstance()->GetSubscriptionResumptionStorage();
     if (subscriptionResumptionStorage)
     {
@@ -158,9 +159,6 @@ void SubscriptionResumptionSessionEstablisher::HandleDeviceConnectionFailure(voi
         // Clean up the persistent subscription information storage.
         subscriptionResumptionStorage->Delete(subscriptionInfo.mNodeId, subscriptionInfo.mFabricIndex,
                                               subscriptionInfo.mSubscriptionId);
-#if CHIP_CONFIG_SUBSCRIPTION_TIMEOUT_RESUMPTION
-        imEngine->ResetNumSubscriptionsRetries();
-#endif // CHIP_CONFIG_SUBSCRIPTION_TIMEOUT_RESUMPTION
     }
 }
 

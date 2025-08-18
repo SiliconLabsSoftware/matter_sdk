@@ -24,7 +24,7 @@
 #include <platform/DeviceInstanceInfoProvider.h>
 
 #if CONFIG_CHIP_PLAT_LOAD_REAL_FACTORY_DATA
-#include <platform/nxp/common/factory_data/legacy/FactoryDataProvider.h>
+#include "FactoryDataProvider.h"
 #ifdef ENABLE_SECURE_WHOLE_FACTORY_DATA
 static uint8_t aes256TestKey[]
     __attribute__((aligned)) = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
@@ -37,18 +37,6 @@ static uint8_t aes256TestKey[]
 using namespace chip;
 using namespace ::chip::Credentials;
 using namespace ::chip::DeviceLayer;
-
-#if CONFIG_CHIP_PLAT_LOAD_REAL_FACTORY_DATA && CONFIG_CHIP_OTA_FACTORY_DATA_PROCESSOR
-/**
- * Custom factory data restore mechanism. This function must be implemented by vendors.
- */
-CHIP_ERROR CustomFactoryDataRestoreMechanism(void)
-{
-    ChipLogProgress(DeviceLayer, "This is a custom factory data restore mechanism.");
-
-    return CHIP_NO_ERROR;
-}
-#endif
 
 /**
  * Allows to register Matter factory data before initializing the Matter stack
@@ -68,12 +56,12 @@ CHIP_ERROR NXP::App::AppFactoryData_PostMatterStackInit(void)
     /* Please Note, because currently we only support AES-256 key provisioning and de-wrap, so the trasfterred AES key should be 256
      * bit size*/
     FactoryDataPrvdImpl().SetEncryptionMode(FactoryDataProvider::encrypt_ecb);
-    FactoryDataPrvdImpl().SetAesKey(&aes256TestKey[0], FactoryDataProvider::aes_256);
+    FactoryDataPrvdImpl().SetAes256Key(&aes256TestKey[0]);
 #endif
     FactoryDataPrvdImpl().Init();
-    SetDeviceInstanceInfoProvider(&FactoryDataPrvdImpl());
-    SetDeviceAttestationCredentialsProvider(&FactoryDataPrvdImpl());
-    SetCommissionableDataProvider(&FactoryDataPrvdImpl());
+    SetDeviceInstanceInfoProvider(&FactoryDataPrvd());
+    SetDeviceAttestationCredentialsProvider(&FactoryDataPrvd());
+    SetCommissionableDataProvider(&FactoryDataPrvd());
 #else
     // Initialize device attestation with example one (only for debug purpose)
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());

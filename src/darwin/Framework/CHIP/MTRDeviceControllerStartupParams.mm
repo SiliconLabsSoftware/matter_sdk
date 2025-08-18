@@ -18,7 +18,6 @@
 #import "MTRCertificates.h"
 #import "MTRConversion.h"
 #import "MTRDeviceControllerStartupParams_Internal.h"
-#import "MTRDeviceController_Concrete.h"
 #import "MTRDeviceController_Internal.h"
 #import "MTRLogging_Internal.h"
 #import "MTRP256KeypairBridge.h"
@@ -597,7 +596,7 @@ constexpr NSUInteger kDefaultConcurrentSubscriptionPoolSize = 300;
     return self;
 }
 
-- (instancetype)initForNewController:(MTRDeviceController_Concrete *)controller
+- (instancetype)initForNewController:(MTRDeviceController *)controller
                          fabricTable:(chip::FabricTable *)fabricTable
                             keystore:(chip::Crypto::OperationalKeystore *)keystore
                 advertiseOperational:(BOOL)advertiseOperational

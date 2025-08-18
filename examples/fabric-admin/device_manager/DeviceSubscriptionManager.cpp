@@ -32,27 +32,31 @@
 using namespace ::chip;
 using namespace ::chip::app;
 
-namespace admin {
+DeviceSubscriptionManager & DeviceSubscriptionManager::Instance()
+{
+    static DeviceSubscriptionManager instance;
+    return instance;
+}
 
-CHIP_ERROR DeviceSubscriptionManager::StartSubscription(Controller::DeviceController & controller, ScopedNodeId scopedNodeId)
+CHIP_ERROR DeviceSubscriptionManager::StartSubscription(Controller::DeviceController & controller, NodeId nodeId)
 {
     assertChipStackLockedByCurrentThread();
-    auto it = mDeviceSubscriptionMap.find(scopedNodeId);
+    auto it = mDeviceSubscriptionMap.find(nodeId);
     VerifyOrReturnError((it == mDeviceSubscriptionMap.end()), CHIP_ERROR_INCORRECT_STATE);
 
     auto deviceSubscription = std::make_unique<DeviceSubscription>();
     VerifyOrReturnError(deviceSubscription, CHIP_ERROR_NO_MEMORY);
     ReturnErrorOnFailure(deviceSubscription->StartSubscription(
-        [this](ScopedNodeId aNodeId) { this->DeviceSubscriptionTerminated(aNodeId); }, controller, scopedNodeId));
+        [this](NodeId aNodeId) { this->DeviceSubscriptionTerminated(aNodeId); }, controller, nodeId));
 
-    mDeviceSubscriptionMap[scopedNodeId] = std::move(deviceSubscription);
+    mDeviceSubscriptionMap[nodeId] = std::move(deviceSubscription);
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR DeviceSubscriptionManager::RemoveSubscription(ScopedNodeId scopedNodeId)
+CHIP_ERROR DeviceSubscriptionManager::RemoveSubscription(NodeId nodeId)
 {
     assertChipStackLockedByCurrentThread();
-    auto it = mDeviceSubscriptionMap.find(scopedNodeId);
+    auto it = mDeviceSubscriptionMap.find(nodeId);
     VerifyOrReturnError((it != mDeviceSubscriptionMap.end()), CHIP_ERROR_NOT_FOUND);
     // We cannot safely erase the DeviceSubscription from mDeviceSubscriptionMap.
     // After calling StopSubscription we expect DeviceSubscription to eventually
@@ -63,16 +67,14 @@ CHIP_ERROR DeviceSubscriptionManager::RemoveSubscription(ScopedNodeId scopedNode
     return CHIP_NO_ERROR;
 }
 
-void DeviceSubscriptionManager::DeviceSubscriptionTerminated(ScopedNodeId scopedNodeId)
+void DeviceSubscriptionManager::DeviceSubscriptionTerminated(NodeId nodeId)
 {
     assertChipStackLockedByCurrentThread();
-    auto it = mDeviceSubscriptionMap.find(scopedNodeId);
+    auto it = mDeviceSubscriptionMap.find(nodeId);
     // DeviceSubscriptionTerminated is a private method that is expected to only
     // be called by DeviceSubscription when it is terminal and is ready to be
     // cleaned up and removed. If it is not mapped that means something has gone
     // really wrong and there is likely a memory leak somewhere.
     VerifyOrDie(it != mDeviceSubscriptionMap.end());
-    mDeviceSubscriptionMap.erase(scopedNodeId);
+    mDeviceSubscriptionMap.erase(nodeId);
 }
-
-} // namespace admin

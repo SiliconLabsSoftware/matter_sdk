@@ -23,6 +23,7 @@
 #include <EnergyEvseManager.h>
 #include <EnergyTimeUtils.h>
 
+#include <EnergyTimeUtils.h>
 #include <FakeReadings.h>
 #include <app/clusters/device-energy-management-server/DeviceEnergyManagementTestEventTriggerHandler.h>
 #include <app/clusters/electrical-energy-measurement-server/EnergyReportingTestEventTriggerHandler.h>
@@ -46,7 +47,7 @@ using namespace chip::app::Clusters::PowerSource::Attributes;
 
 using Protocols::InteractionModel::Status;
 
-CHIP_ERROR EVSEManufacturer::Init(chip::EndpointId powerSourceEndpointId)
+CHIP_ERROR EVSEManufacturer::Init()
 {
     /* Manufacturers should modify this to do any custom initialisation */
 
@@ -62,7 +63,7 @@ CHIP_ERROR EVSEManufacturer::Init(chip::EndpointId powerSourceEndpointId)
 
     ReturnErrorOnFailure(InitializePowerMeasurementCluster());
 
-    ReturnErrorOnFailure(InitializePowerSourceCluster(powerSourceEndpointId));
+    ReturnErrorOnFailure(InitializePowerSourceCluster());
 
     DeviceEnergyManagementDelegate * dem = GetEvseManufacturer()->GetDEMDelegate();
     VerifyOrReturnLogError(dem != nullptr, CHIP_ERROR_UNINITIALIZED);
@@ -210,7 +211,7 @@ CHIP_ERROR EVSEManufacturer::ComputeChargingSchedule()
     ReturnErrorOnFailure(GetMinutesPastMidnight(minutesPastMidnightNow_m));
 
     uint32_t now_epoch_s = 0;
-    ReturnErrorOnFailure(System::Clock::GetClock_MatterEpochS(now_epoch_s));
+    ReturnErrorOnFailure(GetEpochTS(now_epoch_s));
 
     DataModel::Nullable<uint32_t> startTime_epoch_s;
     DataModel::Nullable<uint32_t> targetTime_epoch_s;
@@ -351,30 +352,31 @@ CHIP_ERROR EVSEManufacturer::InitializePowerMeasurementCluster()
 /**
  * @brief   Allows a client application to initialise the PowerSource cluster
  */
-CHIP_ERROR EVSEManufacturer::InitializePowerSourceCluster(chip::EndpointId endpointId)
+CHIP_ERROR EVSEManufacturer::InitializePowerSourceCluster()
 {
     Protocols::InteractionModel::Status status;
 
-    status = PowerSource::Attributes::Status::Set(endpointId, PowerSourceStatusEnum::kActive);
+    status = PowerSource::Attributes::Status::Set(EndpointId(0) /*RootNode*/, PowerSourceStatusEnum::kActive);
     VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
-    status = PowerSource::Attributes::FeatureMap::Set(endpointId, static_cast<uint32_t>(PowerSource::Feature::kWired));
+    status =
+        PowerSource::Attributes::FeatureMap::Set(EndpointId(0 /*RootNode*/), static_cast<uint32_t>(PowerSource::Feature::kWired));
     VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
-    status = PowerSource::Attributes::WiredNominalVoltage::Set(endpointId, 230'000); // 230V in mv
+    status = PowerSource::Attributes::WiredNominalVoltage::Set(EndpointId(0 /*RootNode*/), 230'000); // 230V in mv
     VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
-    status = PowerSource::Attributes::WiredMaximumCurrent::Set(endpointId, 32'000); // 32A in mA
-    VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
-
-    status = PowerSource::Attributes::WiredCurrentType::Set(endpointId, PowerSource::WiredCurrentTypeEnum::kAc);
-    VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
-    status = PowerSource::Attributes::Description::Set(endpointId, CharSpan::fromCharString("Primary Mains Power"));
+    status = PowerSource::Attributes::WiredMaximumCurrent::Set(EndpointId(0 /*RootNode*/), 32'000); // 32A in mA
     VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
 
-    chip::EndpointId endpointArray[] = { endpointId };
+    status = PowerSource::Attributes::WiredCurrentType::Set(EndpointId(0 /*RootNode*/), PowerSource::WiredCurrentTypeEnum::kAc);
+    VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
+    status = PowerSource::Attributes::Description::Set(EndpointId(0 /*RootNode*/), CharSpan::fromCharString("Primary Mains Power"));
+    VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
+
+    chip::EndpointId endpointArray[] = { 1 /* EVSE Endpoint */ };
     Span<EndpointId> endpointList    = Span<EndpointId>(endpointArray);
 
     // Note per API - we do not need to maintain the span after the SetEndpointList has been called
     // since it takes a copy (see power-source-server.cpp)
-    PowerSourceServer::Instance().SetEndpointList(endpointId, endpointList);
+    PowerSourceServer::Instance().SetEndpointList(0 /* Root Node */, endpointList);
 
     return CHIP_NO_ERROR;
 }
@@ -448,7 +450,7 @@ CHIP_ERROR EVSEManufacturer::SendCumulativeEnergyReading(EndpointId aEndpointId,
 
     // Get current timestamp
     uint32_t currentTimestamp;
-    CHIP_ERROR err = System::Clock::GetClock_MatterEpochS(currentTimestamp);
+    CHIP_ERROR err = GetEpochTS(currentTimestamp);
     if (err == CHIP_NO_ERROR)
     {
         // use EpochTS
@@ -457,7 +459,7 @@ CHIP_ERROR EVSEManufacturer::SendCumulativeEnergyReading(EndpointId aEndpointId,
     }
     else
     {
-        ChipLogError(AppServer, "GetClock_MatterEpochS returned error getting timestamp %" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(AppServer, "GetEpochTS returned error getting timestamp %" CHIP_ERROR_FORMAT, err.Format());
 
         // use systemTime as a fallback
         System::Clock::Milliseconds64 system_time_ms =
@@ -521,7 +523,7 @@ CHIP_ERROR EVSEManufacturer::SendPeriodicEnergyReading(EndpointId aEndpointId, i
 
     // Get current timestamp
     uint32_t currentTimestamp;
-    CHIP_ERROR err = System::Clock::GetClock_MatterEpochS(currentTimestamp);
+    CHIP_ERROR err = GetEpochTS(currentTimestamp);
     if (err == CHIP_NO_ERROR)
     {
         // use EpochTS
@@ -530,7 +532,7 @@ CHIP_ERROR EVSEManufacturer::SendPeriodicEnergyReading(EndpointId aEndpointId, i
     }
     else
     {
-        ChipLogError(AppServer, "GetClock_MatterEpochS returned error getting timestamp");
+        ChipLogError(AppServer, "GetEpochTS returned error getting timestamp");
 
         // use systemTime as a fallback
         System::Clock::Milliseconds64 system_time_ms =

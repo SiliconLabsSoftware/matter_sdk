@@ -21,7 +21,6 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/SafeInt.h>
 
-#include <algorithm>
 #include <iostream>
 #include <regex>
 #include <unordered_map>

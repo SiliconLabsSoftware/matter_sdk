@@ -38,7 +38,7 @@ LaundryWasherControlDelegate LaundryWasherControlDelegate::instance;
 
 CHIP_ERROR LaundryWasherControlDelegate::GetSpinSpeedAtIndex(size_t index, MutableCharSpan & spinSpeed)
 {
-    if (index >= MATTER_ARRAY_SIZE(spinSpeedsNameOptions))
+    if (index >= ArraySize(spinSpeedsNameOptions))
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
@@ -47,7 +47,7 @@ CHIP_ERROR LaundryWasherControlDelegate::GetSpinSpeedAtIndex(size_t index, Mutab
 
 CHIP_ERROR LaundryWasherControlDelegate::GetSupportedRinseAtIndex(size_t index, NumberOfRinsesEnum & supportedRinse)
 {
-    if (index >= MATTER_ARRAY_SIZE(supportRinsesOptions))
+    if (index >= ArraySize(supportRinsesOptions))
     {
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }

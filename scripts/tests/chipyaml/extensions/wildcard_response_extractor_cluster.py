@@ -14,7 +14,7 @@
 #    limitations under the License.
 
 
-from matter.yamltests.pseudo_clusters.pseudo_cluster import PseudoCluster
+from matter_yamltests.pseudo_clusters.pseudo_cluster import PseudoCluster
 
 _VALUE_ARGUMENT_NAME = 'Value'
 _CLUSTERS_ARGUMENT_NAME = 'Clusters'

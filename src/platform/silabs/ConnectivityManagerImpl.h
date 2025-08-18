@@ -102,6 +102,7 @@ private:
     bool _IsWiFiStationProvisioned(void);
     void _ClearWiFiStationProvision(void);
     CHIP_ERROR _GetAndLogWifiStatsCounters(void);
+    bool _CanStartWiFiScan();
     void _OnWiFiScanDone();
     void _OnWiFiStationProvisionChange();
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
@@ -166,8 +167,12 @@ inline System::Clock::Timeout ConnectivityManagerImpl::_GetWiFiStationReconnectI
 {
     return mWiFiStationReconnectInterval;
 }
-#endif
 
+inline bool ConnectivityManagerImpl::_CanStartWiFiScan()
+{
+    return mWiFiStationState != kWiFiStationState_Connecting;
+}
+#endif
 #if 0 // CHIP_DEVICE_CONFIG_ENABLE_THREAD
 inline bool ConnectivityManagerImpl::_HaveServiceConnectivity(void)
 {

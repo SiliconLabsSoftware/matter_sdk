@@ -103,7 +103,6 @@ done
 [[ $ENABLE_BITCODE == YES ]] && target_cflags+=("-flto")
 
 declare -a args=(
-    'import("//config/darwin/args.gni")'
     'default_configs_cosmetic=[]' # suppress colorization
     'chip_crypto="boringssl"'
     'chip_build_controller_dynamic_server=false'
@@ -133,6 +132,7 @@ esac
 [[ $PLATFORM_FAMILY_NAME != macOS ]] && {
     args+=(
         'target_os="ios"'
+        'import("//config/ios/args.gni")'
     )
 }
 
@@ -184,12 +184,6 @@ esac
 [[ $CHIP_ENABLE_ENCODING_SENTINEL_ENUM_VALUES == YES ]] && {
     args+=(
         'enable_encoding_sentinel_enum_values=true'
-    )
-}
-
-[[ $CHIP_USE_NETWORK_FRAMEWORK == YES ]] && {
-    args+=(
-        'chip_system_config_use_network_framework=true'
     )
 }
 

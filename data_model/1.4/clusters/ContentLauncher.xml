@@ -177,23 +177,17 @@ Davis, CA 95616, USA
     <struct name="AdditionalInfoStruct">
       <field id="0" name="Name" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
       <field id="1" name="Value" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="8192"/>
-        </constraint>
+        <constraint type="maxLength" value="8192"/>
       </field>
     </struct>
     <struct name="BrandingInformationStruct">
       <field id="0" name="ProviderName" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="256"/>
-        </constraint>
+        <constraint type="maxLength" value="256"/>
       </field>
       <field id="1" name="Background" type="StyleInformationStruct" default="MS">
         <optionalConform/>
@@ -234,9 +228,7 @@ Davis, CA 95616, USA
       </field>
       <field id="1" name="Value" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="1024"/>
-        </constraint>
+        <constraint type="maxLength" value="1024"/>
       </field>
       <field id="2" name="ExternalIDList" type="list" default="empty">
         <entry type="AdditionalInfoStruct"/>
@@ -267,18 +259,12 @@ Davis, CA 95616, USA
     <struct name="StyleInformationStruct">
       <field id="0" name="ImageURL" type="string" default="MS">
         <optionalConform/>
-        <constraint>
-          <maxLength value="8192"/>
-        </constraint>
+        <constraint type="maxLength" value="8192"/>
       </field>
       <field id="1" name="Color" type="string" default="MS">
         <optionalConform/>
-        <constraint>
-          <allowed value="7"/>
-        </constraint>
-        <constraint>
-          <allowed value="9"/>
-        </constraint>
+        <constraint type="allowed" value="7"/>
+        <constraint type="allowed" value="9"/>
       </field>
       <field id="2" name="Size" type="DimensionStruct" default="MS">
         <optionalConform/>
@@ -287,9 +273,7 @@ Davis, CA 95616, USA
     <struct name="TrackPreferenceStruct">
       <field id="0" name="LanguageCode" type="string">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="32"/>
-        </constraint>
+        <constraint type="maxLength" value="32"/>
       </field>
       <field id="1" name="Characteristics" type="list" default="null">
         <entry type="CharacteristicEnum"/>
@@ -307,18 +291,14 @@ Davis, CA 95616, USA
   <attributes>
     <attribute id="0x0000" name="AcceptHeader" type="list" default="empty">
       <entry type="string">
-        <constraint>
-          <maxLength value="1024"/>
-        </constraint>
+        <constraint type="maxLength" value="1024"/>
       </entry>
       <access read="true" readPrivilege="view"/>
       <quality persistence="nonVolatile"/>
       <mandatoryConform>
         <feature name="UP"/>
       </mandatoryConform>
-      <constraint>
-        <maxCount value="100"/>
-      </constraint>
+      <constraint type="maxCount" value="100"/>
     </attribute>
     <attribute id="0x0001" name="SupportedStreamingProtocols" type="SupportedProtocolsBitmap" default="0">
       <access read="true" readPrivilege="view"/>
@@ -336,15 +316,11 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="Search" type="ContentSearchStruct">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="1" name="AutoPlay" type="bool">
         <mandatoryConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
       <field id="2" name="Data" type="string" default="MS">
         <optionalConform/>
@@ -354,9 +330,7 @@ Davis, CA 95616, USA
       </field>
       <field id="4" name="UseCurrentContext" type="bool" default="true">
         <optionalConform/>
-        <constraint>
-          <desc/>
-        </constraint>
+        <constraint type="desc"/>
       </field>
     </command>
     <command id="0x01" name="LaunchURL" direction="commandToServer" response="LauncherResponse">

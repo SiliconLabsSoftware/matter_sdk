@@ -17,6 +17,7 @@
  */
 
 #include <EnergyEvseDelegateImpl.h>
+#include <EnergyTimeUtils.h>
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/EventLogging.h>
@@ -149,7 +150,7 @@ Status EnergyEvseDelegate::EnableDischarging(const DataModel::Nullable<uint32_t>
 Status EnergyEvseDelegate::ScheduleCheckOnEnabledTimeout()
 {
 
-    uint32_t matterEpoch = 0;
+    uint32_t chipEpoch = 0;
     DataModel::Nullable<uint32_t> enabledUntilTime;
 
     if (mSupplyState == SupplyStateEnum::kChargingEnabled)
@@ -172,11 +173,11 @@ Status EnergyEvseDelegate::ScheduleCheckOnEnabledTimeout()
         return Status::Success;
     }
 
-    CHIP_ERROR err = System::Clock::GetClock_MatterEpochS(matterEpoch);
+    CHIP_ERROR err = DeviceEnergyManagement::GetEpochTS(chipEpoch);
     if (err == CHIP_NO_ERROR)
     {
         /* time is sync'd */
-        int32_t delta = static_cast<int32_t>(enabledUntilTime.Value() - matterEpoch);
+        int32_t delta = static_cast<int32_t>(enabledUntilTime.Value() - chipEpoch);
         if (delta > 0)
         {
             /* The timer hasn't expired yet - set a timer to check in the future */
@@ -933,10 +934,10 @@ Status EnergyEvseDelegate::ComputeMaxChargeCurrentLimit()
 
     oldValue                    = mActualChargingCurrentLimit;
     mActualChargingCurrentLimit = mMaxHardwareCurrentLimit;
-    mActualChargingCurrentLimit = std::min(mActualChargingCurrentLimit, mCircuitCapacity);
-    mActualChargingCurrentLimit = std::min(mActualChargingCurrentLimit, mCableAssemblyCurrentLimit);
-    mActualChargingCurrentLimit = std::min(mActualChargingCurrentLimit, mMaximumChargingCurrentLimitFromCommand);
-    mActualChargingCurrentLimit = std::min(mActualChargingCurrentLimit, mUserMaximumChargeCurrent);
+    mActualChargingCurrentLimit = min(mActualChargingCurrentLimit, mCircuitCapacity);
+    mActualChargingCurrentLimit = min(mActualChargingCurrentLimit, mCableAssemblyCurrentLimit);
+    mActualChargingCurrentLimit = min(mActualChargingCurrentLimit, mMaximumChargingCurrentLimitFromCommand);
+    mActualChargingCurrentLimit = min(mActualChargingCurrentLimit, mUserMaximumChargeCurrent);
 
     /* Set the actual max charging current attribute */
     mMaximumChargeCurrent = mActualChargingCurrentLimit;
@@ -1633,8 +1634,8 @@ bool EnergyEvseDelegate::IsEvsePluggedIn()
 void EvseSession::StartSession(EndpointId endpointId, int64_t chargingMeterValue, int64_t dischargingMeterValue)
 {
     /* Get Timestamp */
-    uint32_t matterEpoch = 0;
-    CHIP_ERROR err       = System::Clock::GetClock_MatterEpochS(matterEpoch);
+    uint32_t chipEpoch = 0;
+    CHIP_ERROR err     = DeviceEnergyManagement::GetEpochTS(chipEpoch);
     if (err != CHIP_NO_ERROR)
     {
         /* Note that the error will be also be logged inside GetErrorTS() -
@@ -1642,7 +1643,7 @@ void EvseSession::StartSession(EndpointId endpointId, int64_t chargingMeterValue
         ChipLogError(AppServer, "EVSE: Unable to get current time when starting session - err:%" CHIP_ERROR_FORMAT, err.Format());
         return;
     }
-    mStartTime = matterEpoch;
+    mStartTime = chipEpoch;
 
     mSessionEnergyChargedAtStart    = chargingMeterValue;
     mSessionEnergyDischargedAtStart = dischargingMeterValue;
@@ -1700,8 +1701,8 @@ void EvseSession::StopSession(EndpointId endpointId, int64_t chargingMeterValue,
 void EvseSession::RecalculateSessionDuration(EndpointId endpointId)
 {
     /* Get Timestamp */
-    uint32_t matterEpoch = 0;
-    CHIP_ERROR err       = System::Clock::GetClock_MatterEpochS(matterEpoch);
+    uint32_t chipEpoch = 0;
+    CHIP_ERROR err     = DeviceEnergyManagement::GetEpochTS(chipEpoch);
     if (err != CHIP_NO_ERROR)
     {
         /* Note that the error will be also be logged inside GetErrorTS() -
@@ -1711,7 +1712,7 @@ void EvseSession::RecalculateSessionDuration(EndpointId endpointId)
         return;
     }
 
-    uint32_t duration = matterEpoch - mStartTime;
+    uint32_t duration = chipEpoch - mStartTime;
     mSessionDuration  = MakeNullable(duration);
     MatterReportingAttributeChangeCallback(endpointId, EnergyEvse::Id, SessionDuration::Id);
 }

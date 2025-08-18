@@ -22,7 +22,6 @@
 #import <Matter/MTRDeviceControllerParameters.h>
 
 #import "MTRDeviceController_Internal.h"
-#import "MTRDeviceController_XPC_Internal.h"
 
 #import "MTRAsyncWorkQueue.h"
 #import "MTRAttestationTrustStoreBridge.h"
@@ -42,7 +41,6 @@
 #import "MTRDeviceControllerStartupParams_Internal.h"
 #import "MTRDeviceController_Concrete.h"
 #import "MTRDeviceController_XPC.h"
-#import "MTRDeviceDataValidation.h"
 #import "MTRDevice_Concrete.h"
 #import "MTRDevice_Internal.h"
 #import "MTRDevice_XPC_Internal.h"
@@ -51,13 +49,13 @@
 #import "MTRLogging_Internal.h"
 #import "MTRMetricKeys.h"
 #import "MTRMetricsCollector.h"
+#import "MTROperationalCredentialsDelegate.h"
 #import "MTRP256KeypairBridge.h"
 #import "MTRPersistentStorageDelegateBridge.h"
 #import "MTRServerEndpoint_Internal.h"
 #import "MTRSetupPayload.h"
 #import "MTRTimeUtils.h"
 #import "MTRUnfairLock.h"
-#import "MTRUtilities.h"
 #import "NSDataSpanConversion.h"
 #import "NSStringSpanConversion.h"
 
@@ -85,12 +83,11 @@
 @implementation MTRDevice_XPC
 
 @synthesize _internalState;
-@synthesize queue = _queue;
 
 - (instancetype)initWithNodeID:(NSNumber *)nodeID controller:(MTRDeviceController_XPC *)controller
 {
     if (self = [super initForSubclassesWithNodeID:nodeID controller:controller]) {
-        _queue = dispatch_queue_create("org.csa-iot.matter.framework.devicexpc.workqueue", DISPATCH_QUEUE_SERIAL_WITH_AUTORELEASE_POOL);
+        // Nothing else to do, all set.
     }
 
     return self;
@@ -116,64 +113,22 @@
     }
 
     // TODO: Add these to the description
+    // MTR_OPTIONAL_ATTRIBUTE(kMTRDeviceInternalPropertyDeviceState, _internalDeviceStateForDescription, properties);
     // MTR_OPTIONAL_ATTRIBUTE(kMTRDeviceInternalPropertyLastSubscriptionAttemptWait, _lastSubscriptionAttemptWaitForDescription, properties);
     // MTR_OPTIONAL_ATTRIBUTE(kMTRDeviceInternalPropertyMostRecentReportTime, _mostRecentReportTimeForDescription, properties);
     // MTR_OPTIONAL_ATTRIBUTE(kMTRDeviceInternalPropertyLastSubscriptionFailureTime, _lastSubscriptionFailureTimeForDescription, properties);
 
-    return [NSString stringWithFormat:@"<%@: %p, node: %016llX-%016llX (%llu), VID: %@, PID: %@, WiFi: %@, Thread: %@, controller: %@ state: %lu>",
-                     NSStringFromClass(self.class), self,
-                     _deviceController.compressedFabricID.unsignedLongLongValue,
-                     _nodeID.unsignedLongLongValue,
-                     _nodeID.unsignedLongLongValue,
-                     [self vendorID],
-                     [self productID],
-                     wifi,
-                     thread,
-                     _deviceController.uniqueIdentifier,
-                     (unsigned long) [MTR_SAFE_CAST(self._internalState[kMTRDeviceInternalPropertyDeviceState], NSNumber) unsignedLongValue]];
-}
-
-- (nullable NSNumber *)vendorID
-{
-    return [[self._internalState objectForKey:kMTRDeviceInternalPropertyKeyVendorID] copy];
-}
-
-- (nullable NSNumber *)productID
-{
-    return [[self._internalState objectForKey:kMTRDeviceInternalPropertyKeyProductID] copy];
-}
-
-- (MTRNetworkCommissioningFeature)networkCommissioningFeatures
-{
-    return [[self._internalState objectForKey:kMTRDeviceInternalPropertyNetworkFeatures] unsignedIntValue];
-}
-
-#pragma mark - Delegate added/removed callbacks
-
-- (void)_delegateAdded:(id<MTRDeviceDelegate>)delegate
-{
-    os_unfair_lock_assert_owner(&self->_lock);
-
-    [super _delegateAdded:delegate];
-    MTR_LOG("%@ delegate added: %@", self, delegate);
-
-    // dispatch to own queue so we're not holding our lock while calling out to the controller code.
-    dispatch_async(self.queue, ^{
-        [(MTRDeviceController_XPC *) [self deviceController] _updateRegistrationInfo];
-    });
-}
-
-- (void)_delegateRemoved:(id<MTRDeviceDelegate>)delegate
-{
-    os_unfair_lock_assert_owner(&self->_lock);
-
-    [super _delegateRemoved:delegate];
-    MTR_LOG("%@ delegate removed: %@", self, delegate);
-
-    // dispatch to own queue so we're not holding our lock while calling out to the controller code.
-    dispatch_async(self.queue, ^{
-        [(MTRDeviceController_XPC *) [self deviceController] _updateRegistrationInfo];
-    });
+    return [NSString
+        stringWithFormat:@"<%@: %p, node: %016llX-%016llX (%llu), VID: %@, PID: %@, WiFi: %@, Thread: %@, controller: %@>",
+        NSStringFromClass(self.class), self,
+        _deviceController.compressedFabricID.unsignedLongLongValue,
+        _nodeID.unsignedLongLongValue,
+        _nodeID.unsignedLongLongValue,
+        [self._internalState objectForKey:kMTRDeviceInternalPropertyKeyVendorID],
+        [self._internalState objectForKey:kMTRDeviceInternalPropertyKeyProductID],
+        wifi,
+        thread,
+        _deviceController.uniqueIdentifier];
 }
 
 #pragma mark - Client Callbacks (MTRDeviceDelegate)
@@ -181,67 +136,23 @@
 // required methods for MTRDeviceDelegates
 - (oneway void)device:(NSNumber *)nodeID stateChanged:(MTRDeviceState)state
 {
-    // Not needed, since internal will get this
+    MTR_LOG("%s", __PRETTY_FUNCTION__);
+    [self _lockAndCallDelegatesWithBlock:^(id<MTRDeviceDelegate> delegate) {
+        [delegate device:self stateChanged:state];
+    }];
 }
 
-- (oneway void)device:(NSNumber *)nodeID receivedAttributeReport:(NSArray<MTRDeviceResponseValueDictionary> *)attributeReport
+- (oneway void)device:(NSNumber *)nodeID receivedAttributeReport:(NSArray<NSDictionary<NSString *, id> *> *)attributeReport
 {
-    MTR_LOG("%@ %s", self, __PRETTY_FUNCTION__);
-    if (!MTR_SAFE_CAST(nodeID, NSNumber)) {
-        MTR_LOG_ERROR("%@ invalid device:receivedAttributeReport: nodeID: %@", self, nodeID);
-        return;
-    }
-
-    if (!MTRAttributeReportIsWellFormed(attributeReport)) {
-        MTR_LOG_ERROR("%@ invalid device:receivedAttributeReport: attributeReport: %@", self, attributeReport);
-        return;
-    }
-
+    MTR_LOG("%s", __PRETTY_FUNCTION__);
     [self _lockAndCallDelegatesWithBlock:^(id<MTRDeviceDelegate> delegate) {
         [delegate device:self receivedAttributeReport:attributeReport];
     }];
-
-    std::lock_guard lock(_lock);
-    for (NSDictionary<NSString *, id> * report in attributeReport) {
-        if (!MTR_SAFE_CAST(report, NSDictionary)) {
-            MTR_LOG_ERROR("%@ handed a response-value that is not a dictionary: %@", self, report);
-            continue;
-        }
-
-        MTRAttributePath * path = MTR_SAFE_CAST(report[MTRAttributePathKey], MTRAttributePath);
-        if (!path) {
-            MTR_LOG_ERROR("%@ no valid path for attribute report %@", self, report);
-            continue;
-        }
-
-        MTRDeviceDataValueDictionary value = report[MTRDataKey];
-        if (!value) {
-            // This is normal; this could be an error report.
-            continue;
-        }
-
-        if (!MTR_SAFE_CAST(value, NSDictionary)) {
-            MTR_LOG_ERROR("%@ invalid data-value reported: %@", self, report);
-            continue;
-        }
-
-        [self _attributeValue:value reportedForPath:path];
-    }
 }
 
-- (oneway void)device:(NSNumber *)nodeID receivedEventReport:(NSArray<MTRDeviceResponseValueDictionary> *)eventReport
+- (oneway void)device:(NSNumber *)nodeID receivedEventReport:(NSArray<NSDictionary<NSString *, id> *> *)eventReport
 {
-    MTR_LOG("%@ %s", self, __PRETTY_FUNCTION__);
-    if (!MTR_SAFE_CAST(nodeID, NSNumber)) {
-        MTR_LOG_ERROR("%@ invalid device:receivedEventReport: nodeID: %@", self, nodeID);
-        return;
-    }
-
-    if (!MTREventReportIsWellFormed(eventReport)) {
-        MTR_LOG_ERROR("%@ invalid device:receivedEventReport: eventReport: %@", self, eventReport);
-        return;
-    }
-
+    MTR_LOG("%s", __PRETTY_FUNCTION__);
     [self _lockAndCallDelegatesWithBlock:^(id<MTRDeviceDelegate> delegate) {
         [delegate device:self receivedEventReport:eventReport];
     }];
@@ -250,12 +161,7 @@
 // optional methods for MTRDeviceDelegates - check for implementation before calling
 - (oneway void)deviceBecameActive:(NSNumber *)nodeID
 {
-    MTR_LOG("%@ %s", self, __PRETTY_FUNCTION__);
-    if (!MTR_SAFE_CAST(nodeID, NSNumber)) {
-        MTR_LOG_ERROR("%@ invalid deviceBecameActive: nodeID: %@", self, nodeID);
-        return;
-    }
-
+    MTR_LOG("%s", __PRETTY_FUNCTION__);
     [self _lockAndCallDelegatesWithBlock:^(id<MTRDeviceDelegate> delegate) {
         if ([delegate respondsToSelector:@selector(deviceBecameActive:)]) {
             [delegate deviceBecameActive:self];
@@ -265,23 +171,15 @@
 
 - (oneway void)deviceCachePrimed:(NSNumber *)nodeID
 {
-    // Not needed since this is a state update now
-}
-
-- (BOOL)diagnosticLogTransferInProgress
-{
-    NSNumber * diagnosticLogTransferInProgressNumber = MTR_SAFE_CAST(self._internalState[kMTRDeviceInternalPropertyDiagnosticLogTransferInProgress], NSNumber);
-    return diagnosticLogTransferInProgressNumber.boolValue;
+    [self _lockAndCallDelegatesWithBlock:^(id<MTRDeviceDelegate> delegate) {
+        if ([delegate respondsToSelector:@selector(deviceCachePrimed:)]) {
+            [delegate deviceCachePrimed:self];
+        }
+    }];
 }
 
 - (oneway void)deviceConfigurationChanged:(NSNumber *)nodeID
 {
-    MTR_LOG("%@ %s", self, __PRETTY_FUNCTION__);
-    if (!MTR_SAFE_CAST(nodeID, NSNumber)) {
-        MTR_LOG_ERROR("%@ invalid deviceConfigurationChanged: nodeID: %@", self, nodeID);
-        return;
-    }
-
     [self _lockAndCallDelegatesWithBlock:^(id<MTRDeviceDelegate> delegate) {
         if ([delegate respondsToSelector:@selector(deviceConfigurationChanged:)]) {
             [delegate deviceConfigurationChanged:self];
@@ -289,136 +187,18 @@
     }];
 }
 
-- (BOOL)_ensureValidValuesForKeys:(const NSDictionary<NSString *, Class> *)keys inInternalState:(NSMutableDictionary *)internalState valueRequired:(BOOL)required
-{
-    for (NSString * key in keys) {
-        id value = internalState[key];
-        if (!value) {
-            if (required) {
-                MTR_LOG_ERROR("%@ device:internalStateUpdated: handed state with no value for \"%@\": %@", self, key, value);
-                return NO;
-            }
-
-            continue;
-        }
-        if (![value isKindOfClass:keys[key]]) {
-            MTR_LOG_ERROR("%@ device:internalStateUpdated: handed state with invalid value of type %@ for \"%@\": %@", self,
-                NSStringFromClass([value class]), key, value);
-            if (required) {
-                return NO;
-            }
-
-            // If an optional value is invalid, just drop it and press on with
-            // the other parts of the state, so we don't break those pieces
-            // just because something optional has gone awry.
-            [internalState removeObjectForKey:key];
-        }
-    }
-
-    return YES;
-}
-
 - (oneway void)device:(NSNumber *)nodeID internalStateUpdated:(NSDictionary *)dictionary
 {
-    MTR_LOG("%@ %s", self, __PRETTY_FUNCTION__);
-    if (!MTR_SAFE_CAST(nodeID, NSNumber)) {
-        MTR_LOG_ERROR("%@ invalid device:internalStateUpdated: nodeID: %@", self, nodeID);
-        return;
-    }
-
-    if (!MTR_SAFE_CAST(dictionary, NSDictionary)) {
-        MTR_LOG_ERROR("%@ invalid device:internalStateUpdated dictionary: %@", self, dictionary);
-        return;
-    }
-
-    [self _updateInternalState:[dictionary mutableCopy]];
-}
-
-- (void)_updateInternalState:(NSMutableDictionary *)newState
-{
-    static const auto * requiredInternalStateKeys = @{
-        kMTRDeviceInternalPropertyDeviceState : NSNumber.class,
-        kMTRDeviceInternalPropertyLastSubscriptionAttemptWait : NSNumber.class,
-    };
-
-    static const auto * optionalInternalStateKeys = @{
-        kMTRDeviceInternalPropertyKeyVendorID : NSNumber.class,
-        kMTRDeviceInternalPropertyKeyProductID : NSNumber.class,
-        kMTRDeviceInternalPropertyNetworkFeatures : NSNumber.class,
-        kMTRDeviceInternalPropertyMostRecentReportTime : NSDate.class,
-        kMTRDeviceInternalPropertyLastSubscriptionFailureTime : NSDate.class,
-        kMTRDeviceInternalPropertyDiagnosticLogTransferInProgress : NSNumber.class
-    };
-
-    VerifyOrReturn([self _ensureValidValuesForKeys:requiredInternalStateKeys inInternalState:newState valueRequired:YES]);
-    VerifyOrReturn([self _ensureValidValuesForKeys:optionalInternalStateKeys inInternalState:newState valueRequired:NO]);
-
-    NSNumber * oldStateNumber = MTR_SAFE_CAST(self._internalState[kMTRDeviceInternalPropertyDeviceState], NSNumber);
-    NSNumber * newStateNumber = MTR_SAFE_CAST(newState[kMTRDeviceInternalPropertyDeviceState], NSNumber);
-
-    NSNumber * oldPrimedState = MTR_SAFE_CAST(self._internalState[kMTRDeviceInternalPropertyDeviceCachePrimed], NSNumber);
-    NSNumber * newPrimedState = MTR_SAFE_CAST(newState[kMTRDeviceInternalPropertyDeviceCachePrimed], NSNumber);
-
-    [self _setInternalState:newState];
-
-    if (!MTREqualObjects(oldStateNumber, newStateNumber)) {
-        MTRDeviceState state = self.state;
-        [self _lockAndCallDelegatesWithBlock:^(id<MTRDeviceDelegate> delegate) {
-            [delegate device:self stateChanged:state];
-        }];
-    }
-
-    if (!MTREqualObjects(oldPrimedState, newPrimedState)) {
-        [self _lockAndCallDelegatesWithBlock:^(id<MTRDeviceDelegate> delegate) {
-            if ([delegate respondsToSelector:@selector(deviceCachePrimed:)]) {
-                [delegate deviceCachePrimed:self];
-            }
-        }];
-    }
-}
-
-- (MTRDeviceState)state
-{
-    // TEMPORARY WORKAROUND for UNTIL WE HAVE the addDelegate flow fixed
-    if (![self delegateExists]) {
-        return MTRDeviceStateReachable;
-    }
-
-    NSNumber * stateNumber = MTR_SAFE_CAST(self._internalState[kMTRDeviceInternalPropertyDeviceState], NSNumber);
-    switch (static_cast<MTRDeviceState>(stateNumber.unsignedIntegerValue)) {
-    default:
-    case MTRDeviceStateUnknown:
-        return MTRDeviceStateUnknown;
-
-    case MTRDeviceStateUnreachable:
-        return MTRDeviceStateUnreachable;
-
-    case MTRDeviceStateReachable:
-        return MTRDeviceStateReachable;
-    }
-
-    MTR_LOG_ERROR("stateNumber from internal state is an invalid value: %@", stateNumber);
-
-    return MTRDeviceStateUnknown;
-}
-
-- (BOOL)deviceCachePrimed
-{
-    NSNumber * deviceCachePrimedNumber = MTR_SAFE_CAST(self._internalState[kMTRDeviceInternalPropertyDeviceCachePrimed], NSNumber);
-    return deviceCachePrimedNumber.boolValue;
-}
-
-- (nullable NSDate *)estimatedStartTime
-{
-    return MTR_SAFE_CAST(self._internalState[kMTRDeviceInternalPropertyEstimatedStartTime], NSDate);
-}
-
-- (nullable NSNumber *)estimatedSubscriptionLatency
-{
-    return MTR_SAFE_CAST(self._internalState[kMTRDeviceInternalPropertyEstimatedSubscriptionLatency], NSNumber);
+    [self _setInternalState:dictionary];
+    MTR_LOG("%@ internal state updated", self);
 }
 
 #pragma mark - Remote Commands
+
+MTR_DEVICE_SIMPLE_REMOTE_XPC_GETTER(state, MTRDeviceState, MTRDeviceStateUnknown, getStateWithReply)
+MTR_DEVICE_SIMPLE_REMOTE_XPC_GETTER(deviceCachePrimed, BOOL, NO, getDeviceCachePrimedWithReply)
+MTR_DEVICE_SIMPLE_REMOTE_XPC_GETTER(estimatedStartTime, NSDate * _Nullable, nil, getEstimatedStartTimeWithReply)
+MTR_DEVICE_SIMPLE_REMOTE_XPC_GETTER(estimatedSubscriptionLatency, NSNumber * _Nullable, nil, getEstimatedSubscriptionLatencyWithReply)
 
 typedef NSDictionary<NSString *, id> * _Nullable ReadAttributeResponseType;
 MTR_DEVICE_COMPLEX_REMOTE_XPC_GETTER(readAttributeWithEndpointID
@@ -471,10 +251,7 @@ MTR_DEVICE_COMPLEX_REMOTE_XPC_GETTER(readAttributePaths
 
     @try {
         [[xpcConnection remoteObjectProxyWithErrorHandler:^(NSError * _Nonnull error) {
-            MTR_LOG_ERROR("Invoke error: %@", error);
-            dispatch_async(queue, ^{
-                completion(nil, [NSError errorWithDomain:MTRErrorDomain code:MTRErrorCodeGeneralError userInfo:nil]);
-            });
+            MTR_LOG_ERROR("Error: %@", error);
         }] deviceController:[[self deviceController] uniqueIdentifier]
                                  nodeID:[self nodeID]
             invokeCommandWithEndpointID:endpointID
@@ -485,131 +262,9 @@ MTR_DEVICE_COMPLEX_REMOTE_XPC_GETTER(readAttributePaths
                   expectedValueInterval:expectedValueInterval
                      timedInvokeTimeout:timeout
             serverSideProcessingTimeout:serverSideProcessingTimeout
-                             completion:^(NSArray<NSDictionary<NSString *, id> *> * _Nullable values, NSError * _Nullable error) {
-                                 dispatch_async(queue, ^{
-                                     if (values == nil && error == nil) {
-                                         MTR_LOG_ERROR("%@ got invoke response for (%@, %@, %@) without values or error", self, endpointID, clusterID, commandID);
-                                         completion(nil, [MTRError errorForCHIPErrorCode:CHIP_ERROR_INVALID_ARGUMENT]);
-                                         return;
-                                     }
-
-                                     if (error != nil && !MTR_SAFE_CAST(error, NSError)) {
-                                         MTR_LOG_ERROR("%@ got invoke response for (%@, %@, %@) that has invalid error object: %@", self, endpointID, clusterID, commandID, error);
-                                         completion(nil, [MTRError errorForCHIPErrorCode:CHIP_ERROR_INVALID_ARGUMENT]);
-                                         return;
-                                     }
-
-                                     if (values != nil && !MTRInvokeResponseIsWellFormed(values)) {
-                                         MTR_LOG_ERROR("%@ got invoke response for (%@, %@, %@) that has invalid data: %@", self, clusterID, commandID, values, values);
-                                         completion(nil, [MTRError errorForCHIPErrorCode:CHIP_ERROR_INVALID_ARGUMENT]);
-                                         return;
-                                     }
-
-                                     if (values != nil && error != nil) {
-                                         MTR_LOG_ERROR("%@ got invoke response for (%@, %@, %@) with both values and error: %@, %@", self, endpointID, clusterID, commandID, values, error);
-                                         // Just propagate through the error.
-                                         completion(nil, error);
-                                         return;
-                                     }
-
-                                     completion(values, error);
-                                 });
-                             }];
+                             completion:completion];
     } @catch (NSException * exception) {
-        MTR_LOG_ERROR("Exception sending XPC message: %@", exception);
-        dispatch_async(queue, ^{
-            completion(nil, [NSError errorWithDomain:MTRErrorDomain code:MTRErrorCodeGeneralError userInfo:nil]);
-        });
-    }
-}
-
-- (void)invokeCommands:(NSArray<NSArray<MTRCommandWithRequiredResponse *> *> *)commands
-                 queue:(dispatch_queue_t)queue
-            completion:(MTRDeviceResponseHandler)completion
-{
-    NSXPCConnection * xpcConnection = [(MTRDeviceController_XPC *) [self deviceController] xpcConnection];
-
-    @try {
-        [[xpcConnection remoteObjectProxyWithErrorHandler:^(NSError * _Nonnull error) {
-            MTR_LOG_ERROR("%@ Error in %@: %@", self, NSStringFromSelector(_cmd), error);
-            dispatch_async(queue, ^{
-                completion(nil, [NSError errorWithDomain:MTRErrorDomain code:MTRErrorCodeGeneralError userInfo:nil]);
-            });
-        }] deviceController:[[self deviceController] uniqueIdentifier]
-                     nodeID:[self nodeID]
-             invokeCommands:commands
-                 completion:^(NSArray<MTRDeviceResponseValueDictionary> * _Nullable responses, NSError * _Nullable error) {
-                     dispatch_async(queue, ^{
-                         if (responses == nil && error == nil) {
-                             MTR_LOG_ERROR("%@ got invoke responses for %@ without values or error", self, commands);
-                             completion(nil, [MTRError errorForCHIPErrorCode:CHIP_ERROR_INVALID_ARGUMENT]);
-                             return;
-                         }
-
-                         if (error != nil && !MTR_SAFE_CAST(error, NSError)) {
-                             MTR_LOG_ERROR("%@ got invoke responses for %@ that has invalid error object: %@", self, commands, error);
-                             completion(nil, [MTRError errorForCHIPErrorCode:CHIP_ERROR_INVALID_ARGUMENT]);
-                             return;
-                         }
-
-                         if (responses != nil && !MTRInvokeResponsesAreWellFormed(responses)) {
-                             MTR_LOG_ERROR("%@ got invoke responses for %@ that has invalid data: %@", self, commands, responses);
-                             completion(nil, [MTRError errorForCHIPErrorCode:CHIP_ERROR_INVALID_ARGUMENT]);
-                             return;
-                         }
-
-                         if (responses != nil && error != nil) {
-                             MTR_LOG_ERROR("%@ got invoke responses for %@ with both responses and error: %@, %@", self, commands, responses, error);
-                             // Just propagate through the error.
-                             completion(nil, error);
-                             return;
-                         }
-
-                         if (error != nil) {
-                             MTR_LOG_ERROR("%@ got error trying to invokeCommands: %@", self, error);
-                         }
-
-                         completion(responses, error);
-                     });
-                 }];
-    } @catch (NSException * exception) {
-        MTR_LOG_ERROR("%@ Exception sending XPC message for %@: %@", self, NSStringFromSelector(_cmd), exception);
-        dispatch_async(queue, ^{
-            completion(nil, [NSError errorWithDomain:MTRErrorDomain code:MTRErrorCodeGeneralError userInfo:nil]);
-        });
-    }
-}
-
-- (void)downloadLogOfType:(MTRDiagnosticLogType)type
-                  timeout:(NSTimeInterval)timeout
-                    queue:(dispatch_queue_t)queue
-               completion:(void (^)(NSURL * _Nullable url, NSError * _Nullable error))completion
-{
-    NSXPCConnection * xpcConnection = [(MTRDeviceController_XPC *) [self deviceController] xpcConnection];
-
-    @try {
-        [[xpcConnection remoteObjectProxyWithErrorHandler:^(NSError * _Nonnull error) {
-            MTR_LOG_ERROR("%@ Error in %@: %@", self, NSStringFromSelector(_cmd), error);
-            dispatch_async(queue, ^{
-                completion(nil, [NSError errorWithDomain:MTRErrorDomain code:MTRErrorCodeGeneralError userInfo:nil]);
-            });
-        }] deviceController:[[self deviceController] uniqueIdentifier]
-                       nodeID:[self nodeID]
-            downloadLogOfType:type
-                      timeout:timeout
-                   completion:^(NSURL * _Nullable url, NSError * _Nullable error) {
-                       dispatch_async(queue, ^{
-                           completion(url, error);
-                           if (url) {
-                               [[NSFileManager defaultManager] removeItemAtPath:url.path error:nil];
-                           }
-                       });
-                   }];
-    } @catch (NSException * exception) {
-        MTR_LOG_ERROR("%@ Exception sending XPC messsage for %@: %@", self, NSStringFromSelector(_cmd), exception);
-        dispatch_async(queue, ^{
-            completion(nil, [NSError errorWithDomain:MTRErrorDomain code:MTRErrorCodeGeneralError userInfo:nil]);
-        });
+        MTR_LOG_ERROR("Exception sending XPC messsage: %@", exception);
     }
 }
 

@@ -29,7 +29,7 @@
 #endif
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKETS
-#include <inet/ZephyrSocket.h> // nogncheck
+#include <zephyr/net/socket.h>
 #endif
 
 #if CHIP_SYSTEM_CONFIG_POSIX_LOCKING
@@ -39,6 +39,9 @@
 
 #if CHIP_SYSTEM_CONFIG_USE_LIBEV
 #include <ev.h>
+#if CHIP_SYSTEM_CONFIG_USE_DISPATCH
+#error "CHIP_SYSTEM_CONFIG_USE_LIBEV and CHIP_SYSTEM_CONFIG_USE_DISPATCH are mutually exclusive"
+#endif
 #endif // CHIP_SYSTEM_CONFIG_USE_LIBEV
 
 #include <lib/support/ObjectLifeCycle.h>
@@ -87,14 +90,18 @@ public:
 #if !(CHIP_SYSTEM_CONFIG_USE_DISPATCH || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS)
     void AddLoopHandler(EventLoopHandler & handler) override;
     void RemoveLoopHandler(EventLoopHandler & handler) override;
-#endif // !(CHIP_SYSTEM_CONFIG_USE_DISPATCH || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS)h
+#endif // !(CHIP_SYSTEM_CONFIG_USE_DISPATCH || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS)
 
-#if CHIP_SYSTEM_CONFIG_USE_LIBEV
+#if CHIP_SYSTEM_CONFIG_USE_DISPATCH
+    void SetDispatchQueue(dispatch_queue_t dispatchQueue) override { mDispatchQueue = dispatchQueue; };
+    dispatch_queue_t GetDispatchQueue() override { return mDispatchQueue; };
+    void HandleTimerComplete(TimerList::Node * timer);
+#elif CHIP_SYSTEM_CONFIG_USE_LIBEV
     virtual void SetLibEvLoop(struct ev_loop * aLibEvLoopP) override { mLibEvLoopP = aLibEvLoopP; };
     virtual struct ev_loop * GetLibEvLoop() override { return mLibEvLoopP; };
     static void HandleLibEvTimer(EV_P_ struct ev_timer * t, int revents);
     static void HandleLibEvIoWatcher(EV_P_ struct ev_io * i, int revents);
-#endif // CHIP_SYSTEM_CONFIG_USE_LIBEV
+#endif // CHIP_SYSTEM_CONFIG_USE_DISPATCH/LIBEV
 
     // Expose the result of WaitForEvents() for non-blocking socket implementations.
     bool IsSelectResultValid() const { return mSelectResult >= 0; }
@@ -111,6 +118,11 @@ protected:
         int mFD;
         SocketEvents mPendingIO;
         SocketWatchCallback mCallback;
+#if CHIP_SYSTEM_CONFIG_USE_DISPATCH
+        dispatch_source_t mRdSource;
+        dispatch_source_t mWrSource;
+        void DisableAndClear();
+#endif
 #if CHIP_SYSTEM_CONFIG_USE_LIBEV
         struct ev_io mIoWatcher;
         LayerImplSelect * mLayerImplSelectP;
@@ -128,7 +140,9 @@ protected:
     TimerList mExpiredTimers;
     timeval mNextTimeout;
 
+#if !CHIP_SYSTEM_CONFIG_USE_DISPATCH
     IntrusiveList<EventLoopHandler> mLoopHandlers;
+#endif
 
     // Members for select loop
     struct SelectSets
@@ -152,7 +166,9 @@ protected:
     std::atomic<pthread_t> mHandleSelectThread;
 #endif // CHIP_SYSTEM_CONFIG_POSIX_LOCKING
 
-#if CHIP_SYSTEM_CONFIG_USE_LIBEV
+#if CHIP_SYSTEM_CONFIG_USE_DISPATCH
+    dispatch_queue_t mDispatchQueue = nullptr;
+#elif CHIP_SYSTEM_CONFIG_USE_LIBEV
     struct ev_loop * mLibEvLoopP;
 #endif
 };

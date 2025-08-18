@@ -50,7 +50,7 @@
 
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 
-#include <platform/Linux/dbus/bluez/DBusBluez.h>
+#include <platform/Linux/dbus/bluez/DbusBluez.h>
 
 namespace chip {
 

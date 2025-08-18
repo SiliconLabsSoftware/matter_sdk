@@ -235,7 +235,7 @@ def close_connection(devCtrl, nodeId):
     :return: true if successful, otherwise false
     """
     try:
-        devCtrl.MarkSessionDefunct(nodeId)
+        devCtrl.CloseSession(nodeId)
     except exceptions.ChipStackException as ex:
         log.error("Close session failed: {}".format(str(ex)))
         return False

@@ -21,7 +21,6 @@
 #include <app/AppConfig.h>
 #include <app/AttributePathParams.h>
 #include <app/InteractionModelEngine.h>
-#include <app/ReadClient.h>
 #include <app/ReadPrepareParams.h>
 #include <controller/TypedReadCallback.h>
 

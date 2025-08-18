@@ -129,9 +129,6 @@ protected:
     void DiscardExchange(); // Clear our reference to our exchange context pointer so that it can close itself at some later time.
 
     void SetPeerSessionId(uint16_t id) { mPeerSessionId.SetValue(id); }
-
-    void SetRemoteSessionParameters(const SessionParameters & sessionParams) { mRemoteSessionParams = sessionParams; }
-
     virtual void OnSuccessStatusReport() {}
 
     // Handle a failure StatusReport message from the server.  protocolData will
@@ -183,11 +180,25 @@ protected:
         }
 
         Optional<uintptr_t> protocolData;
-        if (report.IsBusy() && report.GetMinimumWaitTime().has_value())
+        if (report.GetGeneralCode() == Protocols::SecureChannel::GeneralStatusCode::kBusy &&
+            report.GetProtocolCode() == Protocols::SecureChannel::kProtocolCodeBusy)
         {
-            System::Clock::Milliseconds16 minimumWaitTime = report.GetMinimumWaitTime().value();
-            ChipLogProgress(SecureChannel, "Received busy status report with minimum wait time: %u ms", minimumWaitTime.count());
-            protocolData.Emplace(minimumWaitTime.count());
+            if (!report.GetProtocolData().IsNull())
+            {
+                Encoding::LittleEndian::Reader reader(report.GetProtocolData()->Start(), report.GetProtocolData()->DataLength());
+
+                uint16_t minimumWaitTime = 0;
+                CHIP_ERROR waitTimeErr   = reader.Read16(&minimumWaitTime).StatusCode();
+                if (waitTimeErr != CHIP_NO_ERROR)
+                {
+                    ChipLogError(SecureChannel, "Failed to read the minimum wait time: %" CHIP_ERROR_FORMAT, waitTimeErr.Format());
+                }
+                else
+                {
+                    ChipLogProgress(SecureChannel, "Received busy status report with minimum wait time: %u ms", minimumWaitTime);
+                    protocolData.Emplace(minimumWaitTime);
+                }
+            }
         }
 
         // It's very important that we propagate the return value from
@@ -196,17 +207,16 @@ protected:
     }
 
     /**
-     * Try to decode the current element (pointed by the TLV reader) as Session parameters (which include MRP parameters).
-     * If the Session parameters are found, outparam sessionParameters is updated with the decoded values.
+     * Try to decode the current element (pointed by the TLV reader) as MRP parameters.
+     * If the MRP parameters are found, mRemoteSessionParams is updated with the devoded values.
      *
-     * Session parameters are optional. So, if the TLV reader is not pointing to the Session parameters,
+     * MRP parameters are optional. So, if the TLV reader is not pointing to the MRP parameters,
      * the function is a noop.
      *
      * If the parameters are present, but TLV reader fails to correctly parse it, the function will
      * return the corresponding error.
      */
-    static CHIP_ERROR DecodeSessionParametersIfPresent(TLV::Tag expectedTag, TLV::ContiguousBufferTLVReader & tlvReader,
-                                                       SessionParameters & sessionParameters);
+    CHIP_ERROR DecodeMRPParametersIfPresent(TLV::Tag expectedTag, TLV::ContiguousBufferTLVReader & tlvReader);
 
     bool IsSessionEstablishmentInProgress();
 

@@ -74,19 +74,12 @@ Davis, CA 95616, USA
     <attribute id="0x0000" name="BorderRouterName" type="string">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <lengthBetween>
-          <from value="1"/>
-          <to value="63"/>
-        </lengthBetween>
-      </constraint>
+      <constraint type="lengthBetween" from="1" to="63"/>
     </attribute>
     <attribute id="0x0001" name="BorderAgentID" type="octstr">
       <access read="true" readPrivilege="view"/>
       <mandatoryConform/>
-      <constraint>
-        <allowed value="16"/>
-      </constraint>
+      <constraint type="allowed" value="16"/>
     </attribute>
     <attribute id="0x0002" name="ThreadVersion" type="uint16" default="MS">
       <access read="true" readPrivilege="view"/>
@@ -122,9 +115,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="Dataset" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="254"/>
-        </constraint>
+        <constraint type="maxLength" value="254"/>
       </field>
     </command>
     <command id="0x03" name="SetActiveDatasetRequest" direction="commandToServer" response="Y">
@@ -132,9 +123,7 @@ Davis, CA 95616, USA
       <mandatoryConform/>
       <field id="0" name="ActiveDataset" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="254"/>
-        </constraint>
+        <constraint type="maxLength" value="254"/>
       </field>
       <field id="1" name="Breadcrumb" type="uint64">
         <optionalConform/>
@@ -147,9 +136,7 @@ Davis, CA 95616, USA
       </mandatoryConform>
       <field id="0" name="PendingDataset" type="octstr">
         <mandatoryConform/>
-        <constraint>
-          <maxLength value="254"/>
-        </constraint>
+        <constraint type="maxLength" value="254"/>
       </field>
     </command>
   </commands>

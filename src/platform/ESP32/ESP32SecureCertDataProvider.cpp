@@ -131,7 +131,6 @@ CHIP_ERROR ESP32SecureCertDataProvider::GetSpake2pVerifier(MutableByteSpan & ver
     return CHIP_NO_ERROR;
 }
 
-#if CHIP_DEVICE_CONFIG_ENABLE_DEVICE_INSTANCE_INFO_PROVIDER
 CHIP_ERROR ESP32SecureCertDataProvider::GetRotatingDeviceIdUniqueId(MutableByteSpan & uniqueIdSpan)
 {
 #if CHIP_ENABLE_ROTATING_DEVICE_ID
@@ -141,7 +140,6 @@ CHIP_ERROR ESP32SecureCertDataProvider::GetRotatingDeviceIdUniqueId(MutableByteS
     return CHIP_ERROR_NOT_IMPLEMENTED;
 #endif // CHIP_ENABLE_ROTATING_DEVICE_ID
 }
-#endif // CHIP_DEVICE_CONFIG_ENABLE_DEVICE_INSTANCE_INFO_PROVIDER
 
 } // namespace DeviceLayer
 } // namespace chip

@@ -63,7 +63,6 @@ static_library("messaging") {
     "ExchangeMgr.cpp",
     "ExchangeMgr.h",
     "Flags.h",
-    "ReliableMessageAnalyticsDelegate.h",
     "ReliableMessageContext.cpp",
     "ReliableMessageContext.h",
     "ReliableMessageMgr.cpp",

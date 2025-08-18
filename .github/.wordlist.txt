@@ -41,15 +41,11 @@ AFL
 AIDL
 algs
 alloc
-allocator
-allocators
-Ambrose
 Ameba
 amebad
 amebaiot
 AmebaZ
 amebaz2
-ANC
 announcementReason
 AnnounceOTAProvider
 AnnounceOTAProviderRequest
@@ -86,7 +82,6 @@ ASR
 AssertionError
 AST
 ASYNC
-ATL
 ATLs
 atomics
 att
@@ -116,7 +111,6 @@ avahi
 avL
 AwaitNextAction
 AXXXF
-Axxxx
 AYNJV
 babaf
 backend
@@ -127,7 +121,6 @@ BallastConfiguration
 BarrierControl
 BasicCHIPRegression
 BasicInformation
-Batcher
 baudrate
 BCM
 BD
@@ -256,7 +249,6 @@ ClusterName
 ClusterObjectTests
 ClusterRevision
 ClusterTestGeneration
-CMAC
 cmake
 CMakeLists
 CMD
@@ -272,7 +264,6 @@ CodeGenerator
 CodeLab
 codelabs
 ColorControl
-Combinators
 Comcast
 Commandline
 CommandHandlerInterface
@@ -310,7 +301,6 @@ ContentLauncher
 contrib
 controllee
 conv
-Cooktop
 CopperConcentrationMeasurement
 Corstone
 cortexa
@@ -322,13 +312,11 @@ CPROTO
 cpuapp
 cpython
 CQM
-CRL
 crypto
 cryptographic
 CSA
 csg
 csrrequest
-cstdint
 csu
 csv
 ctl
@@ -373,7 +361,6 @@ decrypt
 decrypted
 DEDEDEDE
 deepnote
-deepwiki
 DefaultOTAProviders
 DefaultOTARequestor
 DefaultOTARequestorDriver
@@ -454,7 +441,6 @@ DNSStubListener
 docbuild
 Dockerfile
 Dockerfiles
-docstrings
 Don'ts
 DoorLock
 DoorState
@@ -517,7 +503,6 @@ entrypoint
 enum
 Enums
 env
-EP
 epochKey
 epochStartTime
 eq
@@ -549,7 +534,6 @@ ExtendedPAN
 ExtensionEntry
 extern
 extpanid
-Exx
 FabricId
 fabricIdx
 fabricIndex
@@ -582,8 +566,6 @@ FlowMeasurement
 FluorideConcentrationMeasurement
 focusable
 forkpty
-formatter
-formatters
 FOTA
 FreeRTOS
 FreeRTOSConfig
@@ -597,7 +579,6 @@ fuzzer
 fuzzers
 fuzztest
 FW
-Fxx
 gbl
 gcloud
 GDB
@@ -697,7 +678,6 @@ ICMP
 IDF
 IDL
 IDLs
-IDM
 idt
 idx
 ifconfig
@@ -752,20 +732,16 @@ IPython
 ISCAN
 isHexString
 isLowerCase
-isort
 isUpperCase
 itemName
 iterable
 itsfoss
-IW
 JDK
 jinja
-JCM
 JLink
 JLinkExe
 JLinkRTTClient
 JN
-jf
 jni
 jpg
 jre
@@ -902,7 +878,6 @@ MediaPlayback
 MediaTek
 MEI
 mem
-memcpy
 memdf
 MemMonitoring
 menuconfig
@@ -919,7 +894,6 @@ microcontroller
 microcontrollers
 MicroSD
 middleware
-MIMXRT
 minApplicableSoftwareVersion
 Minicom
 MinInterval
@@ -951,14 +925,12 @@ Multicast
 multilib
 Multiprotocol
 multithreaded
-Murata
 mutex
 mutexes
 mv
 MX
 mydir
 MyPASSWORD
-mypy
 MySSID
 NAMESERVER
 NAMESPACE
@@ -1035,7 +1007,6 @@ OpenThreadDemo
 openweave
 OperationalCredentials
 operationalDataset
-operationalstate
 opkg
 OPTIGA
 optionMask
@@ -1161,7 +1132,6 @@ PRs
 PSA
 PSCAN
 PSECT
-Pseudocode
 PSK
 PSoC
 PTR
@@ -1180,7 +1150,6 @@ PyFunction
 pylint
 PyObject
 pypi
-pyproject
 PyRun
 pytest
 PYTHONPATH
@@ -1211,12 +1180,10 @@ READMEs
 readonly
 readthedocs
 Reag
-Realtek
 rebase
 recommand
 recommanded
 recurse
-refrigeratoralarm
 regen
 registerAttributeAccessOverride
 RegisterCommandHandler
@@ -1256,7 +1223,6 @@ RPi's
 RPis
 RSA
 rsn
-Rsp
 RSSI
 RST
 rsync
@@ -1303,7 +1269,6 @@ semver
 SendButton
 SendNewInputEvent
 sendto
-SEPR
 seqdiag
 SERIALDEVICE
 serialno
@@ -1477,7 +1442,6 @@ toJson
 tokenization
 tokenized
 tokenizer
-toml
 toolchain
 toolchains
 topologies
@@ -1491,8 +1455,6 @@ trackFree
 TransferSession
 transitionTime
 TransportMgrBase
-triaged
-triaging
 TriggerEffect
 TRNG
 trustm
@@ -1647,7 +1609,6 @@ xFFFF
 xfffff
 xFFFFFFEFFFFFFFFF
 XMLPICSValidator
-XMLs
 xtensa
 xvzf
 xwayland

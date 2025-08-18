@@ -21,7 +21,6 @@
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/operational-state-server/operational-state-server.h>
 
-#include <app/util/attribute-metadata.h>
 #include <protocols/interaction_model/StatusCode.h>
 
 #ifdef MATTER_DM_PLUGIN_RVC_OPERATIONAL_STATE_SERVER
@@ -94,11 +93,6 @@ public:
      */
     void HandleStopStateCallback(OperationalState::GenericOperationalError & err) override;
 
-    /**
-     * Handle Command Callback in application: GoHome
-     */
-    void HandleGoHomeCommandCallback(OperationalState::GenericOperationalError & err) override;
-
     uint32_t mRunningTime = 0;
     uint32_t mPausedTime  = 0;
     app::DataModel::Nullable<uint32_t> mCountdownTime;
@@ -126,8 +120,6 @@ void Shutdown();
 } // namespace Clusters
 } // namespace app
 } // namespace chip
-
-chip::app::Clusters::RvcOperationalState::RvcOperationalStateDelegate * getRvcOperationalStateDelegate();
 
 chip::Protocols::InteractionModel::Status chefRvcOperationalStateWriteCallback(chip::EndpointId endpoint, chip::ClusterId clusterId,
                                                                                const EmberAfAttributeMetadata * attributeMetadata,

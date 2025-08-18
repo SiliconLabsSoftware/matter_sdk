@@ -52,6 +52,25 @@ namespace DeviceLayer {
 namespace {
 otInstance * sOTInstance = NULL;
 
+// Network commissioning
+#ifndef _NO_GENERIC_THREAD_NETWORK_COMMISSIONING_DRIVER_
+NetworkCommissioning::GenericThreadDriver sGenericThreadDriver;
+app::Clusters::NetworkCommissioning::Instance sThreadNetworkCommissioningInstance(0 /* Endpoint Id */, &sGenericThreadDriver);
+#endif
+
+void initStaticNetworkCommissioningThreadDriver(void)
+{
+#ifndef _NO_GENERIC_THREAD_NETWORK_COMMISSIONING_DRIVER_
+    sThreadNetworkCommissioningInstance.Init();
+#endif
+}
+
+void shutdownStaticNetworkCommissioningThreadDriver(void)
+{
+#ifndef _NO_GENERIC_THREAD_NETWORK_COMMISSIONING_DRIVER_
+    sThreadNetworkCommissioningInstance.Shutdown();
+#endif
+}
 }; // namespace
 
 using namespace ::chip::DeviceLayer::Internal;
@@ -114,6 +133,7 @@ CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
     err            = GenericThreadStackManagerImpl_OpenThread<ThreadStackManagerImpl>::ConfigureThreadStack(otInst);
+    initStaticNetworkCommissioningThreadDriver();
     return err;
 }
 
@@ -121,6 +141,7 @@ void ThreadStackManagerImpl::FactoryResetThreadStack(void)
 {
     VerifyOrReturn(sOTInstance != NULL);
     otInstanceFactoryReset(sOTInstance);
+    shutdownStaticNetworkCommissioningThreadDriver();
 }
 
 bool ThreadStackManagerImpl::IsInitialized()

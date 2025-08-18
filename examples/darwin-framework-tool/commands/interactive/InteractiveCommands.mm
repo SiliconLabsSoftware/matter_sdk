@@ -27,26 +27,15 @@
 #include <editline.h>
 #include <stdlib.h>
 
-constexpr char kInteractiveModeInstruction[] = "╔══════════════════════════════════════════════════════════════════╗\n"
-                                               "║                        Interactive Mode                          ║\n"
-                                               "╠══════════════════════════════════════════════════════════════════╣\n"
-                                               "║ Stop and restart stack    : [Ctrl+_] & [Ctrl+^ ]                 ║\n"
-                                               "║ Suspend/Resume controllers: [Ctrl+Z]                             ║\n"
-                                               "║ Trigger Resubscription    : [Ctrl+G]                             ║\n"
-                                               "║ Trigger exit(0)           : [Ctrl+@]                             ║\n"
-                                               "║ Quit Interactive          : 'quit()' or `quit`                   ║\n"
-                                               "╚══════════════════════════════════════════════════════════════════╝\n";
-constexpr char kInteractiveModePrompt[] = ">>> ";
+constexpr char kInteractiveModePrompt[] = "Stop and restart stack: [Ctrl+_] & [Ctrl+^]\n"
+                                          "Trigger exit(0): [Ctrl+@]\n"
+                                          "Quit Interactive: 'quit()'\n"
+                                          ">>> ";
 constexpr char kInteractiveModeHistoryFilePath[] = "/tmp/darwin_framework_tool_history";
 constexpr char kInteractiveModeStopCommand[] = "quit()";
-constexpr char kInteractiveModeStopAlternateCommand[] = "quit";
 constexpr char kCategoryError[] = "Error";
 constexpr char kCategoryProgress[] = "Info";
 constexpr char kCategoryDetail[] = "Debug";
-
-@interface MTRDevice ()
-- (void)_deviceMayBeReachable;
-@end
 
 namespace {
 
@@ -76,41 +65,6 @@ public:
     CHIP_ERROR RunCommand() override
     {
         StopCommissioners();
-        return CHIP_NO_ERROR;
-    }
-
-    chip::System::Clock::Timeout GetWaitDuration() const override { return chip::System::Clock::Seconds16(0); }
-};
-
-class SuspendOrResumeCommand : public CHIPCommandBridge {
-public:
-    SuspendOrResumeCommand()
-        : CHIPCommandBridge("suspend")
-    {
-    }
-
-    CHIP_ERROR RunCommand() override
-    {
-        SuspendOrResumeCommissioners();
-        return CHIP_NO_ERROR;
-    }
-
-    chip::System::Clock::Timeout GetWaitDuration() const override { return chip::System::Clock::Seconds16(0); }
-};
-
-class TriggerResubscriptionCommand : public CHIPCommandBridge {
-public:
-    TriggerResubscriptionCommand()
-        : CHIPCommandBridge("trigger-resubscription")
-    {
-    }
-
-    CHIP_ERROR RunCommand() override
-    {
-        __auto_type * device = GetLastUsedDevice();
-        if (nil != device) {
-            [device _deviceMayBeReachable];
-        }
         return CHIP_NO_ERROR;
     }
 
@@ -323,11 +277,6 @@ char * GetCommand(const chip::Optional<char *> & mAdditionalPrompt, char * comma
         printf("%s\n", mAdditionalPrompt.Value());
         ClearLine();
     }
-
-    ClearLine();
-    printf("%s", kInteractiveModeInstruction);
-    ClearLine();
-
     command = readline(kInteractiveModePrompt);
 
     // Do not save empty lines
@@ -353,20 +302,6 @@ el_status_t StopFunction()
     return CSstay;
 }
 
-el_status_t SuspendOrResumeFunction()
-{
-    SuspendOrResumeCommand cmd;
-    cmd.RunCommand();
-    return CSstay;
-}
-
-el_status_t TriggerResubscriptionFunction()
-{
-    TriggerResubscriptionCommand cmd;
-    cmd.RunCommand();
-    return CSstay;
-}
-
 el_status_t ExitFunction()
 {
     exit(0);
@@ -388,8 +323,6 @@ CHIP_ERROR InteractiveStartCommand::RunCommand()
     el_bind_key(CTL('^'), RestartFunction);
     el_bind_key(CTL('_'), StopFunction);
     el_bind_key(CTL('@'), ExitFunction);
-    el_bind_key(CTL('Z'), SuspendOrResumeFunction);
-    el_bind_key(CTL('G'), TriggerResubscriptionFunction);
 
     char * command = nullptr;
     int status;
@@ -458,7 +391,7 @@ CHIP_ERROR InteractiveServerCommand::LogJSON(const char * json)
 
 bool InteractiveCommand::ParseCommand(char * command, int * status)
 {
-    if (strcmp(command, kInteractiveModeStopCommand) == 0 || strcmp(command, kInteractiveModeStopAlternateCommand) == 0) {
+    if (strcmp(command, kInteractiveModeStopCommand) == 0) {
         ExecuteDeferredCleanups();
         return NO;
     }

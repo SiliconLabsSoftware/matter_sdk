@@ -31,7 +31,7 @@
 #endif
 
 #if CHIP_SYSTEM_CONFIG_USE_ZEPHYR_SOCKETS
-#include <inet/ZephyrSocket.h> // nogncheck
+#include <zephyr/net/socket.h>
 #endif
 
 #include <zephyr/kernel.h>
@@ -54,14 +54,12 @@ class GenericPlatformManagerImpl_Zephyr : public GenericPlatformManagerImpl<Impl
 protected:
     using ThreadStack = k_thread_stack_t *;
 
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS
     // Members for select() loop
     int mMaxFd;
     fd_set mReadSet;
     fd_set mWriteSet;
     fd_set mErrorSet;
     timeval mNextTimeout;
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS
 
     // Lock for the whole CHIP stack
     k_mutex mChipStackLock;
@@ -96,10 +94,9 @@ protected:
 private:
     // ===== Private members for use by this class only.
     ImplClass * Impl() { return static_cast<ImplClass *>(this); }
-
-#if CHIP_SYSTEM_CONFIG_USE_SOCKETS
+    void SysUpdate();
+    void SysProcess();
     void ProcessDeviceEvents();
-#endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS
 
     volatile bool mShouldRunEventLoop;
 

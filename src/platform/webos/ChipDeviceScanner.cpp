@@ -294,7 +294,7 @@ exit:
 CHIP_ERROR ChipDeviceScanner::StartChipScan(unsigned timeoutMs)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    VerifyOrReturnError(!mIsScanning, CHIP_ERROR_INCORRECT_STATE);
+    ReturnErrorCodeIf(mIsScanning, CHIP_ERROR_INCORRECT_STATE);
 
     kScanTimeout = timeoutMs;
 
@@ -327,7 +327,7 @@ bool ChipDeviceScanner::cancelDiscoveryCb(LSHandle * sh, LSMessage * message, vo
 CHIP_ERROR ChipDeviceScanner::StopChipScan()
 {
     int ret = 0;
-    VerifyOrReturnError(mIsScanning, CHIP_ERROR_INCORRECT_STATE);
+    ReturnErrorCodeIf(!mIsScanning, CHIP_ERROR_INCORRECT_STATE);
 
     ret = LSCall(mLSHandle, "luna://com.webos.service.bluetooth2/dadapter/cancelDiscovery", "{}", cancelDiscoveryCb, this, NULL,
                  NULL);

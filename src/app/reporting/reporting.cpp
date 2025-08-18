@@ -18,8 +18,7 @@
 
 #include <app/AttributePathParams.h>
 #include <app/InteractionModelEngine.h>
-#include <app/data-model-provider/Provider.h>
-#include <lib/support/CodeUtils.h>
+#include <app/util/attribute-storage.h>
 #include <platform/LockTracker.h>
 
 using namespace chip;
@@ -31,10 +30,7 @@ void MatterReportingAttributeChangeCallback(EndpointId endpoint, ClusterId clust
     // applications notifying about changes from their end.
     assertChipStackLockedByCurrentThread();
 
-    DataModel::Provider * provider = InteractionModelEngine::GetInstance()->GetDataModelProvider();
-    VerifyOrReturn(provider != nullptr);
-
-    provider->Temporary_ReportAttributeChanged(AttributePathParams(endpoint, clusterId, attributeId));
+    emberAfAttributeChanged(endpoint, clusterId, attributeId, emberAfGlobalInteractionModelAttributesChangedListener());
 }
 
 void MatterReportingAttributeChangeCallback(const ConcreteAttributePath & aPath)
@@ -43,10 +39,8 @@ void MatterReportingAttributeChangeCallback(const ConcreteAttributePath & aPath)
     // applications notifying about changes from their end.
     assertChipStackLockedByCurrentThread();
 
-    DataModel::Provider * provider = InteractionModelEngine::GetInstance()->GetDataModelProvider();
-    VerifyOrReturn(provider != nullptr);
-
-    provider->Temporary_ReportAttributeChanged(AttributePathParams(aPath.mEndpointId, aPath.mClusterId, aPath.mAttributeId));
+    emberAfAttributeChanged(aPath.mEndpointId, aPath.mClusterId, aPath.mAttributeId,
+                            emberAfGlobalInteractionModelAttributesChangedListener());
 }
 
 void MatterReportingAttributeChangeCallback(EndpointId endpoint)
@@ -55,8 +49,5 @@ void MatterReportingAttributeChangeCallback(EndpointId endpoint)
     // applications notifying about changes from their end.
     assertChipStackLockedByCurrentThread();
 
-    DataModel::Provider * provider = InteractionModelEngine::GetInstance()->GetDataModelProvider();
-    VerifyOrReturn(provider != nullptr);
-
-    provider->Temporary_ReportAttributeChanged(AttributePathParams(endpoint));
+    emberAfEndpointChanged(endpoint, emberAfGlobalInteractionModelAttributesChangedListener());
 }

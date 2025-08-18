@@ -22,8 +22,8 @@
 #import "MTRErrorTestUtils.h"
 #import "MTRTestCase+ServerAppRunner.h"
 #import "MTRTestCase.h"
-#import "MTRTestControllerDelegate.h"
 #import "MTRTestKeys.h"
+#import "MTRTestResetCommissioneeHelper.h"
 #import "MTRTestStorage.h"
 
 // system dependencies
@@ -116,6 +116,44 @@ static NSString * kUpdatedSoftwareVersionString_10 = @"10.0";
     _downloadFilePath = downloadFilePath;
 
     return self;
+}
+
+@end
+
+@interface MTROTAProviderTestControllerDelegate : NSObject <MTRDeviceControllerDelegate>
+@property (nonatomic, readonly) XCTestExpectation * expectation;
+@property (nonatomic, readonly) NSNumber * commissioneeNodeID;
+@end
+
+@implementation MTROTAProviderTestControllerDelegate
+- (id)initWithExpectation:(XCTestExpectation *)expectation commissioneeNodeID:(NSNumber *)nodeID
+{
+    self = [super init];
+    if (self) {
+        _expectation = expectation;
+        _commissioneeNodeID = nodeID;
+    }
+    return self;
+}
+
+- (void)controller:(MTRDeviceController *)controller commissioningSessionEstablishmentDone:(NSError * _Nullable)error
+{
+    XCTAssertEqual(error.code, 0);
+
+    NSError * commissionError = nil;
+    [sController commissionNodeWithID:self.commissioneeNodeID
+                  commissioningParams:[[MTRCommissioningParameters alloc] init]
+                                error:&commissionError];
+    XCTAssertNil(commissionError);
+
+    // Keep waiting for onCommissioningComplete
+}
+
+- (void)controller:(MTRDeviceController *)controller commissioningComplete:(NSError *)error
+{
+    XCTAssertEqual(error.code, 0);
+    [_expectation fulfill];
+    _expectation = nil;
 }
 
 @end
@@ -411,6 +449,7 @@ static MTROTAProviderDelegateImpl * sOTAProviderDelegate;
         NSNumber * blockIndex, NSNumber * bytesToSkip, BlockQueryCompletion completion) {
         XCTAssertEqualObjects(nodeID, nodeID);
         XCTAssertEqual(controller, sController);
+        XCTAssertEqualObjects(blockSize, @(1024)); // Seems to always be 1024.
         XCTAssertEqualObjects(blockIndex, @(lastBlockIndex + 1));
         XCTAssertEqualObjects(bytesToSkip, @(0)); // Don't expect to see skips here.
         // Make sure we actually end up with multiple blocks.
@@ -482,14 +521,22 @@ static MTROTAProviderDelegateImpl * sOTAProviderDelegate;
 @end
 
 static BOOL sStackInitRan = NO;
+static BOOL sNeedsStackShutdown = YES;
 
-@implementation MTROTAProviderTests
+@implementation MTROTAProviderTests {
+    NSMutableSet<NSNumber *> * _commissionedNodeIDs;
+}
 
 + (void)tearDown
 {
     // Global teardown, runs once
-    [self shutdownStack];
-    [super tearDown];
+    if (sNeedsStackShutdown) {
+        // We don't need to worry about ResetCommissionee.  If we get here,
+        // we're running only one of our test methods (using
+        // -only-testing:MatterTests/MTROTAProviderTests/testMethodName), since
+        // we did not run test999_TearDown.
+        [self shutdownStack];
+    }
 }
 
 - (void)setUp
@@ -501,6 +548,8 @@ static BOOL sStackInitRan = NO;
     if (sStackInitRan == NO) {
         [self initStack];
     }
+
+    _commissionedNodeIDs = [[NSMutableSet alloc] init];
 
     XCTAssertNil(sOTAProviderDelegate.queryImageHandler);
     XCTAssertNil(sOTAProviderDelegate.applyUpdateRequestHandler);
@@ -527,6 +576,11 @@ static BOOL sStackInitRan = NO;
 
 - (void)tearDown
 {
+    for (NSNumber * nodeID in _commissionedNodeIDs) {
+        __auto_type * device = [MTRBaseDevice deviceWithNodeID:nodeID controller:sController];
+        ResetCommissionee(device, dispatch_get_main_queue(), self, kTimeoutInSeconds);
+    }
+
     if (sController != nil) {
         [sController shutdown];
         XCTAssertFalse([sController isRunning]);
@@ -549,8 +603,8 @@ static BOOL sStackInitRan = NO;
 {
     XCTestExpectation * expectation =
         [self expectationWithDescription:[NSString stringWithFormat:@"Commissioning Complete for %@", nodeID]];
-    __auto_type * deviceControllerDelegate = [[MTRTestControllerDelegate alloc] initWithExpectation:expectation
-                                                                                          newNodeID:nodeID];
+    __auto_type * deviceControllerDelegate = [[MTROTAProviderTestControllerDelegate alloc] initWithExpectation:expectation
+                                                                                            commissioneeNodeID:nodeID];
     dispatch_queue_t callbackQueue = dispatch_queue_create("com.chip.device_controller_delegate", DISPATCH_QUEUE_SERIAL);
 
     [sController setDeviceControllerDelegate:deviceControllerDelegate queue:callbackQueue];
@@ -564,6 +618,8 @@ static BOOL sStackInitRan = NO;
     XCTAssertNil(error);
 
     [self waitForExpectations:@[ expectation ] timeout:kPairingTimeoutInSeconds];
+
+    [_commissionedNodeIDs addObject:nodeID];
 
     return [MTRDevice deviceWithNodeID:nodeID controller:sController];
 }
@@ -589,6 +645,8 @@ static BOOL sStackInitRan = NO;
 
 + (void)shutdownStack
 {
+    sNeedsStackShutdown = NO;
+
     [[MTRDeviceControllerFactory sharedInstance] stopControllerFactory];
 }
 
@@ -1098,6 +1156,7 @@ static BOOL sStackInitRan = NO;
         NSNumber * blockIndex, NSNumber * bytesToSkip, BlockQueryCompletion completion) {
         XCTAssertEqualObjects(nodeID, @(kDeviceId1));
         XCTAssertEqual(controller, sController);
+        XCTAssertEqualObjects(blockSize, @(1024)); // Seems to always be 1024.
         XCTAssertEqualObjects(blockIndex, @(lastBlockIndex + 1));
         XCTAssertEqualObjects(bytesToSkip, @(0)); // Don't expect to see skips here.
         // Make sure we actually end up with multiple blocks.
@@ -1176,6 +1235,7 @@ static BOOL sStackInitRan = NO;
             NSNumber * blockIndex, NSNumber * bytesToSkip, BlockQueryCompletion completion) {
             XCTAssertEqualObjects(nodeID, @(kDeviceId2));
             XCTAssertEqual(controller, sController);
+            XCTAssertEqualObjects(blockSize, @(1024)); // Seems to always be 1024.
             XCTAssertEqualObjects(blockIndex, @(lastBlockIndex + 1));
             XCTAssertEqualObjects(bytesToSkip, @(0)); // Don't expect to see skips here.
             // Make sure we actually end up with multiple blocks.

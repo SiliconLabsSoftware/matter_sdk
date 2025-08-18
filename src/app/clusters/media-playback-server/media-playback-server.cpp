@@ -37,8 +37,7 @@
 #include <platform/CHIPDeviceConfig.h>
 
 #if CHIP_DEVICE_CONFIG_APP_PLATFORM_ENABLED
-#include <app/app-platform/ContentAppPlatform.h> // nogncheck
-
+#include <app/app-platform/ContentAppPlatform.h>
 #endif // CHIP_DEVICE_CONFIG_APP_PLATFORM_ENABLED
 
 using namespace chip;
@@ -710,9 +709,4 @@ void MatterMediaPlaybackClusterServerAttributeChangedCallback(const chip::app::C
 void MatterMediaPlaybackPluginServerInitCallback()
 {
     app::AttributeAccessInterfaceRegistry::Instance().Register(&gMediaPlaybackAttrAccess);
-}
-
-void MatterMediaPlaybackPluginServerShutdownCallback()
-{
-    app::AttributeAccessInterfaceRegistry::Instance().Unregister(&gMediaPlaybackAttrAccess);
 }

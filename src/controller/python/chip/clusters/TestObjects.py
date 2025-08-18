@@ -20,7 +20,8 @@ import typing
 from dataclasses import dataclass
 from enum import IntEnum
 
-from .. import ChipUtility
+from chip import ChipUtility
+
 from .ClusterObjects import ClusterCommand, ClusterObjectDescriptor
 
 

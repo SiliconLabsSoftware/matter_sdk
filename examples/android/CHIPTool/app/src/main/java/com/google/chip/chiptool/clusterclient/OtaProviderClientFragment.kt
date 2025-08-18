@@ -63,9 +63,6 @@ class OtaProviderClientFragment : Fragment() {
   private val vendorId: Int
     get() = binding.vendorIdEd.text.toString().toInt()
 
-  private val softwareVersion: Long
-    get() = binding.softwareVersionEd.text.toString().toLongOrNull() ?: 0L
-
   private val otaProviderCallback = OtaProviderCallback()
   private val binding
     get() = _binding!!
@@ -474,8 +471,8 @@ class OtaProviderClientFragment : Fragment() {
   }
 
   private fun updateOTAStatusBtnClick() {
-    val version = softwareVersion
-    val versionString = softwareVersion.toString()
+    val version = 2L
+    val versionString = "2.0"
 
     val filename = binding.firmwareFileTv.text.toString()
     Log.d(TAG, "updateOTAStatusBtnClick : $filename")
@@ -651,7 +648,6 @@ class OtaProviderClientFragment : Fragment() {
       bufferedInputStream?.close()
       inputStream = null
       bufferedInputStream = null
-      showMessage("BDXTransfer End! - ErrorCode: $errorCode")
     }
 
     override fun handleBDXQuery(
