@@ -299,6 +299,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     ReturnErrorOnFailure(sWifiNetworkDriver.Init());
 #endif
 
+    ReturnErrorOnFailure(GetPlatform().VerifyIfUpdated());
     // Stop Matter event handling while setting up resources
     chip::DeviceLayer::PlatformMgr().LockChipStack();
 

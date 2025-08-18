@@ -15,6 +15,8 @@
  *    limitations under the License.
  */
 
+#include <platform/DiagnosticDataProvider.h>
+#include <platform/silabs/SilabsConfig.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_si91x_common_flash_intf.h>
 
@@ -22,12 +24,10 @@
 #include <task.h>
 
 #include <app/icd/server/ICDServerConfig.h>
-#include <lib/support/CodeUtils.h>
 
 #include <lib/support/CodeUtils.h>
 #if SILABS_LOG_ENABLED
 #include "silabs_utils.h"
-
 #endif // SILABS_LOG_ENABLED
 
 // TODO add includes ?
