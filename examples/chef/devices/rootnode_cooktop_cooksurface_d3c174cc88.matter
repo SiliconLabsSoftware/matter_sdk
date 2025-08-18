@@ -1570,7 +1570,6 @@ cluster TemperatureMeasurement = 1026 {
 
 endpoint 0 {
   device type ma_rootdevice = 22, version 3;
-  device type ma_otarequestor = 18, version 1;
 
 
   server cluster Descriptor {
@@ -1626,30 +1625,16 @@ endpoint 0 {
     callback attribute capabilityMinima;
     callback attribute specificationVersion;
     callback attribute maxPathsPerInvoke;
-    callback attribute configurationVersion default = 1;
+    ram      attribute configurationVersion default = 1;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 5;
-  }
-
-  server cluster OtaSoftwareUpdateRequestor {
-    callback attribute defaultOTAProviders;
-    ram      attribute updatePossible default = 1;
-    ram      attribute updateState default = 0;
-    ram      attribute updateStateProgress default = 0;
-    callback attribute generatedCommandList;
-    callback attribute acceptedCommandList;
-    callback attribute attributeList;
-    ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 1;
-
-    handle command AnnounceOTAProvider;
+    ram      attribute clusterRevision default = 4;
   }
 
   server cluster LocalizationConfiguration {
-    persist  attribute activeLocale default = "en-US";
+    ram      attribute activeLocale;
     callback attribute supportedLocales;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
@@ -1678,7 +1663,7 @@ endpoint 0 {
     callback attribute acceptedCommandList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
-    callback attribute clusterRevision default = 2;
+    ram      attribute clusterRevision default = 2;
 
     handle command ArmFailSafe;
     handle command ArmFailSafeResponse;
@@ -1691,13 +1676,10 @@ endpoint 0 {
   server cluster NetworkCommissioning {
     callback attribute maxNetworks;
     callback attribute networks;
-    callback attribute scanMaxTimeSeconds;
-    callback attribute connectMaxTimeSeconds;
     callback attribute interfaceEnabled;
     callback attribute lastNetworkingStatus;
     callback attribute lastNetworkID;
     callback attribute lastConnectErrorValue;
-    callback attribute supportedWiFiBands;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
@@ -1907,3 +1889,5 @@ endpoint 2 {
     ram      attribute clusterRevision default = 4;
   }
 }
+
+
