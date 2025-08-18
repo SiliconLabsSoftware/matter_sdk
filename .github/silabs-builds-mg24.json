@@ -27,7 +27,7 @@
             "boards": ["BRD4187C"],
             "arguments": [
                 "--docker",
-                "--icd"
+                "--lit-icd"
             ]
         }
     ]
