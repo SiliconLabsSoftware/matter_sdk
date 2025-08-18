@@ -214,7 +214,7 @@ else
                 optArgs+="chip_enable_icd_server=true chip_openthread_ftd=false sl_enable_test_event_trigger=true "
                 shift
                 ;;
-            --lit-icd)
+            --lit-icd-internal-use-only)
                 optArgs+="chip_enable_icd_server=true chip_openthread_ftd=false sl_enable_test_event_trigger=true "
                 optArgs+="chip_subscription_timeout_resumption=false sl_use_subscription_syncing=true "
                 optArgs+="chip_enable_icd_lit=true chip_icd_report_on_active_mode=true chip_enable_icd_dsls=true "
