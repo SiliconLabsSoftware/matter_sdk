@@ -21,7 +21,7 @@
 
 #include "silabs_utils.h"
 
-// ---- Lighting Example App Config ----
+// ---- Platform Example App Config ----
 
 #define APP_TASK_NAME "Platform"
 
