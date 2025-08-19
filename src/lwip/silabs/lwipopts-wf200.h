@@ -70,19 +70,19 @@
 
 #define LWIP_SOCKET 0
 
-#define TCPIP_THREAD_PRIO osPriorityAboveNormal
-
-#ifdef DIC_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
 #define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())
 #define MEM_SIZE 5632
 #define MEMP_NUM_UDP_PCB (6)
 #define TCP_MSS (4 * 1152)
+#define TCPIP_THREAD_PRIO osPriorityHigh7
 #else
 #define LWIP_DNS 0
 #define MEMP_NUM_UDP_PCB (5)
 #define TCP_MSS (1152)
-#endif // DIC_ENABLE
+#define TCPIP_THREAD_PRIO osPriorityAboveNormal
+#endif // SL_MATTER_ENABLE_AWS
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1
 
@@ -117,6 +117,10 @@
 #ifndef LWIP_DHCP
 #define LWIP_DHCP (LWIP_IPV4)
 #endif /* LWIP_DHCP */
+
+// IPv6 should be enabled by default
+#define LWIP_IPV6 1
+#define LWIP_NETIF_API 1
 
 #define LWIP_ETHERNET (LWIP_IPV6) // Required for IPV6 only mode
 #define LWIP_IPV6_MLD (LWIP_IPV6)
