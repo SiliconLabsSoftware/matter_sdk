@@ -150,14 +150,16 @@ bool ApplicationSleepManager::ProcessSpecialVendorIDCase(chip::VendorId vendorId
 
 bool ApplicationSleepManager::ProcessKeychainEdgeCase()
 {
-    bool hasValidException = false;
+    bool hasValidException = true; // Default to true if no VendorId::Apple fabric is found
 
     for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
     {
-        if ((it->GetVendorId() == chip::VendorId::Apple || it->GetVendorId() == chip::VendorId::Google) &&
-            mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
+        if (it->GetVendorId() == chip::VendorId::Apple)
         {
-            hasValidException = true;
+            if (!subscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
+            {
+                hasValidException = false; // Found an Apple fabric, but no active subscription
+            }
             break;
         }
     }
