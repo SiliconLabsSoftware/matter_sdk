@@ -149,6 +149,14 @@ CHIP_ERROR ConfigurationManagerImpl::GetBootReason(uint32_t & bootReason)
     matterBootCause = BootReasonType::kUnspecified;
 #endif
 
+#if !SLI_SI91X_MCU_INTERFACE
+    BootloaderResetCause_t testBootReason = bootloader_getResetReason();
+    if (matterBootCause == BootReasonType::kUnspecified && testBootReason.reason == BOOTLOADER_RESET_REASON_GO &&
+        testBootReason.signature == BOOTLOADER_RESET_SIGNATURE_VALID)
+    {
+        matterBootCause = BootReasonType::kSoftwareUpdateCompleted;
+    }
+#endif
     bootReason = to_underlying(matterBootCause);
     return CHIP_NO_ERROR;
 }
