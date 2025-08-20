@@ -18,8 +18,7 @@
  */
 
 // SL-TEMP: GN cannot use sl_main until it supports sisdk 2025.6
-// sl_system_init is always used for 917 soc
-#if (SL_MATTER_GN_BUILD == 1 || SLI_SI91X_MCU_INTERFACE)
+#if (SL_MATTER_GN_BUILD == 1) || defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
 #include "sl_system_init.h"
 #else
 #include "sl_main_init.h"
@@ -49,7 +48,7 @@ void app_init(void)
 
 // SL-TEMP: GN cannot use sl_main until it supports sisdk 2025.6
 // sl_system_init is always used for 917 soc
-#if (SL_MATTER_GN_BUILD == 1 || SLI_SI91X_MCU_INTERFACE)
+#if (SL_MATTER_GN_BUILD == 1) || defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
 int main(void)
 {
     app_init_early();
