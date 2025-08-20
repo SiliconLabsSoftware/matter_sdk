@@ -156,7 +156,7 @@ bool ApplicationSleepManager::ProcessKeychainEdgeCase()
     {
         if (it->GetVendorId() == chip::VendorId::Apple)
         {
-            if (!subscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
+            if (!mSubscriptionsInfoProvider->FabricHasAtLeastOneActiveSubscription(it->GetFabricIndex()))
             {
                 hasValidException = false; // Found an Apple fabric, but no active subscription
             }
