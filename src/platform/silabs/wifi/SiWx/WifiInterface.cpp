@@ -110,13 +110,13 @@ sl_net_wifi_lwip_context_t wifi_client_context;
 #endif // SLI_SI91X_LWIP_HOSTED_NETWORK_STACK
 sl_wifi_security_t security = SL_WIFI_SECURITY_UNKNOWN;
 
-// TODO : Temporary work-around for wifi-init failure in 917NCP ACX module board(BRD4357A). Can be removed after
-// Wiseconnect fixes region code for all ACX module boards.
-#ifdef ACX_MODULE_BOARD
-#define REGION_CODE IGNORE_REGION
-#else
+// The REGION_CODE macro defines the regulatory region for the Wi-Fi device.
+// The default value is 'US'. Users can override this macro to specify a different region code.
+// The region code must match one of the values defined in the 'sl_wifi_region_code_t' enum,
+// which is located in 'wifi-sdk/inc/sl_wifi_constants.h'. Example values include US, EU, JP, etc.
+#ifndef REGION_CODE
 #define REGION_CODE US
-#endif // ACX_MODULE_BOARD
+#endif // !def REGION_CODE
 
 const sl_wifi_device_configuration_t config = {
     .boot_option = LOAD_NWP_FW,
@@ -433,7 +433,17 @@ sl_status_t SetWifiConfigurations()
 sl_status_t JoinCallback(sl_wifi_event_t event, char * result, uint32_t resultLenght, void * arg)
 {
     sl_status_t status = SL_STATUS_OK;
-    wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
+    // If the failed event is encountered when sl_net_up is in-progress,
+    // we ignore it and wait for the sl_net_up to complete.
+    if (wfx_rsi.dev_state.Has(WifiState::kStationConnecting))
+    {
+        wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
+        if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
+        {
+            return SL_STATUS_IN_PROGRESS;
+        }
+    }
+
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
         status = *reinterpret_cast<sl_status_t *>(result);
@@ -470,6 +480,19 @@ sl_status_t JoinWifiNetwork(void)
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
     status = sl_net_up((sl_net_interface_t) SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
+
+    if (!(wfx_rsi.dev_state.Has(WifiState::kStationConnecting)))
+    {
+        // TODO: Remove this check once the sl_net_up is fixed, sl_net_up is not completely synchronous
+        // and issue is mostly seen on OPEN access points
+
+        // sl_net_up can return SL_STATUS_SUCCESS, even if the join callback has been called
+        // If the state has changed, it means that the join callback has already been called
+        // rejoin already started, so we should not proceed with further processing
+        ChipLogDetail(DeviceLayer, "JoinCallback already called, skipping further processing");
+
+        status = SL_STATUS_FAIL;
+    }
 
     if (status == SL_STATUS_OK)
     {
