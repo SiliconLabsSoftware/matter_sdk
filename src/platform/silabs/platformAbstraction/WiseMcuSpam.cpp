@@ -95,11 +95,13 @@ CHIP_ERROR SilabsPlatform::Init(void)
     mButtonCallback = nullptr;
 
     bool performedUpdate;
-    ReturnLogErrorOnFailure(
-        Internal::SilabsConfig::ReadConfigValue(Internal::SilabsConfig::kConfigKey_MatterUpdateReboot, performedUpdate));
+    CHIP_ERROR err =
+        Internal::SilabsConfig::ReadConfigValue(Internal::SilabsConfig::kConfigKey_MatterUpdateReboot, performedUpdate);
+
+    VerifyOrReturnLogError(CHIP_NO_ERROR == err || CHIP_ERROR_NOT_FOUND == err, err);
     if (performedUpdate)
     {
-        Internal::SilabsConfig::WriteConfigValue(Internal::SilabsConfig::kConfigKey_MatterUpdateReboot, false);
+        Internal::SilabsConfig::ClearConfigValue(Internal::SilabsConfig::kConfigKey_MatterUpdateReboot);
         mRebootCause = to_underlying(BootReasonType::kSoftwareUpdateCompleted);
     }
 
