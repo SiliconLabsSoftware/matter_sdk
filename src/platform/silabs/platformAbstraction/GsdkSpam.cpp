@@ -17,6 +17,8 @@
 
 #include <em_device.h>
 #include <lib/support/CodeUtils.h>
+#include <platform/DiagnosticDataProvider.h>
+#include <platform/silabs/SilabsConfig.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #if defined(_SILICON_LABS_32B_SERIES_2)
 #include "em_msc.h"
@@ -77,7 +79,7 @@ extern "C" {
 #if defined(_SILICON_LABS_32B_SERIES_3)
 // To remove any ambiguities regarding the Flash aliases, use the below macro to ignore the 8 MSB.
 #define FLASH_GENERIC_MASK 0x00FFFFFF
-#define GENERIC_ADDRESS(addr) ((addr) &FLASH_GENERIC_MASK)
+#define GENERIC_ADDRESS(addr) ((addr) & FLASH_GENERIC_MASK)
 
 // Transforms any address into an address using the same alias as FLASH_BASE from the CMSIS.
 #define CMSIS_CONVERTED_ADDRESS(addr) (GENERIC_ADDRESS(addr) | FLASH_BASE)
@@ -109,6 +111,15 @@ CHIP_ERROR SilabsPlatform::Init(void)
     // Clear the register, as the causes cumulate over resets.
     sl_hal_emu_clear_reset_cause();
 #endif // _SILICON_LABS_32B_SERIES_2
+
+    bool performedUpdate;
+    ReturnLogErrorOnFailure(
+        Internal::SilabsConfig::ReadConfigValue(Internal::SilabsConfig::kConfigKey_MatterUpdateReboot, performedUpdate));
+    if (performedUpdate)
+    {
+        Internal::SilabsConfig::WriteConfigValue(Internal::SilabsConfig::kConfigKey_MatterUpdateReboot, false);
+        mRebootCause = to_underlying(BootReasonType::kSoftwareUpdateCompleted);
+    }
 
 #if SILABS_LOG_OUT_UART && defined(SL_CATALOG_CLI_PRESENT)
     sl_iostream_set_default(sl_iostream_stdio_handle);
