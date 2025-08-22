@@ -128,6 +128,8 @@ extern uint32_t SystemCoreClock;
 #include "SEGGER_SYSVIEW_FreeRTOS.h"
 #endif
 
+#include "taskTrace.h"
+#define traceTASK_SWITCHED_IN() myTaskSwitchedInHook((uint32_t) pxCurrentTCB)
 /*-----------------------------------------------------------
  * Application specific definitions.
  *
@@ -219,7 +221,7 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #ifdef HEAP_MONITORING
 #define configMAX_TASK_NAME_LEN (24)
 #else
-#define configMAX_TASK_NAME_LEN (10)
+#define configMAX_TASK_NAME_LEN (24)
 #endif // HEAP_MONITORING
 
 #define configUSE_16_BIT_TICKS (0)
@@ -229,6 +231,8 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define configUSE_COUNTING_SEMAPHORES (1)
 #define configUSE_TASK_NOTIFICATIONS 1
 #define configUSE_TRACE_FACILITY 1
+#define configUSE_STATS_FORMATTING_FUNCTIONS 1
+#define configUSE_APPLICATION_TASK_TAG 1
 #define configQUEUE_REGISTRY_SIZE (10)
 #define configUSE_QUEUE_SETS (0)
 #define configUSE_NEWLIB_REENTRANT (0)

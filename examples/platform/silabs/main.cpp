@@ -27,6 +27,7 @@
 #include <MatterConfig.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 
+#include "taskTrace.h"
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
 
 // This is a User definable function in sl_main context, called by sl_main_init before the kernel is started
@@ -44,6 +45,7 @@ void app_init(void)
     SILABS_TRACE_BEGIN(chip::Tracing::Silabs::TimeTraceOperation::kMatterInit);
     // Initialize the matter application. For example, create periodic timer(s) or
     // task(s).
+    startAccumulation();
     SilabsMatterConfig::AppInit();
 }
 

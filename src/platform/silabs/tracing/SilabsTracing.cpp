@@ -107,6 +107,10 @@ const char * TimeTraceOperationToString(TimeTraceOperation operation)
         return "NumTraces";
     case TimeTraceOperation::kBufferFull:
         return "BufferFull";
+    case TimeTraceOperation::kMpDatamodelInit:
+        return "MpDatamodelInit";
+    case TimeTraceOperation::kTaskEnter:
+        return "TaskEnter";
     default:
         return "Unknown";
     }
@@ -570,6 +574,17 @@ CHIP_ERROR SilabsTracer::FindAppOperationIndex(CharSpan & appOperationKey, size_
     }
     index = SilabsTracer::kMaxAppOperationKeys;
     return CHIP_ERROR_NOT_FOUND;
+}
+
+CHIP_ERROR SilabsTracer::TimeTraceTaskEntry(uint32_t taskId, System::Clock::Milliseconds32 timestamp)
+{
+    TimeTracker tracker;
+    tracker.mStartTime = timestamp;
+    tracker.mEndTime   = tracker.mStartTime;
+    tracker.mOperation = to_underlying(TimeTraceOperation::kTaskEnter);
+    tracker.mType      = OperationType::kInstant;
+    tracker.mError     = CHIP_ERROR(taskId);
+    return OutputTrace(tracker);
 }
 
 } // namespace Silabs

@@ -83,7 +83,7 @@ public:
     static constexpr size_t kNumTraces                = to_underlying(TimeTraceOperation::kNumTraces);
     static constexpr size_t kMaxAppOperationKeys      = 5;
     static constexpr size_t kMaxAppOperationKeyLength = 16;
-    static constexpr size_t kMaxBufferedTraces        = 64;
+    static constexpr size_t kMaxBufferedTraces        = 128;
     static constexpr size_t kMaxTraceSize             = 128;
 
     /** @brief Get the singleton instance of SilabsTracer */
@@ -224,6 +224,8 @@ public:
 
     inline size_t GetRegisteredAppOperationsCount() { return mAppOperationKeyCount; }
     inline char * GetAppOperationKey(size_t index) { return mAppOperationKeys[index]; }
+
+    CHIP_ERROR TimeTraceTaskEntry(uint32_t taskId, System::Clock::Milliseconds32 timestamp);
 
 private:
     struct TimeTrackerList

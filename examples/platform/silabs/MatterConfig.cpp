@@ -205,8 +205,12 @@ void ApplicationStart(void * unused)
     ChipLogProgress(DeviceLayer, "Starting App Task");
     err = AppTask::GetAppTask().StartAppTask();
     if (err != CHIP_NO_ERROR)
-        appError(err);
-
+    appError(err);
+    
+    char StartApp[] = "StartAppTask";
+    CharSpan StartAppSpan(StartApp);
+    SILABS_TRACE_REGISTER(StartAppSpan);
+    SILABS_TRACE_INSTANT(StartAppSpan);
     VerifyOrDie(osThreadTerminate(sMainTaskHandle) == osOK); // Deleting the main task should never fail.
     sMainTaskHandle = nullptr;
 }
