@@ -67,6 +67,7 @@
 #define TCP_QUEUE_OOSEQ 0
 #define ARP_QUEUEING (0)
 #define TCPIP_THREAD_NAME "LWIP"
+#define TCPIP_THREAD_PRIO osPriorityAboveNormal
 
 #define LWIP_SOCKET 0
 
@@ -76,12 +77,11 @@
 #define MEM_SIZE 5632
 #define MEMP_NUM_UDP_PCB (6)
 #define TCP_MSS (4 * 1152)
-#define TCPIP_THREAD_PRIO osPriorityHigh7
 #else
 #define LWIP_DNS 0
 #define MEMP_NUM_UDP_PCB (5)
 #define TCP_MSS (1152)
-#define TCPIP_THREAD_PRIO osPriorityAboveNormal
+
 #endif // SL_MATTER_ENABLE_AWS
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1

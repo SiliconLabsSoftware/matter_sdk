@@ -21,6 +21,8 @@
 #ifndef __MATTER_AWS_CONFIG_H
 #define __MATTER_AWS_CONFIG_H
 
+#include "cmsis_os2.h"
+
 /* Instance configuration */
 
 #ifndef SL_MATTER_AWS_NVM_EMBED_CERT
@@ -30,7 +32,7 @@
 /* Task Configuration */
 #define MATTER_AWS_TASK_NAME "MATTER_AWS"
 #define MATTER_AWS_TASK_STACK_SIZE (2 * 1024) // 2k
-#define MATTER_AWS_TASK_PRIORITY (5)
+#define MATTER_AWS_TASK_PRIORITY (osPriorityAboveNormal)
 
 /* Network Configuration */
 #define MATTER_AWS_SERVER_HOST ""
