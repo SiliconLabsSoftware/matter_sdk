@@ -112,11 +112,11 @@ CHIP_ERROR SilabsPlatform::Init(void)
     sl_hal_emu_clear_reset_cause();
 #endif // _SILICON_LABS_32B_SERIES_2
 
-    bool performedUpdate;
+    bool performedUpdate = false;
     CHIP_ERROR err =
         Internal::SilabsConfig::ReadConfigValue(Internal::SilabsConfig::kConfigKey_MatterUpdateReboot, performedUpdate);
-
-    VerifyOrReturnLogError(CHIP_NO_ERROR == err || CHIP_ERROR_NOT_FOUND == err, err);
+    ChipLogError(NotSpecified, "Reading MatterUpdateReboot: %" CHIP_ERROR_FORMAT, err.Format());
+    // VerifyOrReturnLogError(CHIP_NO_ERROR == err || CHIP_ERROR_NOT_FOUND == err, err);
     if (performedUpdate)
     {
         Internal::SilabsConfig::ClearConfigValue(Internal::SilabsConfig::kConfigKey_MatterUpdateReboot);
