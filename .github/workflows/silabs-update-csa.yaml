@@ -22,7 +22,7 @@ jobs:
               run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
 
             - name: Checkout matter_sdk::csa branch
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   repository: SiliconLabsSoftware/matter_sdk
                   ref: csa
