@@ -24,19 +24,11 @@
 #include <platform/internal/BLEManager.h>
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
 
-#if CHIP_SYSTEM_CONFIG_USE_LWIP
 #include <lwip/dns.h>
 #include <lwip/ip_addr.h>
 #include <lwip/nd6.h>
 #include <lwip/netif.h>
-#endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-#include <system/SystemLayerImpl.h>
-extern "C" {
-#include "sl_si91x_socket.h"
-}
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 #include <platform/internal/GenericConnectivityManagerImpl_UDP.ipp>
 
 #if INET_CONFIG_ENABLE_TCP_ENDPOINT
@@ -60,23 +52,6 @@ namespace chip {
 namespace DeviceLayer {
 
 ConnectivityManagerImpl ConnectivityManagerImpl::sInstance;
-
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-namespace {
-static void sl_wifi_async_select_cb(fd_set * readfds, fd_set * writefds, fd_set * errorfds, long int timeout)
-{
-    // Schedule work to handle the events
-    // This is a workaround for the fact that sl_si91x_select() is not thread-safe
-    // and cannot be called from the event loop context.
-    DeviceLayer::SystemLayer().ScheduleWork(
-        [](chip::System::Layer * aLayer, void * aAppState) {
-            auto & systemSocketLayer = static_cast<chip::System::LayerImplFreeRTOSSockets &>(*aLayer);
-            systemSocketLayer.HandleEvents();
-        },
-        nullptr);
-}
-} // namespace
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
 
 CHIP_ERROR ConnectivityManagerImpl::_Init()
 {
@@ -105,20 +80,6 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
 {
     // Forward the event to the generic base classes as needed.
     // Handle Wfx wifi events...
-#if CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
-    if (event->Type == DeviceEventType::kSocketSelectStart)
-    {
-        // Call sl_si91x_select() to start the select operation
-        // and pass the callback function to be called when the select operation is complete.
-        int result = sl_si91x_select(event->SocketSelectStart.FD, const_cast<fd_set *>(&event->SocketSelectStart.ReadSet),
-                                     const_cast<fd_set *>(&event->SocketSelectStart.WriteSet),
-                                     const_cast<fd_set *>(&event->SocketSelectStart.ErrorSet), nullptr, sl_wifi_async_select_cb);
-        if (result < 0)
-        {
-            ChipLogError(DeviceLayer, "sl_si91x_select() failed: %d", result);
-        }
-    }
-#endif // CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS
     if (event->Type == DeviceEventType::kWFXSystemEvent)
     {
 

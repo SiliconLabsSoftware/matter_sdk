@@ -84,10 +84,8 @@ public:
     void HandleEvents() override;
     void EventLoopEnds() override {}
 
-#if !(CHIP_SYSTEM_CONFIG_USE_DISPATCH || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS)
     void AddLoopHandler(EventLoopHandler & handler) override;
     void RemoveLoopHandler(EventLoopHandler & handler) override;
-#endif // !(CHIP_SYSTEM_CONFIG_USE_DISPATCH || CHIP_SYSTEM_CONFIG_USE_FREERTOS_SOCKETS)h
 
 #if CHIP_SYSTEM_CONFIG_USE_LIBEV
     virtual void SetLibEvLoop(struct ev_loop * aLibEvLoopP) override { mLibEvLoopP = aLibEvLoopP; };
