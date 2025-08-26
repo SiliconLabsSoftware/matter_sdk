@@ -34,11 +34,12 @@ using SilabsTracer       = Tracing::Silabs::SilabsTracer;
 
 TimeTraceOperation StringToTimeTraceOperation(const char * str)
 {
-    for (uint32_t ttOp = 0; ttOp < to_underlying(TimeTraceOperation::kNumTraces); ttOp++)
+    for (auto ttOp = 0; ttOp < to_underlying(TimeTraceOperation::kNumTraces); ttOp++)
     {
-        if (strcmp(str, TimeTraceOperationToString(static_cast<TimeTraceOperation>(ttOp))) == 0)
+        TimeTraceOperation op = static_cast<TimeTraceOperation>(ttOp);
+        if (strcmp(str, TimeTraceOperationToString(op)) == 0)
         {
-            return static_cast<TimeTraceOperation>(ttOp);
+            return op;
         }
     }
     return TimeTraceOperation::kNumTraces;
