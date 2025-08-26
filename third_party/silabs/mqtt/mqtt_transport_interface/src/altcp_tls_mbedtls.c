@@ -1161,6 +1161,8 @@ static int altcp_mbedtls_bio_send(void *ctx, const unsigned char *dataptr, size_
       return MBEDTLS_ERR_NET_SEND_FAILED;
     }
   }
+  // Send data immediately after write to avoid queuing
+  altcp_output(conn->inner_conn);
   return written;
 }
 
