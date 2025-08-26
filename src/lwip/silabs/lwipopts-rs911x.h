@@ -31,6 +31,7 @@
 #endif
 
 #include <stdlib.h>
+#include "cmsis_os2.h"
 
 #if (SL_MATTER_GN_BUILD == 0)
 #include "sl_matter_wifi_config.h"
@@ -66,6 +67,7 @@
 #define TCP_QUEUE_OOSEQ 0
 #define ARP_QUEUEING (0)
 #define TCPIP_THREAD_NAME "LWIP"
+#define TCPIP_THREAD_PRIO osPriorityAboveNormal
 
 #define LWIP_SOCKET 0
 
@@ -73,11 +75,9 @@
 #define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())
 #define TCP_MSS (4 * 1152)
-#define TCPIP_THREAD_PRIO osPriorityRealtime7
 #else
 #define LWIP_DNS 0
 #define TCP_MSS (1152)
-#define TCPIP_THREAD_PRIO osPriorityAboveNormal
 #endif /* SL_MATTER_ENABLE_AWS */
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1

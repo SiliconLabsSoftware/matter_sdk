@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Matter abstraction layer for Direct Internet Connectivity.
+ * @brief Matter abstraction layer for AWS
  *******************************************************************************
  * # License
  * <b>Copyright 2023 Silicon Laboratories Inc.
