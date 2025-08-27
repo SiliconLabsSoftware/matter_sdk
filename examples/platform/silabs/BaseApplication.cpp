@@ -319,6 +319,7 @@ CHIP_ERROR BaseApplication::Init()
         return err;
     }
 
+    OutputQrCode(true /*refreshLCD at init*/);
     SILABS_TRACE_END_ERROR(TimeTraceOperation::kAppInit, err);
     SILABS_TRACE_END_ERROR(TimeTraceOperation::kBootup, err);
     return err;
@@ -373,7 +374,6 @@ CHIP_ERROR BaseApplication::BaseInit()
 
     ConfigurationMgr().LogDeviceConfig();
 
-    OutputQrCode(true /*refreshLCD at init*/);
 #if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
     LEDWidget::InitGpio();
     sStatusLED.Init(SYSTEM_STATE_LED);
