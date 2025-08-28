@@ -78,7 +78,7 @@ using WiFiBandEnum = chip::app::Clusters::NetworkCommissioning::WiFiBandEnum;
 // which is located in 'wifi-sdk/inc/sl_wifi_constants.h'. Example values include US, EU, JP, etc.
 #ifndef REGION_CODE
 #define REGION_CODE US
-#endif // !def REGION_CODE
+#endif // !REGION_CODE
 
 // TODO: This needs to be refactored so we don't need the global object
 WfxRsi_t wfx_rsi;
