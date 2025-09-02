@@ -28,8 +28,7 @@ constexpr uint8_t kRefEndpointId = 1;
 
 using namespace chip;
 using namespace chip::app;
-using namespace Clusters::RefrigeratorAlarm;
-using namespace Clusters::TemperatureControl;
+using namespace chip::app::Clusters;
 using Shell::Engine;
 using Shell::shell_command_t;
 using Shell::streamer_get;
