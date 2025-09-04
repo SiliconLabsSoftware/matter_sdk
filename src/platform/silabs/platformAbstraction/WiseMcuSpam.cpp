@@ -15,8 +15,6 @@
  *    limitations under the License.
  */
 
-#include <platform/DiagnosticDataProvider.h>
-#include <platform/silabs/SilabsConfig.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_si91x_common_flash_intf.h>
 

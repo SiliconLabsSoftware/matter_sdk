@@ -103,8 +103,8 @@ CHIP_ERROR ConfigurationManagerImpl::IncreaseBootCount(void)
 
 CHIP_ERROR ConfigurationManagerImpl::GetBootReason(uint32_t & bootReason)
 {
-
-   uint32_t rebootCause = Silabs::GetPlatform().GetRebootCause();
+    // rebootCause is obtained at bootup.
+    uint32_t rebootCause = Silabs::GetPlatform().GetRebootCause();
 
     // Before looking into the bootloader reboot cause, check if we performed a matter update
     if (rebootCause == to_underlying(BootReasonType::kSoftwareUpdateCompleted))
@@ -113,7 +113,6 @@ CHIP_ERROR ConfigurationManagerImpl::GetBootReason(uint32_t & bootReason)
         return CHIP_NO_ERROR;
     }
 
-    // rebootCause is obtained at bootup.
     BootReasonType matterBootCause;
 
 #if defined(_RMU_RSTCAUSE_MASK)
