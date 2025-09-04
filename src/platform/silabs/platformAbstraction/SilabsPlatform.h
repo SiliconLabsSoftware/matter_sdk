@@ -87,7 +87,7 @@ private:
     void SilabsPlatformLock(void);
     void SilabsPlatformUnlock(void);
 
-    SilabsPlatform() {};
+    SilabsPlatform(){};
     virtual ~SilabsPlatform() = default;
 
     uint32_t mRebootCause = 0;
