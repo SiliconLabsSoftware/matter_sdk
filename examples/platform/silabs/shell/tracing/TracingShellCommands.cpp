@@ -126,6 +126,26 @@ TimeTraceOperation StringToTimeTraceOperation(const char * str)
     {
         return TimeTraceOperation::kBufferFull;
     }
+    else if (strcmp(str, "EM0PowerMode") == 0)
+    {
+        return TimeTraceOperation::kEM0PowerMode;
+    }
+    else if (strcmp(str, "EM1PowerMode") == 0)
+    {
+        return TimeTraceOperation::kEM1PowerMode;
+    }
+    else if (strcmp(str, "EM2PowerMode") == 0)
+    {
+        return TimeTraceOperation::kEM2PowerMode;
+    }
+    else if (strcmp(str, "EM3PowerMode") == 0)
+    {
+        return TimeTraceOperation::kEM3PowerMode;
+    }
+    else if (strcmp(str, "EM4PowerMode") == 0)
+    {
+        return TimeTraceOperation::kEM4PowerMode;
+    }
     else
     {
         return TimeTraceOperation::kNumTraces;

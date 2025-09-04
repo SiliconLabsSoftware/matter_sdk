@@ -49,7 +49,12 @@ enum class TimeTraceOperation : uint8_t
     kMatterInit,
     kAppInit,
     kBufferFull,
-    kNumTraces,
+    kEM0PowerMode,
+    kEM1PowerMode,
+    kEM2PowerMode,
+    kEM3PowerMode,
+    kEM4PowerMode,
+    kNumTraces
 };
 
 enum class OperationType : uint8_t

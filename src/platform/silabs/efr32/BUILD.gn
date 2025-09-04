@@ -130,6 +130,7 @@ static_library("efr32") {
   if (matter_enable_tracing_support) {
     public_deps += [
       "${chip_root}/src/platform/silabs/tracing:SilabsTracing",
+      "${chip_root}/src/platform/silabs/tracing/utils:power-manager-tracing",
       "${chip_root}/src/tracing",
     ]
   }

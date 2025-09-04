@@ -96,6 +96,11 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #if MATTER_TRACING_ENABLED
 #include <platform/silabs/tracing/BackendImpl.h> // nogncheck
 #include <tracing/registry.h>
+
+#if defined(SL_MATTER_POWER_MANAGER_TRACING_ENABLED)
+#include <platform/silabs/tracing/utils/PowerManagerTracing.h>
+#endif // SL_MATTER_POWER_MANAGER_TRACING_ENABLED
+
 #endif // MATTER_TRACING_ENABLED
 
 /**********************************************************
@@ -358,6 +363,10 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #if MATTER_TRACING_ENABLED
     static Tracing::Silabs::BackendImpl backend;
     Tracing::Register(backend);
+
+#if defined(SL_MATTER_POWER_MANAGER_TRACING_ENABLED)
+    Tracing::Silabs::RegisterPowerManagerTracing();
+#endif // SL_MATTER_POWER_MANAGER_TRACING_ENABLED
 #endif // MATTER_TRACING_ENABLED
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();

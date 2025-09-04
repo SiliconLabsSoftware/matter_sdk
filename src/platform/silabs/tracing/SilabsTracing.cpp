@@ -103,10 +103,20 @@ const char * TimeTraceOperationToString(TimeTraceOperation operation)
         return "MatterInit";
     case TimeTraceOperation::kAppInit:
         return "AppInit";
-    case TimeTraceOperation::kNumTraces:
-        return "NumTraces";
     case TimeTraceOperation::kBufferFull:
         return "BufferFull";
+    case TimeTraceOperation::kEM0PowerMode:
+        return "EM0PowerMode";
+    case TimeTraceOperation::kEM1PowerMode:
+        return "EM1PowerMode";
+    case TimeTraceOperation::kEM2PowerMode:
+        return "EM2PowerMode";
+    case TimeTraceOperation::kEM3PowerMode:
+        return "EM3PowerMode";
+    case TimeTraceOperation::kEM4PowerMode:
+        return "EM4PowerMode";
+    case TimeTraceOperation::kNumTraces:
+        return "NumTraces";
     default:
         return "Unknown";
     }
