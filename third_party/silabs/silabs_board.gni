@@ -63,6 +63,9 @@ declare_args() {
 
   # RGB LED support
   sl_enable_rgb_led = false
+
+  # Use SiSDK LwIP
+  sl_use_sisdk_lwip = true
 }
 
 declare_args() {
