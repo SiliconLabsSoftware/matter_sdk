@@ -4,13 +4,6 @@
 
 -   To enable DIC functionality use the `enable_matter_aws=true` flag.
 
-````
-
-### Here is an example to build the lighting-app with DIC for the SiWx917 SoC
-
-```shell
-./scripts/examples/gn_silabs_example.sh examples/lighting-app/silabs/ out/debug BRD4338A enable_matter_aws=true chip_enable_wifi_ipv4=true
-````
 
 ## Compile using new/different certificates
 
@@ -24,7 +17,7 @@
         -   provide device_certificate and device_key with your device cert and
             device key. Refer
             [Openssl Device Certificate Creation](#matter--aws-device-openssl-keys-generation)
-    -   Add your AWS server and Clinet ID in file
+    -   Add your AWS server and Client ID in file
         `examples/platform/silabs/matter_aws/matter_aws_interface/include/MatterAwsConfig.h`
         -   Provide `MATTER_AWS_SERVER_HOST` with your AWS Server name
         -   provide `MATTER_AWS_CLIENT_ID` with your device/thing ID
