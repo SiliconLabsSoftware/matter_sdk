@@ -19,6 +19,7 @@ declare_args() {
   # Use lwIP from SiSDK if true, otherwise use the copy from Matter repository.
   sl_use_sisdk_lwip = true
 }
+
 # Defines a lwIP build target.
 #
 # lwIP depends on external header files to compile. This template defines
