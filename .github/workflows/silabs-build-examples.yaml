@@ -80,3 +80,10 @@ jobs:
         with:
             example-app: "refrigerator-app"
             output-directory: "./out/refrigerator-app"
+
+    build-platform-app:
+        name: Build Platform-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "base-platform-app"
+            output-directory: "./out/platform-app"
