@@ -38,6 +38,8 @@ public:
         kDeepSleep       = 1,
         kConnectedSleep  = 2,
     };
+    // Default power save configuration is High Performance
+    PowerSaveConfiguration currentPowerSaveConfiguration = PowerSaveConfiguration::kHighPerformance;
 
     /**
      * @brief Configures the underlying platform to the requested power save mode.
