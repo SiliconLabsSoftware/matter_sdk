@@ -463,6 +463,7 @@ sl_si91x_performance_profile_t ConvertPowerSaveConfiguration(PowerSaveInterface:
         profile = ASSOCIATED_POWER_SAVE;
         break;
     case PowerSaveInterface::PowerSaveConfiguration::kDeepSleep:
+    case PowerSaveInterface::PowerSaveConfiguration::kListenIntervalSleep:
         profile = DEEP_SLEEP_WITH_RAM_RETENTION;
         break;
     default:
