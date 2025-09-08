@@ -837,7 +837,11 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
-    VerifyOrReturnValue(currentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
+    if (currentPowerSaveConfiguration == configuration)
+    {
+        // Power save configuration is already set, nothing to do
+        return CHIP_NO_ERROR;
+    }
 
     int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
     VerifyOrReturnError(error == RSI_SUCCESS, CHIP_ERROR_INTERNAL,

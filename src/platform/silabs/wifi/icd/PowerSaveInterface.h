@@ -38,11 +38,7 @@ public:
         kDeepSleep       = 1,
         kConnectedSleep  = 2,
     };
-protected:
-    // Default power save configuration is High Performance
-    PowerSaveConfiguration currentPowerSaveConfiguration = PowerSaveConfiguration::kHighPerformance;
 
-public:
     /**
      * @brief Configures the underlying platform to the requested power save mode.
      *
@@ -70,6 +66,10 @@ public:
      *                                                         or if it is a non-supported configuration
      */
     virtual CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
+
+protected:
+    // Default power save configuration is High Performance
+    PowerSaveConfiguration currentPowerSaveConfiguration = PowerSaveConfiguration::kHighPerformance;
 };
 
 } // namespace Silabs
