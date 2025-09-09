@@ -71,7 +71,7 @@ public:
 protected:
     // Default power save configuration is High Performance as the device starts in high power mode and low power modes need to be explicitly
     // configured
-    PowerSaveConfiguration currentPowerSaveConfiguration = PowerSaveConfiguration::kHighPerformance;
+    PowerSaveConfiguration mCurrentPowerSaveConfiguration = PowerSaveConfiguration::kHighPerformance;
 };
 
 } // namespace Silabs
