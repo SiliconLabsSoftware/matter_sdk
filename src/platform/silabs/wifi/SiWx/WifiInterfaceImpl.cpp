@@ -322,6 +322,7 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
             status = *reinterpret_cast<sl_status_t *>(scan_result);
             ChipLogError(DeviceLayer, "ScanCallback: failed: 0x%lx", status);
         }
+        wfx_rsi.ap_chan = SL_WIFI_AUTO_CHANNEL;
 
 #if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
         security = SL_WIFI_WPA3_TRANSITION;
@@ -410,7 +411,7 @@ sl_status_t SetWifiConfigurations()
                 .length = static_cast<uint8_t>(wfx_rsi.credentials.ssidLength),
             },
             .channel = {
-                .channel = SL_WIFI_AUTO_CHANNEL,
+                .channel = wfx_rsi.ap_chan,
                 .band = SL_WIFI_AUTO_BAND,
                 .bandwidth = SL_WIFI_AUTO_BANDWIDTH
             },
