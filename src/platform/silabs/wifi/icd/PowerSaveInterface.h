@@ -69,7 +69,8 @@ public:
     virtual CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
 
 protected:
-    // Default power save configuration is High Performance
+    // Default power save configuration is High Performance as the device starts in high power mode and low power modes need to be explicitly
+    // configured
     PowerSaveConfiguration currentPowerSaveConfiguration = PowerSaveConfiguration::kHighPerformance;
 };
 
