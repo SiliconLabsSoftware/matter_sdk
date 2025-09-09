@@ -334,7 +334,7 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
     {
         security        = static_cast<sl_wifi_security_t>(scan_result->scan_info[0].security_mode);
         wfx_rsi.ap_chan = scan_result->scan_info[0].rf_channel;
-        memcpy(wfx_rsi.ap_mac.data(), scan_result->scan_info[0].bssid, kWifiMacAddressLength);
+        memcpy(wfx_rsi.ap_bssid.data(), scan_result->scan_info[0].bssid, kWifiMacAddressLength);
     }
 
     osSemaphoreRelease(sScanCompleteSemaphore);
@@ -772,9 +772,9 @@ CHIP_ERROR WifiInterfaceImpl::GetAccessPointInfo(wfx_wifi_scan_result_t & info)
     chip::CopySpanToMutableSpan(ssid, output);
     info.ssid_length = output.size();
 
-    chip::ByteSpan apMacSpan(wfx_rsi.ap_mac.data(), wfx_rsi.ap_mac.size());
+    chip::ByteSpan apBssidSpan(wfx_rsi.ap_bssid.data(), wfx_rsi.ap_bssid.size());
     chip::MutableByteSpan bssidSpan(info.bssid, kWifiMacAddressLength);
-    chip::CopySpanToMutableSpan(apMacSpan, bssidSpan);
+    chip::CopySpanToMutableSpan(apBssidSpan, bssidSpan);
 
     // TODO: add error processing
     sl_wifi_get_signal_strength(SL_WIFI_CLIENT_INTERFACE, &(rssi));
