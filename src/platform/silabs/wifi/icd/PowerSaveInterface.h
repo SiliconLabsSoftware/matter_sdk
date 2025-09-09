@@ -34,10 +34,10 @@ public:
 
     enum class PowerSaveConfiguration : uint8_t
     {
-        kHighPerformance     = 0,
-        kDeepSleep           = 1,
-        kConnectedSleep      = 2,
-        kListenIntervalSleep = 3,
+        kHighPerformance  = 0,
+        kDeepSleep        = 1,
+        kConnectedSleep   = 2,
+        kLIConnectedSleep = 3,
     };
 
     /**
