@@ -66,6 +66,13 @@
 #define MBEDTLS_SHA256_C
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
 
+// AWS integration does not currently rely on PSA Crypto APIs.
+// These macros are undefined to prevent PSA-related build errors.
+// TODO: Revisit and clean up these macro overrides during refactor.
+#undef MBEDTLS_PSA_CRYPTO_C
+#undef MBEDTLS_USE_PSA_CRYPTO
+#undef MBEDTLS_PSA_CRYPTO_CONFIG
+
 #endif // SL_MATTER_ENABLE_AWS
 
 #ifdef SL_MBEDTLS_USE_TINYCRYPT
