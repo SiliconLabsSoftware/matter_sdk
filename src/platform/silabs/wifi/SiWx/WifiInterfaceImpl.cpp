@@ -658,7 +658,7 @@ void WifiInterfaceImpl::ProcessEvent(WiseconnectWifiInterface::WifiPlatformEvent
             }
 
             osSemaphoreRelease(sScanInProgressSemaphore);
-            if (status != SL_STATUS_OK) 
+            if (status != SL_STATUS_OK)
             {
                 ChipLogProgress(DeviceLayer, "sl_wifi_start_scan failed: 0x%lx", status);
             }
