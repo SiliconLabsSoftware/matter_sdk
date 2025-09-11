@@ -321,14 +321,7 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
         {
             status = *reinterpret_cast<sl_status_t *>(scan_result);
             ChipLogError(DeviceLayer, "ScanCallback: failed: 0x%lx", status);
-        }
-        wfx_rsi.ap_chan = SL_WIFI_AUTO_CHANNEL;
-
-#if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
-        security = SL_WIFI_WPA3_TRANSITION;
-#else
-        security = SL_WIFI_WPA_WPA2_MIXED;
-#endif /* WIFI_ENABLE_SECURITY_WPA3_TRANSITION */
+         }
     }
     else
     {
@@ -352,6 +345,14 @@ sl_status_t InitiateScan()
     chip::ByteSpan requestedSsidSpan(wfx_rsi.credentials.ssid, wfx_rsi.credentials.ssidLength);
     chip::MutableByteSpan ssidSpan(ssid.value, ssid.length);
     chip::CopySpanToMutableSpan(requestedSsidSpan, ssidSpan);
+
+    // SET FALLBACK VALUES FOR THE SCAN
+    wfx_rsi.ap_chan = SL_WIFI_AUTO_CHANNEL;
+#if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
+    security = SL_WIFI_WPA3_TRANSITION;
+#else
+    security = SL_WIFI_WPA_WPA2_MIXED;
+#endif /* WIFI_ENABLE_SECURITY_WPA3_TRANSITION */
 
     sl_wifi_set_scan_callback(ScanCallback, NULL);
 
@@ -411,7 +412,7 @@ sl_status_t SetWifiConfigurations()
                 .length = static_cast<uint8_t>(wfx_rsi.credentials.ssidLength),
             },
             .channel = {
-                .channel = wfx_rsi.ap_chan,
+                .channel = SL_WIFI_AUTO_CHANNEL,
                 .band = SL_WIFI_AUTO_BAND,
                 .bandwidth = SL_WIFI_AUTO_BANDWIDTH
             },
@@ -436,6 +437,10 @@ sl_status_t SetWifiConfigurations()
 
     if (wfx_rsi.ap_chan != SL_WIFI_AUTO_CHANNEL)
     {
+        // AP CHANNEL is set - signifies that the scan was done for a specific SSID
+        // Update the channel and BSSID in the profile
+        profile.config.channel.channel = wfx_rsi.ap_chan;
+
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWifiMacAddressLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWifiMacAddressLength);
         chip::CopySpanToMutableSpan(inBssid, bssidSpan);
