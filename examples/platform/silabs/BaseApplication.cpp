@@ -320,7 +320,28 @@ CHIP_ERROR BaseApplication::Init()
         appError(err);
         return err;
     }
-
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#if defined(SL_MATTER_ZIGBEE_SEQUENTIAL) ||                                                                                        \
+    (defined(SL_MATTER_ZIGBEE_CMP) && !defined(SL_CATALOG_RAIL_UTIL_IEEE802154_FAST_CHANNEL_SWITCHING_PRESENT))
+    PlatformMgr().LockChipStack();
+    uint16_t nbOfMatterFabric = Server::GetInstance().GetFabricTable().FabricCount();
+    PlatformMgr().UnlockChipStack();
+    if (nbOfMatterFabric != 0)
+    {
+#ifdef SL_MATTER_ZIGBEE_CMP
+        uint8_t channel = otLinkGetChannel(ThreadStackMgrImpl().OTInstance());
+        SILABS_LOG("Setting Zigbee channel to %d", channel);
+        Zigbee::RequestStart(channel);
+#else
+        Zigbee::RequestLeave();
+#endif // SL_MATTER_ZIGBEE_CMP
+    }
+    else
+#endif // SL_MATTER_ZIGBEE_SEQUENTIAL || (SL_MATTER_ZIGBEE_CMP && !SL_CATALOG_RAIL_UTIL_IEEE802154_FAST_CHANNEL_SWITCHING_PRESENT)
+    {
+        Zigbee::RequestStart();
+    }
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
     SILABS_TRACE_END_ERROR(TimeTraceOperation::kAppInit, err);
     SILABS_TRACE_END_ERROR(TimeTraceOperation::kBootup, err);
     return err;

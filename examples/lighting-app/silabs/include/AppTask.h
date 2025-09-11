@@ -31,10 +31,15 @@
 #include "AppEvent.h"
 #include "BaseApplication.h"
 #include "LightingManager.h"
+
 #include <ble/Ble.h>
 #include <cmsis_os2.h>
 #include <lib/core/CHIPError.h>
 #include <platform/CHIPDeviceLayer.h>
+
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include <app/persistence/DeferredAttributePersistenceProvider.h>
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 
 /**********************************************************
  * Defines
@@ -85,7 +90,9 @@ public:
 
 private:
     static AppTask sAppTask;
-
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
     static void ActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * value);
     static void ActionCompleted(LightingManager::Action_t aAction);
     static void LightActionEventHandler(AppEvent * aEvent);
