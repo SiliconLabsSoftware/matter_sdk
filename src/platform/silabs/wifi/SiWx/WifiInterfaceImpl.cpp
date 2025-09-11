@@ -370,7 +370,7 @@ sl_status_t InitiateScan()
     }
 
     osSemaphoreRelease(sScanInProgressSemaphore);
-    VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_wifi_start_scan failed: 0x%lx", status));
+    VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogProgress(DeviceLayer, "sl_wifi_start_scan failed: 0x%lx", status));
 
     return status;
 }
@@ -660,7 +660,7 @@ void WifiInterfaceImpl::ProcessEvent(WiseconnectWifiInterface::WifiPlatformEvent
             osSemaphoreRelease(sScanInProgressSemaphore);
             if (status != SL_STATUS_OK) 
             {
-                ChipLogError(DeviceLayer, "sl_wifi_start_scan failed: 0x%lx", status);
+                ChipLogProgress(DeviceLayer, "sl_wifi_start_scan failed: 0x%lx", status);
             }
 
         }
