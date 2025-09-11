@@ -321,7 +321,7 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
         {
             status = *reinterpret_cast<sl_status_t *>(scan_result);
             ChipLogError(DeviceLayer, "ScanCallback: failed: 0x%lx", status);
-         }
+        }
     }
     else
     {
@@ -662,7 +662,6 @@ void WifiInterfaceImpl::ProcessEvent(WiseconnectWifiInterface::WifiPlatformEvent
             {
                 ChipLogProgress(DeviceLayer, "sl_wifi_start_scan failed: 0x%lx", status);
             }
-
         }
         break;
 
