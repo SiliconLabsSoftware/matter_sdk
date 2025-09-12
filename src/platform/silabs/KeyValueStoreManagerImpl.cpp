@@ -51,10 +51,6 @@ KeyValueStoreManagerImpl KeyValueStoreManagerImpl::sInstance;
 
 CHIP_ERROR KeyValueStoreManagerImpl::Init(void)
 {
-    ReturnErrorOnFailure(SilabsConfig::Init());
-
-    Silabs::MigrationManager::GetMigrationInstance().applyMigrations();
-
     memset(mKvsKeyMap, 0, sizeof(mKvsKeyMap));
     size_t outLen    = 0;
     CHIP_ERROR error = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_KvsStringKeyMap,
@@ -275,18 +271,31 @@ void KeyValueStoreManagerImpl::ErasePartition(void)
 
 void KeyValueStoreManagerImpl::KvsMapMigration(void)
 {
-    size_t readlen                                                                        = 0;
-    constexpr uint8_t oldMaxEntires                                                       = 120;
-    char mKvsStoredKeyString[oldMaxEntires][PersistentStorageDelegate::kKeyLengthMax + 1] = { 0 };
-    CHIP_ERROR err =
-        SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_KvsStringKeyMap, reinterpret_cast<uint8_t *>(mKvsStoredKeyString),
-                                         sizeof(mKvsStoredKeyString), readlen);
+// this migration precedes Series 3, we don't need to run it in that case
+#ifndef _SILICON_LABS_32B_SERIES_3
+    size_t readlen                  = 0;
+    constexpr uint8_t oldMaxEntries = 120;
+    size_t maxStringLen             = PersistentStorageDelegate::kKeyLengthMax + 1;
+    char * mKvsStoredKeyString      = new char[oldMaxEntries * maxStringLen];
+
+    CHIP_ERROR err;
+    if (!mKvsStoredKeyString)
+    {
+        err = CHIP_ERROR_NO_MEMORY;
+    }
+    else
+    {
+        err = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_KvsStringKeyMap,
+                                               reinterpret_cast<uint8_t *>(mKvsStoredKeyString), oldMaxEntries * maxStringLen,
+                                               readlen);
+    }
 
     if (err == CHIP_NO_ERROR)
     {
-        for (uint8_t i = 0; i < oldMaxEntires; i++)
+        for (uint8_t i = 0; i < oldMaxEntries; i++)
         {
-            if (mKvsStoredKeyString[i][0] != 0)
+            char * keyString = mKvsStoredKeyString + (i * maxStringLen);
+            if (keyString[0] != 0)
             {
                 size_t dataLen   = 0;
                 uint32_t nvm3Key = CONVERT_KEYMAP_INDEX_TO_NVM3KEY(i);
@@ -294,14 +303,14 @@ void KeyValueStoreManagerImpl::KvsMapMigration(void)
                 if (SilabsConfig::ConfigValueExists(nvm3Key, dataLen))
                 {
                     // Read old data and prefix it with the string Key for the collision prevention mechanism.
-                    size_t keyStringLen    = strlen(mKvsStoredKeyString[i]);
+                    size_t keyStringLen    = strlen(keyString);
                     uint8_t * prefixedData = static_cast<uint8_t *>(Platform::MemoryAlloc(keyStringLen + dataLen));
                     VerifyOrDie(prefixedData != nullptr);
-                    memcpy(prefixedData, mKvsStoredKeyString[i], keyStringLen);
+                    memcpy(prefixedData, keyString, keyStringLen);
 
                     SilabsConfig::ReadConfigValueBin(nvm3Key, prefixedData + keyStringLen, dataLen, readlen);
                     SilabsConfig::WriteConfigValueBin(nvm3Key, prefixedData, keyStringLen + dataLen);
-                    mKvsKeyMap[i] = KeyValueStoreMgrImpl().hashKvsKeyString(mKvsStoredKeyString[i]);
+                    mKvsKeyMap[i] = KeyValueStoreMgrImpl().hashKvsKeyString(keyString);
                     Platform::MemoryFree(prefixedData);
                 }
             }
@@ -315,6 +324,8 @@ void KeyValueStoreManagerImpl::KvsMapMigration(void)
         // start with a fresh kvs section.
         KeyValueStoreMgrImpl().ErasePartition();
     }
+    delete[] mKvsStoredKeyString;
+#endif
 }
 
 void KeyValueStoreManagerImpl::KvsKeyMapCleanup(void * argument)

@@ -16,9 +16,17 @@
  */
 
 #include "MigrationManager.h"
+#include "sl_component_catalog.h"
+#include "sl_core.h"
+#include <headers/ProvisionManager.h>
+#include <headers/ProvisionStorage.h>
+#include <lib/support/CodeUtils.h>
+#include <lib/support/Span.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/SilabsConfig.h>
 #include <stdio.h>
+
+extern uint8_t linker_static_secure_tokens_begin; // Symbol defined by the linker script needed for MigrateS3Certificates
 
 using namespace ::chip::DeviceLayer::Internal;
 using namespace ::chip::DeviceLayer::PersistedStorage;
@@ -35,12 +43,12 @@ typedef struct
     func_ptr migrationFunc;
 } migrationData_t;
 
-#define COUNT_OF(A) (sizeof(A) / sizeof((A)[0]))
 static migrationData_t migrationTable[] = {
     { .migrationGroup = 1, .migrationFunc = MigrateKvsMap },
     { .migrationGroup = 2, .migrationFunc = MigrateDacProvider },
     { .migrationGroup = 3, .migrationFunc = MigrateCounterConfigs },
     { .migrationGroup = 4, .migrationFunc = MigrateHardwareVersion },
+    { .migrationGroup = 5, .migrationFunc = MigrateS3Certificates },
     // add any additional migration neccesary. migrationGroup should stay equal if done in the same commit or increment by 1 for
     // each new entry.
 };
@@ -53,7 +61,7 @@ void MigrationManager::applyMigrations()
     SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_MigrationCounter, lastMigationGroupDone);
 
     uint32_t completedMigrationGroup = lastMigationGroupDone;
-    for (uint32_t i = 0; i < COUNT_OF(migrationTable); i++)
+    for (uint32_t i = 0; i < MATTER_ARRAY_SIZE(migrationTable); i++)
     {
         if (lastMigationGroupDone < migrationTable[i].migrationGroup)
         {
@@ -67,7 +75,7 @@ void MigrationManager::applyMigrations()
 void MigrationManager::MigrateUint16(uint32_t old_key, uint32_t new_key)
 {
     uint16_t value = 0;
-    if (SilabsConfig::ConfigValueExists(old_key) && (CHIP_NO_ERROR == SilabsConfig::ReadConfigValue(old_key, value)))
+    if (CHIP_NO_ERROR == SilabsConfig::ReadConfigValue(old_key, value))
     {
         if (CHIP_NO_ERROR == SilabsConfig::WriteConfigValue(new_key, value))
         {
@@ -80,7 +88,7 @@ void MigrationManager::MigrateUint16(uint32_t old_key, uint32_t new_key)
 void MigrationManager::MigrateUint32(uint32_t old_key, uint32_t new_key)
 {
     uint32_t value = 0;
-    if (SilabsConfig::ConfigValueExists(old_key) && (CHIP_NO_ERROR == SilabsConfig::ReadConfigValue(old_key, value)))
+    if (CHIP_NO_ERROR == SilabsConfig::ReadConfigValue(old_key, value))
     {
         if (CHIP_NO_ERROR == SilabsConfig::WriteConfigValue(new_key, value))
         {
@@ -130,6 +138,104 @@ void MigrateHardwareVersion(void)
 {
     constexpr uint32_t kOldKey_HardwareVersion = SilabsConfigKey(SilabsConfig::kMatterConfig_KeyBase, 0x08);
     MigrationManager::MigrateUint16(kOldKey_HardwareVersion, SilabsConfig::kConfigKey_HardwareVersion);
+}
+
+void MigrateS3Certificates()
+{
+#ifdef _SILICON_LABS_32B_SERIES_3
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    // Suspend all other threads so they don't interfere with the migration
+    // This is mostly targeted to the zigbee task that overwrites our certificates
+    uint32_t threadCount         = osThreadGetCount();
+    osThreadId_t * threadIdTable = new osThreadId_t[threadCount];
+    //  Forms a table of the active thread ids
+    osThreadEnumerate(threadIdTable, threadCount);
+    for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
+    {
+        osThreadId_t tId = threadIdTable[tIdIndex];
+        if (tId != osThreadGetId())
+        {
+            osThreadSuspend(tId);
+        }
+    }
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
+    uint32_t tokenStartAddr = reinterpret_cast<uint32_t>(&linker_static_secure_tokens_begin);
+    uint32_t secondPageAddr = tokenStartAddr + FLASH_PAGE_SIZE;
+    uint32_t credsBaseAddr  = 0;
+
+    // when credentials have been provided and stored in the first page of the static token location, we temporarely migrate them to
+    // the second page.
+    if (CHIP_NO_ERROR == SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_Base_Addr, credsBaseAddr) &&
+        (credsBaseAddr >= tokenStartAddr && credsBaseAddr < secondPageAddr))
+    {
+        uint32_t cdSize                = 0;
+        uint32_t dacSize               = 0;
+        uint32_t paiSize               = 0;
+        bool actionSucceed             = false;
+        Provision::Manager & provision = Provision::Manager::GetInstance();
+
+        // Read the size of each credential type to determine the buffer size needed
+        actionSucceed = (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_CD_Size, cdSize) == CHIP_NO_ERROR);
+        actionSucceed |= (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_DAC_Size, dacSize) == CHIP_NO_ERROR);
+        actionSucceed |= (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_PAI_Size, paiSize) == CHIP_NO_ERROR);
+
+        if (actionSucceed)
+        {
+            // Depending on existing configuration, certifications could be overlapping from the first page to the second page.
+            // To mitigate any risk, we want to read all buffer before starting to move any of them.
+            // allocate buffers for each certificate.
+            uint8_t * dacBuffer = new uint8_t[dacSize];
+            uint8_t * paiBuffer = new uint8_t[paiSize];
+            uint8_t * cdBuffer  = new uint8_t[cdSize];
+            actionSucceed       = (dacBuffer != nullptr && paiBuffer != nullptr && cdBuffer != nullptr);
+            MutableByteSpan dacBufferSpan(dacBuffer, dacSize);
+            MutableByteSpan paiBufferSpan(paiBuffer, paiSize);
+            MutableByteSpan cdBufferSpan(cdBuffer, cdSize);
+
+            // Step to read the certificates at their current location
+            if (actionSucceed)
+            {
+                provision.Init();
+                // Read all certs and store it in our allocated buffer
+                actionSucceed = (provision.GetStorage().GetDeviceAttestationCert(dacBufferSpan) == CHIP_NO_ERROR);
+                actionSucceed |= (provision.GetStorage().GetProductAttestationIntermediateCert(paiBufferSpan) == CHIP_NO_ERROR);
+                actionSucceed |= (provision.GetStorage().GetCertificationDeclaration(cdBufferSpan) == CHIP_NO_ERROR);
+            }
+
+            // Step to write the certificates to their new location
+            if (actionSucceed)
+            {
+                provision.GetStorage().Initialize(0, 0);
+                provision.GetStorage().SetCredentialsBaseAddress(secondPageAddr);
+                // Write all certs back to the second page
+                // On the first write, we erase the new page.
+                provision.GetStorage().SetDeviceAttestationCert(dacBufferSpan);
+                provision.GetStorage().SetProductAttestationIntermediateCert(paiBufferSpan);
+                provision.GetStorage().SetCertificationDeclaration(cdBufferSpan);
+            }
+
+            // Free allocated memory. If allocation step failed we are still safe do to so.
+            delete[] dacBuffer;
+            delete[] paiBuffer;
+            delete[] cdBuffer;
+        }
+    }
+
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    // resume all threads
+    for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
+    {
+        osThreadId_t tId = threadIdTable[tIdIndex];
+        if (tId != osThreadGetId())
+        {
+            osThreadResume(tId);
+        }
+    }
+
+    delete[] threadIdTable;
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#endif //_SILICON_LABS_32B_SERIES_3
 }
 
 } // namespace Silabs

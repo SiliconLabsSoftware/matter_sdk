@@ -19,6 +19,7 @@
 
 #include <lib/support/CodeUtils.h>
 #include <platform/DiagnosticDataProvider.h>
+#include <platform/silabs/MigrationManager.h>
 #include <platform/silabs/SilabsConfig.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
@@ -38,6 +39,13 @@ CHIP_ERROR SilabsPlatform::VerifyIfUpdated()
         mRebootCause = to_underlying(BootReasonType::kSoftwareUpdateCompleted);
     }
 
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR SilabsPlatform::nvmInit()
+{
+    ReturnErrorOnFailure(Internal::SilabsConfig::Init());
+    Silabs::MigrationManager::GetMigrationInstance().applyMigrations();
     return CHIP_NO_ERROR;
 }
 

@@ -80,6 +80,11 @@ public:
      */
     CHIP_ERROR VerifyIfUpdated();
 
+    /** nvmInit
+     * @brief Initialize the nvm driver (e.g., NVM3), and execute any needed migrations.
+     */
+    CHIP_ERROR nvmInit();
+
 private:
     friend SilabsPlatform & GetPlatform(void);
 
