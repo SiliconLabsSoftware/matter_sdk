@@ -441,8 +441,8 @@ sl_status_t SetWifiConfigurations()
 
     if (wfx_rsi.ap_chan != SL_WIFI_AUTO_CHANNEL)
     {
-        // AP CHANNEL is set - signifies that the scan was done for a specific SSID
-        // Update the channel and BSSID in the profile
+       // AP channel is known - This indicates that the netowrk scan was done for a specific SSID.
+       // Providing the channel and BSSID in the profile avoids scanning all channels again.
         profile.config.channel.channel = wfx_rsi.ap_chan;
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWifiMacAddressLength);
