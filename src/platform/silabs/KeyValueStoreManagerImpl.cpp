@@ -273,10 +273,10 @@ void KeyValueStoreManagerImpl::KvsMapMigration(void)
 {
 // this migration precedes Series 3, we don't need to run it in that case
 #ifndef _SILICON_LABS_32B_SERIES_3
-    size_t readlen                  = 0;
-    constexpr uint8_t oldMaxEntries = 120;
-    size_t maxStringLen             = PersistentStorageDelegate::kKeyLengthMax + 1;
-    char * mKvsStoredKeyString      = new char[oldMaxEntries * maxStringLen];
+    size_t readlen                   = 0;
+    constexpr uint32_t oldMaxEntries = 120;
+    uint32_t maxStringLen            = PersistentStorageDelegate::kKeyLengthMax + 1;
+    char * mKvsStoredKeyString       = new char[oldMaxEntries * maxStringLen];
 
     CHIP_ERROR err;
     if (!mKvsStoredKeyString)

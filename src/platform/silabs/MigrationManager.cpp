@@ -190,8 +190,8 @@ void MigrateS3Certificates()
 
         // Read the size of each credential type to determine the buffer size needed
         actionSucceed = (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_CD_Size, cdSize) == CHIP_NO_ERROR);
-        actionSucceed |= (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_DAC_Size, dacSize) == CHIP_NO_ERROR);
-        actionSucceed |= (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_PAI_Size, paiSize) == CHIP_NO_ERROR);
+        actionSucceed &= (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_DAC_Size, dacSize) == CHIP_NO_ERROR);
+        actionSucceed &= (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_PAI_Size, paiSize) == CHIP_NO_ERROR);
 
         if (actionSucceed)
         {
@@ -212,8 +212,8 @@ void MigrateS3Certificates()
                 provision.Init();
                 // Read all certs and store it in our allocated buffer
                 actionSucceed = (provision.GetStorage().GetDeviceAttestationCert(dacBufferSpan) == CHIP_NO_ERROR);
-                actionSucceed |= (provision.GetStorage().GetProductAttestationIntermediateCert(paiBufferSpan) == CHIP_NO_ERROR);
-                actionSucceed |= (provision.GetStorage().GetCertificationDeclaration(cdBufferSpan) == CHIP_NO_ERROR);
+                actionSucceed &= (provision.GetStorage().GetProductAttestationIntermediateCert(paiBufferSpan) == CHIP_NO_ERROR);
+                actionSucceed &= (provision.GetStorage().GetCertificationDeclaration(cdBufferSpan) == CHIP_NO_ERROR);
             }
 
             // Step to write the certificates to their new location
