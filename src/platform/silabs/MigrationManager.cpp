@@ -57,6 +57,23 @@ static migrationData_t migrationTable[] = {
 
 void MigrationManager::applyMigrations()
 {
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    // Suspend all other threads so they don't interfere with the migration
+    // This is mostly targeted to the zigbee task that overwrites our certificates
+    uint32_t threadCount         = osThreadGetCount();
+    osThreadId_t * threadIdTable = new osThreadId_t[threadCount];
+    //  Forms a table of the active thread ids
+    osThreadEnumerate(threadIdTable, threadCount);
+    for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
+    {
+        osThreadId_t tId = threadIdTable[tIdIndex];
+        if (tId != osThreadGetId())
+        {
+            osThreadSuspend(tId);
+        }
+    }
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
     uint32_t lastMigationGroupDone = 0;
     SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_MigrationCounter, lastMigationGroupDone);
 
@@ -70,6 +87,19 @@ void MigrationManager::applyMigrations()
         }
     }
     SilabsConfig::WriteConfigValue(SilabsConfig::kConfigKey_MigrationCounter, completedMigrationGroup);
+
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    // resume all threads
+    for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
+    {
+        osThreadId_t tId = threadIdTable[tIdIndex];
+        if (tId != osThreadGetId())
+        {
+            osThreadResume(tId);
+        }
+    }
+    delete[] threadIdTable;
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
 
 void MigrationManager::MigrateUint16(uint32_t old_key, uint32_t new_key)
@@ -143,23 +173,6 @@ void MigrateHardwareVersion(void)
 void MigrateS3Certificates()
 {
 #ifdef _SILICON_LABS_32B_SERIES_3
-#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-    // Suspend all other threads so they don't interfere with the migration
-    // This is mostly targeted to the zigbee task that overwrites our certificates
-    uint32_t threadCount         = osThreadGetCount();
-    osThreadId_t * threadIdTable = new osThreadId_t[threadCount];
-    //  Forms a table of the active thread ids
-    osThreadEnumerate(threadIdTable, threadCount);
-    for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
-    {
-        osThreadId_t tId = threadIdTable[tIdIndex];
-        if (tId != osThreadGetId())
-        {
-            osThreadSuspend(tId);
-        }
-    }
-#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-
     uint32_t tokenStartAddr = reinterpret_cast<uint32_t>(&linker_static_secure_tokens_begin);
     uint32_t secondPageAddr = tokenStartAddr + FLASH_PAGE_SIZE;
     uint32_t credsBaseAddr  = 0;
@@ -221,20 +234,6 @@ void MigrateS3Certificates()
             delete[] cdBuffer;
         }
     }
-
-#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-    // resume all threads
-    for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
-    {
-        osThreadId_t tId = threadIdTable[tIdIndex];
-        if (tId != osThreadGetId())
-        {
-            osThreadResume(tId);
-        }
-    }
-
-    delete[] threadIdTable;
-#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 #endif //_SILICON_LABS_32B_SERIES_3
 }
 
