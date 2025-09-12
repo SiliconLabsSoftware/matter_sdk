@@ -230,7 +230,7 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
     Protocols::InteractionModel::Status status;
     app::DataModel::Nullable<uint8_t> currentlevel;
     // Read currentlevel value
-    status = LevelControl::Attributes::CurrentLevel::Get(1, currentlevel);
+    status = LevelControl::Attributes::CurrentLevel::Get(LIGHT_ENDPOINT, currentlevel);
     PlatformMgr().UnlockChipStack();
     VerifyOrReturn(Protocols::InteractionModel::Status::Success == status,
                    ChipLogError(NotSpecified, "Failed to get CurrentLevel attribute"));
