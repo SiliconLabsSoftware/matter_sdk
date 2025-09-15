@@ -24,6 +24,7 @@
 #include "MigrationManager.h"
 #include <cmsis_os2.h>
 #include <crypto/CHIPCryptoPAL.h>
+#include <lib/support/ScopedBuffer.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/KeyValueStoreManager.h>
 #include <platform/silabs/SilabsConfig.h>
@@ -273,22 +274,23 @@ void KeyValueStoreManagerImpl::KvsMapMigration(void)
 {
 // this migration precedes Series 3, we don't need to run it in that case
 #ifndef _SILICON_LABS_32B_SERIES_3
-    size_t readlen                   = 0;
-    constexpr uint32_t oldMaxEntries = 120;
-    uint32_t maxStringLen            = PersistentStorageDelegate::kKeyLengthMax + 1;
-    char * mKvsStoredKeyString       = new char[oldMaxEntries * maxStringLen];
+    size_t readlen                 = 0;
+    constexpr size_t oldMaxEntries = 120;
+    uint32_t maxStringLen          = 33; // determined by constant PersistentStorageDelegate::kKeyLengthMax + 1 before migration
+    Platform::ScopedMemoryBuffer<char> mKvsStoredKeyString;
+    mKvsStoredKeyString.Alloc(oldMaxEntries * maxStringLen);
 
-    VerifyOrReturn(mKvsStoredKeyString != nullptr);
+    VerifyOrReturn(mKvsStoredKeyString.Get() != nullptr);
 
-    CHIP_ERROR err =
-        SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_KvsStringKeyMap, reinterpret_cast<uint8_t *>(mKvsStoredKeyString),
-                                         oldMaxEntries * maxStringLen, readlen);
+    CHIP_ERROR err = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_KvsStringKeyMap,
+                                                      reinterpret_cast<uint8_t *>(mKvsStoredKeyString.Get()),
+                                                      oldMaxEntries * maxStringLen, readlen);
 
     if (err == CHIP_NO_ERROR)
     {
-        for (uint8_t i = 0; i < oldMaxEntries; i++)
+        for (uint8_t i = 0; i < std::min(oldMaxEntries, KeyValueStoreManagerImpl::kMaxEntries); i++)
         {
-            char * keyString = mKvsStoredKeyString + (i * maxStringLen);
+            char * keyString = mKvsStoredKeyString.Get() + (i * maxStringLen);
             if (keyString[0] != 0)
             {
                 size_t dataLen   = 0;
@@ -318,7 +320,6 @@ void KeyValueStoreManagerImpl::KvsMapMigration(void)
         // start with a fresh kvs section.
         KeyValueStoreMgrImpl().ErasePartition();
     }
-    delete[] mKvsStoredKeyString;
 #endif
 }
 

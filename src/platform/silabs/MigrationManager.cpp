@@ -21,6 +21,7 @@
 #include <headers/ProvisionManager.h>
 #include <headers/ProvisionStorage.h>
 #include <lib/support/CodeUtils.h>
+#include <lib/support/ScopedBuffer.h>
 #include <lib/support/Span.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/SilabsConfig.h>
@@ -60,16 +61,20 @@ void MigrationManager::ApplyMigrations()
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
     // Suspend all other threads so they don't interfere with the migration
     // This is mostly targeted to the zigbee task that overwrites our certificates
-    uint32_t threadCount         = osThreadGetCount();
-    osThreadId_t * threadIdTable = new osThreadId_t[threadCount];
-    //  Forms a table of the active thread ids
-    osThreadEnumerate(threadIdTable, threadCount);
-    for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
+    uint32_t threadCount = osThreadGetCount();
+    chip::Platform::ScopedMemoryBuffer<osThreadId_t> threadIdTable;
+    threadIdTable.Alloc(threadCount);
+    if (threadIdTable.Get() != nullptr)
     {
-        osThreadId_t tId = threadIdTable[tIdIndex];
-        if (tId != osThreadGetId())
+        //  Forms a table of the active thread ids
+        osThreadEnumerate(threadIdTable.Get(), threadCount);
+        for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
         {
-            osThreadSuspend(tId);
+            osThreadId_t tId = threadIdTable[tIdIndex];
+            if (tId != osThreadGetId())
+            {
+                osThreadSuspend(tId);
+            }
         }
     }
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
@@ -90,15 +95,17 @@ void MigrationManager::ApplyMigrations()
 
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
     // resume all threads
-    for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
+    if (threadIdTable.Get() != nullptr)
     {
-        osThreadId_t tId = threadIdTable[tIdIndex];
-        if (tId != osThreadGetId())
+        for (uint8_t tIdIndex = 0; tIdIndex < threadCount; tIdIndex++)
         {
-            osThreadResume(tId);
+            osThreadId_t tId = threadIdTable[tIdIndex];
+            if (tId != osThreadGetId())
+            {
+                osThreadResume(tId);
+            }
         }
     }
-    delete[] threadIdTable;
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
 
@@ -195,69 +202,34 @@ void MigrateS3Certificates()
         // Depending on existing configuration, certifications could be overlapping from the first page to the second page.
         // To mitigate any risk, we want to read all buffer before starting to move any of them.
         // allocate buffers for each certificate.
-        uint8_t * dacBuffer = new uint8_t[dacSize];
-        uint8_t * paiBuffer = new uint8_t[paiSize];
-        uint8_t * cdBuffer  = new uint8_t[cdSize];
-        VerifyOrReturn(dacBuffer != nullptr && paiBuffer != nullptr && cdBuffer != nullptr);
+        // ScopedMemoryBuffer will automatically free the memory when it goes out of scope.
+        Platform::ScopedMemoryBuffer<uint8_t> dacBuffer;
+        Platform::ScopedMemoryBuffer<uint8_t> paiBuffer;
+        Platform::ScopedMemoryBuffer<uint8_t> cdBuffer;
+        dacBuffer.Alloc(dacSize);
+        VerifyOrReturn(dacBuffer.Get() != nullptr);
+        paiBuffer.Alloc(paiSize);
+        VerifyOrReturn(paiBuffer.Get() != nullptr);
+        cdBuffer.Alloc(cdSize);
+        VerifyOrReturn(cdBuffer.Get() != nullptr);
 
-        MutableByteSpan dacBufferSpan(dacBuffer, dacSize);
-        MutableByteSpan paiBufferSpan(paiBuffer, paiSize);
-        MutableByteSpan cdBufferSpan(cdBuffer, cdSize);
+        MutableByteSpan dacBufferSpan(dacBuffer.Get(), dacSize);
+        MutableByteSpan paiBufferSpan(paiBuffer.Get(), paiSize);
+        MutableByteSpan cdBufferSpan(cdBuffer.Get(), cdSize);
 
-        enum migrationStep
-        {
-            eReadDac,
-            eReadPai,
-            eReadCd,
-            eWriteCertificates,
-            eCleanup,
-        };
-
-        migrationStep steps = eReadDac;
         provision.Init();
+        // Read All certificates are the current location
+        VerifyOrReturn(provision.GetStorage().GetDeviceAttestationCert(dacBufferSpan) == CHIP_NO_ERROR);
+        VerifyOrReturn(provision.GetStorage().GetProductAttestationIntermediateCert(paiBufferSpan) == CHIP_NO_ERROR);
+        VerifyOrReturn(provision.GetStorage().GetCertificationDeclaration(cdBufferSpan) == CHIP_NO_ERROR);
 
-        while (steps != eCleanup)
-        {
-            switch (steps)
-            {
-            case eReadDac:
-                // read DAC at its current location.
-                steps = (provision.GetStorage().GetDeviceAttestationCert(dacBufferSpan) == CHIP_NO_ERROR) ? eReadPai : eCleanup;
-                break;
-
-            case eReadPai:
-                // read PAI at its current location.
-                steps = (provision.GetStorage().GetProductAttestationIntermediateCert(paiBufferSpan) == CHIP_NO_ERROR) ? eReadCd
-                                                                                                                       : eCleanup;
-                break;
-
-            case eReadCd:
-                // read CD at its current location.
-                steps = (provision.GetStorage().GetCertificationDeclaration(cdBufferSpan) == CHIP_NO_ERROR) ? eWriteCertificates
-                                                                                                            : eCleanup;
-                break;
-
-            case eWriteCertificates:
-                // Step to write the certificates to their new location
-                provision.GetStorage().Initialize(0, 0);
-                provision.GetStorage().SetCredentialsBaseAddress(secondPageAddr);
-                // Write all certs back to the second page
-                // The first set/write, after an Initialize, erases the new page. We don't need to do it explicitly.
-                provision.GetStorage().SetDeviceAttestationCert(dacBufferSpan);
-                provision.GetStorage().SetProductAttestationIntermediateCert(paiBufferSpan);
-                provision.GetStorage().SetCertificationDeclaration(cdBufferSpan);
-                steps = eCleanup;
-                break;
-
-            case eCleanup:
-                // We shouldn't get here but all steps are done. We do the cleanup outside of the while.
-                break;
-            }
-        }
-        // Free allocated memory. If allocation step failed we are still safe do to so.
-        delete[] dacBuffer;
-        delete[] paiBuffer;
-        delete[] cdBuffer;
+        provision.GetStorage().Initialize(0, 0);
+        provision.GetStorage().SetCredentialsBaseAddress(secondPageAddr);
+        // Write all certs back to the second page
+        // The first set/write, after an Initialize, erases the new page. We don't need to do it explicitly.
+        provision.GetStorage().SetDeviceAttestationCert(dacBufferSpan);
+        provision.GetStorage().SetProductAttestationIntermediateCert(paiBufferSpan);
+        provision.GetStorage().SetCertificationDeclaration(cdBufferSpan);
     }
 #endif //_SILICON_LABS_32B_SERIES_3
 }
