@@ -27,7 +27,7 @@
 #include <system/SystemClock.h>
 
 #ifndef SERIALIZED_TIME_TRACKERS_SIZE_BYTES
-// Default size, watermarks store 6 uint32_t, which is 24 bytes
+// Default size, metrics store 6 uint32_t, which is 24 bytes
 // We currently have 19 operations to track, so 19 * 24 = 456 bytes
 // 512 bytes should be enough including the serialization overhead
 #define SERIALIZED_TIME_TRACKERS_SIZE_BYTES 512
@@ -64,7 +64,7 @@ struct TimeTracker
     }
 };
 
-struct Watermark
+struct Metric
 {
     // Values that will be stored in the NVM
     System::Clock::Milliseconds32 mMovingAverage; // Successful operation average time
@@ -92,17 +92,17 @@ public:
     static SilabsTracer & Instance() { return sInstance; }
 
     /** @brief Initialize the SilabsTracer
-     *  This method initializes sets the watermarks and time trackers to 0 and clears the traces buffer.
+     *  This method initializes sets the metrics and time trackers to 0 and clears the traces buffer.
      *  @return CHIP_ERROR, currently no failure is implemented but when the NVM is added this will return an error if the NVM
      * initialization fails.
      */
     CHIP_ERROR Init();
 
-    /** @brief Start storing watermarks in persistent storage
+    /** @brief Start storing metrics in persistent storage
      *  @param storage Pointer to the persistent storage delegate
      *  @return CHIP_ERROR, returns an error if the storage is null
      */
-    CHIP_ERROR StartWatermarksStorage(PersistentStorageDelegate * storage);
+    CHIP_ERROR StartMetricsStorage(PersistentStorageDelegate * storage);
 
     /** @brief Begin tracing a time operation
      * This calls the OutputTrace method to log the trace if logs are enabled, and stores the time tracker in the buffer if the
@@ -136,7 +136,7 @@ public:
     }
     /** @brief TimeTraceInstant
      *  We currently allow to register App specific operations to be tracked by the time tracer, but only for instant traces, and
-     * not for watermarks.
+     * not for metrics.
      * @param appOperation The name of the app operation key to generate a trace for
      */
     CHIP_ERROR TimeTraceInstant(CharSpan & appOperationKey, CHIP_ERROR error = CHIP_NO_ERROR);
@@ -164,16 +164,16 @@ public:
      */
     CHIP_ERROR OutputTimeTracker(const TimeTracker & tracker);
 
-    /** @brief Output a watermark for a specific operation
-     *  @param aOperation The operation to output the watermark for
+    /** @brief Output a metric for a specific operation
+     *  @param aOperation The operation to output the metric for
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized
      */
-    CHIP_ERROR OutputWaterMark(char* aOperation);
+    CHIP_ERROR OutputMetric(char* aOperation);
 
-    /** @brief Output all watermarks
-     *  @return CHIP_ERROR, CHIP_ERROR_UNINITIALIZED error if any watermark output fails
+    /** @brief Output all metrics
+     *  @return CHIP_ERROR, CHIP_ERROR_UNINITIALIZED error if any metric output fails
      */
-    CHIP_ERROR OutputAllWaterMarks();
+    CHIP_ERROR OutputAllMetrics();
 
     /** @brief Flush all traces from the buffer in the order they were added
      * If logs are enabled, this will output all the traces in the buffer and clear the buffer.
@@ -195,15 +195,15 @@ public:
     SilabsTracer(SilabsTracer const &)             = delete;
     SilabsTracer & operator=(SilabsTracer const &) = delete;
 
-    /** @brief Save the watermarks to persistent storage
+    /** @brief Save the metrics to persistent storage
      *  @return CHIP_ERROR, returns an error if the storage is not initialized
      */
-    CHIP_ERROR SaveWatermarks();
+    CHIP_ERROR SaveMetrics();
 
-    /** @brief Load the watermarks from persistent storage
+    /** @brief Load the metrics from persistent storage
      *  @return CHIP_ERROR, returns an error if the storage is not initialized
      */
-    CHIP_ERROR LoadWatermarks();
+    CHIP_ERROR LoadMetrics();
 
     // Methods to get the time trackers metrics values
 
@@ -213,11 +213,11 @@ public:
      */
     TimeTracker GetTimeTracker(TimeTraceOperation aOperation) { return mLatestTimeTrackers[to_underlying(aOperation)]; }
 
-    /** @brief Get the watermark for a specific operation
-     *  @param aOperation The operation to get the watermark for
-     *  @return Watermark, the watermark for the operation
+    /** @brief Get the metric for a specific operation
+     *  @param aOperation The operation to get the metric for
+     *  @return Metric, the metric for the operation
      */
-    Watermark GetWatermark(TimeTraceOperation aOperation) { return mWatermarks[to_underlying(aOperation)]; }
+    Metric GetMetric(TimeTraceOperation aOperation) { return mMetrics[to_underlying(aOperation)]; }
     size_t GetTimeTracesCount() { return mBufferedTrackerCount; }
 
     CHIP_ERROR GetTraceByOperation(size_t aOperation, MutableCharSpan & buffer) const;
@@ -294,7 +294,7 @@ private:
         char label[kMaxLabelLength];
         char group[kMaxGroupLength];
         System::Clock::Milliseconds32 startTime;
-        Watermark watermark;
+        Metric metric;
     };
 
     // Singleton class with a static instance
@@ -308,8 +308,8 @@ private:
     // Time trackers to store time stamps for ongoing operations
     TimeTracker mLatestTimeTrackers[kNumTraces];
 
-    // Watermarks for each operation
-    Watermark mWatermarks[kNumTraces];
+    // Metrics for each operation
+    Metric mMetrics[kNumTraces];
 
     // Contains all the named traces
     NamedTrace mNamedTraces[kMaxNamedTraces];

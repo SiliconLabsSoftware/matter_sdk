@@ -32,106 +32,6 @@ namespace {
 using TimeTraceOperation = Tracing::Silabs::TimeTraceOperation;
 using SilabsTracer       = Tracing::Silabs::SilabsTracer;
 
-TimeTraceOperation StringToTimeTraceOperation(const char * str)
-{
-    if (strcmp(str, "Spake2p") == 0)
-    {
-        return TimeTraceOperation::kSpake2p;
-    }
-    else if (strcmp(str, "Pake1") == 0)
-    {
-        return TimeTraceOperation::kPake1;
-    }
-    else if (strcmp(str, "Pake2") == 0)
-    {
-        return TimeTraceOperation::kPake2;
-    }
-    else if (strcmp(str, "Pake3") == 0)
-    {
-        return TimeTraceOperation::kPake3;
-    }
-    else if (strcmp(str, "OperationalCredentials") == 0)
-    {
-        return TimeTraceOperation::kOperationalCredentials;
-    }
-    else if (strcmp(str, "AttestationVerification") == 0)
-    {
-        return TimeTraceOperation::kAttestationVerification;
-    }
-    else if (strcmp(str, "CSR") == 0)
-    {
-        return TimeTraceOperation::kCSR;
-    }
-    else if (strcmp(str, "NOC") == 0)
-    {
-        return TimeTraceOperation::kNOC;
-    }
-    else if (strcmp(str, "TransportLayer") == 0)
-    {
-        return TimeTraceOperation::kTransportLayer;
-    }
-    else if (strcmp(str, "TransportSetup") == 0)
-    {
-        return TimeTraceOperation::kTransportSetup;
-    }
-    else if (strcmp(str, "FindOperational") == 0)
-    {
-        return TimeTraceOperation::kFindOperational;
-    }
-    else if (strcmp(str, "CaseSession") == 0)
-    {
-        return TimeTraceOperation::kCaseSession;
-    }
-    else if (strcmp(str, "Sigma1") == 0)
-    {
-        return TimeTraceOperation::kSigma1;
-    }
-    else if (strcmp(str, "Sigma2") == 0)
-    {
-        return TimeTraceOperation::kSigma2;
-    }
-    else if (strcmp(str, "Sigma3") == 0)
-    {
-        return TimeTraceOperation::kSigma3;
-    }
-    else if (strcmp(str, "OTA") == 0)
-    {
-        return TimeTraceOperation::kOTA;
-    }
-    else if (strcmp(str, "ImageUpload") == 0)
-    {
-        return TimeTraceOperation::kImageUpload;
-    }
-    else if (strcmp(str, "ImageVerification") == 0)
-    {
-        return TimeTraceOperation::kImageVerification;
-    }
-    else if (strcmp(str, "AppApplyTime") == 0)
-    {
-        return TimeTraceOperation::kAppApplyTime;
-    }
-    else if (strcmp(str, "Bootup") == 0)
-    {
-        return TimeTraceOperation::kBootup;
-    }
-    else if (strcmp(str, "SilabsInit") == 0)
-    {
-        return TimeTraceOperation::kSilabsInit;
-    }
-    else if (strcmp(str, "MatterInit") == 0)
-    {
-        return TimeTraceOperation::kMatterInit;
-    }
-    else if (strcmp(str, "BufferFull") == 0)
-    {
-        return TimeTraceOperation::kBufferFull;
-    }
-    else
-    {
-        return TimeTraceOperation::kNumTraces;
-    }
-}
-
 Engine sShellTracingSubCommands;
 
 /********************************************************
@@ -165,23 +65,22 @@ CHIP_ERROR TracingCommandHandler(int argc, char ** argv)
     return sShellTracingSubCommands.ExecCommand(argc, argv);
 }
 
-CHIP_ERROR WatermarksCommandHandler(int argc, char ** argv)
+CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
 {
     CHIP_ERROR error = CHIP_NO_ERROR;
     if (argc == 0 || argv == nullptr || argv[0] == nullptr)
     {
-        streamer_printf(streamer_get(), "Usage: tracing watermarks <TimeTraceOperation>\r\n");
+        streamer_printf(streamer_get(), "Usage: tracing metrics <TimeTraceOperation>\r\n");
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
     if (strcmp(argv[0], "all") == 0)
     {
-        error = SilabsTracer::Instance().OutputAllWaterMarks();
+        error = SilabsTracer::Instance().OutputAllMetrics();
     }
     else
     {
-        TimeTraceOperation operation = StringToTimeTraceOperation(argv[0]);
-        error                        = SilabsTracer::Instance().OutputWaterMark(operation);
+        error = SilabsTracer::Instance().OutputMetric(argv[0]);
     }
     return error;
 }
@@ -227,7 +126,7 @@ void RegisterCommands()
     static const Shell::Command sTracingSubCommands[] = {
         { &TracingHelpHandler, "help", "Output the help menu" },
         { &TracingListTimeOperations, "list", "List all available TimeTraceOperations" },
-        { &WatermarksCommandHandler, "watermarks", "Display runtime watermarks. Usage: watermarks <TimeTraceOperation>" },
+        { &MetricsCommandHandler, "metrics", "Display runtime metrics. Usage: metrics <TimeTraceOperation>" },
         { &FlushCommandHandler, "flush", "Display buffered traces. Usage: flush <TimeTraceOperation>" },
     };
     static const Shell::Command cmds_silabs_tracing = { &TracingCommandHandler, "tracing",
