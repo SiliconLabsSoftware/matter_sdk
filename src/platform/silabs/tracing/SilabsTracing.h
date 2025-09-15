@@ -164,6 +164,8 @@ public:
      */
     CHIP_ERROR OutputTimeTracker(const TimeTracker & tracker);
 
+    CHIP_ERROR OutputMetric(size_t aOperationIdx);
+
     /** @brief Output a metric for a specific operation
      *  @param aOperation The operation to output the metric for
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized
@@ -174,6 +176,8 @@ public:
      *  @return CHIP_ERROR, CHIP_ERROR_UNINITIALIZED error if any metric output fails
      */
     CHIP_ERROR OutputAllMetrics();
+
+    CHIP_ERROR OutputAllCurrentOperations();
 
     /** @brief Flush all traces from the buffer in the order they were added
      * If logs are enabled, this will output all the traces in the buffer and clear the buffer.
@@ -240,6 +244,11 @@ public:
      */
     CHIP_ERROR FindAppOperationIndex(CharSpan & appOperationKey, size_t & index) const;
 
+
+    // const char * TimeTraceOperationToString(size_t operation);
+    TimeTraceOperation StringToTimeTraceOperation(const char * str);
+    const char * OperationIndexToString(size_t operation);
+
     inline size_t GetRegisteredAppOperationsCount() { return mAppOperationKeyCount; }
     inline char * GetAppOperationKey(size_t index) { return mAppOperationKeys[index]; }
 
@@ -293,7 +302,8 @@ private:
         uint8_t groupLen = 0;
         char label[kMaxLabelLength];
         char group[kMaxGroupLength];
-        System::Clock::Milliseconds32 startTime;
+        TimeTracker tracker;
+        // System::Clock::Milliseconds32 startTime;
         Metric metric;
     };
 
@@ -356,7 +366,7 @@ private:
 };
 
 const char * TimeTraceOperationToString(TimeTraceOperation operation);
-const char * TimeTraceOperationToString(size_t operation);
+const char * OperationTypeToString(OperationType type);
 
 } // namespace Silabs
 } // namespace Tracing
