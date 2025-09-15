@@ -32,19 +32,6 @@ namespace {
 using TimeTraceOperation = Tracing::Silabs::TimeTraceOperation;
 using SilabsTracer       = Tracing::Silabs::SilabsTracer;
 
-TimeTraceOperation StringToTimeTraceOperation(const char * str)
-{
-    for (auto ttOp = 0; ttOp < to_underlying(TimeTraceOperation::kNumTraces); ttOp++)
-    {
-        TimeTraceOperation op = static_cast<TimeTraceOperation>(ttOp);
-        if (strcmp(str, TimeTraceOperationToString(op)) == 0)
-        {
-            return op;
-        }
-    }
-    return TimeTraceOperation::kNumTraces;
-}
-
 Engine sShellTracingSubCommands;
 
 /********************************************************
@@ -78,23 +65,22 @@ CHIP_ERROR TracingCommandHandler(int argc, char ** argv)
     return sShellTracingSubCommands.ExecCommand(argc, argv);
 }
 
-CHIP_ERROR WatermarksCommandHandler(int argc, char ** argv)
+CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
 {
     CHIP_ERROR error = CHIP_NO_ERROR;
     if (argc == 0 || argv == nullptr || argv[0] == nullptr)
     {
-        streamer_printf(streamer_get(), "Usage: tracing watermarks <TimeTraceOperation>\r\n");
+        streamer_printf(streamer_get(), "Usage: tracing metrics <TimeTraceOperation>\r\n");
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
     if (strcmp(argv[0], "all") == 0)
     {
-        error = SilabsTracer::Instance().OutputAllWaterMarks();
+        error = SilabsTracer::Instance().OutputAllMetrics();
     }
     else
     {
-        TimeTraceOperation operation = StringToTimeTraceOperation(argv[0]);
-        error                        = SilabsTracer::Instance().OutputWaterMark(operation);
+        error = SilabsTracer::Instance().OutputMetric(argv[0]);
     }
     return error;
 }
@@ -140,7 +126,7 @@ void RegisterCommands()
     static const Shell::Command sTracingSubCommands[] = {
         { &TracingHelpHandler, "help", "Output the help menu" },
         { &TracingListTimeOperations, "list", "List all available TimeTraceOperations" },
-        { &WatermarksCommandHandler, "watermarks", "Display runtime watermarks. Usage: watermarks <TimeTraceOperation>" },
+        { &MetricsCommandHandler, "metrics", "Display runtime metrics. Usage: metrics <TimeTraceOperation>" },
         { &FlushCommandHandler, "flush", "Display buffered traces. Usage: flush <TimeTraceOperation>" },
     };
     static const Shell::Command cmds_silabs_tracing = { &TracingCommandHandler, "tracing",
