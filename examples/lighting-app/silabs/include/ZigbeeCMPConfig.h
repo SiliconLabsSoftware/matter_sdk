@@ -1,38 +1,22 @@
-/*
+/***************************************************************************
+ * @file ZigbeeCMPConfig.h
+ * @brief Configuration for the concurrent Zigbee Cluster Library (ZCL) for the Silicon Labs platform.
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
  *
- *    Copyright (c) 2020 Project CHIP Authors
- *    Copyright (c) 2019 Google LLC.
- *    All rights reserved.
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
+ ******************************************************************************/
 #pragma once
-
-#include "silabs_utils.h"
-
-// ---- Lighting Example App Config ----
-
-#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-#include "sl_cmp_config.h"
-#ifdef SL_MATTER_ZIGBEE_CMP
-#include "ZigbeeCMPConfig.h"
-#elif defined(SL_MATTER_ZIGBEE_SEQUENTIAL)
-#include "ZigbeeSequentialConfig.h"
-#endif // SL_MATTER_ZIGBEE_CMP
-#else
-#define APP_TASK_NAME "Light"
-#define BLE_DEV_NAME "SL-" APP_TASK_NAME
+#define APP_TASK_NAME "CMP-Light"
+#define BLE_DEV_NAME "SL-" APP_TASK_NAME "-Conc"
 
 #define ON_DEMO_BITMAP                                                                                                             \
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0xfc,  \
@@ -89,11 +73,3 @@
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x80, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03, 0xc0, 0xff, 0xff, 0xff, 0xff,    \
         0xff, 0xff, 0x3f, 0xfc, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,    \
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-
-// Must match with Matter Light endpoint
-#define LIGHT_ENDPOINT 1
-
-// Time it takes in ms for the simulated actuator to move from one
-// state to another.
-#define ACTUATOR_MOVEMENT_PERIOD_MS 10

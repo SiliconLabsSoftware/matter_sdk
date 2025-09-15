@@ -26,11 +26,9 @@
 #include "RGBLEDWidget.h"
 #endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 
-#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 #include <app/persistence/AttributePersistenceProviderInstance.h>
 #include <app/persistence/DefaultAttributePersistenceProvider.h>
 #include <app/persistence/DeferredAttributePersistenceProvider.h>
-#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/clusters/on-off-server/on-off-server.h>
@@ -73,7 +71,6 @@ RGBLEDWidget sLightLED; // Use RGBLEDWidget if RGB LED functionality is enabled
 LEDWidget sLightLED; // Use LEDWidget for basic LED functionality
 #endif
 
-#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 // Array of attributes that will have their non-volatile storage deferred/delayed.
 // This is useful for attributes that change frequently over short periods of time, such as during transitions.
 // In this example, we defer the storage of the Level Control's CurrentLevel attribute and the Color Control's
@@ -83,7 +80,6 @@ DeferredAttribute gDeferredAttributeTable[] = {
     DeferredAttribute(ConcreteAttributePath(LIGHT_ENDPOINT, ColorControl::Id, ColorControl::Attributes::CurrentHue::Id)),
     DeferredAttribute(ConcreteAttributePath(LIGHT_ENDPOINT, ColorControl::Id, ColorControl::Attributes::CurrentSaturation::Id))
 };
-#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 } // namespace
 
 using namespace chip::TLV;
@@ -143,7 +139,7 @@ void AppTask::AppTaskMain(void * pvParameter)
 
     // Initialization that needs to happen before the BaseInit is called here as the BaseApplication::Init() will call
     // the AppInit() after BaseInit.
-#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
     // Retrieve the existing AttributePersistenceProvider, which should already be created and initialized.
     // This provider is typically set up by the CodegenDataModelProviderInstance constructor,
     // which is called in InitMatter within MatterConfig.cpp.
@@ -160,7 +156,6 @@ void AppTask::AppTaskMain(void * pvParameter)
     VerifyOrDie(sAppTask.pDeferredAttributePersister != nullptr);
 
     app::SetAttributePersistenceProvider(sAppTask.pDeferredAttributePersister);
-#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 
     CHIP_ERROR err = sAppTask.Init();
     if (err != CHIP_NO_ERROR)
