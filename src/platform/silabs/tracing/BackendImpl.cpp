@@ -39,17 +39,29 @@ TimeTraceOperation MapMetricKeyToOperation(MetricKey metricKey)
         return TimeTraceOperation::kCaseSession;
     if (metricKey == kMetricDeviceRMPRetryCount)
         return TimeTraceOperation::kTransportLayer;
-
-    return TimeTraceOperation::kNumTraces;
+    return TimeTraceOperation::kUnknown;
+    // return TimeTraceOperation::kNumTraces; TODO add back
 }
 
 void BackendImpl::TraceBegin(const char * label, const char * group)
 {
-    SilabsTracer::Instance().TimeTraceBegin(MapMetricKeyToOperation(label));
+    TimeTraceOperation operation = MapMetricKeyToOperation(label);
+    if(operation != TimeTraceOperation::kUnknown){
+        SilabsTracer::Instance().TimeTraceBegin(MapMetricKeyToOperation(label));
+    }
+    else{
+        SilabsTracer::Instance().NamedTraceBegin(label, group);
+    }
 }
 void BackendImpl::TraceEnd(const char * label, const char * group)
 {
-    SilabsTracer::Instance().TimeTraceEnd(MapMetricKeyToOperation(label), CHIP_NO_ERROR);
+    TimeTraceOperation operation = MapMetricKeyToOperation(label);
+    if(operation != TimeTraceOperation::kUnknown){
+        SilabsTracer::Instance().TimeTraceEnd(MapMetricKeyToOperation(label), CHIP_NO_ERROR);
+    }
+    else{
+        SilabsTracer::Instance().NamedTraceEnd(label, group);
+    }
 }
 void BackendImpl::TraceInstant(const char * label, const char * group)
 {

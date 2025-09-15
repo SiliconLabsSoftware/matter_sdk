@@ -85,6 +85,8 @@ public:
     static constexpr size_t kMaxAppOperationKeyLength = 16;
     static constexpr size_t kMaxBufferedTraces        = 64;
     static constexpr size_t kMaxTraceSize             = 128;
+    // If the number of named traces exceeds this value at runtime, the exceeding traces will be dropped.
+    static constexpr int16_t kMaxNamedTraces          = 128;    
 
     /** @brief Get the singleton instance of SilabsTracer */
     static SilabsTracer & Instance() { return sInstance; }
@@ -139,6 +141,22 @@ public:
      */
     CHIP_ERROR TimeTraceInstant(CharSpan & appOperationKey, CHIP_ERROR error = CHIP_NO_ERROR);
 
+    /** @brief Begin a named trace with a label and group
+     * Starts timing a named trace identified by the given label and group.
+     *  @param label The label for the trace
+     *  @param group The group for the trace
+     *  @return CHIP_ERROR, returns CHIP_ERROR_NO_MEMORY if the trace buffer is full.
+     */
+    CHIP_ERROR NamedTraceBegin(const char* label, const char* group);
+
+    /** @brief End a named trace with a label and group
+     * Ends timing for a named trace identified by the given label and group, and records the result.
+     *  @param label The label for the trace
+     *  @param group The group for the trace
+     *  @return CHIP_ERROR, returns CHIP_ERROR_NOT_FOUND if the trace is not active and could not create a new one.
+     */
+    CHIP_ERROR NamedTraceEnd(const char* label, const char* group);
+
     /** @brief Output a time tracker
      * This will output the latest time tracker for a specific operation, without affecting the buffer.
      *  @param tracker The time tracker to output
@@ -150,7 +168,7 @@ public:
      *  @param aOperation The operation to output the watermark for
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized
      */
-    CHIP_ERROR OutputWaterMark(TimeTraceOperation aOperation);
+    CHIP_ERROR OutputWaterMark(char* aOperation);
 
     /** @brief Output all watermarks
      *  @return CHIP_ERROR, CHIP_ERROR_UNINITIALIZED error if any watermark output fails
@@ -267,6 +285,18 @@ private:
         }
     };
 
+    struct NamedTrace {
+        static constexpr size_t kMaxLabelLength = 16;
+        static constexpr size_t kMaxGroupLength = 16;
+        
+        uint8_t labelLen = 0;
+        uint8_t groupLen = 0;
+        char label[kMaxLabelLength];
+        char group[kMaxGroupLength];
+        System::Clock::Milliseconds32 startTime;
+        Watermark watermark;
+    };
+
     // Singleton class with a static instance
     static SilabsTracer sInstance;
 
@@ -280,6 +310,9 @@ private:
 
     // Watermarks for each operation
     Watermark mWatermarks[kNumTraces];
+
+    // Contains all the named traces
+    NamedTrace mNamedTraces[kMaxNamedTraces];
 
     PersistentStorageDelegate * mStorage = nullptr;
 
@@ -300,6 +333,26 @@ private:
      *  @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
     CHIP_ERROR OutputTrace(const TimeTracker & tracker);
+
+    /**
+     * @brief Find the index of a named trace with the given label and group, or create a new one if it does not exist.
+     * If a trace with the specified label and group exists, returns its index.
+     * If not, creates a new trace entry if there is available space and returns its index.
+     * @param label The label for the trace.
+     * @param group The group for the trace.
+     * @return int16_t The index of the found or newly created trace, or -1 if the trace buffer is full.
+     */
+    int16_t FindOrCreateTrace(const char* label, const char* group);
+
+    /**
+     * @brief Find the index of an existing named trace with the given label and group.
+     * Searches for a trace entry matching the specified label and group.
+     * @param label The label for the trace.
+     * @param group The group for the trace.
+     * @return int16_t The index of the found trace, or -1 if no matching trace exists.
+     */
+    int16_t FindExistingTrace(const char* label, const char* group);
+
 };
 
 const char * TimeTraceOperationToString(TimeTraceOperation operation);
