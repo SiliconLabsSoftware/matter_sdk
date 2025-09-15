@@ -205,7 +205,6 @@ CHIP_ERROR ConnectivityManagerImpl::_SetPollingInterval(System::Clock::Milliseco
 {
     // TODO ICD
     (void) pollingInterval;
-    ChipLogError(DeviceLayer, "Set ICD Fast Polling on Silabs Wifi platform");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER */
