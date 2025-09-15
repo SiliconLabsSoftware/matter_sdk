@@ -46,13 +46,8 @@ CHIP_ERROR TracingHelpHandler(int argc, char ** argv)
 
 CHIP_ERROR TracingListTimeOperations(int argc, char ** argv)
 {
-    size_t TotalTraceNumber =
-        to_underlying(TimeTraceOperation::kNumTraces) + SilabsTracer::Instance().GetRegisteredAppOperationsCount();
-    for (size_t i = 0; i < TotalTraceNumber; ++i)
-    {
-        streamer_printf(streamer_get(), "Operation: %s\r\n", Tracing::Silabs::TimeTraceOperationToString(i));
-    }
-    return CHIP_NO_ERROR;
+    return SilabsTracer::Instance().OutputAllCurrentOperations();
+    
 }
 
 CHIP_ERROR TracingCommandHandler(int argc, char ** argv)
@@ -106,7 +101,7 @@ CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
     }
     else
     {
-        TimeTraceOperation operation = StringToTimeTraceOperation(argv[0]);
+        TimeTraceOperation operation = SilabsTracer::Instance().StringToTimeTraceOperation(argv[0]);
         if (operation == TimeTraceOperation::kNumTraces)
         {
             streamer_printf(streamer_get(), "Unknown Operation Key\r\n");
