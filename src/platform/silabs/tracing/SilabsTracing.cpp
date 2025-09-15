@@ -355,6 +355,62 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(CharSpan & aOperationKey, CHIP_ERROR e
     return OutputTrace(tracker);
 }
 
+CHIP_ERROR SilabsTracer::NamedTraceBegin(const char* label, const char* group){
+    int16_t mIndex = FindOrCreateTrace(label, group);
+    if (mIndex >= 0)
+    {
+        auto& trace = mNamedTraces[mIndex];
+        trace.startTime = SILABS_GET_TIME();
+        trace.watermark.mTotalCount++;
+
+        return CHIP_NO_ERROR;
+    }
+    else{
+        return CHIP_ERROR_NO_MEMORY;
+    }
+}
+
+CHIP_ERROR SilabsTracer::NamedTraceEnd(const char* label, const char* group){
+    int8_t mIndex = FindOrCreateTrace(label, group);
+    if( mIndex < 0){
+        // Did not find and buffer too full to create an new entry
+        return CHIP_ERROR_NOT_FOUND;
+    }
+    auto& trace = mNamedTraces[mIndex];
+    if (trace.startTime.count() != 0)
+    {
+        auto endTime = SILABS_GET_TIME();
+
+        auto duration = (endTime < trace.startTime)                                             \
+            ? (endTime + System::Clock::Milliseconds32((UINT32_MAX / 1000)) - trace.startTime)  \
+            : endTime- trace.startTime;
+        
+        trace.watermark.mSuccessfullCount++;
+        trace.watermark.mMovingAverage = System::Clock::Milliseconds32(
+            (trace.watermark.mMovingAverage.count() * (trace.watermark.mSuccessfullCount - 1) + duration.count()) /
+            trace.watermark.mSuccessfullCount);
+
+        if (duration > trace.watermark.mMaxTimeMs)
+        {
+            trace.watermark.mMaxTimeMs = duration;
+        }
+
+        if (trace.watermark.mSuccessfullCount == 1 || duration < trace.watermark.mMinTimeMs)
+        {
+            trace.watermark.mMinTimeMs = duration;
+        }
+
+        if (duration > trace.watermark.mMovingAverage)
+        {
+            trace.watermark.mCountAboveAvg++;
+        }
+
+        trace.startTime = System::Clock::Milliseconds32(0);
+
+        return CHIP_NO_ERROR;
+    }
+}
+
 CHIP_ERROR SilabsTracer::OutputTimeTracker(const TimeTracker & tracker)
 {
     VerifyOrReturnError(tracker.mOperation < kNumTraces + kMaxAppOperationKeys, CHIP_ERROR_INVALID_ARGUMENT,
@@ -400,9 +456,11 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR SilabsTracer::OutputWaterMark(TimeTraceOperation aOperation)
+CHIP_ERROR SilabsTracer::OutputWaterMark(char* aOperation)
 {
-    VerifyOrReturnError(to_underlying(aOperation) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
+    TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation);
+
+    VerifyOrReturnError(to_underlying(operationKey) < kNumTraces, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(DeviceLayer,
                                      "Invalid Watemarks TimeTraceOperation\r\nNote: App specific operations are not "
                                      "supported by Watermarks"));
@@ -430,6 +488,17 @@ CHIP_ERROR SilabsTracer::OutputAllWaterMarks()
             return err;
         }
     }
+    for (size_t i =0 ; i < kMaxNamedTraces; i++){
+        ChipLogProgress(DeviceLayer,
+                        "| Op: %-15s:%-16s| MaxTime:%-5" PRIu32 "| MinTime:%-5" PRIu32 "| AvgTime:%-5" PRIu32 "| TotalCount:%-8" PRIu32
+                        ", SuccessFullCount:%-8" PRIu32 "| CountAboveAvg:%-8" PRIu32 "|",
+                        mNamedTraces[i].group,mNamedTraces[i].label, mNamedTraces[i].watermark.mMaxTimeMs.count(),
+                        mNamedTraces[i].watermark.mMinTimeMs.count(),
+                        mNamedTraces[i].watermark.mMovingAverage.count(),
+                        mNamedTraces[i].watermark.mTotalCount, mNamedTraces[i].watermark.mSuccessfullCount,
+                        mNamedTraces[i].watermark.mCountAboveAvg);
+    }
+
     return CHIP_NO_ERROR;
 }
 
@@ -449,6 +518,14 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushAll()
 
 CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(size_t aOperation)
 {
+
+    TimeTraceOperation operation = StringToTimeTraceOperation(argv[0]);
+    if (operation == TimeTraceOperation::kNumTraces)
+    {
+        streamer_printf(streamer_get(), "Unknown Operation Key\r\n");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+
     VerifyOrReturnError(aOperation < kNumTraces + kMaxAppOperationKeys, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(DeviceLayer, "Invalid TimeTraceOperation"));
     auto * current = mTimeTrackerList.head;
@@ -566,6 +643,69 @@ CHIP_ERROR SilabsTracer::FindAppOperationIndex(CharSpan & appOperationKey, size_
     }
     index = SilabsTracer::kMaxAppOperationKeys;
     return CHIP_ERROR_NOT_FOUND;
+}
+
+int16_t SilabsTracer::FindOrCreateTrace(const char* label, const char* group)
+{
+    int8_t index = FindExistingTrace(label, group);
+    if (index >= 0)
+    {
+        return index;
+    }
+
+    // Find first empty slot
+    for (size_t i = 0; i < kMaxNamedTraces; i++)
+    {
+        if (mNamedTraces[i].labelLen == 0)
+        {
+            auto& trace = mNamedTraces[i];
+            size_t labelLen = strlen(label);
+            size_t groupLen = strlen(group);
+
+            // Truncate label and group if too long
+            if (labelLen >= NamedTrace::kMaxLabelLength)
+            {
+                labelLen = NamedTrace::kMaxLabelLength - 1;
+            }
+            if (groupLen >= NamedTrace::kMaxGroupLength)
+            {
+                groupLen = NamedTrace::kMaxGroupLength - 1;
+            }
+
+            memcpy(trace.label, label, labelLen);
+            trace.label[labelLen] = '\0';
+            trace.labelLen = labelLen;
+
+            memcpy(trace.group, group, groupLen);
+            trace.group[groupLen] = '\0';
+            trace.groupLen = groupLen;
+
+            return i;
+        }
+    }
+    return -1;
+}
+
+int16_t SilabsTracer::FindExistingTrace(const char* label, const char* group)
+{
+    // Effective (truncated) input lengths — computed once.
+    // const size_t inLabelLen = strnlen(label, NamedTrace::kMaxLabelLength - 1);
+    // const size_t inGroupLen = strnlen(group, NamedTrace::kMaxGroupLength - 1);
+
+    for (int16_t i = 0; i < kMaxNamedTraces; ++i)
+    {
+        const auto& t = mNamedTraces[i];
+        if (t.labelLen == 0) return -1;  // empty slot
+
+        // prefix semantics: stored must fit within incoming, then bytes must match
+        if (std::memcmp(t.group,  group,  t.groupLen )  == 0 &&
+            std::memcmp(t.label,  label,  t.labelLen )  == 0){
+                return i;
+            }
+
+
+    }
+    return -1;
 }
 
 } // namespace Silabs
