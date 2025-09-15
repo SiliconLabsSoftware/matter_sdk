@@ -1,9 +1,16 @@
-# Build Procedure For Direct Internet Connectivity (DIC)
+# Build Procedure For Matter AWS
 
-## Build command with DIC
+## Build command with Matter AWS
 
--   To enable DIC functionality use the `enable_matter_aws=true` flag.
+-   To enable Matter AWS functionality use the `enable_matter_aws=true` flag.
 
+````
+
+### Here is an example to build the lighting-app with Matter AWS for the SiWx917 SoC
+
+```shell
+./scripts/examples/gn_silabs_example.sh examples/lighting-app/silabs/ out/debug BRD4338A enable_matter_aws=true chip_enable_wifi_ipv4=true
+````
 
 ## Compile using new/different certificates
 
@@ -27,9 +34,9 @@
 
 ## Matter + AWS device openssl keys generation
 
-## Openssl Installation (In ubuntu)
+## Openssl Installation (In ubuntu 22.04)
 
-1. To install openssl - `sudo apt install openssl`
+1. To install openssl (v 3.0.2) - `sudo apt install openssl`
 
 ## Certificates Creation
 

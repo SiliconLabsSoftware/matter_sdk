@@ -1,5 +1,6 @@
 # Matter Wi-Fi + AWS Component
 
+-   Matter+AWS is a silabs only feature to connect matter devices to proprietary
     cloud solutions(AWS,GCP,APPLE ...) directly. As such, a Matter Wi-Fi device
     must support connecting locally on the Matter Fabric, via IPv6, and
     connecting to the Internet via IPv4.
@@ -18,14 +19,17 @@
 
 ### Hardware Requirements
 
--   Hardware required for Matter + AWS feature to run on Silicon Labs Platform,
-    refer [Hardware Requirements](#hardware-requirements)
+For the list of hardware requirements for Matter + AWS feature , see the
+official
+[Silicon Labs Matter HW requirements](https://siliconlabs.github.io/matter/latest/general/HARDWARE_REQUIREMENTS.html)
+documentation.
 
 ### Software Requirements
 
--   MQTT Explorer http://mqtt-explorer.com/
--   Software required for Matter + AWS feature, refer
-    [Software Requirements](#software-requirements)
+For the list of software requirements for Matter + AWS feature , see the
+official
+[Silicon Labs Matter Software requirements](https://siliconlabs.github.io/matter/latest/general/SOFTWARE_REQUIREMENTS.html)
+documentation.
 
 ## End-to-End Set-up bring up
 
