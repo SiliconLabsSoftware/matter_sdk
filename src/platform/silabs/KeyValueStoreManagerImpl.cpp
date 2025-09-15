@@ -278,17 +278,11 @@ void KeyValueStoreManagerImpl::KvsMapMigration(void)
     uint32_t maxStringLen            = PersistentStorageDelegate::kKeyLengthMax + 1;
     char * mKvsStoredKeyString       = new char[oldMaxEntries * maxStringLen];
 
-    CHIP_ERROR err;
-    if (!mKvsStoredKeyString)
-    {
-        err = CHIP_ERROR_NO_MEMORY;
-    }
-    else
-    {
-        err = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_KvsStringKeyMap,
-                                               reinterpret_cast<uint8_t *>(mKvsStoredKeyString), oldMaxEntries * maxStringLen,
-                                               readlen);
-    }
+    VerifyOrReturn(mKvsStoredKeyString != nullptr);
+
+    CHIP_ERROR err =
+        SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_KvsStringKeyMap, reinterpret_cast<uint8_t *>(mKvsStoredKeyString),
+                                         oldMaxEntries * maxStringLen, readlen);
 
     if (err == CHIP_NO_ERROR)
     {

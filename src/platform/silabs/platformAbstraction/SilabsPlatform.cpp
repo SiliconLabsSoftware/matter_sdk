@@ -42,10 +42,10 @@ CHIP_ERROR SilabsPlatform::VerifyIfUpdated()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR SilabsPlatform::nvmInit()
+CHIP_ERROR SilabsPlatform::NvmInit()
 {
     ReturnErrorOnFailure(Internal::SilabsConfig::Init());
-    Silabs::MigrationManager::GetMigrationInstance().applyMigrations();
+    Silabs::MigrationManager::GetMigrationInstance().ApplyMigrations();
     return CHIP_NO_ERROR;
 }
 

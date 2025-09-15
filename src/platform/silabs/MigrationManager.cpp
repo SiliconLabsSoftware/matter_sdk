@@ -55,7 +55,7 @@ static migrationData_t migrationTable[] = {
 
 } // namespace
 
-void MigrationManager::applyMigrations()
+void MigrationManager::ApplyMigrations()
 {
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
     // Suspend all other threads so they don't interfere with the migration
@@ -185,54 +185,79 @@ void MigrateS3Certificates()
         uint32_t cdSize                = 0;
         uint32_t dacSize               = 0;
         uint32_t paiSize               = 0;
-        bool actionSucceed             = false;
         Provision::Manager & provision = Provision::Manager::GetInstance();
 
         // Read the size of each credential type to determine the buffer size needed
-        actionSucceed = (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_CD_Size, cdSize) == CHIP_NO_ERROR);
-        actionSucceed &= (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_DAC_Size, dacSize) == CHIP_NO_ERROR);
-        actionSucceed &= (SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_PAI_Size, paiSize) == CHIP_NO_ERROR);
+        VerifyOrReturn(SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_CD_Size, cdSize) == CHIP_NO_ERROR);
+        VerifyOrReturn(SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_DAC_Size, dacSize) == CHIP_NO_ERROR);
+        VerifyOrReturn(SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_PAI_Size, paiSize) == CHIP_NO_ERROR);
 
-        if (actionSucceed)
+        // Depending on existing configuration, certifications could be overlapping from the first page to the second page.
+        // To mitigate any risk, we want to read all buffer before starting to move any of them.
+        // allocate buffers for each certificate.
+        uint8_t * dacBuffer = new uint8_t[dacSize];
+        uint8_t * paiBuffer = new uint8_t[paiSize];
+        uint8_t * cdBuffer  = new uint8_t[cdSize];
+        VerifyOrReturn(dacBuffer != nullptr && paiBuffer != nullptr && cdBuffer != nullptr);
+
+        MutableByteSpan dacBufferSpan(dacBuffer, dacSize);
+        MutableByteSpan paiBufferSpan(paiBuffer, paiSize);
+        MutableByteSpan cdBufferSpan(cdBuffer, cdSize);
+
+        enum migrationStep
         {
-            // Depending on existing configuration, certifications could be overlapping from the first page to the second page.
-            // To mitigate any risk, we want to read all buffer before starting to move any of them.
-            // allocate buffers for each certificate.
-            uint8_t * dacBuffer = new uint8_t[dacSize];
-            uint8_t * paiBuffer = new uint8_t[paiSize];
-            uint8_t * cdBuffer  = new uint8_t[cdSize];
-            actionSucceed       = (dacBuffer != nullptr && paiBuffer != nullptr && cdBuffer != nullptr);
-            MutableByteSpan dacBufferSpan(dacBuffer, dacSize);
-            MutableByteSpan paiBufferSpan(paiBuffer, paiSize);
-            MutableByteSpan cdBufferSpan(cdBuffer, cdSize);
+            eReadDac,
+            eReadPai,
+            eReadCd,
+            eWriteCertificates,
+            eCleanup,
+        };
 
-            // Step to read the certificates at their current location
-            if (actionSucceed)
-            {
-                provision.Init();
-                // Read all certs and store it in our allocated buffer
-                actionSucceed = (provision.GetStorage().GetDeviceAttestationCert(dacBufferSpan) == CHIP_NO_ERROR);
-                actionSucceed &= (provision.GetStorage().GetProductAttestationIntermediateCert(paiBufferSpan) == CHIP_NO_ERROR);
-                actionSucceed &= (provision.GetStorage().GetCertificationDeclaration(cdBufferSpan) == CHIP_NO_ERROR);
-            }
+        migrationStep steps = eReadDac;
+        provision.Init();
 
-            // Step to write the certificates to their new location
-            if (actionSucceed)
+        while (steps != eCleanup)
+        {
+            switch (steps)
             {
+            case eReadDac:
+                // read DAC at its current location.
+                steps = (provision.GetStorage().GetDeviceAttestationCert(dacBufferSpan) == CHIP_NO_ERROR) ? eReadPai : eCleanup;
+                break;
+
+            case eReadPai:
+                // read PAI at its current location.
+                steps = (provision.GetStorage().GetProductAttestationIntermediateCert(paiBufferSpan) == CHIP_NO_ERROR) ? eReadCd
+                                                                                                                       : eCleanup;
+                break;
+
+            case eReadCd:
+                // read CD at its current location.
+                steps = (provision.GetStorage().GetCertificationDeclaration(cdBufferSpan) == CHIP_NO_ERROR) ? eWriteCertificates
+                                                                                                            : eCleanup;
+                break;
+
+            case eWriteCertificates:
+                // Step to write the certificates to their new location
                 provision.GetStorage().Initialize(0, 0);
                 provision.GetStorage().SetCredentialsBaseAddress(secondPageAddr);
                 // Write all certs back to the second page
-                // On the first write, we erase the new page.
+                // The first set/write, after an Initialize, erases the new page. We don't need to do it explicitly.
                 provision.GetStorage().SetDeviceAttestationCert(dacBufferSpan);
                 provision.GetStorage().SetProductAttestationIntermediateCert(paiBufferSpan);
                 provision.GetStorage().SetCertificationDeclaration(cdBufferSpan);
-            }
+                steps = eCleanup;
+                break;
 
-            // Free allocated memory. If allocation step failed we are still safe do to so.
-            delete[] dacBuffer;
-            delete[] paiBuffer;
-            delete[] cdBuffer;
+            case eCleanup:
+                // We shouldn't get here but all steps are done. We do the cleanup outside of the while.
+                break;
+            }
         }
+        // Free allocated memory. If allocation step failed we are still safe do to so.
+        delete[] dacBuffer;
+        delete[] paiBuffer;
+        delete[] cdBuffer;
     }
 #endif //_SILICON_LABS_32B_SERIES_3
 }

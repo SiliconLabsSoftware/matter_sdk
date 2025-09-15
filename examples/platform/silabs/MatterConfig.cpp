@@ -264,7 +264,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     ReturnErrorOnFailure(WifiInterface::GetInstance().InitWiFiStack());
     // Needs to be done post InitWifiStack for 917.
     // TODO move it in InitWiFiStack
-    GetPlatform().nvmInit();
+    GetPlatform().NvmInit();
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     ReturnErrorOnFailure(WifiSleepManager::GetInstance().Init(&WifiInterface::GetInstance(), &WifiInterface::GetInstance()));
