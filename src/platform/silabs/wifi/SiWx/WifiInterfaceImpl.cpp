@@ -441,7 +441,7 @@ sl_status_t SetWifiConfigurations()
 
     if (wfx_rsi.ap_chan != SL_WIFI_AUTO_CHANNEL)
     {
-        // AP channel is known - This indicates that the netowrk scan was done for a specific SSID.
+        // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
         profile.config.channel.channel = wfx_rsi.ap_chan;
 
@@ -746,7 +746,7 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     }
 
     // failure only happens when the firmware returns an error
-    ChipLogError(DeviceLayer, "sl_wifi_connect failed: 0x%lx", static_cast<uint32_t>(status));
+    ChipLogError(DeviceLayer, "sl_net_up failed: 0x%lx", static_cast<uint32_t>(status));
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     ScheduleConnectionAttempt();
