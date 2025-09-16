@@ -106,6 +106,7 @@ void WifiInterface::NotifyConnection(const MacAddress & ap)
     evt.body.channel = wfx_rsi.ap_chan;
 #endif
     std::copy(ap.begin(), ap.end(), evt.body.mac);
+    retryInterval = kWlanMinRetryIntervalsInSec;
 
     HandleWFXSystemEvent((sl_wfx_generic_message_t *) &evt);
 }
