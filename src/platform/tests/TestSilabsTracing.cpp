@@ -670,6 +670,7 @@ TEST_F(TestSilabsTracing, TestLogs)
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), span), CHIP_NO_ERROR);
     const char * expectedOTALogFormat = "TimeTracker - End      | OTA                               | Status: 0 | Start: "
                                         "00:00:00.000| End: 00:00:00.100| Duration: 00:00:00.100";
+    EXPECT_STREQ(span.data(), expectedOTALogFormat);
 
     // Verify Bootup log
     span = MutableCharSpan(logBuffer);
@@ -719,6 +720,7 @@ TEST_F(TestSilabsTracing, TestLogs)
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation("TestGroup:CustomOp", span), CHIP_NO_ERROR);
     const char * expectedCustomLogFormat = "TimeTracker - End      | TestGroup:CustomOp                | Status: 0 | Start: "
                                            "00:00:00.000| End: 00:00:00.150| Duration: 00:00:00.150";
+    EXPECT_STREQ(span.data(), expectedCustomLogFormat);
 
     // Test OutputAllMetrics including named traces
     EXPECT_EQ(SilabsTracer::Instance().OutputAllMetrics(), CHIP_NO_ERROR);
