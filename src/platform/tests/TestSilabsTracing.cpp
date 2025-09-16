@@ -818,6 +818,9 @@ TEST_F(TestSilabsTracing, TestNamedTraces)
     // Test that ending a non-existent trace returns an error
     EXPECT_EQ(CHIP_ERROR_NOT_FOUND, SilabsTracer::Instance().NamedTraceEnd("NonExistent", "TestGroup"));
 
+    // Flush trace buffer before trying to fill named trace buffer
+    SilabsTracer::Instance().TraceBufferFlushAll();
+
     // Test buffer overflow for named traces
     for (size_t i = 0; i < SilabsTracer::kMaxNamedTraces + 1; i++)
     {
