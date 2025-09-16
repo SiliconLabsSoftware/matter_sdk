@@ -145,7 +145,7 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
 
 TimeTraceOperation SilabsTracer::StringToTimeTraceOperation(const char * aOperation)
 {
-    for (auto i = 0; i < kNumTraces; i++)
+    for (size_t i = 0; i < kNumTraces; i++)
     {
         TimeTraceOperation op = static_cast<TimeTraceOperation>(i);
         if (strcmp(aOperation, TimeTraceOperationToString(op)) == 0)
@@ -286,7 +286,7 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ER
 CHIP_ERROR SilabsTracer::TimeTraceInstant(const char * label, const char * group, CHIP_ERROR error)
 {
     int16_t mIndex = FindOrCreateTrace(label, group);
-    if (mIndex >= 0 && mIndex < kMaxNamedTraces)
+    if (mIndex >= 0)
     {
         auto & trace             = mNamedTraces[mIndex];
         trace.tracker.mStartTime = SILABS_GET_TIME();
@@ -308,7 +308,7 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(const char * label, const char * group
 CHIP_ERROR SilabsTracer::NamedTraceBegin(const char * label, const char * group)
 {
     int16_t mIndex = FindOrCreateTrace(label, group);
-    if (mIndex >= 0 && mIndex < kMaxNamedTraces)
+    if (mIndex >= 0)
     {
         auto & trace             = mNamedTraces[mIndex];
         trace.tracker.mStartTime = SILABS_GET_TIME();
@@ -328,12 +328,13 @@ CHIP_ERROR SilabsTracer::NamedTraceBegin(const char * label, const char * group)
 
 CHIP_ERROR SilabsTracer::NamedTraceEnd(const char * label, const char * group)
 {
-    int8_t mIndex = FindOrCreateTrace(label, group);
-    if (mIndex < 0 || mIndex >= kMaxNamedTraces)
+    size_t mIndex = FindExistingTrace(label, group);
+    if (mIndex < 0)
     {
-        // Did not find and buffer too full to create an new entry
-        return CHIP_ERROR_BUFFER_TOO_SMALL;
+        // Did not find a NamedTraceBegin
+        return CHIP_ERROR_NOT_FOUND;
     }
+
     auto & trace = mNamedTraces[mIndex];
     if (trace.tracker.mType == OperationType::kBegin)
     {
@@ -691,7 +692,7 @@ int16_t SilabsTracer::FindOrCreateTrace(const char * label, const char * group)
 
 int16_t SilabsTracer::FindExistingTrace(const char * label, const char * group)
 {
-    for (int16_t i = 0; i < kMaxNamedTraces; ++i)
+    for (size_t i = 0; i < kMaxNamedTraces; ++i)
     {
         const auto & t = mNamedTraces[i];
         if (t.labelLen == 0)

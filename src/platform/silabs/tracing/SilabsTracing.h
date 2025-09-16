@@ -155,7 +155,7 @@ public:
      * Ends timing for a named trace identified by the given label and group, and records the result.
      *  @param label The label for the trace
      *  @param group The group for the trace
-     *  @return CHIP_ERROR, returns CHIP_ERROR_NOT_FOUND if the trace is not active and could not create a new one.
+     *  @return CHIP_ERROR, returns CHIP_ERROR_NOT_FOUND if a NamedTraceBegin was not found
      */
     CHIP_ERROR NamedTraceEnd(const char * label, const char * group);
 
