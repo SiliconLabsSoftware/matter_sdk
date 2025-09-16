@@ -668,15 +668,15 @@ TEST_F(TestSilabsTracing, TestLogs)
 
     // Verify OTA log
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), span), CHIP_NO_ERROR);
-    const char * expectedOTALogFormat =
-        "TimeTracker - Type: End, Operation: OTA, Status: 0x0, Start: 00:00:00.000, End: 00:00:00.100, Duration: 00:00:00.100";
+    const char * expectedOTALogFormat = "TimeTracker - End     | OTA                               | Status: 0x0 | Start: "
+                                        "00:00:00.000| End: 00:00:00.100| Duration: 00:00:00.100";
     EXPECT_STREQ(span.data(), expectedOTALogFormat);
 
     // Verify Bootup log
     span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBootup), span), CHIP_NO_ERROR);
-    const char * expectedBootupLogFormat =
-        "TimeTracker - Type: End, Operation: Bootup, Status: 0x0, Start: 00:00:00.000, End: 00:00:00.200, Duration: 00:00:00.200";
+    const char * expectedBootupLogFormat = "TimeTracker - End     | Bootup                            | Status: 0x0 | Start: "
+                                           "00:00:00.000| End: 00:00:00.200| Duration: 00:00:00.200";
     EXPECT_STREQ(span.data(), expectedBootupLogFormat);
 
     // Test buffer too small behavior
@@ -709,6 +709,21 @@ TEST_F(TestSilabsTracing, TestLogs)
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBootup), span), CHIP_ERROR_NOT_FOUND);
     span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), span), CHIP_ERROR_NOT_FOUND);
+
+    // Named traces logging
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceBegin("CustomOp", "TestGroup"));
+    gMockClock.AdvanceMonotonic(150_ms64);
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceEnd("CustomOp", "TestGroup"));
+
+    // Verify named trace log
+    span = MutableCharSpan(logBuffer);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation("TestGroup:CustomOp", span), CHIP_NO_ERROR);
+    const char * expectedCustomLogFormat = "TimeTracker - End     | TestGroup:CustomOp                | Status: 0x0 | Start: "
+                                           "00:00:00.000| End: 00:00:00.150| Duration: 00:00:00.150";
+    EXPECT_STREQ(span.data(), expectedCustomLogFormat);
+
+    // Test OutputAllMetrics including named traces
+    EXPECT_EQ(SilabsTracer::Instance().OutputAllMetrics(), CHIP_NO_ERROR);
 }
 
 TEST_F(TestSilabsTracing, TestBufferBusting)
@@ -736,7 +751,8 @@ TEST_F(TestSilabsTracing, TestBufferBusting)
     char logBuffer[256];
     MutableCharSpan logSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBufferFull), logSpan), CHIP_NO_ERROR);
-    const char * expectedNumLogFormat = "TimeTracker - Type: Instant, Operation: BufferFull, Status: 0x19, EventTime: 00:00:06.200";
+    const char * expectedNumLogFormat =
+        "TimeTracker - Instant | BufferFull                        | Status: 0x19 | Time: 00:00:06.200";
     EXPECT_STREQ(logSpan.data(), expectedNumLogFormat);
 
     // Verify the kImageUpload operation was not added
@@ -770,63 +786,51 @@ TEST_F(TestSilabsTracing, TestBufferBusting)
     EXPECT_EQ(0u, SilabsTracer::Instance().GetTimeTracesCount());
 }
 
-TEST_F(TestSilabsTracing, TestAppSpecificTraces)
+TEST_F(TestSilabsTracing, TestNamedTraces)
 {
     gMockClock.SetMonotonic(0_ms64);
     SilabsTracer::Instance().Init();
     size_t traceCount = 0;
-    traceCount        = SilabsTracer::Instance().GetTimeTracesCount();
-    EXPECT_EQ(traceCount, 0u);
 
-    char appSpecificTrace1[SilabsTracer::kMaxAppOperationKeyLength] = "AppTrace";
-    CharSpan appSpecificSpan(appSpecificTrace1);
-    appSpecificSpan.reduce_size(sizeof("AppTrace"));
-    // Simulate registering an app specific trace
-    EXPECT_EQ(SilabsTracer::Instance().RegisterAppTimeTraceOperation(appSpecificSpan), CHIP_NO_ERROR);
+    // Test creating named traces
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceBegin("MyOperation", "TestGroup"));
+    gMockClock.AdvanceMonotonic(100_ms64);
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceEnd("MyOperation", "TestGroup"));
 
-    // Simulate an an instant trace for the app specific trace
-    EXPECT_EQ(SilabsTracer::Instance().TimeTraceInstant(appSpecificSpan), CHIP_NO_ERROR);
+    // Test creating a second named trace
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceBegin("AnotherOp", "TestGroup"));
+    gMockClock.AdvanceMonotonic(150_ms64);
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceEnd("AnotherOp", "TestGroup"));
 
-    // Veryify the app specific trace is added in the buffer by finding its index
-    size_t appSpecificIndex;
-    SilabsTracer::Instance().FindAppOperationIndex(appSpecificSpan, appSpecificIndex);
-    EXPECT_EQ(appSpecificIndex, 0u);
+    // Test instant trace for named operation
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().TimeTraceInstant("InstantOp", "TestGroup"));
 
-    // Create a second app specific trace
-    char appSpecificTrace2[SilabsTracer::kMaxAppOperationKeyLength] = "AppTrace2";
-    CharSpan appSpecificSpan2(appSpecificTrace2);
-    // Verify it is not found in the buffer
-    EXPECT_EQ(CHIP_ERROR_NOT_FOUND, SilabsTracer::Instance().FindAppOperationIndex(appSpecificSpan2, appSpecificIndex));
-    EXPECT_EQ(appSpecificIndex, SilabsTracer::kMaxAppOperationKeys);
+    // Verify trace count
+    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
+    EXPECT_EQ(traceCount, 5u); // 2 begin, 2 end, 1 instant
 
-    // Register the second app specific trace
-    EXPECT_EQ(SilabsTracer::Instance().RegisterAppTimeTraceOperation(appSpecificSpan2), CHIP_NO_ERROR);
-
-    // Simulate an an instant trace for the second app specific trace
-    EXPECT_EQ(SilabsTracer::Instance().TimeTraceInstant(appSpecificSpan2), CHIP_NO_ERROR);
-
-    // Verify that the logs match expectation
+    // Test metrics for named traces
     char logBuffer[256];
     MutableCharSpan span(logBuffer);
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(appSpecificSpan, span), CHIP_NO_ERROR);
-    const char * expectedAppSpecificLogFormat =
-        "TimeTracker - Type: Instant, Operation: AppTrace, Status: 0x0, EventTime: 00:00:00.000";
-    EXPECT_STREQ(span.data(), expectedAppSpecificLogFormat);
 
-    span = MutableCharSpan(logBuffer);
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(appSpecificSpan2, span), CHIP_NO_ERROR);
-    const char * expectedAppSpecificLogFormat2 =
-        "TimeTracker - Type: Instant, Operation: AppTrace2, Status: 0x0, EventTime: 00:00:00.000";
-    EXPECT_STREQ(span.data(), expectedAppSpecificLogFormat2);
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().GetTraceByOperation("TestGroup:MyOperation", span));
 
-    // Confirm trace count
-    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
-    EXPECT_EQ(traceCount, 2u);
-    // Flush the app specific traces
-    EXPECT_EQ(SilabsTracer::Instance().TraceBufferFlushByOperation(appSpecificSpan), CHIP_NO_ERROR);
-    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
-    EXPECT_EQ(traceCount, 1u);
-    EXPECT_EQ(SilabsTracer::Instance().TraceBufferFlushByOperation(appSpecificSpan2), CHIP_NO_ERROR);
-    traceCount = SilabsTracer::Instance().GetTimeTracesCount();
-    EXPECT_EQ(traceCount, 0u);
+    // Test that ending a non-existent trace returns an error
+    EXPECT_EQ(CHIP_ERROR_NOT_FOUND, SilabsTracer::Instance().NamedTraceEnd("NonExistent", "TestGroup"));
+
+    // Test buffer overflow for named traces
+    for (size_t i = 0; i < SilabsTracer::kMaxNamedTraces + 1; i++)
+    {
+        char label[16];
+        snprintf(label, sizeof(label), "Op%zu", i);
+        auto result = SilabsTracer::Instance().TimeTraceInstant(label, "OverflowTest");
+        if (i < SilabsTracer::kMaxNamedTraces)
+        {
+            EXPECT_EQ(CHIP_NO_ERROR, result);
+        }
+        else
+        {
+            EXPECT_EQ(CHIP_ERROR_BUFFER_TOO_SMALL, result);
+        }
+    }
 }
