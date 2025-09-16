@@ -65,7 +65,7 @@ void BackendImpl::TraceEnd(const char * label, const char * group)
 }
 void BackendImpl::TraceInstant(const char * label, const char * group)
 {
-    SilabsTracer::Instance().TimeTraceInstant(MapMetricKeyToOperation(label), CHIP_NO_ERROR);
+    SilabsTracer::Instance().TimeTraceInstant(label, group, CHIP_NO_ERROR);
 }
 
 void BackendImpl::LogMetricEvent(const MetricEvent & event)

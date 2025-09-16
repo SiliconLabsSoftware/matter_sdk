@@ -86,7 +86,7 @@ public:
     static constexpr size_t kMaxBufferedTraces        = 64;
     static constexpr size_t kMaxTraceSize             = 128;
     // If the number of named traces exceeds this value at runtime, the exceeding traces will be dropped.
-    static constexpr int16_t kMaxNamedTraces          = 128;    
+    static constexpr size_t kMaxNamedTraces           = 64;    
 
     /** @brief Get the singleton instance of SilabsTracer */
     static SilabsTracer & Instance() { return sInstance; }
@@ -139,7 +139,7 @@ public:
      * not for metrics.
      * @param appOperation The name of the app operation key to generate a trace for
      */
-    CHIP_ERROR TimeTraceInstant(CharSpan & appOperationKey, CHIP_ERROR error = CHIP_NO_ERROR);
+    CHIP_ERROR TimeTraceInstant(const char * label, const char * group, CHIP_ERROR error = CHIP_NO_ERROR);
 
     /** @brief Begin a named trace with a label and group
      * Starts timing a named trace identified by the given label and group.
@@ -223,27 +223,6 @@ public:
      */
     Metric GetMetric(TimeTraceOperation aOperation) { return mMetrics[to_underlying(aOperation)]; }
     size_t GetTimeTracesCount() { return mBufferedTrackerCount; }
-
-    CHIP_ERROR GetTraceByOperation(size_t aOperation, MutableCharSpan & buffer) const;
-    CHIP_ERROR GetTraceByOperation(CharSpan & appOperationKey, MutableCharSpan & buffer) const;
-
-    /** @brief Register an App specific time trace operation
-     * This will register an App specific operation to be tracked by the time tracer. The string will be mapped to a
-     * TimeTraceOperation higher than the kNumTraces value.
-     *  @param appOperationKey The key of the custom operation, can only be in the array once
-     * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the key is too long, CHIP_ERROR_NO_MEMORY if the buffer is full,
-     * and CHIP_ERROR_INVALID_ARGUMENT if the key is null or already in the array.
-     */
-    CHIP_ERROR RegisterAppTimeTraceOperation(CharSpan & appOperationKey);
-
-    /** @brief Find the index of a custom operation
-     * @param appOperation The key of the custom operation to find
-     *  @param index The index of the custom operation
-     *  @return CHIP_ERROR, returns CHIP_ERROR_NOT_FOUND if the buffer is full, the index will be set to the maximum number of
-     * custom operations if the operationis not found
-     */
-    CHIP_ERROR FindAppOperationIndex(CharSpan & appOperationKey, size_t & index) const;
-
 
     // const char * TimeTraceOperationToString(size_t operation);
     TimeTraceOperation StringToTimeTraceOperation(const char * str);
