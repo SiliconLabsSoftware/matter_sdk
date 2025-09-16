@@ -1,5 +1,12 @@
 version: 2
 updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "SiliconLabsSoftware/matter_build_action"
+
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:
@@ -26,4 +33,3 @@ updates:
     allow:
       - dependency-name: "third_party/silabs/matter_support"
     target-branch: "release_2.6-1.4"
-  
