@@ -649,6 +649,69 @@ CHIP_ERROR SilabsTracer::LoadMetrics()
     return CHIP_NO_ERROR;
 }
 
+CHIP_ERROR SilabsTracer::GetTraceByOperation(size_t aOperationIdx, MutableCharSpan & buffer)
+{
+    auto * current = mTimeTrackerList.head;
+    while (current != nullptr)
+    {
+        if (current->mValue.mOperation == aOperationIdx)
+        {
+            // Found matching trace, format it
+            int required = current->mValue.ToCharArray(buffer);
+            if (required > static_cast<int>(buffer.size()))
+            {
+                return CHIP_ERROR_BUFFER_TOO_SMALL;
+            }
+            return CHIP_NO_ERROR;
+        }
+        current = current->mpNext;
+    }
+    return CHIP_ERROR_NOT_FOUND;
+}
+
+// Overload for string-based operation lookup
+CHIP_ERROR SilabsTracer::GetTraceByOperation(const char * aOperation, MutableCharSpan & buffer)
+{
+    TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation);
+    if (operationKey != TimeTraceOperation::kNumTraces)
+    {
+        return GetTraceByOperation(to_underlying(operationKey), buffer);
+    }
+
+    // Check if it is a named trace
+    const char * colon = strchr(aOperation, ':');
+    if (colon == nullptr)
+    {
+        ChipLogError(DeviceLayer, "Invalid Trace Operation format");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+
+    size_t groupLen = colon - aOperation;
+    size_t labelLen = strlen(colon + 1);
+
+    // Copy group and label into temporary buffers
+    char groupBuf[NamedTrace::kMaxGroupLength] = { 0 };
+    char labelBuf[NamedTrace::kMaxLabelLength] = { 0 };
+
+    if (groupLen >= sizeof(groupBuf))
+        groupLen = sizeof(groupBuf) - 1;
+    if (labelLen >= sizeof(labelBuf))
+        labelLen = sizeof(labelBuf) - 1;
+
+    memcpy(groupBuf, aOperation, groupLen);
+    groupBuf[groupLen] = '\0';
+    memcpy(labelBuf, colon + 1, labelLen);
+    labelBuf[labelLen] = '\0';
+
+    int16_t idx = FindExistingTrace(labelBuf, groupBuf);
+    if (idx < 0)
+    {
+        return CHIP_ERROR_NOT_FOUND;
+    }
+
+    return GetTraceByOperation(idx + kNumTraces, buffer);
+}
+
 int16_t SilabsTracer::FindOrCreateTrace(const char * label, const char * group)
 {
     int8_t index = FindExistingTrace(label, group);

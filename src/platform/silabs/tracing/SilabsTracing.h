@@ -248,6 +248,27 @@ public:
      */
     Metric GetMetric(TimeTraceOperation aOperation) { return mMetrics[to_underlying(aOperation)]; }
 
+    /** @brief Get a specific trace by operation
+     *  Retrieves and formats the most recent trace for the specified operation.
+     *  Does not modify the trace buffer.
+     *  @param aOperationIdx The operation index to retrieve
+     *  @param buffer The buffer to write the formatted trace into
+     *  @return CHIP_ERROR_NOT_FOUND if no trace exists for the operation,
+     *          CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is too small,
+     *          CHIP_NO_ERROR on success
+     */
+    CHIP_ERROR GetTraceByOperation(size_t aOperationIdx, MutableCharSpan & buffer);
+
+    /** @brief Get a specific trace by operation name
+     *  @param aOperation The operation name or "group:label" format for named traces
+     *  @param buffer The buffer to write the formatted trace into
+     *  @return CHIP_ERROR_NOT_FOUND if no trace exists for the operation,
+     *          CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is too small,
+     *          CHIP_ERROR_INVALID_ARGUMENT if operation format is invalid,
+     *          CHIP_NO_ERROR on success
+     */
+    CHIP_ERROR GetTraceByOperation(const char * aOperation, MutableCharSpan & buffer);
+
     size_t GetTimeTracesCount() { return mBufferedTrackerCount; }
 
     /** @brief Convert a string to a TimeTraceOperation enum value
