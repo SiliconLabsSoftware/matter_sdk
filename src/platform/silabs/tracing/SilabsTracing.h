@@ -135,8 +135,7 @@ public:
         return TimeTraceInstant(aOperation, ChipError((error)));
     }
     /** @brief TimeTraceInstant
-     *  We currently allow to register App specific operations to be tracked by the time tracer, but only for instant traces, and
-     * not for metrics.
+     *  We currently allow to register App specific operations to be tracked by the time tracer.
      *  @param label The label for the trace
      *  @param group The group for the trace
      * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
