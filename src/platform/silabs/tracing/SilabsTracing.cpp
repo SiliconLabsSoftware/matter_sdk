@@ -328,7 +328,7 @@ CHIP_ERROR SilabsTracer::NamedTraceBegin(const char * label, const char * group)
 
 CHIP_ERROR SilabsTracer::NamedTraceEnd(const char * label, const char * group)
 {
-    size_t mIndex = FindExistingTrace(label, group);
+    int16_t mIndex = FindExistingTrace(label, group);
     if (mIndex < 0)
     {
         // Did not find a NamedTraceBegin
