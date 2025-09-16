@@ -668,14 +668,14 @@ TEST_F(TestSilabsTracing, TestLogs)
 
     // Verify OTA log
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), span), CHIP_NO_ERROR);
-    const char * expectedOTALogFormat = "TimeTracker - End      | OTA                               | Status: 0 | Start: "
+    const char * expectedOTALogFormat = "TimeTracker - End      | OTA                              | Status: 0 | Start: "
                                         "00:00:00.000| End: 00:00:00.100| Duration: 00:00:00.100";
     EXPECT_STREQ(span.data(), expectedOTALogFormat);
 
     // Verify Bootup log
     span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBootup), span), CHIP_NO_ERROR);
-    const char * expectedBootupLogFormat = "TimeTracker - End      | Bootup                            | Status: 0 | Start: "
+    const char * expectedBootupLogFormat = "TimeTracker - End      | Bootup                           | Status: 0 | Start: "
                                            "00:00:00.000| End: 00:00:00.200| Duration: 00:00:00.200";
     EXPECT_STREQ(span.data(), expectedBootupLogFormat);
 
@@ -718,8 +718,8 @@ TEST_F(TestSilabsTracing, TestLogs)
     // Verify named trace log
     span = MutableCharSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation("TestGroup:CustomOp", span), CHIP_NO_ERROR);
-    const char * expectedCustomLogFormat = "TimeTracker - End      | TestGroup:CustomOp                | Status: 0 | Start: "
-                                           "00:00:00.000| End: 00:00:00.150| Duration: 00:00:00.150";
+    const char * expectedCustomLogFormat = "TimeTracker - End      | TestGroup:CustomOp               | Status: 0 | Start: "
+                                           "00:00:00.200| End: 00:00:00.350| Duration: 00:00:00.150";
     EXPECT_STREQ(span.data(), expectedCustomLogFormat);
 
     // Test OutputAllMetrics including named traces
@@ -752,7 +752,7 @@ TEST_F(TestSilabsTracing, TestBufferBusting)
     MutableCharSpan logSpan(logBuffer);
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kBufferFull), logSpan), CHIP_NO_ERROR);
     const char * expectedNumLogFormat =
-        "TimeTracker - Instant  | BufferFull                        | Status: 19 | Time: 00:00:06.200";
+        "TimeTracker - Instant  | BufferFull                       | Status: 19 | Time: 00:00:06.200";
     EXPECT_STREQ(logSpan.data(), expectedNumLogFormat);
 
     // Verify the kImageUpload operation was not added
