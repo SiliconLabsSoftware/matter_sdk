@@ -47,7 +47,6 @@ CHIP_ERROR TracingHelpHandler(int argc, char ** argv)
 CHIP_ERROR TracingListTimeOperations(int argc, char ** argv)
 {
     return SilabsTracer::Instance().OutputAllCurrentOperations();
-    
 }
 
 CHIP_ERROR TracingCommandHandler(int argc, char ** argv)
@@ -62,7 +61,6 @@ CHIP_ERROR TracingCommandHandler(int argc, char ** argv)
 
 CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
 {
-    CHIP_ERROR error = CHIP_NO_ERROR;
     if (argc == 0 || argv == nullptr || argv[0] == nullptr)
     {
         streamer_printf(streamer_get(), "Usage: tracing metrics <TimeTraceOperation>\r\n");
@@ -71,13 +69,12 @@ CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
 
     if (strcmp(argv[0], "all") == 0)
     {
-        error = SilabsTracer::Instance().OutputAllMetrics();
+        return SilabsTracer::Instance().OutputAllMetrics();
     }
     else
     {
-        error = SilabsTracer::Instance().OutputMetric(argv[0]);
+        return SilabsTracer::Instance().OutputMetric(argv[0]);
     }
-    return error;
 }
 
 CHIP_ERROR FlushCommandHandler(int argc, char ** argv)

@@ -50,7 +50,6 @@ enum class TimeTraceOperation : uint8_t
     kAppInit,
     kBufferFull,
     kNumTraces,
-    kUnknown,
 };
 
 enum class OperationType : uint8_t
