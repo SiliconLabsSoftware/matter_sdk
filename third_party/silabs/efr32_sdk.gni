@@ -94,6 +94,9 @@ declare_args() {
 
   # BLE Side Channel
   sl_enable_ble_side_channel = false
+
+  # Delay before the deferred attribute are stored in nvm, default 2000 when the feature is supported
+  sl_deferred_attribute_store_delay_ms = 2000
 }
 
 examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
@@ -475,6 +478,7 @@ template("efr32_sdk") {
       "NVM3_DEFAULT_NVM_SIZE=${sl_nvm3_nvm_size}",
       "NVM3_DEFAULT_MAX_OBJECT_SIZE=${sl_nvm3_max_object_size}",
       "KVS_MAX_ENTRIES=${kvs_max_entries}",
+      "SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS=${sl_deferred_attribute_store_delay_ms}",
       "CORTEXM3=1",
       "MICRO=EMBER_MICRO_CORTEXM3_EFR32",
       "PLAT=EMBER_PLATFORM_CORTEXM3",

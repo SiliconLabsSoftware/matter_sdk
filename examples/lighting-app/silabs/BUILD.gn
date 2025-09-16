@@ -145,11 +145,12 @@ silabs_executable("lighting_app") {
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
     "src/LightingManager.cpp",
-    "src/ZclCallbacks.cpp",
+    "src/MatterDMCallbacks.cpp",
   ]
 
   deps = [
     ":sdk",
+    "${chip_root}/src/app/persistence:deferred",
     "${chip_root}/src/platform/logging:default",
     app_data_model,
   ]

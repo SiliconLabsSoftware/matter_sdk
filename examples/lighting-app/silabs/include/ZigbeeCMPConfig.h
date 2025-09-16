@@ -1,40 +1,22 @@
-/*
+/***************************************************************************
+ * @file ZigbeeCMPConfig.h
+ * @brief Configuration for the concurrent Zigbee Cluster Library (ZCL) for the Silicon Labs platform.
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
  *
- *    Copyright (c) 2024 Project CHIP Authors
- *    All rights reserved.
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
+ ******************************************************************************/
 #pragma once
-
-#include "silabs_utils.h"
-#include "sl_cmp_config.h"
-// ---- Lighting Example App Config ----
-
 #define APP_TASK_NAME "CMP-Light"
-#ifdef SL_MATTER_ZIGBEE_CMP
 #define BLE_DEV_NAME "SL-" APP_TASK_NAME "-Conc"
-#else
-#define BLE_DEV_NAME "SL-" APP_TASK_NAME "-Seq"
-#endif
-
-// Must match with Matter Light endpoint
-#define LIGHT_ENDPOINT 1
-
-// Time it takes in ms for the simulated actuator to move from one
-// state to another.
-#define ACTUATOR_MOVEMENT_PERIOS_MS 10
 
 #define ON_DEMO_BITMAP                                                                                                             \
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0xfc,  \
