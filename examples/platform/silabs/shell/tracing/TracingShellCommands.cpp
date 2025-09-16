@@ -82,8 +82,6 @@ CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
 
 CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
 {
-    CHIP_ERROR error = CHIP_NO_ERROR;
-    size_t index;
     if (argc == 0 || argv == nullptr || argv[0] == nullptr)
     {
         streamer_printf(streamer_get(), "Usage: tracing flush <TimeTraceOperation>\r\n");
@@ -93,23 +91,12 @@ CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
     CharSpan opKey(argv[0], sizeof(argv[0]));
     if (strcmp(argv[0], "all") == 0)
     {
-        error = SilabsTracer::Instance().TraceBufferFlushAll();
-    }
-    else if (CHIP_NO_ERROR == SilabsTracer::Instance().FindAppOperationIndex(opKey, index))
-    {
-        SilabsTracer::Instance().TraceBufferFlushByOperation(opKey);
+        return SilabsTracer::Instance().TraceBufferFlushAll();
     }
     else
     {
-        TimeTraceOperation operation = SilabsTracer::Instance().StringToTimeTraceOperation(argv[0]);
-        if (operation == TimeTraceOperation::kNumTraces)
-        {
-            streamer_printf(streamer_get(), "Unknown Operation Key\r\n");
-            return CHIP_ERROR_INVALID_ARGUMENT;
-        }
-        error = SilabsTracer::Instance().TraceBufferFlushByOperation(to_underlying(operation));
+        return SilabsTracer::Instance().TraceBufferFlushByOperation(opKey);
     }
-    return error;
 }
 
 } // namespace
