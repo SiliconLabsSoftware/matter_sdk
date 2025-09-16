@@ -83,10 +83,9 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     switch (mType)
     {
     case OperationType::kBegin: {
-        int offset =
-            snprintf(buffer.data(), buffer.size(),
-                     "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
-                     SilabsTracer::Instance().OperationIndexToString(mOperation), mError.AsInteger());
+        int offset = snprintf(buffer.data(), buffer.size(),
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
+                              SilabsTracer::Instance().OperationIndexToString(mOperation), mError.AsInteger());
 
         MutableCharSpan subSpan;
 
@@ -129,10 +128,9 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
         return offset;
     }
     case OperationType::kInstant: {
-        int offset =
-            snprintf(buffer.data(), buffer.size(),
-                     "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Time: ", OperationTypeToString(mType),
-                     SilabsTracer::Instance().OperationIndexToString(mOperation), mError.AsInteger());
+        int offset = snprintf(buffer.data(), buffer.size(),
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Time: ", OperationTypeToString(mType),
+                              SilabsTracer::Instance().OperationIndexToString(mOperation), mError.AsInteger());
         MutableCharSpan subSpan;
         if (offset < static_cast<int>(buffer.size()))
             subSpan = buffer.SubSpan(static_cast<size_t>(offset));
@@ -156,12 +154,12 @@ TimeTraceOperation SilabsTracer::StringToTimeTraceOperation(const char * str)
         }
     }
     // return TimeTraceOperation::kNumTraces;
-    return TimeTraceOperation::kUnknown;
+    return TimeTraceOperation::kNumTraces;
 }
 
 const char * SilabsTracer::OperationIndexToString(size_t operation)
 {
-    if (operation < to_underlying(TimeTraceOperation::kUnknown))
+    if (operation < to_underlying(TimeTraceOperation::kNumTraces))
     {
         return TimeTraceOperationToString(static_cast<TimeTraceOperation>(operation));
     }
@@ -169,7 +167,7 @@ const char * SilabsTracer::OperationIndexToString(size_t operation)
     {
         static char buf[chip::Tracing::Silabs::SilabsTracer::NamedTrace::kMaxGroupLength +
                         chip::Tracing::Silabs::SilabsTracer::NamedTrace::kMaxLabelLength + 2];
-        const auto & trace = mNamedTraces[operation - to_underlying(TimeTraceOperation::kUnknown)];
+        const auto & trace = mNamedTraces[operation - to_underlying(TimeTraceOperation::kNumTraces)];
         snprintf(buf, sizeof(buf), "%s:%s", trace.group, trace.label);
         return buf;
     }
@@ -289,7 +287,7 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(const char * label, const char * group
         trace.tracker.mStartTime = SILABS_GET_TIME();
         trace.metric.mTotalCount++;
 
-        trace.tracker.mOperation = to_underlying(TimeTraceOperation::kUnknown) + mIndex;
+        trace.tracker.mOperation = to_underlying(TimeTraceOperation::kNumTraces) + mIndex;
         trace.tracker.mEndTime   = trace.tracker.mStartTime;
         trace.tracker.mType      = OperationType::kInstant;
         trace.tracker.mError     = error;
@@ -311,7 +309,7 @@ CHIP_ERROR SilabsTracer::NamedTraceBegin(const char * label, const char * group)
         trace.tracker.mStartTime = SILABS_GET_TIME();
         trace.metric.mTotalCount++;
 
-        trace.tracker.mOperation = to_underlying(TimeTraceOperation::kUnknown) + mIndex;
+        trace.tracker.mOperation = to_underlying(TimeTraceOperation::kNumTraces) + mIndex;
         trace.tracker.mType      = OperationType::kBegin;
         trace.tracker.mError     = CHIP_NO_ERROR;
 
@@ -414,7 +412,7 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
 CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
 {
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
-    if (aOperationIdx < to_underlying(TimeTraceOperation::kUnknown))
+    if (aOperationIdx < to_underlying(TimeTraceOperation::kNumTraces))
     {
         ChipLogProgress(DeviceLayer,
                         "| Operation: %-25s| MaxTime:%-5" PRIu32 "| MinTime:%-5" PRIu32 "| AvgTime:%-5" PRIu32
@@ -428,7 +426,7 @@ CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
     else
     {
 
-        const auto & trace = mNamedTraces[aOperationIdx - to_underlying(TimeTraceOperation::kUnknown)];
+        const auto & trace = mNamedTraces[aOperationIdx - to_underlying(TimeTraceOperation::kNumTraces)];
         ChipLogProgress(DeviceLayer,
                         "| Op: %-15s:%-16s| MaxTime:%-5" PRIu32 "| MinTime:%-5" PRIu32 "| AvgTime:%-5" PRIu32
                         "| TotalCount:%-8" PRIu32 ", SuccessFullCount:%-8" PRIu32 "| CountAboveAvg:%-8" PRIu32 "|",
@@ -445,7 +443,7 @@ CHIP_ERROR SilabsTracer::OutputMetric(char * aOperation)
 {
     TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation);
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
-    if (operationKey != TimeTraceOperation::kUnknown)
+    if (operationKey != TimeTraceOperation::kNumTraces)
     {
 
         return OutputMetric(to_underlying(operationKey));
@@ -484,7 +482,7 @@ CHIP_ERROR SilabsTracer::OutputMetric(char * aOperation)
             ChipLogError(DeviceLayer, "Invalid Metrics TimeTraceOperation");
             return CHIP_ERROR_INVALID_ARGUMENT;
         }
-        return OutputMetric(idx + to_underlying(TimeTraceOperation::kUnknown));
+        return OutputMetric(idx + to_underlying(TimeTraceOperation::kNumTraces));
     }
     ChipLogError(DeviceLayer, "Invalid Metrics TimeTraceOperation");
     return CHIP_ERROR_INVALID_ARGUMENT;
@@ -507,7 +505,7 @@ CHIP_ERROR SilabsTracer::OutputAllMetrics()
         {
             break;
         }
-        err = OutputMetric(i + to_underlying(TimeTraceOperation::kUnknown));
+        err = OutputMetric(i + to_underlying(TimeTraceOperation::kNumTraces));
         if (err != CHIP_NO_ERROR)
         {
             return err;
@@ -592,7 +590,7 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan & appOperationKey)
 
     TimeTraceOperation operationKey = StringToTimeTraceOperation(appOperationKey.data());
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
-    if (operationKey != TimeTraceOperation::kUnknown)
+    if (operationKey != TimeTraceOperation::kNumTraces)
     {
         index = to_underlying(operationKey);
     }
@@ -630,7 +628,7 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan & appOperationKey)
             ChipLogError(DeviceLayer, "Invalid Flush TimeTraceOperation");
             return CHIP_ERROR_INVALID_ARGUMENT;
         }
-        index = (idx + to_underlying(TimeTraceOperation::kUnknown));
+        index = (idx + to_underlying(TimeTraceOperation::kNumTraces));
     }
     return SilabsTracer::Instance().TraceBufferFlushByOperation(index);
 }
