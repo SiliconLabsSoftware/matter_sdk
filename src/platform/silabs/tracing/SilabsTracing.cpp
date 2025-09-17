@@ -204,7 +204,10 @@ CHIP_ERROR SilabsTracer::Init()
     // Initialize the time trackers
     memset(mLatestTimeTrackers, 0, sizeof(mLatestTimeTrackers));
     memset(mMetrics, 0, sizeof(mMetrics));
-    memset(mNamedTraces, 0, sizeof(mNamedTraces));
+    for (size_t i = 0; i < kMaxNamedTraces; ++i)
+    {
+        mNamedTraces[i] = NamedTrace{};
+    }
 
     return CHIP_NO_ERROR;
 }
