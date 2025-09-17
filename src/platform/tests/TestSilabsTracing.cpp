@@ -827,6 +827,7 @@ TEST_F(TestSilabsTracing, TestNamedTraces)
         char label[16];
         snprintf(label, sizeof(label), "Op%zu", i);
         auto result = SilabsTracer::Instance().TimeTraceInstant(label, "OverflowTest");
+        SilabsTracer::Instance().TraceBufferFlushAll(); // empty trace buffer as we are testing the NamedTrace one
         if (i < SilabsTracer::kMaxNamedTraces)
         {
             EXPECT_EQ(CHIP_NO_ERROR, result);
