@@ -45,27 +45,23 @@ TimeTraceOperation MapMetricKeyToOperation(MetricKey metricKey)
 void BackendImpl::TraceBegin(const char * label, const char * group)
 {
     TimeTraceOperation operation = MapMetricKeyToOperation(label);
+
     if (operation != TimeTraceOperation::kNumTraces)
-    {
         SilabsTracer::Instance().TimeTraceBegin(MapMetricKeyToOperation(label));
-    }
     else
-    {
         SilabsTracer::Instance().NamedTraceBegin(label, group);
-    }
 }
+
 void BackendImpl::TraceEnd(const char * label, const char * group)
 {
     TimeTraceOperation operation = MapMetricKeyToOperation(label);
+
     if (operation != TimeTraceOperation::kNumTraces)
-    {
         SilabsTracer::Instance().TimeTraceEnd(MapMetricKeyToOperation(label), CHIP_NO_ERROR);
-    }
     else
-    {
         SilabsTracer::Instance().NamedTraceEnd(label, group);
-    }
 }
+
 void BackendImpl::TraceInstant(const char * label, const char * group)
 {
     SilabsTracer::Instance().TimeTraceInstant(label, group, CHIP_NO_ERROR);
