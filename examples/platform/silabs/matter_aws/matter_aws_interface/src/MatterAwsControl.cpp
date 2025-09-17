@@ -132,8 +132,10 @@ static mqttControlCommand WindowMqttControlCmd[] = {
 namespace ThermAttr                                  = chip::app::Clusters::Thermostat::Attributes;
 static mqttControlCommand thermostatMqttControlCmd[] = {
     { .cmdString = "SetMode",
-      .action    = { .setAttribute = [](EndpointId endpoint,
-                                     int32_t value) { Thermostat::Attributes::SystemMode::Set(endpoint, static_cast<Thermostat::SystemModeEnum>(value)); } } },
+      .action    = { .setAttribute =
+                         [](EndpointId endpoint, int32_t value) {
+                          Thermostat::Attributes::SystemMode::Set(endpoint, static_cast<Thermostat::SystemModeEnum>(value));
+                      } } },
     { .cmdString = "Heating",
       .action    = { .setAttribute = [](EndpointId endpoint,
                                      int32_t value) { Thermostat::Attributes::OccupiedHeatingSetpoint::Set(endpoint, value); } } },
