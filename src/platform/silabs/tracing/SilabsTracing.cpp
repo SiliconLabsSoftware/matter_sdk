@@ -502,22 +502,16 @@ CHIP_ERROR SilabsTracer::OutputAllMetrics()
     {
         err = OutputMetric(i);
         if (err != CHIP_NO_ERROR)
-        {
             return err;
-        }
     }
     for (size_t i = 0; i < kMaxNamedTraces; i++)
     {
         if (mNamedTraces[i].labelLen == 0 && mNamedTraces[i].groupLen == 0)
-        {
-            // Beginning of empty items, can stop printing.
-            break;
-        }
+            break; // Beginning of empty items, can stop printing.
+
         err = OutputMetric(i + kNumTraces);
         if (err != CHIP_NO_ERROR)
-        {
             return err;
-        }
     }
 
     return err;
@@ -741,13 +735,10 @@ int16_t SilabsTracer::FindOrCreateTrace(const char * label, const char * group)
 
             // Truncate label and group if too long
             if (labelLen >= NamedTrace::kMaxLabelLength)
-            {
                 labelLen = NamedTrace::kMaxLabelLength - 1;
-            }
+
             if (groupLen >= NamedTrace::kMaxGroupLength)
-            {
                 groupLen = NamedTrace::kMaxGroupLength - 1;
-            }
 
             memcpy(trace.label, label, labelLen);
             trace.label[labelLen] = '\0';
