@@ -153,7 +153,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_TICKLESS_IDLE 0
 #endif // SL_CATALOG_POWER_MANAGER_PRESENT
 
-#if SLI_SI91X_MCU_INTERFACE
+#ifdef SLI_SI91X_MCU_INTERFACE
 #define configTICK_RATE_HZ (1000)
 #else // For EFR32
 #define configTICK_RATE_HZ (1024)
