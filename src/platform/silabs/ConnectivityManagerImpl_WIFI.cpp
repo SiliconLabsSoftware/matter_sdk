@@ -203,8 +203,8 @@ void ConnectivityManagerImpl::_OnWiFiStationProvisionChange()
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 CHIP_ERROR ConnectivityManagerImpl::_SetPollingInterval(System::Clock::Milliseconds32 pollingInterval)
 {
-    // TODO: This feature is not required in the current integration - stub for now.
-    // Revisit this once the full integration is planned and implement accordingly.
+    // TODO: This function is not used in the current integration - return no error to avoid having the ICDManager error log.
+    // Revisit this once we complete the ICD integration
     (void) pollingInterval;
     return CHIP_NO_ERROR;
 }
