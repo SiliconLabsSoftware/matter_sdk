@@ -131,10 +131,9 @@ static mqttControlCommand WindowMqttControlCmd[] = {
 #ifdef ZCL_USING_THERMOSTAT_CLUSTER_SERVER
 namespace ThermAttr                                  = chip::app::Clusters::Thermostat::Attributes;
 static mqttControlCommand thermostatMqttControlCmd[] = {
-      .action    = { .setAttribute =
-                         [](EndpointId endpoint, int32_t value) {
-                          Thermostat::Attributes::SystemMode::Set(endpoint, static_cast<Thermostat::SystemModeEnum>(value));
-                      } } },
+    { .cmdString = "SetMode",
+      .action    = { .setAttribute = [](EndpointId endpoint,
+                                     int32_t value) { Thermostat::Attributes::SystemMode::Set(endpoint, static_cast<Thermostat::SystemModeEnum>(value)); } } },
     { .cmdString = "Heating",
       .action    = { .setAttribute = [](EndpointId endpoint,
                                      int32_t value) { Thermostat::Attributes::OccupiedHeatingSetpoint::Set(endpoint, value); } } },
