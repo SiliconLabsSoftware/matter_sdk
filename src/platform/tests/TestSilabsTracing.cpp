@@ -821,6 +821,9 @@ TEST_F(TestSilabsTracing, TestNamedTraces)
     // Flush trace buffer before trying to fill named trace buffer
     SilabsTracer::Instance().TraceBufferFlushAll();
 
+    // Re-initialize the tracer to clear named traces before buffer overflow test
+    SilabsTracer::Instance().Init();
+
     // Test buffer overflow for named traces
     for (size_t i = 0; i < SilabsTracer::kMaxNamedTraces + 1; i++)
     {
