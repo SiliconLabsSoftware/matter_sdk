@@ -433,8 +433,7 @@ void ICDManager::UpdateOperationState(OperationalState state)
 #endif // CHIP_CONFIG_ENABLE_ICD_CIP
 
         CHIP_ERROR err = DeviceLayer::ConnectivityMgr().SetPollingInterval(slowPollInterval);
-        // TODO: Handle error case after the SetPollingInterval feature is implemented.
-        if (err != CHIP_ERROR_NOT_IMPLEMENTED && err != CHIP_NO_ERROR)
+        if (err != CHIP_NO_ERROR)
         {
             ChipLogError(AppServer, "Failed to set Slow Polling Interval: err %" CHIP_ERROR_FORMAT, err.Format());
         }
@@ -474,8 +473,7 @@ void ICDManager::UpdateOperationState(OperationalState state)
 
             CHIP_ERROR err =
                 DeviceLayer::ConnectivityMgr().SetPollingInterval(ICDConfigurationData::GetInstance().GetFastPollingInterval());
-            // TODO: Handle error case after the SetPollingInterval feature is implemented.
-            if (err != CHIP_ERROR_NOT_IMPLEMENTED && err != CHIP_NO_ERROR)
+            if (err != CHIP_NO_ERROR)
             {
                 ChipLogError(AppServer, "Failed to set Fast Polling Interval: err %" CHIP_ERROR_FORMAT, err.Format());
             }
