@@ -256,7 +256,7 @@ public:
      *          CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is too small,
      *          CHIP_NO_ERROR on success
      */
-    CHIP_ERROR GetTraceByOperation(size_t aOperationIdx, MutableCharSpan & buffer);
+    CHIP_ERROR GetTraceByOperation(size_t aOperationIdx, MutableCharSpan & buffer) const;
 
     /** @brief Get a specific trace by operation name
      *  @param aOperation The operation name or "group:label" format for named traces
@@ -266,7 +266,7 @@ public:
      *          CHIP_ERROR_INVALID_ARGUMENT if operation format is invalid,
      *          CHIP_NO_ERROR on success
      */
-    CHIP_ERROR GetTraceByOperation(CharSpan aOperation, MutableCharSpan & buffer);
+    CHIP_ERROR GetTraceByOperation(CharSpan aOperation, MutableCharSpan & buffer) const;
 
     size_t GetTimeTracesCount() { return mBufferedTrackerCount; }
 
