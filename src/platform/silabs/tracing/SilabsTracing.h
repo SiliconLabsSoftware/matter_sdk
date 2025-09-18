@@ -266,7 +266,7 @@ public:
      *          CHIP_ERROR_INVALID_ARGUMENT if operation format is invalid,
      *          CHIP_NO_ERROR on success
      */
-    CHIP_ERROR GetTraceByOperation(const char * aOperation, MutableCharSpan & buffer);
+    CHIP_ERROR GetTraceByOperation(CharSpan aOperation, MutableCharSpan & buffer);
 
     size_t GetTimeTracesCount() { return mBufferedTrackerCount; }
 
@@ -278,9 +278,10 @@ public:
 
     /** @brief Get the string representation of an operation by its index
      *  @param aOperationIdx The index of the operation
+     *  @param buffer The output buffer to write the string to
      *  @return const char *, the string representation of the operation
      */
-    const char * OperationIndexToString(size_t aOperationIdx);
+    CHIP_ERROR OperationIndexToString(size_t aOperationIdx, MutableCharSpan buffer);
 
     inline size_t GetRegisteredAppOperationsCount() { return mAppOperationKeyCount; }
     inline char * GetAppOperationKey(size_t index) { return mAppOperationKeys[index]; }

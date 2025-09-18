@@ -80,15 +80,24 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     // Note: We mimic the snprintf behavior where the output of the function is the number of characters that WOULD be
     // written to the buffer regardless of the success or failure of the operation. This is to allow the caller to know
     // the size of the buffer required to store the output by calling this function with a buffer of size 0.
+
+    // Get the operation as a string
+    char opStr[32] = { 0 };
+    chip::MutableCharSpan opSpan(opStr, sizeof(opStr));
+    CHIP_ERROR err = chip::Tracing::Silabs::SilabsTracer::Instance().OperationIndexToString(mOperation, opSpan);
+    if (err != CHIP_NO_ERROR)
+    {
+        snprintf(opStr, sizeof(opStr), "Unknown");
+    }
+
     switch (mType)
     {
     case OperationType::kBegin: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
-                              SilabsTracer::Instance().OperationIndexToString(mOperation), mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType), opStr,
+                              mError.AsInteger());
 
         MutableCharSpan subSpan;
-
         if (offset < static_cast<int>(buffer.size()))
             subSpan = buffer.SubSpan(static_cast<size_t>(offset));
         offset += FormatTimeStamp(mStartTime, subSpan);
@@ -97,8 +106,8 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     }
     case OperationType::kEnd: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
-                              SilabsTracer::Instance().OperationIndexToString(mOperation), mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType), opStr,
+                              mError.AsInteger());
 
         MutableCharSpan subSpan;
 
@@ -131,11 +140,10 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     }
     case OperationType::kInstant: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Time: ", OperationTypeToString(mType),
-                              SilabsTracer::Instance().OperationIndexToString(mOperation), mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Time: ", OperationTypeToString(mType), opStr,
+                              mError.AsInteger());
 
         MutableCharSpan subSpan;
-
         if (offset < static_cast<int>(buffer.size()))
             subSpan = buffer.SubSpan(static_cast<size_t>(offset));
         offset += FormatTimeStamp(mStartTime, subSpan);
@@ -158,24 +166,22 @@ TimeTraceOperation SilabsTracer::StringToTimeTraceOperation(const char * aOperat
     return TimeTraceOperation::kNumTraces;
 }
 
-const char * SilabsTracer::OperationIndexToString(size_t aOperationIdx)
+CHIP_ERROR SilabsTracer::OperationIndexToString(size_t aOperationIdx, MutableCharSpan buffer)
 {
-    // If value is in operation enum, return it.
-    VerifyOrReturnValue(aOperationIdx >= kNumTraces, TimeTraceOperationToString(static_cast<TimeTraceOperation>(aOperationIdx)));
-
-    static char buf[chip::Tracing::Silabs::SilabsTracer::NamedTrace::kMaxGroupLength +
-                    chip::Tracing::Silabs::SilabsTracer::NamedTrace::kMaxLabelLength + 2];
-
-    size_t namedTraceIdx = aOperationIdx - kNumTraces;
-    if (namedTraceIdx >= kMaxNamedTraces) // Validate Index won't be out of bounds
+    if (aOperationIdx < kNumTraces) // If value is in operation enum, return it.
     {
-        snprintf(buf, sizeof(buf), "NamedTraceOverflow");
-        return buf;
+        snprintf(buffer.data(), buffer.size(), "%s", TimeTraceOperationToString(static_cast<TimeTraceOperation>(aOperationIdx)));
+    }
+    else
+    {
+        size_t namedTraceIdx = aOperationIdx - kNumTraces;
+        VerifyOrReturnError(namedTraceIdx < kMaxNamedTraces, CHIP_ERROR_INVALID_ARGUMENT);
+
+        const auto & trace = mNamedTraces[namedTraceIdx];
+        snprintf(buffer.data(), buffer.size(), "%s:%s", trace.group, trace.label);
     }
 
-    const auto & trace = mNamedTraces[namedTraceIdx];
-    snprintf(buf, sizeof(buf), "%s:%s", trace.group, trace.label);
-    return buf;
+    return CHIP_NO_ERROR;
 }
 
 SilabsTracer SilabsTracer::sInstance;
@@ -668,23 +674,23 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(size_t aOperationIdx, MutableCharSp
 }
 
 // Overload for string-based operation lookup
-CHIP_ERROR SilabsTracer::GetTraceByOperation(const char * aOperation, MutableCharSpan & buffer)
+CHIP_ERROR SilabsTracer::GetTraceByOperation(CharSpan aOperation, MutableCharSpan & buffer)
 {
-    TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation);
+    TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation.data());
     if (operationKey != TimeTraceOperation::kNumTraces)
     {
         return GetTraceByOperation(to_underlying(operationKey), buffer);
     }
 
     // Check if it is a named trace
-    const char * colon = strchr(aOperation, ':');
+    const char * colon = strchr(aOperation.data(), ':');
     if (colon == nullptr)
     {
         ChipLogError(DeviceLayer, "Invalid Trace Operation format");
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
-    size_t groupLen = colon - aOperation;
+    size_t groupLen = colon - aOperation.data();
     size_t labelLen = strlen(colon + 1);
 
     // Copy group and label into temporary buffers
@@ -696,7 +702,7 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(const char * aOperation, MutableCha
     if (labelLen >= sizeof(labelBuf))
         labelLen = sizeof(labelBuf) - 1;
 
-    memcpy(groupBuf, aOperation, groupLen);
+    memcpy(groupBuf, aOperation.data(), groupLen);
     groupBuf[groupLen] = '\0';
     memcpy(labelBuf, colon + 1, labelLen);
     labelBuf[labelLen] = '\0';
