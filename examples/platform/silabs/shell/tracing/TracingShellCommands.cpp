@@ -64,14 +64,16 @@ CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
     VerifyOrReturnError((argc != 0) && (argv != nullptr) && (argv[0] != nullptr), CHIP_ERROR_INVALID_ARGUMENT,
                         streamer_printf(streamer_get(), "Usage: tracing metrics <TimeTraceOperation>\r\n"));
 
+    CHIP_ERROR error = CHIP_NO_ERROR;
     if (strcmp(argv[0], "all") == 0)
     {
-        return SilabsTracer::Instance().OutputAllMetrics();
+        error = SilabsTracer::Instance().OutputAllMetrics();
     }
     else
     {
-        return SilabsTracer::Instance().OutputMetric(argv[0]);
+        error = SilabsTracer::Instance().OutputMetric(argv[0]);
     }
+    return error;
 }
 
 CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
@@ -79,15 +81,17 @@ CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
     VerifyOrReturnError((argc != 0) && (argv != nullptr) && (argv[0] != nullptr), CHIP_ERROR_INVALID_ARGUMENT,
                         streamer_printf(streamer_get(), "Usage: tracing flush <TimeTraceOperation>\r\n"));
 
+    CHIP_ERROR error = CHIP_NO_ERROR;
     CharSpan opKey(argv[0], sizeof(argv[0]));
     if (strcmp(argv[0], "all") == 0)
     {
-        return SilabsTracer::Instance().TraceBufferFlushAll();
+        error = SilabsTracer::Instance().TraceBufferFlushAll();
     }
     else
     {
-        return SilabsTracer::Instance().TraceBufferFlushByOperation(opKey);
+        error = SilabsTracer::Instance().TraceBufferFlushByOperation(opKey);
     }
+    return error;
 }
 
 } // namespace

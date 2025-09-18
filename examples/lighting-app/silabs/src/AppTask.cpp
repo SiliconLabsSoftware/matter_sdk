@@ -102,7 +102,7 @@ CHIP_ERROR AppTask::AppInit()
 
     sLightLED.Init(LIGHT_LED);
     sLightLED.Set(LightMgr().IsLightOn());
-    MATTER_TRACE_INSTANT("LightOn", "Reboot");
+    SILABS_TRACE_NAMED_INSTANT("LightOn", "Reboot");
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
