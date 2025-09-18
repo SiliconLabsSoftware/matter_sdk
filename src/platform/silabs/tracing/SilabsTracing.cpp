@@ -313,33 +313,26 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(const char * label, const char * group
 
 CHIP_ERROR SilabsTracer::NamedTraceBegin(const char * label, const char * group)
 {
+    VerifyOrReturnError(label != nullptr && group != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
     int16_t mIndex = FindOrCreateTrace(label, group);
-    if (mIndex >= 0)
-    {
-        auto & trace = mNamedTraces[mIndex];
+    VerifyOrReturnError(mIndex >= 0, CHIP_ERROR_BUFFER_TOO_SMALL);
 
-        trace.tracker.mStartTime = SILABS_GET_TIME();
-        trace.metric.mTotalCount++;
-        trace.tracker.mOperation = kNumTraces + mIndex;
-        trace.tracker.mType      = OperationType::kBegin;
-        trace.tracker.mError     = CHIP_NO_ERROR;
+    auto & trace = mNamedTraces[mIndex];
 
-        return OutputTrace(trace.tracker);
-    }
-    else
-    {
-        return CHIP_ERROR_BUFFER_TOO_SMALL;
-    }
+    trace.tracker.mStartTime = SILABS_GET_TIME();
+    trace.metric.mTotalCount++;
+    trace.tracker.mOperation = kNumTraces + mIndex;
+    trace.tracker.mType      = OperationType::kBegin;
+    trace.tracker.mError     = CHIP_NO_ERROR;
+
+    return OutputTrace(trace.tracker);
 }
 
 CHIP_ERROR SilabsTracer::NamedTraceEnd(const char * label, const char * group)
 {
     int16_t mIndex = FindExistingTrace(label, group);
-    if (mIndex < 0)
-    {
-        // Did not find a NamedTraceBegin
-        return CHIP_ERROR_NOT_FOUND;
-    }
+    VerifyOrReturnError(mIndex >= 0, CHIP_ERROR_NOT_FOUND);
 
     auto & trace = mNamedTraces[mIndex];
     if (trace.tracker.mType == OperationType::kBegin)
@@ -354,15 +347,12 @@ CHIP_ERROR SilabsTracer::NamedTraceEnd(const char * label, const char * group)
             (trace.metric.mMovingAverage.count() * (trace.metric.mSuccessfullCount - 1) + duration.count()) /
             trace.metric.mSuccessfullCount);
 
-        // New Max?
         if (duration > trace.metric.mMaxTimeMs)
             trace.metric.mMaxTimeMs = duration;
 
-        // New Min?
-        if (trace.metric.mSuccessfullCount == 1 || duration < trace.metric.mMinTimeMs)
+        if (trace.metric.mSuccessfullCount <= 1 || duration < trace.metric.mMinTimeMs)
             trace.metric.mMinTimeMs = duration;
 
-        // Above Average?
         if (duration > trace.metric.mMovingAverage)
             trace.metric.mCountAboveAvg++;
 
@@ -418,6 +408,7 @@ CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
 }
 CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
 {
+    VerifyOrReturnError(aOperationIdx < kNumTraces + kMaxNamedTraces - 1, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     if (aOperationIdx < kNumTraces)
     {
