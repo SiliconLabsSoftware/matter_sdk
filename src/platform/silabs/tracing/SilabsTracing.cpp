@@ -410,6 +410,7 @@ CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
 {
     VerifyOrReturnError(aOperationIdx < kNumTraces + kMaxNamedTraces - 1, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
+    CHIP_ERROR error;
     if (aOperationIdx < kNumTraces)
     {
         ChipLogProgress(DeviceLayer,
@@ -419,7 +420,7 @@ CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
                         mMetrics[aOperationIdx].mMaxTimeMs.count(), mMetrics[aOperationIdx].mMinTimeMs.count(),
                         mMetrics[aOperationIdx].mMovingAverage.count(), mMetrics[aOperationIdx].mTotalCount,
                         mMetrics[aOperationIdx].mSuccessfullCount, mMetrics[aOperationIdx].mCountAboveAvg);
-        return CHIP_NO_ERROR;
+        error = CHIP_NO_ERROR;
     }
     else
     {
@@ -431,10 +432,10 @@ CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
                         trace.group, trace.label, trace.metric.mMaxTimeMs.count(), trace.metric.mMinTimeMs.count(),
                         trace.metric.mMovingAverage.count(), trace.metric.mTotalCount, trace.metric.mSuccessfullCount,
                         trace.metric.mCountAboveAvg);
-        return CHIP_NO_ERROR;
+        error = CHIP_NO_ERROR;
     }
 
-    return CHIP_ERROR_INVALID_ARGUMENT;
+    return error;
 }
 
 CHIP_ERROR SilabsTracer::OutputMetric(char * aOperation)
@@ -643,7 +644,7 @@ CHIP_ERROR SilabsTracer::LoadMetrics()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR SilabsTracer::GetTraceByOperation(size_t aOperationIdx, MutableCharSpan & buffer)
+CHIP_ERROR SilabsTracer::GetTraceByOperation(size_t aOperationIdx, MutableCharSpan & buffer) const
 {
     auto * current = mTimeTrackerList.head;
     while (current != nullptr)
@@ -651,7 +652,7 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(size_t aOperationIdx, MutableCharSp
         if (current->mValue.mOperation == aOperationIdx)
         {
             // Found matching trace, format it
-            int required = current->mValue.ToCharArray(buffer);
+            auto required = current->mValue.ToCharArray(buffer);
             if (required > static_cast<int>(buffer.size()))
                 return CHIP_ERROR_BUFFER_TOO_SMALL;
 
@@ -665,7 +666,7 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(size_t aOperationIdx, MutableCharSp
 }
 
 // Overload for string-based operation lookup
-CHIP_ERROR SilabsTracer::GetTraceByOperation(CharSpan aOperation, MutableCharSpan & buffer)
+CHIP_ERROR SilabsTracer::GetTraceByOperation(CharSpan aOperation, MutableCharSpan & buffer) const
 {
     TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation.data());
     if (operationKey != TimeTraceOperation::kNumTraces)
