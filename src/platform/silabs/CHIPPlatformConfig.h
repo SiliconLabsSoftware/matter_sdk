@@ -127,6 +127,10 @@ static_assert(CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE >= 3, "ICD Observers pool size
 
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
 
+#ifndef CHIP_CONFIG_MRP_RETRY_INTERVAL_SENDER_BOOST
+#define CHIP_CONFIG_MRP_RETRY_INTERVAL_SENDER_BOOST (2500_ms32)
+#endif // CHIP_CONFIG_MRP_RETRY_INTERVAL_SENDER_BOOST
+
 /**
  * @brief CHIP_SHELL_MAX_LINE_SIZE
  *
@@ -137,6 +141,7 @@ static_assert(CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE >= 3, "ICD Observers pool size
 #endif // CHIP_SHELL_MAX_LINE_SIZE
 
 // ==================== CMSISOS Configuration Overrides ====================
+
 #ifndef CHIP_CONFIG_CMSISOS_USE_STATIC_TASK
 #define CHIP_CONFIG_CMSISOS_USE_STATIC_TASK 1
 #endif
