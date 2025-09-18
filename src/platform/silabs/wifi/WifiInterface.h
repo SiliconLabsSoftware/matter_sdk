@@ -354,7 +354,7 @@ public:
     }
 
     /**
-     * @brief Function will reset the state of the reconnection attempts with the Access Point 
+     * @brief Function will reset the state of the reconnection attempts with the Access Point
      */
     void ResetScheduledConnectionAttempts();
 
