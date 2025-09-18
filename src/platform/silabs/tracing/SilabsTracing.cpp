@@ -102,25 +102,27 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
 
         MutableCharSpan subSpan;
 
-        // Print Start
+        // Print Start time
         if (offset < static_cast<int>(buffer.size()))
             subSpan = buffer.SubSpan(static_cast<size_t>(offset));
         offset += FormatTimeStamp(mStartTime, subSpan);
 
-        // Print End
+        // Print End label
         if (offset < static_cast<int>(buffer.size()))
             subSpan = buffer.SubSpan(static_cast<size_t>(offset));
         offset += snprintf(subSpan.data(), subSpan.size(), "| End: ");
 
+        // Print End time
         if (offset < static_cast<int>(buffer.size()))
             subSpan = buffer.SubSpan(static_cast<size_t>(offset));
         offset += FormatTimeStamp(mEndTime, subSpan);
 
-        // Print Duration
+        // Print Duration label
         if (offset < static_cast<int>(buffer.size()))
             subSpan = buffer.SubSpan(static_cast<size_t>(offset));
         offset += snprintf(subSpan.data(), subSpan.size(), "| Duration: ");
 
+        // Print Duration time
         if (offset < static_cast<int>(buffer.size()))
             subSpan = buffer.SubSpan(static_cast<size_t>(offset));
         offset += FormatTimeStamp(mEndTime - mStartTime, subSpan);
@@ -150,34 +152,30 @@ TimeTraceOperation SilabsTracer::StringToTimeTraceOperation(const char * aOperat
     for (size_t i = 0; i < kNumTraces; i++)
     {
         TimeTraceOperation op = static_cast<TimeTraceOperation>(i);
-        if (strcmp(aOperation, TimeTraceOperationToString(op)) == 0)
-            return op;
+        VerifyOrReturnValue(!strcmp(aOperation, TimeTraceOperationToString(op)) == 0, op);
     }
+    // Unable to match, return value for unknown
     return TimeTraceOperation::kNumTraces;
 }
 
 const char * SilabsTracer::OperationIndexToString(size_t aOperationIdx)
 {
-    if (aOperationIdx < kNumTraces)
-    {
-        return TimeTraceOperationToString(static_cast<TimeTraceOperation>(aOperationIdx));
-    }
-    else
-    {
-        static char buf[chip::Tracing::Silabs::SilabsTracer::NamedTrace::kMaxGroupLength +
-                        chip::Tracing::Silabs::SilabsTracer::NamedTrace::kMaxLabelLength + 2];
+    // If value is in operation enum, return it.
+    VerifyOrReturnValue(aOperationIdx >= kNumTraces, TimeTraceOperationToString(static_cast<TimeTraceOperation>(aOperationIdx)));
 
-        size_t namedTraceIdx = aOperationIdx - kNumTraces;
-        if (namedTraceIdx >= kMaxNamedTraces) // Validate Index won't be out of bounds
-        {
-            snprintf(buf, sizeof(buf), "InvalidTrace");
-            return buf;
-        }
+    static char buf[chip::Tracing::Silabs::SilabsTracer::NamedTrace::kMaxGroupLength +
+                    chip::Tracing::Silabs::SilabsTracer::NamedTrace::kMaxLabelLength + 2];
 
-        const auto & trace = mNamedTraces[namedTraceIdx];
-        snprintf(buf, sizeof(buf), "%s:%s", trace.group, trace.label);
+    size_t namedTraceIdx = aOperationIdx - kNumTraces;
+    if (namedTraceIdx >= kMaxNamedTraces) // Validate Index won't be out of bounds
+    {
+        snprintf(buf, sizeof(buf), "InvalidTrace");
         return buf;
     }
+
+    const auto & trace = mNamedTraces[namedTraceIdx];
+    snprintf(buf, sizeof(buf), "%s:%s", trace.group, trace.label);
+    return buf;
 }
 
 SilabsTracer SilabsTracer::sInstance;
@@ -259,14 +257,15 @@ CHIP_ERROR SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR 
         auto & metric = mMetrics[to_underlying(aOperation)];
         metric.mSuccessfullCount++;
         metric.mMovingAverage = System::Clock::Milliseconds32(
-            (metric.mMovingAverage.count() * (metric.mSuccessfullCount - 1) + duration.count()) / metric.mSuccessfullCount);
+            (static_cast<uint64_t>(metric.mMovingAverage.count()) * (metric.mSuccessfullCount - 1) + duration.count()) /
+            metric.mSuccessfullCount);
 
         // New Max?
         if (duration > metric.mMaxTimeMs)
             metric.mMaxTimeMs = System::Clock::Milliseconds32(duration);
 
-        // New Min?
-        if (metric.mMinTimeMs.count() == 0 || duration < metric.mMinTimeMs)
+        // New (or first) Min?
+        if (metric.mSuccessfullCount <= 1 || duration < metric.mMinTimeMs)
             metric.mMinTimeMs = System::Clock::Milliseconds32(duration);
 
         // Above Average?
