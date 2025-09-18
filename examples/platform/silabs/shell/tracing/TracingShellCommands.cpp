@@ -61,11 +61,8 @@ CHIP_ERROR TracingCommandHandler(int argc, char ** argv)
 
 CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
 {
-    if (argc == 0 || argv == nullptr || argv[0] == nullptr)
-    {
-        streamer_printf(streamer_get(), "Usage: tracing metrics <TimeTraceOperation>\r\n");
-        return CHIP_ERROR_INVALID_ARGUMENT;
-    }
+    VerifyOrReturnError((argc != 0) && (argv != nullptr) && (argv[0] != nullptr), CHIP_ERROR_INVALID_ARGUMENT,
+                        streamer_printf(streamer_get(), "Usage: tracing metrics <TimeTraceOperation>\r\n"));
 
     if (strcmp(argv[0], "all") == 0)
     {
@@ -79,11 +76,8 @@ CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
 
 CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
 {
-    if (argc == 0 || argv == nullptr || argv[0] == nullptr)
-    {
-        streamer_printf(streamer_get(), "Usage: tracing flush <TimeTraceOperation>\r\n");
-        return CHIP_ERROR_INVALID_ARGUMENT;
-    }
+    VerifyOrReturnError((argc != 0) && (argv != nullptr) && (argv[0] != nullptr), CHIP_ERROR_INVALID_ARGUMENT,
+                        streamer_printf(streamer_get(), "Usage: tracing flush <TimeTraceOperation>\r\n"));
 
     CharSpan opKey(argv[0], sizeof(argv[0]));
     if (strcmp(argv[0], "all") == 0)

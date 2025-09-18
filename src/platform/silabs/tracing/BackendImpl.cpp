@@ -46,7 +46,7 @@ void BackendImpl::TraceBegin(const char * label, const char * group)
 {
     TimeTraceOperation operation = MapMetricKeyToOperation(label);
 
-    if (operation != TimeTraceOperation::kNumTraces)
+    if (operation < TimeTraceOperation::kNumTraces) // Operation was found
         SilabsTracer::Instance().TimeTraceBegin(MapMetricKeyToOperation(label));
     else
         SilabsTracer::Instance().NamedTraceBegin(label, group);
@@ -56,7 +56,7 @@ void BackendImpl::TraceEnd(const char * label, const char * group)
 {
     TimeTraceOperation operation = MapMetricKeyToOperation(label);
 
-    if (operation != TimeTraceOperation::kNumTraces)
+    if (operation < TimeTraceOperation::kNumTraces) // Operation was found
         SilabsTracer::Instance().TimeTraceEnd(MapMetricKeyToOperation(label), CHIP_NO_ERROR);
     else
         SilabsTracer::Instance().NamedTraceEnd(label, group);
