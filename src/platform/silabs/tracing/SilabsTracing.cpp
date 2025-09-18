@@ -169,7 +169,7 @@ const char * SilabsTracer::OperationIndexToString(size_t aOperationIdx)
     size_t namedTraceIdx = aOperationIdx - kNumTraces;
     if (namedTraceIdx >= kMaxNamedTraces) // Validate Index won't be out of bounds
     {
-        snprintf(buf, sizeof(buf), "InvalidTrace");
+        snprintf(buf, sizeof(buf), "NamedTraceOverflow");
         return buf;
     }
 
@@ -291,23 +291,18 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ER
 CHIP_ERROR SilabsTracer::TimeTraceInstant(const char * label, const char * group, CHIP_ERROR error)
 {
     int16_t mIndex = FindOrCreateTrace(label, group);
-    if (mIndex >= 0)
-    {
-        auto & trace = mNamedTraces[mIndex];
+    VerifyOrReturnError(mIndex >= 0, CHIP_ERROR_BUFFER_TOO_SMALL);
 
-        trace.tracker.mStartTime = SILABS_GET_TIME();
-        trace.metric.mTotalCount++;
-        trace.tracker.mOperation = kNumTraces + mIndex;
-        trace.tracker.mEndTime   = trace.tracker.mStartTime;
-        trace.tracker.mType      = OperationType::kInstant;
-        trace.tracker.mError     = error;
+    auto & trace = mNamedTraces[mIndex];
 
-        return OutputTrace(trace.tracker);
-    }
-    else
-    {
-        return CHIP_ERROR_BUFFER_TOO_SMALL;
-    }
+    trace.tracker.mStartTime = SILABS_GET_TIME();
+    trace.metric.mTotalCount++;
+    trace.tracker.mOperation = kNumTraces + mIndex;
+    trace.tracker.mEndTime   = trace.tracker.mStartTime;
+    trace.tracker.mType      = OperationType::kInstant;
+    trace.tracker.mError     = error;
+
+    return OutputTrace(trace.tracker);
 }
 
 CHIP_ERROR SilabsTracer::NamedTraceBegin(const char * label, const char * group)
