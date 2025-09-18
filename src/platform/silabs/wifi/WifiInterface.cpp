@@ -106,7 +106,9 @@ void WifiInterface::NotifyConnection(const MacAddress & ap)
     evt.body.channel = wfx_rsi.ap_chan;
 #endif
     std::copy(ap.begin(), ap.end(), evt.body.mac);
-    retryInterval = kWlanMinRetryIntervalsInSec;
+    // Resetting the retry connection state machine for a successful connection
+    // NOTE: This is required in case an access point gets disconnected after a successful connection.
+    ResetScheduledConnectionAttempts();
 
     HandleWFXSystemEvent((sl_wfx_generic_message_t *) &evt);
 }
