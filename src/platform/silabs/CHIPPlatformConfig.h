@@ -141,7 +141,6 @@ static_assert(CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE >= 3, "ICD Observers pool size
 #endif // CHIP_SHELL_MAX_LINE_SIZE
 
 // ==================== CMSISOS Configuration Overrides ====================
-
 #ifndef CHIP_CONFIG_CMSISOS_USE_STATIC_TASK
 #define CHIP_CONFIG_CMSISOS_USE_STATIC_TASK 1
 #endif
