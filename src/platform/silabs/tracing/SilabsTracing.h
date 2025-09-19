@@ -140,7 +140,7 @@ public:
      *  @param group The group for the trace
      * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
-    CHIP_ERROR TimeTraceInstant(const char * label, const char * group, CHIP_ERROR error = CHIP_NO_ERROR);
+    CHIP_ERROR TimeTraceInstant(CharSpan label, CharSpan group, CHIP_ERROR error = CHIP_NO_ERROR);
 
     /** @brief Begin a named trace with a label and group
      * Starts timing a named trace identified by the given label and group.
@@ -148,7 +148,7 @@ public:
      *  @param group The group for the trace
      *  @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full.
      */
-    CHIP_ERROR NamedTraceBegin(const char * label, const char * group);
+    CHIP_ERROR NamedTraceBegin(CharSpan label, CharSpan group);
 
     /** @brief End a named trace with a label and group
      * Ends timing for a named trace identified by the given label and group, and records the result.
@@ -156,7 +156,9 @@ public:
      *  @param group The group for the trace
      *  @return CHIP_ERROR, returns CHIP_ERROR_NOT_FOUND if a NamedTraceBegin was not found
      */
-    CHIP_ERROR NamedTraceEnd(const char * label, const char * group);
+    CHIP_ERROR NamedTraceEnd(const CharSpan label, const CharSpan group);
+
+    CHIP_ERROR FinishMetric(Metric & metric, System::Clock::Milliseconds32 duration);
 
     /** @brief Output a time tracker
      * This will output the latest time tracker for a specific operation, without affecting the buffer.
@@ -182,7 +184,7 @@ public:
      *  @param aOperation The name of the operation.
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized.
      */
-    CHIP_ERROR OutputMetric(char * aOperation);
+    CHIP_ERROR OutputMetric(CharSpan aOperation);
 
     /** @brief Output all metrics for all operations
      *  Outputs the metrics for all tracked operations.
@@ -217,7 +219,7 @@ public:
      *  @param appOperationKey The key identifying the app operation.
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the logs are not initialized.
      */
-    CHIP_ERROR TraceBufferFlushByOperation(CharSpan & appOperationKey);
+    CHIP_ERROR TraceBufferFlushByOperation(CharSpan appOperationKey);
 
     // prevent copy constructor and assignment operator
     SilabsTracer(SilabsTracer const &)             = delete;
@@ -274,12 +276,12 @@ public:
      *  @param aOperation The string representation of the operation
      *  @return TimeTraceOperation, the corresponding enum value or kNumTraces if not found
      */
-    TimeTraceOperation StringToTimeTraceOperation(const char * aOperation);
+    TimeTraceOperation StringToTimeTraceOperation(CharSpan aOperation) const;
 
     /** @brief Get the string representation of an operation by its index
      *  @param aOperationIdx The index of the operation
      *  @param buffer The output buffer to write the string to
-     *  @return const char *, the string representation of the operation
+     *  @return const CharSpan, the string representation of the operation
      */
     CHIP_ERROR OperationIndexToString(size_t aOperationIdx, MutableCharSpan buffer);
 
@@ -386,7 +388,7 @@ private:
      * @param group The group for the trace.
      * @return int16_t The index of the found or newly created trace, or -1 if the trace buffer is full.
      */
-    int16_t FindOrCreateTrace(const char * label, const char * group);
+    int16_t FindOrCreateTrace(const CharSpan label, const CharSpan group);
 
     /**
      * @brief Find the index of an existing named trace with the given label and group.
@@ -395,7 +397,7 @@ private:
      * @param group The group for the trace.
      * @return int16_t The index of the found trace, or -1 if no matching trace exists.
      */
-    int16_t FindExistingTrace(const char * label, const char * group);
+    int16_t FindExistingTrace(const CharSpan label, const CharSpan group) const;
 };
 
 /** @brief Get the string representation of a TimeTraceOperation enum value

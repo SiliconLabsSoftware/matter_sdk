@@ -71,7 +71,7 @@ CHIP_ERROR MetricsCommandHandler(int argc, char ** argv)
     }
     else
     {
-        error = SilabsTracer::Instance().OutputMetric(argv[0]);
+        error = SilabsTracer::Instance().OutputMetric(CharSpan::fromCharString(argv[0]));
     }
     return error;
 }
@@ -89,7 +89,7 @@ CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
     }
     else
     {
-        error = SilabsTracer::Instance().TraceBufferFlushByOperation(opKey);
+        error = SilabsTracer::Instance().TraceBufferFlushByOperation(CharSpan::fromCharString(argv[0]));
     }
     return error;
 }
