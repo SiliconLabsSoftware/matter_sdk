@@ -694,7 +694,7 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(CharSpan aOperation, MutableCharSpa
 
 CHIP_ERROR SilabsTracer::FindOrCreateTrace(const CharSpan label, const CharSpan group, size_t & outIdx)
 {
-    ReturnErrorOnFailure(FindExistingTrace(label, group, outIdx));
+    VerifyOrReturnError(FindExistingTrace(label, group, outIdx) != CHIP_NO_ERROR, CHIP_NO_ERROR);
 
     // Find first empty slot
     for (size_t i = 0; i < kMaxNamedTraces; i++)
