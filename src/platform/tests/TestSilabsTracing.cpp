@@ -711,13 +711,16 @@ TEST_F(TestSilabsTracing, TestLogs)
     EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(to_underlying(TimeTraceOperation::kOTA), span), CHIP_ERROR_NOT_FOUND);
 
     // Named traces logging
-    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceBegin("CustomOp", "TestGroup"));
+    EXPECT_EQ(
+        CHIP_NO_ERROR,
+        SilabsTracer::Instance().NamedTraceBegin(CharSpan::fromCharString("CustomOp"), CharSpan::fromCharString("TestGroup")));
     gMockClock.AdvanceMonotonic(150_ms64);
-    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceEnd("CustomOp", "TestGroup"));
+    EXPECT_EQ(CHIP_NO_ERROR,
+              SilabsTracer::Instance().NamedTraceEnd(CharSpan::fromCharString("CustomOp"), CharSpan::fromCharString("TestGroup")));
 
     // Verify named trace log
     span = MutableCharSpan(logBuffer);
-    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation("TestGroup:CustomOp", span), CHIP_NO_ERROR);
+    EXPECT_EQ(SilabsTracer::Instance().GetTraceByOperation(CharSpan::fromCharString("TestGroup:CustomOp"), span), CHIP_NO_ERROR);
     const char * expectedCustomLogFormat = "TimeTracker - End      | TestGroup:CustomOp               | Status: 0 | Start: "
                                            "00:00:00.200| End: 00:00:00.350| Duration: 00:00:00.150";
     EXPECT_STREQ(span.data(), expectedCustomLogFormat);
@@ -793,17 +796,26 @@ TEST_F(TestSilabsTracing, TestNamedTraces)
     size_t traceCount = 0;
 
     // Test creating named traces
-    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceBegin("MyOperation", "TestGroup"));
+    EXPECT_EQ(
+        CHIP_NO_ERROR,
+        SilabsTracer::Instance().NamedTraceBegin(CharSpan::fromCharString("MyOperation"), CharSpan::fromCharString("TestGroup")));
     gMockClock.AdvanceMonotonic(100_ms64);
-    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceEnd("MyOperation", "TestGroup"));
+    EXPECT_EQ(
+        CHIP_NO_ERROR,
+        SilabsTracer::Instance().NamedTraceEnd(CharSpan::fromCharString("MyOperation"), CharSpan::fromCharString("TestGroup")));
 
     // Test creating a second named trace
-    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceBegin("AnotherOp", "TestGroup"));
+    EXPECT_EQ(
+        CHIP_NO_ERROR,
+        SilabsTracer::Instance().NamedTraceBegin(CharSpan::fromCharString("AnotherOp"), CharSpan::fromCharString("TestGroup")));
     gMockClock.AdvanceMonotonic(150_ms64);
-    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().NamedTraceEnd("AnotherOp", "TestGroup"));
+    EXPECT_EQ(CHIP_NO_ERROR,
+              SilabsTracer::Instance().NamedTraceEnd(CharSpan::fromCharString("AnotherOp"), CharSpan::fromCharString("TestGroup")));
 
     // Test instant trace for named operation
-    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().TimeTraceInstant("InstantOp", "TestGroup"));
+    EXPECT_EQ(
+        CHIP_NO_ERROR,
+        SilabsTracer::Instance().TimeTraceInstant(CharSpan::fromCharString("InstantOp"), CharSpan::fromCharString("TestGroup")));
 
     // Verify trace count
     traceCount = SilabsTracer::Instance().GetTimeTracesCount();
@@ -813,10 +825,12 @@ TEST_F(TestSilabsTracing, TestNamedTraces)
     char logBuffer[256];
     MutableCharSpan span(logBuffer);
 
-    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().GetTraceByOperation("TestGroup:MyOperation", span));
+    EXPECT_EQ(CHIP_NO_ERROR, SilabsTracer::Instance().GetTraceByOperation(CharSpan::fromCharString("TestGroup:MyOperation"), span));
 
     // Test that ending a non-existent trace returns an error
-    EXPECT_EQ(CHIP_ERROR_NOT_FOUND, SilabsTracer::Instance().NamedTraceEnd("NonExistent", "TestGroup"));
+    EXPECT_EQ(
+        CHIP_ERROR_NOT_FOUND,
+        SilabsTracer::Instance().NamedTraceEnd(CharSpan::fromCharString("NonExistent"), CharSpan::fromCharString("TestGroup")));
 
     // Flush trace buffer before trying to fill named trace buffer
     SilabsTracer::Instance().TraceBufferFlushAll();
@@ -829,7 +843,8 @@ TEST_F(TestSilabsTracing, TestNamedTraces)
     {
         char label[16];
         snprintf(label, sizeof(label), "Op%04zu", i);
-        auto result = SilabsTracer::Instance().TimeTraceInstant(label, "OverflowTest");
+        auto result =
+            SilabsTracer::Instance().TimeTraceInstant(CharSpan::fromCharString(label), CharSpan::fromCharString("OverflowTest"));
         SilabsTracer::Instance().TraceBufferFlushAll(); // empty trace buffer as we are testing the NamedTrace one
         if (i < SilabsTracer::kMaxNamedTraces)
         {

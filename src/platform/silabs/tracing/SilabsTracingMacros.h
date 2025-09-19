@@ -60,7 +60,9 @@ private:
 #define SILABS_TRACE_END(operation) ::chip::Tracing::Silabs::SilabsTracer::Instance().TimeTraceEnd(operation)
 #define SILABS_TRACE_END_ERROR(operation, error) ::chip::Tracing::Silabs::SilabsTracer::Instance().TimeTraceEnd(operation, error)
 #define SILABS_TRACE_INSTANT(operation) ::chip::Tracing::Silabs::SilabsTracer::Instance().TimeTraceInstant(operation)
-#define SILABS_TRACE_NAMED_INSTANT(label, group) ::chip::Tracing::Silabs::SilabsTracer::Instance().TimeTraceInstant(label, group)
+#define SILABS_TRACE_NAMED_INSTANT(label, group)                                                                                   \
+    ::chip::Tracing::Silabs::SilabsTracer::Instance().TimeTraceInstant(CharSpan::fromCharString(label),                            \
+                                                                       CharSpan::fromCharString(group))
 #define SILABS_TRACE_INSTANT_ERROR(operation, error)                                                                               \
     ::chip::Tracing::Silabs::SilabsTracer::Instance().TimeTraceInstant(operation, error)
 

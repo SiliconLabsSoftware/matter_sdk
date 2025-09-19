@@ -155,12 +155,13 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     }
 }
 
-TimeTraceOperation SilabsTracer::StringToTimeTraceOperation(const char * aOperation)
+TimeTraceOperation SilabsTracer::StringToTimeTraceOperation(CharSpan aOperation) const
 {
     for (size_t i = 0; i < kNumTraces; i++)
     {
         TimeTraceOperation op = static_cast<TimeTraceOperation>(i);
-        VerifyOrReturnValue(!strcmp(aOperation, TimeTraceOperationToString(op)) == 0, op);
+        CharSpan needle       = CharSpan::fromCharString(TimeTraceOperationToString(op));
+        VerifyOrReturnValue(!aOperation.data_equal(needle), op);
     }
     // Unable to match, return value for unknown
     return TimeTraceOperation::kNumTraces;
@@ -255,29 +256,15 @@ CHIP_ERROR SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR 
     tracker.mType    = OperationType::kEnd;
     tracker.mError   = error;
 
-    if (error == CHIP_NO_ERROR)
-    {
-        // Calculate the duration and update the time tracker
-        auto duration = SILABS_GET_DURATION(tracker);
+    VerifyOrReturnValue(error == CHIP_NO_ERROR, error);
 
-        auto & metric = mMetrics[to_underlying(aOperation)];
-        metric.mSuccessfullCount++;
-        metric.mMovingAverage = System::Clock::Milliseconds32(
-            (static_cast<uint64_t>(metric.mMovingAverage.count()) * (metric.mSuccessfullCount - 1) + duration.count()) /
-            metric.mSuccessfullCount);
+    // Calculate the duration and update the time tracker
+    auto duration = SILABS_GET_DURATION(tracker);
 
-        // New Max?
-        if (duration > metric.mMaxTimeMs)
-            metric.mMaxTimeMs = System::Clock::Milliseconds32(duration);
+    auto & metric = mMetrics[to_underlying(aOperation)];
 
-        // New (or first) Min?
-        if (metric.mSuccessfullCount <= 1 || duration < metric.mMinTimeMs)
-            metric.mMinTimeMs = System::Clock::Milliseconds32(duration);
+    ReturnErrorOnFailure(FinishMetric(metric, duration));
 
-        // Above Average?
-        if (duration > metric.mMovingAverage)
-            metric.mCountAboveAvg++;
-    }
     return OutputTrace(tracker);
 }
 
@@ -294,7 +281,7 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(TimeTraceOperation aOperation, CHIP_ER
     return OutputTrace(tracker);
 }
 
-CHIP_ERROR SilabsTracer::TimeTraceInstant(const char * label, const char * group, CHIP_ERROR error)
+CHIP_ERROR SilabsTracer::TimeTraceInstant(const CharSpan label, const CharSpan group, CHIP_ERROR error)
 {
     int16_t mIndex = FindOrCreateTrace(label, group);
     VerifyOrReturnError(mIndex >= 0, CHIP_ERROR_BUFFER_TOO_SMALL);
@@ -311,9 +298,9 @@ CHIP_ERROR SilabsTracer::TimeTraceInstant(const char * label, const char * group
     return OutputTrace(trace.tracker);
 }
 
-CHIP_ERROR SilabsTracer::NamedTraceBegin(const char * label, const char * group)
+CHIP_ERROR SilabsTracer::NamedTraceBegin(const CharSpan label, const CharSpan group)
 {
-    VerifyOrReturnError(label != nullptr && group != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(label.size() != 0 && group.size() != 0, CHIP_ERROR_INVALID_ARGUMENT);
 
     int16_t mIndex = FindOrCreateTrace(label, group);
     VerifyOrReturnError(mIndex >= 0, CHIP_ERROR_BUFFER_TOO_SMALL);
@@ -329,36 +316,44 @@ CHIP_ERROR SilabsTracer::NamedTraceBegin(const char * label, const char * group)
     return OutputTrace(trace.tracker);
 }
 
-CHIP_ERROR SilabsTracer::NamedTraceEnd(const char * label, const char * group)
+CHIP_ERROR SilabsTracer::NamedTraceEnd(const CharSpan label, const CharSpan group)
 {
     int16_t mIndex = FindExistingTrace(label, group);
     VerifyOrReturnError(mIndex >= 0, CHIP_ERROR_NOT_FOUND);
 
     auto & trace = mNamedTraces[mIndex];
-    if (trace.tracker.mType == OperationType::kBegin)
+
+    VerifyOrReturnError(trace.tracker.mType == OperationType::kBegin, CHIP_ERROR_INCORRECT_STATE);
+
+    trace.tracker.mEndTime = SILABS_GET_TIME();
+    trace.tracker.mType    = OperationType::kEnd;
+
+    auto duration = SILABS_GET_DURATION(trace.tracker);
+
+    ReturnErrorOnFailure(FinishMetric(trace.metric, duration));
+
+    return OutputTrace(trace.tracker);
+}
+
+CHIP_ERROR SilabsTracer::FinishMetric(Metric & metric, System::Clock::Milliseconds32 duration)
+{
+    metric.mSuccessfullCount++;
+    metric.mMovingAverage = System::Clock::Milliseconds32(
+        (static_cast<uint64_t>(metric.mMovingAverage.count()) * (metric.mSuccessfullCount - 1) + duration.count()) /
+        metric.mSuccessfullCount);
+
+    if (duration > metric.mMaxTimeMs)
     {
-        trace.tracker.mEndTime = SILABS_GET_TIME();
-        trace.tracker.mType    = OperationType::kEnd;
-
-        auto duration = SILABS_GET_DURATION(trace.tracker);
-
-        trace.metric.mSuccessfullCount++;
-        trace.metric.mMovingAverage = System::Clock::Milliseconds32(
-            (trace.metric.mMovingAverage.count() * (trace.metric.mSuccessfullCount - 1) + duration.count()) /
-            trace.metric.mSuccessfullCount);
-
-        if (duration > trace.metric.mMaxTimeMs)
-            trace.metric.mMaxTimeMs = duration;
-
-        if (trace.metric.mSuccessfullCount <= 1 || duration < trace.metric.mMinTimeMs)
-            trace.metric.mMinTimeMs = duration;
-
-        if (duration > trace.metric.mMovingAverage)
-            trace.metric.mCountAboveAvg++;
-
-        return OutputTrace(trace.tracker);
     }
-    return CHIP_ERROR_NOT_FOUND;
+    metric.mMaxTimeMs = System::Clock::Milliseconds32(duration);
+
+    if (metric.mSuccessfullCount <= 1 || duration < metric.mMinTimeMs)
+        metric.mMinTimeMs = System::Clock::Milliseconds32(duration);
+
+    if (duration > metric.mMovingAverage)
+        metric.mCountAboveAvg++;
+
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR SilabsTracer::OutputTimeTracker(const TimeTracker & tracker)
@@ -438,44 +433,43 @@ CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
     return error;
 }
 
-CHIP_ERROR SilabsTracer::OutputMetric(char * aOperation)
+CHIP_ERROR SilabsTracer::OutputMetric(CharSpan aOperation)
 {
     TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation);
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     if (operationKey != TimeTraceOperation::kNumTraces)
     {
-
         return OutputMetric(to_underlying(operationKey));
     }
     else
     {
         // Check if it is a named trace
         // Parse aOperation as "group:label"
-        const char * colon = strchr(aOperation, ':');
-        if (colon == nullptr)
+        const char * base = aOperation.data();
+        const void * pos  = memchr(base, ':', aOperation.size());
+        if (pos == nullptr)
         {
-            ChipLogError(DeviceLayer, "Invalid Metrics TimeTraceOperation");
+            ChipLogError(DeviceLayer, "Invalid Trace Operation format");
             return CHIP_ERROR_INVALID_ARGUMENT;
         }
+        const char * colon = static_cast<const char *>(pos);
 
-        size_t groupLen = colon - aOperation;
-        size_t labelLen = strlen(colon + 1);
+        size_t groupLen   = static_cast<size_t>(colon - base);
+        size_t labelStart = groupLen + 1;
+        if (labelStart > aOperation.size())
+        {
+            ChipLogError(DeviceLayer, "Invalid Trace Operation format");
+            return CHIP_ERROR_INVALID_ARGUMENT;
+        }
+        size_t labelLen = aOperation.size() - labelStart;
 
-        // Copy group and label into temporary buffers
-        char groupBuf[NamedTrace::kMaxGroupLength] = { 0 };
-        char labelBuf[NamedTrace::kMaxLabelLength] = { 0 };
+        groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
+        labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
 
-        if (groupLen >= sizeof(groupBuf))
-            groupLen = sizeof(groupBuf) - 1;
-        if (labelLen >= sizeof(labelBuf))
-            labelLen = sizeof(labelBuf) - 1;
+        CharSpan groupSpan = aOperation.SubSpan(0, groupLen);
+        CharSpan labelSpan = aOperation.SubSpan(labelStart, labelLen);
 
-        memcpy(groupBuf, aOperation, groupLen);
-        groupBuf[groupLen] = '\0';
-        memcpy(labelBuf, colon + 1, labelLen);
-        labelBuf[labelLen] = '\0';
-
-        int16_t idx = FindExistingTrace(labelBuf, groupBuf);
+        int16_t idx = FindExistingTrace(labelSpan, groupSpan);
         if (idx < 0)
         {
             ChipLogError(DeviceLayer, "Invalid Metrics TimeTraceOperation");
@@ -580,11 +574,11 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(size_t aOperationIdx)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan & appOperationKey)
+CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan appOperationKey)
 {
     size_t index = 0;
 
-    TimeTraceOperation operationKey = StringToTimeTraceOperation(appOperationKey.data());
+    TimeTraceOperation operationKey = StringToTimeTraceOperation(appOperationKey);
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
     if (operationKey != TimeTraceOperation::kNumTraces)
     {
@@ -594,31 +588,31 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan & appOperationKey)
     {
         // Check if it is a named trace
         // Parse appOperationKey as "group:label"
-        const char * colon = strchr(appOperationKey.data(), ':');
-        if (colon == nullptr)
+        const char * base = appOperationKey.data();
+        const void * pos  = memchr(base, ':', appOperationKey.size());
+        if (pos == nullptr)
         {
-            ChipLogError(DeviceLayer, "Invalid Flush TimeTraceOperation");
+            ChipLogError(DeviceLayer, "Invalid Trace Operation format");
             return CHIP_ERROR_INVALID_ARGUMENT;
         }
+        const char * colon = static_cast<const char *>(pos);
 
-        size_t groupLen = colon - appOperationKey.data();
-        size_t labelLen = strlen(colon + 1);
+        size_t groupLen   = static_cast<size_t>(colon - base);
+        size_t labelStart = groupLen + 1;
+        if (labelStart > appOperationKey.size())
+        {
+            ChipLogError(DeviceLayer, "Invalid Trace Operation format");
+            return CHIP_ERROR_INVALID_ARGUMENT;
+        }
+        size_t labelLen = appOperationKey.size() - labelStart;
 
-        // Copy group and label into temporary buffers
-        char groupBuf[NamedTrace::kMaxGroupLength] = { 0 };
-        char labelBuf[NamedTrace::kMaxLabelLength] = { 0 };
+        groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
+        labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
 
-        if (groupLen >= sizeof(groupBuf))
-            groupLen = sizeof(groupBuf) - 1;
-        if (labelLen >= sizeof(labelBuf))
-            labelLen = sizeof(labelBuf) - 1;
+        CharSpan groupSpan = appOperationKey.SubSpan(0, groupLen);
+        CharSpan labelSpan = appOperationKey.SubSpan(labelStart, labelLen);
 
-        memcpy(groupBuf, appOperationKey.data(), groupLen);
-        groupBuf[groupLen] = '\0';
-        memcpy(labelBuf, colon + 1, labelLen);
-        labelBuf[labelLen] = '\0';
-
-        int16_t idx = FindExistingTrace(labelBuf, groupBuf);
+        int16_t idx = FindExistingTrace(labelSpan, groupSpan);
         if (idx < 0)
         {
             ChipLogError(DeviceLayer, "Invalid Flush TimeTraceOperation");
@@ -668,47 +662,46 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(size_t aOperationIdx, MutableCharSp
 // Overload for string-based operation lookup
 CHIP_ERROR SilabsTracer::GetTraceByOperation(CharSpan aOperation, MutableCharSpan & buffer) const
 {
-    TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation.data());
+    TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation);
     if (operationKey != TimeTraceOperation::kNumTraces)
     {
         return GetTraceByOperation(to_underlying(operationKey), buffer);
     }
 
     // Check if it is a named trace
-    const char * colon = strchr(aOperation.data(), ':');
-    if (colon == nullptr)
+    const char * base = aOperation.data();
+    const void * pos  = memchr(base, ':', aOperation.size());
+
+    if (pos == nullptr)
     {
         ChipLogError(DeviceLayer, "Invalid Trace Operation format");
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
+    const char * colon = static_cast<const char *>(pos);
 
-    size_t groupLen = colon - aOperation.data();
-    size_t labelLen = strlen(colon + 1);
+    size_t groupLen   = static_cast<size_t>(colon - base);
+    size_t labelStart = groupLen + 1;
 
-    // Copy group and label into temporary buffers
-    char groupBuf[NamedTrace::kMaxGroupLength] = { 0 };
-    char labelBuf[NamedTrace::kMaxLabelLength] = { 0 };
-
-    if (groupLen >= sizeof(groupBuf))
-        groupLen = sizeof(groupBuf) - 1;
-    if (labelLen >= sizeof(labelBuf))
-        labelLen = sizeof(labelBuf) - 1;
-
-    memcpy(groupBuf, aOperation.data(), groupLen);
-    groupBuf[groupLen] = '\0';
-    memcpy(labelBuf, colon + 1, labelLen);
-    labelBuf[labelLen] = '\0';
-
-    int16_t idx = FindExistingTrace(labelBuf, groupBuf);
-    if (idx < 0)
+    if (labelStart > aOperation.size())
     {
-        return CHIP_ERROR_NOT_FOUND;
+        ChipLogError(DeviceLayer, "Invalid Trace Operation format");
+        return CHIP_ERROR_INVALID_ARGUMENT;
     }
+    size_t labelLen = aOperation.size() - labelStart;
+
+    groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
+    labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
+
+    CharSpan groupSpan = aOperation.SubSpan(0, groupLen);
+    CharSpan labelSpan = aOperation.SubSpan(labelStart, labelLen);
+
+    int16_t idx = FindExistingTrace(labelSpan, groupSpan);
+    VerifyOrReturnError(idx >= 0, CHIP_ERROR_NOT_FOUND);
 
     return GetTraceByOperation(idx + kNumTraces, buffer);
 }
 
-int16_t SilabsTracer::FindOrCreateTrace(const char * label, const char * group)
+int16_t SilabsTracer::FindOrCreateTrace(const CharSpan label, const CharSpan group)
 {
     int8_t index = FindExistingTrace(label, group);
     if (index >= 0)
@@ -722,8 +715,8 @@ int16_t SilabsTracer::FindOrCreateTrace(const char * label, const char * group)
         if (mNamedTraces[i].labelLen == 0)
         {
             auto & trace    = mNamedTraces[i];
-            size_t labelLen = strlen(label);
-            size_t groupLen = strlen(group);
+            size_t labelLen = label.size();
+            size_t groupLen = group.size();
 
             // Truncate label and group if too long
             if (labelLen >= NamedTrace::kMaxLabelLength)
@@ -732,11 +725,11 @@ int16_t SilabsTracer::FindOrCreateTrace(const char * label, const char * group)
             if (groupLen >= NamedTrace::kMaxGroupLength)
                 groupLen = NamedTrace::kMaxGroupLength - 1;
 
-            memcpy(trace.label, label, labelLen);
+            memcpy(trace.label, label.data(), labelLen);
             trace.label[labelLen] = '\0';
             trace.labelLen        = labelLen;
 
-            memcpy(trace.group, group, groupLen);
+            memcpy(trace.group, group.data(), groupLen);
             trace.group[groupLen] = '\0';
             trace.groupLen        = groupLen;
 
@@ -746,7 +739,7 @@ int16_t SilabsTracer::FindOrCreateTrace(const char * label, const char * group)
     return -1;
 }
 
-int16_t SilabsTracer::FindExistingTrace(const char * label, const char * group)
+int16_t SilabsTracer::FindExistingTrace(const CharSpan label, const CharSpan group) const
 {
     for (size_t i = 0; i < kMaxNamedTraces; ++i)
     {
@@ -755,7 +748,7 @@ int16_t SilabsTracer::FindExistingTrace(const char * label, const char * group)
             return -1; // empty slot
 
         // prefix semantics: stored must fit within incoming, then bytes must match
-        if (std::memcmp(t.group, group, t.groupLen) == 0 && std::memcmp(t.label, label, t.labelLen) == 0)
+        if (std::memcmp(t.group, group.data(), t.groupLen) == 0 && std::memcmp(t.label, label.data(), t.labelLen) == 0)
         {
             return i;
         }
