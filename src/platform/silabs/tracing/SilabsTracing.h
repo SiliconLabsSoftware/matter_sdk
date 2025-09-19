@@ -158,6 +158,11 @@ public:
      */
     CHIP_ERROR NamedTraceEnd(const CharSpan label, const CharSpan group);
 
+    /**
+     * @brief Helper method to save end, duration and calculate statistics of a Metric
+     * @param metric Metric instance to be modified
+     * @param duration Duration of the TimeTracker
+     */
     CHIP_ERROR FinishMetric(Metric & metric, System::Clock::Milliseconds32 duration);
 
     /** @brief Output a time tracker
@@ -386,7 +391,8 @@ private:
      * If not, creates a new trace entry if there is available space and returns its index.
      * @param label The label for the trace.
      * @param group The group for the trace.
-     * @return int16_t The index of the found or newly created trace, or -1 if the trace buffer is full.
+     * @param size_t Reference to the found index.
+     * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
     CHIP_ERROR FindOrCreateTrace(const CharSpan label, const CharSpan group, size_t & outIdx);
 
@@ -395,7 +401,8 @@ private:
      * Searches for a trace entry matching the specified label and group.
      * @param label The label for the trace.
      * @param group The group for the trace.
-     * @return int16_t The index of the found trace, or -1 if no matching trace exists.
+     * @param size_t Reference to the found index.
+     * @return CHIP_ERROR, returns CHIP_ERROR_NOT_FOUND if it doesn't exist
      */
     CHIP_ERROR FindExistingTrace(const CharSpan label, const CharSpan group, size_t & outIdx) const;
 };
