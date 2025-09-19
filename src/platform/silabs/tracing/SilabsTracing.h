@@ -388,7 +388,7 @@ private:
      * @param group The group for the trace.
      * @return int16_t The index of the found or newly created trace, or -1 if the trace buffer is full.
      */
-    int16_t FindOrCreateTrace(const CharSpan label, const CharSpan group);
+    CHIP_ERROR FindOrCreateTrace(const CharSpan label, const CharSpan group, size_t & outIdx);
 
     /**
      * @brief Find the index of an existing named trace with the given label and group.
@@ -397,7 +397,7 @@ private:
      * @param group The group for the trace.
      * @return int16_t The index of the found trace, or -1 if no matching trace exists.
      */
-    int16_t FindExistingTrace(const CharSpan label, const CharSpan group) const;
+    CHIP_ERROR FindExistingTrace(const CharSpan label, const CharSpan group, size_t & outIdx) const;
 };
 
 /** @brief Get the string representation of a TimeTraceOperation enum value
