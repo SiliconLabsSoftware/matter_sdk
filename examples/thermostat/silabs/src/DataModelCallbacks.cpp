@@ -54,4 +54,8 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         dic::control::AttributeHandler(attributePath.mEndpointId, attributeId);
 #endif // DIC_ENABLE
     }
+
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(attributePath.mEndpointId, clusterId, attributeId, value, type);
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
