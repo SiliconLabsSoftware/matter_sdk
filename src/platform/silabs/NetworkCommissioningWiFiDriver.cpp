@@ -164,7 +164,7 @@ CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
 
     ChipLogProgress(NetworkProvisioning, "Setting up connection for WiFi SSID: %.*s", static_cast<int>(ssidLen), ssid);
     // Resetting the retry connection state machine for a new access point connection
-    WifiInterface::GetInstance().ResetScheduledConnectionAttempts();
+    WifiInterface::GetInstance().ResetConnectionRetryInterval();
     // Configure the WFX WiFi interface.
     WifiInterface::GetInstance().SetWifiCredentials(wifiConfig);
     ReturnErrorOnFailure(ConnectivityMgr().SetWiFiStationMode(ConnectivityManager::kWiFiStationMode_Disabled));

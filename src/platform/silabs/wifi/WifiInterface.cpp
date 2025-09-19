@@ -108,7 +108,7 @@ void WifiInterface::NotifyConnection(const MacAddress & ap)
     std::copy(ap.begin(), ap.end(), evt.body.mac);
     // Resetting the retry connection state machine for a successful connection
     // NOTE: This is required in case an access point gets disconnected after a successful connection.
-    ResetScheduledConnectionAttempts();
+    ResetConnectionRetryInterval();
 
     HandleWFXSystemEvent((sl_wfx_generic_message_t *) &evt);
 }
@@ -179,7 +179,7 @@ void WifiInterface::ScheduleConnectionAttempt()
     retryInterval += retryInterval;
 }
 
-void WifiInterface::ResetScheduledConnectionAttempts()
+void WifiInterface::ResetConnectionRetryInterval()
 {
     ChipLogDetail(DeviceLayer, "ScheduleConnectionAttempts: Resetting state to default");
     retryInterval = kWlanMinRetryIntervalsInSec;

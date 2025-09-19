@@ -354,9 +354,9 @@ public:
     }
 
     /**
-     * @brief Function will reset the state of the reconnection attempts with the Access Point
+     * @brief Function resets reconnection attempt interval back to the minimum value
      */
-    void ResetScheduledConnectionAttempts();
+    void ResetConnectionRetryInterval();
 
 protected:
     /**
