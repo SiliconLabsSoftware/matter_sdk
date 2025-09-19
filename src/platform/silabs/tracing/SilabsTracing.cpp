@@ -474,7 +474,7 @@ CHIP_ERROR SilabsTracer::OutputMetric(CharSpan aOperation)
         CharSpan labelSpan = aOperation.SubSpan(labelStart, labelLen);
 
         size_t idx = 0;
-        ReturnLogErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, idx));
+        ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, idx));
         return OutputMetric(idx + kNumTraces);
     }
     ChipLogError(DeviceLayer, "Invalid Metrics TimeTraceOperation");
@@ -612,7 +612,7 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan appOperationKey)
         CharSpan groupSpan = appOperationKey.SubSpan(0, groupLen);
         CharSpan labelSpan = appOperationKey.SubSpan(labelStart, labelLen);
 
-        ReturnLogErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, index));
+        ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, index));
         index = (index + kNumTraces);
     }
     return SilabsTracer::Instance().TraceBufferFlushByOperation(index);
