@@ -344,14 +344,18 @@ CHIP_ERROR SilabsTracer::FinishMetric(Metric & metric, System::Clock::Millisecon
 
     if (duration > metric.mMaxTimeMs)
     {
+        metric.mMaxTimeMs = System::Clock::Milliseconds32(duration);
     }
-    metric.mMaxTimeMs = System::Clock::Milliseconds32(duration);
 
     if (metric.mSuccessfullCount <= 1 || duration < metric.mMinTimeMs)
+    {
         metric.mMinTimeMs = System::Clock::Milliseconds32(duration);
+    }
 
     if (duration > metric.mMovingAverage)
+    {
         metric.mCountAboveAvg++;
+    }
 
     return CHIP_NO_ERROR;
 }
