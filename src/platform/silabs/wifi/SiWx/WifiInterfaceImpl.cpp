@@ -322,6 +322,13 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
             status = *reinterpret_cast<sl_status_t *>(scan_result);
             ChipLogError(DeviceLayer, "ScanCallback: failed: 0x%lx", status);
         }
+        // SET FALLBACK VALUES FOR THE SCAN
+        wfx_rsi.ap_chan = SL_WIFI_AUTO_CHANNEL;
+#if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
+        security = SL_WIFI_WPA3_TRANSITION;
+#else
+        security = SL_WIFI_WPA_WPA2_MIXED;
+#endif /* WIFI_ENABLE_SECURITY_WPA3_TRANSITION */
     }
     else
     {
@@ -348,14 +355,6 @@ sl_status_t InitiateScan()
     chip::ByteSpan requestedSsidSpan(wfx_rsi.credentials.ssid, wfx_rsi.credentials.ssidLength);
     chip::MutableByteSpan ssidSpan(ssid.value, ssid.length);
     chip::CopySpanToMutableSpan(requestedSsidSpan, ssidSpan);
-
-    // SET FALLBACK VALUES FOR THE SCAN
-    wfx_rsi.ap_chan = SL_WIFI_AUTO_CHANNEL;
-#if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
-    security = SL_WIFI_WPA3_TRANSITION;
-#else
-    security = SL_WIFI_WPA_WPA2_MIXED;
-#endif /* WIFI_ENABLE_SECURITY_WPA3_TRANSITION */
 
     sl_wifi_set_scan_callback(ScanCallback, NULL);
 
