@@ -1,6 +1,7 @@
 #include <LockManager.h>
 #include <app/server/Server.h>
 #include <lib/support/CodeUtils.h>
+#include <nvm3_default.h>
 #include <platform/silabs/SilabsConfig.h>
 
 using namespace chip::app::Clusters;
