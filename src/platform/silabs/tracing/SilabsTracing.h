@@ -398,12 +398,6 @@ private:
     CHIP_ERROR SplitNamedTraceString(CharSpan appOperationKey, CharSpan & groupSpan, CharSpan & labelSpan) const;
 };
 
-/** @brief Get the string representation of a TimeTraceOperation enum value
- *  @param operation The TimeTraceOperation enum value
- *  @return const char *, the string representation of the operation
- */
-const char * TimeTraceOperationToString(TimeTraceOperation operation);
-
 } // namespace Silabs
 } // namespace Tracing
 } // namespace chip

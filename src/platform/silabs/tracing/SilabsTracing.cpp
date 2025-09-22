@@ -84,6 +84,66 @@ const char * OperationTypeToString(OperationType type)
         return "Unknown";
     }
 }
+
+const char * TimeTraceOperationToString(TimeTraceOperation operation)
+{
+    switch (operation)
+    {
+    case TimeTraceOperation::kSpake2p:
+        return "Spake2p";
+    case TimeTraceOperation::kPake1:
+        return "Pake1";
+    case TimeTraceOperation::kPake2:
+        return "Pake2";
+    case TimeTraceOperation::kPake3:
+        return "Pake3";
+    case TimeTraceOperation::kOperationalCredentials:
+        return "OperationalCredentials";
+    case TimeTraceOperation::kAttestationVerification:
+        return "AttestationVerification";
+    case TimeTraceOperation::kCSR:
+        return "CSR";
+    case TimeTraceOperation::kNOC:
+        return "NOC";
+    case TimeTraceOperation::kTransportLayer:
+        return "TransportLayer";
+    case TimeTraceOperation::kTransportSetup:
+        return "TransportSetup";
+    case TimeTraceOperation::kFindOperational:
+        return "FindOperational";
+    case TimeTraceOperation::kCaseSession:
+        return "CaseSession";
+    case TimeTraceOperation::kSigma1:
+        return "Sigma1";
+    case TimeTraceOperation::kSigma2:
+        return "Sigma2";
+    case TimeTraceOperation::kSigma3:
+        return "Sigma3";
+    case TimeTraceOperation::kOTA:
+        return "OTA";
+    case TimeTraceOperation::kImageUpload:
+        return "ImageUpload";
+    case TimeTraceOperation::kImageVerification:
+        return "ImageVerification";
+    case TimeTraceOperation::kAppApplyTime:
+        return "AppApplyTime";
+    case TimeTraceOperation::kBootup:
+        return "Bootup";
+    case TimeTraceOperation::kSilabsInit:
+        return "SilabsInit";
+    case TimeTraceOperation::kMatterInit:
+        return "MatterInit";
+    case TimeTraceOperation::kAppInit:
+        return "AppInit";
+    case TimeTraceOperation::kNumTraces:
+        return "NumTraces";
+    case TimeTraceOperation::kBufferFull:
+        return "BufferFull";
+    default:
+        return "Unknown";
+    }
+}
+
 } // namespace
 struct TimeTrackerStorage : public TimeTracker, PersistentData<kPersistentTimeTrackerBufferMax>
 {
@@ -422,7 +482,6 @@ CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
 {
     VerifyOrReturnError(aOperationIdx < kNumTraces + kMaxNamedTraces - 1, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
-    CHIP_ERROR error;
     if (aOperationIdx < kNumTraces)
     {
         ChipLogProgress(DeviceLayer,
@@ -432,7 +491,6 @@ CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
                         mMetrics[aOperationIdx].mMaxTimeMs.count(), mMetrics[aOperationIdx].mMinTimeMs.count(),
                         mMetrics[aOperationIdx].mMovingAverage.count(), mMetrics[aOperationIdx].mTotalCount,
                         mMetrics[aOperationIdx].mSuccessfullCount, mMetrics[aOperationIdx].mCountAboveAvg);
-        error = CHIP_NO_ERROR;
     }
     else
     {
@@ -444,10 +502,9 @@ CHIP_ERROR SilabsTracer::OutputMetric(size_t aOperationIdx)
                         trace.group, trace.label, trace.metric.mMaxTimeMs.count(), trace.metric.mMinTimeMs.count(),
                         trace.metric.mMovingAverage.count(), trace.metric.mTotalCount, trace.metric.mSuccessfullCount,
                         trace.metric.mCountAboveAvg);
-        error = CHIP_NO_ERROR;
     }
 
-    return error;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR SilabsTracer::OutputMetric(CharSpan aOperation)
@@ -461,7 +518,7 @@ CHIP_ERROR SilabsTracer::OutputMetric(CharSpan aOperation)
     // Otherwise, check if it is a named trace
     CharSpan groupSpan;
     CharSpan labelSpan;
-    SplitNamedTraceString(aOperation, groupSpan, labelSpan);
+    ReturnErrorOnFailure(SplitNamedTraceString(aOperation, groupSpan, labelSpan));
 
     size_t idx = 0;
     ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, idx));
@@ -573,7 +630,7 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan appOperationKey)
         // Otherwise, check if it is a named trace
         CharSpan groupSpan;
         CharSpan labelSpan;
-        SplitNamedTraceString(appOperationKey, groupSpan, labelSpan);
+        ReturnErrorOnFailure(SplitNamedTraceString(appOperationKey, groupSpan, labelSpan));
 
         ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, index));
         index = (index + kNumTraces);
@@ -629,7 +686,7 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(CharSpan aOperation, MutableCharSpa
     // Otherwise, check if it is a named trace
     CharSpan groupSpan;
     CharSpan labelSpan;
-    SplitNamedTraceString(aOperation, groupSpan, labelSpan);
+    ReturnErrorOnFailure(SplitNamedTraceString(aOperation, groupSpan, labelSpan));
 
     size_t mIndex = 0;
     ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, mIndex));
@@ -707,65 +764,8 @@ CHIP_ERROR SilabsTracer::SplitNamedTraceString(CharSpan appOperationKey, CharSpa
 
     groupSpan = CharSpan(appOperationKey.SubSpan(0, groupLen));
     labelSpan = CharSpan(appOperationKey.SubSpan(labelStart, labelLen));
-}
 
-const char * TimeTraceOperationToString(TimeTraceOperation operation)
-{
-    switch (operation)
-    {
-    case TimeTraceOperation::kSpake2p:
-        return "Spake2p";
-    case TimeTraceOperation::kPake1:
-        return "Pake1";
-    case TimeTraceOperation::kPake2:
-        return "Pake2";
-    case TimeTraceOperation::kPake3:
-        return "Pake3";
-    case TimeTraceOperation::kOperationalCredentials:
-        return "OperationalCredentials";
-    case TimeTraceOperation::kAttestationVerification:
-        return "AttestationVerification";
-    case TimeTraceOperation::kCSR:
-        return "CSR";
-    case TimeTraceOperation::kNOC:
-        return "NOC";
-    case TimeTraceOperation::kTransportLayer:
-        return "TransportLayer";
-    case TimeTraceOperation::kTransportSetup:
-        return "TransportSetup";
-    case TimeTraceOperation::kFindOperational:
-        return "FindOperational";
-    case TimeTraceOperation::kCaseSession:
-        return "CaseSession";
-    case TimeTraceOperation::kSigma1:
-        return "Sigma1";
-    case TimeTraceOperation::kSigma2:
-        return "Sigma2";
-    case TimeTraceOperation::kSigma3:
-        return "Sigma3";
-    case TimeTraceOperation::kOTA:
-        return "OTA";
-    case TimeTraceOperation::kImageUpload:
-        return "ImageUpload";
-    case TimeTraceOperation::kImageVerification:
-        return "ImageVerification";
-    case TimeTraceOperation::kAppApplyTime:
-        return "AppApplyTime";
-    case TimeTraceOperation::kBootup:
-        return "Bootup";
-    case TimeTraceOperation::kSilabsInit:
-        return "SilabsInit";
-    case TimeTraceOperation::kMatterInit:
-        return "MatterInit";
-    case TimeTraceOperation::kAppInit:
-        return "AppInit";
-    case TimeTraceOperation::kNumTraces:
-        return "NumTraces";
-    case TimeTraceOperation::kBufferFull:
-        return "BufferFull";
-    default:
-        return "Unknown";
-    }
+    return CHIP_NO_ERROR;
 }
 
 } // namespace Silabs
