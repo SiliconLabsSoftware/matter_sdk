@@ -459,24 +459,9 @@ CHIP_ERROR SilabsTracer::OutputMetric(CharSpan aOperation)
     VerifyOrReturnValue(operationKey == TimeTraceOperation::kNumTraces, OutputMetric(to_underlying(operationKey)));
 
     // Otherwise, check if it is a named trace
-    // Parse aOperation as "group:label"
-    const char * base = aOperation.data();
-    const void * pos  = memchr(base, ':', aOperation.size());
-    // Unable to find a ":", so for sure we can't find it
-    VerifyOrReturnError(pos != nullptr, CHIP_ERROR_INVALID_ARGUMENT, ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
-
-    const char * colon = static_cast<const char *>(pos);
-    size_t groupLen    = static_cast<size_t>(colon - base);
-    size_t labelStart  = groupLen + 1;
-    VerifyOrReturnError(labelStart <= aOperation.size(), CHIP_ERROR_INVALID_ARGUMENT,
-                        ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
-    size_t labelLen = aOperation.size() - labelStart;
-
-    groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
-    labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
-
-    CharSpan groupSpan = aOperation.SubSpan(0, groupLen);
-    CharSpan labelSpan = aOperation.SubSpan(labelStart, labelLen);
+    CharSpan groupSpan;
+    CharSpan labelSpan;
+    SplitNamedTraceString(aOperation, groupSpan, labelSpan);
 
     size_t idx = 0;
     ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, idx));
@@ -585,25 +570,10 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan appOperationKey)
     else
     {
         // Check if it is a named trace
-        // Parse appOperationKey as "group:label"
-        const char * base = appOperationKey.data();
-        const void * pos  = memchr(base, ':', appOperationKey.size());
-        VerifyOrReturnError(pos != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
-                            ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
-
-        const char * colon = static_cast<const char *>(pos);
-
-        size_t groupLen   = static_cast<size_t>(colon - base);
-        size_t labelStart = groupLen + 1;
-        VerifyOrReturnError(labelStart <= appOperationKey.size(), CHIP_ERROR_INVALID_ARGUMENT,
-                            ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
-        size_t labelLen = appOperationKey.size() - labelStart;
-
-        groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
-        labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
-
-        CharSpan groupSpan = appOperationKey.SubSpan(0, groupLen);
-        CharSpan labelSpan = appOperationKey.SubSpan(labelStart, labelLen);
+        // Otherwise, check if it is a named trace
+        CharSpan groupSpan;
+        CharSpan labelSpan;
+        SplitNamedTraceString(appOperationKey, groupSpan, labelSpan);
 
         ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, index));
         index = (index + kNumTraces);
@@ -656,26 +626,10 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(CharSpan aOperation, MutableCharSpa
         return GetTraceByOperation(to_underlying(operationKey), buffer);
     }
 
-    // Check if it is a named trace
-    const char * base = aOperation.data();
-    const void * pos  = memchr(base, ':', aOperation.size());
-    VerifyOrReturnError(pos != nullptr, CHIP_ERROR_INVALID_ARGUMENT, ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
-
-    const char * colon = static_cast<const char *>(pos);
-
-    size_t groupLen   = static_cast<size_t>(colon - base);
-    size_t labelStart = groupLen + 1;
-
-    VerifyOrReturnError(labelStart <= aOperation.size(), CHIP_ERROR_INVALID_ARGUMENT,
-                        ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
-
-    size_t labelLen = aOperation.size() - labelStart;
-
-    groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
-    labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
-
-    CharSpan groupSpan = aOperation.SubSpan(0, groupLen);
-    CharSpan labelSpan = aOperation.SubSpan(labelStart, labelLen);
+    // Otherwise, check if it is a named trace
+    CharSpan groupSpan;
+    CharSpan labelSpan;
+    SplitNamedTraceString(aOperation, groupSpan, labelSpan);
 
     size_t mIndex = 0;
     ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, mIndex));
@@ -732,6 +686,27 @@ CHIP_ERROR SilabsTracer::FindExistingTrace(const CharSpan label, const CharSpan 
         }
     }
     return CHIP_ERROR_NOT_FOUND;
+}
+
+CHIP_ERROR SilabsTracer::SplitNamedTraceString(CharSpan appOperationKey, CharSpan & groupSpan, CharSpan & labelSpan) const
+{
+    // Parse appOperationKey as "group:label"
+    const void * pos = memchr(appOperationKey.data(), ':', appOperationKey.size());
+    VerifyOrReturnError(pos != nullptr, CHIP_ERROR_INVALID_ARGUMENT, ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
+
+    const char * colon = static_cast<const char *>(pos);
+
+    size_t groupLen   = static_cast<size_t>(colon - appOperationKey.data());
+    size_t labelStart = groupLen + 1;
+    VerifyOrReturnError(labelStart <= appOperationKey.size(), CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
+    size_t labelLen = appOperationKey.size() - labelStart;
+
+    groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
+    labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
+
+    groupSpan = CharSpan(appOperationKey.SubSpan(0, groupLen));
+    labelSpan = CharSpan(appOperationKey.SubSpan(labelStart, labelLen));
 }
 
 const char * TimeTraceOperationToString(TimeTraceOperation operation)

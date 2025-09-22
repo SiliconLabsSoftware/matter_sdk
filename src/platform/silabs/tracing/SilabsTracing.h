@@ -387,6 +387,15 @@ private:
      * @return CHIP_ERROR, returns CHIP_ERROR_NOT_FOUND if it doesn't exist
      */
     CHIP_ERROR FindExistingTrace(const CharSpan label, const CharSpan group, size_t & outIdx) const;
+
+    /**
+     * @brief From a string like "Reboot:LighOn", split into "Reboot" and "LightOn"
+     * @param appOperationKey the full entry key such as Reboot:LighOn"
+     * @param groupSpan reference for the output of group
+     * @param labelSpan reference for the output of label
+     * @return CHIP_ERROR, returns CHIP_ERROR_INVALID_ARGUMENT if the format is not respected.
+     */
+    CHIP_ERROR SplitNamedTraceString(CharSpan appOperationKey, CharSpan & groupSpan, CharSpan & labelSpan) const;
 };
 
 /** @brief Get the string representation of a TimeTraceOperation enum value
