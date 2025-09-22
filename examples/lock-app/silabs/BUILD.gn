@@ -119,7 +119,7 @@ silabs_executable("lock_app") {
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
     "src/LockManager.cpp",
-    "src/DataModelCallbacks",
+    "src/DataModelCallbacks.cpp",
   ]
 
   if (chip_build_libshell) {
