@@ -140,7 +140,7 @@ public:
      *  @param group The group for the trace
      * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
      */
-    CHIP_ERROR TimeTraceInstant(CharSpan label, CharSpan group, CHIP_ERROR error = CHIP_NO_ERROR);
+    CHIP_ERROR TimeTraceInstant(const CharSpan label, const CharSpan group, CHIP_ERROR error = CHIP_NO_ERROR);
 
     /** @brief Begin a named trace with a label and group
      * Starts timing a named trace identified by the given label and group.
@@ -148,7 +148,7 @@ public:
      *  @param group The group for the trace
      *  @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full.
      */
-    CHIP_ERROR NamedTraceBegin(CharSpan label, CharSpan group);
+    CHIP_ERROR NamedTraceBegin(const CharSpan label, const CharSpan group);
 
     /** @brief End a named trace with a label and group
      * Ends timing for a named trace identified by the given label and group, and records the result.
