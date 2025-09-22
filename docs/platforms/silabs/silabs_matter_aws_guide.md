@@ -1,7 +1,7 @@
 # Matter Wi-Fi + AWS Component
 
--   Matter + AWS is a silabs only feature to connect matter devices to proprietary
-    cloud solutions(AWS) directly. As such, a Matter Wi-Fi device
+-   Matter + AWS is a silabs only feature to connect matter devices to
+    proprietary cloud solutions(AWS) directly. As such, a Matter Wi-Fi device
     must support connecting locally on the Matter Fabric, via IPv6, and
     connecting to the Internet via IPv4.
 -   Matter devices can be controlled by chip-tool or controller and the
