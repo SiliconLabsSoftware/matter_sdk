@@ -717,12 +717,10 @@ CHIP_ERROR SilabsTracer::FindOrCreateTrace(const CharSpan label, const CharSpan 
                 groupLen = NamedTrace::kMaxGroupLength - 1;
 
             memcpy(trace.label, label.data(), labelLen);
-            trace.label[labelLen] = '\0';
-            trace.labelLen        = labelLen;
+            trace.labelLen = labelLen;
 
             memcpy(trace.group, group.data(), groupLen);
-            trace.group[groupLen] = '\0';
-            trace.groupLen        = groupLen;
+            trace.groupLen = groupLen;
 
             outIdx = i;
             return CHIP_NO_ERROR;
