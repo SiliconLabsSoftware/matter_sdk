@@ -134,8 +134,7 @@ public:
     {
         return TimeTraceInstant(aOperation, ChipError((error)));
     }
-    /** @brief TimeTraceInstant
-     *  We currently allow to register App specific operations to be tracked by the time tracer.
+    /** @brief Trace an instant time operation using a Named Trace
      *  @param label The label for the trace
      *  @param group The group for the trace
      * @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full
@@ -143,7 +142,6 @@ public:
     CHIP_ERROR TimeTraceInstant(const CharSpan label, const CharSpan group, CHIP_ERROR error = CHIP_NO_ERROR);
 
     /** @brief Begin a named trace with a label and group
-     * Starts timing a named trace identified by the given label and group.
      *  @param label The label for the trace
      *  @param group The group for the trace
      *  @return CHIP_ERROR, returns CHIP_ERROR_BUFFER_TOO_SMALL if the buffer is full.
@@ -151,7 +149,6 @@ public:
     CHIP_ERROR NamedTraceBegin(const CharSpan label, const CharSpan group);
 
     /** @brief End a named trace with a label and group
-     * Ends timing for a named trace identified by the given label and group, and records the result.
      *  @param label The label for the trace
      *  @param group The group for the trace
      *  @return CHIP_ERROR, returns CHIP_ERROR_NOT_FOUND if a NamedTraceBegin was not found
@@ -171,34 +168,29 @@ public:
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized
      */
     /** @brief Output a specific time tracker
-     *  Outputs the provided TimeTracker's details to the log.
      *  @param tracker The TimeTracker to output.
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized.
      */
     CHIP_ERROR OutputTimeTracker(const TimeTracker & tracker);
 
     /** @brief Output the metric for a specific operation by index
-     *  Outputs the metric information for the operation at the given index.
      *  @param aOperationIdx The index of the operation.
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized.
      */
     CHIP_ERROR OutputMetric(size_t aOperationIdx);
 
     /** @brief Output the metric for a specific operation by name
-     *  Outputs the metric information for the operation identified by the given name.
      *  @param aOperation The name of the operation.
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized.
      */
     CHIP_ERROR OutputMetric(CharSpan aOperation);
 
     /** @brief Output all metrics for all operations
-     *  Outputs the metrics for all tracked operations.
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if any metric output fails.
      */
     CHIP_ERROR OutputAllMetrics();
 
     /** @brief Output all currently active operations
-     *  Outputs information about all operations that are currently in progress.
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the log is not initialized.
      */
     CHIP_ERROR OutputAllCurrentOperations();
@@ -380,8 +372,6 @@ private:
 
     /**
      * @brief Find the index of a named trace with the given label and group, or create a new one if it does not exist.
-     * If a trace with the specified label and group exists, returns its index.
-     * If not, creates a new trace entry if there is available space and returns its index.
      * @param label The label for the trace.
      * @param group The group for the trace.
      * @param size_t Reference to the found index.
@@ -391,7 +381,6 @@ private:
 
     /**
      * @brief Find the index of an existing named trace with the given label and group.
-     * Searches for a trace entry matching the specified label and group.
      * @param label The label for the trace.
      * @param group The group for the trace.
      * @param size_t Reference to the found index.
@@ -405,12 +394,6 @@ private:
  *  @return const char *, the string representation of the operation
  */
 const char * TimeTraceOperationToString(TimeTraceOperation operation);
-
-/** @brief Get the string representation of an OperationType enum value
- *  @param type The OperationType enum value
- *  @return const char *, the string representation of the operation type
- */
-const char * OperationTypeToString(OperationType type);
 
 } // namespace Silabs
 } // namespace Tracing

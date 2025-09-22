@@ -69,6 +69,21 @@ int FormatTimeStamp(std::chrono::milliseconds time, MutableCharSpan & buffer)
 
 namespace {
 constexpr size_t kPersistentTimeTrackerBufferMax = SERIALIZED_TIME_TRACKERS_SIZE_BYTES;
+
+const char * OperationTypeToString(OperationType type)
+{
+    switch (type)
+    {
+    case OperationType::kBegin:
+        return "Begin";
+    case OperationType::kEnd:
+        return "End";
+    case OperationType::kInstant:
+        return "Instant";
+    default:
+        return "Unknown";
+    }
+}
 } // namespace
 struct TimeTrackerStorage : public TimeTracker, PersistentData<kPersistentTimeTrackerBufferMax>
 {
@@ -439,71 +454,56 @@ CHIP_ERROR SilabsTracer::OutputMetric(CharSpan aOperation)
 {
     TimeTraceOperation operationKey = StringToTimeTraceOperation(aOperation);
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
-    if (operationKey != TimeTraceOperation::kNumTraces)
-    {
-        return OutputMetric(to_underlying(operationKey));
-    }
-    else
-    {
-        // Check if it is a named trace
-        // Parse aOperation as "group:label"
-        const char * base = aOperation.data();
-        const void * pos  = memchr(base, ':', aOperation.size());
-        if (pos == nullptr)
-        {
-            ChipLogError(DeviceLayer, "Invalid Trace Operation format");
-            return CHIP_ERROR_INVALID_ARGUMENT;
-        }
-        const char * colon = static_cast<const char *>(pos);
 
-        size_t groupLen   = static_cast<size_t>(colon - base);
-        size_t labelStart = groupLen + 1;
-        if (labelStart > aOperation.size())
-        {
-            ChipLogError(DeviceLayer, "Invalid Trace Operation format");
-            return CHIP_ERROR_INVALID_ARGUMENT;
-        }
-        size_t labelLen = aOperation.size() - labelStart;
+    // Check if operation is part of the operations enum =
+    VerifyOrReturnValue(operationKey == TimeTraceOperation::kNumTraces, OutputMetric(to_underlying(operationKey)));
 
-        groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
-        labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
+    // Otherwise, check if it is a named trace
+    // Parse aOperation as "group:label"
+    const char * base = aOperation.data();
+    const void * pos  = memchr(base, ':', aOperation.size());
+    // Unable to find a ":", so for sure we can't find it
+    VerifyOrReturnError(pos != nullptr, CHIP_ERROR_INVALID_ARGUMENT, ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
 
-        CharSpan groupSpan = aOperation.SubSpan(0, groupLen);
-        CharSpan labelSpan = aOperation.SubSpan(labelStart, labelLen);
+    const char * colon = static_cast<const char *>(pos);
+    size_t groupLen    = static_cast<size_t>(colon - base);
+    size_t labelStart  = groupLen + 1;
+    VerifyOrReturnError(labelStart <= aOperation.size(), CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
+    size_t labelLen = aOperation.size() - labelStart;
 
-        size_t idx = 0;
-        ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, idx));
-        return OutputMetric(idx + kNumTraces);
-    }
-    ChipLogError(DeviceLayer, "Invalid Metrics TimeTraceOperation");
-    return CHIP_ERROR_INVALID_ARGUMENT;
+    groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
+    labelLen = std::min(labelLen, static_cast<size_t>(NamedTrace::kMaxLabelLength > 0 ? NamedTrace::kMaxLabelLength - 1 : 0));
+
+    CharSpan groupSpan = aOperation.SubSpan(0, groupLen);
+    CharSpan labelSpan = aOperation.SubSpan(labelStart, labelLen);
+
+    size_t idx = 0;
+    ReturnErrorOnFailure(FindExistingTrace(labelSpan, groupSpan, idx));
+    return OutputMetric(idx + kNumTraces);
 }
 
 CHIP_ERROR SilabsTracer::OutputAllMetrics()
 {
-    CHIP_ERROR err;
     for (size_t i = 0; i < kNumTraces; ++i)
     {
-        err = OutputMetric(i);
-        if (err != CHIP_NO_ERROR)
-            return err;
+        ReturnErrorOnFailure(OutputMetric(i));
     }
     for (size_t i = 0; i < kMaxNamedTraces; i++)
     {
         if (mNamedTraces[i].labelLen == 0 && mNamedTraces[i].groupLen == 0)
             break; // Beginning of empty items, can stop printing.
 
-        err = OutputMetric(i + kNumTraces);
-        if (err != CHIP_NO_ERROR)
-            return err;
+        ReturnErrorOnFailure(OutputMetric(i + kNumTraces));
     }
 
-    return err;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR SilabsTracer::OutputAllCurrentOperations()
 {
-    CHIP_ERROR err = CHIP_NO_ERROR;
+    VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
+
     // Print defined operations
     for (size_t i = 0; i < kNumTraces; i++)
     {
@@ -521,7 +521,7 @@ CHIP_ERROR SilabsTracer::OutputAllCurrentOperations()
         ChipLogProgress(DeviceLayer, "Operation: %-15s:%-16s", trace.group, trace.label);
     }
 
-    return err;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR SilabsTracer::TraceBufferFlushAll()
@@ -588,20 +588,15 @@ CHIP_ERROR SilabsTracer::TraceBufferFlushByOperation(CharSpan appOperationKey)
         // Parse appOperationKey as "group:label"
         const char * base = appOperationKey.data();
         const void * pos  = memchr(base, ':', appOperationKey.size());
-        if (pos == nullptr)
-        {
-            ChipLogError(DeviceLayer, "Invalid Trace Operation format");
-            return CHIP_ERROR_INVALID_ARGUMENT;
-        }
+        VerifyOrReturnError(pos != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
+                            ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
+
         const char * colon = static_cast<const char *>(pos);
 
         size_t groupLen   = static_cast<size_t>(colon - base);
         size_t labelStart = groupLen + 1;
-        if (labelStart > appOperationKey.size())
-        {
-            ChipLogError(DeviceLayer, "Invalid Trace Operation format");
-            return CHIP_ERROR_INVALID_ARGUMENT;
-        }
+        VerifyOrReturnError(labelStart <= appOperationKey.size(), CHIP_ERROR_INVALID_ARGUMENT,
+                            ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
         size_t labelLen = appOperationKey.size() - labelStart;
 
         groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
@@ -664,22 +659,16 @@ CHIP_ERROR SilabsTracer::GetTraceByOperation(CharSpan aOperation, MutableCharSpa
     // Check if it is a named trace
     const char * base = aOperation.data();
     const void * pos  = memchr(base, ':', aOperation.size());
+    VerifyOrReturnError(pos != nullptr, CHIP_ERROR_INVALID_ARGUMENT, ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
 
-    if (pos == nullptr)
-    {
-        ChipLogError(DeviceLayer, "Invalid Trace Operation format");
-        return CHIP_ERROR_INVALID_ARGUMENT;
-    }
     const char * colon = static_cast<const char *>(pos);
 
     size_t groupLen   = static_cast<size_t>(colon - base);
     size_t labelStart = groupLen + 1;
 
-    if (labelStart > aOperation.size())
-    {
-        ChipLogError(DeviceLayer, "Invalid Trace Operation format");
-        return CHIP_ERROR_INVALID_ARGUMENT;
-    }
+    VerifyOrReturnError(labelStart <= aOperation.size(), CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(DeviceLayer, "Invalid Trace Operation format"));
+
     size_t labelLen = aOperation.size() - labelStart;
 
     groupLen = std::min(groupLen, static_cast<size_t>(NamedTrace::kMaxGroupLength > 0 ? NamedTrace::kMaxGroupLength - 1 : 0));
@@ -799,21 +788,6 @@ const char * TimeTraceOperationToString(TimeTraceOperation operation)
         return "NumTraces";
     case TimeTraceOperation::kBufferFull:
         return "BufferFull";
-    default:
-        return "Unknown";
-    }
-}
-
-const char * OperationTypeToString(OperationType type)
-{
-    switch (type)
-    {
-    case OperationType::kBegin:
-        return "Begin";
-    case OperationType::kEnd:
-        return "End";
-    case OperationType::kInstant:
-        return "Instant";
     default:
         return "Unknown";
     }
