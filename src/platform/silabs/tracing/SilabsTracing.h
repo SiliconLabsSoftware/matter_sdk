@@ -290,9 +290,6 @@ public:
      */
     CHIP_ERROR OperationIndexToString(size_t aOperationIdx, MutableCharSpan buffer);
 
-    inline size_t GetRegisteredAppOperationsCount() { return mAppOperationKeyCount; }
-    inline char * GetAppOperationKey(size_t index) { return mAppOperationKeys[index]; }
-
 private:
     struct TimeTrackerList
     {
@@ -337,8 +334,8 @@ private:
 
     struct NamedTrace
     {
-        static constexpr size_t kMaxLabelLength = 16;
-        static constexpr size_t kMaxGroupLength = 16;
+        static constexpr size_t kMaxLabelLength = kMaxAppOperationKeyLength;
+        static constexpr size_t kMaxGroupLength = kMaxAppOperationKeyLength;
 
         uint8_t labelLen = 0;
         uint8_t groupLen = 0;
@@ -368,10 +365,6 @@ private:
     PersistentStorageDelegate * mStorage = nullptr;
 
     size_t mBufferedTrackerCount = 0;
-
-    // App specific Operation keys buffer
-    char mAppOperationKeys[SilabsTracer::kMaxAppOperationKeys][SilabsTracer::kMaxAppOperationKeyLength];
-    size_t mAppOperationKeyCount = 0;
 
     /** @brief Clear the trace buffer */
     void TraceBufferClear();

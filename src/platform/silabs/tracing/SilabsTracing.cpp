@@ -82,20 +82,18 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     // the size of the buffer required to store the output by calling this function with a buffer of size 0.
 
     // Get the operation as a string
-    char opStr[32] = { 0 };
+    char opStr[SilabsTracer::kMaxAppOperationKeyLength * 2] = { 0 }; // label + group
     chip::MutableCharSpan opSpan(opStr, sizeof(opStr));
-    CHIP_ERROR err = chip::Tracing::Silabs::SilabsTracer::Instance().OperationIndexToString(mOperation, opSpan);
-    if (err != CHIP_NO_ERROR)
-    {
-        snprintf(opStr, sizeof(opStr), "Unknown");
-    }
+
+    // Validate it is a known operation
+    VerifyOrReturnValue(SilabsTracer::Instance().OperationIndexToString(mOperation, opSpan) == CHIP_NO_ERROR, 0xFFFF);
 
     switch (mType)
     {
     case OperationType::kBegin: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType), opStr,
-                              mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
+                              opSpan.data(), mError.AsInteger());
 
         MutableCharSpan subSpan;
         if (offset < static_cast<int>(buffer.size()))
@@ -106,8 +104,8 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     }
     case OperationType::kEnd: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType), opStr,
-                              mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
+                              opSpan.data(), mError.AsInteger());
 
         MutableCharSpan subSpan;
 
@@ -140,8 +138,8 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     }
     case OperationType::kInstant: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Time: ", OperationTypeToString(mType), opStr,
-                              mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Time: ", OperationTypeToString(mType),
+                              opSpan.data(), mError.AsInteger());
 
         MutableCharSpan subSpan;
         if (offset < static_cast<int>(buffer.size()))
