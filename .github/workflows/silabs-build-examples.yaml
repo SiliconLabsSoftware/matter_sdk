@@ -128,10 +128,18 @@ jobs:
             output-directory: "./out/onoff-plug-app"
             build-type: "standard"
 
-    build-tempalte-app:
+    build-template-app:
         name: Build Template-App variations
         uses: ./.github/workflows/silabs-common-build.yaml
         with:
             example-app: "template"
             output-directory: "./out/template-app"
+            build-type: "standard"
+
+    build-platform-app:
+        name: Build Platform-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "base-platform-app"
+            output-directory: "./out/platform-app"
             build-type: "standard"
