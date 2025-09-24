@@ -1,5 +1,5 @@
 # Security Policy
-
+TEST to trigger CLA , NOT
 Thank you for helping us keep the Matter SDK secure!
 
 ## Reporting a Vulnerability
