@@ -65,7 +65,9 @@ jobs:
                     ./scripts/tools/zap/generate.py examples/template/silabs/template_DataModel_config/sl_template.zap &&
                     ./scripts/tools/zap/generate.py examples/onoff-plug-app/silabs/data_model/onoff-plug-app.zap &&
                     ./scripts/tools/zap/generate.py examples/fan-control-app/silabs/data_model/fan-control-wifi-app.zap &&
-                    ./scripts/tools/zap/generate.py examples/multi-sensor-app/silabs/data_model/multi-sensor-wifi-app.zap
+                    ./scripts/tools/zap/generate.py examples/multi-sensor-app/silabs/data_model/multi-sensor-wifi-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/base-platform-app/silabs/data_model/platform-thread-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/base-platform-app/silabs/data_model/platform-thread-icd-app.zap
                   '
 
             - name: Commit ZAP regeneration
