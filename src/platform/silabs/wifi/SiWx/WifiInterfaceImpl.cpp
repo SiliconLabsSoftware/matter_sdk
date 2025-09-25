@@ -868,8 +868,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
     sl_wifi_performance_profile_v2_t wifi_profile = { .profile = ConvertPowerSaveConfiguration(configuration),
                                                       // TODO: Performance profile fails if not alligned with DTIM
                                                       .dtim_aligned_type = SL_SI91X_ALIGN_WITH_DTIM_BEACON,
-                                                      // TODO: Different types need to be fixed in the Wi-Fi SDK
-                                                      .listen_interval = static_cast<uint16_t>(listenInterval) };
+                                                      .listen_interval   = listenInterval };
 
     sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
