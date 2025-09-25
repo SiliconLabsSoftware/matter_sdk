@@ -15,7 +15,7 @@ permissions:
 jobs:
   CLAAssistant:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'miduggan24' }}
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'silabs-matter-ci-bot' }}
     steps:
       - name: Create CLA Assistant Lite bot token
         uses: actions/create-github-app-token@v2
