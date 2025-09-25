@@ -36,8 +36,8 @@ sends them to the corresponding _handler_.
 ### Receiving Matter commands
 
 All Matter commands reach the application through the intermediate of the
-function [MatterPostAttributeChangeCallback()](src/DataModelCallbacks.cpp). Modify
-this function to forward the commands it receives to a _function_ of your
+function [MatterPostAttributeChangeCallback()](src/DataModelCallbacks.cpp).
+Modify this function to forward the commands it receives to a _function_ of your
 choosing. This _function_ should implement the behavior you desire in response
 to these commands.
 
