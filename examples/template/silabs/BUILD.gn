@@ -123,7 +123,7 @@ silabs_executable("template_app") {
   sources = [
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
-    "src/ZclCallbacks.cpp",
+    "src/DataModelCallbacks.cpp",
   ]
 
   deps = [
