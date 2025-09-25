@@ -15,7 +15,7 @@ permissions:
 jobs:
   CLAAssistant:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'silabs-matter-ci-bot' }}
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'miduggan24' }}
     steps:
       - name: Create CLA Assistant Lite bot token
         uses: actions/create-github-app-token@v2
@@ -29,7 +29,7 @@ jobs:
       - name: Mask generated token
         run: |
           echo "::add-mask::${{ steps.app-token.outputs.token }}"
-          echo "test echo"
+          echo "github.actor is ${{ github.actor }}"
 
       - name: "CLA Assistant"
         if: ${{ contains(github.event.comment.body, 'I have read the CLA Document and I hereby sign the CLA') }} || github.event_name == 'pull_request_target'
