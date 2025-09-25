@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'miduggan24' }}
     steps:
+      - name: Debug github.actor
+        run: echo "github.actor is ${{ github.actor }}"
       - name: Create CLA Assistant Lite bot token
         uses: actions/create-github-app-token@v2
         id: app-token
