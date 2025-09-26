@@ -113,6 +113,8 @@ command for the BRD4187C is
 ./scripts/examples/gn_silabs_example.sh examples/lighting-app/silabs/ out/lighting-app_rs9116 BRD4187C use_external_flash=false chip_enable_ble_rs911x=true --wifi rs9116
 ```
 
+> **Note**: Matter Support for 9116 will be deprecated from upcoming releases.
+
 > **Note**: The build argument `--wifi rs9116` is necessary to build the
 > BRD4187C image with the necessary code for the NCP combo.
 > `chip_enable_ble_rs911x=true` enables the RS9116 NCP bluetooth. The MG24 +
@@ -156,6 +158,8 @@ disabled specific features.
 > ```
 
 Here is a list of some the supported macros and their GN argument equivalent.
+
+> **Note**: Matter Support for 9116 will be deprecated from upcoming releases.
 
 |          Macro Name           | Description                                                                                            | GN equivalent                                                                                                                                              |
 | :---------------------------: | :----------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- |
