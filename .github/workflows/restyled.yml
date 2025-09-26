@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   restyled:
-    runs-on: silabs-internal
+    runs-on: ubuntu-latest
     steps:
       - name: Generate token for the workflow
         id: generate_token
