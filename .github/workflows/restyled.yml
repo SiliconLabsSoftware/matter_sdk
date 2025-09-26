@@ -13,15 +13,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - uses: restyled-io/actions/setup@v4
 
       - id: restyler
         uses: restyled-io/actions/run@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           fail-on-differences: true
 
       - if: |
@@ -30,10 +27,10 @@ jobs:
           github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           base: ${{ steps.restyler.outputs.restyled-base }}
           branch: ${{ steps.restyler.outputs.restyled-head }}
           title: ${{ steps.restyler.outputs.restyled-title }}
           body: ${{ steps.restyler.outputs.restyled-body }}
           labels: "restyled"
+          reviewers: ${{ github.event.pull_request.user.login }}
           delete-branch: true
