@@ -26,10 +26,11 @@ jobs:
           owner: SiliconLabsInternal
           repositories: contributor-license-agreements
 
+      - name: Debug actor
+        run: echo "github.actor is ${{ github.actor }}"
+
       - name: Mask generated token
-        run: |
-          echo "::add-mask::${{ steps.app-token.outputs.token }}"
-          echo "github.actor is ${{ github.actor }}"
+        run: echo "::add-mask::${{ steps.app-token.outputs.token }}"
 
       - name: "CLA Assistant"
         if: ${{ contains(github.event.comment.body, 'I have read the CLA Document and I hereby sign the CLA') }} || github.event_name == 'pull_request_target'
