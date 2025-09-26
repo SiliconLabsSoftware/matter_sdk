@@ -27,7 +27,7 @@
 #   ref     - Git reference to compare against (optional)
 #
 # Options:
-#   -d      - Sets container's log level to DEBUG, if unspecified the default log level will remain (info level)
+#   -d      - Sets container's log level to DEBUG, if unspecified, the default log level will remain (info level)
 #   -p      - Pulls the Docker image before running the restyle paths
 #
 # Reference Selection (when ref is not specified):
