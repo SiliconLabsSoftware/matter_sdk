@@ -20,7 +20,7 @@ set -x
 branch_name=$(git branch | grep "^*" | awk '{print $2}')
 
 # Check if origin points to the main repo
-	origin_url=$(git remote get-url origin 2>/dev/null || echo "")
+origin_url=$(git remote get-url origin 2>/dev/null || echo "")
 if [[ "$origin_url" == "https://github.com/SiliconLabsSoftware/matter_sdk.git" ]]; then
     # Main repo setup - fetch restyled branch from origin
     git fetch origin restyled/"$branch_name"
