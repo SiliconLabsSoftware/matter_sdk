@@ -10,9 +10,16 @@ concurrency:
 jobs:
   restyled:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - uses: restyled-io/actions/setup@v4
 
@@ -32,5 +39,4 @@ jobs:
           title: ${{ steps.restyler.outputs.restyled-title }}
           body: ${{ steps.restyler.outputs.restyled-body }}
           labels: "restyled"
-          reviewers: ${{ github.event.pull_request.user.login }}
           delete-branch: true
