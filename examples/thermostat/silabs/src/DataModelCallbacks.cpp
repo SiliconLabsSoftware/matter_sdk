@@ -28,6 +28,11 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include <MultiProtocolDataModelHelper.h>
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
 #ifdef DIC_ENABLE
 #include "dic_control.h"
 #endif // DIC_ENABLE
