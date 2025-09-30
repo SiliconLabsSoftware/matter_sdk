@@ -17,9 +17,23 @@
 #include "SilabsTracing.h"
 #include <cstdio> // for snprintf
 #include <cstring>
+#include <memory> // for std::unique_ptr
 #include <lib/support/CodeUtils.h>
 #include <lib/support/PersistentData.h>
 #include <string> // Include the necessary header for std::string
+
+// Include FreeRTOS configuration first
+extern "C" {
+#include "FreeRTOSConfig.h"
+}
+
+// FreeRTOS includes for task statistics
+#if configGENERATE_RUN_TIME_STATS == 1
+extern "C" {
+#include "FreeRTOS.h"
+#include "task.h"
+}
+#endif
 
 #if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
 #include <rail.h>
@@ -767,6 +781,86 @@ CHIP_ERROR SilabsTracer::SplitNamedTraceString(CharSpan appOperationKey, CharSpa
 
     return CHIP_NO_ERROR;
 }
+
+#if configGENERATE_RUN_TIME_STATS == 1
+
+CHIP_ERROR SilabsTracer::OutputTaskStatistics()
+{
+    VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
+    
+    UBaseType_t uxArraySize = uxTaskGetNumberOfTasks();
+    
+    std::unique_ptr<TaskStatus_t[]> pxTaskStatusArray(new (std::nothrow) TaskStatus_t[uxArraySize]);
+    VerifyOrReturnError(pxTaskStatusArray != nullptr, CHIP_ERROR_NO_MEMORY);
+    
+    uint32_t ulTotalRunTime;
+    
+    uxArraySize = uxTaskGetSystemState(pxTaskStatusArray.get(), uxArraySize, &ulTotalRunTime);
+    
+    if (uxArraySize == 0)
+    {
+        ChipLogError(DeviceLayer, "Failed to get task system state");
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    VerifyOrReturnError(ulTotalRunTime > 0, CHIP_ERROR_UNINITIALIZED, ChipLogProgress(DeviceLayer, "Runtime statistics not available (total runtime is 0)"));
+    
+    ChipLogProgress(DeviceLayer, "=== FreeRTOS Task Statistics ===");
+    ChipLogProgress(DeviceLayer, "Number of tasks: %lu", (unsigned long)uxArraySize);
+    ChipLogProgress(DeviceLayer, "Total runtime: %lu ticks", (unsigned long)ulTotalRunTime);
+    ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4s | %-9s | %-6s |", "Task Name", "State", "Prio", "Stack HWM", "CPU %");
+    ChipLogProgress(DeviceLayer, "|%-22s|%-10s|%-6s|%-11s|%-8s|", "----------------------", "----------", "------", "-----------", "--------");
+    
+    for (UBaseType_t i = 0; i < uxArraySize; i++)
+    {
+        const char * taskState;
+        switch (pxTaskStatusArray.get()[i].eCurrentState)
+        {
+        case eRunning:
+            taskState = "Running";
+            break;
+        case eReady:
+            taskState = "Ready";
+            break;
+        case eBlocked:
+            taskState = "Blocked";
+            break;
+        case eSuspended:
+            taskState = "Suspend";
+            break;
+        case eDeleted:
+            taskState = "Deleted";
+            break;
+        default:
+            taskState = "Unknown";
+            break;
+        }
+        
+        // CPU usage percentage
+        uint32_t cpuPercent = (pxTaskStatusArray.get()[i].ulRunTimeCounter * 100) / ulTotalRunTime;
+        uint32_t cpuPercentTenths = ((pxTaskStatusArray.get()[i].ulRunTimeCounter * 1000) / ulTotalRunTime) % 10;
+        
+        ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4lu | %-9lu | %3lu.%lu%% |",
+                       pxTaskStatusArray.get()[i].pcTaskName,
+                       taskState,
+                       (unsigned long)pxTaskStatusArray.get()[i].uxCurrentPriority,
+                       (unsigned long)pxTaskStatusArray.get()[i].usStackHighWaterMark,
+                       (unsigned long)cpuPercent,
+                       (unsigned long)cpuPercentTenths);
+    }
+    
+    return CHIP_NO_ERROR;
+}
+
+#else // configGENERATE_RUN_TIME_STATS == 1
+
+CHIP_ERROR SilabsTracer::OutputTaskStatistics()
+{
+    ChipLogError(DeviceLayer, "Task statistics not available - configGENERATE_RUN_TIME_STATS not enabled");
+    return CHIP_ERROR_UNINITIALIZED;
+}
+
+#endif // configGENERATE_RUN_TIME_STATS == 1
 
 } // namespace Silabs
 } // namespace Tracing

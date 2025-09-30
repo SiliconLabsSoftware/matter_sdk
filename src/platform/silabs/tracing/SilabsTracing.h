@@ -282,6 +282,13 @@ public:
      */
     CHIP_ERROR OperationIndexToString(size_t aOperationIdx, MutableCharSpan buffer);
 
+    /** @brief Output FreeRTOS task statistics including CPU usage
+     * This function uses uxTaskGetSystemState() to retrieve task information and displays task name, state, priority, stack high
+     * water mark, and CPU usage percentage.
+     *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the logs or RTOS features required are not initialized
+     */
+    CHIP_ERROR OutputTaskStatistics();
+
 private:
     struct TimeTrackerList
     {
