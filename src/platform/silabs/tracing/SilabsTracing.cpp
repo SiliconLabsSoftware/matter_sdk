@@ -839,8 +839,8 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         }
 
         // CPU usage percentage
-        uint32_t cpuPercent       = (pxTaskStatusArray.get()[i].ulRunTimeCounter * 100) / ulTotalRunTime;
-        uint32_t cpuPercentTenths = ((pxTaskStatusArray.get()[i].ulRunTimeCounter * 1000) / ulTotalRunTime) % 10;
+        uint32_t cpuPercent       = (static_cast<uint64_t>(pxTaskStatusArray.get()[i].ulRunTimeCounter) * 100) / ulTotalRunTime;
+        uint32_t cpuPercentTenths = ((static_cast<uint64_t>(pxTaskStatusArray.get()[i].ulRunTimeCounter) * 1000) / ulTotalRunTime) % 10;
 
         ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4lu | %-9lu | %3lu.%lu%% |", pxTaskStatusArray.get()[i].pcTaskName,
                         taskState, (unsigned long) pxTaskStatusArray.get()[i].uxCurrentPriority,
