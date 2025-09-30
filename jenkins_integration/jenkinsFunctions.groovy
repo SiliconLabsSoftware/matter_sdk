@@ -5,22 +5,28 @@ def send_sonar_results_to_github(commit_sha, result, status, sonar_output, pr_nu
     withCredentials([
         usernamePassword(credentialsId: 'Matter-Extension-GitHub', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')
     ]) {
-        // Escape sonar output for shell command
-        def escapedOutput = sonar_output.replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+        // Write sonar output to a temporary file to avoid "Argument list too long" error
+        def tempFile = "${env.WORKSPACE}/sonar_output_${BUILD_NUMBER}.txt"
+        writeFile file: tempFile, text: sonar_output
         
-        sh """
-            python3 -u jenkins_integration/github/send_sonar_results_to_github.py \\
-                --github_token \${GITHUB_ACCESS_TOKEN} \\
-                --repo_owner "SiliconLabsSoftware" \\
-                --repo_name "matter_extension" \\
-                --pr_number ${pr_number} \\
-                --commit_sha ${commit_sha} \\
-                --result ${result} \\
-                --status ${status} \\
-                --branch_name "${branch_name}" \\
-                --target_branch "${target_branch}" \\
-                --sonar_output "${escapedOutput}"
-        """
+        try {
+            sh """
+                python3 -u jenkins_integration/github/send_sonar_results_to_github.py \\
+                    --github_token \${GITHUB_ACCESS_TOKEN} \\
+                    --repo_owner "SiliconLabsSoftware" \\
+                    --repo_name "matter_sdk" \\
+                    --pr_number ${pr_number} \\
+                    --commit_sha ${commit_sha} \\
+                    --result ${result} \\
+                    --status ${status} \\
+                    --branch_name "${branch_name}" \\
+                    --target_branch "${target_branch}" \\
+                    --sonar_output_file "${tempFile}"
+            """
+        } finally {
+            // Clean up temporary file
+            sh "rm -f '${tempFile}'"
+        }
     }
 }
 
@@ -43,7 +49,7 @@ def publishSonarAnalysis() {
 
             // Prepare global SonarQube parameters
             def sonarqubeParams = [
-                "-Dsonar.projectKey=github_matter_sdk",
+                "-Dsonar.projectKey=matter_sdk",
                 "-Dsonar.projectBaseDir=${env.WORKSPACE}",
                 "-Dsonar.working.directory=${env.WORKSPACE}/sonar",
                 "-Dsonar.token=${SONAR_SECRET}",

@@ -109,7 +109,7 @@ def main():
     parser = argparse.ArgumentParser(description="Post SonarQube results to GitHub PR")
     parser.add_argument("--github_token", required=True, help="GitHub access token")
     parser.add_argument("--repo_owner", default="SiliconLabsSoftware", help="GitHub repository owner")
-    parser.add_argument("--repo_name", default="matter_extension", help="GitHub repository name")
+    parser.add_argument("--repo_name", default="matter_sdk", help="GitHub repository name")
     parser.add_argument("--pr_number", required=True, help="Pull request number")
     parser.add_argument("--commit_sha", required=True, help="Git commit SHA")
     parser.add_argument("--result", required=True, choices=["PASS", "FAIL"], help="SonarQube analysis result")
@@ -117,11 +117,22 @@ def main():
 
     parser.add_argument("--branch_name", required=True, help="Source branch name")
     parser.add_argument("--target_branch", required=True, help="Target branch name")
-    parser.add_argument("--sonar_output", required=True, help="SonarQube scanner output")
+    parser.add_argument("--sonar_output_file", required=True, help="Path to file containing SonarQube scanner output")
     
     args = parser.parse_args()
     
     try:
+        # Read SonarQube output from file
+        try:
+            with open(args.sonar_output_file, 'r', encoding='utf-8') as f:
+                sonar_output = f.read()
+        except FileNotFoundError:
+            print(f"❌ Error: SonarQube output file not found: {args.sonar_output_file}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"❌ Error reading SonarQube output file: {str(e)}")
+            sys.exit(1)
+        
         # Create comment body
         comment_body = create_comment_body(
             args.result,
@@ -129,7 +140,7 @@ def main():
             args.commit_sha,
             args.branch_name,
             args.target_branch,
-            args.sonar_output
+            sonar_output
         )
         
         # Post PR comment
