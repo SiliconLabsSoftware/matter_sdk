@@ -39,7 +39,7 @@
 
 // Default behaviour of the CMP app is concurrent multiprotocol
 #if ! defined(SL_MATTER_ZIGBEE_CMP) && ! defined(SL_MATTER_ZIGBEE_SEQUENTIAL)
-#define SL_MATTER_ZIGBEE_CMP       
+#define SL_MATTER_ZIGBEE_CMP
 #endif
 
 // <h>CMP App Configuration
@@ -58,7 +58,7 @@
 // <i> Default: wildcard euid64
 // <i> This need to be in reverse order, e.g. 3425B4FFFEA959E0 ==> 0xE0, 0x59, 0xA9, 0xFE, 0xFF, 0xb4, 0x25, 0x34
 // <i> including the arguments.
-#define SL_MATTER_CMP_INSTALL_CODE_EUID64 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF           
+#define SL_MATTER_CMP_INSTALL_CODE_EUID64 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 
 
 
