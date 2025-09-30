@@ -292,10 +292,8 @@ class JinjaCodegenTarget():
             jar_url = f"https://repo1.maven.org/maven2/com/facebook/ktfmt/{VERSION}/{JAR_NAME}"
 
             with tempfile.TemporaryDirectory(prefix='ktfmt') as tmpdir:
-                path, http_message = urllib.request.urlretrieve(
-                    jar_url, Path(tmpdir).joinpath(JAR_NAME).as_posix())
-                subprocess.check_call(
-                    ['java', '-jar', path, '--google-style'] + paths)
+                path, http_message = urllib.request.urlretrieve(jar_url, Path(tmpdir).joinpath(JAR_NAME).as_posix())
+                subprocess.check_call(['java', '-jar', path, '--google-style'] + paths)
         except Exception:
             traceback.print_exc()
 
@@ -312,8 +310,7 @@ class JinjaCodegenTarget():
     def codeFormat(self):
         outputs = subprocess.check_output(["./scripts/codegen.py", "--name-only", "--generator",
                                            self.generator, "--log-level", "fatal", self.idl_path]).decode("utf8").split("\n")
-        outputs = [os.path.join(self.output_directory, name)
-                   for name in outputs if name]
+        outputs = [os.path.join(self.output_directory, name) for name in outputs if name]
 
         # Split output files by extension,
         name_dict = {}
@@ -372,8 +369,7 @@ def setupArgumentsParser():
 
     parser.add_argument('--parallel', action='store_true')
     parser.add_argument('--no-parallel', action='store_false', dest='parallel')
-    parser.add_argument('--no-rerun-in-env',
-                        action='store_false', dest='rerun_in_env')
+    parser.add_argument('--no-rerun-in-env', action='store_false', dest='rerun_in_env')
     parser.set_defaults(parallel=True, rerun_in_env=True)
 
     args = parser.parse_args()
@@ -403,7 +399,7 @@ def getGlobalTemplatesTargets():
 
         if "zigbee" in example_name:
             # TODO silabs docker image doesn't have the zigbee zcl template need, as it was scrub for size reasons.
-            logging.info("-- Skipping zigbee examples regen --")
+            logging.info("-- Skipping zigbee-matter examples regen --")
             continue
         if example_name == "chef":
             if os.path.join("chef", "devices") not in str(filepath):
@@ -417,8 +413,7 @@ def getGlobalTemplatesTargets():
         logging.info("Found example %s (via %s)" %
                      (example_name, str(filepath)))
 
-        targets.append(ZAPGenerateTarget.MatterIdlTarget(
-            ZapInput.FromZap(filepath)))
+        targets.append(ZAPGenerateTarget.MatterIdlTarget(ZapInput.FromZap(filepath)))
 
     targets.append(ZAPGenerateTarget.MatterIdlTarget(ZapInput.FromPropertiesJson(DEFAULT_DATA_MODEL_DESCRIPTION_FILE),
                    client_side=True, matter_file_name="src/controller/data_model/controller-clusters.matter"))
@@ -457,8 +452,7 @@ def getGoldenTestImageTargets():
 
 
 def getSpecificTemplatesTargets():
-    zap_input = ZapInput.FromPropertiesJson(
-        DEFAULT_DATA_MODEL_DESCRIPTION_FILE)
+    zap_input = ZapInput.FromPropertiesJson(DEFAULT_DATA_MODEL_DESCRIPTION_FILE)
 
     # Mapping of required template and output directory
     templates = {
@@ -474,8 +468,7 @@ def getSpecificTemplatesTargets():
     targets = []
     for template, output_dir in templates.items():
         logging.info("Found specific template %s" % template)
-        targets.append(ZAPGenerateTarget(
-            zap_input, template=template, output_dir=output_dir))
+        targets.append(ZAPGenerateTarget(zap_input, template=template, output_dir=output_dir))
 
     return targets
 
@@ -547,8 +540,7 @@ def main():
             logging.info("Will re-try running in a build environment....")
 
             what_to_run = sys.argv + ['--no-rerun-in-env']
-            launcher = os.path.join(
-                CHIP_ROOT_DIR, 'scripts', 'run_in_build_env.sh')
+            launcher = os.path.join(CHIP_ROOT_DIR, 'scripts', 'run_in_build_env.sh')
             os.execv(launcher, [launcher, shlex.join(what_to_run)])
         sys.exit(1)
 
