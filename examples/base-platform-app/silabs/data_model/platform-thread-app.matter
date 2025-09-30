@@ -1759,6 +1759,7 @@ endpoint 0 {
   }
 
   server cluster AccessControl {
+    emits event AccessControlEntryChanged;
     callback attribute acl;
     callback attribute subjectsPerAccessControlEntry;
     callback attribute targetsPerAccessControlEntry;
@@ -1771,6 +1772,7 @@ endpoint 0 {
   }
 
   server cluster BasicInformation {
+    emits event StartUp;
     callback attribute dataModelRevision;
     callback attribute vendorName;
     callback attribute vendorID;
@@ -1869,9 +1871,19 @@ endpoint 0 {
     callback attribute attributeList;
     callback attribute featureMap;
     callback attribute clusterRevision;
+
+    handle command ScanNetworks;
+    handle command ScanNetworksResponse;
+    handle command AddOrUpdateThreadNetwork;
+    handle command RemoveNetwork;
+    handle command NetworkConfigResponse;
+    handle command ConnectNetwork;
+    handle command ConnectNetworkResponse;
+    handle command ReorderNetwork;
   }
 
   server cluster GeneralDiagnostics {
+    emits event BootReason;
     callback attribute networkInterfaces;
     callback attribute rebootCount;
     callback attribute upTime;
@@ -1987,7 +1999,7 @@ endpoint 1 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 0;
+    ram      attribute featureMap default = 1;
     ram      attribute clusterRevision default = 4;
 
     handle command AddGroupResponse;
