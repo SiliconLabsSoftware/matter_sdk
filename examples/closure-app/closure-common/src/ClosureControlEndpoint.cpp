@@ -54,6 +54,139 @@ enum class ClosureControlTestEventTrigger : uint64_t
 
 } // namespace
 
+namespace {
+
+/**
+ * @brief Logs state transition information for debugging purposes
+ * @param fromState The previous state
+ * @param toState The new state
+ * @param reason Optional reason for the state change
+ */
+void LogStateTransition(MainStateEnum fromState, MainStateEnum toState, const char * reason = nullptr)
+{
+    const char * fromStateStr = "Unknown";
+    const char * toStateStr = "Unknown";
+    
+    // Convert from state enum to string
+    switch (fromState)
+    {
+    case MainStateEnum::kStopped:
+        fromStateStr = "Stopped";
+        break;
+    case MainStateEnum::kCalibrating:
+        fromStateStr = "Calibrating";
+        break;
+    case MainStateEnum::kMoving:
+        fromStateStr = "Moving";
+        break;
+    case MainStateEnum::kWaitingForMotion:
+        fromStateStr = "WaitingForMotion";
+        break;
+    case MainStateEnum::kError:
+        fromStateStr = "Error";
+        break;
+    case MainStateEnum::kProtected:
+        fromStateStr = "Protected";
+        break;
+    case MainStateEnum::kDisengaged:
+        fromStateStr = "Disengaged";
+        break;
+    case MainStateEnum::kSetupRequired:
+        fromStateStr = "SetupRequired";
+        break;
+    default:
+        fromStateStr = "UnknownState";
+        break;
+    }
+    
+    // Convert to state enum to string
+    switch (toState)
+    {
+    case MainStateEnum::kStopped:
+        toStateStr = "Stopped";
+        break;
+    case MainStateEnum::kCalibrating:
+        toStateStr = "Calibrating";
+        break;
+    case MainStateEnum::kMoving:
+        toStateStr = "Moving";
+        break;
+    case MainStateEnum::kWaitingForMotion:
+        toStateStr = "WaitingForMotion";
+        break;
+    case MainStateEnum::kError:
+        toStateStr = "Error";
+        break;
+    case MainStateEnum::kProtected:
+        toStateStr = "Protected";
+        break;
+    case MainStateEnum::kDisengaged:
+        toStateStr = "Disengaged";
+        break;
+    case MainStateEnum::kSetupRequired:
+        toStateStr = "SetupRequired";
+        break;
+    default:
+        toStateStr = "UnknownState";
+        break;
+    }
+    
+    if (reason != nullptr)
+    {
+        ChipLogProgress(AppServer, "Closure state transition: %s -> %s (Reason: %s)", fromStateStr, toStateStr, reason);
+    }
+    else
+    {
+        ChipLogProgress(AppServer, "Closure state transition: %s -> %s", fromStateStr, toStateStr);
+    }
+}
+
+/**
+ * @brief Validates if a state transition is allowed
+ * @param fromState The current state
+ * @param toState The desired new state
+ * @return true if transition is valid, false otherwise
+ */
+bool IsValidStateTransition(MainStateEnum fromState, MainStateEnum toState)
+{
+    // Allow transitions to Error state from any state
+    if (toState == MainStateEnum::kError)
+    {
+        return true;
+    }
+    
+    // Allow transitions from Error state to Stopped state
+    if (fromState == MainStateEnum::kError && toState == MainStateEnum::kStopped)
+    {
+        return true;
+    }
+    
+    // Allow transitions from Protected/Disengaged/SetupRequired to Stopped
+    if ((fromState == MainStateEnum::kProtected || fromState == MainStateEnum::kDisengaged || 
+         fromState == MainStateEnum::kSetupRequired) && toState == MainStateEnum::kStopped)
+    {
+        return true;
+    }
+    
+    // Normal operational transitions
+    switch (fromState)
+    {
+    case MainStateEnum::kStopped:
+        return (toState == MainStateEnum::kCalibrating || toState == MainStateEnum::kMoving || 
+                toState == MainStateEnum::kWaitingForMotion);
+    case MainStateEnum::kCalibrating:
+        return (toState == MainStateEnum::kStopped);
+    case MainStateEnum::kMoving:
+        return (toState == MainStateEnum::kStopped);
+    case MainStateEnum::kWaitingForMotion:
+        return (toState == MainStateEnum::kStopped || toState == MainStateEnum::kMoving);
+    default:
+        return false;
+    }
+}
+
+} // anonymous namespace
+
 Status ClosureControlDelegate::HandleCalibrateCommand()
 {
     return ClosureManager::GetInstance().OnCalibrateCommand();

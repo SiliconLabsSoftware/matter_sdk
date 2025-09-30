@@ -49,7 +49,7 @@ def publishSonarAnalysis() {
 
             // Prepare global SonarQube parameters
             def sonarqubeParams = [
-                "-Dsonar.projectKey=matter_sdk",
+                "-Dsonar.projectKey=github_matter_sdk",
                 "-Dsonar.projectBaseDir=${env.WORKSPACE}",
                 "-Dsonar.working.directory=${env.WORKSPACE}/sonar",
                 "-Dsonar.token=${SONAR_SECRET}",
@@ -60,8 +60,8 @@ def publishSonarAnalysis() {
                 "-Dsonar.qualitygate.wait=true",
                 "-Dsonar.cfamily.threads=32",
                 "-Dsonar.sourceEncoding=UTF-8",
-                "-Dsonar.sources=.",
-                "-Dsonar.inclusions=**/*.c,**/*.h,**/*.cpp,**/*.hpp",
+                "-Dsonar.sources=examples/closure-app",
+                "-Dsonar.inclusions=examples/closure-app/**/*.c,examples/closure-app/**/*.h,examples/closure-app/**/*.cpp,examples/closure-app/**/*.hpp",
                 "-Dsonar.exclusions=third_party/**"
             ]
 
