@@ -22,6 +22,7 @@ import("${silabs_sdk_build_root}/silabs_executable.gni")
 
 import("${chip_root}/examples/common/pigweed/pigweed_rpcs.gni")
 import("${chip_root}/src/platform/device.gni")
+import("${chip_root}/src/tracing/tracing_args.gni")
 import("${chip_root}/third_party/silabs/silabs_board.gni")
 
 if (chip_enable_pw_rpc) {
@@ -121,6 +122,10 @@ if (wifi_soc) {
     }
 
     defines = []
+
+    if (matter_enable_tracing_support) {
+      defines += [ "TRACING_RUNTIME_STATS" ]
+    }
     if (chip_enable_pw_rpc) {
       defines += [
         "HAL_VCOM_ENABLE=1",

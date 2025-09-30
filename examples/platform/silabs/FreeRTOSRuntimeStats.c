@@ -1,5 +1,5 @@
 /***************************************************************************
- * @file freertos_runtime_stats.c
+ * @file FreeRTOSRuntimeStats.c
  * @brief FreeRTOS runtime statistics timer implementation for Silicon Labs platform.
  *******************************************************************************
  * # License
