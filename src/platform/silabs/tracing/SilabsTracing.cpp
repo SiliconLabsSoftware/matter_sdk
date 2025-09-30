@@ -787,16 +787,16 @@ CHIP_ERROR SilabsTracer::SplitNamedTraceString(CharSpan appOperationKey, CharSpa
 CHIP_ERROR SilabsTracer::OutputTaskStatistics()
 {
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
-    
+
     UBaseType_t uxArraySize = uxTaskGetNumberOfTasks();
-    
+
     std::unique_ptr<TaskStatus_t[]> pxTaskStatusArray(new (std::nothrow) TaskStatus_t[uxArraySize]);
     VerifyOrReturnError(pxTaskStatusArray != nullptr, CHIP_ERROR_NO_MEMORY);
-    
+
     uint32_t ulTotalRunTime;
-    
+
     uxArraySize = uxTaskGetSystemState(pxTaskStatusArray.get(), uxArraySize, &ulTotalRunTime);
-    
+
     if (uxArraySize == 0)
     {
         ChipLogError(DeviceLayer, "Failed to get task system state");
@@ -804,13 +804,13 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
     }
 
     VerifyOrReturnError(ulTotalRunTime > 0, CHIP_ERROR_UNINITIALIZED, ChipLogProgress(DeviceLayer, "Runtime statistics not available (total runtime is 0)"));
-    
+
     ChipLogProgress(DeviceLayer, "=== FreeRTOS Task Statistics ===");
     ChipLogProgress(DeviceLayer, "Number of tasks: %lu", (unsigned long)uxArraySize);
     ChipLogProgress(DeviceLayer, "Total runtime: %lu ticks", (unsigned long)ulTotalRunTime);
     ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4s | %-9s | %-6s |", "Task Name", "State", "Prio", "Stack HWM", "CPU %");
     ChipLogProgress(DeviceLayer, "|%-22s|%-10s|%-6s|%-11s|%-8s|", "----------------------", "----------", "------", "-----------", "--------");
-    
+
     for (UBaseType_t i = 0; i < uxArraySize; i++)
     {
         const char * taskState;
@@ -835,11 +835,11 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
             taskState = "Unknown";
             break;
         }
-        
+
         // CPU usage percentage
         uint32_t cpuPercent = (pxTaskStatusArray.get()[i].ulRunTimeCounter * 100) / ulTotalRunTime;
         uint32_t cpuPercentTenths = ((pxTaskStatusArray.get()[i].ulRunTimeCounter * 1000) / ulTotalRunTime) % 10;
-        
+
         ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4lu | %-9lu | %3lu.%lu%% |",
                        pxTaskStatusArray.get()[i].pcTaskName,
                        taskState,
@@ -848,7 +848,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
                        (unsigned long)cpuPercent,
                        (unsigned long)cpuPercentTenths);
     }
-    
+
     return CHIP_NO_ERROR;
 }
 
