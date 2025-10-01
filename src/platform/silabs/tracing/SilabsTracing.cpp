@@ -19,17 +19,20 @@
 #include <cstring>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/PersistentData.h>
-#include <memory> // for std::unique_ptr
 #include <string> // Include the necessary header for std::string
 
+#if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS
+#include <memory> // for std::unique_ptr
+#endif
+
 // Include FreeRTOS configuration first
-#ifdef TRACING_RUNTIME_STATS
+#if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS
 extern "C" {
 #include "FreeRTOSConfig.h"
 }
 #endif
 // FreeRTOS includes for task statistics
-#if configGENERATE_RUN_TIME_STATS == 1
+#if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
 extern "C" {
 #include "FreeRTOS.h"
 #include "task.h"
@@ -783,7 +786,7 @@ CHIP_ERROR SilabsTracer::SplitNamedTraceString(CharSpan appOperationKey, CharSpa
     return CHIP_NO_ERROR;
 }
 
-#if configGENERATE_RUN_TIME_STATS == 1
+#if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
 
 CHIP_ERROR SilabsTracer::OutputTaskStatistics()
 {

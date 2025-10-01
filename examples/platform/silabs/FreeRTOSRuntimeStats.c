@@ -16,7 +16,7 @@
  ******************************************************************************/
 #include "FreeRTOSConfig.h"
 
-#if configGENERATE_RUN_TIME_STATS == 1
+#if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
 
 #include "FreeRTOS.h"
 #include "task.h"

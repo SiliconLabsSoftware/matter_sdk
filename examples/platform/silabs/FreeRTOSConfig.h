@@ -166,7 +166,7 @@ extern uint32_t SystemCoreClock;
 
 /* Main functions*/
 /* Run time stats gathering related definitions. */
-#ifdef TRACING_RUNTIME_STATS
+#if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS
 #define configGENERATE_RUN_TIME_STATS (1)
 #define configUSE_STATS_FORMATTING_FUNCTIONS (1)
 
@@ -179,6 +179,8 @@ extern void vIncrementRunTimeCounter(void);
 
 /* Hook to call runtime counter increment from system tick */
 #define traceTASK_SWITCHED_IN() vIncrementRunTimeCounter()
+#else
+#define configGENERATE_RUN_TIME_STATS (0)
 #endif // TRACING_RUNTIME_STATS
 
 /* Co-routine related definitions. */
