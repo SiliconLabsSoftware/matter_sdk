@@ -23,10 +23,11 @@
 #include <string> // Include the necessary header for std::string
 
 // Include FreeRTOS configuration first
+#ifdef TRACING_RUNTIME_STATS
 extern "C" {
 #include "FreeRTOSConfig.h"
 }
-
+#endif
 // FreeRTOS includes for task statistics
 #if configGENERATE_RUN_TIME_STATS == 1
 extern "C" {
