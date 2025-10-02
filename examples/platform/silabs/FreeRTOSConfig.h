@@ -105,9 +105,8 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdio.h>
-#if __has_include(<platform/silabs/tracing/SilabsTracingConfig.h>)
+
 #include <platform/silabs/tracing/SilabsTracingConfig.h>
-#endif
 
 #ifdef SLI_SI91X_MCU_INTERFACE
 #include "si91x_device.h"
