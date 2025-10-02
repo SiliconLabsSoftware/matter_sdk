@@ -25,13 +25,13 @@
 
 /**
  * @brief Enable FreeRTOS runtime statistics collection for task CPU usage tracking.
- * 
+ *
  * When enabled (set to 1), this enables:
  * - configGENERATE_RUN_TIME_STATS in FreeRTOS
- * - configUSE_STATS_FORMATTING_FUNCTIONS in FreeRTOS  
+ * - configUSE_STATS_FORMATTING_FUNCTIONS in FreeRTOS
  * - Runtime statistics timer configuration
  * - Task switching hooks for statistics collection
- * 
+ *
  * Default: 0 (disabled)
  */
 #ifndef TRACING_RUNTIME_STATS
@@ -40,11 +40,11 @@
 
 /**
  * @brief Size in bytes for serialized time tracker storage.
- * 
+ *
  * Default size, metrics store 6 uint32_t, which is 24 bytes
  * We currently have 19 operations to track, so 19 * 24 = 456 bytes
  * 512 bytes should be enough including the serialization overhead
- * 
+ *
  * Default: 512 bytes
  */
 #ifndef SERIALIZED_TIME_TRACKERS_SIZE_BYTES
