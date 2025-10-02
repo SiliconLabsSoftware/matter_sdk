@@ -17,6 +17,12 @@
 
 import("//build_overrides/build.gni")
 import("//build_overrides/chip.gni")
+import("${chip_root}/build/chip/buildconfig_header.gni")
+
+buildconfig_header("silabs_tracing_config") {
+  header = "SilabsTracingConfig.h"
+  header_dir = "platform/silabs/tracing"
+}
 
 static_library("SilabsTracing") {
   sources = [
@@ -33,5 +39,8 @@ static_library("SilabsTracing") {
     "${chip_root}/src/system",
   ]
 
-  public_deps = [ "${chip_root}/src/tracing:tracing" ]
+  public_deps = [
+    ":silabs_tracing_config",
+    "${chip_root}/src/tracing:tracing",
+  ]
 }

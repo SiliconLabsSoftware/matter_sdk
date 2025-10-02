@@ -16,6 +16,7 @@
  ******************************************************************************/
 #pragma once
 
+#include <platform/silabs/tracing/SilabsTracingConfig.h>
 #include "SilabsTracingTypes.h"
 #include <cstddef>
 #include <cstdlib>
@@ -25,13 +26,6 @@
 #include <lib/support/Span.h>
 #include <stdint.h>
 #include <system/SystemClock.h>
-
-#ifndef SERIALIZED_TIME_TRACKERS_SIZE_BYTES
-// Default size, metrics store 6 uint32_t, which is 24 bytes
-// We currently have 19 operations to track, so 19 * 24 = 456 bytes
-// 512 bytes should be enough including the serialization overhead
-#define SERIALIZED_TIME_TRACKERS_SIZE_BYTES 512
-#endif
 
 namespace chip {
 namespace Tracing {

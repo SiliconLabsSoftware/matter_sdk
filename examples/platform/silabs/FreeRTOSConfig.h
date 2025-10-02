@@ -106,6 +106,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
+#include <platform/silabs/tracing/SilabsTracingConfig.h>
+
 #ifdef SLI_SI91X_MCU_INTERFACE
 #include "si91x_device.h"
 extern uint32_t SystemCoreClock;
@@ -166,7 +168,7 @@ extern uint32_t SystemCoreClock;
 
 /* Main functions*/
 /* Run time stats gathering related definitions. */
-#if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS
+#if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS == 1
 #define configGENERATE_RUN_TIME_STATS (1)
 #define configUSE_STATS_FORMATTING_FUNCTIONS (1)
 

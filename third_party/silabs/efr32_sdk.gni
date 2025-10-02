@@ -1143,6 +1143,7 @@ template("efr32_sdk") {
 
     public_deps = [
       ":efr32_mbedtls_config",
+      "${chip_root}/src/platform/silabs/tracing:silabs_tracing_config",
       "${segger_rtt_root}:segger_rtt",
       "${segger_rtt_root}:segger_rtt_printf",
     ]

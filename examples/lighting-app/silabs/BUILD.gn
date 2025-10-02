@@ -123,9 +123,6 @@ if (wifi_soc) {
 
     defines = []
 
-    if (matter_enable_tracing_support) {
-      defines += [ "TRACING_RUNTIME_STATS" ]
-    }
     if (chip_enable_pw_rpc) {
       defines += [
         "HAL_VCOM_ENABLE=1",
