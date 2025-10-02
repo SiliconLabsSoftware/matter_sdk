@@ -791,9 +791,9 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
     UBaseType_t uxArraySize = uxTaskGetNumberOfTasks();
 
     // pvPortMalloc and pvPortFree are FreeRTOS memory allocation functions and use FreeRTOS heap.
-    TaskStatus_t *pxTaskStatusArray;
-    pxTaskStatusArray = (TaskStatus_t*) pvPortMalloc( uxArraySize * sizeof( TaskStatus_t ) );
-    VerifyOrReturnError(pxTaskStatusArray != NULL, CHIP_ERROR_NO_MEMORY,  vPortFree(pxTaskStatusArray));
+    TaskStatus_t * pxTaskStatusArray;
+    pxTaskStatusArray = (TaskStatus_t *) pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));
+    VerifyOrReturnError(pxTaskStatusArray != NULL, CHIP_ERROR_NO_MEMORY, vPortFree(pxTaskStatusArray));
 
     uint32_t ulTotalRunTime;
 
@@ -806,12 +806,12 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         return CHIP_ERROR_INTERNAL;
     }
 
-    if( ulTotalRunTime <= 0){
+    if (ulTotalRunTime <= 0)
+    {
         ChipLogProgress(DeviceLayer, "Runtime statistics not available (total runtime is 0)");
         vPortFree(pxTaskStatusArray);
         return CHIP_ERROR_UNINITIALIZED;
     }
-
 
     ChipLogProgress(DeviceLayer, "=== FreeRTOS Task Statistics ===");
     ChipLogProgress(DeviceLayer, "Number of tasks: %lu", (unsigned long) uxArraySize);
@@ -846,12 +846,11 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         }
 
         // CPU usage percentage
-        uint32_t cpuPercent = (static_cast<uint64_t>(pxTaskStatusArray[i].ulRunTimeCounter) * 100) / ulTotalRunTime;
-        uint32_t cpuPercentTenths =
-            ((static_cast<uint64_t>(pxTaskStatusArray[i].ulRunTimeCounter) * 1000) / ulTotalRunTime) % 10;
+        uint32_t cpuPercent       = (static_cast<uint64_t>(pxTaskStatusArray[i].ulRunTimeCounter) * 100) / ulTotalRunTime;
+        uint32_t cpuPercentTenths = ((static_cast<uint64_t>(pxTaskStatusArray[i].ulRunTimeCounter) * 1000) / ulTotalRunTime) % 10;
 
-        ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4lu | %-9lu | %3lu.%lu%% |", pxTaskStatusArray[i].pcTaskName,
-                        taskState, (unsigned long) pxTaskStatusArray[i].uxCurrentPriority,
+        ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4lu | %-9lu | %3lu.%lu%% |", pxTaskStatusArray[i].pcTaskName, taskState,
+                        (unsigned long) pxTaskStatusArray[i].uxCurrentPriority,
                         (unsigned long) pxTaskStatusArray[i].usStackHighWaterMark, (unsigned long) cpuPercent,
                         (unsigned long) cpuPercentTenths);
     }
