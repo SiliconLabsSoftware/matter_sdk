@@ -789,7 +789,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
 
     UBaseType_t uxArraySize = uxTaskGetNumberOfTasks();
-   
+
     // pvPortMalloc and pvPortFree are FreeRTOS memory allocation functions and use FreeRTOS heap.
     TaskStatus_t *pxTaskStatusArray;
     pxTaskStatusArray = (TaskStatus_t*) pvPortMalloc( uxArraySize * sizeof( TaskStatus_t ) );
@@ -811,7 +811,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         vPortFree(pxTaskStatusArray);
         return CHIP_ERROR_UNINITIALIZED;
     }
-                        
+
 
     ChipLogProgress(DeviceLayer, "=== FreeRTOS Task Statistics ===");
     ChipLogProgress(DeviceLayer, "Number of tasks: %lu", (unsigned long) uxArraySize);
