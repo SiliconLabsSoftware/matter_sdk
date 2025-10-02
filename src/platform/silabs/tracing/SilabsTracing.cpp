@@ -802,11 +802,16 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
     if (uxArraySize == 0)
     {
         ChipLogError(DeviceLayer, "Failed to get task system state");
+        vPortFree(pxTaskStatusArray);
         return CHIP_ERROR_INTERNAL;
     }
 
-    VerifyOrReturnError(ulTotalRunTime > 0, CHIP_ERROR_UNINITIALIZED,
-                        ChipLogProgress(DeviceLayer, "Runtime statistics not available (total runtime is 0)"));
+    if( ulTotalRunTime <= 0){
+        ChipLogProgress(DeviceLayer, "Runtime statistics not available (total runtime is 0)");
+        vPortFree(pxTaskStatusArray);
+        return CHIP_ERROR_UNINITIALIZED;
+    }
+                        
 
     ChipLogProgress(DeviceLayer, "=== FreeRTOS Task Statistics ===");
     ChipLogProgress(DeviceLayer, "Number of tasks: %lu", (unsigned long) uxArraySize);
