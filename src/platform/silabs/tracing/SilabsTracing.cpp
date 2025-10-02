@@ -21,10 +21,6 @@
 #include <lib/support/PersistentData.h>
 #include <string> // Include the necessary header for std::string
 
-#if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS
-#include <memory> // for std::unique_ptr
-#endif
-
 // Include FreeRTOS configuration first
 #if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS
 extern "C" {
@@ -793,13 +789,15 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
 
     UBaseType_t uxArraySize = uxTaskGetNumberOfTasks();
-
-    std::unique_ptr<TaskStatus_t[]> pxTaskStatusArray(new (std::nothrow) TaskStatus_t[uxArraySize]);
-    VerifyOrReturnError(pxTaskStatusArray != nullptr, CHIP_ERROR_NO_MEMORY);
+   
+    // pvPortMalloc and pvPortFree are FreeRTOS memory allocation functions and use FreeRTOS heap.
+    TaskStatus_t *pxTaskStatusArray;
+    pxTaskStatusArray = (TaskStatus_t*) pvPortMalloc( uxArraySize * sizeof( TaskStatus_t ) );
+    VerifyOrReturnError(pxTaskStatusArray != NULL, CHIP_ERROR_NO_MEMORY,  vPortFree(pxTaskStatusArray));
 
     uint32_t ulTotalRunTime;
 
-    uxArraySize = uxTaskGetSystemState(pxTaskStatusArray.get(), uxArraySize, &ulTotalRunTime);
+    uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxArraySize, &ulTotalRunTime);
 
     if (uxArraySize == 0)
     {
@@ -820,7 +818,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
     for (UBaseType_t i = 0; i < uxArraySize; i++)
     {
         const char * taskState;
-        switch (pxTaskStatusArray.get()[i].eCurrentState)
+        switch (pxTaskStatusArray[i].eCurrentState)
         {
         case eRunning:
             taskState = "Running";
@@ -843,16 +841,17 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         }
 
         // CPU usage percentage
-        uint32_t cpuPercent = (static_cast<uint64_t>(pxTaskStatusArray.get()[i].ulRunTimeCounter) * 100) / ulTotalRunTime;
+        uint32_t cpuPercent = (static_cast<uint64_t>(pxTaskStatusArray[i].ulRunTimeCounter) * 100) / ulTotalRunTime;
         uint32_t cpuPercentTenths =
-            ((static_cast<uint64_t>(pxTaskStatusArray.get()[i].ulRunTimeCounter) * 1000) / ulTotalRunTime) % 10;
+            ((static_cast<uint64_t>(pxTaskStatusArray[i].ulRunTimeCounter) * 1000) / ulTotalRunTime) % 10;
 
-        ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4lu | %-9lu | %3lu.%lu%% |", pxTaskStatusArray.get()[i].pcTaskName,
-                        taskState, (unsigned long) pxTaskStatusArray.get()[i].uxCurrentPriority,
-                        (unsigned long) pxTaskStatusArray.get()[i].usStackHighWaterMark, (unsigned long) cpuPercent,
+        ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4lu | %-9lu | %3lu.%lu%% |", pxTaskStatusArray[i].pcTaskName,
+                        taskState, (unsigned long) pxTaskStatusArray[i].uxCurrentPriority,
+                        (unsigned long) pxTaskStatusArray[i].usStackHighWaterMark, (unsigned long) cpuPercent,
                         (unsigned long) cpuPercentTenths);
     }
 
+    vPortFree(pxTaskStatusArray);
     return CHIP_NO_ERROR;
 }
 
