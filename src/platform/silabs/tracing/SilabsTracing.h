@@ -16,7 +16,6 @@
  ******************************************************************************/
 #pragma once
 
-#include <platform/silabs/tracing/SilabsTracingConfig.h>
 #include "SilabsTracingTypes.h"
 #include <cstddef>
 #include <cstdlib>
@@ -24,6 +23,7 @@
 #include <lib/core/CHIPPersistentStorageDelegate.h>
 #include <lib/support/LinkedList.h>
 #include <lib/support/Span.h>
+#include <platform/silabs/tracing/SilabsTracingConfig.h>
 #include <stdint.h>
 #include <system/SystemClock.h>
 
