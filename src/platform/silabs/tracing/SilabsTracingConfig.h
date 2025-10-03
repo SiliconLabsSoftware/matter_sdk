@@ -16,7 +16,6 @@
  ******************************************************************************/
 #pragma once
 
-
 /**
  * @brief Centralized configuration for Silabs tracing functionality.
  */
