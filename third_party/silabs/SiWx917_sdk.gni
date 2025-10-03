@@ -56,7 +56,7 @@ template("siwx917_sdk") {
     _include_dirs = [
       "${chip_root}",
 
-      # "${chip_root}/src",
+      "${chip_root}/src",
       "${chip_root}/examples/platform/silabs/",
 
       # "${root_gen_dir}/include",
