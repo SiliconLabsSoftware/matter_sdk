@@ -24,6 +24,8 @@
 // Runtime statistics timer implementation
 // These functions are called by FreeRTOS to configure and read the runtime timer
 
+#pragma message("FreeRTOS Runtime statistics are enabled. This is a debugging feature and may have an impact on performance.")
+
 static volatile uint32_t sRunTimeCounter = 0;
 
 void vConfigureTimerForRunTimeStats(void)
