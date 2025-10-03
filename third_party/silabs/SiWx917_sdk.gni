@@ -55,11 +55,8 @@ template("siwx917_sdk") {
     # Treat these includes as system includes, so warnings in them are not fatal.
     _include_dirs = [
       "${chip_root}",
-
       "${chip_root}/src",
       "${chip_root}/examples/platform/silabs/",
-
-      # "${root_gen_dir}/include",
       "${efr32_sdk_root}/platform/emdrv/nvm3/config",
       "${efr32_sdk_root}/platform/emdrv/nvm3/inc",
       "${efr32_sdk_root}/platform/emdrv/common/inc",
