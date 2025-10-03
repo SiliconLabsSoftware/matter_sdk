@@ -16,8 +16,6 @@
  ******************************************************************************/
 #pragma once
 
-#include <matter/tracing/build_config.h>
-#if defined(MATTER_TRACING_ENABLED) && MATTER_TRACING_ENABLED == 1
 
 /**
  * @brief Centralized configuration for Silabs tracing functionality.
@@ -50,5 +48,3 @@
 #ifndef SERIALIZED_TIME_TRACKERS_SIZE_BYTES
 #define SERIALIZED_TIME_TRACKERS_SIZE_BYTES 512
 #endif
-
-#endif // MATTER_TRACING_ENABLED
