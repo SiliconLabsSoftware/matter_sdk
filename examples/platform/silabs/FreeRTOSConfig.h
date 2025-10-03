@@ -244,15 +244,15 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 
 #ifndef configTOTAL_HEAP_SIZE
 #ifdef SL_WIFI
-#ifdef DIC_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
 #ifdef SLI_SI91X_MCU_INTERFACE
-#define configTOTAL_HEAP_SIZE ((size_t) ((75 + EXTRA_HEAP_k) * 1024))
+#define configTOTAL_HEAP_SIZE ((size_t) ((65 + EXTRA_HEAP_k) * 1024))
 #else
 #define configTOTAL_HEAP_SIZE ((size_t) ((68 + EXTRA_HEAP_k) * 1024))
 #endif // SLI_SI91X_MCU_INTERFACE
 #else
 #define configTOTAL_HEAP_SIZE ((size_t) ((42 + EXTRA_HEAP_k) * 1024))
-#endif // DIC
+#endif // MATTER_AWS
 #else  // SL_WIFI
 #if SL_CONFIG_OPENTHREAD_LIB == 1
 #define configTOTAL_HEAP_SIZE ((size_t) ((40 + EXTRA_HEAP_k) * 1024))
@@ -268,7 +268,7 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define INCLUDE_vTaskDelete (1)
 #define INCLUDE_vTaskSuspend (1)
 #define INCLUDE_xResumeFromISR (1)
-#define INCLUDE_vTaskDelayUntil (1)
+#define INCLUDE_xTaskDelayUntil (1)
 #define INCLUDE_vTaskDelay (1)
 #define INCLUDE_xTaskGetSchedulerState (1)
 #define INCLUDE_xTaskGetCurrentTaskHandle (1)
