@@ -40,6 +40,35 @@ jobs:
               '[SL-UP]': 'sl-up'
             };
             
+            const allSlLabels = Object.values(prefixMapping);
+            
+            // First, get current labels to remove any existing SL labels
+            console.log('Getting current PR labels...');
+            const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            // Remove any existing SL labels to ensure only one at a time
+            const existingSlLabels = currentLabels.filter(label => allSlLabels.includes(label.name));
+            if (existingSlLabels.length > 0) {
+              console.log(`Removing existing SL labels: ${existingSlLabels.map(l => l.name).join(', ')}`);
+              for (const label of existingSlLabels) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: prNumber,
+                    name: label.name
+                  });
+                  console.log(`Removed label: ${label.name}`);
+                } catch (error) {
+                  console.log(`Warning: Could not remove label '${label.name}': ${error.message}`);
+                }
+              }
+            }
+            
             // Check if the title starts with any of the valid prefixes
             let foundPrefix = null;
             let labelToApply = null;
