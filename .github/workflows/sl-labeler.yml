@@ -1,0 +1,78 @@
+name: SL Labeler
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  check-sl-prefix:
+    name: Check SL Prefix and Apply Labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title for SL prefix and apply labels
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const prTitle = context.payload.pull_request.title;
+            const prNumber = context.payload.pull_request.number;
+            
+            console.log(`Checking PR title: "${prTitle}"`);
+            
+            // Define the valid prefixes and their corresponding labels
+            const prefixMapping = {
+              '[SL-ONLY]': 'sl-only',
+              '[SL-TEMP]': 'sl-temp',
+              '[SL-UP]': 'sl-up'
+            };
+            
+            // Check if the title starts with any of the valid prefixes
+            let foundPrefix = null;
+            let labelToApply = null;
+            
+            for (const [prefix, label] of Object.entries(prefixMapping)) {
+              if (prTitle.startsWith(prefix)) {
+                foundPrefix = prefix;
+                labelToApply = label;
+                break;
+              }
+            }
+            
+            if (!foundPrefix) {
+              // No valid prefix found - fail the workflow
+              const validPrefixes = Object.keys(prefixMapping).join(', ');
+              const errorMessage = `❌ PR title prefix is missing. Please add one of the following prefixes to your PR title: ${validPrefixes}`;
+              
+              console.log(errorMessage);
+              
+              // Add a comment to the PR explaining the issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: errorMessage
+              });
+              
+              // Fail the workflow
+              throw new Error(`PR title must start with one of: ${validPrefixes}`);
+            } else {
+              // Valid prefix found - apply the corresponding label
+              console.log(`✅ Found valid prefix: ${foundPrefix}, applying label: ${labelToApply}`);
+              
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  labels: [labelToApply]
+                });
+                
+                console.log(`Label '${labelToApply}' applied successfully`);
+              } catch (error) {
+                console.log(`Warning: Could not apply label '${labelToApply}': ${error.message}`);
+                // Continue without failing - the prefix check passed
+              }
+            }
