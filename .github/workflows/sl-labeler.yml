@@ -11,6 +11,7 @@ jobs:
   check-sl-prefix:
     name: Check SL Prefix and Apply Labels
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'silabs-matter-ci-bot' }}
     steps:
       - name: Generate token for the workflow
         id: generate_token
