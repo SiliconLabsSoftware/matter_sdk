@@ -31,7 +31,13 @@ jobs:
             const prTitle = context.payload.pull_request.title;
             const prNumber = context.payload.pull_request.number;
             
-            console.log(`Checking PR title: "${prTitle}"`);
+            // Input validation and security checks
+            if (typeof prTitle !== 'string') {
+              throw new Error('Invalid PR title: not a string');
+            }
+            
+            // Safely log the PR title to prevent injection attacks
+            console.log('Checking PR title:', JSON.stringify(prTitle));
             
             // Define the valid prefixes and their corresponding labels
             const prefixMapping = {
@@ -100,7 +106,7 @@ jobs:
               throw new Error(`PR title must start with one of: ${validPrefixes}`);
             } else {
               // Valid prefix found - apply the corresponding label
-              console.log(`✅ Found valid prefix: ${foundPrefix}, applying label: ${labelToApply}`);
+              console.log('✅ Found valid prefix:', JSON.stringify(foundPrefix), 'applying label:', JSON.stringify(labelToApply));
               
               try {
                 await github.rest.issues.addLabels({
