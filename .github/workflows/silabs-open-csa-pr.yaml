@@ -44,4 +44,4 @@ jobs:
                       **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
                   token: ${{ steps.generate_token.outputs.token }}
                   labels:
-                      changing-submodules-on-purpose, sl-require-admin-action
+                      changing-git-submodules-on-purpose, sl-require-admin-action
