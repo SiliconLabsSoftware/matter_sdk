@@ -48,32 +48,13 @@ jobs:
             
             const allSlLabels = Object.values(prefixMapping);
             
-            // First, get current labels to remove any existing SL labels
+            // First, get current labels to check existing state
             console.log('Getting current PR labels...');
             const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber
             });
-            
-            // Remove any existing SL labels to ensure only one at a time
-            const existingSlLabels = currentLabels.filter(label => allSlLabels.includes(label.name));
-            if (existingSlLabels.length > 0) {
-              console.log(`Removing existing SL labels: ${existingSlLabels.map(l => l.name).join(', ')}`);
-              for (const label of existingSlLabels) {
-                try {
-                  await github.rest.issues.removeLabel({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: prNumber,
-                    name: label.name
-                  });
-                  console.log(`Removed label: ${label.name}`);
-                } catch (error) {
-                  console.log(`Warning: Could not remove label '${label.name}': ${error.message}`);
-                }
-              }
-            }
             
             // Check if the title starts with any of the valid prefixes
             let foundPrefix = null;
@@ -88,6 +69,24 @@ jobs:
             }
             
             if (!foundPrefix) {
+              // No valid prefix found - remove any existing SL labels and fail
+              const existingSlLabels = currentLabels.filter(label => allSlLabels.includes(label.name));
+              if (existingSlLabels.length > 0) {
+                console.log(`Removing existing SL labels: ${existingSlLabels.map(l => l.name).join(', ')}`);
+                for (const label of existingSlLabels) {
+                  try {
+                    await github.rest.issues.removeLabel({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: prNumber,
+                      name: label.name
+                    });
+                    console.log(`Removed label: ${label.name}`);
+                  } catch (error) {
+                    console.log(`Warning: Could not remove label '${label.name}': ${error.message}`);
+                  }
+                }
+              }
               // No valid prefix found - fail the workflow
               const validPrefixes = Object.keys(prefixMapping).join(', ');
               const errorMessage = `❌ PR title prefix is missing. Please add one of the following prefixes to your PR title: ${validPrefixes}`;
@@ -105,20 +104,55 @@ jobs:
               // Fail the workflow
               throw new Error(`PR title must start with one of: ${validPrefixes}`);
             } else {
-              // Valid prefix found - apply the corresponding label
-              console.log('✅ Found valid prefix:', JSON.stringify(foundPrefix), 'applying label:', JSON.stringify(labelToApply));
+              // Valid prefix found - check if the correct label is already present
+              console.log('✅ Found valid prefix:', JSON.stringify(foundPrefix), 'checking label:', JSON.stringify(labelToApply));
               
-              try {
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: prNumber,
-                  labels: [labelToApply]
-                });
+              const existingSlLabels = currentLabels.filter(label => allSlLabels.includes(label.name));
+              const hasCorrectLabel = currentLabels.some(label => label.name === labelToApply);
+              const hasIncorrectSlLabels = existingSlLabels.filter(label => label.name !== labelToApply);
+              
+              if (hasCorrectLabel && hasIncorrectSlLabels.length === 0) {
+                // Correct label is already present and no incorrect SL labels exist
+                console.log(`✅ Correct label '${labelToApply}' is already present, no changes needed`);
+              } else {
+                // Need to update labels
                 
-                console.log(`Label '${labelToApply}' applied successfully`);
-              } catch (error) {
-                console.log(`Warning: Could not apply label '${labelToApply}': ${error.message}`);
-                // Continue without failing - the prefix check passed
+                // Remove any incorrect SL labels
+                if (hasIncorrectSlLabels.length > 0) {
+                  console.log(`Removing incorrect SL labels: ${hasIncorrectSlLabels.map(l => l.name).join(', ')}`);
+                  for (const label of hasIncorrectSlLabels) {
+                    try {
+                      await github.rest.issues.removeLabel({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: prNumber,
+                        name: label.name
+                      });
+                      console.log(`Removed label: ${label.name}`);
+                    } catch (error) {
+                      console.log(`Warning: Could not remove label '${label.name}': ${error.message}`);
+                    }
+                  }
+                }
+                
+                // Add the correct label if not already present
+                if (!hasCorrectLabel) {
+                  console.log(`Adding label: ${labelToApply}`);
+                  try {
+                    await github.rest.issues.addLabels({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: prNumber,
+                      labels: [labelToApply]
+                    });
+                    
+                    console.log(`Label '${labelToApply}' applied successfully`);
+                  } catch (error) {
+                    console.log(`Warning: Could not apply label '${labelToApply}': ${error.message}`);
+                    // Continue without failing - the prefix check passed
+                  }
+                } else {
+                  console.log(`Label '${labelToApply}' already present, no need to add`);
+                }
               }
             }
