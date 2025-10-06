@@ -6,10 +6,11 @@ Script to post SonarQube static analysis results to GitHub PR as a comment.
 import argparse
 import json
 import os
-import requests
-import sys
 import re
+import sys
 from datetime import datetime
+
+import requests
 
 
 def post_pr_comment(github_token, repo_owner, repo_name, pr_number, comment_body):
