@@ -197,19 +197,19 @@ def create_comment_body(status, commit_sha, branch_name, target_branch, sonar_ou
     comment_body = f"""## 🔍 SonarQube Static Analysis Results
 
 **Result:** {result_emoji} {result_text}  
-**Quality Gate Status:** {status}  
+**Quality Gate Status:** {quality_gate_status}  
 **Commit SHA:** `{commit_sha}`
 
 ### 📊 Analysis Summary
 - **Branch:** `{branch_name}`
 - **Target:** `{target_branch}`
-- **Analysis Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+- **Analysis Time:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}
 
-### � Key Metrics
+### 📈 Key Metrics
 | Metric | Value |
 |--------|-------|
 | **New Lines of Code** | {metrics.get('new_lines', 'N/A')} |
-| **New Duplicated Lines Density** | {metrics.get('new_duplicated_lines_density', metrics.get('duplicated_lines_density', 'N/A'))}% |
+| **New Duplicated Lines Density** | {metrics.get('new_duplicated_lines_density', metrics.get('duplicated_lines_density', 'N/A')) if not metrics.get('new_duplicated_lines_density', metrics.get('duplicated_lines_density', 'N/A')).replace('.', '', 1).isdigit() else metrics.get('new_duplicated_lines_density', metrics.get('duplicated_lines_density', 'N/A')) + '%'} |
 | **New Violations** | {metrics.get('new_violations', 'N/A')} |
 | **New Code Smells** | {metrics.get('new_code_smells', 'N/A')} |
 | **New Bugs** | {metrics.get('new_bugs', 'N/A')} |
@@ -223,7 +223,7 @@ def create_comment_body(status, commit_sha, branch_name, target_branch, sonar_ou
 | **Reliability Rating** | {convert_rating_to_letter(metrics.get('reliability_rating', 'N/A'))} |
 | **New Security Rating** | {convert_rating_to_letter(metrics.get('new_security_rating', 'N/A'))} |
 
-### �📋 Detailed Results
+### 📋 Detailed Results
 <details>
 <summary>Click to view SonarQube output</summary>
 

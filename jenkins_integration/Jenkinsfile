@@ -2,12 +2,8 @@
 @Library('gsdk-shared-lib@master')
 
 def commit_sha = ""
-def run_number = ""
 def pr_number = ""
-def bypass_send_results_gh = ""
-pipeline
 {
-    agent { node { label 'Build-Farm-Large' } }
     options { buildDiscarder(logRotator(artifactNumToKeepStr: '10')) }
     stages {
         stage('Initialize') {
@@ -48,7 +44,7 @@ pipeline
                                 env.CHANGE_ID,
                                 env.CHANGE_BRANCH,
                                 env.CHANGE_TARGET,
-                                null  // sonar_token will be fetched from credentials
+                                null  // sonar_token will be fetched from Jenkins credentials using the credentials ID defined in jenkinsFunctions.groovy (see 'withCredentials' usage for details)
                             )
                             echo "✅ Posted SonarQube results to GitHub PR #${env.CHANGE_ID}"
                         } else {
@@ -56,6 +52,7 @@ pipeline
                         }
                     } catch (Exception githubEx) {
                         echo "❌ Failed to post to GitHub PR: ${githubEx.getMessage()}"
+                        githubEx.printStackTrace()
                     }
                 }
             }

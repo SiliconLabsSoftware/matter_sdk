@@ -8,6 +8,9 @@ def send_sonar_results_to_github(commit_sha, status, sonar_output, pr_number, br
     ]) {
         // Use passed token or get from credentials
         def actualSonarToken = sonar_token ?: SONAR_SECRET
+        if (actualSonarToken == null || actualSonarToken.toString().trim().isEmpty()) {
+            error "SonarQube token is missing. Please provide a valid token."
+        }
         // Write sonar output to a temporary file to avoid "Argument list too long" error
         def tempFile = "${env.WORKSPACE}/sonar_output_${BUILD_NUMBER}.txt"
         writeFile file: tempFile, text: sonar_output
@@ -39,6 +42,11 @@ def send_sonar_results_to_github(commit_sha, status, sonar_output, pr_number, br
                         --sonar_token "\${SONAR_TOKEN}" \\
                         --project_key "github_matter_sdk"
                 """
+            try {
+                sh "rm -f '${tempFile}'"
+                echo "Temporary file '${tempFile}' removed successfully."
+            } catch (Exception e) {
+                echo "Warning: Failed to remove temporary file '${tempFile}': ${e.getMessage()}"
             }
         } finally {
             // Clean up temporary file
@@ -95,8 +103,9 @@ def publishSonarAnalysis() {
 
             // Capture the sonar-scanner output with error handling
             def sonarOutput = ""
-            def qualityGateResult = "FAIL"
-            def qualityGateStatus = "FAILED"
+                def scannerCmd = ['sonar-scanner'] + sonarqubeParams
+                sonarOutput = sh(script: scannerCmd.collect { "\"${it}\"" }.join(' '), returnStdout: true).trim()
+                echo "SonarQube Scanner Output:\n${sonarOutput}"
             def commit_sha = env.GIT_COMMIT ?: "unknown"
 
             try {
