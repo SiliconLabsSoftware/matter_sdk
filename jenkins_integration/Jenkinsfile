@@ -27,7 +27,7 @@ pipeline
                     def sonarCommitSha = ""
 
                     withDockerContainer(image: 'sonarsource/sonar-scanner-cli:latest') {
-                        def sonarResult = pipelineFunctions.publishSonarAnalysis(false)
+                        def sonarResult = pipelineFunctions.publishSonarAnalysis()
 
                         // Extract results for GitHub posting outside Docker
                         staticAnalysisStatus = sonarResult.status

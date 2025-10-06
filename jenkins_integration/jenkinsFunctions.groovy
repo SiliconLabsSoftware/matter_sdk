@@ -51,7 +51,7 @@ def send_sonar_results_to_github(commit_sha, status, sonar_output, pr_number, br
 /**
  * Publishes static analysis results to SonarQube.
  */
-def publishSonarAnalysis(postToGitHub = false) {
+def publishSonarAnalysis() {
 
         // Use the SonarQube environment defined in Jenkins
         withSonarQubeEnv('Silabs SonarQube') {
@@ -77,8 +77,8 @@ def publishSonarAnalysis(postToGitHub = false) {
                 "-Dsonar.qualitygate.wait=true",
                 "-Dsonar.cfamily.threads=32",
                 "-Dsonar.sourceEncoding=UTF-8",
-                "-Dsonar.sources=examples/closure-app",
-                "-Dsonar.inclusions=examples/closure-app/**/*.c,examples/closure-app/**/*.h,examples/closure-app/**/*.cpp,examples/closure-app/**/*.hpp",
+                "-Dsonar.sources=.",
+                "-Dsonar.inclusions=**/*.c,**/*.h,**/*.cpp,**/*.hpp",
                 "-Dsonar.exclusions=third_party/**"
             ]
 

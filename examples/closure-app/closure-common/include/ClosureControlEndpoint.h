@@ -191,13 +191,6 @@ private:
      * @return CurrentPositionEnum The corresponding CurrentPositionEnum value.
      */
     CurrentPositionEnum MapTargetPositionToCurrentPositioning(TargetPositionEnum value);
-    
-    /**
-     * @brief Dummy function to intentionally trigger SonarQube static analysis violations.
-     * 
-     * This function contains various code quality issues for testing purposes.
-     */
-    void DummyFunctionWithViolations();
 };
 
 } // namespace ClosureControl
