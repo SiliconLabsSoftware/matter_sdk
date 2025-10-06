@@ -1,28 +1,45 @@
 /**
  * Send SonarQube results to GitHub PR using Python script
  */
-def send_sonar_results_to_github(commit_sha, result, status, sonar_output, pr_number, branch_name, target_branch) {
+def send_sonar_results_to_github(commit_sha, status, sonar_output, pr_number, branch_name, target_branch, sonar_token = null) {
     withCredentials([
-        usernamePassword(credentialsId: 'Matter-Extension-GitHub', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')
+        usernamePassword(credentialsId: 'Matter-Extension-GitHub', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN'),
+        string(credentialsId: 'sonarqube_token', variable: 'SONAR_SECRET')
     ]) {
+        // Use passed token or get from credentials
+        def actualSonarToken = sonar_token ?: SONAR_SECRET
         // Write sonar output to a temporary file to avoid "Argument list too long" error
         def tempFile = "${env.WORKSPACE}/sonar_output_${BUILD_NUMBER}.txt"
         writeFile file: tempFile, text: sonar_output
         
         try {
-            sh """
-                python3 -u jenkins_integration/github/send_sonar_results_to_github.py \\
-                    --github_token \${GITHUB_ACCESS_TOKEN} \\
-                    --repo_owner "SiliconLabsSoftware" \\
-                    --repo_name "matter_sdk" \\
-                    --pr_number ${pr_number} \\
-                    --commit_sha ${commit_sha} \\
-                    --result ${result} \\
-                    --status ${status} \\
-                    --branch_name "${branch_name}" \\
-                    --target_branch "${target_branch}" \\
-                    --sonar_output_file "${tempFile}"
-            """
+            // Get SonarQube server URL with fallbacks
+            def sonarHost = env.SONAR_HOST_URL ?: env.SONAR_SERVER_URL ?: "https://sonarqube.silabs.net"
+            
+            echo "Using SonarQube host: ${sonarHost}"
+            echo "Available SonarQube environment variables:"
+            echo "SONAR_HOST_URL: ${env.SONAR_HOST_URL}"
+            echo "SONAR_SERVER_URL: ${env.SONAR_SERVER_URL}"
+            echo "Sonar token available: ${actualSonarToken != null && !actualSonarToken.isEmpty()}"
+            
+            // Use environment variable to avoid Groovy string interpolation security warning
+            withEnv(["SONAR_TOKEN=${actualSonarToken}", "SONAR_OUTPUT_FILE=${tempFile}"]) {
+                sh """
+                    python3 -u jenkins_integration/github/send_sonar_results_to_github.py \\
+                        --github_token "\${GITHUB_ACCESS_TOKEN}" \\
+                        --repo_owner "SiliconLabsSoftware" \\
+                        --repo_name "matter_sdk" \\
+                        --pr_number ${pr_number} \\
+                        --commit_sha ${commit_sha} \\
+                        --status ${status} \\
+                        --branch_name "${branch_name}" \\
+                        --target_branch "${target_branch}" \\
+                        --sonar_output_file "\${SONAR_OUTPUT_FILE}" \\
+                        --sonar_url "${sonarHost}" \\
+                        --sonar_token "\${SONAR_TOKEN}" \\
+                        --project_key "github_matter_sdk"
+                """
+            }
         } finally {
             // Clean up temporary file
             sh "rm -f '${tempFile}'"
@@ -34,7 +51,7 @@ def send_sonar_results_to_github(commit_sha, result, status, sonar_output, pr_nu
 /**
  * Publishes static analysis results to SonarQube.
  */
-def publishSonarAnalysis() {
+def publishSonarAnalysis(postToGitHub = false) {
 
         // Use the SonarQube environment defined in Jenkins
         withSonarQubeEnv('Silabs SonarQube') {
@@ -112,9 +129,8 @@ def publishSonarAnalysis() {
             }
 
             echo "Static Analysis Quality Gate Status: ${qualityGateStatus}"
-            echo "Static Analysis Result: ${qualityGateResult}"
 
-            return [status: qualityGateStatus, result: qualityGateResult, output: sonarOutput, commit_sha: commit_sha]
+            return [status: qualityGateStatus, output: sonarOutput, commit_sha: commit_sha]
         }
     }
 }

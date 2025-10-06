@@ -485,3 +485,58 @@ void ClosureControlEndpoint::OnPanelMotionActionComplete()
     mLogic.SetCountdownTimeFromDelegate(0);
     mLogic.GenerateMovementCompletedEvent();
 }
+
+// Dummy function to intentionally trigger SonarQube static analysis violations
+void ClosureControlEndpoint::DummyFunctionWithViolations()
+{
+    // Code smell: Unused variable
+    int unusedVariable = 42;
+    
+    // Code smell: Magic number
+    int magicNumber = 999;
+    
+    // Duplicated code block 1
+    int duplicatedCode1 = 1;
+    duplicatedCode1 += 10;
+    duplicatedCode1 *= 2;
+    duplicatedCode1 -= 5;
+    
+    // Duplicated code block 2 (identical to block 1)
+    int duplicatedCode2 = 1;
+    duplicatedCode2 += 10;
+    duplicatedCode2 *= 2;
+    duplicatedCode2 -= 5;
+    
+    // Potential bug: Null pointer dereference
+    char* nullPtr = nullptr;
+    if (magicNumber > 500)
+    {
+        // This could cause a segmentation fault
+        *nullPtr = 'x';
+    }
+    
+    // Security vulnerability: Buffer overflow potential
+    char buffer[10];
+    for (int i = 0; i <= 20; i++)  // Writing beyond buffer bounds
+    {
+        buffer[i] = 'A';
+    }
+    
+    // Code smell: Complex conditional
+    if (magicNumber > 100 && magicNumber < 500 && duplicatedCode1 != duplicatedCode2 && 
+        buffer[0] != 'B' && nullPtr == nullptr && unusedVariable > 0)
+    {
+        // Do nothing - empty if block
+    }
+    
+    // Security hotspot: Hardcoded password
+    const char* hardcodedPassword = "admin123";
+    
+    // Code smell: Dead code
+    if (false)
+    {
+        // This code will never be executed
+        int deadCode = hardcodedPassword[0];
+        deadCode++;
+    }
+}

@@ -22,39 +22,37 @@ pipeline
             steps {
                 script {
                     // Declare variables outside the Docker container block
-                    def staticAnalysisResult = ""
                     def staticAnalysisStatus = ""
                     def staticAnalysisOutput = ""
                     def sonarCommitSha = ""
 
                     withDockerContainer(image: 'sonarsource/sonar-scanner-cli:latest') {
-                        def sonarResult = pipelineFunctions.publishSonarAnalysis()
+                        def sonarResult = pipelineFunctions.publishSonarAnalysis(false)
 
-                        // Extract results for GitHub reporting
-                        staticAnalysisResult = sonarResult.result
+                        // Extract results for GitHub posting outside Docker
                         staticAnalysisStatus = sonarResult.status
                         staticAnalysisOutput = sonarResult.output
                         sonarCommitSha = sonarResult.commit_sha
 
-                        echo "Static Analysis Result: ${staticAnalysisResult}"
                         echo "Static Analysis Status: ${staticAnalysisStatus}"
                         echo "Commit SHA from SonarQube: ${sonarCommitSha}"
                     }
-                    // Send results to GitHub PR only
+                    
+                    // Post to GitHub outside of Docker container
                     try {
                         if (env.CHANGE_ID) {
                             pipelineFunctions.send_sonar_results_to_github(
                                 sonarCommitSha,
-                                staticAnalysisResult,
                                 staticAnalysisStatus,
                                 staticAnalysisOutput,
                                 env.CHANGE_ID,
                                 env.CHANGE_BRANCH,
-                                env.CHANGE_TARGET
+                                env.CHANGE_TARGET,
+                                null  // sonar_token will be fetched from credentials
                             )
                             echo "✅ Posted SonarQube results to GitHub PR #${env.CHANGE_ID}"
                         } else {
-                            echo "ℹ️  Skipping GitHub PR comment (not a PR or bypass enabled)"
+                            echo "ℹ️  Skipping GitHub PR comment (not a PR)"
                         }
                     } catch (Exception githubEx) {
                         echo "❌ Failed to post to GitHub PR: ${githubEx.getMessage()}"
