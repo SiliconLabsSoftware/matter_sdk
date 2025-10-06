@@ -39,9 +39,8 @@
 #include "stack/include/zigbee-security-manager.h" // Install code
 #include "zll-commissioning.h"
 
-#include "LightingManager.h"
-
 #include "AppConfig.h"
+#include "sl_cmp_config.h"
 
 #include "ZigbeeCallbacks.h"
 
@@ -224,7 +223,7 @@ extern "C" void finding_and_binding_event_handler(sl_zigbee_af_event_t * event)
     {
         sl_zigbee_af_event_set_inactive(&finding_and_binding_event);
 
-        SILABS_LOG(" [ZB] Find and bind target start: 0x%X", sl_zigbee_af_find_and_bind_target_start(LIGHT_ENDPOINT));
+        SILABS_LOG(" [ZB] Find and bind target start: 0x%X", sl_zigbee_af_find_and_bind_target_start(SL_CMP_ENDPOINT));
     }
 }
 

@@ -69,6 +69,11 @@
 // <i> including the arguments.
 #define SL_MATTER_CMP_INSTALL_CODE_EUID64 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 
+// <o SL_CMP_ENDPOINT> Enpoint where CMP features are enables
+// <i> Default: 0
+// <i> This the endpoint where the mapping between Matter-Zigbee data models will be performed
+#define SL_CMP_ENDPOINT 1
+
 #endif // SL_CMP_CONFIG_H
 
 // <<< end of configuration section >>>
