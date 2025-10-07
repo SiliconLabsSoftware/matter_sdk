@@ -834,8 +834,9 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
 
         vTaskDelay(pdMS_TO_TICKS(10));
 
-        if (task->state == eTaskStateTerminated)
+        if (task->state == eDeleted && task->handle == NULL)
         {
+            // This is a historically tracked deleted task
             ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4s | %-9s | %-6s | %-12s | %-6s | %-10lu |", 
                             task->name,
                             pcTaskStateToString(task->state),
