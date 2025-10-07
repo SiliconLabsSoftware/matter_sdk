@@ -199,6 +199,7 @@ sl_status_t BackgroundScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t 
 
     uint32_t nbreResults = result->scan_count;
     chip::ByteSpan requestedSsidSpan(wfx_rsi.scan_ssid, wfx_rsi.scan_ssid_length);
+    ChipLogProgress(DeviceLayer, "Scan count: %lu", static_cast<unsigned long>(nbreResults));
 
     for (uint32_t i = 0; i < nbreResults; i++)
     {
@@ -210,6 +211,8 @@ sl_status_t BackgroundScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t 
 
         // Copy the scanned SSID to the current scan ssid buffer that will be forwarded to the callback
         chip::MutableByteSpan currentScanSsid(currentScanResult.ssid, WFX_MAX_SSID_LENGTH);
+        // ChipLogByteSpan(DeviceLayer, ByteSpan(currentScanSsid.data(), currentScanSsid.size()));
+        ChipLogProgress(DeviceLayer, "  SSID: %.*s", static_cast<int>(scannedSsidSpan.size()), scannedSsidSpan.data());
         chip::CopySpanToMutableSpan(scannedSsidSpan, currentScanSsid);
         currentScanResult.ssid_length = currentScanSsid.size();
 
@@ -634,6 +637,7 @@ void WifiInterfaceImpl::ProcessEvent(WiseconnectWifiInterface::WifiPlatformEvent
 
             sl_wifi_set_scan_callback(BackgroundScanCallback, nullptr);
             wfx_rsi.dev_state.Set(WifiInterface::WifiState::kScanStarted);
+            
 
             // If an ssid was not provided, we need to call the scan API with nullptr to scan all Wi-Fi networks
             sl_wifi_ssid_t ssid      = { 0 };
@@ -644,9 +648,17 @@ void WifiInterfaceImpl::ProcessEvent(WiseconnectWifiInterface::WifiPlatformEvent
                 chip::ByteSpan requestedSsid(wfx_rsi.scan_ssid, wfx_rsi.scan_ssid_length);
                 chip::MutableByteSpan ouputSsid(ssid.value, sizeof(ssid.value));
                 chip::CopySpanToMutableSpan(requestedSsid, ouputSsid);
+                ChipLogProgress(DeviceLayer, "scan_ssid: %.*s", wfx_rsi.scan_ssid_length, wfx_rsi.scan_ssid);
+                for(size_t i=0;i<wfx_rsi.credentials.passkeyLength;i++)
+                {
+                    ChipLogProgress(DeviceLayer, "%02x ", wfx_rsi.credentials.passkey[i]);
+                }
 
                 ssid.length = ouputSsid.size();
                 ssidPtr     = &ssid;
+            }
+            else {
+                ChipLogProgress(DeviceLayer, "scan_ssid: nullptr");
             }
 
             osSemaphoreAcquire(sScanInProgressSemaphore, osWaitForever);

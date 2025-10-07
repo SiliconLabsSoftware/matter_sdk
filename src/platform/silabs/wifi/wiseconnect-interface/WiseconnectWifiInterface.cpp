@@ -66,6 +66,7 @@ CHIP_ERROR WiseconnectWifiInterface::StartNetworkScan(chip::ByteSpan ssid, ScanC
 
     if (ssid.empty()) // Scan all networks
     {
+        ChipLogProgress(DeviceLayer, "****SSID Empty");
         wfx_rsi.scan_ssid_length = 0;
         wfx_rsi.scan_ssid        = nullptr;
     }
@@ -73,13 +74,14 @@ CHIP_ERROR WiseconnectWifiInterface::StartNetworkScan(chip::ByteSpan ssid, ScanC
     {
         wfx_rsi.scan_ssid_length = ssid.size();
         wfx_rsi.scan_ssid        = reinterpret_cast<uint8_t *>(chip::Platform::MemoryAlloc(wfx_rsi.scan_ssid_length));
+        ChipLogProgress(DeviceLayer, "****SSID Allocated: %.*s", wfx_rsi.scan_ssid_length, wfx_rsi.scan_ssid);
         VerifyOrReturnError(wfx_rsi.scan_ssid != nullptr, CHIP_ERROR_NO_MEMORY);
 
         chip::MutableByteSpan scanSsidSpan(wfx_rsi.scan_ssid, wfx_rsi.scan_ssid_length);
         chip::CopySpanToMutableSpan(ssid, scanSsidSpan);
     }
     wfx_rsi.scan_cb = callback;
-
+    ChipLogProgress(DeviceLayer, "Starting WiFi Scan");
     // TODO: We should be calling the start function directly instead of doing it asynchronously
     WifiPlatformEvent event = WifiPlatformEvent::kScan;
     PostWifiPlatformEvent(event);

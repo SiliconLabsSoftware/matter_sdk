@@ -273,6 +273,7 @@ uint32_t SlWiFiDriver::GetSupportedWiFiBandsMask() const
 bool SlWiFiDriver::StartScanWiFiNetworks(ByteSpan ssid)
 {
     ChipLogProgress(DeviceLayer, "Start Scan WiFi Networks");
+    ChipLogProgress(DeviceLayer, "SSID: %.*s", ssid.size(), ssid.data());
     CHIP_ERROR err = WifiInterface::GetInstance().StartNetworkScan(ssid, OnScanWiFiNetworkDone);
 
     if (err != CHIP_NO_ERROR)

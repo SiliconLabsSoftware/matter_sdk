@@ -758,6 +758,11 @@ void GenericConfigurationManagerImpl<ConfigClass>::LogDeviceConfig()
         {
             setupPasscode = 0;
         }
+        else
+        {
+            ChipLogProgress(DeviceLayer, "Error");
+            setupPasscode = 0;
+        }
         ChipLogProgress(DeviceLayer, "  Setup Pin Code (0 for UNKNOWN/ERROR): %" PRIu32 "", setupPasscode);
     }
 

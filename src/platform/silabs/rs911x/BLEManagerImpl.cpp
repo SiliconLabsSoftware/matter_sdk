@@ -34,6 +34,7 @@
 #include <platform/CommissionableDataProvider.h>
 #include <platform/DeviceInstanceInfoProvider.h>
 #include <platform/internal/BLEManager.h>
+#include "silabs_utils.h"
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
 #include <setup_payload/AdditionalDataPayloadGenerator.h>
@@ -183,7 +184,7 @@ void rsi_ble_add_matter_service(void)
     SilabsBleWrapper::rsi_ble_add_char_val_att(
         new_serv_resp.serv_handler, new_serv_resp.start_handle + RSI_BLE_CHAR_C3_MEASUREMENT_HANDLE_LOC, custom_characteristic_C3,
         RSI_BLE_ATT_PROPERTY_READ, // Set read
-        data, sizeof(data), ATT_REC_IN_HOST);
+        data, sizeof(data), ATT_REC_MAINTAIN_IN_HOST);
 #endif // CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
 }
 
@@ -218,10 +219,18 @@ void BLEManagerImpl::ProcessEvent(SilabsBleWrapper::BleEvent_t inEvent)
     break;
     case SilabsBleWrapper::BleEventType::RSI_BLE_EVENT_GATT_RD: {
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
-        if (inEvent.eventData.rsi_ble_read_req->type == 0)
-        {
-            BLEMgrImpl().HandleC3ReadRequest(inEvent.eventData);
-        }
+        ChipLogProgress(DeviceLayer,"Inside RSI_BLE_EVENT_GATT_RD: ");
+        ChipLogProgress(DeviceLayer,"inEvent.eventData.rsi_ble_read_req->type : %d", inEvent.eventData.rsi_ble_read_req->type);
+        // ChipLogProgress(DeviceLayer,"Device Address: ");
+        // for(int i=0;i<6;i++)
+        // {
+        //     ChipLogProgress(DeviceLayer,"%lx", inEvent.eventData.rsi_ble_read_req->dev_addr[i]);
+        // }
+        ChipLogProgress(DeviceLayer,"Evt handle : %d", inEvent.eventData.rsi_ble_read_req->handle);
+        ChipLogProgress(DeviceLayer,"Evt offset : %d", inEvent.eventData.rsi_ble_read_req->offset);
+        ChipLogProgress(DeviceLayer,"----------------------------");
+        BLEMgrImpl().HandleC3ReadRequest(inEvent.eventData);
+
 #endif // CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     }
     break;
@@ -873,6 +882,10 @@ void BLEManagerImpl::HandleConnectionCloseEvent(const SilabsBleWrapper::sl_wfx_m
 void BLEManagerImpl::HandleWriteEvent(const SilabsBleWrapper::sl_wfx_msg_t & evt)
 {
     ChipLogProgress(DeviceLayer, "Char Write Req, packet type %d", evt.rsi_ble_write.pkt_type);
+     
+    ChipLogProgress(DeviceLayer, "evt.rsi_ble_write.handle[0]: %d,  rsi_ble_gatt_server_client_config_hndl: %d",evt.rsi_ble_write.handle[0], 
+        (uint8_t) rsi_ble_gatt_server_client_config_hndl);
+
 
     if (evt.rsi_ble_write.handle[0] == (uint8_t) rsi_ble_gatt_server_client_config_hndl) // TODO:: compare the handle exactly
     {
@@ -1037,8 +1050,10 @@ CHIP_ERROR BLEManagerImpl::EncodeAdditionalDataTlv()
     CHIP_ERROR err = CHIP_NO_ERROR;
     BitFlags<AdditionalDataFields> additionalDataFields;
     AdditionalDataPayloadGeneratorParams additionalDataPayloadParams;
+    ChipLogProgress(DeviceLayer, "EncodeAdditionalDataTlv");
 
 #if CHIP_ENABLE_ROTATING_DEVICE_ID && defined(CHIP_DEVICE_CONFIG_ROTATING_DEVICE_ID_UNIQUE_ID)
+    ChipLogProgress(DeviceLayer, "Getting Rotating Device ID");
     uint8_t rotatingDeviceIdUniqueId[ConfigurationManager::kRotatingDeviceIDUniqueIDLength] = {};
     MutableByteSpan rotatingDeviceIdUniqueIdSpan(rotatingDeviceIdUniqueId);
 
@@ -1061,16 +1076,41 @@ CHIP_ERROR BLEManagerImpl::EncodeAdditionalDataTlv()
     {
         ChipLogError(DeviceLayer, "Failed to generate TLV encoded Additional Data: %" CHIP_ERROR_FORMAT, err.Format());
     }
-    return err;
 
+    ChipLogProgress(DeviceLayer, "c3AdditionalDataBufferHandle->Length : %d", sInstance.c3AdditionalDataBufferHandle->DataLength() );
+    ChipLogProgress(DeviceLayer, "c3AdditionalDataBufferHandle->data : ");
+    ChipLogByteSpan(DeviceLayer, ByteSpan(sInstance.c3AdditionalDataBufferHandle->Start(), sInstance.c3AdditionalDataBufferHandle->DataLength()));
     return CHIP_NO_ERROR;
 }
 
 void BLEManagerImpl::HandleC3ReadRequest(const SilabsBleWrapper::sl_wfx_msg_t & evt)
 {
-    sl_status_t ret = rsi_ble_gatt_read_response(evt.rsi_ble_read_req->dev_addr, GATT_READ_RESP, evt.rsi_ble_read_req->handle,
-                                                 GATT_READ_ZERO_OFFSET, sInstance.c3AdditionalDataBufferHandle->DataLength(),
-                                                 sInstance.c3AdditionalDataBufferHandle->Start());
+    ChipLogProgress(DeviceLayer, "Inside HandleC3ReadRequest");
+    ChipLogProgress(DeviceLayer, "c3AdditionalDataBufferHandle->Length : %d", sInstance.c3AdditionalDataBufferHandle->DataLength() );
+    // ChipLogProgress(DeviceLayer,"c3AdditionalDataBufferHandle->data : ");
+    // ChipLogByteSpan(DeviceLayer, ByteSpan(sInstance.c3AdditionalDataBufferHandle->Start(), sInstance.c3AdditionalDataBufferHandle->DataLength()));
+    sl_status_t ret;
+    if (evt.rsi_ble_read_req->type == 0)
+    {
+        uint8_t * ptr = sInstance.c3AdditionalDataBufferHandle->Start();
+        ret = rsi_ble_gatt_read_response(evt.rsi_ble_read_req->dev_addr, GATT_READ_RESP, evt.rsi_ble_read_req->handle,
+                                         GATT_READ_ZERO_OFFSET, 22,
+                                         ptr);
+        ChipLogByteSpan(DeviceLayer, ByteSpan(ptr, 22));
+    }
+    else
+    {
+        uint8_t * ptr = sInstance.c3AdditionalDataBufferHandle->Start() + evt.rsi_ble_read_req->offset;
+        ret = rsi_ble_gatt_read_response(evt.rsi_ble_read_req->dev_addr, 1, evt.rsi_ble_read_req->handle,
+                                         evt.rsi_ble_read_req->offset,sInstance.c3AdditionalDataBufferHandle->DataLength() - evt.rsi_ble_read_req->offset,
+                                         ptr);
+    }
+    // rsi_ble_gatt_read_response(evt.rsi_ble_read_req->dev_addr, GATT_READ_RESP, evt.rsi_ble_read_req->handle,
+    //                                              GATT_READ_ZERO_OFFSET, sInstance.c3AdditionalDataBufferHandle->DataLength(),
+    //                                              sInstance.c3AdditionalDataBufferHandle->Start());
+    // uint8_t * ptr = sInstance.c3AdditionalDataBufferHandle->Start() + evt.rsi_ble_read_req->offset;
+    // ChipLogByteSpan(DeviceLayer, ByteSpan(ptr, sInstance.c3AdditionalDataBufferHandle->DataLength() - evt.rsi_ble_read_req->offset));
+    ChipLogProgress(DeviceLayer,"Return value of read response : %ld", ret);
     if (ret != SL_STATUS_OK)
     {
         ChipLogDetail(DeviceLayer, "Failed to send read response, err:%ld", ret);
