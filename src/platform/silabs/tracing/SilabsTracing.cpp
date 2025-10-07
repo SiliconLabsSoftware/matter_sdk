@@ -32,6 +32,7 @@ extern "C" {
 extern "C" {
 #include "FreeRTOS.h"
 #include "task.h"
+#include "FreeRTOSRuntimeStats.h"
 }
 #endif
 
@@ -788,74 +789,80 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
 {
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
 
-    UBaseType_t uxArraySize = uxTaskGetNumberOfTasks();
-
-    // pvPortMalloc and pvPortFree are FreeRTOS memory allocation functions and use FreeRTOS heap.
-    TaskStatus_t * pxTaskStatusArray;
-    pxTaskStatusArray = (TaskStatus_t *) pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));
-    VerifyOrReturnError(pxTaskStatusArray != NULL, CHIP_ERROR_NO_MEMORY, vPortFree(pxTaskStatusArray));
-
-    uint32_t ulTotalRunTime;
-
-    uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxArraySize, &ulTotalRunTime);
-
-    if (uxArraySize == 0)
+    const uint32_t maxTasks = 64; // Should be enough for most applications
+    TaskInfo taskInfoArray[maxTasks];
+    SystemTaskStats systemStats;
+    
+    uint32_t taskCount = ulGetAllTaskInfo(taskInfoArray, maxTasks, &systemStats);
+    
+    if (taskCount == 0)
     {
-        ChipLogError(DeviceLayer, "Failed to get task system state");
-        vPortFree(pxTaskStatusArray);
+        ChipLogError(DeviceLayer, "Failed to get task information");
         return CHIP_ERROR_INTERNAL;
     }
 
-    if (ulTotalRunTime <= 0)
-    {
-        ChipLogProgress(DeviceLayer, "Runtime statistics not available (total runtime is 0)");
-        vPortFree(pxTaskStatusArray);
-        return CHIP_ERROR_UNINITIALIZED;
-    }
+    // Print system-wide statistics
+    ChipLogProgress(DeviceLayer, "=== Task Statistics ===");
+    ChipLogProgress(DeviceLayer, "Active tasks: %lu | Terminated tasks: %lu | Total tasks: %lu", 
+                    (unsigned long)systemStats.activeTaskCount, 
+                    (unsigned long)systemStats.terminatedTaskCount,
+                    (unsigned long)systemStats.totalTaskCount);
+    ChipLogProgress(DeviceLayer, "Total Runtime: %lu ms", 
+                    (unsigned long)systemStats.totalRunTime);
+    ChipLogProgress(DeviceLayer, "System Preemption Ratio: %lu.%02lu%% (%lu/%lu switches)", 
+                    (unsigned long)(systemStats.systemPreemptionRatio / 100),
+                    (unsigned long)(systemStats.systemPreemptionRatio % 100),
+                    (unsigned long)systemStats.totalPreemptionCount,
+                    (unsigned long)systemStats.totalSwitchOutCount);
 
-    ChipLogProgress(DeviceLayer, "=== FreeRTOS Task Statistics ===");
-    ChipLogProgress(DeviceLayer, "Number of tasks: %lu", (unsigned long) uxArraySize);
-    ChipLogProgress(DeviceLayer, "Total runtime: %lu ticks", (unsigned long) ulTotalRunTime);
-    ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4s | %-9s | %-6s |", "Task Name", "State", "Prio", "Stack HWM", "CPU %");
-    ChipLogProgress(DeviceLayer, "|%-22s|%-10s|%-6s|%-11s|%-8s|", "----------------------", "----------", "------", "-----------",
-                    "--------");
+    vTaskDelay(pdMS_TO_TICKS(100));
 
-    for (UBaseType_t i = 0; i < uxArraySize; i++)
+    // Print table header
+    ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4s | %-9s | %-6s | %-12s | %-6s | %-10s |", 
+                    "Task Name", "State", "Prio", "Stack HWM", "CPU %", "Preempt", "Pre. %", "Last Time");
+    ChipLogProgress(DeviceLayer, "|%-24s|%-12s|%-6s|%-11s|%-8s|%-14s|%-8s|%-12s|", 
+                    "------------------------", "------------", "------", "-----------", 
+                    "--------", "--------------", "--------", "------------");
+
+    // Print task information
+    for (uint32_t i = 0; i < taskCount; i++)
     {
-        const char * taskState;
-        switch (pxTaskStatusArray[i].eCurrentState)
+        const TaskInfo* task = &taskInfoArray[i];
+        
+        if (!task->isValid)
+            continue;
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+
+        if (task->state == eTaskStateTerminated)
         {
-        case eRunning:
-            taskState = "Running";
-            break;
-        case eReady:
-            taskState = "Ready";
-            break;
-        case eBlocked:
-            taskState = "Blocked";
-            break;
-        case eSuspended:
-            taskState = "Suspend";
-            break;
-        case eDeleted:
-            taskState = "Deleted";
-            break;
-        default:
-            taskState = "Unknown";
-            break;
+            ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4s | %-9s | %-6s | %-12s | %-6s | %-10lu |", 
+                            task->name,
+                            pcTaskStateToString(task->state),
+                            "N/A",
+                            "N/A", 
+                            "N/A",
+                            "N/A",
+                            "N/A",
+                            (unsigned long)task->lastExecutionTime);
         }
-
-        // CPU usage percentage
-        uint32_t cpuPercent       = (static_cast<uint64_t>(pxTaskStatusArray[i].ulRunTimeCounter) * 100) / ulTotalRunTime;
-        uint32_t cpuPercentTenths = ((static_cast<uint64_t>(pxTaskStatusArray[i].ulRunTimeCounter) * 1000) / ulTotalRunTime) % 10;
-
-        ChipLogProgress(DeviceLayer, "| %-20s | %-8s | %-4lu | %-9lu | %3lu.%lu%% |", pxTaskStatusArray[i].pcTaskName, taskState,
-                        (unsigned long) pxTaskStatusArray[i].uxCurrentPriority,
-                        (unsigned long) pxTaskStatusArray[i].usStackHighWaterMark, (unsigned long) cpuPercent,
-                        (unsigned long) cpuPercentTenths);
+        else
+        {
+            ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4lu | %-9lu | %2lu.%02lu%% | %4lu/%-7lu |%3lu.%02lu%% | %-10lu |", 
+                            task->name,
+                            pcTaskStateToString(task->state),
+                            (unsigned long)task->priority,
+                            (unsigned long)task->stackHighWaterMark,
+                            (unsigned long)(task->cpuPercentage / 100),
+                            (unsigned long)(task->cpuPercentage % 100),
+                            (unsigned long)task->preemptionCount,
+                            (unsigned long)task->switchOutCount,
+                            (unsigned long)(task->preemptionPercentage / 100),
+                            (unsigned long)(task->preemptionPercentage % 100),
+                            (unsigned long)task->lastExecutionTime);
+        }
     }
 
-    vPortFree(pxTaskStatusArray);
     return CHIP_NO_ERROR;
 }
 

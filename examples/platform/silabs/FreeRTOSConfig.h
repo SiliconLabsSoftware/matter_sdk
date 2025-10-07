@@ -169,18 +169,20 @@ extern uint32_t SystemCoreClock;
 /* Main functions*/
 /* Run time stats gathering related definitions. */
 #if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS == 1
+
+#include "FreeRTOSRuntimeStats.c"
 #define configGENERATE_RUN_TIME_STATS (1)
 #define configUSE_STATS_FORMATTING_FUNCTIONS (1)
 
-/* Runtime statistics timer configuration. */
 extern uint32_t ulGetRunTimeCounterValue(void);
-extern void vConfigureTimerForRunTimeStats(void);
-extern void vIncrementRunTimeCounter(void);
-#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
+extern void vTaskSwitchedOut(void);
+extern void vTaskSwitchedIn(void);
+// Required for configGENERATE_RUN_TIME_STATS, but not used in this implementation.
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() {}
 #define portGET_RUN_TIME_COUNTER_VALUE() ulGetRunTimeCounterValue()
-
-/* Hook to call runtime counter increment from system tick */
-#define traceTASK_SWITCHED_IN() vIncrementRunTimeCounter()
+#define traceTASK_SWITCHED_IN() vTaskSwitchedIn()
+#define traceTASK_DELETE(xTask) vTaskDeleted(xTask)
+#define traceTASK_SWITCHED_OUT() vTaskSwitchedOut()
 #else
 #define configGENERATE_RUN_TIME_STATS (0)
 #endif // TRACING_RUNTIME_STATS
@@ -233,11 +235,12 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define configMAX_PRIORITIES (56)
 #define configMINIMAL_STACK_SIZE (320) /* Number of words to use for Idle and Timer stacks */
 
-#ifdef HEAP_MONITORING
+#if defined(HEAP_MONITORING) || (defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS == 1)
+// Required otherwise all 3 Bluetooth tasks get the same name in the stats
 #define configMAX_TASK_NAME_LEN (24)
 #else
 #define configMAX_TASK_NAME_LEN (10)
-#endif // HEAP_MONITORING
+#endif
 
 #define configUSE_16_BIT_TICKS (0)
 #define configIDLE_SHOULD_YIELD (1)
