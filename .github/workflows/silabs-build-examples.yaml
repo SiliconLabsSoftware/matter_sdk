@@ -143,3 +143,11 @@ jobs:
             example-app: "base-platform-app"
             output-directory: "./out/platform-app"
             build-type: "standard"
+
+    build-closure-app:
+        name: Build Closure-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "closure-app"
+            output-directory: "./out/closure-app"
+            build-type: "standard"
