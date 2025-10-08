@@ -178,7 +178,8 @@ extern uint32_t ulGetRunTimeCounterValue(void);
 extern void vTaskSwitchedOut(void);
 extern void vTaskSwitchedIn(void);
 // Required for configGENERATE_RUN_TIME_STATS, but not used in this implementation.
-#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() {}
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()                                                                                   \
+    {}
 #define portGET_RUN_TIME_COUNTER_VALUE() ulGetRunTimeCounterValue()
 #define traceTASK_SWITCHED_IN() vTaskSwitchedIn()
 #define traceTASK_DELETE(xTask) vTaskDeleted(xTask)
