@@ -17,8 +17,6 @@
 
 #pragma once
 
-// #include "FreeRTOSConfig.h"
-
 #if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
 
 #include "FreeRTOS.h"
@@ -33,35 +31,32 @@ typedef struct
     eTaskState state;
     UBaseType_t priority;
     UBaseType_t stackHighWaterMark;
-    uint32_t runTimeCounter;       // Total CPU time
-    uint32_t cpuPercentage;        // CPU usage percentage
-    uint32_t switchOutCount;       // Total times switched out
-    uint32_t preemptionCount;      // Times preempted (switched out while ready)
-    uint32_t preemptionPercentage; // Preemption percentage
-    uint32_t lastExecutionTime;    // Last execution time
+    uint32_t runTimeCounter; // Total CPU time in ms
+    uint32_t cpuPercentage;
+    uint32_t switchOutCount;  // Total times switched out
+    uint32_t preemptionCount; // Times preempted (switched out while ready)
+    uint32_t preemptionPercentage;
+    uint32_t lastExecutionTime; // in ms
 } TaskInfo;
-
-// System-wide task statistics
 typedef struct
 {
-    uint32_t totalRunTime;          // Total system run time in ms
-    uint32_t totalSwitchOutCount;   // Total task switches
-    uint32_t totalPreemptionCount;  // Total preemptions
-    uint32_t systemPreemptionRatio; // Overall preemption ratio
-    uint32_t activeTaskCount;       // Number of currently active tasks
-    uint32_t terminatedTaskCount;   // Number of deleted tasks we're tracking
-    uint32_t totalTaskCount;        // activeTaskCount + terminatedTaskCount
+    uint32_t totalRunTime; // Total system run time in ms
+    uint32_t totalSwitchOutCount;
+    uint32_t totalPreemptionCount;
+    uint32_t systemPreemptionRatio;
+    uint32_t activeTaskCount;
+    uint32_t terminatedTaskCount;
+    uint32_t totalTaskCount;
 } SystemTaskStats;
 
-// Internal task tracking structure
 typedef struct
 {
-    TaskHandle_t handle; // NULL for deleted tasks
+    TaskHandle_t handle;
     char name[configMAX_TASK_NAME_LEN];
     uint32_t switchOutCount;
     uint32_t preemptionCount;
     uint32_t lastSwitchOutTime;
-    bool isDeleted; // true if this task has been deleted
+    bool isDeleted;
 } TaskStats;
 
 /**
