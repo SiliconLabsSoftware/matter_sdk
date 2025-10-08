@@ -16,6 +16,12 @@
  ******************************************************************************/
 #pragma once
 
+// Only include if tracing is enabled.
+// Prevents from accidental inclusion when tracing is disabled, but runtime stats could be enabled.
+// Currently, un commenting this, breaks the builds that include Pigweed RPC. See MATTER-5582
+// #include <matter/tracing/build_config.h>
+// #if defined(MATTER_TRACING_ENABLED) && MATTER_TRACING_ENABLED == 1
+
 /**
  * @brief Centralized configuration for Silabs tracing functionality.
  */
@@ -32,7 +38,21 @@
  * Default: 0 (disabled)
  */
 #ifndef TRACING_RUNTIME_STATS
-#define TRACING_RUNTIME_STATS 0
+#define TRACING_RUNTIME_STATS 1
+#endif
+
+/**
+ * @brief Maximum number of tasks to track for runtime statistics.
+ * This defines the size of the internal tracking array for task statistics.
+ * The actual number of tracked tasks may be less than this value.
+ *
+ * For reference, as of October 2025, the Thread lighting app has 13 tasks.
+ * The default of 32 should be sufficient for most applications.
+ *
+ * Default: 32 tasks
+ */
+#ifndef TRACING_RUNTIME_STATS_MAX_TASKS
+#define TRACING_RUNTIME_STATS_MAX_TASKS 32
 #endif
 
 /**
@@ -47,3 +67,5 @@
 #ifndef SERIALIZED_TIME_TRACKERS_SIZE_BYTES
 #define SERIALIZED_TIME_TRACKERS_SIZE_BYTES 512
 #endif
+
+// #endif // MATTER_TRACING_ENABLED
