@@ -32,15 +32,14 @@
                 ]
             }
         ],
-        "base-platform-app":
-        [
-        {
-            "boards": ["BRD4187C"],
-            "arguments": [
-                "--docker",
-                "--lit-icd-internal-use-only"
-            ]
-        }
+        "base-platform-app": [
+            {
+                "boards": ["BRD4187C"],
+                "arguments": [
+                    "--docker",
+                    "--lit-icd-internal-use-only"
+                ]
+            }
         ]
     }
 }
