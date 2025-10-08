@@ -24,8 +24,10 @@
 #include "FanControlUI.h"
 #include "demo-ui-bitmaps.h"
 #include "dmd.h"
+#if DISPLAY_ENABLED
 #include "glib.h"
 #include "lcd.h"
+#endif // DISPLAY_ENABLED
 
 using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::FanControl;

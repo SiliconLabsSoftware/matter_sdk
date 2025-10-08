@@ -55,14 +55,14 @@ CHIP_ERROR FanControlManager::Init()
 
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     Attributes::SpeedMax::Get(GetEndPoint(), &mSpeedMax);
+    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
+    DataModel::Nullable<uint8_t> speedSettingNullable   = GetSpeedSetting();
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
-    uint8_t percentSettingCB                            = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
+    uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
     PercentSettingWriteCallback(percentSettingCB);
 
-    DataModel::Nullable<uint8_t> speedSettingNullable = GetSpeedSetting();
-    uint8_t speedSettingCB                            = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
+    uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
     SpeedSettingWriteCallback(speedSettingCB);
 
     return CHIP_NO_ERROR;
