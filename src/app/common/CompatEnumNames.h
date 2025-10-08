@@ -36,9 +36,11 @@ using OTADownloadProtocol  = DownloadProtocolEnum;
 using OTAQueryStatus       = StatusEnum;
 } // namespace OtaSoftwareUpdateProvider
 
+    /*
 namespace MediaPlayback {
 using MediaPlaybackStatusEnum = StatusEnum;
 }
+    */
 
 namespace OtaSoftwareUpdateRequestor {
 // https://github.com/project-chip/connectedhomeip/pull/29459 renamed these
@@ -48,13 +50,16 @@ using OTAChangeReasonEnum   = ChangeReasonEnum;
 using OTAUpdateStateEnum    = UpdateStateEnum;
 } // namespace OtaSoftwareUpdateRequestor
 
+    /* 
 namespace ContentLauncher {
 // https://github.com/project-chip/connectedhomeip/pull/30176 renamed these
 // enums to follow the spec names.
 using SupportedStreamingProtocol = SupportedProtocolsBitmap;
 using ContentLaunchStatusEnum    = StatusEnum;
 } // namespace ContentLauncher
+    */
 
+    /*
 namespace ApplicationLauncher {
 // https://github.com/project-chip/connectedhomeip/pull/30134 renamed this
 using ApplicationLauncherStatusEnum = StatusEnum;
@@ -75,6 +80,7 @@ namespace TargetNavigator {
 // https://github.com/project-chip/connectedhomeip/pull/30322 renamed this
 using TargetNavigatorStatusEnum = StatusEnum;
 } // namespace TargetNavigator
+    */
 
 namespace LevelControl {
 // https://github.com/project-chip/connectedhomeip/pull/30417 renamed/updated these
@@ -127,6 +133,7 @@ using SaturationMoveMode   = MoveModeEnum;
 using SaturationStepMode   = StepModeEnum;
 } // namespace ColorControl
 
+    /*
 namespace RefrigeratorAlarm {
 // https://github.com/project-chip/connectedhomeip/pull/31517 renamed this
 using AlarmMap = AlarmBitmap;
@@ -136,6 +143,10 @@ namespace DishwasherAlarm {
 // https://github.com/project-chip/connectedhomeip/pull/31517 renamed this
 using AlarmMap = AlarmBitmap;
 } // namespace DishwasherAlarm
+
+    */
+
+
 
 } // namespace Clusters
 } // namespace app

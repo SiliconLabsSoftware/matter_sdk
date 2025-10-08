@@ -3,7 +3,7 @@
 
 #pragma once
 
-{{#zcl_clusters}}
-#include <clusters/{{asUpperCamelCase label}}/EventIds.h>
-{{/zcl_clusters}}
+{{#all_user_clusters}}
+#include <clusters/{{asUpperCamelCase name}}/EventIds.h>
+{{/all_user_clusters}}
 

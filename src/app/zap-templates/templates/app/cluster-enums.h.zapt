@@ -5,9 +5,9 @@
 
 #include <clusters/shared/Enums.h>
 
-{{#zcl_clusters}}
+{{#all_user_clusters}}
 #include <clusters/{{asUpperCamelCase name}}/Enums.h>
-{{/zcl_clusters}}
+{{/all_user_clusters}}
 
 // Included at the end, so all our definitions above are available.
 #include <app/common/CompatEnumNames.h>

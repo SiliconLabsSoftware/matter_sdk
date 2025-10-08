@@ -6,12 +6,12 @@
 #include <clusters/shared/Attributes.h>
 #include <clusters/shared/Structs.h>
 
-{{#zcl_clusters}}
+{{#all_user_clusters}}
 #include <clusters/{{asUpperCamelCase name}}/Attributes.h>
 #include <clusters/{{asUpperCamelCase name}}/Commands.h>
 #include <clusters/{{asUpperCamelCase name}}/Events.h>
 #include <clusters/{{asUpperCamelCase name}}/Structs.h>
-{{/zcl_clusters}}
+{{/all_user_clusters}}
 
 #include <app/common/CompatEnumNames.h>
 

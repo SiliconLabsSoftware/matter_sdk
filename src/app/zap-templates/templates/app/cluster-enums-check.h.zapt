@@ -5,7 +5,7 @@
 
 #include <clusters/shared/EnumsCheck.h>
 
-{{#zcl_clusters}}
+{{#all_user_clusters}}
 #include <clusters/{{asUpperCamelCase name}}/EnumsCheck.h>
-{{/zcl_clusters}}
+{{/all_user_clusters}}
 

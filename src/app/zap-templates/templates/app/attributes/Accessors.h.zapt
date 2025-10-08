@@ -19,10 +19,10 @@ namespace app {
 
 namespace Clusters {
 
-{{#zcl_clusters}}
+{{#all_user_clusters}}
 {{#zcl_attributes_server}}
 {{#first}}
-namespace {{asUpperCamelCase parent.label}} {
+namespace {{asUpperCamelCase parent.name}} {
 namespace Attributes {
 
 {{/first}}
@@ -44,11 +44,11 @@ Protocols::InteractionModel::Status Set(EndpointId endpoint, {{zapTypeToEncodabl
 {{/unless}}
 {{#last}}
 } // namespace Attributes
-} // {{asUpperCamelCase parent.label}}
+} // {{asUpperCamelCase parent.name}}
 
 {{/last}}
 {{/zcl_attributes_server}}
-{{/zcl_clusters}}
+{{/all_user_clusters}}
 
 } // Clusters
 } // app
