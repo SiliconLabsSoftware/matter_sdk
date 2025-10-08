@@ -1,4 +1,4 @@
-name: SL Labeler
+name: Silabs Labeler
 
 on:
   pull_request:
@@ -43,7 +43,8 @@ jobs:
             const prefixMapping = {
               '[SL-ONLY]': 'sl-only',
               '[SL-TEMP]': 'sl-temp',
-              '[SL-UP]': 'sl-up'
+              '[SL-UP]': 'sl-up',
+              '[CSA-CP]': 'csa-cp'
             };
             
             const allSlLabels = Object.values(prefixMapping);
@@ -92,14 +93,6 @@ jobs:
               const errorMessage = `❌ PR title prefix is missing. Please add one of the following prefixes to your PR title: ${validPrefixes}`;
               
               console.log(errorMessage);
-              
-              // Add a comment to the PR explaining the issue
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: errorMessage
-              });
               
               // Fail the workflow
               throw new Error(`PR title must start with one of: ${validPrefixes}`);
