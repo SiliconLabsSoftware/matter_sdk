@@ -18,225 +18,238 @@
 
 #if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
 
-#include "FreeRTOSRuntimeStats.h"
 #include "FreeRTOS.h"
+#include "FreeRTOSRuntimeStats.h"
 #include "task.h"
 #include <string.h>
 
-// Runtime statistics timer implementation
-// These functions are called by FreeRTOS to configure and read the runtime timer
+#pragma message(                                                                                                                   \
+    "FreeRTOS Runtime statistics are enabled. This is a debugging feature and may have an impact on performance. Disable for release builds. Set TRACING_RUNTIME_STATS to 0 in SilabsTracingConfig.h to disable.")
 
-#pragma message("FreeRTOS Runtime statistics are enabled. This is a debugging feature and may have an impact on performance. Disable for release builds. Set TRACING_RUNTIME_STATS to 0 in SilabsTracingConfig.h to disable.")
-
-// static volatile uint32_t sRunTimeCounter = 0;
-
-// Simplified global tracking variables
-static volatile uint32_t sTaskSwitchedOut = 0;
-static volatile uint32_t sReadyTaskSwitchedOut = 0;
+// Global tracking variables
+static volatile uint32_t sTaskSwitchCount         = 0;
+static volatile uint32_t sPreemptionCount         = 0;
 static volatile TaskHandle_t sLastTaskSwitchedOut = NULL;
 
-// Single unified tracking array - no separate deleted tasks array
-static TaskStats sTaskStats[MAX_TRACKED_TASKS];
-static volatile uint32_t sTrackedTaskCount = 0;
+// Simple task statistics tracking (only active tasks)
+static TaskStats sTaskStats[TRACING_RUNTIME_STATS_MAX_TASKS];
+static volatile uint32_t sTaskCount = 0;
 
-// Helper function to find or create a task stats entry
-static TaskStats* pxFindOrCreateTaskStats(TaskHandle_t handle)
+static TaskStats * findTaskStats(TaskHandle_t handle)
 {
-    if (handle == NULL) return NULL;
-
-    // Find existing entry
-    for (uint32_t i = 0; i < sTrackedTaskCount; i++) {
-        if (sTaskStats[i].handle == handle) {
+    for (uint32_t i = 0; i < sTaskCount; i++)
+    {
+        if (sTaskStats[i].handle == handle && !sTaskStats[i].isDeleted)
+        {
             return &sTaskStats[i];
         }
     }
-
-    // Create new entry if space available
-    if (sTrackedTaskCount < MAX_TRACKED_TASKS) {
-        TaskStats* stats = &sTaskStats[sTrackedTaskCount];
-        stats->handle = handle;
-        stats->switchOutCount = 0;
-        stats->preemptionCount = 0;
-        stats->lastSwitchOutTime = 0;
-        
-        // Get and store task name
-        const char *taskName = pcTaskGetName(handle);
-        if (taskName) {
-            strncpy(stats->name, taskName, TASK_NAME_LEN - 1);
-            stats->name[TASK_NAME_LEN - 1] = '\0';
-        } else {
-            snprintf(stats->name, TASK_NAME_LEN, "Task_%p", (void*)handle);
-        }
-        
-        sTrackedTaskCount++;
-        return stats;
-    }
-
     return NULL;
 }
 
-void vTaskDeleted(void* xTask)
+static TaskStats * createTaskStats(TaskHandle_t handle)
 {
-    // Simply mark the task as deleted in our tracking - no separate array needed
-    if (xTask != NULL) {
-        TaskStats* stats = pxFindOrCreateTaskStats((TaskHandle_t)xTask);
-        if (stats != NULL) {
-            stats->lastSwitchOutTime = ulGetRunTimeCounterValue(); // Store deletion time
-            stats->handle = NULL; // Mark as deleted
+    if (sTaskCount >= TRACING_RUNTIME_STATS_MAX_TASKS || handle == NULL)
+    {
+        return NULL;
+    }
+
+    TaskStats * stats        = &sTaskStats[sTaskCount++];
+    stats->handle            = handle;
+    stats->switchOutCount    = 0;
+    stats->preemptionCount   = 0;
+    stats->lastSwitchOutTime = 0;
+    stats->isDeleted         = false;
+
+    // Store task name
+    const char * taskName = pcTaskGetName(handle);
+    if (taskName)
+    {
+        strncpy(stats->name, taskName, configMAX_TASK_NAME_LEN - 1);
+        stats->name[configMAX_TASK_NAME_LEN - 1] = '\0';
+    }
+
+    return stats;
+}
+
+void vTaskDeleted(void * xTask)
+{
+    if (xTask == NULL)
+        return;
+
+    TaskHandle_t handle = (TaskHandle_t) xTask;
+    TaskStats * stats   = findTaskStats(handle);
+    if (stats != NULL)
+    {
+        stats->handle    = NULL;
+        stats->isDeleted = true;
+        return;
+    }
+
+    // Task not found in our tracking, task was never switched out
+    if (sTaskCount < TRACING_RUNTIME_STATS_MAX_TASKS)
+    {
+        TaskStats * stats        = &sTaskStats[sTaskCount++];
+        stats->handle            = NULL;
+        stats->switchOutCount    = 0;
+        stats->preemptionCount   = 0;
+        stats->lastSwitchOutTime = ulGetRunTimeCounterValue(); // Deletion time since we don't have any other details about it
+        stats->isDeleted         = true;
+
+        // Try to get task name before it's completely gone
+        const char * taskName = pcTaskGetName((TaskHandle_t) xTask);
+        if (taskName)
+        {
+            strncpy(stats->name, taskName, configMAX_TASK_NAME_LEN - 1);
+            stats->name[configMAX_TASK_NAME_LEN - 1] = '\0';
         }
     }
 }
 
 uint32_t ulGetRunTimeCounterValue(void)
 {
-    return (xTaskGetTickCount() * 1000) / configTICK_RATE_HZ;
+    return ((uint64_t) xTaskGetTickCount() * 1000) / configTICK_RATE_HZ;
 }
 
-// Helper function for percentage calculation (returns percentage * 100 for 2 decimal places)
-static inline uint32_t ulCalculatePercentage(uint32_t part, uint32_t total)
+void vTaskSwitchedOut(void)
 {
-    return (total > 0) ? (part * 10000) / total : 0;
-}
-
-
-void vTaskSwitchedOut(){
-    sTaskSwitchedOut++;
+    sTaskSwitchCount++;
     TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
-    sLastTaskSwitchedOut = currentTask;
-    
-    // Track per-task statistics
-    TaskStats* stats = pxFindOrCreateTaskStats(currentTask);
-    if (stats != NULL) {
+    sLastTaskSwitchedOut     = currentTask;
+
+    TaskStats * stats = findTaskStats(currentTask);
+    if (stats == NULL)
+    {
+        stats = createTaskStats(currentTask);
+    }
+
+    if (stats != NULL)
+    {
         stats->switchOutCount++;
         stats->lastSwitchOutTime = ulGetRunTimeCounterValue();
     }
 }
 
-void vTaskSwitchedIn(){
-    // Check if the last task that was switched out was in Ready state (preempted)
-    if (sLastTaskSwitchedOut != NULL && eReady == eTaskGetState(sLastTaskSwitchedOut)){
-        sReadyTaskSwitchedOut++;
-        
-        // Track per-task preemption statistics
-        TaskStats* stats = pxFindOrCreateTaskStats(sLastTaskSwitchedOut);
-        if (stats != NULL) {
+void vTaskSwitchedIn(void)
+{
+    // Check if last task was preempted (in Ready state right after being switched out)
+    if (sLastTaskSwitchedOut != NULL && eTaskGetState(sLastTaskSwitchedOut) == eReady)
+    {
+        sPreemptionCount++;
+
+        TaskStats * stats = findTaskStats(sLastTaskSwitchedOut);
+        if (stats != NULL)
+        {
             stats->preemptionCount++;
         }
     }
 }
 
-// New Clean API Implementation
-
-const char* pcTaskStateToString(eTaskState state)
+uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, SystemTaskStats * systemStats)
 {
-    switch (state)
-    {
-        case eRunning:          return "Running";
-        case eReady:            return "Ready";
-        case eBlocked:          return "Blocked";
-        case eSuspended:        return "Suspend";
-        case eDeleted:          return "Deleted";
-        default:                return "Unknown";
-    }
-}
+    if (taskInfoArray == NULL || taskInfoArraySize == 0)
+        return 0;
 
-// Unified function to populate TaskInfo from either active task or our tracked stats
-static void vPopulateTaskInfo(TaskInfo* taskInfo, const TaskStatus_t* taskStatus, const TaskStats* stats, uint32_t totalRunTime)
-{
-    // Initialize all fields
-    memset(taskInfo, 0, sizeof(TaskInfo));
-    taskInfo->isValid = true;
-
-    if (taskStatus != NULL) {
-        // Active task - populate from FreeRTOS data
-        strncpy(taskInfo->name, taskStatus->pcTaskName, configMAX_TASK_NAME_LEN - 1);
-        taskInfo->name[configMAX_TASK_NAME_LEN - 1] = '\0';
-        taskInfo->handle = taskStatus->xHandle;
-        taskInfo->priority = taskStatus->uxCurrentPriority;
-        taskInfo->stackHighWaterMark = taskStatus->usStackHighWaterMark;
-        taskInfo->runTimeCounter = taskStatus->ulRunTimeCounter;
-        taskInfo->cpuPercentage = ulCalculatePercentage(taskStatus->ulRunTimeCounter, totalRunTime);
-        
-        // Copy FreeRTOS task state directly
-        taskInfo->state = taskStatus->eCurrentState;
-    } else if (stats != NULL && stats->handle == NULL) {
-        // Deleted task - populate from our tracked stats
-        strncpy(taskInfo->name, stats->name, configMAX_TASK_NAME_LEN - 1);
-        taskInfo->name[configMAX_TASK_NAME_LEN - 1] = '\0';
-        taskInfo->handle = NULL;
-        taskInfo->state = eDeleted;  // Use standard FreeRTOS deleted state
-        taskInfo->lastExecutionTime = stats->lastSwitchOutTime;
-        // Other fields remain 0 as initialized
-    }
-
-    // Add preemption statistics if we have tracking data
-    if (stats != NULL) {
-        taskInfo->switchOutCount = stats->switchOutCount;
-        taskInfo->preemptionCount = stats->preemptionCount;
-        taskInfo->preemptionPercentage = ulCalculatePercentage(stats->preemptionCount, stats->switchOutCount);
-        if (taskStatus != NULL) {
-            taskInfo->lastExecutionTime = stats->lastSwitchOutTime;
-        }
-    }
-}
-
-uint32_t ulGetAllTaskInfo(TaskInfo* taskInfoArray, uint32_t maxTasks, SystemTaskStats* systemStats)
-{
-    if (taskInfoArray == NULL) return 0;
-    
     uint32_t taskCount = 0;
-    uint32_t deletedTaskCount = 0;
-    
+
     // Initialize system stats
-    if (systemStats != NULL) {
+    if (systemStats != NULL)
+    {
         memset(systemStats, 0, sizeof(SystemTaskStats));
-        systemStats->totalRunTime = ulGetRunTimeCounterValue();
-        systemStats->totalSwitchOutCount = sTaskSwitchedOut;
-        systemStats->totalPreemptionCount = sReadyTaskSwitchedOut;
-        systemStats->systemPreemptionRatio = ulCalculatePercentage(sReadyTaskSwitchedOut, sTaskSwitchedOut);
+        systemStats->totalRunTime         = ulGetRunTimeCounterValue();
+        systemStats->totalSwitchOutCount  = sTaskSwitchCount;
+        systemStats->totalPreemptionCount = sPreemptionCount;
+        systemStats->systemPreemptionRatio =
+            sTaskSwitchCount > 0 ? (uint32_t) (((uint64_t) sPreemptionCount * 10000) / sTaskSwitchCount) : 0;
     }
-    
-    // Get active tasks from FreeRTOS
-    UBaseType_t uxArraySize = uxTaskGetNumberOfTasks();
-    TaskStatus_t * pxTaskStatusArray = (TaskStatus_t *) pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));
-    
-    if (pxTaskStatusArray != NULL) {
-        uint32_t ulTotalRunTime;
-        uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxArraySize, &ulTotalRunTime);
-        
-        // Process active tasks
-        for (UBaseType_t i = 0; i < uxArraySize && taskCount < maxTasks; i++) {
-            TaskStats* stats = pxFindOrCreateTaskStats(pxTaskStatusArray[i].xHandle);
-            vPopulateTaskInfo(&taskInfoArray[taskCount], &pxTaskStatusArray[i], stats, ulTotalRunTime);
+
+    // Don't exceed configured max tasks we can track.
+    UBaseType_t numTasks = uxTaskGetNumberOfTasks();
+    if (numTasks > taskInfoArraySize)
+        numTasks = taskInfoArraySize;
+
+    TaskStatus_t stackArray[TRACING_RUNTIME_STATS_MAX_TASKS];
+    TaskStatus_t * taskArray = stackArray;
+
+    uint32_t totalRunTime;
+    UBaseType_t actualTasks = uxTaskGetSystemState(taskArray, numTasks, &totalRunTime);
+    // actualTasks will be 0 if the array provided is too small
+
+    // Populate task info for each active task returned by FreeRTOS
+    for (UBaseType_t i = 0; i < actualTasks && taskCount < TRACING_RUNTIME_STATS_MAX_TASKS; i++)
+    {
+        TaskInfo * info       = &taskInfoArray[taskCount];
+        TaskStatus_t * status = &taskArray[i];
+        TaskStats * stats     = findTaskStats(status->xHandle);
+
+        // Copy basic info
+        strncpy(info->name, status->pcTaskName, configMAX_TASK_NAME_LEN - 1);
+        info->name[configMAX_TASK_NAME_LEN - 1] = '\0';
+        info->handle                            = status->xHandle;
+        info->state                             = status->eCurrentState;
+        info->priority                          = status->uxCurrentPriority;
+        info->stackHighWaterMark                = status->usStackHighWaterMark;
+        info->runTimeCounter                    = status->ulRunTimeCounter;
+        info->cpuPercentage = totalRunTime > 0 ? (uint32_t) (((uint64_t) status->ulRunTimeCounter * 10000) / totalRunTime) : 0;
+
+        // Add tracking stats if available
+        if (stats != NULL)
+        {
+            info->switchOutCount  = stats->switchOutCount;
+            info->preemptionCount = stats->preemptionCount;
+            info->preemptionPercentage =
+                stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
+            info->lastExecutionTime = stats->lastSwitchOutTime;
+        }
+        else
+        {
+            info->switchOutCount       = 0;
+            info->preemptionCount      = 0;
+            info->preemptionPercentage = 0;
+            info->lastExecutionTime    = 0;
+        }
+
+        taskCount++;
+    }
+
+    // Add deleted tasks from our tracking
+    uint32_t deletedCount = 0;
+    for (uint32_t i = 0; i < sTaskCount && taskCount < TRACING_RUNTIME_STATS_MAX_TASKS; i++)
+    {
+        if (sTaskStats[i].isDeleted)
+        {
+            TaskInfo * info   = &taskInfoArray[taskCount];
+            TaskStats * stats = &sTaskStats[i];
+
+            // Copy deleted task info
+            strncpy(info->name, stats->name, configMAX_TASK_NAME_LEN - 1);
+            info->name[configMAX_TASK_NAME_LEN - 1] = '\0';
+            info->handle                            = NULL;
+            info->state = eDeleted; // While technically the deleted state is something else in FreeRTOS, we use eDeleted for the
+                                    // purpose of this debug feature.
+            info->priority           = 0;
+            info->stackHighWaterMark = 0;
+            info->runTimeCounter     = 0;
+            info->cpuPercentage      = 0;
+            info->switchOutCount     = stats->switchOutCount;
+            info->preemptionCount    = stats->preemptionCount;
+            info->lastExecutionTime  = stats->lastSwitchOutTime;
+            info->preemptionPercentage =
+                stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
+
             taskCount++;
-        }
-        
-        // Update system stats
-        if (systemStats != NULL) {
-            systemStats->activeTaskCount = uxArraySize;
-            if (systemStats->totalRunTime < ulTotalRunTime) {
-                systemStats->totalRunTime = ulTotalRunTime;
-            }
-        }
-        
-        vPortFree(pxTaskStatusArray);
-    }
-    
-    // Add terminated tasks from our tracking
-    for (uint32_t i = 0; i < sTrackedTaskCount && taskCount < maxTasks; i++) {
-        if (sTaskStats[i].handle == NULL) { // Deleted task
-            vPopulateTaskInfo(&taskInfoArray[taskCount], NULL, &sTaskStats[i], 0);
-            taskCount++;
-            deletedTaskCount++;
+            deletedCount++;
         }
     }
-    
+
     // Final system stats update
-    if (systemStats != NULL) {
-        systemStats->terminatedTaskCount = deletedTaskCount;
-        systemStats->totalTaskCount = taskCount;
+    if (systemStats != NULL)
+    {
+        systemStats->terminatedTaskCount = deletedCount;
+        systemStats->totalTaskCount      = systemStats->activeTaskCount + deletedCount;
+        systemStats->activeTaskCount     = actualTasks;
     }
-    
+
     return taskCount;
 }
 

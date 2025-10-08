@@ -19,72 +19,58 @@
 
 // #include "FreeRTOSConfig.h"
 
-#if 1
+#if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include <stdint.h>
+#include <platform/silabs/tracing/SilabsTracingConfig.h>
 #include <stdbool.h>
-
-
-// Use standard FreeRTOS task states (eRunning, eReady, eBlocked, eSuspended, eDeleted)
-// No need for custom enum since FreeRTOS already provides what we need
-
-#define MAX_TRACKED_TASKS 32
-#define TASK_NAME_LEN     configMAX_TASK_NAME_LEN
-
-// Unified task information structure
-typedef struct {
+#include <stdint.h>
+typedef struct
+{
     char name[configMAX_TASK_NAME_LEN];
-    TaskHandle_t handle;                    // NULL for deleted tasks we're tracking historically
-    eTaskState state;                       // Standard FreeRTOS task state
-    UBaseType_t priority;                   // 0 for deleted tasks
-    UBaseType_t stackHighWaterMark;         // 0 for deleted tasks
-    uint32_t runTimeCounter;                // Total CPU time
-    uint32_t cpuPercentage;                 // CPU usage percentage (x100 for 2 decimal places)
-    uint32_t switchOutCount;                // Total times switched out
-    uint32_t preemptionCount;               // Times preempted (switched out while ready)
-    uint32_t preemptionPercentage;          // Preemption percentage (x100 for 2 decimal places)
-    uint32_t lastExecutionTime;             // Last time this task ran (for deleted) or switch time
-    bool isValid;                           // true if this entry contains valid data
+    TaskHandle_t handle;
+    eTaskState state;
+    UBaseType_t priority;
+    UBaseType_t stackHighWaterMark;
+    uint32_t runTimeCounter;       // Total CPU time
+    uint32_t cpuPercentage;        // CPU usage percentage
+    uint32_t switchOutCount;       // Total times switched out
+    uint32_t preemptionCount;      // Times preempted (switched out while ready)
+    uint32_t preemptionPercentage; // Preemption percentage
+    uint32_t lastExecutionTime;    // Last execution time
 } TaskInfo;
 
 // System-wide task statistics
-typedef struct {
-    uint32_t totalRunTime;                  // Total system run time in ms
-    uint32_t totalSwitchOutCount;           // Total task switches
-    uint32_t totalPreemptionCount;          // Total preemptions
-    uint32_t systemPreemptionRatio;         // Overall preemption ratio (x100)
-    uint32_t activeTaskCount;               // Number of currently active tasks
-    uint32_t terminatedTaskCount;           // Number of deleted tasks we're tracking historically
-    uint32_t totalTaskCount;                // activeTaskCount + terminatedTaskCount
+typedef struct
+{
+    uint32_t totalRunTime;          // Total system run time in ms
+    uint32_t totalSwitchOutCount;   // Total task switches
+    uint32_t totalPreemptionCount;  // Total preemptions
+    uint32_t systemPreemptionRatio; // Overall preemption ratio
+    uint32_t activeTaskCount;       // Number of currently active tasks
+    uint32_t terminatedTaskCount;   // Number of deleted tasks we're tracking
+    uint32_t totalTaskCount;        // activeTaskCount + terminatedTaskCount
 } SystemTaskStats;
 
-typedef struct {
-    TaskHandle_t handle;
-    char name[TASK_NAME_LEN];
+// Internal task tracking structure
+typedef struct
+{
+    TaskHandle_t handle; // NULL for deleted tasks
+    char name[configMAX_TASK_NAME_LEN];
     uint32_t switchOutCount;
     uint32_t preemptionCount;
     uint32_t lastSwitchOutTime;
+    bool isDeleted; // true if this task has been deleted
 } TaskStats;
 
-
-
-// API Functions
-
 /**
- * @brief Get comprehensive task statistics including active and deleted tasks
+ * @brief Get comprehensive task statistics for active and deleted tasks
  * @param taskInfoArray Array to store task information
- * @param maxTasks Maximum number of tasks the array can hold
- * @param systemStats Pointer to store system-wide statistics
+ * @param taskInfoArraySize Maximum number of tasks the array can hold
+ * @param systemStats Pointer to store system-wide statistics (optional)
  * @return Number of tasks actually returned, or 0 on error
  */
-uint32_t ulGetAllTaskInfo(TaskInfo* taskInfoArray, uint32_t maxTasks, SystemTaskStats* systemStats);
-
-// Helper functions for state conversion
-const char* pcTaskStateToString(eTaskState state);
-
-
-
+uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, SystemTaskStats * systemStats);
 
 #endif // configGENERATE_RUN_TIME_STATS == 1
