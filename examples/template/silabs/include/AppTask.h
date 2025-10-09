@@ -22,7 +22,6 @@
 #include "AppEvent.h"
 #include "BaseApplication.h"
 #include "FreeRTOS.h"
-#include "sl_simple_button_instances.h"
 #include <stdbool.h>
 #include <stdint.h>
 
