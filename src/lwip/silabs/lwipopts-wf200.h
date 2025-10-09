@@ -31,6 +31,7 @@
 #endif
 
 #include <stdlib.h>
+#include "cmsis_os2.h"
 
 #if (SL_MATTER_GN_BUILD == 0)
 #include "sl_matter_wifi_config.h"
