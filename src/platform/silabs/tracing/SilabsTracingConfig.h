@@ -38,7 +38,7 @@
  * Default: 0 (disabled)
  */
 #ifndef TRACING_RUNTIME_STATS
-#define TRACING_RUNTIME_STATS 0
+#define TRACING_RUNTIME_STATS 1
 #endif
 
 /**
@@ -52,7 +52,7 @@
  * Default: 32 tasks
  */
 #ifndef TRACING_RUNTIME_STATS_MAX_TASKS
-#define TRACING_RUNTIME_STATS_MAX_TASKS 32
+#define TRACING_RUNTIME_STATS_MAX_TASKS 16
 #endif
 
 /**

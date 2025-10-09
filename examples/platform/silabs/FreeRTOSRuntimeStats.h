@@ -36,7 +36,11 @@ typedef struct
     uint32_t switchOutCount;  // Total times switched out
     uint32_t preemptionCount; // Times preempted (switched out while ready)
     uint32_t preemptionPercentage;
-    uint32_t lastExecutionTime; // in ms
+    uint32_t lastExecutionTime;      // in ms
+    uint32_t readyTimeHighWaterMark; // in ms
+    uint32_t totalReadyTime;         // in ms
+    uint32_t totalRunningTime;
+    uint32_t totalBlockedTime;
 } TaskInfo;
 typedef struct
 {
@@ -56,6 +60,13 @@ typedef struct
     uint32_t switchOutCount;
     uint32_t preemptionCount;
     uint32_t lastSwitchOutTime;
+    uint32_t lastMovedToReadyTime;
+    uint32_t totalReadyTime;
+    uint32_t readyTimeHighWaterMark;
+    uint32_t lastMovedToRunningTime;
+    uint32_t totalRunningTime;
+    uint32_t lastMovedToBlockedTime;
+    uint32_t totalBlockedTime;
     bool isDeleted;
 } TaskStats;
 
