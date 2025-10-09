@@ -189,7 +189,9 @@ extern void vTaskSwitchedIn(void);
 #define portGET_RUN_TIME_COUNTER_VALUE() ulGetRunTimeCounterValue()
 #define traceTASK_SWITCHED_IN() vTaskSwitchedIn()
 #define traceTASK_DELETE(xTask) vTaskDeleted(xTask)
+#define traceTASK_CREATE(xTask) vTaskCreated(xTask)
 #define traceTASK_SWITCHED_OUT() vTaskSwitchedOut()
+#define traceMOVED_TASK_TO_READY_STATE(xTask) vTaskMovedToReadyState(xTask)
 #else
 #define configGENERATE_RUN_TIME_STATS (0)
 #endif // TRACING_RUNTIME_STATS

@@ -853,10 +853,13 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         else
         {
             // Active task
-            ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4lu | %-9lu | %2lu.%02lu%% | %4lu/%-7lu |%3lu.%02lu%% | %-10lu |",
-                            task->name, FreeRTOSTaskStateToString(task->state), task->priority, task->stackHighWaterMark,
-                            (task->cpuPercentage / 100), (task->cpuPercentage % 100), task->preemptionCount, task->switchOutCount,
-                            (task->preemptionPercentage / 100), (task->preemptionPercentage % 100), task->lastExecutionTime);
+            ChipLogProgress(
+                DeviceLayer,
+                "| %-23s| %-10s | %-4lu | %-9lu | %2lu.%02lu%% | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-4lu | %-4lu | %-4lu |",
+                task->name, FreeRTOSTaskStateToString(task->state), task->priority, task->stackHighWaterMark,
+                (task->cpuPercentage / 100), (task->cpuPercentage % 100), task->preemptionCount, task->switchOutCount,
+                (task->preemptionPercentage / 100), (task->preemptionPercentage % 100), task->lastExecutionTime,
+                task->totalRunningTime, task->totalReadyTime, task->totalBlockedTime);
         }
     }
 

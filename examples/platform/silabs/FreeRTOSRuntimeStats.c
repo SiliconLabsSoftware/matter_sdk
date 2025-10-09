@@ -24,7 +24,7 @@
 #include <string.h>
 
 #pragma message(                                                                                                                   \
-        "FreeRTOS Runtime statistics are enabled. This is a debugging feature and may have an impact on performance. Disable for release builds. Set TRACING_RUNTIME_STATS to 0 in SilabsTracingConfig.h to disable.")
+    "FreeRTOS Runtime statistics are enabled. This is a debugging feature and may have an impact on performance. Disable for release builds. Set TRACING_RUNTIME_STATS to 0 in SilabsTracingConfig.h to disable.")
 
 // Global tracking variables
 static volatile uint32_t sTaskSwitchCount         = 0;
@@ -54,12 +54,17 @@ static TaskStats * createTaskStats(TaskHandle_t handle)
         return NULL;
     }
 
-    TaskStats * stats        = &sTaskStats[sTaskCount++];
-    stats->handle            = handle;
-    stats->switchOutCount    = 0;
-    stats->preemptionCount   = 0;
-    stats->lastSwitchOutTime = 0;
-    stats->isDeleted         = false;
+    TaskStats * stats             = &sTaskStats[sTaskCount++];
+    stats->handle                 = handle;
+    stats->switchOutCount         = 0;
+    stats->preemptionCount        = 0;
+    stats->lastSwitchOutTime      = 0;
+    stats->lastMovedToReadyTime   = 0;
+    stats->totalReadyTime         = 0;
+    stats->totalRunningTime       = 0;
+    stats->totalBlockedTime       = 0;
+    stats->readyTimeHighWaterMark = 0;
+    stats->isDeleted              = false;
 
     // Store task name
     const char * taskName = pcTaskGetName(handle);
@@ -106,6 +111,49 @@ void vTaskDeleted(void * xTask)
     }
 }
 
+void vTaskCreated(void * xTask)
+{
+    if (xTask == NULL)
+        return;
+
+    TaskHandle_t handle = (TaskHandle_t) xTask;
+    TaskStats * stats   = findTaskStats(handle);
+    if (stats == NULL)
+    {
+        createTaskStats(handle);
+    }
+    if (stats != NULL)
+    {
+        stats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
+        return;
+    }
+}
+
+void vTaskMovedToReadyState(void * xTask)
+{
+    if (xTask == NULL)
+        return;
+
+    TaskHandle_t handle = (TaskHandle_t) xTask;
+    TaskStats * stats   = findTaskStats(handle);
+    if (stats == NULL)
+    {
+        stats = createTaskStats(handle);
+    }
+    if (stats != NULL)
+    {
+        // stats->totalReadyTime++;
+        stats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
+        if (stats->lastMovedToBlockedTime != 0)
+        {
+            uint32_t timeInBlocked = ulGetRunTimeCounterValue() - stats->lastMovedToBlockedTime;
+            stats->totalBlockedTime += timeInBlocked;
+            stats->lastMovedToBlockedTime = 0;
+        }
+        return;
+    }
+}
+
 uint32_t ulGetRunTimeCounterValue(void)
 {
     return ((uint64_t) xTaskGetTickCount() * 1000) / configTICK_RATE_HZ;
@@ -126,23 +174,42 @@ void vTaskSwitchedOut(void)
     if (stats != NULL)
     {
         stats->switchOutCount++;
-        stats->lastSwitchOutTime = ulGetRunTimeCounterValue();
+        stats->lastSwitchOutTime    = ulGetRunTimeCounterValue();
+        stats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
+        if (stats->lastMovedToRunningTime != 0)
+        {
+            uint32_t timeInRunning = ulGetRunTimeCounterValue() - stats->lastMovedToRunningTime;
+            stats->totalRunningTime += timeInRunning;
+            stats->lastMovedToRunningTime = 0;
+        }
     }
 }
 
 void vTaskSwitchedIn(void)
 {
+
+    TaskStats * lastTaskStats = findTaskStats(sLastTaskSwitchedOut);
     // Check if last task was preempted (in Ready state right after being switched out)
-    if (sLastTaskSwitchedOut != NULL && eTaskGetState(sLastTaskSwitchedOut) == eReady)
+    if (sLastTaskSwitchedOut != NULL && eTaskGetState(sLastTaskSwitchedOut) == eReady && lastTaskStats != NULL)
     {
         sPreemptionCount++;
-
-        TaskStats * stats = findTaskStats(sLastTaskSwitchedOut);
-        if (stats != NULL)
-        {
-            stats->preemptionCount++;
-        }
+        lastTaskStats->preemptionCount++;
+        lastTaskStats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
     }
+
+    TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
+    TaskStats * currentStats = findTaskStats(currentTask);
+    if (currentStats != NULL && currentStats->lastMovedToReadyTime != 0)
+    {
+        uint32_t timeInReady = ulGetRunTimeCounterValue() - currentStats->lastMovedToReadyTime;
+        currentStats->totalReadyTime += timeInReady;
+        if (timeInReady > currentStats->readyTimeHighWaterMark)
+        {
+            currentStats->readyTimeHighWaterMark = timeInReady;
+        }
+        currentStats->lastMovedToReadyTime = 0;
+    }
+    currentStats->lastMovedToRunningTime = ulGetRunTimeCounterValue();
 }
 
 uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, SystemTaskStats * systemStats)
@@ -195,11 +262,15 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
         // Add tracking stats if available
         if (stats != NULL)
         {
-            info->switchOutCount  = stats->switchOutCount;
-            info->preemptionCount = stats->preemptionCount;
+            info->switchOutCount         = stats->switchOutCount;
+            info->preemptionCount        = stats->preemptionCount;
+            info->lastExecutionTime      = stats->lastSwitchOutTime;
+            info->readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
+            info->totalReadyTime         = stats->totalReadyTime;
+            info->totalRunningTime       = stats->totalRunningTime;
+            info->totalBlockedTime       = stats->totalBlockedTime;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
-            info->lastExecutionTime = stats->lastSwitchOutTime;
         }
         else
         {
