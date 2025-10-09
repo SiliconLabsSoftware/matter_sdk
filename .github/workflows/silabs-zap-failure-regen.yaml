@@ -68,6 +68,8 @@ jobs:
                     ./scripts/tools/zap/generate.py examples/multi-sensor-app/silabs/data_model/multi-sensor-wifi-app.zap &&
                     ./scripts/tools/zap/generate.py examples/base-platform-app/silabs/data_model/platform-thread-app.zap &&
                     ./scripts/tools/zap/generate.py examples/base-platform-app/silabs/data_model/platform-thread-icd-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/base-platform-app/silabs/data_model/platform-wifi-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/base-platform-app/silabs/data_model/platform-wifi-icd-app.zap &&
                     ./scripts/tools/zap/generate.py examples/thermostat/silabs/data_model/thermostat-thread-app.zap
                   '
 
