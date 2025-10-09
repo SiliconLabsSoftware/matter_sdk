@@ -161,6 +161,11 @@ source_set("efr32-common") {
     "${silabs_common_plat_dir}/syscalls_stubs.cpp",
   ]
 
+  # FreeRTOS runtime statistics support
+  if (matter_enable_tracing_support) {
+    sources += [ "${silabs_common_plat_dir}/FreeRTOSRuntimeStats.c" ]
+  }
+
   if (chip_enable_pw_rpc || chip_build_libshell || enable_openthread_cli ||
       sl_uart_log_output) {
     sources += [ "${silabs_common_plat_dir}/uart.cpp" ]

@@ -94,6 +94,11 @@ CHIP_ERROR FlushCommandHandler(int argc, char ** argv)
     return error;
 }
 
+CHIP_ERROR TasksCommandHandler(int argc, char ** argv)
+{
+    return SilabsTracer::Instance().OutputTaskStatistics();
+}
+
 } // namespace
 
 namespace TracingCommands {
@@ -105,6 +110,7 @@ void RegisterCommands()
         { &TracingListTimeOperations, "list", "List all available TimeTraceOperations" },
         { &MetricsCommandHandler, "metrics", "Display runtime metrics. Usage: metrics <TimeTraceOperation>" },
         { &FlushCommandHandler, "flush", "Display buffered traces. Usage: flush <TimeTraceOperation>" },
+        { &TasksCommandHandler, "tasks", "Display FreeRTOS task statistics." },
     };
     static const Shell::Command cmds_silabs_tracing = { &TracingCommandHandler, "tracing",
                                                         "Dispatch Silicon Labs Tracing command" };

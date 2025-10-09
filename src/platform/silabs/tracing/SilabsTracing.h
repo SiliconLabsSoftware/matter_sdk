@@ -23,15 +23,9 @@
 #include <lib/core/CHIPPersistentStorageDelegate.h>
 #include <lib/support/LinkedList.h>
 #include <lib/support/Span.h>
+#include <platform/silabs/tracing/SilabsTracingConfig.h>
 #include <stdint.h>
 #include <system/SystemClock.h>
-
-#ifndef SERIALIZED_TIME_TRACKERS_SIZE_BYTES
-// Default size, metrics store 6 uint32_t, which is 24 bytes
-// We currently have 19 operations to track, so 19 * 24 = 456 bytes
-// 512 bytes should be enough including the serialization overhead
-#define SERIALIZED_TIME_TRACKERS_SIZE_BYTES 512
-#endif
 
 namespace chip {
 namespace Tracing {
@@ -281,6 +275,13 @@ public:
      *  @return const CharSpan, the string representation of the operation
      */
     CHIP_ERROR OperationIndexToString(size_t aOperationIdx, MutableCharSpan buffer);
+
+    /** @brief Output FreeRTOS task statistics
+     * This function uses uxTaskGetSystemState() and FreeRTOSRuntimeStats.h to retrieve task information and displays task name,
+     * state, priority, stack high water mark, and CPU usage percentage.
+     *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the logs or RTOS features required are not initialized
+     */
+    CHIP_ERROR OutputTaskStatistics();
 
 private:
     struct TimeTrackerList

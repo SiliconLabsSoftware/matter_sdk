@@ -21,6 +21,21 @@
 #include <lib/support/PersistentData.h>
 #include <string> // Include the necessary header for std::string
 
+// Include FreeRTOS configuration first
+#if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS
+extern "C" {
+#include "FreeRTOSConfig.h"
+}
+#endif
+// FreeRTOS includes for task statistics
+#if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
+extern "C" {
+#include "FreeRTOS.h"
+#include "FreeRTOSRuntimeStats.h"
+#include "task.h"
+}
+#endif
+
 #if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
 #include <rail.h>
 // RAIL_GetTime() returns time in usec
@@ -767,6 +782,96 @@ CHIP_ERROR SilabsTracer::SplitNamedTraceString(CharSpan appOperationKey, CharSpa
 
     return CHIP_NO_ERROR;
 }
+
+#if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
+
+namespace {
+const char * FreeRTOSTaskStateToString(eTaskState state)
+{
+    switch (state)
+    {
+    case eRunning:
+        return "Running";
+    case eReady:
+        return "Ready";
+    case eBlocked:
+        return "Blocked";
+    case eSuspended:
+        return "Suspend";
+    case eDeleted:
+        return "Deleted";
+    default:
+        return "Unknown";
+    }
+}
+} // namespace
+
+CHIP_ERROR SilabsTracer::OutputTaskStatistics()
+{
+    VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
+
+    TaskInfo taskInfoArray[TRACING_RUNTIME_STATS_MAX_TASKS];
+    SystemTaskStats systemStats;
+
+    uint32_t taskCount = ulGetAllTaskInfo(taskInfoArray, TRACING_RUNTIME_STATS_MAX_TASKS, &systemStats);
+
+    VerifyOrReturnError(taskCount > 0, CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to get task information"));
+
+    ChipLogProgress(DeviceLayer, "=== Task Statistics ===");
+    ChipLogProgress(DeviceLayer, "Active tasks: %lu | Terminated tasks: %lu | Total tasks: %lu", systemStats.activeTaskCount,
+                    systemStats.terminatedTaskCount, systemStats.totalTaskCount);
+    ChipLogProgress(DeviceLayer, "Total Runtime: %lu ms", systemStats.totalRunTime);
+    ChipLogProgress(DeviceLayer, "System Preemption Ratio: %lu.%02lu%% (%lu/%lu switches)",
+                    (systemStats.systemPreemptionRatio / 100), (systemStats.systemPreemptionRatio % 100),
+                    systemStats.totalPreemptionCount, systemStats.totalSwitchOutCount);
+
+    ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4s | %-9s | %-6s | %-12s | %-6s | %-10s |", "Task Name", "State", "Prio",
+                    "Stack HWM", "CPU %", "Preempt", "Pre. %", "Last Time");
+    ChipLogProgress(DeviceLayer, "|%-24s|%-12s|%-6s|%-11s|%-8s|%-14s|%-8s|%-12s|", "------------------------", "------------",
+                    "------", "-----------", "--------", "--------------", "--------", "------------");
+
+    // Print each task's information as a row in the table
+    for (uint32_t i = 0; i < taskCount; i++)
+    {
+        const TaskInfo * task = &taskInfoArray[i];
+
+        // if (!task->isValid)
+        // continue;
+
+        // Allow time for the UART buffer to empty itself. Without this, some lines may be skipped and a "Missed Logs: X" will
+        // appear in the output A delay of 1 tick was not sufficient, so we use 10.
+        vTaskDelay(10);
+
+        if (task->state == eDeleted && task->handle == NULL)
+        {
+            // This is deleted task
+            ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4s | %-9s | %-6s | %4lu/%-7lu |%3lu.%02lu%% | %-10lu |", task->name,
+                            FreeRTOSTaskStateToString(task->state), "N/A", "N/A", "N/A", task->preemptionCount,
+                            task->switchOutCount, (task->preemptionPercentage / 100), (task->preemptionPercentage % 100),
+                            task->lastExecutionTime);
+        }
+        else
+        {
+            // Active task
+            ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4lu | %-9lu | %2lu.%02lu%% | %4lu/%-7lu |%3lu.%02lu%% | %-10lu |",
+                            task->name, FreeRTOSTaskStateToString(task->state), task->priority, task->stackHighWaterMark,
+                            (task->cpuPercentage / 100), (task->cpuPercentage % 100), task->preemptionCount, task->switchOutCount,
+                            (task->preemptionPercentage / 100), (task->preemptionPercentage % 100), task->lastExecutionTime);
+        }
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+#else // configGENERATE_RUN_TIME_STATS == 1
+
+CHIP_ERROR SilabsTracer::OutputTaskStatistics()
+{
+    ChipLogError(DeviceLayer, "Task statistics not available - configGENERATE_RUN_TIME_STATS not enabled");
+    return CHIP_ERROR_UNINITIALIZED;
+}
+
+#endif // configGENERATE_RUN_TIME_STATS == 1
 
 } // namespace Silabs
 } // namespace Tracing
