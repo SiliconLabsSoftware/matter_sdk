@@ -61,8 +61,7 @@ void ButtonActionTriggered(AppEvent * aEvent);
 
 /**
  * @brief Returns the DataModel TemperatureMeasurement::MeasureValue attribute.
- *        Function locks and unlocks the Matter task.
- *        The caller MUST NOT hold the lock on the Matter task, otherwise a deadlock is created.
+ *        The caller MUST hold the lock on the Matter task.
  *
  * @return Status code code if we failed to read the data model attribute
  */
@@ -70,8 +69,7 @@ chip::Protocols::InteractionModel::Status GetMeasuredTemperature(chip::app::Data
 
 /**
  * @brief Returns the DataModel TemperatureMeasurement::MaxMeasureValue attribute.
- *        Function locks and unlocks the Matter task.
- *        The caller MUST NOT hold the lock on the Matter task, otherwise a deadlock is created.
+ *        The caller MUST hold the lock on the Matter task.
  *
  * @return Status code code if we failed to read the data model attribute
  */
@@ -79,8 +77,7 @@ chip::Protocols::InteractionModel::Status GetMaxMeasuredTemperature(chip::app::D
 
 /**
  * @brief Returns the DataModel TemperatureMeasurement::MinMeasureValue attribute.
- *        Function locks and unlocks the Matter task.
- *        The caller MUST NOT hold the lock on the Matter task, otherwise a deadlock is created.
+ *        The caller MUST hold the lock on the Matter task.
  *
  * @return Status code code if we failed to read the data model attribute
  */
@@ -88,8 +85,7 @@ chip::Protocols::InteractionModel::Status GetMinMeasuredTemperature(chip::app::D
 
 /**
  * @brief Returns the DataModel RelativityHumidityMeasurement::MeasureValue attribute.
- *        Function locks and unlocks the Matter task.
- *        The caller MUST NOT hold the lock on the Matter task, otherwise a deadlock is created.
+ *        The caller MUST hold the lock on the Matter task.
  *
  * @return Status code code if we failed to read the data model attribute
  */
@@ -97,8 +93,7 @@ chip::Protocols::InteractionModel::Status GetMeasuredHumidity(chip::app::DataMod
 
 /**
  * @brief Returns the DataModel RelativityHumidityMeasurement::MaxMeasureValue attribute.
- *        Function locks and unlocks the Matter task.
- *        The caller MUST NOT hold the lock on the Matter task, otherwise a deadlock is created.
+ *        The caller MUST hold the lock on the Matter task.
  *
  * @return Status code code if we failed to read the data model attribute
  */
@@ -106,8 +101,7 @@ chip::Protocols::InteractionModel::Status GetMaxMeasuredHumidity(chip::app::Data
 
 /**
  * @brief Returns the DataModel RelativityHumidityMeasurement::MinMeasureValue attribute.
- *        Function locks and unlocks the Matter task.
- *        The caller MUST NOT hold the lock on the Matter task, otherwise a deadlock is created.
+ *        The caller MUST hold the lock on the Matter task.
  *
  * @return Status code code if we failed to read the data model attribute
  */
@@ -115,8 +109,7 @@ chip::Protocols::InteractionModel::Status GetMinMeasuredHumidity(chip::app::Data
 
 /**
  * @brief Functions reads the Occupancy attributes and returns based on if Occupancy is detected.
- *        Function locks and unlocks the Matter task.
- *        The caller MUST NOT hold the lock on the Matter task, otherwise a deadlock is created.
+ *        The caller MUST hold the lock on the Matter task.
  *
  * @return true Occupancy is detected - Ocupancysensing::Occupancy is set to occupied
  * @return false Occupancy not is detected - Ocupancysensing::Occupancy is not set to occupied
