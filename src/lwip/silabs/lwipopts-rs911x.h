@@ -30,7 +30,6 @@
 #include <lwip/lwip_buildconfig.h>
 #endif
 
-#include "cmsis_os2.h"
 #include <stdlib.h>
 
 #if (SL_MATTER_GN_BUILD == 0)
@@ -67,18 +66,20 @@
 #define TCP_QUEUE_OOSEQ 0
 #define ARP_QUEUEING (0)
 #define TCPIP_THREAD_NAME "LWIP"
-#define TCPIP_THREAD_PRIO osPriorityAboveNormal
 
 #define LWIP_SOCKET 0
 
-#ifdef SL_MATTER_ENABLE_AWS
+// Setting the priority of the lwip thread to osPriorityAboveNormal
+#define TCPIP_THREAD_PRIO (32)
+
+#ifdef DIC_ENABLE
 #define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())
 #define TCP_MSS (4 * 1152)
 #else
 #define LWIP_DNS 0
 #define TCP_MSS (1152)
-#endif /* SL_MATTER_ENABLE_AWS */
+#endif /* DIC_ENABLE */
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1
 

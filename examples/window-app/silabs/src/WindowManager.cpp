@@ -54,11 +54,11 @@ using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 #define APP_ACTION_LED 1
 
-#ifdef SL_MATTER_ENABLE_AWS
+#ifdef DIC_ENABLE
 #define DECIMAL 10
 #define MSG_SIZE 6
-#include "MatterAws.h"
-#endif // SL_MATTER_ENABLE_AWS
+#include "dic.h"
+#endif // DIC_ENABLE
 
 using namespace ::chip::Credentials;
 using namespace ::chip::DeviceLayer;
@@ -478,22 +478,22 @@ void WindowManager::Cover::PositionSet(chip::EndpointId endpointId, chip::Percen
     if (action == ControlAction::Tilt)
     {
         TiltPositionSet(endpointId, nullablePosition);
-#ifdef SL_MATTER_ENABLE_AWS
+#ifdef DIC_ENABLE
         uint16_t value = position;
         char buffer[MSG_SIZE];
         itoa(value, buffer, DECIMAL);
-        MatterAwsSendMsg("tilt/position set", (const char *) (buffer));
-#endif // SL_MATTER_ENABLE_AWS
+        dic_sendmsg("tilt/position set", (const char *) (buffer));
+#endif // DIC_ENABLE
     }
     else
     {
         LiftPositionSet(endpointId, nullablePosition);
-#ifdef SL_MATTER_ENABLE_AWS
+#ifdef DIC_ENABLE
         uint16_t value = position;
         char buffer[MSG_SIZE];
         itoa(value, buffer, DECIMAL);
-        MatterAwsSendMsg("lift/position set", (const char *) (buffer));
-#endif // SL_MATTER_ENABLE_AWS
+        dic_sendmsg("lift/position set", (const char *) (buffer));
+#endif // DIC_ENABLE
     }
 }
 
