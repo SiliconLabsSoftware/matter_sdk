@@ -37,12 +37,12 @@
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
-#include <setup_payload/OnboardingCodesUtil.h>
 
 #include <assert.h>
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
+#include <setup_payload/OnboardingCodesUtil.h>
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
 
@@ -71,7 +71,6 @@ CHIP_ERROR AppTask::AppInit()
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
 #ifdef DISPLAY_ENABLED
-    GetLCD().Init((uint8_t *) "Fan-App");
     GetLCD().SetCustomUI(FanControlUI::DrawUI);
 #endif
 

@@ -25,10 +25,10 @@
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
-#include <setup_payload/OnboardingCodesUtil.h>
 
 #include <assert.h>
 
+#include <setup_payload/OnboardingCodesUtil.h>
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
 
@@ -82,7 +82,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     while (true)
     {
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
-        while (eventReceived == pdTRUE)
+        while (eventReceived == osOK)
         {
             sAppTask.DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
