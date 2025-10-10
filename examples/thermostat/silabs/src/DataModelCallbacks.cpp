@@ -28,6 +28,11 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include <MultiProtocolDataModelHelper.h>
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
 #ifdef DIC_ENABLE
 #include "dic_control.h"
 #endif // DIC_ENABLE
@@ -54,4 +59,8 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         dic::control::AttributeHandler(attributePath.mEndpointId, attributeId);
 #endif // DIC_ENABLE
     }
+
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(attributePath.mEndpointId, clusterId, attributeId, value, type);
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
