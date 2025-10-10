@@ -174,8 +174,8 @@ void vTaskSwitchedOut(void)
     if (stats != NULL)
     {
         stats->switchOutCount++;
-        stats->lastSwitchOutTime    = ulGetRunTimeCounterValue();
-        stats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
+        stats->lastSwitchOutTime = ulGetRunTimeCounterValue();
+        // Don't set lastMovedToReadyTime here - we don't know the target state yet
         if (stats->lastMovedToRunningTime != 0)
         {
             uint32_t timeInRunning = ulGetRunTimeCounterValue() - stats->lastMovedToRunningTime;
@@ -187,7 +187,6 @@ void vTaskSwitchedOut(void)
 
 void vTaskSwitchedIn(void)
 {
-
     TaskStats * lastTaskStats = findTaskStats(sLastTaskSwitchedOut);
     // Check if last task was preempted (in Ready state right after being switched out)
     if (sLastTaskSwitchedOut != NULL && eTaskGetState(sLastTaskSwitchedOut) == eReady && lastTaskStats != NULL)
@@ -197,8 +196,18 @@ void vTaskSwitchedIn(void)
         lastTaskStats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
     }
 
+    if (sLastTaskSwitchedOut != NULL && eTaskGetState(sLastTaskSwitchedOut) == eBlocked && lastTaskStats != NULL)
+    {
+        lastTaskStats->lastMovedToBlockedTime = ulGetRunTimeCounterValue();
+    }
+
     TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
     TaskStats * currentStats = findTaskStats(currentTask);
+    if (currentStats == NULL)
+    {
+        currentStats = createTaskStats(currentTask);
+    }
+    
     if (currentStats != NULL && currentStats->lastMovedToReadyTime != 0)
     {
         uint32_t timeInReady = ulGetRunTimeCounterValue() - currentStats->lastMovedToReadyTime;
@@ -209,7 +218,11 @@ void vTaskSwitchedIn(void)
         }
         currentStats->lastMovedToReadyTime = 0;
     }
-    currentStats->lastMovedToRunningTime = ulGetRunTimeCounterValue();
+    
+    if (currentStats != NULL)
+    {
+        currentStats->lastMovedToRunningTime = ulGetRunTimeCounterValue();
+    }
 }
 
 uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, SystemTaskStats * systemStats)
