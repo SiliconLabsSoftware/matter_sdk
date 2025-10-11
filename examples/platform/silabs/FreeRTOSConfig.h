@@ -106,7 +106,9 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
+#if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS == 1
 #include <platform/silabs/tracing/SilabsTracingConfig.h>
+#endif // TRACING_RUNTIME_STATS
 
 #ifdef SLI_SI91X_MCU_INTERFACE
 #include "si91x_device.h"
