@@ -38,7 +38,7 @@
  * Default: 0 (disabled)
  */
 #ifndef TRACING_RUNTIME_STATS
-#define TRACING_RUNTIME_STATS 1
+#define TRACING_RUNTIME_STATS 0
 #endif
 
 /**
