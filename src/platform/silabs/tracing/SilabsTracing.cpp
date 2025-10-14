@@ -845,7 +845,8 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         {
             // This is deleted task
             ChipLogProgress(DeviceLayer,
-                            "| %-23s| %-7s | %-4s | %-9s | %-9s | %-6s | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-7s | %-7s | %-7s |",
+                            "| %-23s| %-7s | %-4s | %-9s | %-9s | %-6s | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-8lu|"
+                            " %-8lu| %-8lu|",
                             task->name, FreeRTOSTaskStateToString(task->state), "N/A", "N/A", "N/A", "N/A", task->preemptionCount,
                             task->switchOutCount, (task->preemptionPercentage / 100), (task->preemptionPercentage % 100),
                             task->lastExecutionTime, task->readyTimeHighWaterMark, task->totalRunningTime, task->totalReadyTime);
