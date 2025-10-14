@@ -62,7 +62,6 @@ static TaskStats * createTaskStats(TaskHandle_t handle)
     stats->lastMovedToReadyTime   = 0;
     stats->totalReadyTime         = 0;
     stats->totalRunningTime       = 0;
-    stats->totalBlockedTime       = 0;
     stats->readyTimeHighWaterMark = 0;
     stats->isDeleted              = false;
 
@@ -142,14 +141,7 @@ void vTaskMovedToReadyState(void * xTask)
     }
     if (stats != NULL)
     {
-        // stats->totalReadyTime++;
         stats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
-        if (stats->lastMovedToBlockedTime != 0)
-        {
-            uint32_t timeInBlocked = ulGetRunTimeCounterValue() - stats->lastMovedToBlockedTime;
-            stats->totalBlockedTime += timeInBlocked;
-            stats->lastMovedToBlockedTime = 0;
-        }
         return;
     }
 }
@@ -196,18 +188,13 @@ void vTaskSwitchedIn(void)
         lastTaskStats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
     }
 
-    if (sLastTaskSwitchedOut != NULL && eTaskGetState(sLastTaskSwitchedOut) == eBlocked && lastTaskStats != NULL)
-    {
-        lastTaskStats->lastMovedToBlockedTime = ulGetRunTimeCounterValue();
-    }
-
     TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
     TaskStats * currentStats = findTaskStats(currentTask);
     if (currentStats == NULL)
     {
         currentStats = createTaskStats(currentTask);
     }
-    
+
     if (currentStats != NULL && currentStats->lastMovedToReadyTime != 0)
     {
         uint32_t timeInReady = ulGetRunTimeCounterValue() - currentStats->lastMovedToReadyTime;
@@ -218,7 +205,7 @@ void vTaskSwitchedIn(void)
         }
         currentStats->lastMovedToReadyTime = 0;
     }
-    
+
     if (currentStats != NULL)
     {
         currentStats->lastMovedToRunningTime = ulGetRunTimeCounterValue();
@@ -268,9 +255,16 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
         info->handle                            = status->xHandle;
         info->state                             = status->eCurrentState;
         info->priority                          = status->uxCurrentPriority;
-        info->stackHighWaterMark                = status->usStackHighWaterMark;
-        info->runTimeCounter                    = status->ulRunTimeCounter;
-        info->cpuPercentage = totalRunTime > 0 ? (uint32_t) (((uint64_t) status->ulRunTimeCounter * 10000) / totalRunTime) : 0;
+
+        // Calculate stack sizes using the stack pointers
+        size_t totalStackSize = (status->pxEndOfStack - status->pxStackBase) * sizeof(StackType_t);
+        size_t usedStackSize  = totalStackSize - (status->usStackHighWaterMark * sizeof(StackType_t));
+
+        info->stackHighWaterMark = usedStackSize;  // Max stack used in bytes
+        info->stackMaxSize       = totalStackSize; // Total allocated stack in bytes
+
+        info->runTimeCounter = status->ulRunTimeCounter;
+        info->cpuPercentage  = totalRunTime > 0 ? (uint32_t) (((uint64_t) status->ulRunTimeCounter * 10000) / totalRunTime) : 0;
 
         // Add tracking stats if available
         if (stats != NULL)
@@ -281,7 +275,6 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
             info->readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
             info->totalReadyTime         = stats->totalReadyTime;
             info->totalRunningTime       = stats->totalRunningTime;
-            info->totalBlockedTime       = stats->totalBlockedTime;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
         }

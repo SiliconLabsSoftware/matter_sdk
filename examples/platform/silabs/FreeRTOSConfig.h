@@ -179,6 +179,7 @@ extern uint32_t SystemCoreClock;
 #include "FreeRTOSRuntimeStats.c"
 #define configGENERATE_RUN_TIME_STATS (1)
 #define configUSE_STATS_FORMATTING_FUNCTIONS (1)
+#define configRECORD_STACK_HIGH_ADDRESS (1)
 
 extern uint32_t ulGetRunTimeCounterValue(void);
 extern void vTaskSwitchedOut(void);

@@ -825,10 +825,12 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
                     (systemStats.systemPreemptionRatio / 100), (systemStats.systemPreemptionRatio % 100),
                     systemStats.totalPreemptionCount, systemStats.totalSwitchOutCount);
 
-    ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4s | %-9s | %-6s | %-12s | %-6s | %-10s |", "Task Name", "State", "Prio",
-                    "Stack HWM", "CPU %", "Preempt", "Pre. %", "Last Time");
-    ChipLogProgress(DeviceLayer, "|%-24s|%-12s|%-6s|%-11s|%-8s|%-14s|%-8s|%-12s|", "------------------------", "------------",
-                    "------", "-----------", "--------", "--------------", "--------", "------------");
+    ChipLogProgress(DeviceLayer, "| %-23s| %-7s | %-4s | %-9s | %-9s | %-6s | %-12s | %-6s | %-10s | %-7s | %-7s | %-7s |",
+                    "Task Name", "State", "Prio", "Stack HWM", "Stack Max", "CPU %", "Preempted", "Pre. %", "Last Time", "Rdy HWM",
+                    "Run Tot", "Rdy Tot");
+    ChipLogProgress(DeviceLayer, "|%-24s|%-9s|%-6s|%-11s|%-11s|%-8s|%-14s|%-8s|%-12s|%-9s|%-9s|%-9s|", "------------------------",
+                    "---------", "------", "-----------", "-----------", "--------", "--------------", "--------", "------------",
+                    "---------", "---------", "---------");
 
     // Print each task's information as a row in the table
     for (uint32_t i = 0; i < taskCount; i++)
@@ -845,21 +847,22 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         if (task->state == eDeleted && task->handle == NULL)
         {
             // This is deleted task
-            ChipLogProgress(DeviceLayer, "| %-23s| %-10s | %-4s | %-9s | %-6s | %4lu/%-7lu |%3lu.%02lu%% | %-10lu |", task->name,
-                            FreeRTOSTaskStateToString(task->state), "N/A", "N/A", "N/A", task->preemptionCount,
+            ChipLogProgress(DeviceLayer,
+                            "| %-23s| %-7s | %-4s | %-9s | %-9s | %-6s | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-7s | %-7s | %-7s |",
+                            task->name, FreeRTOSTaskStateToString(task->state), "N/A", "N/A", "N/A", "N/A", task->preemptionCount,
                             task->switchOutCount, (task->preemptionPercentage / 100), (task->preemptionPercentage % 100),
-                            task->lastExecutionTime);
+                            task->lastExecutionTime, "N/A", "N/A", "N/A");
         }
         else
         {
             // Active task
-            ChipLogProgress(
-                DeviceLayer,
-                "| %-23s| %-10s | %-4lu | %-9lu | %2lu.%02lu%% | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-4lu | %-4lu | %-4lu |",
-                task->name, FreeRTOSTaskStateToString(task->state), task->priority, task->stackHighWaterMark,
-                (task->cpuPercentage / 100), (task->cpuPercentage % 100), task->preemptionCount, task->switchOutCount,
-                (task->preemptionPercentage / 100), (task->preemptionPercentage % 100), task->lastExecutionTime,
-                task->totalRunningTime, task->totalReadyTime, task->totalBlockedTime);
+            ChipLogProgress(DeviceLayer,
+                            "| %-23s| %-7s | %-4lu | %-9lu | %-9lu | %2lu.%02lu%% | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-8lu|"
+                            " %-8lu| %-8lu|",
+                            task->name, FreeRTOSTaskStateToString(task->state), task->priority, task->stackHighWaterMark,
+                            task->stackMaxSize, (task->cpuPercentage / 100), (task->cpuPercentage % 100), task->preemptionCount,
+                            task->switchOutCount, (task->preemptionPercentage / 100), (task->preemptionPercentage % 100),
+                            task->lastExecutionTime, task->readyTimeHighWaterMark, task->totalRunningTime, task->totalReadyTime);
         }
     }
 

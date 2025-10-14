@@ -31,6 +31,7 @@ typedef struct
     eTaskState state;
     UBaseType_t priority;
     UBaseType_t stackHighWaterMark;
+    UBaseType_t stackMaxSize;
     uint32_t runTimeCounter; // Total CPU time in ms
     uint32_t cpuPercentage;
     uint32_t switchOutCount;  // Total times switched out
@@ -40,7 +41,6 @@ typedef struct
     uint32_t readyTimeHighWaterMark; // in ms
     uint32_t totalReadyTime;         // in ms
     uint32_t totalRunningTime;
-    uint32_t totalBlockedTime;
 } TaskInfo;
 typedef struct
 {
@@ -65,8 +65,6 @@ typedef struct
     uint32_t readyTimeHighWaterMark;
     uint32_t lastMovedToRunningTime;
     uint32_t totalRunningTime;
-    uint32_t lastMovedToBlockedTime;
-    uint32_t totalBlockedTime;
     bool isDeleted;
 } TaskStats;
 
