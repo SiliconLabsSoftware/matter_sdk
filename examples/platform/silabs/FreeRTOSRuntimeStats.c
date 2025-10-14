@@ -97,6 +97,8 @@ void vTaskDeleted(void * xTask)
         stats->handle            = NULL;
         stats->switchOutCount    = 0;
         stats->preemptionCount   = 0;
+        stats->totalReadyTime    = 0;
+        stats->totalRunningTime  = 0;
         stats->lastSwitchOutTime = ulGetRunTimeCounterValue(); // Deletion time since we don't have any other details about it
         stats->isDeleted         = true;
 
@@ -148,6 +150,8 @@ void vTaskMovedToReadyState(void * xTask)
 
 uint32_t ulGetRunTimeCounterValue(void)
 {
+    // Return time in milliseconds since system start
+    // The '1000' is for second to millisecond conversion
     return ((uint64_t) xTaskGetTickCount() * 1000) / configTICK_RATE_HZ;
 }
 
@@ -280,10 +284,13 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
         }
         else
         {
-            info->switchOutCount       = 0;
-            info->preemptionCount      = 0;
-            info->preemptionPercentage = 0;
-            info->lastExecutionTime    = 0;
+            info->switchOutCount         = 0;
+            info->preemptionCount        = 0;
+            info->lastExecutionTime      = 0;
+            info->readyTimeHighWaterMark = 0;
+            info->totalReadyTime         = 0;
+            info->totalRunningTime       = 0;
+            info->preemptionPercentage   = 0;
         }
 
         taskCount++;
@@ -304,13 +311,16 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
             info->handle                            = NULL;
             info->state = eDeleted; // While technically the deleted state is something else in FreeRTOS, we use eDeleted for the
                                     // purpose of this debug feature.
-            info->priority           = 0;
-            info->stackHighWaterMark = 0;
-            info->runTimeCounter     = 0;
-            info->cpuPercentage      = 0;
-            info->switchOutCount     = stats->switchOutCount;
-            info->preemptionCount    = stats->preemptionCount;
-            info->lastExecutionTime  = stats->lastSwitchOutTime;
+            info->priority               = 0;
+            info->stackHighWaterMark     = 0;
+            info->runTimeCounter         = 0;
+            info->cpuPercentage          = 0;
+            info->switchOutCount         = stats->switchOutCount;
+            info->preemptionCount        = stats->preemptionCount;
+            info->lastExecutionTime      = stats->lastSwitchOutTime;
+            info->readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
+            info->totalReadyTime         = stats->totalReadyTime;
+            info->totalRunningTime       = stats->totalRunningTime;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
 

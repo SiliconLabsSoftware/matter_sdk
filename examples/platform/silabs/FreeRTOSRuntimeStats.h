@@ -69,7 +69,11 @@ typedef struct
 } TaskStats;
 
 /**
- * @brief Get comprehensive task statistics for active and deleted tasks
+ * @brief Get comprehensive task statistics for active and deleted tasks.
+ * All times are in milliseconds and sizes are in bytes.
+ * The statistics related to time such as Ready time and Running time are to be taken lightly as they are based on task switch
+ * hooks and a timer with a resolution of 1 ms. The values are best effort and may not be accurate. Furthermore, systems that use
+ * FreeRTOS tickless idle may have even less accuracy.
  * @param taskInfoArray Array to store task information
  * @param taskInfoArraySize Maximum number of tasks the array can hold
  * @param systemStats Pointer to store system-wide statistics (optional)

@@ -837,9 +837,6 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
     {
         const TaskInfo * task = &taskInfoArray[i];
 
-        // if (!task->isValid)
-        // continue;
-
         // Allow time for the UART buffer to empty itself. Without this, some lines may be skipped and a "Missed Logs: X" will
         // appear in the output A delay of 1 tick was not sufficient, so we use 10.
         vTaskDelay(10);
@@ -851,7 +848,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
                             "| %-23s| %-7s | %-4s | %-9s | %-9s | %-6s | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-7s | %-7s | %-7s |",
                             task->name, FreeRTOSTaskStateToString(task->state), "N/A", "N/A", "N/A", "N/A", task->preemptionCount,
                             task->switchOutCount, (task->preemptionPercentage / 100), (task->preemptionPercentage % 100),
-                            task->lastExecutionTime, "N/A", "N/A", "N/A");
+                            task->lastExecutionTime, task->readyTimeHighWaterMark, task->totalRunningTime, task->totalReadyTime);
         }
         else
         {
