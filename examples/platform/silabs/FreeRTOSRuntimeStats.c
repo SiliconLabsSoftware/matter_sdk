@@ -24,7 +24,7 @@
 #include <string.h>
 
 #pragma message(                                                                                                                   \
-    "FreeRTOS Runtime statistics are enabled. This is a debugging feature and may have an impact on performance. Disable for release builds. Set TRACING_RUNTIME_STATS to 0 in SilabsTracingConfig.h to disable.")
+        "FreeRTOS Runtime statistics are enabled. This is a debugging feature and may have an impact on performance. Disable for release builds. Set TRACING_RUNTIME_STATS to 0 in SilabsTracingConfig.h to disable.")
 
 // Global tracking variables
 static volatile uint32_t sTaskSwitchCount         = 0;
