@@ -18,10 +18,21 @@
 import("//build_overrides/build.gni")
 import("//build_overrides/chip.gni")
 import("${chip_root}/build/chip/buildconfig_header.gni")
+import("${chip_root}/src/platform/silabs/tracing/silabs_tracing_args.gni")
 
 buildconfig_header("silabs_tracing_config") {
   header = "SilabsTracingConfig.h"
   header_dir = "platform/silabs/tracing"
+
+  defines = []
+
+  if (silabs_tracing_runtime_stats == true) {
+    defines += [
+      "TRACING_RUNTIME_STATS=1",
+      "TRACING_RUNTIME_STATS_MAX_TASKS=16",
+    ]
+  }
+  defines += [ "SERIALIZED_TIME_TRACKERS_SIZE_BYTES=512" ]
 }
 
 static_library("SilabsTracing") {
