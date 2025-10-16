@@ -43,11 +43,12 @@ public:
      * @return CHIP_ERROR indicating success or failure of the initialization.
      */
     CHIP_ERROR Init();
+
 private:
     EndpointId mEndpoint = kInvalidEndpointId;
 };
 
-} // namespace oven
+} // namespace Oven
 } // namespace Clusters
 } // namespace app
 } // namespace chip

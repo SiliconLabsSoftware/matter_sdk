@@ -26,11 +26,9 @@ using namespace chip::app::DataModel;
 using namespace chip::app::Clusters;
 
 // Define the temperature level options for the oven
-CharSpan AppSupportedTemperatureLevelsDelegate::temperatureLevelOptions[3] = {
-    CharSpan::fromCharString("Low"),
-    CharSpan::fromCharString("Medium"),
-    CharSpan::fromCharString("High")
-};
+CharSpan AppSupportedTemperatureLevelsDelegate::temperatureLevelOptions[3] = { CharSpan::fromCharString("Low"),
+                                                                               CharSpan::fromCharString("Medium"),
+                                                                               CharSpan::fromCharString("High") };
 
 // Define supported temperature levels by endpoint
 const AppSupportedTemperatureLevelsDelegate::EndpointPair AppSupportedTemperatureLevelsDelegate::supportedOptionsByEndpoints[3] = {
@@ -63,7 +61,9 @@ CHIP_ERROR AppSupportedTemperatureLevelsDelegate::Next(MutableCharSpan & item)
         {
             if (mIndex < endpointPair.mSize)
             {
-                ChipLogProgress(AppServer, "Returning temperature level: %.*s", static_cast<int>(endpointPair.mTemperatureLevels[mIndex].size()), endpointPair.mTemperatureLevels[mIndex].data());
+                ChipLogProgress(AppServer, "Returning temperature level: %.*s",
+                                static_cast<int>(endpointPair.mTemperatureLevels[mIndex].size()),
+                                endpointPair.mTemperatureLevels[mIndex].data());
                 CHIP_ERROR err = CopyCharSpanToMutableCharSpan(endpointPair.mTemperatureLevels[mIndex], item);
                 if (err == CHIP_NO_ERROR)
                 {

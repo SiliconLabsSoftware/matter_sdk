@@ -47,7 +47,6 @@ public:
 
 private:
     EndpointId mEndpoint = kInvalidEndpointId;
-
 };
 
 } // namespace CookTop

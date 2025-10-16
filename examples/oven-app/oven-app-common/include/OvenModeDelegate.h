@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include <app/clusters/mode-base-server/mode-base-server.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
-#include <app/clusters/mode-base-server/mode-base-server.h>
 
 // Forward declarations to reduce header dependencies
 namespace chip {
@@ -38,11 +38,11 @@ struct Type;
 namespace ModeOptionStruct {
 struct Type;
 }
-}
-}
-}
-}
-}
+} // namespace Structs
+} // namespace detail
+} // namespace Clusters
+} // namespace app
+} // namespace chip
 
 namespace chip {
 namespace app {
