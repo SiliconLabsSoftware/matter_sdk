@@ -18,12 +18,12 @@
 
 #pragma once
 
+#include <AppSupportedTemperatureLevelsDelegate.h>
 #include <app-common/zap-generated/cluster-objects.h>
-#include <lib/core/CHIPError.h>
-#include <lib/core/DataModelTypes.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
-#include <AppSupportedTemperatureLevelsDelegate.h>
+#include <lib/core/CHIPError.h>
+#include <lib/core/DataModelTypes.h>
 
 namespace chip {
 namespace app {

@@ -37,5 +37,5 @@ CHIP_ERROR CookTopEndpoint::Init()
 void CookTopEndpoint::offCommand()
 {
     // Handle off command
-    return ;
+    return;
 }

@@ -26,9 +26,9 @@
 #include <lib/support/TimeUtils.h>
 #include <platform/CHIPDeviceLayer.h>
 
-#include "OvenEndpoint.h"
-#include "CookTopEndpoint.h"
 #include "CookSurfaceEndpoint.h"
+#include "CookTopEndpoint.h"
+#include "OvenEndpoint.h"
 #include "TemperatureControlledCabinetEndpoint.h"
 
 using namespace chip;

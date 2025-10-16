@@ -19,10 +19,9 @@
 #pragma once
 
 #include <OvenModeDelegate.h>
-#include <lib/core/CHIPError.h>
 #include <app/clusters/mode-base-server/mode-base-server.h>
 #include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
-
+#include <lib/core/CHIPError.h>
 
 namespace chip {
 namespace app {
@@ -35,9 +34,7 @@ class TemperatureControlledCabinetEndpoint
 {
 public:
     TemperatureControlledCabinetEndpoint(EndpointId endpointId) :
-        mEndpointId(endpointId),
-        mOvenModeDelegate(endpointId),
-        mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, 0)
+        mEndpointId(endpointId), mOvenModeDelegate(endpointId), mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, 0)
     {}
 
     /**
