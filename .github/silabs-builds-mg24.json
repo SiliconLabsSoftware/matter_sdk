@@ -11,10 +11,6 @@
             },
             {
                 "boards": ["BRD4187C"],
-                "arguments": ["--docker", "--wifi rs9116"]
-            },
-            {
-                "boards": ["BRD4187C"],
                 "arguments": ["--docker", "--wifi SiWx917"]
             },
             {
