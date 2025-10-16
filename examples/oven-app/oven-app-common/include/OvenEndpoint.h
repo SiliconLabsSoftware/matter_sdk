@@ -34,7 +34,7 @@ class OvenEndpoint
 {
 public:
     OvenEndpoint(EndpointId endpointId) : mEndpoint(endpointId) {}
-    
+
     /**
      * @brief Initialize the oven endpoint.
      *

@@ -52,5 +52,3 @@ void OvenManager::Init()
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
 }
-
-
