@@ -100,6 +100,13 @@ jobs:
             example-app: "fan-control-app"
             output-directory: "./out/fan-control-app"
 
+    build-rangehood-app:
+        name: Build rangehood-App variations
+        uses: ./.github/workflows/silabs-common-build.yaml
+        with:
+            example-app: "rangehood-app"
+            output-directory: "./out/rangehood-app"
+
     build-multi-sensor-app:
         name: Build Multi-Sensor-App variations
         uses: ./.github/workflows/silabs-common-build.yaml

@@ -62,9 +62,11 @@ jobs:
                   ./scripts/run_in_build_env.sh '
                     ./scripts/tools/zap/generate.py examples/multi-sensor-app/silabs/data_model/multi-sensor-thread-app.zap &&
                     ./scripts/tools/zap/generate.py examples/fan-control-app/silabs/data_model/fan-control-thread-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/rangehood-app/silabs/data_model/rangehood-thread-app.zap &&
                     ./scripts/tools/zap/generate.py examples/template/silabs/template_DataModel_config/sl_template.zap &&
                     ./scripts/tools/zap/generate.py examples/onoff-plug-app/silabs/data_model/onoff-plug-app.zap &&
                     ./scripts/tools/zap/generate.py examples/fan-control-app/silabs/data_model/fan-control-wifi-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/rangehood-app/silabs/data_model/rangehood-wifi-app.zap &&
                     ./scripts/tools/zap/generate.py examples/multi-sensor-app/silabs/data_model/multi-sensor-wifi-app.zap
                   '
 
