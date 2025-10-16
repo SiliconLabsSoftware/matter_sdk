@@ -34,17 +34,17 @@ namespace TemperatureControlledCabinet {
 class TemperatureControlledCabinetEndpoint
 {
 public:
-    TemperatureControlledCabinetEndpoint(EndpointId endpointId) : 
-        mEndpointId(endpointId), 
-        mOvenModeDelegate(endpointId), 
-        mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, 0) 
+    TemperatureControlledCabinetEndpoint(EndpointId endpointId) :
+        mEndpointId(endpointId),
+        mOvenModeDelegate(endpointId),
+        mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, 0)
     {}
 
     /**
      * Initialize the temperature controlled cabinet endpoint.
      */
     CHIP_ERROR Init();
-    
+
 private:
     EndpointId mEndpointId = kInvalidEndpointId;
     OvenModeDelegate mOvenModeDelegate;

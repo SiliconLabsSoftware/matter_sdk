@@ -76,7 +76,7 @@ public:
 
 private:
     EndpointId mEndpointId;
-    
+
     // Static arrays moved to implementation file to reduce header size
     static const detail::Structs::ModeTagStruct::Type sModeTagsBake[];
     static const detail::Structs::ModeTagStruct::Type sModeTagsConvection[];
@@ -87,7 +87,7 @@ private:
     static const detail::Structs::ModeTagStruct::Type sModeTagsConvectionRoast[];
     static const detail::Structs::ModeTagStruct::Type sModeTagsWarming[];
     static const detail::Structs::ModeTagStruct::Type sModeTagsProofing[];
-    
+
     static const detail::Structs::ModeOptionStruct::Type skModeOptions[];
 };
 

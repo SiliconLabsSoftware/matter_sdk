@@ -28,7 +28,7 @@ using namespace chip::app::Clusters;
 // Define the temperature level options for the oven
 CharSpan AppSupportedTemperatureLevelsDelegate::temperatureLevelOptions[3] = {
     CharSpan::fromCharString("Low"),
-    CharSpan::fromCharString("Medium"), 
+    CharSpan::fromCharString("Medium"),
     CharSpan::fromCharString("High")
 };
 

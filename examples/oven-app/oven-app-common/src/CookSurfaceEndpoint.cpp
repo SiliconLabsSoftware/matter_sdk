@@ -31,7 +31,7 @@ using namespace chip::app::Clusters;
 CHIP_ERROR CookSurfaceEndpoint::Init()
 {
     ChipLogProgress(AppServer, "CookSurfaceEndpoint::Init() called for endpoint %d", mEndpoint);
-    
+
     // Temperature Control Delegate set
     TemperatureControl::SetInstance(&mTemperatureControlDelegate);
     ChipLogProgress(AppServer, "Temperature control delegate set for CookSurfaceEndpoint");

@@ -123,14 +123,14 @@ CHIP_ERROR OvenModeDelegate::GetModeTagsByIndex(uint8_t modeIndex, DataModel::Li
     // Convert const list to non-const using data() and size()
     auto & sourceTags = skModeOptions[modeIndex].modeTags;
     tags = DataModel::List<detail::Structs::ModeTagStruct::Type>(
-        const_cast<detail::Structs::ModeTagStruct::Type*>(sourceTags.data()), 
+        const_cast<detail::Structs::ModeTagStruct::Type*>(sourceTags.data()),
         sourceTags.size()
     );
-    
+
     return CHIP_NO_ERROR;
 }
 
 } // namespace TemperatureControlledCabinet
-} // namespace Clusters  
+} // namespace Clusters
 } // namespace app
 } // namespace chip
