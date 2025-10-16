@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <AppSupportedTemperatureLevelsDelegate.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
