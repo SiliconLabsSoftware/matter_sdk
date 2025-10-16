@@ -2589,5 +2589,3 @@ endpoint 5 {
     ram      attribute clusterRevision default = 4;
   }
 }
-
-
