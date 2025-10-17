@@ -852,6 +852,15 @@
               "maxInterval": 65534,
               "reportableChange": 0
             }
+          ],
+          "events": [
+            {
+              "name": "StartUp",
+              "code": 0,
+              "mfgCode": null,
+              "side": "server",
+              "included": 1
+            }
           ]
         },
         {
@@ -1179,10 +1188,10 @@
               "side": "server",
               "type": "int16u",
               "included": 1,
-              "storageOption": "RAM",
+              "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "1",
+              "defaultValue": null,
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -1523,6 +1532,88 @@
           "define": "NETWORK_COMMISSIONING_CLUSTER",
           "side": "server",
           "enabled": 1,
+          "commands": [
+            {
+              "name": "ScanNetworks",
+              "code": 0,
+              "mfgCode": null,
+              "source": "client",
+              "isIncoming": 1,
+              "isEnabled": 1
+            },
+            {
+              "name": "ScanNetworksResponse",
+              "code": 1,
+              "mfgCode": null,
+              "source": "server",
+              "isIncoming": 0,
+              "isEnabled": 1
+            },
+            {
+              "name": "AddOrUpdateWiFiNetwork",
+              "code": 2,
+              "mfgCode": null,
+              "source": "client",
+              "isIncoming": 1,
+              "isEnabled": 1
+            },
+            {
+              "name": "RemoveNetwork",
+              "code": 4,
+              "mfgCode": null,
+              "source": "client",
+              "isIncoming": 1,
+              "isEnabled": 1
+            },
+            {
+              "name": "NetworkConfigResponse",
+              "code": 5,
+              "mfgCode": null,
+              "source": "server",
+              "isIncoming": 0,
+              "isEnabled": 1
+            },
+            {
+              "name": "ConnectNetwork",
+              "code": 6,
+              "mfgCode": null,
+              "source": "client",
+              "isIncoming": 1,
+              "isEnabled": 1
+            },
+            {
+              "name": "ConnectNetworkResponse",
+              "code": 7,
+              "mfgCode": null,
+              "source": "server",
+              "isIncoming": 0,
+              "isEnabled": 1
+            },
+            {
+              "name": "ReorderNetwork",
+              "code": 8,
+              "mfgCode": null,
+              "source": "client",
+              "isIncoming": 1,
+              "isEnabled": 1
+            },
+            {
+              "name": "QueryIdentity",
+              "code": 9,
+              "mfgCode": null,
+              "source": "client",
+              "isIncoming": 1,
+              "isEnabled": 1
+            },
+            {
+              "name": "QueryIdentityResponse",
+              "code": 10,
+              "mfgCode": null,
+              "source": "server",
+              "isIncoming": 0,
+              "isEnabled": 1
+            }
+          ],
           "attributes": [
             {
               "name": "MaxNetworks",
@@ -1653,27 +1744,11 @@
               "reportableChange": 0
             },
             {
-              "name": "SupportedThreadFeatures",
-              "code": 9,
+              "name": "SupportedWiFiBands",
+              "code": 8,
               "mfgCode": null,
               "side": "server",
-              "type": "ThreadCapabilitiesBitmap",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "ThreadVersion",
-              "code": 10,
-              "mfgCode": null,
-              "side": "server",
-              "type": "int16u",
+              "type": "array",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -1960,22 +2035,41 @@
               "maxInterval": 65534,
               "reportableChange": 0
             }
+          ],
+          "events": [
+            {
+              "name": "BootReason",
+              "code": 3,
+              "mfgCode": null,
+              "side": "server",
+              "included": 1
+            }
           ]
         },
         {
-          "name": "Thread Network Diagnostics",
-          "code": 53,
+          "name": "Wi-Fi Network Diagnostics",
+          "code": 54,
           "mfgCode": null,
-          "define": "THREAD_NETWORK_DIAGNOSTICS_CLUSTER",
+          "define": "WIFI_NETWORK_DIAGNOSTICS_CLUSTER",
           "side": "server",
           "enabled": 1,
+          "commands": [
+            {
+              "name": "ResetCounts",
+              "code": 0,
+              "mfgCode": null,
+              "source": "client",
+              "isIncoming": 1,
+              "isEnabled": 1
+            }
+          ],
           "attributes": [
             {
-              "name": "Channel",
+              "name": "BSSID",
               "code": 0,
               "mfgCode": null,
               "side": "server",
-              "type": "int16u",
+              "type": "octet_string",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -1987,11 +2081,11 @@
               "reportableChange": 0
             },
             {
-              "name": "RoutingRole",
+              "name": "SecurityType",
               "code": 1,
               "mfgCode": null,
               "side": "server",
-              "type": "RoutingRoleEnum",
+              "type": "SecurityTypeEnum",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -2003,11 +2097,11 @@
               "reportableChange": 0
             },
             {
-              "name": "NetworkName",
+              "name": "WiFiVersion",
               "code": 2,
               "mfgCode": null,
               "side": "server",
-              "type": "char_string",
+              "type": "WiFiVersionEnum",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -2019,7 +2113,7 @@
               "reportableChange": 0
             },
             {
-              "name": "PanId",
+              "name": "ChannelNumber",
               "code": 3,
               "mfgCode": null,
               "side": "server",
@@ -2035,11 +2129,11 @@
               "reportableChange": 0
             },
             {
-              "name": "ExtendedPanId",
+              "name": "RSSI",
               "code": 4,
               "mfgCode": null,
               "side": "server",
-              "type": "int64u",
+              "type": "int8s",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -2051,11 +2145,11 @@
               "reportableChange": 0
             },
             {
-              "name": "MeshLocalPrefix",
+              "name": "BeaconLostCount",
               "code": 5,
               "mfgCode": null,
               "side": "server",
-              "type": "octet_string",
+              "type": "int32u",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -2067,11 +2161,27 @@
               "reportableChange": 0
             },
             {
-              "name": "NeighborTable",
+              "name": "BeaconRxCount",
+              "code": 6,
+              "mfgCode": null,
+              "side": "server",
+              "type": "int32u",
+              "included": 1,
+              "storageOption": "External",
+              "singleton": 0,
+              "bounded": 0,
+              "defaultValue": null,
+              "reportable": 1,
+              "minInterval": 1,
+              "maxInterval": 65534,
+              "reportableChange": 0
+            },
+            {
+              "name": "PacketMulticastRxCount",
               "code": 7,
               "mfgCode": null,
               "side": "server",
-              "type": "array",
+              "type": "int32u",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -2083,11 +2193,11 @@
               "reportableChange": 0
             },
             {
-              "name": "RouteTable",
+              "name": "PacketMulticastTxCount",
               "code": 8,
               "mfgCode": null,
               "side": "server",
-              "type": "array",
+              "type": "int32u",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -2099,7 +2209,7 @@
               "reportableChange": 0
             },
             {
-              "name": "PartitionId",
+              "name": "PacketUnicastRxCount",
               "code": 9,
               "mfgCode": null,
               "side": "server",
@@ -2115,11 +2225,11 @@
               "reportableChange": 0
             },
             {
-              "name": "Weighting",
+              "name": "PacketUnicastTxCount",
               "code": 10,
               "mfgCode": null,
               "side": "server",
-              "type": "int16u",
+              "type": "int32u",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -2131,120 +2241,8 @@
               "reportableChange": 0
             },
             {
-              "name": "DataVersion",
+              "name": "CurrentMaxRate",
               "code": 11,
-              "mfgCode": null,
-              "side": "server",
-              "type": "int16u",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "StableDataVersion",
-              "code": 12,
-              "mfgCode": null,
-              "side": "server",
-              "type": "int16u",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "LeaderRouterId",
-              "code": 13,
-              "mfgCode": null,
-              "side": "server",
-              "type": "int8u",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "SecurityPolicy",
-              "code": 59,
-              "mfgCode": null,
-              "side": "server",
-              "type": "SecurityPolicy",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "ChannelPage0Mask",
-              "code": 60,
-              "mfgCode": null,
-              "side": "server",
-              "type": "octet_string",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "OperationalDatasetComponents",
-              "code": 61,
-              "mfgCode": null,
-              "side": "server",
-              "type": "OperationalDatasetComponents",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "ActiveNetworkFaultsList",
-              "code": 62,
-              "mfgCode": null,
-              "side": "server",
-              "type": "array",
-              "included": 1,
-              "storageOption": "External",
-              "singleton": 0,
-              "bounded": 0,
-              "defaultValue": null,
-              "reportable": 1,
-              "minInterval": 1,
-              "maxInterval": 65534,
-              "reportableChange": 0
-            },
-            {
-              "name": "ExtAddress",
-              "code": 63,
               "mfgCode": null,
               "side": "server",
               "type": "int64u",
@@ -2259,11 +2257,11 @@
               "reportableChange": 0
             },
             {
-              "name": "Rloc16",
-              "code": 64,
+              "name": "OverrunCount",
+              "code": 12,
               "mfgCode": null,
               "side": "server",
-              "type": "int16u",
+              "type": "int64u",
               "included": 1,
               "storageOption": "External",
               "singleton": 0,
@@ -2332,7 +2330,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "0",
+              "defaultValue": "3",
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -3219,7 +3217,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "0",
+              "defaultValue": "1",
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
