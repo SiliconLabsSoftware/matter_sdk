@@ -56,6 +56,7 @@ template("siwx917_sdk") {
     _include_dirs = [
       "${chip_root}",
       "${chip_root}/src",
+      "${target_gen_dir}/include",
       "${chip_root}/examples/platform/silabs/",
       "${efr32_sdk_root}/platform/emdrv/nvm3/config",
       "${efr32_sdk_root}/platform/emdrv/nvm3/inc",
@@ -858,6 +859,7 @@ template("siwx917_sdk") {
     }
 
     public_deps = [
+      "${chip_root}/src/platform/silabs/tracing:silabs_tracing_config",
       "${segger_rtt_root}:segger_rtt",
       "${segger_rtt_root}:segger_rtt_printf",
     ]

@@ -31,12 +31,16 @@ typedef struct
     eTaskState state;
     UBaseType_t priority;
     UBaseType_t stackHighWaterMark;
+    UBaseType_t stackMaxSize;
     uint32_t runTimeCounter; // Total CPU time in ms
     uint32_t cpuPercentage;
     uint32_t switchOutCount;  // Total times switched out
     uint32_t preemptionCount; // Times preempted (switched out while ready)
     uint32_t preemptionPercentage;
-    uint32_t lastExecutionTime; // in ms
+    uint32_t lastExecutionTime;      // in ms
+    uint32_t readyTimeHighWaterMark; // in ms
+    uint32_t totalReadyTime;         // in ms
+    uint32_t totalRunningTime;
 } TaskInfo;
 typedef struct
 {
@@ -56,11 +60,20 @@ typedef struct
     uint32_t switchOutCount;
     uint32_t preemptionCount;
     uint32_t lastSwitchOutTime;
+    uint32_t lastMovedToReadyTime;
+    uint32_t totalReadyTime;
+    uint32_t readyTimeHighWaterMark;
+    uint32_t lastMovedToRunningTime;
+    uint32_t totalRunningTime;
     bool isDeleted;
 } TaskStats;
 
 /**
- * @brief Get comprehensive task statistics for active and deleted tasks
+ * @brief Get comprehensive task statistics for active and deleted tasks.
+ * All times are in milliseconds and sizes are in bytes.
+ * The statistics related to time such as Ready time and Running time are to be taken lightly as they are based on task switch
+ * hooks and a timer with a resolution of 1 ms. The values are best effort and may not be accurate. Furthermore, systems that use
+ * FreeRTOS tickless idle may have even less accuracy.
  * @param taskInfoArray Array to store task information
  * @param taskInfoArraySize Maximum number of tasks the array can hold
  * @param systemStats Pointer to store system-wide statistics (optional)
