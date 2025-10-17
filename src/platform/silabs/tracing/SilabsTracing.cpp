@@ -83,9 +83,9 @@ int FormatTimeStamp(std::chrono::milliseconds time, MutableCharSpan & buffer)
 }
 
 namespace {
-    // Size in bytes for serialized time tracker storage
-    // Metrics store 6 uint32_t, which is 24 bytes. We currently have 19 operations to track, so 19 * 24 = 456 bytes.
-    // 512 bytes should be enough including the serialization overhead
+// Size in bytes for serialized time tracker storage
+// Metrics store 6 uint32_t, which is 24 bytes. We currently have 19 operations to track, so 19 * 24 = 456 bytes.
+// 512 bytes should be enough including the serialization overhead
 constexpr size_t kPersistentTimeTrackerBufferMax = SERIALIZED_TIME_TRACKERS_SIZE_BYTES;
 
 const char * OperationTypeToString(OperationType type)
