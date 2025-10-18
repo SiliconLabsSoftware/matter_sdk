@@ -287,6 +287,7 @@ extern "C" void vApplicationGetTimerTaskMemory(StaticTask_t ** ppxTimerTaskTCBBu
 }
 
 #if !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
+#ifndef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 extern "C" void RAILCb_AssertFailed(RAIL_Handle_t railHandle, uint32_t errorCode)
 {
     char faultMessage[kMaxFaultStringLen] = { 0 };
@@ -311,5 +312,6 @@ extern "C" void RAILCb_AssertFailed(RAIL_Handle_t railHandle, uint32_t errorCode
 
     chipAbort();
 }
+#endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 #endif // !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
 #endif // HARD_FAULT_LOG_ENABLE
