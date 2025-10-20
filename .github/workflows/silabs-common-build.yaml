@@ -18,7 +18,7 @@ jobs:
         runs-on: ubuntu-latest
 
         container:
-            image: ghcr.io/project-chip/chip-build-efr32:167
+            image: ghcr.io/project-chip/chip-build-efr32:171
 
         strategy:
             fail-fast: false
