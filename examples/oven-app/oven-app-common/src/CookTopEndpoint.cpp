@@ -30,7 +30,6 @@ using namespace ::chip::app::Clusters::OnOff;
 CHIP_ERROR CookTopEndpoint::Init()
 {
     // Initialization logic
-    // OnOffServer::Instance().initOnOffServer(mEndpoint);
     return CHIP_NO_ERROR;
 }
 

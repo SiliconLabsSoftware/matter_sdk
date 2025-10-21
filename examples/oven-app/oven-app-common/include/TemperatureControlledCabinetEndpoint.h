@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <OvenModeDelegate.h>
+#include "OvenModeDelegate.h"
 #include <app/clusters/mode-base-server/mode-base-server.h>
 #include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
 #include <lib/core/CHIPError.h>

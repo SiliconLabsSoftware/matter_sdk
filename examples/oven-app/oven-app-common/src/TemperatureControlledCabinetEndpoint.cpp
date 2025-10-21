@@ -17,7 +17,6 @@
  */
 
 #include "TemperatureControlledCabinetEndpoint.h"
-#include "OvenManager.h"
 #include "OvenModeDelegate.h"
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-enums.h>
