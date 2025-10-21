@@ -19,8 +19,8 @@
 #include "OvenModeDelegate.h"
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
-#include <lib/support/logging/CHIPLogging.h>
 #include <lib/support/CodeUtils.h>
+#include <lib/support/logging/CHIPLogging.h>
 
 using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::OvenMode;
@@ -121,20 +121,20 @@ CHIP_ERROR OvenModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & va
 
 CHIP_ERROR OvenModeDelegate::GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<detail::Structs::ModeTagStruct::Type> & tags)
 {
-  if (modeIndex >= MATTER_ARRAY_SIZE(skModeOptions))
-  {
-      return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
-  }
+    if (modeIndex >= MATTER_ARRAY_SIZE(skModeOptions))
+    {
+        return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+    }
 
-  if (tags.size() < skModeOptions[modeIndex].modeTags.size())
-  {
-      return CHIP_ERROR_INVALID_ARGUMENT;
-  }
+    if (tags.size() < skModeOptions[modeIndex].modeTags.size())
+    {
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
 
-  std::copy(skModeOptions[modeIndex].modeTags.begin(), skModeOptions[modeIndex].modeTags.end(), tags.begin());
-  tags.reduce_size(skModeOptions[modeIndex].modeTags.size());
+    std::copy(skModeOptions[modeIndex].modeTags.begin(), skModeOptions[modeIndex].modeTags.end(), tags.begin());
+    tags.reduce_size(skModeOptions[modeIndex].modeTags.size());
 
-  return CHIP_NO_ERROR;
+    return CHIP_NO_ERROR;
 }
 
 } // namespace TemperatureControlledCabinet

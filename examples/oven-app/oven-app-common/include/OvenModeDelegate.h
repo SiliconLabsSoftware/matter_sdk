@@ -18,12 +18,12 @@
 
 #pragma once
 
+#include <app-common/zap-generated/cluster-objects.h> // provides detail::Structs::ModeTagStruct::Type and ModeOptionStruct::Type
 #include <app/clusters/mode-base-server/mode-base-server.h>
+#include <app/data-model/List.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
-#include <app/data-model/List.h>
 #include <lib/support/Span.h>
-#include <app-common/zap-generated/cluster-objects.h> // provides detail::Structs::ModeTagStruct::Type and ModeOptionStruct::Type
 
 namespace chip {
 namespace app {
