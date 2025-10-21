@@ -319,13 +319,13 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
             info->stats.handle                            = NULL;
             info->state = eDeleted; // While technically the deleted state is something else in FreeRTOS, we use eDeleted for the
                                     // purpose of this debug feature.
-            info->priority               = 0;
-            info->stackHighWaterMark     = 0;
-            info->runTimeCounter         = 0;
-            info->cpuPercentage          = 0;
-            info->stats.switchOutCount   = stats->switchOutCount;
-            info->stats.preemptionCount  = stats->preemptionCount;
-            info->lastExecutionTime      = stats->lastSwitchOutTime;
+            info->priority                     = 0;
+            info->stackHighWaterMark           = 0;
+            info->runTimeCounter               = 0;
+            info->cpuPercentage                = 0;
+            info->stats.switchOutCount         = stats->switchOutCount;
+            info->stats.preemptionCount        = stats->preemptionCount;
+            info->lastExecutionTime            = stats->lastSwitchOutTime;
             info->stats.readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
             info->stats.totalReadyTime         = stats->totalReadyTime;
             info->stats.totalRunningTime       = stats->totalRunningTime;

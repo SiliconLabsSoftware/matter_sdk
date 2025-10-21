@@ -844,16 +844,17 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         // appear in the output A delay of 1 tick was not sufficient, so we use 10.
         vTaskDelay(10);
 
-        //This dual check ensures that we do not misclassify tasks that may have a lingering handle after deletion.
+        // This dual check ensures that we do not misclassify tasks that may have a lingering handle after deletion.
         if (task->state == eDeleted && task->stats.handle == NULL)
         {
             // This is deleted task
             ChipLogProgress(DeviceLayer,
                             "| %-23s| %-7s | %-4s | %-9s | %-9s | %-6s | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-8lu|"
                             " %-8lu| %-8lu|",
-                            task->stats.name, FreeRTOSTaskStateToString(task->state), "N/A", "N/A", "N/A", "N/A", task->stats.preemptionCount,
-                            task->stats.switchOutCount, (task->preemptionPercentage / 100), (task->preemptionPercentage % 100),
-                            task->lastExecutionTime, task->stats.readyTimeHighWaterMark, task->stats.totalRunningTime, task->stats.totalReadyTime);
+                            task->stats.name, FreeRTOSTaskStateToString(task->state), "N/A", "N/A", "N/A", "N/A",
+                            task->stats.preemptionCount, task->stats.switchOutCount, (task->preemptionPercentage / 100),
+                            (task->preemptionPercentage % 100), task->lastExecutionTime, task->stats.readyTimeHighWaterMark,
+                            task->stats.totalRunningTime, task->stats.totalReadyTime);
         }
         else
         {
@@ -862,9 +863,10 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
                             "| %-23s| %-7s | %-4lu | %-9lu | %-9lu | %2lu.%02lu%% | %4lu/%-7lu |%3lu.%02lu%% | %-10lu | %-8lu|"
                             " %-8lu| %-8lu|",
                             task->stats.name, FreeRTOSTaskStateToString(task->state), task->priority, task->stackHighWaterMark,
-                            task->stackMaxSize, (task->cpuPercentage / 100), (task->cpuPercentage % 100), task->stats.preemptionCount,
-                            task->stats.switchOutCount, (task->preemptionPercentage / 100), (task->preemptionPercentage % 100),
-                            task->lastExecutionTime, task->stats.readyTimeHighWaterMark, task->stats.totalRunningTime, task->stats.totalReadyTime);
+                            task->stackMaxSize, (task->cpuPercentage / 100), (task->cpuPercentage % 100),
+                            task->stats.preemptionCount, task->stats.switchOutCount, (task->preemptionPercentage / 100),
+                            (task->preemptionPercentage % 100), task->lastExecutionTime, task->stats.readyTimeHighWaterMark,
+                            task->stats.totalRunningTime, task->stats.totalReadyTime);
         }
     }
 

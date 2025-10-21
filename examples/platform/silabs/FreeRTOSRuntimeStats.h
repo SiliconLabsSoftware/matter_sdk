@@ -41,15 +41,15 @@ typedef struct
 
 typedef struct
 {
-    TaskStats stats;                 // Core task statistics
-    eTaskState state;                // Current task state
-    UBaseType_t priority;            // Task priority
-    UBaseType_t stackHighWaterMark;  // Max stack used in bytes
-    UBaseType_t stackMaxSize;        // Total allocated stack in bytes
-    uint32_t runTimeCounter;         // Total CPU time in ms
-    uint32_t cpuPercentage;          // CPU usage percentage (in basis points)
-    uint32_t preemptionPercentage;   // Preemption percentage (in basis points)
-    uint32_t lastExecutionTime;      // Last execution time in ms
+    TaskStats stats;                // Core task statistics
+    eTaskState state;               // Current task state
+    UBaseType_t priority;           // Task priority
+    UBaseType_t stackHighWaterMark; // Max stack used in bytes
+    UBaseType_t stackMaxSize;       // Total allocated stack in bytes
+    uint32_t runTimeCounter;        // Total CPU time in ms
+    uint32_t cpuPercentage;         // CPU usage percentage (in basis points)
+    uint32_t preemptionPercentage;  // Preemption percentage (in basis points)
+    uint32_t lastExecutionTime;     // Last execution time in ms
 } TaskInfo;
 
 typedef struct
@@ -66,9 +66,9 @@ typedef struct
 /**
  * @brief Get comprehensive task statistics for active and deleted tasks.
  * All times are in milliseconds and sizes are in bytes.
- * The statistics related to time such as Ready time and Running time should be considered approximate, as they are based on task switch
- * hooks and a timer with a resolution of 1 ms. The values are best effort and may not be accurate. Furthermore, systems that use
- * FreeRTOS tickless idle may have even less accuracy.
+ * The statistics related to time such as Ready time and Running time should be considered approximate, as they are based on task
+ * switch hooks and a timer with a resolution of 1 ms. The values are best effort and may not be accurate. Furthermore, systems that
+ * use FreeRTOS tickless idle may have even less accuracy.
  * @param taskInfoArray Array to store task information
  * @param taskInfoArraySize Maximum number of tasks the array can hold
  * @param systemStats Pointer to store system-wide statistics (optional)
