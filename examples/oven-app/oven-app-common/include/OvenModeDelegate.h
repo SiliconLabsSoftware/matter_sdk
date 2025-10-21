@@ -21,28 +21,9 @@
 #include <app/clusters/mode-base-server/mode-base-server.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
-
-// Forward declarations to reduce header dependencies
-namespace chip {
-namespace app {
-namespace DataModel {
-template <typename T>
-class List;
-}
-namespace Clusters {
-namespace detail {
-namespace Structs {
-namespace ModeTagStruct {
-struct Type;
-}
-namespace ModeOptionStruct {
-struct Type;
-}
-} // namespace Structs
-} // namespace detail
-} // namespace Clusters
-} // namespace app
-} // namespace chip
+#include <app/data-model/List.h>
+#include <lib/support/Span.h>
+#include <app-common/zap-generated/cluster-objects.h> // provides detail::Structs::ModeTagStruct::Type and ModeOptionStruct::Type
 
 namespace chip {
 namespace app {
