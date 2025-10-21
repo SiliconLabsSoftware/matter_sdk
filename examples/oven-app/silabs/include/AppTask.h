@@ -91,7 +91,7 @@ private:
     /**
      * @brief PB0 Button event processing function
      *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
+     *        Press and release will restart BLEAdvertising if not commissioned
      *
      * @param aEvent button event being processed
      */

@@ -47,8 +47,9 @@ class AppSupportedTemperatureLevelsDelegate : public TemperatureControl::Support
     static CharSpan temperatureLevelOptions[3];
 
 public:
-    // Use a fixed size of 2 for oven app (cook-surface multiple endpoints: 4, 5)
-    static const EndpointPair supportedOptionsByEndpoints[2];
+    // Use a fixed size for oven app (cook-surface multiple endpoints: 4, 5)
+    static constexpr size_t kNumCookSurfaceEndpoints = 2;
+    static const EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];
 
     uint8_t Size() override;
 
