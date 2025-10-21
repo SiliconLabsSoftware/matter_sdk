@@ -42,7 +42,6 @@ class AppSupportedTemperatureLevelsDelegate : public TemperatureControl::Support
         EndpointPair(EndpointId aEndpointId, CharSpan * aTemperatureLevels, uint8_t aSize) :
             mEndpointId(aEndpointId), mTemperatureLevels(aTemperatureLevels), mSize(aSize)
         {}
-
     };
 
     static CharSpan temperatureLevelOptions[3];
@@ -54,7 +53,6 @@ public:
     uint8_t Size() override;
 
     CHIP_ERROR Next(MutableCharSpan & item) override;
-
 };
 
 } // namespace TemperatureControlledCabinet
