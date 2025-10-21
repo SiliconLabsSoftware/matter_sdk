@@ -96,7 +96,9 @@ CHIP_ERROR OvenModeDelegate::Init()
 void OvenModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Commands::ChangeToModeResponse::Type & response)
 {
     ChipLogProgress(Zcl, "OvenModeDelegate::HandleChangeToMode: NewMode=%d", NewMode);
-    // Here, add code to handle the mode change
+    // TODO: Implement logic to change the oven mode.
+    // This should update the oven's state and perform any necessary actions (e.g., start heating, change temperature)
+    // based on the value of NewMode. If the mode change fails, set response.status to the appropriate error code.
     response.status = to_underlying(ModeBase::StatusCode::kSuccess);
 }
 
