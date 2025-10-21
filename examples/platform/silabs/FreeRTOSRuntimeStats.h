@@ -26,35 +26,6 @@
 #include <stdint.h>
 typedef struct
 {
-    char name[configMAX_TASK_NAME_LEN];
-    TaskHandle_t handle;
-    eTaskState state;
-    UBaseType_t priority;
-    UBaseType_t stackHighWaterMark;
-    UBaseType_t stackMaxSize;
-    uint32_t runTimeCounter; // Total CPU time in ms
-    uint32_t cpuPercentage;
-    uint32_t switchOutCount;  // Total times switched out
-    uint32_t preemptionCount; // Times preempted (switched out while ready)
-    uint32_t preemptionPercentage;
-    uint32_t lastExecutionTime;      // in ms
-    uint32_t readyTimeHighWaterMark; // in ms
-    uint32_t totalReadyTime;         // in ms
-    uint32_t totalRunningTime;
-} TaskInfo;
-typedef struct
-{
-    uint32_t totalRunTime; // Total system run time in ms
-    uint32_t totalSwitchOutCount;
-    uint32_t totalPreemptionCount;
-    uint32_t systemPreemptionRatio;
-    uint32_t activeTaskCount;
-    uint32_t terminatedTaskCount;
-    uint32_t totalTaskCount;
-} SystemTaskStats;
-
-typedef struct
-{
     TaskHandle_t handle;
     char name[configMAX_TASK_NAME_LEN];
     uint32_t switchOutCount;
@@ -67,6 +38,30 @@ typedef struct
     uint32_t totalRunningTime;
     bool isDeleted;
 } TaskStats;
+
+typedef struct
+{
+    TaskStats stats;                 // Core task statistics
+    eTaskState state;                // Current task state
+    UBaseType_t priority;            // Task priority
+    UBaseType_t stackHighWaterMark;  // Max stack used in bytes
+    UBaseType_t stackMaxSize;        // Total allocated stack in bytes
+    uint32_t runTimeCounter;         // Total CPU time in ms
+    uint32_t cpuPercentage;          // CPU usage percentage (in basis points)
+    uint32_t preemptionPercentage;   // Preemption percentage (in basis points)
+    uint32_t lastExecutionTime;      // Last execution time in ms
+} TaskInfo;
+
+typedef struct
+{
+    uint32_t totalRunTime; // Total system run time in ms
+    uint32_t totalSwitchOutCount;
+    uint32_t totalPreemptionCount;
+    uint32_t systemPreemptionRatio;
+    uint32_t activeTaskCount;
+    uint32_t terminatedTaskCount;
+    uint32_t totalTaskCount;
+} SystemTaskStats;
 
 /**
  * @brief Get comprehensive task statistics for active and deleted tasks.

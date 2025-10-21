@@ -254,11 +254,11 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
         TaskStats * stats     = findTaskStats(status->xHandle);
 
         // Copy basic info
-        strncpy(info->name, status->pcTaskName, configMAX_TASK_NAME_LEN - 1);
-        info->name[configMAX_TASK_NAME_LEN - 1] = '\0';
-        info->handle                            = status->xHandle;
-        info->state                             = status->eCurrentState;
-        info->priority                          = status->uxCurrentPriority;
+        strncpy(info->stats.name, status->pcTaskName, configMAX_TASK_NAME_LEN - 1);
+        info->stats.name[configMAX_TASK_NAME_LEN - 1] = '\0';
+        info->stats.handle                            = status->xHandle;
+        info->state                                   = status->eCurrentState;
+        info->priority                                = status->uxCurrentPriority;
 
         // Calculate stack sizes using the stack pointers
         size_t totalStackSize = (status->pxEndOfStack - status->pxStackBase) * sizeof(StackType_t);
@@ -273,24 +273,32 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
         // Add tracking stats if available
         if (stats != NULL)
         {
-            info->switchOutCount         = stats->switchOutCount;
-            info->preemptionCount        = stats->preemptionCount;
-            info->lastExecutionTime      = stats->lastSwitchOutTime;
-            info->readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
-            info->totalReadyTime         = stats->totalReadyTime;
-            info->totalRunningTime       = stats->totalRunningTime;
+            info->stats.switchOutCount         = stats->switchOutCount;
+            info->stats.preemptionCount        = stats->preemptionCount;
+            info->lastExecutionTime            = stats->lastSwitchOutTime;
+            info->stats.readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
+            info->stats.totalReadyTime         = stats->totalReadyTime;
+            info->stats.totalRunningTime       = stats->totalRunningTime;
+            info->stats.lastSwitchOutTime      = stats->lastSwitchOutTime;
+            info->stats.lastMovedToReadyTime   = stats->lastMovedToReadyTime;
+            info->stats.lastMovedToRunningTime = stats->lastMovedToRunningTime;
+            info->stats.isDeleted              = stats->isDeleted;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
         }
         else
         {
-            info->switchOutCount         = 0;
-            info->preemptionCount        = 0;
-            info->lastExecutionTime      = 0;
-            info->readyTimeHighWaterMark = 0;
-            info->totalReadyTime         = 0;
-            info->totalRunningTime       = 0;
-            info->preemptionPercentage   = 0;
+            info->stats.switchOutCount         = 0;
+            info->stats.preemptionCount        = 0;
+            info->lastExecutionTime            = 0;
+            info->stats.readyTimeHighWaterMark = 0;
+            info->stats.totalReadyTime         = 0;
+            info->stats.totalRunningTime       = 0;
+            info->stats.lastSwitchOutTime      = 0;
+            info->stats.lastMovedToReadyTime   = 0;
+            info->stats.lastMovedToRunningTime = 0;
+            info->stats.isDeleted              = false;
+            info->preemptionPercentage         = 0;
         }
 
         taskCount++;
@@ -306,21 +314,25 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
             TaskStats * stats = &sTaskStats[i];
 
             // Copy deleted task info
-            strncpy(info->name, stats->name, configMAX_TASK_NAME_LEN - 1);
-            info->name[configMAX_TASK_NAME_LEN - 1] = '\0';
-            info->handle                            = NULL;
+            strncpy(info->stats.name, stats->name, configMAX_TASK_NAME_LEN - 1);
+            info->stats.name[configMAX_TASK_NAME_LEN - 1] = '\0';
+            info->stats.handle                            = NULL;
             info->state = eDeleted; // While technically the deleted state is something else in FreeRTOS, we use eDeleted for the
                                     // purpose of this debug feature.
             info->priority               = 0;
             info->stackHighWaterMark     = 0;
             info->runTimeCounter         = 0;
             info->cpuPercentage          = 0;
-            info->switchOutCount         = stats->switchOutCount;
-            info->preemptionCount        = stats->preemptionCount;
+            info->stats.switchOutCount   = stats->switchOutCount;
+            info->stats.preemptionCount  = stats->preemptionCount;
             info->lastExecutionTime      = stats->lastSwitchOutTime;
-            info->readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
-            info->totalReadyTime         = stats->totalReadyTime;
-            info->totalRunningTime       = stats->totalRunningTime;
+            info->stats.readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
+            info->stats.totalReadyTime         = stats->totalReadyTime;
+            info->stats.totalRunningTime       = stats->totalRunningTime;
+            info->stats.lastSwitchOutTime      = stats->lastSwitchOutTime;
+            info->stats.lastMovedToReadyTime   = stats->lastMovedToReadyTime;
+            info->stats.lastMovedToRunningTime = stats->lastMovedToRunningTime;
+            info->stats.isDeleted              = stats->isDeleted;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
 
