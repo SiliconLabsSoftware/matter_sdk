@@ -31,10 +31,9 @@ CharSpan AppSupportedTemperatureLevelsDelegate::temperatureLevelOptions[3] = { C
                                                                                CharSpan::fromCharString("High") };
 
 // Define supported temperature levels by endpoint
-const AppSupportedTemperatureLevelsDelegate::EndpointPair AppSupportedTemperatureLevelsDelegate::supportedOptionsByEndpoints[3] = {
-    AppSupportedTemperatureLevelsDelegate::EndpointPair(1, temperatureLevelOptions, 3),
-    AppSupportedTemperatureLevelsDelegate::EndpointPair(4, temperatureLevelOptions, 3),
-    AppSupportedTemperatureLevelsDelegate::EndpointPair(5, temperatureLevelOptions, 3)
+const AppSupportedTemperatureLevelsDelegate::EndpointPair AppSupportedTemperatureLevelsDelegate::supportedOptionsByEndpoints[2] = {
+    AppSupportedTemperatureLevelsDelegate::EndpointPair(4, temperatureLevelOptions, 3), // CookSurface endpoint 4
+    AppSupportedTemperatureLevelsDelegate::EndpointPair(5, temperatureLevelOptions, 3)  // CookSurface endpoint 5
 };
 
 uint8_t AppSupportedTemperatureLevelsDelegate::Size()

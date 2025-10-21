@@ -43,20 +43,18 @@ class AppSupportedTemperatureLevelsDelegate : public TemperatureControl::Support
             mEndpointId(aEndpointId), mTemperatureLevels(aTemperatureLevels), mSize(aSize)
         {}
 
-        ~EndpointPair() {}
     };
 
     static CharSpan temperatureLevelOptions[3];
 
 public:
-    // Use a fixed size of 3 for oven app (multiple endpoints: 1, 4, 5)
-    static const EndpointPair supportedOptionsByEndpoints[3];
+    // Use a fixed size of 2 for oven app (cook-surface multiple endpoints: 4, 5)
+    static const EndpointPair supportedOptionsByEndpoints[2];
 
     uint8_t Size() override;
 
     CHIP_ERROR Next(MutableCharSpan & item) override;
 
-    ~AppSupportedTemperatureLevelsDelegate() {}
 };
 
 } // namespace TemperatureControlledCabinet
