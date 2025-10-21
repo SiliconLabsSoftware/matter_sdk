@@ -844,6 +844,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
         // appear in the output A delay of 1 tick was not sufficient, so we use 10.
         vTaskDelay(10);
 
+        //This dual check ensures that we do not misclassify tasks that may have a lingering handle after deletion.
         if (task->state == eDeleted && task->stats.handle == NULL)
         {
             // This is deleted task
