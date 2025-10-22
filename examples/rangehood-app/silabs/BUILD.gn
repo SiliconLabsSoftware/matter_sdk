@@ -78,6 +78,7 @@ if (wifi_soc) {
       "${examples_plat_dir}",
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
+      "${examples_common_plat_dir}/rgb_led",
     ]
 
     defines = []
@@ -139,6 +140,8 @@ silabs_executable("rangehood-app") {
     "src/AppTask.cpp",
     "src/DataModelCallbacks.cpp",
     "src/FanControlManager.cpp",
+    "src/LightingManager.cpp",
+
   ]
 
   if (!disable_lcd) {

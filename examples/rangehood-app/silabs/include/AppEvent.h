@@ -27,6 +27,7 @@ struct AppEvent : public BaseAppEvent
     {
         kEventType_FanControl = BaseAppEvent::kEventType_Max + 1,
         kEventType_Install,
+        kEventType_Light,
     };
 
     union
@@ -36,5 +37,21 @@ struct AppEvent : public BaseAppEvent
             uint8_t Action;
             int32_t Actor;
         } FanEvent;
+
+        struct
+        {
+            uint8_t Action;
+            int32_t Actor;
+            uint8_t Value;
+        } LightEvent;
+
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+        struct
+        {
+            uint8_t Action;
+            int32_t Actor;
+            RGBLEDWidget::ColorData_t Value;
+        } LightControlEvent;
+#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     };
 };

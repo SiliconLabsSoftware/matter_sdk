@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "AppEvent.h"
+#include "AppConfig.h"
 
 #include <app/clusters/fan-control-server/fan-control-delegate.h>
 #include <app/clusters/fan-control-server/fan-control-server.h>
@@ -88,7 +89,7 @@ public:
 private:
     friend FanControlManager & FanControlMgr(void);
 
-    EndpointId mEndPoint = 1;
+    EndpointId mEndPoint = FAN_ENDPOINT;
     FanModeEnum mFanMode;
     uint8_t mSpeedMax;
 

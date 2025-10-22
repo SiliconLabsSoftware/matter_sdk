@@ -34,6 +34,14 @@
 #include <lib/core/CHIPError.h>
 #include <platform/CHIPDeviceLayer.h>
 
+
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+#include "RGBLEDWidget.h"
+#endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+#include "LightingManager.h"
+
+#include <app/persistence/DeferredAttributePersistenceProvider.h>
+
 /**********************************************************
  * Defines
  *********************************************************/
@@ -89,8 +97,6 @@ private:
 
     static AppTask sAppTask;
 
-    static void UpdateClusterState(intptr_t context);
-
     /**
      * @brief PB0 Button event processing function
      *        Press and hold will trigger a factory reset timer start
@@ -99,4 +105,26 @@ private:
      * @param aEvent button event being processed
      */
     static void ButtonHandler(AppEvent * aEvent);
+
+    /**
+     * @brief PB1 Button event processing function
+     *        Function triggers a switch action sent to the CHIP task
+     *
+     * @param aEvent button event being processed
+     */
+    static void SwitchActionEventHandler(AppEvent * aEvent);
+
+    void PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction);
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    void PostLightControlActionRequest(int32_t aActor, LightingManager::Action_t aAction, RGBLEDWidget::ColorData_t * aValue);
+#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
+
+    static void ActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * value);
+    static void ActionCompleted(LightingManager::Action_t aAction);
+    static void LightActionEventHandler(AppEvent * aEvent);
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    static void LightControlEventHandler(AppEvent * aEvent);
+#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
+
+    static void UpdateClusterState(intptr_t context);
 };

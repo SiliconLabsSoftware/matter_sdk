@@ -28,7 +28,12 @@
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-// TODO: Add support for DIC
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+#include "RGBLEDWidget.h"
+#endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+#include "LightingManager.h"
+
+#include <app-common/zap-generated/attributes/Accessors.h>
 
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
@@ -38,18 +43,36 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
 {
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
-    ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
+    EndpointId endpointId   = attributePath.mEndpointId;
+    
+    ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI " on endpoint %u", ChipLogValueMEI(clusterId), endpointId);
 
     switch (clusterId)
     {
     case FanControl::Id:
-        FanControlMgr().HandleFanControlAttributeChange(attributeId, type, size, value);
+        // Fan control should only be on FAN_ENDPOINT
+        if (endpointId == FAN_ENDPOINT)
+        {
+            FanControlMgr().HandleFanControlAttributeChange(attributeId, type, size, value);
+        }
         break;
+        
+    case OnOff::Id:
+        // Light on/off control should only be on LIGHT_ENDPOINT
+        if (endpointId == LIGHT_ENDPOINT && attributeId == OnOff::Attributes::OnOff::Id)
+        {
+            LightMgr().InitiateAction(AppEvent::kEventType_Light, *value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION,
+                                      value);
+        }
+        break;
+        
     case Identify::Id:
-        ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
+        ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
+                        ChipLogValueMEI(attributeId), type, *value, size, endpointId);
         break;
+        
     default:
+        ChipLogProgress(Zcl, "Unhandled cluster " ChipLogFormatMEI " on endpoint %u", ChipLogValueMEI(clusterId), endpointId);
         break;
     }
 }

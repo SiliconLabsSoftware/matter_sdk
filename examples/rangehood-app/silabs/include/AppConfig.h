@@ -23,10 +23,14 @@
 
 // ---- Fan Control Example App Config ----
 
-#define APP_TASK_NAME "Fan"
+#define APP_TASK_NAME "Rangehood"
 
-#define BLE_DEV_NAME "SiLabs-Fan"
+#define BLE_DEV_NAME "SiLabs-Rangehood"
 
 // Time it takes in ms for the simulated actuator to move from one
 // state to another.
-#define ACTUATOR_MOVEMENT_PERIOS_MS 10
+#define ACTUATOR_MOVEMENT_PERIOD_MS 10
+
+// Endpoint definitions for rangehood app
+#define FAN_ENDPOINT 1
+#define LIGHT_ENDPOINT 2
