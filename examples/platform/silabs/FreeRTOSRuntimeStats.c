@@ -15,9 +15,9 @@
  *
  ******************************************************************************/
 
+#include "FreeRTOSRuntimeStats.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "FreeRTOSRuntimeStats.h"
 #include <string.h>
 
 #if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1

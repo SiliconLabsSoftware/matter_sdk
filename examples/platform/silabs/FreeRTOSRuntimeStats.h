@@ -19,11 +19,11 @@
 
 #if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
 
-#include <platform/silabs/tracing/SilabsTracingConfig.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include <platform/silabs/tracing/SilabsTracingConfig.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 // Define configMAX_TASK_NAME_LEN if not already defined
 #ifndef configMAX_TASK_NAME_LEN
