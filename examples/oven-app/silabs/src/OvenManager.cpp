@@ -40,7 +40,7 @@ void OvenManager::Init()
     DeviceLayer::PlatformMgr().LockChipStack();
     // Endpoint initializations
     VerifyOrReturn(mOvenEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "OvenEndpoint Init failed"));
-    VerifyOrReturn(mTemperatureControlledCabinetEndpoint.Init() == CHIP_NO_ERROR,
+    VerifyOrReturn(mTemperatureControlledCabinetEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint Init failed"));
 
     VerifyOrReturn(mCookTopEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookTopEndpoint Init failed"));
 

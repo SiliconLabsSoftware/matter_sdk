@@ -47,7 +47,8 @@ uint8_t AppSupportedTemperatureLevelsDelegate::Size()
             return endpointPair.mSize;
         }
     }
-    ChipLogProgress(AppServer, "No matching endpoint found for %d", mEndpoint);
+    ChipLogError(AppServer, "No matching endpoint found for %d in Size()", mEndpoint);
+    // Returning 0 indicates that the endpoint was not found; this should be treated as an error.
     return 0;
 }
 

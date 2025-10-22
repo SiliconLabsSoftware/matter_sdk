@@ -28,8 +28,6 @@ namespace app {
 namespace Clusters {
 namespace TemperatureControlledCabinet {
 
-// Add TemperatureControlDelegate here
-
 class TemperatureControlledCabinetEndpoint
 {
 public:
