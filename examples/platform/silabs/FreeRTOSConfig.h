@@ -176,14 +176,18 @@ extern uint32_t SystemCoreClock;
 /* Run time stats gathering related definitions. */
 #if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS == 1
 
-#include "FreeRTOSRuntimeStats.c"
+// Forward declarations for runtime stats functions
+extern uint32_t ulGetRunTimeCounterValue(void);
+extern void vTaskSwitchedOut(void);
+extern void vTaskSwitchedIn(void);
+extern void vTaskDeleted(void * xTask);
+extern void vTaskCreated(void * xTask);
+extern void vTaskMovedToReadyState(void * xTask);
+
 #define configGENERATE_RUN_TIME_STATS (1)
 #define configUSE_STATS_FORMATTING_FUNCTIONS (1)
 #define configRECORD_STACK_HIGH_ADDRESS (1)
 
-extern uint32_t ulGetRunTimeCounterValue(void);
-extern void vTaskSwitchedOut(void);
-extern void vTaskSwitchedIn(void);
 // Required for configGENERATE_RUN_TIME_STATS, but not used in this implementation.
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()                                                                                   \
     {}

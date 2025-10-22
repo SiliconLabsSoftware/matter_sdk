@@ -19,11 +19,16 @@
 
 #if defined(configGENERATE_RUN_TIME_STATS) && configGENERATE_RUN_TIME_STATS == 1
 
+#include <platform/silabs/tracing/SilabsTracingConfig.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "FreeRTOS.h"
 #include "task.h"
-#include <platform/silabs/tracing/SilabsTracingConfig.h>
-#include <stdbool.h>
-#include <stdint.h>
+
+// Define configMAX_TASK_NAME_LEN if not already defined
+#ifndef configMAX_TASK_NAME_LEN
+#define configMAX_TASK_NAME_LEN 24
+#endif
 typedef struct
 {
     TaskHandle_t handle;
@@ -62,6 +67,40 @@ typedef struct
     uint32_t terminatedTaskCount;
     uint32_t totalTaskCount;
 } SystemTaskStats;
+
+/**
+ * @brief Get the current runtime counter value in milliseconds.
+ * @return Current runtime in milliseconds since system start
+ */
+uint32_t ulGetRunTimeCounterValue(void);
+
+/**
+ * @brief Task switch out hook function called when a task is switched out.
+ */
+void vTaskSwitchedOut(void);
+
+/**
+ * @brief Task switch in hook function called when a task is switched in.
+ */
+void vTaskSwitchedIn(void);
+
+/**
+ * @brief Task deletion hook function called when a task is deleted.
+ * @param xTask Handle of the task being deleted
+ */
+void vTaskDeleted(void * xTask);
+
+/**
+ * @brief Task creation hook function called when a task is created.
+ * @param xTask Handle of the task being created
+ */
+void vTaskCreated(void * xTask);
+
+/**
+ * @brief Task ready state hook function called when a task is moved to ready state.
+ * @param xTask Handle of the task being moved to ready state
+ */
+void vTaskMovedToReadyState(void * xTask);
 
 /**
  * @brief Get comprehensive task statistics for active and deleted tasks.
