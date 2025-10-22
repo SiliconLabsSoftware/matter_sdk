@@ -176,7 +176,6 @@ extern uint32_t SystemCoreClock;
 /* Run time stats gathering related definitions. */
 #if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS == 1
 
-// Forward declarations for runtime stats functions
 extern uint32_t ulGetRunTimeCounterValue(void);
 extern void vTaskSwitchedOut(void);
 extern void vTaskSwitchedIn(void);
