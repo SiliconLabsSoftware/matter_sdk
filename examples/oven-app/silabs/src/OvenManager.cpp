@@ -36,7 +36,7 @@ using namespace chip::app;
 using namespace chip::app::Clusters;
 using namespace chip::DeviceLayer;
 
-// add tag-lists
+// TODO: Implement tag-lists.
 
 OvenManager OvenManager::sOvenMgr;
 
