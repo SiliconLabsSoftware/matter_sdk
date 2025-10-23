@@ -24,7 +24,6 @@ using namespace chip::app::Clusters::CookTop;
 
 CHIP_ERROR CookTopEndpoint::Init()
 {
-    // TODO: Add CookTop Endpoint Initialization logic
     return CHIP_NO_ERROR;
 }
 

@@ -24,8 +24,6 @@ using namespace chip::app::Clusters::CookSurface;
 
 CHIP_ERROR CookSurfaceEndpoint::Init()
 {
-    ChipLogProgress(AppServer, "CookSurfaceEndpoint::Init()");
-    // TODO: Add Endpoint initialization logic
     return CHIP_NO_ERROR;
 }
 

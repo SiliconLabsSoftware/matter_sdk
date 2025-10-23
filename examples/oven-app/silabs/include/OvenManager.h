@@ -30,7 +30,6 @@
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
-#include "TemperatureControlledCabinetEndpoint.h"
 #include <lib/core/DataModelTypes.h>
 
 class OvenManager
@@ -60,11 +59,11 @@ private:
     static constexpr chip::EndpointId kCookSurfaceEndpoint4                  = 4;
     static constexpr chip::EndpointId kCookSurfaceEndpoint5                  = 5;
 
-    chip::app::Clusters::Oven::OvenEndpoint mOvenEndpoint1{ kOvenEndpoint1 };
+    chip::app::Clusters::Oven::OvenEndpoint mOvenEndpoint1;
     chip::app::Clusters::TemperatureControlledCabinet::TemperatureControlledCabinetEndpoint mTemperatureControlledCabinetEndpoint2{
         kTemperatureControlledCabinetEndpoint2
     };
-    chip::app::Clusters::CookTop::CookTopEndpoint mCookTopEndpoint3{ kCookTopEndpoint3 };
-    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint4{ kCookSurfaceEndpoint4 };
-    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint5{ kCookSurfaceEndpoint5 };
+    chip::app::Clusters::CookTop::CookTopEndpoint mCookTopEndpoint3 { kCookTopEndpoint3 };
+    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint4 { kCookSurfaceEndpoint4 };
+    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint5 { kCookSurfaceEndpoint5 };
 };

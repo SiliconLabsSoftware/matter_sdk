@@ -30,7 +30,7 @@ namespace CookSurface {
 class CookSurfaceEndpoint
 {
 public:
-    CookSurfaceEndpoint(EndpointId endpointId) {}
+    CookSurfaceEndpoint(EndpointId endpointId) : mEndpointId(endpointId) {}
 
     /**
      * @brief Initialize the CookSurface endpoint.
@@ -41,6 +41,10 @@ public:
      * @brief Handle the "off" command for the CookSurface.
      */
     void HandleOffCommand();
+
+private:
+    bool currentOnOffState = false;
+    EndpointId mEndpointId = kInvalidEndpointId;
 };
 
 } // namespace CookSurface

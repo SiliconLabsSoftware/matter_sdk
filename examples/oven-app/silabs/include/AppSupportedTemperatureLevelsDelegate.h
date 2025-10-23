@@ -33,13 +33,14 @@ namespace Clusters {
 struct EndpointPair
 {
     /// An endpoint having temperature control cluster.
-    EndpointId mEndpointId;
+    EndpointId mEndpointId = 0;
     /// Temperature levels supported by the temperature control cluster in this endpoint.
-    CharSpan * mTemperatureLevels;
+    const CharSpan * mTemperatureLevels = nullptr;
     /// Size of the temperature levels array.
-    uint8_t mSize;
+    uint8_t mSize = 0;
 
-    EndpointPair(EndpointId aEndpointId, CharSpan * aTemperatureLevels, uint8_t aSize) :
+    EndpointPair() = default;
+    EndpointPair(EndpointId aEndpointId, const CharSpan * aTemperatureLevels, uint8_t aSize) :
         mEndpointId(aEndpointId), mTemperatureLevels(aTemperatureLevels), mSize(aSize)
     {}
 };
@@ -56,8 +57,19 @@ public:
     // Number of supported temperature levels
     static constexpr size_t kNumTemperatureLevels = 3;
 
-    static CharSpan temperatureLevelOptions[kNumTemperatureLevels];
-    static const EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];
+    AppSupportedTemperatureLevelsDelegate() {};
+
+    // Internal table of endpoint -> levels mapping (filled via RegisterSupportedLevels()).
+    EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];
+    size_t mRegisteredEndpointCount = 0;
+
+    /**
+     * @brief Register supported temperature level strings for a given endpoint.
+     *
+     * The caller supplies an array of CharSpan entries whose lifetime exceeds that of this delegate.
+     * Returns true on success, false if capacity exceeded or duplicate endpoint provided.
+     */
+    bool RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels, uint8_t levelCount);
 
     uint8_t Size() override;
 

@@ -21,24 +21,87 @@
 #include <app-common/zap-generated/cluster-objects.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
+#include <app/clusters/mode-base-server/mode-base-server.h>
+#include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
+#include <app/data-model/List.h>
+#include <lib/support/Span.h>
 
 namespace chip {
 namespace app {
 namespace Clusters {
-namespace Oven {
+namespace TemperatureControlledCabinet {
+class OvenModeDelegate : public ModeBase::Delegate
+{
+public:
+    // Oven mode constants - made static and public for potential reuse
+    static constexpr uint8_t kModeBake            = 0;
+    static constexpr uint8_t kModeConvection      = 1;
+    static constexpr uint8_t kModeGrill           = 2;
+    static constexpr uint8_t kModeRoast           = 3;
+    static constexpr uint8_t kModeClean           = 4;
+    static constexpr uint8_t kModeConvectionBake  = 5;
+    static constexpr uint8_t kModeConvectionRoast = 6;
+    static constexpr uint8_t kModeWarming         = 7;
+    static constexpr uint8_t kModeProofing        = 8;
+    static constexpr uint8_t kModeCount           = 9;
 
+    OvenModeDelegate(EndpointId endpointId) : mEndpointId(endpointId) {}
+
+    // ModeBase::Delegate interface
+    CHIP_ERROR Init() override;
+    void HandleChangeToMode(uint8_t mode, ModeBase::Commands::ChangeToModeResponse::Type & response) override;
+    CHIP_ERROR GetModeLabelByIndex(uint8_t modeIndex, MutableCharSpan & label) override;
+    CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t & value) override;
+    CHIP_ERROR GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<detail::Structs::ModeTagStruct::Type> & tags) override;
+
+private:
+    EndpointId mEndpointId;
+
+    // Static arrays moved to implementation file to reduce header size
+    static const detail::Structs::ModeTagStruct::Type sModeTagsBake[];
+    static const detail::Structs::ModeTagStruct::Type sModeTagsConvection[];
+    static const detail::Structs::ModeTagStruct::Type sModeTagsGrill[];
+    static const detail::Structs::ModeTagStruct::Type sModeTagsRoast[];
+    static const detail::Structs::ModeTagStruct::Type sModeTagsClean[];
+    static const detail::Structs::ModeTagStruct::Type sModeTagsConvectionBake[];
+    static const detail::Structs::ModeTagStruct::Type sModeTagsConvectionRoast[];
+    static const detail::Structs::ModeTagStruct::Type sModeTagsWarming[];
+    static const detail::Structs::ModeTagStruct::Type sModeTagsProofing[];
+
+    static const detail::Structs::ModeOptionStruct::Type skModeOptions[];
+};
+
+class TemperatureControlledCabinetEndpoint
+{
+public:
+    TemperatureControlledCabinetEndpoint(EndpointId endpointId) :
+        mEndpointId(endpointId), mOvenModeDelegate(endpointId), mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, 0)
+    {}
+
+    /**
+     * Initialize the temperature controlled cabinet endpoint.
+     */
+    CHIP_ERROR Init();
+
+private:
+    EndpointId mEndpointId = kInvalidEndpointId;
+    OvenModeDelegate mOvenModeDelegate;
+    ModeBase::Instance mOvenModeInstance;
+};
+
+} // namespace TemperatureControlledCabinet
+
+namespace Oven {
 /**
  * @brief Base oven endpoint placeholder.
  */
 class OvenEndpoint
 {
 public:
-    OvenEndpoint(EndpointId endpointId) {}
+    OvenEndpoint() {}
 
     /**
      * @brief Initialize the oven endpoint.
-     *
-     * @return CHIP_ERROR indicating success or failure of the initialization.
      */
     CHIP_ERROR Init();
 };

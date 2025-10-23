@@ -29,7 +29,7 @@ namespace CookTop {
 class CookTopEndpoint
 {
 public:
-    CookTopEndpoint(EndpointId endpointId) {}
+    CookTopEndpoint(EndpointId endpointId) : mEndpointId(endpointId) {}
 
     /**
      * @brief Initialize the cooktop endpoint.
@@ -42,6 +42,10 @@ public:
      * @brief Handle the "off" command for the cooktop.
      */
     void HandleOffCommand();
+
+private:
+    bool currentOnOffState = false;
+    EndpointId mEndpointId = kInvalidEndpointId;
 };
 
 } // namespace CookTop

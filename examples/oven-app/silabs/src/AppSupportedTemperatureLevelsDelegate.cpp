@@ -24,22 +24,39 @@ using namespace chip;
 using namespace chip::app::Clusters;
 using namespace chip::app::DataModel;
 
-// Define the temperature level options for the oven
-CharSpan AppSupportedTemperatureLevelsDelegate::temperatureLevelOptions[3] = { CharSpan::fromCharString("Low"),
-                                                                               CharSpan::fromCharString("Medium"),
-                                                                               CharSpan::fromCharString("High") };
+bool AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels, uint8_t levelCount)
+{
+    if (levels == nullptr || levelCount == 0)
+    {
+        ChipLogError(AppServer, "RegisterSupportedLevels: invalid levels/null or count=0");
+        return false;
+    }
+    if (mRegisteredEndpointCount >= kNumCookSurfaceEndpoints)
+    {
+        ChipLogError(AppServer, "RegisterSupportedLevels: capacity exceeded (%zu)", mRegisteredEndpointCount);
+        return false;
+    }
+    // Prevent duplicate endpoints
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
+    {
+        if (supportedOptionsByEndpoints[i].mEndpointId == endpoint)
+        {
+            ChipLogError(AppServer, "RegisterSupportedLevels: duplicate endpoint %u", endpoint);
+            return false;
+        }
+    }
 
-// Define supported temperature levels by endpoint
-const EndpointPair AppSupportedTemperatureLevelsDelegate::supportedOptionsByEndpoints[2] = {
-    EndpointPair(4, temperatureLevelOptions, kNumTemperatureLevels), // CookSurface endpoint 4
-    EndpointPair(5, temperatureLevelOptions, kNumTemperatureLevels)  // CookSurface endpoint 5
-};
+    supportedOptionsByEndpoints[mRegisteredEndpointCount++] = EndpointPair(endpoint, levels, levelCount);
+    ChipLogProgress(AppServer, "Registered %u levels for endpoint %u", static_cast<unsigned>(levelCount), endpoint);
+    return true;
+}
 
 uint8_t AppSupportedTemperatureLevelsDelegate::Size()
 {
     ChipLogProgress(AppServer, "AppSupportedTemperatureLevelsDelegate::Size() called for endpoint %d", mEndpoint);
-    for (auto & endpointPair : supportedOptionsByEndpoints)
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
     {
+        const EndpointPair & endpointPair = supportedOptionsByEndpoints[i];
         if (endpointPair.mEndpointId == mEndpoint)
         {
             ChipLogProgress(AppServer, "Found endpoint %d with size %d", mEndpoint, endpointPair.mSize);
@@ -53,8 +70,9 @@ uint8_t AppSupportedTemperatureLevelsDelegate::Size()
 CHIP_ERROR AppSupportedTemperatureLevelsDelegate::Next(MutableCharSpan & item)
 {
     ChipLogProgress(AppServer, "AppSupportedTemperatureLevelsDelegate::Next() called for endpoint %d, index %d", mEndpoint, mIndex);
-    for (auto & endpointPair : supportedOptionsByEndpoints)
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
     {
+        const EndpointPair & endpointPair = supportedOptionsByEndpoints[i];
         if (endpointPair.mEndpointId == mEndpoint)
         {
             if (mIndex < endpointPair.mSize)
