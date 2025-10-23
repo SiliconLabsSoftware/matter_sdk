@@ -145,10 +145,10 @@ silabs_executable("oven_app") {
     "${example_oven_dir}/oven-app-common/src/OvenModeDelegate.cpp",
     "${example_oven_dir}/oven-app-common/src/TemperatureControlledCabinetEndpoint.cpp",
     "${examples_common_plat_dir}/main.cpp",
+    "src/AppSupportedTemperatureLevelsDelegate.cpp",
     "src/AppTask.cpp",
     "src/DataModelCallbacks.cpp",
     "src/OvenManager.cpp",
-    "src/AppSupportedTemperatureLevelsDelegate.cpp",
   ]
 
   deps = [ ":sdk" ]
