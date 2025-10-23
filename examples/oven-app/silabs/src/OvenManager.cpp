@@ -71,6 +71,38 @@ void OvenManager::Init()
 
     VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
 
+    // Set the initial temperature-measurement values for CookSurfaceEndpoint4 and CookSurfaceEndpoint5
+    Status status = TemperatureMeasurement::Attributes::MeasuredValue::Set(kCookSurfaceEndpoint4, 0);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint4 MeasuredValue init failed"));
+    status = TemperatureMeasurement::Attributes::MeasuredValue::Set(kCookSurfaceEndpoint5, 0);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint5 MeasuredValue init failed"));
+
+    // Initialize min/max measured values (range: 0 to 30000 -> 0.00C to 300.00C if unit is 0.01C) for both cook surface endpoints
+    status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(kCookSurfaceEndpoint4, 0);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint4 MinMeasuredValue init failed"));
+    status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(kCookSurfaceEndpoint4, 30000);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint4 MaxMeasuredValue init failed"));
+
+    status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(kCookSurfaceEndpoint5, 0);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint5 MinMeasuredValue init failed"));
+    status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(kCookSurfaceEndpoint5, 30000);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint5 MaxMeasuredValue init failed"));
+
+    // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 4 and 5
+    static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),
+                                                   CharSpan::fromCharString("High") };
+    bool err = mTemperatureControlDelegate.RegisterSupportedLevels(
+        kCookSurfaceEndpoint4, kCookSurfaceLevels,
+        static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
+    
+    VerifyOrReturn(err, ChipLogError(AppServer, "RegisterSupportedLevels failed for endpoint 4"));
+    
+    err = mTemperatureControlDelegate.RegisterSupportedLevels(
+        kCookSurfaceEndpoint5, kCookSurfaceLevels,
+        static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
+    
+    VerifyOrReturn(err, ChipLogError(AppServer, "RegisterSupportedLevels failed for endpoint 5"));
+
     DeviceLayer::PlatformMgr().UnlockChipStack();
 }
 
