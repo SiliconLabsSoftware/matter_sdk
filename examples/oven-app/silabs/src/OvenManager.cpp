@@ -36,7 +36,7 @@ void OvenManager::Init()
     DeviceLayer::PlatformMgr().LockChipStack();
     // Endpoint initializations
     VerifyOrReturn(mOvenEndpoint1.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "OvenEndpoint1 Init failed"));
-    
+
     VerifyOrReturn(mTemperatureControlledCabinetEndpoint2.Init() == CHIP_NO_ERROR,
                    ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint2 Init failed"));
 
@@ -70,13 +70,13 @@ void OvenManager::Init()
     bool err = mTemperatureControlDelegate.RegisterSupportedLevels(
         kCookSurfaceEndpoint4, kCookSurfaceLevels,
         static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
-    
+
     VerifyOrReturn(err, ChipLogError(AppServer, "RegisterSupportedLevels failed for endpoint 4"));
-    
+
     err = mTemperatureControlDelegate.RegisterSupportedLevels(
         kCookSurfaceEndpoint5, kCookSurfaceLevels,
         static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
-    
+
     VerifyOrReturn(err, ChipLogError(AppServer, "RegisterSupportedLevels failed for endpoint 5"));
 
     DeviceLayer::PlatformMgr().UnlockChipStack();

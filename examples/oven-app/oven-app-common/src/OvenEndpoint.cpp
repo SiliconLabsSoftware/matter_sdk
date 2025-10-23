@@ -126,15 +126,15 @@ CHIP_ERROR OvenModeDelegate::GetModeTagsByIndex(uint8_t modeIndex, DataModel::Li
   {
     return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
   }
-  
+
   if (tags.size() < skModeOptions[modeIndex].modeTags.size())
   {
     return CHIP_ERROR_INVALID_ARGUMENT;
   }
-  
+
   std::copy(skModeOptions[modeIndex].modeTags.begin(), skModeOptions[modeIndex].modeTags.end(), tags.begin());
   tags.reduce_size(skModeOptions[modeIndex].modeTags.size());
-  
+
   return CHIP_NO_ERROR;
 }
 
