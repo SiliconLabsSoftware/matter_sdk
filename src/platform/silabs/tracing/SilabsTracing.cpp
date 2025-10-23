@@ -853,7 +853,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
                             " %-8lu| %-8lu|",
                             task->stats.name, FreeRTOSTaskStateToString(task->state), "N/A", "N/A", "N/A", "N/A",
                             task->stats.preemptionCount, task->stats.switchOutCount, (task->preemptionPercentage / 100),
-                            (task->preemptionPercentage % 100), task->lastExecutionTime, task->stats.readyTimeHighWaterMark,
+                            (task->preemptionPercentage % 100), task->stats.lastSwitchOutTime, task->stats.readyTimeHighWaterMark,
                             task->stats.totalRunningTime, task->stats.totalReadyTime);
         }
         else
@@ -865,7 +865,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
                             task->stats.name, FreeRTOSTaskStateToString(task->state), task->priority, task->stackHighWaterMark,
                             task->stackMaxSize, (task->cpuPercentage / 100), (task->cpuPercentage % 100),
                             task->stats.preemptionCount, task->stats.switchOutCount, (task->preemptionPercentage / 100),
-                            (task->preemptionPercentage % 100), task->lastExecutionTime, task->stats.readyTimeHighWaterMark,
+                            (task->preemptionPercentage % 100), task->stats.lastSwitchOutTime, task->stats.readyTimeHighWaterMark,
                             task->stats.totalRunningTime, task->stats.totalReadyTime);
         }
     }

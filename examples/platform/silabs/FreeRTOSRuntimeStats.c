@@ -55,15 +55,8 @@ static TaskStats * createTaskStats(TaskHandle_t handle)
     }
 
     TaskStats * stats             = &sTaskStats[sTaskCount++];
+    memset(stats, 0, sizeof(TaskStats));
     stats->handle                 = handle;
-    stats->switchOutCount         = 0;
-    stats->preemptionCount        = 0;
-    stats->lastSwitchOutTime      = 0;
-    stats->lastMovedToReadyTime   = 0;
-    stats->totalReadyTime         = 0;
-    stats->totalRunningTime       = 0;
-    stats->readyTimeHighWaterMark = 0;
-    stats->isDeleted              = false;
 
     // Store task name
     const char * taskName = pcTaskGetName(handle);
@@ -273,32 +266,13 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
         // Add tracking stats if available
         if (stats != NULL)
         {
-            info->stats.switchOutCount         = stats->switchOutCount;
-            info->stats.preemptionCount        = stats->preemptionCount;
-            info->lastExecutionTime            = stats->lastSwitchOutTime;
-            info->stats.readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
-            info->stats.totalReadyTime         = stats->totalReadyTime;
-            info->stats.totalRunningTime       = stats->totalRunningTime;
-            info->stats.lastSwitchOutTime      = stats->lastSwitchOutTime;
-            info->stats.lastMovedToReadyTime   = stats->lastMovedToReadyTime;
-            info->stats.lastMovedToRunningTime = stats->lastMovedToRunningTime;
-            info->stats.isDeleted              = stats->isDeleted;
+            info->stats = *stats;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
         }
         else
         {
-            info->stats.switchOutCount         = 0;
-            info->stats.preemptionCount        = 0;
-            info->lastExecutionTime            = 0;
-            info->stats.readyTimeHighWaterMark = 0;
-            info->stats.totalReadyTime         = 0;
-            info->stats.totalRunningTime       = 0;
-            info->stats.lastSwitchOutTime      = 0;
-            info->stats.lastMovedToReadyTime   = 0;
-            info->stats.lastMovedToRunningTime = 0;
-            info->stats.isDeleted              = false;
-            info->preemptionPercentage         = 0;
+            memset(&info->stats, 0, sizeof(TaskStats));
         }
 
         taskCount++;
@@ -323,16 +297,7 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
             info->stackHighWaterMark           = 0;
             info->runTimeCounter               = 0;
             info->cpuPercentage                = 0;
-            info->stats.switchOutCount         = stats->switchOutCount;
-            info->stats.preemptionCount        = stats->preemptionCount;
-            info->lastExecutionTime            = stats->lastSwitchOutTime;
-            info->stats.readyTimeHighWaterMark = stats->readyTimeHighWaterMark;
-            info->stats.totalReadyTime         = stats->totalReadyTime;
-            info->stats.totalRunningTime       = stats->totalRunningTime;
-            info->stats.lastSwitchOutTime      = stats->lastSwitchOutTime;
-            info->stats.lastMovedToReadyTime   = stats->lastMovedToReadyTime;
-            info->stats.lastMovedToRunningTime = stats->lastMovedToRunningTime;
-            info->stats.isDeleted              = stats->isDeleted;
+            info->stats                        = *stats;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
 

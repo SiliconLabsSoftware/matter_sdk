@@ -54,7 +54,6 @@ typedef struct
     uint32_t runTimeCounter;        // Total CPU time in ms
     uint32_t cpuPercentage;         // CPU usage percentage (in basis points)
     uint32_t preemptionPercentage;  // Preemption percentage (in basis points)
-    uint32_t lastExecutionTime;     // Last execution time in ms
 } TaskInfo;
 
 typedef struct
