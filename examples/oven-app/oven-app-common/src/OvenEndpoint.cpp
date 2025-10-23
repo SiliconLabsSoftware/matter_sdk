@@ -24,6 +24,10 @@
 #include <lib/support/logging/CHIPLogging.h>
 
 using namespace chip::app;
+using namespace chip::app::Clusters;
+using namespace chip::app::Clusters::Oven;
+using namespace chip::app::Clusters::OvenMode;
+using namespace chip::app::Clusters::TemperatureControlledCabinet;
 using chip::Protocols::InteractionModel::Status;
 
 // Static member definitions
