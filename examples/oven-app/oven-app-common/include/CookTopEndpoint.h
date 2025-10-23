@@ -33,8 +33,6 @@ public:
 
     /**
      * @brief Initialize the cooktop endpoint.
-     *
-     * @return CHIP_ERROR indicating success or failure of the initialization.
      */
     CHIP_ERROR Init();
 

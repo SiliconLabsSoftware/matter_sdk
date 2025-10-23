@@ -28,7 +28,6 @@ using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::Oven;
 using namespace chip::app::Clusters::OvenMode;
 using namespace chip::app::Clusters::TemperatureControlledCabinet;
-// using namespace chip::app::Clusters::detail::Structs;
 using chip::Protocols::InteractionModel::Status;
 
 // Static member definitions
