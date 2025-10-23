@@ -26,11 +26,11 @@
 
 #pragma once
 
+#include "AppSupportedTemperatureLevelsDelegate.h"
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
 #include "TemperatureControlledCabinetEndpoint.h"
-#include "AppSupportedTemperatureLevelsDelegate.h"
 #include <lib/core/DataModelTypes.h>
 
 class OvenManager

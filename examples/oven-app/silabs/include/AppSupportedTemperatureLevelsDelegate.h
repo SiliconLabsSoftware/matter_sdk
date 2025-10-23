@@ -40,7 +40,7 @@ struct EndpointPair
     uint8_t mSize;
 
     EndpointPair(EndpointId aEndpointId, CharSpan * aTemperatureLevels, uint8_t aSize) :
-    mEndpointId(aEndpointId), mTemperatureLevels(aTemperatureLevels), mSize(aSize)
+        mEndpointId(aEndpointId), mTemperatureLevels(aTemperatureLevels), mSize(aSize)
     {}
 };
 

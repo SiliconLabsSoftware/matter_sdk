@@ -42,7 +42,6 @@ public:
      * @brief Handle the "off" command for the cooktop.
      */
     void HandleOffCommand();
-
 };
 
 } // namespace CookTop

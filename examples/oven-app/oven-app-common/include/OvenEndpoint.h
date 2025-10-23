@@ -41,7 +41,6 @@ public:
      * @return CHIP_ERROR indicating success or failure of the initialization.
      */
     CHIP_ERROR Init();
-
 };
 
 } // namespace Oven
