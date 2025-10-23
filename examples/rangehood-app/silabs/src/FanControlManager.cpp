@@ -179,6 +179,7 @@ void FanControlManager::HandleFanControlAttributeChange(AttributeId attributeId,
         FanModeWriteCallback(mFanMode);
         UpdateFanControlLED();
 #if DISPLAY_ENABLED
+        ChipLogProgress(NotSpecified,"In Fancontrol UI");
         UpdateFanControlLCD();
 #endif
         break;

@@ -40,8 +40,6 @@
 #endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 #include "LightingManager.h"
 
-#include <app/persistence/DeferredAttributePersistenceProvider.h>
-
 /**********************************************************
  * Defines
  *********************************************************/

@@ -22,6 +22,7 @@
 #include "AppTask.h"
 #include "FanControlManager.h"
 #include "FanControlUI.h"
+#include "LightingManager.h"
 #include "demo-ui-bitmaps.h"
 #include "dmd.h"
 #include "glib.h"
@@ -56,7 +57,7 @@ void FanControlUI::DrawUI(GLIB_Context_t * glibContext)
 
     GLIB_clear(glibContext);
     DrawHeader(glibContext);
-    DrawCurrentFanMode(glibContext);
+    DrawRangehoodStatus(glibContext);
 
 #if SL_LCDCTRL_MUX
     sl_wfx_host_pre_lcd_spi_transfer();
@@ -174,5 +175,73 @@ void FanControlUI::DrawFont(GLIB_Context_t * glibContext, uint8_t initial_x, uin
                 x++;
             }
         }
+    }
+}
+
+/**
+ * @brief Draw the unified rangehood status showing both light and fan states
+ * This method provides centralized status display for the embedded extractor hood
+ * @param GLIB_Context_t * pointer to the context for the GLIB library
+ */
+void FanControlUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
+{
+    // Display light state (line 3)
+    bool lightState = LightMgr().IsLightOn();
+    ChipLogProgress(AppServer, "DrawRangehoodStatus: Light state = %s", lightState ? "ON" : "OFF");
+    
+    if (lightState)
+    {
+        GLIB_drawStringOnLine(glibContext, "LIGHT : ON", 3, GLIB_ALIGN_LEFT, 0, 0, true);
+    }
+    else
+    {
+        GLIB_drawStringOnLine(glibContext, "LIGHT : OFF", 3, GLIB_ALIGN_LEFT, 0, 0, true);
+    }
+
+    // Display fan state (line 5)
+    FanModeEnum mode = FanControlMgr().GetFanMode();
+    if (mode == FanModeEnum::kOff)
+    {
+        GLIB_drawStringOnLine(glibContext, "FAN : OFF", 5, GLIB_ALIGN_LEFT, 0, 0, true);
+    }
+    else if (mode == FanModeEnum::kUnknownEnumValue)
+    {
+        GLIB_drawStringOnLine(glibContext, "FAN : UNKNOWN", 5, GLIB_ALIGN_LEFT, 0, 0, true);
+    }
+    else
+    {
+        GLIB_drawStringOnLine(glibContext, "FAN : ON", 5, GLIB_ALIGN_LEFT, 0, 0, true);
+    }
+
+    // Display fan speed/mode (line 7)
+    switch (mode)
+    {
+    case FanModeEnum::kOff:
+        GLIB_drawStringOnLine(glibContext, "SPEED : OFF", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case FanModeEnum::kLow:
+        GLIB_drawStringOnLine(glibContext, "SPEED : LOW", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case FanModeEnum::kMedium:
+        GLIB_drawStringOnLine(glibContext, "SPEED : MEDIUM", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case FanModeEnum::kHigh:
+        GLIB_drawStringOnLine(glibContext, "SPEED : HIGH", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case FanModeEnum::kAuto:
+        GLIB_drawStringOnLine(glibContext, "SPEED : AUTO", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case FanModeEnum::kSmart:
+        GLIB_drawStringOnLine(glibContext, "SPEED : SMART", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case FanModeEnum::kOn:
+        GLIB_drawStringOnLine(glibContext, "SPEED : HIGH", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case FanModeEnum::kUnknownEnumValue:
+        GLIB_drawStringOnLine(glibContext, "SPEED : UNKNOWN", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    default:
+        GLIB_drawStringOnLine(glibContext, "SPEED : --", 7, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
     }
 }

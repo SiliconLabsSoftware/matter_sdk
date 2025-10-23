@@ -282,6 +282,12 @@ void AppTask::ActionCompleted(LightingManager::Action_t aAction)
         SILABS_LOG("Light OFF")
     }
 
+    // Update LCD to reflect light state change
+    ChipLogProgress(AppServer, "ActionCompleted: Updating LCD for light state change");
+#ifdef DISPLAY_ENABLED
+    sAppTask.GetLCD().WriteDemoUI(false);
+#endif
+
     if (sAppTask.mSyncClusterToButtonAction)
     {
         chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));

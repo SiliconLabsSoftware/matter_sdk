@@ -21,6 +21,7 @@
  */
 
 #include "AppConfig.h"
+#include "AppTask.h"
 #include "FanControlManager.h"
 
 #include <app-common/zap-generated/ids/Attributes.h>
@@ -60,7 +61,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     case OnOff::Id:
         // Light on/off control should only be on LIGHT_ENDPOINT
         if (endpointId == LIGHT_ENDPOINT && attributeId == OnOff::Attributes::OnOff::Id)
-        {
+        {            
             LightMgr().InitiateAction(AppEvent::kEventType_Light, *value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION,
                                       value);
         }
