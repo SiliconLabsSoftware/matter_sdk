@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <app-common/zap-generated/cluster-objects.h> // provides detail::Structs::ModeTagStruct::Type and ModeOptionStruct::Type
+#include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-server.h>
 #include <app/data-model/List.h>
 #include <lib/core/CHIPError.h>
@@ -30,7 +30,6 @@ namespace app {
 namespace Clusters {
 namespace TemperatureControlledCabinet {
 
-/// This is an application level delegate to handle Oven commands according to the specific business logic.
 class OvenModeDelegate : public ModeBase::Delegate
 {
 public:
