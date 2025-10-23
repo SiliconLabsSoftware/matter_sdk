@@ -54,9 +54,9 @@ static TaskStats * createTaskStats(TaskHandle_t handle)
         return NULL;
     }
 
-    TaskStats * stats             = &sTaskStats[sTaskCount++];
+    TaskStats * stats = &sTaskStats[sTaskCount++];
     memset(stats, 0, sizeof(TaskStats));
-    stats->handle                 = handle;
+    stats->handle = handle;
 
     // Store task name
     const char * taskName = pcTaskGetName(handle);
@@ -293,11 +293,11 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
             info->stats.handle                            = NULL;
             info->state = eDeleted; // While technically the deleted state is something else in FreeRTOS, we use eDeleted for the
                                     // purpose of this debug feature.
-            info->priority                     = 0;
-            info->stackHighWaterMark           = 0;
-            info->runTimeCounter               = 0;
-            info->cpuPercentage                = 0;
-            info->stats                        = *stats;
+            info->priority           = 0;
+            info->stackHighWaterMark = 0;
+            info->runTimeCounter     = 0;
+            info->cpuPercentage      = 0;
+            info->stats              = *stats;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
 
