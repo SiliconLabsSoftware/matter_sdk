@@ -58,7 +58,6 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 
-
 #include <lib/support/Span.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 
@@ -83,6 +82,7 @@ RGBLEDWidget sLightLED; // Use RGBLEDWidget if RGB LED functionality is enabled
 #else
 LEDWidget sLightLED; // Use LEDWidget for basic LED functionality
 #endif
+
 } // namespace
 
 #define APP_FUNCTION_BUTTON 0
@@ -106,7 +106,7 @@ CHIP_ERROR AppTask::AppInit()
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
 #ifdef DISPLAY_ENABLED
-    GetLCD().Init((uint8_t *) "Fan-App");
+    GetLCD().Init((uint8_t *) "Rangehood-App");
     GetLCD().SetCustomUI(FanControlUI::DrawUI);
 #endif
 
@@ -116,6 +116,10 @@ CHIP_ERROR AppTask::AppInit()
         ChipLogError(AppServer, "FanControlMgr::Init() failed");
         appError(err);
     }
+
+    // Initialize LED without reading attribute state yet
+    sLightLED.Init(LIGHT_LED);
+
     // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
@@ -149,6 +153,19 @@ void AppTask::AppTaskMain(void * pvParameter)
         ChipLogError(AppServer, "AppTask.Init() failed");
         appError(err);
     }
+
+    // Initialize LightingManager after the chip stack is fully initialized
+    err = LightMgr().Init();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "LightMgr::Init() failed");
+        appError(err);
+    }
+
+    LightMgr().SetCallbacks(ActionInitiated, ActionCompleted);
+
+    // Set the initial LED state based on the attribute value
+    sLightLED.Set(LightMgr().IsLightOn());
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
     sAppTask.StartStatusLEDTimer();
@@ -300,7 +317,9 @@ void AppTask::UpdateClusterState(intptr_t context)
     uint8_t newValue = LightMgr().IsLightOn();
 
     // write the new on/off value
+    PlatformMgr().LockChipStack();
     Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(LIGHT_ENDPOINT, newValue, false);
+    PlatformMgr().UnlockChipStack();
 
     if (status != Protocols::InteractionModel::Status::Success)
     {
