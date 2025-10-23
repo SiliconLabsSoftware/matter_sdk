@@ -17,24 +17,19 @@
  */
 
 #include "CookTopEndpoint.h"
-#include <app-common/zap-generated/cluster-objects.h>
 #include <lib/core/CHIPError.h>
-#include <lib/core/DataModelTypes.h>
 
 using namespace chip;
 using namespace chip::app::Clusters::CookTop;
-using namespace chip::app::DataModel;
-using namespace ::chip::app::Clusters;
-using namespace ::chip::app::Clusters::OnOff;
 
 CHIP_ERROR CookTopEndpoint::Init()
 {
-    // Initialization logic
+    // TODO: Add CookTop Endpoint Initialization logic
     return CHIP_NO_ERROR;
 }
 
-void CookTopEndpoint::offCommand()
+void CookTopEndpoint::HandleOffCommand()
 {
-    // Handle off command
+    // TODO: Implement the logic to handle the "off" command
     return;
 }

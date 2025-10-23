@@ -17,26 +17,15 @@
  */
 
 #include "OvenManager.h"
-#include "AppConfig.h"
-#include "AppTask.h"
-
-#include <app-common/zap-generated/cluster-objects.h>
-#include <app/server/Server.h>
-#include <app/util/attribute-storage.h>
-#include <lib/support/TimeUtils.h>
-#include <platform/CHIPDeviceLayer.h>
-
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
 #include "TemperatureControlledCabinetEndpoint.h"
 
-using namespace chip;
-using namespace chip::app;
-using namespace chip::app::Clusters;
-using namespace chip::DeviceLayer;
+#include <platform/CHIPDeviceLayer.h>
 
-// TODO: Implement tag-lists.
+using namespace chip;
+using namespace chip::app::Clusters;
 
 OvenManager OvenManager::sOvenMgr;
 
@@ -44,11 +33,13 @@ void OvenManager::Init()
 {
     DeviceLayer::PlatformMgr().LockChipStack();
     // Endpoint initializations
-    mOvenEndpoint1.Init();
-    mTemperatureControlledCabinetEndpoint2.Init();
-    mCookTopEndpoint3.Init();
-    mCookSurfaceEndpoint4.Init();
-    mCookSurfaceEndpoint5.Init();
+    VerifyOrReturn(mOvenEndpoint1.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "OvenEndpoint1 Init failed"));
+    VerifyOrReturn(mTemperatureControlledCabinetEndpoint2.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint2 Init failed"));
+    VerifyOrReturn(mCookTopEndpoint3.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookTopEndpoint3 Init failed"));
+    // Temperature Control Delegate set
+    TemperatureControl::SetInstance(&mTemperatureControlDelegate);
+    VerifyOrReturn(mCookSurfaceEndpoint4.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint4 Init failed"));
+    VerifyOrReturn(mCookSurfaceEndpoint5.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint5 Init failed"));
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
 }

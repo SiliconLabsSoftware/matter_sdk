@@ -24,6 +24,6 @@ using namespace chip::app::Clusters::Oven;
 
 CHIP_ERROR OvenEndpoint::Init()
 {
-    // Initialization logic
+    // TODO: Add Initialization logic (if needed)
     return CHIP_NO_ERROR;
 }

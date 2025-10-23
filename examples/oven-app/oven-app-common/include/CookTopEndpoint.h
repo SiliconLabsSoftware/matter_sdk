@@ -29,12 +29,10 @@ namespace CookTop {
 class CookTopEndpoint
 {
 public:
-    CookTopEndpoint(EndpointId endpointId) : mEndpoint(endpointId) {}
+    CookTopEndpoint(EndpointId endpointId) {}
 
     /**
      * @brief Initialize the cooktop endpoint.
-     *
-     * This function sets up the cooktop endpoint, preparing it for operation.
      *
      * @return CHIP_ERROR indicating success or failure of the initialization.
      */
@@ -43,10 +41,8 @@ public:
     /**
      * @brief Handle the "off" command for the cooktop.
      */
-    void offCommand();
+    void HandleOffCommand();
 
-private:
-    EndpointId mEndpoint = kInvalidEndpointId;
 };
 
 } // namespace CookTop

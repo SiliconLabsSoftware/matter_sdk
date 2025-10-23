@@ -25,7 +25,24 @@
 namespace chip {
 namespace app {
 namespace Clusters {
-namespace TemperatureControlledCabinet {
+
+/**
+ * @brief Endpoint to temperature levels mapping. The endpoint must have a temperature control cluster.
+ * Represents a pair of endpoints and temperature levels supported by that endpoint.
+ */
+struct EndpointPair
+{
+    /// An endpoint having temperature control cluster.
+    EndpointId mEndpointId;
+    /// Temperature levels supported by the temperature control cluster in this endpoint.
+    CharSpan * mTemperatureLevels;
+    /// Size of the temperature levels array.
+    uint8_t mSize;
+    
+    EndpointPair(EndpointId aEndpointId, CharSpan * aTemperatureLevels, uint8_t aSize) :
+    mEndpointId(aEndpointId), mTemperatureLevels(aTemperatureLevels), mSize(aSize)
+    {}
+};
 
 /**
  * Implementation of SupportedTemperatureLevelsIteratorDelegate for the oven app.
@@ -33,22 +50,13 @@ namespace TemperatureControlledCabinet {
  */
 class AppSupportedTemperatureLevelsDelegate : public TemperatureControl::SupportedTemperatureLevelsIteratorDelegate
 {
-    struct EndpointPair
-    {
-        EndpointId mEndpointId;
-        CharSpan * mTemperatureLevels;
-        uint8_t mSize;
-
-        EndpointPair(EndpointId aEndpointId, CharSpan * aTemperatureLevels, uint8_t aSize) :
-            mEndpointId(aEndpointId), mTemperatureLevels(aTemperatureLevels), mSize(aSize)
-        {}
-    };
-
-    static CharSpan temperatureLevelOptions[3];
-
 public:
     // Use a fixed size for oven app (cook-surface multiple endpoints: 4, 5)
     static constexpr size_t kNumCookSurfaceEndpoints = 2;
+    // Number of supported temperature levels
+    static constexpr size_t kNumTemperatureLevels = 3;
+
+    static CharSpan temperatureLevelOptions[kNumTemperatureLevels];
     static const EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];
 
     uint8_t Size() override;
@@ -56,7 +64,6 @@ public:
     CHIP_ERROR Next(MutableCharSpan & item) override;
 };
 
-} // namespace TemperatureControlledCabinet
 } // namespace Clusters
 } // namespace app
 } // namespace chip

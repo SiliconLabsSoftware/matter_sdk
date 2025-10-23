@@ -21,9 +21,8 @@
 #include <lib/support/logging/CHIPLogging.h>
 
 using namespace chip;
-using namespace chip::app::Clusters::TemperatureControlledCabinet;
-using namespace chip::app::DataModel;
 using namespace chip::app::Clusters;
+using namespace chip::app::DataModel;
 
 // Define the temperature level options for the oven
 CharSpan AppSupportedTemperatureLevelsDelegate::temperatureLevelOptions[3] = { CharSpan::fromCharString("Low"),
@@ -31,9 +30,9 @@ CharSpan AppSupportedTemperatureLevelsDelegate::temperatureLevelOptions[3] = { C
                                                                                CharSpan::fromCharString("High") };
 
 // Define supported temperature levels by endpoint
-const AppSupportedTemperatureLevelsDelegate::EndpointPair AppSupportedTemperatureLevelsDelegate::supportedOptionsByEndpoints[2] = {
-    AppSupportedTemperatureLevelsDelegate::EndpointPair(4, temperatureLevelOptions, 3), // CookSurface endpoint 4
-    AppSupportedTemperatureLevelsDelegate::EndpointPair(5, temperatureLevelOptions, 3)  // CookSurface endpoint 5
+const EndpointPair AppSupportedTemperatureLevelsDelegate::supportedOptionsByEndpoints[2] = {
+    EndpointPair(4, temperatureLevelOptions, kNumTemperatureLevels), // CookSurface endpoint 4
+    EndpointPair(5, temperatureLevelOptions, kNumTemperatureLevels)  // CookSurface endpoint 5
 };
 
 uint8_t AppSupportedTemperatureLevelsDelegate::Size()
@@ -48,7 +47,6 @@ uint8_t AppSupportedTemperatureLevelsDelegate::Size()
         }
     }
     ChipLogError(AppServer, "No matching endpoint found for %d in Size()", mEndpoint);
-    // Returning 0 indicates that the endpoint was not found; this should be treated as an error.
     return 0;
 }
 

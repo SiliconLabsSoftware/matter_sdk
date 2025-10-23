@@ -33,19 +33,15 @@ namespace Oven {
 class OvenEndpoint
 {
 public:
-    OvenEndpoint(EndpointId endpointId) : mEndpoint(endpointId) {}
+    OvenEndpoint(EndpointId endpointId) {}
 
     /**
      * @brief Initialize the oven endpoint.
-     *
-     * This function sets up the oven endpoint, preparing it for operation.
      *
      * @return CHIP_ERROR indicating success or failure of the initialization.
      */
     CHIP_ERROR Init();
 
-private:
-    EndpointId mEndpoint = kInvalidEndpointId;
 };
 
 } // namespace Oven

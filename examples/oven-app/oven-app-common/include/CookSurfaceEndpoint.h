@@ -18,10 +18,7 @@
 
 #pragma once
 
-#include <AppSupportedTemperatureLevelsDelegate.h>
 #include <app-common/zap-generated/cluster-objects.h>
-#include <app/clusters/on-off-server/on-off-server.h>
-#include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
 
@@ -33,7 +30,7 @@ namespace CookSurface {
 class CookSurfaceEndpoint
 {
 public:
-    CookSurfaceEndpoint(EndpointId endpointId) : mEndpoint(endpointId) {}
+    CookSurfaceEndpoint(EndpointId endpointId) {}
 
     /**
      * @brief Initialize the CookSurface endpoint.
@@ -43,11 +40,7 @@ public:
     /**
      * @brief Handle the "off" command for the CookSurface.
      */
-    void offCommand();
-
-private:
-    EndpointId mEndpoint = kInvalidEndpointId;
-    TemperatureControlledCabinet::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
+    void HandleOffCommand();
 };
 
 } // namespace CookSurface

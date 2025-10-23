@@ -2360,10 +2360,10 @@ endpoint 2 {
   }
 
   server cluster TemperatureControl {
-    ram      attribute temperatureSetpoint;
-    ram      attribute minTemperature;
-    ram      attribute maxTemperature;
-    ram      attribute step;
+    ram      attribute temperatureSetpoint default = 0;
+    ram      attribute minTemperature default = 0;
+    ram      attribute maxTemperature default = 10000;
+    ram      attribute step default = 50;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;

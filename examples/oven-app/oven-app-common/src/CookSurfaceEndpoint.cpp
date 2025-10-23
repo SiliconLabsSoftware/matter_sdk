@@ -17,29 +17,20 @@
  */
 
 #include "CookSurfaceEndpoint.h"
-#include <app-common/zap-generated/cluster-objects.h>
-#include <app/clusters/on-off-server/on-off-server.h>
-#include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
 #include <lib/core/CHIPError.h>
-#include <lib/core/DataModelTypes.h>
 
 using namespace chip;
 using namespace chip::app::Clusters::CookSurface;
-using namespace chip::app::DataModel;
-using namespace chip::app::Clusters;
 
 CHIP_ERROR CookSurfaceEndpoint::Init()
 {
-    ChipLogProgress(AppServer, "CookSurfaceEndpoint::Init() called for endpoint %d", mEndpoint);
-
-    // Temperature Control Delegate set
-    TemperatureControl::SetInstance(&mTemperatureControlDelegate);
-    ChipLogProgress(AppServer, "Temperature control delegate set for CookSurfaceEndpoint");
-
+    ChipLogProgress(AppServer, "CookSurfaceEndpoint::Init()");
+    // TODO: Add Endpoint initialization logic
     return CHIP_NO_ERROR;
 }
 
-void CookSurfaceEndpoint::offCommand()
+void CookSurfaceEndpoint::HandleOffCommand()
 {
+    // TODO: Implement the logic to handle the "off" command
     return;
 }

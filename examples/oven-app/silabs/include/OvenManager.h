@@ -30,6 +30,7 @@
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
 #include "TemperatureControlledCabinetEndpoint.h"
+#include "AppSupportedTemperatureLevelsDelegate.h"
 #include <lib/core/DataModelTypes.h>
 
 class OvenManager
@@ -50,6 +51,7 @@ public:
 
 private:
     static OvenManager sOvenMgr;
+    chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
     // Define the endpoint ID for the Oven
     static constexpr chip::EndpointId kOvenEndpoint1                         = 1;
