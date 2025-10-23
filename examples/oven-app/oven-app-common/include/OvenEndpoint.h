@@ -19,11 +19,11 @@
 #pragma once
 
 #include <app-common/zap-generated/cluster-objects.h>
-#include <lib/core/CHIPError.h>
-#include <lib/core/DataModelTypes.h>
 #include <app/clusters/mode-base-server/mode-base-server.h>
 #include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
 #include <app/data-model/List.h>
+#include <lib/core/CHIPError.h>
+#include <lib/core/DataModelTypes.h>
 #include <lib/support/Span.h>
 
 namespace chip {

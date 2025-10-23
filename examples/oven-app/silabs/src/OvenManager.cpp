@@ -67,7 +67,7 @@ void OvenManager::Init()
     // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 4 and 5
     static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),
                                                    CharSpan::fromCharString("High") };
-    bool err = mTemperatureControlDelegate.RegisterSupportedLevels(
+    bool err                                   = mTemperatureControlDelegate.RegisterSupportedLevels(
         kCookSurfaceEndpoint4, kCookSurfaceLevels,
         static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
 

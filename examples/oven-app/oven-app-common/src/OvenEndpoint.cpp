@@ -19,10 +19,9 @@
 #include "OvenEndpoint.h"
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <lib/core/CHIPError.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include <lib/core/CHIPError.h>
-
 
 using namespace chip::app;
 using namespace chip::app::Clusters;
@@ -86,56 +85,54 @@ const detail::Structs::ModeOptionStruct::Type OvenModeDelegate::skModeOptions[kM
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsProofing) }
 };
 
-
-
 CHIP_ERROR OvenModeDelegate::Init()
 {
-  // Set the instance for the mode base delegate
-  return CHIP_NO_ERROR;
+    // Set the instance for the mode base delegate
+    return CHIP_NO_ERROR;
 }
 
 void OvenModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Commands::ChangeToModeResponse::Type & response)
 {
-  ChipLogProgress(Zcl, "OvenModeDelegate::HandleChangeToMode: NewMode=%d", NewMode);
-  // TODO: Implement logic to change the oven mode.
-  response.status = to_underlying(ModeBase::StatusCode::kSuccess);
+    ChipLogProgress(Zcl, "OvenModeDelegate::HandleChangeToMode: NewMode=%d", NewMode);
+    // TODO: Implement logic to change the oven mode.
+    response.status = to_underlying(ModeBase::StatusCode::kSuccess);
 }
 
 CHIP_ERROR OvenModeDelegate::GetModeLabelByIndex(uint8_t modeIndex, MutableCharSpan & label)
 {
-  if (modeIndex >= kModeCount)
-  {
-    return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
-  }
-  return CopyCharSpanToMutableCharSpan(skModeOptions[modeIndex].label, label);
+    if (modeIndex >= kModeCount)
+    {
+        return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+    }
+    return CopyCharSpanToMutableCharSpan(skModeOptions[modeIndex].label, label);
 }
 
 CHIP_ERROR OvenModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
 {
-  if (modeIndex >= kModeCount)
-  {
-    return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
-  }
-  value = skModeOptions[modeIndex].mode;
-  return CHIP_NO_ERROR;
+    if (modeIndex >= kModeCount)
+    {
+        return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+    }
+    value = skModeOptions[modeIndex].mode;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR OvenModeDelegate::GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<detail::Structs::ModeTagStruct::Type> & tags)
 {
-  if (modeIndex >= MATTER_ARRAY_SIZE(skModeOptions))
-  {
-    return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
-  }
+    if (modeIndex >= MATTER_ARRAY_SIZE(skModeOptions))
+    {
+        return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+    }
 
-  if (tags.size() < skModeOptions[modeIndex].modeTags.size())
-  {
-    return CHIP_ERROR_INVALID_ARGUMENT;
-  }
+    if (tags.size() < skModeOptions[modeIndex].modeTags.size())
+    {
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
 
-  std::copy(skModeOptions[modeIndex].modeTags.begin(), skModeOptions[modeIndex].modeTags.end(), tags.begin());
-  tags.reduce_size(skModeOptions[modeIndex].modeTags.size());
+    std::copy(skModeOptions[modeIndex].modeTags.begin(), skModeOptions[modeIndex].modeTags.end(), tags.begin());
+    tags.reduce_size(skModeOptions[modeIndex].modeTags.size());
 
-  return CHIP_NO_ERROR;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR TemperatureControlledCabinetEndpoint::Init()

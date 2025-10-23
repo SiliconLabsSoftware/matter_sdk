@@ -63,7 +63,7 @@ private:
     chip::app::Clusters::TemperatureControlledCabinet::TemperatureControlledCabinetEndpoint mTemperatureControlledCabinetEndpoint2{
         kTemperatureControlledCabinetEndpoint2
     };
-    chip::app::Clusters::CookTop::CookTopEndpoint mCookTopEndpoint3 { kCookTopEndpoint3 };
-    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint4 { kCookSurfaceEndpoint4 };
-    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint5 { kCookSurfaceEndpoint5 };
+    chip::app::Clusters::CookTop::CookTopEndpoint mCookTopEndpoint3{ kCookTopEndpoint3 };
+    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint4{ kCookSurfaceEndpoint4 };
+    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint5{ kCookSurfaceEndpoint5 };
 };

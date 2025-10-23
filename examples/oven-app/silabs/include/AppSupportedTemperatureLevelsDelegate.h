@@ -57,7 +57,7 @@ public:
     // Number of supported temperature levels
     static constexpr size_t kNumTemperatureLevels = 3;
 
-    AppSupportedTemperatureLevelsDelegate() {};
+    AppSupportedTemperatureLevelsDelegate(){};
 
     // Internal table of endpoint -> levels mapping (filled via RegisterSupportedLevels()).
     EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];

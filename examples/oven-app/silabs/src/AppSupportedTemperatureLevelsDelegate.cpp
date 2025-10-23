@@ -24,7 +24,8 @@ using namespace chip;
 using namespace chip::app::Clusters;
 using namespace chip::app::DataModel;
 
-bool AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels, uint8_t levelCount)
+bool AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels,
+                                                                    uint8_t levelCount)
 {
     if (levels == nullptr || levelCount == 0)
     {
