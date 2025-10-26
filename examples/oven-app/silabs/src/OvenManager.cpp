@@ -22,6 +22,10 @@
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
 
+#include <app-common/zap-generated/cluster-objects.h>
+#include <app-common/zap-generated/attributes/Accessors.h>
+#include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+
 #include "AppConfig.h"
 #include "AppTask.h"
 
@@ -66,6 +70,24 @@ void OvenManager::Init()
                    ChipLogError(AppServer, "SetTemperatureControlledCabinetInitialState failed"));
 
     VerifyOrReturn(mCookTopEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookTopEndpoint Init failed"));
+
+    // Initialize TemperatureControl cluster numeric temperature attributes for endpoint 2 (silent on failure)
+    {
+    Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(kTemperatureControlledCabinetEndpoint2, 0);
+    VerifyOrReturn(tcStatus == Status::Success,
+               ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
+
+    tcStatus = TemperatureControl::Attributes::MinTemperature::Set(kTemperatureControlledCabinetEndpoint2, 0);
+    VerifyOrReturn(tcStatus == Status::Success,
+               ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
+
+    tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(kTemperatureControlledCabinetEndpoint2, 30000);
+    VerifyOrReturn(tcStatus == Status::Success,
+               ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
+
+    tcStatus = TemperatureControl::Attributes::Step::Set(kTemperatureControlledCabinetEndpoint2, 500);
+    VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 Step init failed"));
+    }
 
     // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
     TemperatureControl::SetInstance(&mTemperatureControlDelegate);
