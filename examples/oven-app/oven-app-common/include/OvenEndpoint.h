@@ -57,10 +57,12 @@ public:
     CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t & value) override;
     CHIP_ERROR GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<detail::Structs::ModeTagStruct::Type> & tags) override;
 
+    // Public helper to query support status without exposing internal tables
+    static bool IsSupportedMode(uint8_t mode);
+
 private:
     EndpointId mEndpointId;
 
-    // Static arrays moved to implementation file to reduce header size
     static const detail::Structs::ModeTagStruct::Type sModeTagsBake[];
     static const detail::Structs::ModeTagStruct::Type sModeTagsConvection[];
     static const detail::Structs::ModeTagStruct::Type sModeTagsGrill[];

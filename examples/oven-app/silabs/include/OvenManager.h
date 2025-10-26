@@ -37,6 +37,7 @@
 
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app/clusters/on-off-server/on-off-server.h>
+#include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <lib/core/DataModelTypes.h>
 
 class OvenManager
@@ -81,6 +82,14 @@ public:
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
     void TempCtrlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
     void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+    void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+
+    /**
+     * @brief Central handler for OvenMode delegate requests. Applies validation, blocked-transition policy,
+     *        and writes the CurrentMode attribute if allowed.
+     */
+    void ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t newMode,
+                               chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response);
 
 private:
     static OvenManager sOvenMgr;
