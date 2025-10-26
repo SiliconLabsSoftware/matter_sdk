@@ -28,15 +28,41 @@
 #pragma once
 
 #include "AppSupportedTemperatureLevelsDelegate.h"
-#include "CookSurfaceEndpoint.h"
-#include "CookTopEndpoint.h"
+// Corrected relative paths (silabs/include -> go up two levels to oven-app root)
 #include "OvenEndpoint.h"
-#include "AppSupportedTemperatureLevelsDelegate.h"
+#include "CookTopEndpoint.h"
+#include "CookSurfaceEndpoint.h"
+
+#include "AppEvent.h"
+
+#include <app-common/zap-generated/ids/Attributes.h>
+#include <app/clusters/on-off-server/on-off-server.h>
 #include <lib/core/DataModelTypes.h>
 
 class OvenManager
 {
 public:
+    enum Action_t
+    {
+        ON_ACTION = 0,
+        OFF_ACTION,
+
+        INVALID_ACTION
+    } Action;
+
+    enum State_t
+    {
+        kState_OffInitiated = 0,
+        kState_OffCompleted,
+        kState_OnInitiated,
+        kState_OnCompleted,
+    } State;
+
+    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);
+    typedef void (*Callback_fn_initiated)(Action_t, int32_t aActor, uint8_t * value);
+    typedef void (*Callback_fn_completed)(Action_t);
+    void SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB);
+
     /**
      * @brief Initializes the OvenManager and its associated resources.
      *
@@ -53,10 +79,19 @@ public:
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
+    void TempCtrlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+    void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
 
 private:
     static OvenManager sOvenMgr;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
+
+    State_t mState;
+
+    Callback_fn_initiated mActionInitiated_CB;
+    Callback_fn_completed mActionCompleted_CB;
+
+    static void ActuatorMovementHandler(AppEvent * aEvent);
 
     // Define the endpoint ID for the Oven
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;

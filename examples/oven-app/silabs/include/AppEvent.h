@@ -35,6 +35,7 @@ struct AppEvent : public BaseAppEvent
         {
             uint8_t Action;
             int32_t Actor;
+            void * Context;
         } OvenEvent;
     };
 };

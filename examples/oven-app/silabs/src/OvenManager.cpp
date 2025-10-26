@@ -17,9 +17,13 @@
  */
 
 #include "OvenManager.h"
+// Corrected relative paths to shared oven-app-common headers (src/ -> ../../)
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
+
+#include "AppConfig.h"
+#include "AppTask.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -141,4 +145,130 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
                         ChipLogError(AppServer, "Setting Step failed : %u", to_underlying(tcStatus)));
 
     return CHIP_NO_ERROR;
+}
+
+void OvenManager::TempCtrlAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
+{
+    if (endpointId == kTemperatureControlledCabinetEndpoint2)
+    {
+        // Handle temperature control attribute changes for the temperature-controlled cabinet
+    }
+    else if (endpointId == kCookSurfaceEndpoint4 || endpointId == kCookSurfaceEndpoint5)
+    {
+        // Handle temperature control attribute changes for the cook surface endpoints
+        if (*value == 0) // low
+        {
+
+        }
+        else if (*value == 1) // medium
+        {
+
+        }
+        else if (*value == 2) // high
+        {
+
+        }
+    }
+    return;
+}
+
+void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
+{
+    if (endpointId == kCookTopEndpoint3)
+    {
+        // Handle LCD and LED Actions
+        InitiateAction(AppEvent::kEventType_Oven, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value);
+        
+        // Update CookSurface states accordingly
+        mCookSurfaceEndpoint4.SetOnOffState(*value);
+        mCookSurfaceEndpoint5.SetOnOffState(*value);
+    }
+    else if (endpointId == kCookSurfaceEndpoint4 || endpointId == kCookSurfaceEndpoint5)
+    {
+        // Handle On/Off attribute changes for the cook surface endpoints
+        ChipLogProgress(AppServer, "OnOff command received for endpoint : %d", endpointId);
+        bool cookSurfaceEndpoint4State = mCookSurfaceEndpoint4.GetOnOffState();
+        bool cookSurfaceEndpoint5State = mCookSurfaceEndpoint5.GetOnOffState();
+        ChipLogProgress(AppServer, "ep4 OnOff state : %d", cookSurfaceEndpoint4State);
+        ChipLogProgress(AppServer, "ep5 OnOff state : %d", cookSurfaceEndpoint5State);
+        // Check if both cooksurfaces are off. If yes, turn off the cooktop (call cooktop.TurnOffCookTop)
+        if (cookSurfaceEndpoint4State == false && cookSurfaceEndpoint5State == false)
+        {
+            mCookTopEndpoint3.SetOnOffState(false);
+        }
+    }
+    return;
+}
+
+
+void OvenManager::SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB)
+{
+    mActionInitiated_CB = aActionInitiated_CB;
+    mActionCompleted_CB = aActionCompleted_CB;
+}
+
+bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue)
+{
+    bool action_initiated = false;
+    State_t new_state;
+
+    // Initiate Turn On/Off Action only when the previous one is complete.
+    // if (((mState == kState_OffCompleted) || mOffEffectArmed) && aAction == ON_ACTION)
+    if (mState == kState_OffCompleted && aAction == ON_ACTION)
+    {
+        action_initiated = true;
+
+        new_state = kState_OnInitiated;
+    }
+    else if (mState == kState_OnCompleted && aAction == OFF_ACTION)
+    {
+        action_initiated = true;
+
+        new_state = kState_OffInitiated;
+    }
+
+    if (action_initiated && (aAction == ON_ACTION || aAction == OFF_ACTION))
+    {
+        mState = new_state;
+
+        AppEvent event;
+        event.Type               = AppEvent::kEventType_Oven; // Assuming a distinct action type exists; fallback to Timer if not.
+        event.OvenEvent.Context = this; // Reuse Context field; adjust if a specific union member exists for action.
+        event.Handler            = ActuatorMovementHandler;
+        AppTask::GetAppTask().PostEvent(&event);
+    }
+
+    if (action_initiated && mActionInitiated_CB)
+    {
+        mActionInitiated_CB(aAction, aActor, aValue);
+    }
+
+    return action_initiated;
+}
+
+void OvenManager::ActuatorMovementHandler(AppEvent * aEvent)
+{
+    Action_t actionCompleted = INVALID_ACTION;
+
+    // Correct union member: event posted stored context in OvenEvent.Context, not TimerEvent.Context.
+    OvenManager * oven = static_cast<OvenManager *>(aEvent->OvenEvent.Context);
+
+    if (oven->mState == kState_OffInitiated)
+    {
+        oven->mState   = kState_OffCompleted;
+        actionCompleted = OFF_ACTION;
+    }
+    else if (oven->mState == kState_OnInitiated)
+    {
+        oven->mState   = kState_OnCompleted;
+        actionCompleted = ON_ACTION;
+    }
+
+    if (actionCompleted != INVALID_ACTION)
+    {
+        if (oven->mActionCompleted_CB)
+        {
+            oven->mActionCompleted_CB(actionCompleted);
+        }
+    }
 }

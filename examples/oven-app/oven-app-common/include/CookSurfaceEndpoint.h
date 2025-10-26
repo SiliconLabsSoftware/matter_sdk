@@ -39,7 +39,17 @@ public:
      */
     CHIP_ERROR Init();
 
-    void HandleOffCommand();
+    /**
+     * @brief Returns the cached current On/Off state without querying attributes.
+     */
+    bool CurrentState() const { return currentOnOffState; }
+
+    bool GetOnOffState();
+
+    /**
+     * @brief Set On/Off state for the CookSurface.
+     */
+    void SetOnOffState(bool state);
 
     EndpointId GetEndpointId() const { return mEndpointId; }
 

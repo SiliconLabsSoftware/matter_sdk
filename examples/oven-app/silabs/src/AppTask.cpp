@@ -70,9 +70,9 @@ CHIP_ERROR AppTask::AppInit()
     GetLCD().Init((uint8_t *) "Oven-App");
 #endif
 
-    // Initialization of Oven Manager and endpoints of oven and ovenpanel.
+    // Initialization of Oven Manager and endpoints of oven.
     OvenManager::GetInstance().Init();
-
+    OvenManager::GetInstance().SetCallbacks(ActionInitiated, ActionCompleted);
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
@@ -128,4 +128,42 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     button_event.ButtonEvent.Action = btnAction;
     button_event.Handler            = BaseApplication::ButtonHandler;
     AppTask::GetAppTask().PostEvent(&button_event);
+}
+
+void AppTask::ActionInitiated(OvenManager::Action_t aAction, int32_t aActor, uint8_t * aValue)
+{
+    // Action initiated
+    bool lightOn = aAction == OvenManager::ON_ACTION;
+    SILABS_LOG("Turning light %s", (lightOn) ? "On" : "Off");
+
+    //TODO: Update LED state
+
+#ifdef DISPLAY_ENABLED
+    sAppTask.GetLCD().WriteDemoUI(lightOn);
+#endif
+
+    if (aActor == AppEvent::kEventType_Button)
+    {
+        sAppTask.mSyncClusterToButtonAction = true;
+    }
+}
+
+void AppTask::ActionCompleted(OvenManager::Action_t aAction)
+{
+    // action has been completed on the oven
+    if (aAction == OvenManager::ON_ACTION)
+    {
+        SILABS_LOG("Oven ON")
+    }
+    else if (aAction == OvenManager::OFF_ACTION)
+    {
+        SILABS_LOG("Oven OFF")
+    }
+
+    if (sAppTask.mSyncClusterToButtonAction)
+    {
+        // chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
+        // Schedule work to Update CookTop and CookSurfaceEndpoints (turn on/off)
+        sAppTask.mSyncClusterToButtonAction = false;
+    }
 }
