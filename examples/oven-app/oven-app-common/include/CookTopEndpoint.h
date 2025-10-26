@@ -38,7 +38,10 @@ public:
      */
     CHIP_ERROR Init();
 
-    void HandleOffCommand();
+    /**
+     * @brief Handle the "off" command for the cooktop.
+     */
+    void SetOnOffState(bool state);
 
 private:
     bool currentOnOffState = false;

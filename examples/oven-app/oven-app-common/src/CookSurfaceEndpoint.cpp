@@ -17,14 +17,34 @@
  */
 
 #include "CookSurfaceEndpoint.h"
-#include <lib/core/CHIPError.h>
+#include <app/clusters/on-off-server/on-off-server.h>
+#include <protocols/interaction_model/StatusCode.h>
 
 using namespace chip;
+using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::CookSurface;
 
 CHIP_ERROR CookSurfaceEndpoint::Init()
 {
+    bool state = false;
+    OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
+    currentOnOffState = state;
     return CHIP_NO_ERROR;
 }
 
-void CookSurfaceEndpoint::HandleOffCommand() {}
+bool CookSurfaceEndpoint::GetOnOffState()
+{
+    bool state = false;
+    OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
+    return state;
+}
+
+void CookSurfaceEndpoint::SetOnOffState(bool state)
+{
+    CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
+    auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    if (status == chip::Protocols::InteractionModel::Status::Success)
+    {
+        currentOnOffState = state;
+    }
+}
