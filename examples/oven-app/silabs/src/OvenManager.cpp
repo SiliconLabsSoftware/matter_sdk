@@ -17,9 +17,13 @@
  */
 
 #include "OvenManager.h"
+// Corrected relative paths to shared oven-app-common headers (src/ -> ../../)
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
+
+#include "AppConfig.h"
+#include "AppTask.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>

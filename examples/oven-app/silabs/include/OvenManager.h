@@ -28,9 +28,13 @@
 #pragma once
 
 #include "AppSupportedTemperatureLevelsDelegate.h"
-#include "CookSurfaceEndpoint.h"
-#include "CookTopEndpoint.h"
+// Corrected relative paths (silabs/include -> go up two levels to oven-app root)
 #include "OvenEndpoint.h"
+<<<<<<< HEAD
+=======
+#include "CookTopEndpoint.h"
+#include "CookSurfaceEndpoint.h"
+>>>>>>> 9e0e5250ea (Commands implementation)
 
 #include "AppEvent.h"
 
