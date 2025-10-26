@@ -18,6 +18,9 @@
 
 #include "OvenEndpoint.h"
 #include <app-common/zap-generated/cluster-objects.h>
+#include <app-common/zap-generated/attributes/Accessors.h>
+
+#include "OvenManager.h"
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <lib/core/CHIPError.h>
 #include <lib/support/CodeUtils.h>
@@ -92,9 +95,8 @@ CHIP_ERROR OvenModeDelegate::Init()
 
 void OvenModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Commands::ChangeToModeResponse::Type & response)
 {
-    ChipLogProgress(Zcl, "OvenModeDelegate::HandleChangeToMode: NewMode=%d", NewMode);
-    // TODO: Implement logic to change the oven mode.
-    response.status = to_underlying(ModeBase::StatusCode::kSuccess);
+  ChipLogProgress(Zcl, "OvenModeDelegate forwarding mode change to OvenManager (ep=%u newMode=%u)", mEndpointId, NewMode);
+  OvenManager::GetInstance().ProcessOvenModeChange(mEndpointId, NewMode, response);
 }
 
 CHIP_ERROR OvenModeDelegate::GetModeLabelByIndex(uint8_t modeIndex, MutableCharSpan & label)
@@ -135,3 +137,16 @@ CHIP_ERROR OvenEndpoint::Init()
 {
     return CHIP_NO_ERROR;
 }
+
+bool OvenModeDelegate::IsSupportedMode(uint8_t mode)
+{
+  for (auto const & opt : skModeOptions)
+  {
+    if (opt.mode == mode)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
