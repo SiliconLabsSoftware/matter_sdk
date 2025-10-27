@@ -28,7 +28,6 @@
 #pragma once
 
 #include "AppSupportedTemperatureLevelsDelegate.h"
-// Corrected relative paths (silabs/include -> go up two levels to oven-app root)
 #include "OvenEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "CookSurfaceEndpoint.h"
@@ -80,8 +79,34 @@ public:
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
+    /**
+     * @brief Handles temperature control attribute changes.
+     *
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
     void TempCtrlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+    
+    /**
+     * @brief Handles on/off attribute changes.
+     *
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
     void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+
+    /**
+     * @brief Handles oven mode attribute changes.
+     *
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
     void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
 
     /**

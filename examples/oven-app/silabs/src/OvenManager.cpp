@@ -17,7 +17,6 @@
  */
 
 #include "OvenManager.h"
-// Corrected relative paths to shared oven-app-common headers (src/ -> ../../)
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
@@ -171,21 +170,9 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
 
 void OvenManager::TempCtrlAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
 {
-    if (endpointId == kCookSurfaceEndpoint4 || endpointId == kCookSurfaceEndpoint5)
+    if (endpointId == kTemperatureControlledCabinetEndpoint2)
     {
-        // Handle temperature control attribute changes for the cook surface endpoints
-        if (*value == 0) // low
-        {
-            // TODO: Adjust the temperature-setpoint value in TemperatureControl Cluster accordingly
-        }
-        else if (*value == 1) // medium
-        {
-            // TODO: Adjust the temperature-setpoint value in TemperatureControl Cluster accordingly
-        }
-        else if (*value == 2) // high
-        {
-            // TODO: Adjust the temperature-setpoint value in TemperatureControl Cluster accordingly
-        }
+        // TODO: Update the LCD with the new Temperature Control attribute value
     }
     return;
 }
@@ -194,7 +181,6 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
 {
     if (endpointId == kCookTopEndpoint3)
     {
-        // Handle LCD and LED Actions
         InitiateAction(AppEvent::kEventType_Oven, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value);
         
         // Update CookSurface states accordingly
@@ -235,18 +221,15 @@ bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aVa
     State_t new_state;
 
     // Initiate Turn On/Off Action only when the previous one is complete.
-    // if (((mState == kState_OffCompleted) || mOffEffectArmed) && aAction == ON_ACTION)
     if (mState == kState_OffCompleted && aAction == ON_ACTION)
     {
         action_initiated = true;
-
-        new_state = kState_OnInitiated;
+        new_state        = kState_OnInitiated;
     }
     else if (mState == kState_OnCompleted && aAction == OFF_ACTION)
     {
         action_initiated = true;
-
-        new_state = kState_OffInitiated;
+        new_state        = kState_OffInitiated;
     }
 
     if (action_initiated && (aAction == ON_ACTION || aAction == OFF_ACTION))
@@ -254,8 +237,8 @@ bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aVa
         mState = new_state;
 
         AppEvent event;
-        event.Type               = AppEvent::kEventType_Oven; // Assuming a distinct action type exists; fallback to Timer if not.
-        event.OvenEvent.Context = this; // Reuse Context field; adjust if a specific union member exists for action.
+        event.Type               = AppEvent::kEventType_Oven;
+        event.OvenEvent.Context  = this;
         event.Handler            = ActuatorMovementHandler;
         AppTask::GetAppTask().PostEvent(&event);
     }
@@ -272,17 +255,16 @@ void OvenManager::ActuatorMovementHandler(AppEvent * aEvent)
 {
     Action_t actionCompleted = INVALID_ACTION;
 
-    // Correct union member: event posted stored context in OvenEvent.Context, not TimerEvent.Context.
     OvenManager * oven = static_cast<OvenManager *>(aEvent->OvenEvent.Context);
 
     if (oven->mState == kState_OffInitiated)
     {
-        oven->mState   = kState_OffCompleted;
+        oven->mState    = kState_OffCompleted;
         actionCompleted = OFF_ACTION;
     }
     else if (oven->mState == kState_OnInitiated)
     {
-        oven->mState   = kState_OnCompleted;
+        oven->mState    = kState_OnCompleted;
         actionCompleted = ON_ACTION;
     }
 
@@ -331,7 +313,7 @@ void OvenManager::ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t new
     using chip::Protocols::InteractionModel::Status;
     ChipLogProgress(AppServer, "OvenManager::ProcessOvenModeChange ep=%u newMode=%u", endpointId, newMode);
 
-    // 1. Verify newMode is among supported modes
+    // Verify newMode is among supported modes
     bool supported = TemperatureControlledCabinet::OvenModeDelegate::IsSupportedMode(newMode);
     if (!supported)
     {
@@ -339,7 +321,7 @@ void OvenManager::ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t new
         return;
     }
 
-    // 2. Read current mode
+    // Read Current Oven Mode
     uint8_t currentMode;
     Status attrStatus   = OvenMode::Attributes::CurrentMode::Get(endpointId, &currentMode);
     if (attrStatus != Status::Success)
@@ -350,14 +332,14 @@ void OvenManager::ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t new
         return;
     }
 
-    // 3. No-op
+    // No action needed if current mode is the same as new mode
     if (currentMode == newMode)
     {
         response.status = to_underlying(ModeBase::StatusCode::kSuccess);
         return;
     }
 
-    // 4. Policy check
+    // Check if the mode transition is possible
     if (IsTransitionBlocked(currentMode, newMode))
     {
         ChipLogProgress(AppServer, "OvenManager: Blocked transition %u -> %u", currentMode, newMode);
@@ -366,7 +348,7 @@ void OvenManager::ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t new
         return;
     }
 
-    // 5. Write new mode
+    // Write new mode
     Status writeStatus = OvenMode::Attributes::CurrentMode::Set(endpointId, newMode);
     if (writeStatus != Status::Success)
     {

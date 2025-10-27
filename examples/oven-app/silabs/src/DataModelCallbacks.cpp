@@ -48,7 +48,6 @@ void MatterPostAttributeChangeCallback(const app::ConcreteAttributePath & attrib
     case app::Clusters::OnOff::Id:
         ChipLogProgress(Zcl, "OnOff cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                         ChipLogValueMEI(attributeId), type, *value, size);
-        ChipLogProgress(Zcl, "OnOff received for endpoint: %d", attributePath.mEndpointId);
         OvenManager::GetInstance().OnOffAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     case app::Clusters::TemperatureControl::Id:

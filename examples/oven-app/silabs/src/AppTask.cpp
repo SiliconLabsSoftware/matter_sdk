@@ -132,11 +132,10 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
 void AppTask::ActionInitiated(OvenManager::Action_t aAction, int32_t aActor, uint8_t * aValue)
 {
-    // Action initiated
     bool lightOn = aAction == OvenManager::ON_ACTION;
     SILABS_LOG("Turning light %s", (lightOn) ? "On" : "Off");
 
-    //TODO: Update LED state
+    // TODO: Update LED state
 
 #ifdef DISPLAY_ENABLED
     sAppTask.GetLCD().WriteDemoUI(lightOn);
@@ -150,20 +149,19 @@ void AppTask::ActionInitiated(OvenManager::Action_t aAction, int32_t aActor, uin
 
 void AppTask::ActionCompleted(OvenManager::Action_t aAction)
 {
-    // action has been completed on the oven
+    // Action has been completed on the oven
     if (aAction == OvenManager::ON_ACTION)
     {
-        SILABS_LOG("Oven ON")
+        SILABS_LOG("Oven ON");
     }
     else if (aAction == OvenManager::OFF_ACTION)
     {
-        SILABS_LOG("Oven OFF")
+        SILABS_LOG("Oven OFF");
     }
 
     if (sAppTask.mSyncClusterToButtonAction)
     {
-        // chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
-        // Schedule work to Update CookTop and CookSurfaceEndpoints (turn on/off)
+        // TODO: Schedule work to Update CookTop and CookSurfaceEndpoints (turn on/off)
         sAppTask.mSyncClusterToButtonAction = false;
     }
 }

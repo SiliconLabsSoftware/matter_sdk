@@ -76,7 +76,6 @@ if (wifi_soc) {
       "${examples_plat_dir}",
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
-      # Added for oven app Option A: expose shared oven-app-common headers to all upstream targets
       "${example_oven_dir}/oven-app-common/include",
     ]
 
