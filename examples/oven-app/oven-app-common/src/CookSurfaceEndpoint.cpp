@@ -28,7 +28,6 @@ CHIP_ERROR CookSurfaceEndpoint::Init()
 {
     bool state = false;
     OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
-    currentOnOffState = state;
     return CHIP_NO_ERROR;
 }
 
@@ -43,8 +42,8 @@ void CookSurfaceEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
     auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
-    if (status == chip::Protocols::InteractionModel::Status::Success)
+    if (status != Protocols::InteractionModel::Status::Success)
     {
-        currentOnOffState = state;
+        ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status));
     }
 }

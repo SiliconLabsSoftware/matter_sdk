@@ -40,9 +40,8 @@ public:
     CHIP_ERROR Init();
 
     /**
-     * @brief Returns the cached current On/Off state without querying attributes.
+     * @brief Returns the current On/Off state.
      */
-    bool CurrentState() const { return currentOnOffState; }
 
     bool GetOnOffState();
 
@@ -54,7 +53,6 @@ public:
     EndpointId GetEndpointId() const { return mEndpointId; }
 
 private:
-    bool currentOnOffState = false;
     EndpointId mEndpointId = kInvalidEndpointId;
 };
 
