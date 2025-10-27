@@ -19,10 +19,12 @@
 #include "OvenManager.h"
 #include "CookEndpoints.h"
 #include "OvenEndpoint.h"
+#include "OvenBindingHandler.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <platform/CHIPDeviceLayer.h>
 
 #include "AppConfig.h"
 #include "AppTask.h"
@@ -82,6 +84,9 @@ void OvenManager::Init()
     VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
+
+    // Initialize binding manager (after stack unlock to avoid long hold)
+    InitOvenBindingHandler();
 }
 
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
