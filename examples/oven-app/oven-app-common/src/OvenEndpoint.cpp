@@ -149,4 +149,3 @@ bool OvenModeDelegate::IsSupportedMode(uint8_t mode)
   }
   return false;
 }
-
