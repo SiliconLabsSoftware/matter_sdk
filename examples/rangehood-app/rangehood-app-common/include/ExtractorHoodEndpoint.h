@@ -52,7 +52,7 @@ public:
 
 protected:
     EndpointId mEndpoint = 0;
-}
+};
 
 class ExtractorHoodEndpoint
 {
@@ -64,10 +64,16 @@ public:
      */
     CHIP_ERROR Init();
 
+    /**
+     * @brief Get the FanDelegate instance for this endpoint.
+     */
+    FanDelegate & GetFanDelegate() { return mFanDelegate; }
+
     /* Add ExtractorHoodEndpoint functions*/
 
 private:
     EndpointId mEndpointId = kInvalidEndpointId;
+    FanDelegate mFanDelegate;
 };
 
 } // namespace ExtractorHood

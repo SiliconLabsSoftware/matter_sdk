@@ -34,7 +34,7 @@ using Protocols::InteractionModel::Status;
 
 RangeHoodManager RangeHoodManager::sRangeHoodMgr;
 
-void RangeHoodManager::Init()
+CHIP_ERROR RangeHoodManager::Init()
 {
     DeviceLayer::PlatformMgr().LockChipStack();
     // Endpoint initializations
@@ -63,7 +63,7 @@ void RangeHoodManager::Init()
     OnOffServer::Instance().getOnOffValue(LIGHT_ENDPOINT, &currentLedState);
 
 
-    Attributes::SpeedMax::Get(GetEndPoint(), &mSpeedMax);
+    Attributes::SpeedMax::Get(kExtractorHoodEndpoint1, &mSpeedMax);
 
     DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
     uint8_t percentSettingCB                            = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
@@ -73,9 +73,11 @@ void RangeHoodManager::Init()
     uint8_t speedSettingCB                            = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
     SpeedSettingWriteCallback(speedSettingCB);
 
-    FanControl::SetDefaultDelegate(kExtractorHoodEndpoint1, /* delegate object*/ );
+    FanControl::SetDefaultDelegate(kExtractorHoodEndpoint1, &mExtractorHoodEndpoint1.GetFanDelegate());
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
+    
+    return CHIP_NO_ERROR;
 }
 
 bool RangeHoodManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue)
@@ -146,7 +148,7 @@ void RangeHoodManager::CancelTimer(void)
 void RangeHoodManager::TimerEventHandler(void * timerCbArg)
 {
     // The callback argument is the light obj context assigned at timer creation.
-    RangeHoodManager * light = static_cast<LightingManager *>(timerCbArg);
+    RangeHoodManager * light = static_cast<RangeHoodManager *>(timerCbArg);
 
     // The timer event handler will be called in the context of the timer task
     // once mLightTimer expires. Post an event to apptask queue with the actual handler
@@ -171,7 +173,7 @@ void RangeHoodManager::TimerEventHandler(void * timerCbArg)
 
 void RangeHoodManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 {
-    LightingManager * light = static_cast<LightingManager *>(aEvent->TimerEvent.Context);
+    RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
     int32_t actor           = AppEvent::kEventType_Timer;
     uint8_t value           = aEvent->LightEvent.Value;
 
@@ -190,7 +192,7 @@ void RangeHoodManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 
 void RangeHoodManager::OffEffectTimerEventHandler(AppEvent * aEvent)
 {
-    LightingManager * light = static_cast<LightingManager *>(aEvent->TimerEvent.Context);
+    RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
     int32_t actor           = AppEvent::kEventType_Timer;
     uint8_t value           = aEvent->LightEvent.Value;
 
@@ -280,8 +282,8 @@ void RangeHoodManager::OnTriggerOffWithEffect(OnOffEffect * effect)
         }
     }
 
-    LightMgr().mOffEffectArmed = true;
-    LightMgr().StartTimer(offEffectDuration);
+    this->mOffEffectArmed = true;
+    this->StartTimer(offEffectDuration);
 }
  
 Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff)
@@ -333,12 +335,12 @@ Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId
 
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
     data->percentSetting       = curPercentSetting;
-    data->endPoint             = GetEndPoint();
+    data->endPoint             = kExtractorHoodEndpoint1;
     data->isPercentSetting     = true;
 
     if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
     {
-        ChipLogError(NotSpecified, "FanControlManager::HandleStep: Failed to update PercentSetting attribute");
+        ChipLogError(NotSpecified, "RangeHoodManager::HandleStep: Failed to update PercentSetting attribute");
         return Status::Failure;
     }
 
@@ -380,11 +382,6 @@ void RangeHoodManager::HandleFanControlAttributeChange(AttributeId attributeId, 
         break;
     }
 
-    case Attributes::SpeedSetting::Id: {
-        SpeedSettingWriteCallback(*value);
-        break;
-    }
-
     case Attributes::FanMode::Id: {
         mFanMode = *reinterpret_cast<FanModeEnum *>(value);
         FanModeWriteCallback(mFanMode);
@@ -405,7 +402,7 @@ void RangeHoodManager::PercentSettingWriteCallback(uint8_t aNewPercentSetting)
     percentCurrent = aNewPercentSetting;
 
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
-    data->endPoint             = GetEndPoint();
+    data->endPoint             = kExtractorHoodEndpoint1;
     data->percentCurrent       = percentCurrent;
     data->isPercentCurrent     = true;
 
@@ -423,7 +420,7 @@ void RangeHoodManager::SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
     speedCurrent = aNewSpeedSetting;
 
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
-    data->endPoint             = GetEndPoint();
+    data->endPoint             = kExtractorHoodEndpoint1;
     data->speedCurrent         = speedCurrent;
     data->isSpeedCurrent       = true;
 
@@ -455,7 +452,7 @@ void RangeHoodManager::SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
 void RangeHoodManager::UpdateFanMode()
 {
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
-    data->endPoint             = GetEndPoint();
+    data->endPoint             = kExtractorHoodEndpoint1;
     data->fanMode              = mFanMode;
     data->isFanMode            = true;
     if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
@@ -466,7 +463,7 @@ void RangeHoodManager::UpdateFanMode()
 
 void RangeHoodManager::FanModeWriteCallback(FanModeEnum aNewFanMode)
 {
-    ChipLogDetail(NotSpecified, "FanControlManager::FanModeWriteCallback: %d", (uint8_t) aNewFanMode);
+    ChipLogDetail(NotSpecified, "RangeHoodManager::FanModeWriteCallback: %d", (uint8_t) aNewFanMode);
     // Set Percent Settings, which will update the Speed Settings through callback.
     switch (aNewFanMode)
     {
@@ -523,7 +520,7 @@ void RangeHoodManager::SetPercentSetting(Percent aNewPercentSetting)
     {
         AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
         data->percentCurrent       = aNewPercentSetting;
-        data->endPoint             = GetEndPoint();
+        data->endPoint             = kExtractorHoodEndpoint1;
         data->isPercentCurrent     = true;
         if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
         {
@@ -536,7 +533,7 @@ DataModel::Nullable<uint8_t> RangeHoodManager::GetSpeedSetting()
 {
     DataModel::Nullable<uint8_t> speedSetting;
 
-    Status status = Attributes::SpeedSetting::Get(GetEndPoint(), speedSetting);
+    Status status = Attributes::SpeedSetting::Get(kExtractorHoodEndpoint1, speedSetting);
     if (status != Status::Success)
     {
         ChipLogError(NotSpecified, "RangeHoodManager::GetSpeedSetting: failed to get SpeedSetting attribute: %d",
@@ -550,7 +547,7 @@ DataModel::Nullable<Percent> RangeHoodManager::GetPercentSetting()
 {
     DataModel::Nullable<Percent> percentSetting;
 
-    Status status = Attributes::PercentSetting::Get(GetEndPoint(), percentSetting);
+    Status status = Attributes::PercentSetting::Get(kExtractorHoodEndpoint1, percentSetting);
     if (status != Status::Success)
     {
         ChipLogError(NotSpecified, "RangeHoodManager::GetPercentSetting: failed to get PercentSetting attribute: %d",

@@ -30,7 +30,7 @@
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
 
-#include <RangeHoodManager.h>
+#include "RangeHoodManager.h"
 #include <app-common/zap-generated/attribute-type.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app/clusters/fan-control-server/fan-control-delegate.h>
@@ -71,13 +71,10 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
-#ifdef DISPLAY_ENABLED
-    GetLCD().SetCustomUI(FanControlUI::DrawUI);
-#endif
-
    // Initialization of Oven Manager and endpoints of oven.
     RangeHoodManager::GetInstance().Init();
     RangeHoodManager::GetInstance().SetCallbacks(ActionInitiated, ActionCompleted);
+
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
@@ -173,4 +170,14 @@ void AppTask::ActionCompleted(RangeHoodManager::Action_t aAction)
         // TODO: Schedule work to Update Light Endpoints (turn on/off)
         sAppTask.mSyncClusterToButtonAction = false;
     }
+}
+
+void AppTask::PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction)
+{
+    AppEvent event;
+    event.Type              = AppEvent::kEventType_Light;
+    event.LightEvent.Actor  = aActor;
+    event.LightEvent.Action = aAction;
+    event.Handler           = LightActionEventHandler;
+    PostEvent(&event);
 }

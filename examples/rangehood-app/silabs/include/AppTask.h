@@ -77,6 +77,7 @@ public:
      *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
+    void PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction);
 
 private:
     static AppTask sAppTask;
@@ -84,6 +85,7 @@ private:
     static void ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor, uint8_t * value);
     static void ActionCompleted(RangeHoodManager::Action_t aAction);
         
+    static void LightActionEventHandler(AppEvent * aEvent);
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
      *

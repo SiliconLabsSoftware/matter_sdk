@@ -149,7 +149,7 @@ private:
      * @brief Initializes the RangeHoodManager and its associated resources.
      *
      */
-    void Init();
+    CHIP_ERROR Init();
 
     /**
      * @brief Returns the singleton instance of the RangeHoodManager.

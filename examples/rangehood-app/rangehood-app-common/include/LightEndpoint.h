@@ -48,7 +48,6 @@ public:
     void SetOnOffState(bool state);
 
 private:
-    bool currentOnOffState = false;
     EndpointId mEndpointId = kInvalidEndpointId;
 };
 

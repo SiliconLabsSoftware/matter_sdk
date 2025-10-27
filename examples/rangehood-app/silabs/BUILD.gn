@@ -35,10 +35,10 @@ silabs_project_dir = "${chip_root}/examples/rangehood-app/silabs"
 examples_common_plat_dir = "${chip_root}/examples/platform/silabs"
 example_rangehood_dir = "${chip_root}/examples/rangehood-app"
 
-if (wifi_soc) {
+#if (wifi_soc) {
   import("${chip_root}/third_party/silabs/SiWx917_sdk.gni")
   examples_plat_dir = "${chip_root}/examples/platform/silabs/SiWx917"
-}
+#}
 
 import("${examples_common_plat_dir}/args.gni")
 
@@ -106,7 +106,7 @@ silabs_executable("rangehood_app") {
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
     "src/DataModelCallbacks.cpp",
-    "src/RangehoodManager.cpp",
+    "src/RangeHoodManager.cpp",
   ]
 
   deps = [ ":sdk" ]
@@ -187,7 +187,7 @@ silabs_executable("rangehood_app") {
 }
 
 group("silabs") {
-  deps = [ ":oven_app" ]
+  deps = [ ":rangehood_app" ]
 }
 
 group("default") {
