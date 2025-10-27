@@ -30,7 +30,7 @@ CHIP_ERROR CookTopEndpoint::Init()
 void CookTopEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
-    auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    auto status         = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
     if (status == chip::Protocols::InteractionModel::Status::Success)
     {
         currentOnOffState = state;

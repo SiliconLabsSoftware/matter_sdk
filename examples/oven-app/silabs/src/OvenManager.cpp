@@ -21,8 +21,8 @@
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
 
-#include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/attributes/Accessors.h>
+#include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 
 #include "AppConfig.h"
@@ -59,20 +59,17 @@ void OvenManager::Init()
 
     // Initialize TemperatureControl cluster numeric temperature attributes for endpoint 2 (silent on failure)
     {
-    Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(kTemperatureControlledCabinetEndpoint2, 0);
-    VerifyOrReturn(tcStatus == Status::Success,
-               ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
+        Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(kTemperatureControlledCabinetEndpoint2, 0);
+        VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
 
-    tcStatus = TemperatureControl::Attributes::MinTemperature::Set(kTemperatureControlledCabinetEndpoint2, 0);
-    VerifyOrReturn(tcStatus == Status::Success,
-               ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
+        tcStatus = TemperatureControl::Attributes::MinTemperature::Set(kTemperatureControlledCabinetEndpoint2, 0);
+        VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
 
-    tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(kTemperatureControlledCabinetEndpoint2, 30000);
-    VerifyOrReturn(tcStatus == Status::Success,
-               ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
+        tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(kTemperatureControlledCabinetEndpoint2, 30000);
+        VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
 
-    tcStatus = TemperatureControl::Attributes::Step::Set(kTemperatureControlledCabinetEndpoint2, 500);
-    VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 Step init failed"));
+        tcStatus = TemperatureControl::Attributes::Step::Set(kTemperatureControlledCabinetEndpoint2, 500);
+        VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 Step init failed"));
     }
 
     // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
@@ -201,10 +198,11 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     return;
 }
 
-void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size)
+void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                                 uint16_t size)
 {
     VerifyOrReturn(endpointId == kTemperatureControlledCabinetEndpoint2,
-                    ChipLogError(AppServer, "Command received over Unsupported Endpoint"));
+                   ChipLogError(AppServer, "Command received over Unsupported Endpoint"));
     // TODO: Update the LCD with the new Oven Mode
     return;
 }
@@ -237,9 +235,9 @@ bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aVa
         mState = new_state;
 
         AppEvent event;
-        event.Type               = AppEvent::kEventType_Oven;
-        event.OvenEvent.Context  = this;
-        event.Handler            = ActuatorMovementHandler;
+        event.Type              = AppEvent::kEventType_Oven;
+        event.OvenEvent.Context = this;
+        event.Handler           = ActuatorMovementHandler;
         AppTask::GetAppTask().PostEvent(&event);
     }
 
@@ -323,10 +321,10 @@ void OvenManager::ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t new
 
     // Read Current Oven Mode
     uint8_t currentMode;
-    Status attrStatus   = OvenMode::Attributes::CurrentMode::Get(endpointId, &currentMode);
+    Status attrStatus = OvenMode::Attributes::CurrentMode::Get(endpointId, &currentMode);
     if (attrStatus != Status::Success)
     {
-    ChipLogError(AppServer, "OvenManager: Failed to read CurrentMode");
+        ChipLogError(AppServer, "OvenManager: Failed to read CurrentMode");
         response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
         response.statusText.SetValue(CharSpan::fromCharString("Read CurrentMode failed"));
         return;
@@ -352,7 +350,7 @@ void OvenManager::ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t new
     Status writeStatus = OvenMode::Attributes::CurrentMode::Set(endpointId, newMode);
     if (writeStatus != Status::Success)
     {
-    ChipLogError(AppServer, "OvenManager: Failed to write CurrentMode");
+        ChipLogError(AppServer, "OvenManager: Failed to write CurrentMode");
         response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
         response.statusText.SetValue(CharSpan::fromCharString("Write CurrentMode failed"));
         return;

@@ -41,7 +41,7 @@ bool CookSurfaceEndpoint::GetOnOffState()
 void CookSurfaceEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
-    auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    auto status         = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
     if (status != Protocols::InteractionModel::Status::Success)
     {
         ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status));

@@ -28,15 +28,15 @@
 #pragma once
 
 #include "AppSupportedTemperatureLevelsDelegate.h"
-#include "OvenEndpoint.h"
-#include "CookTopEndpoint.h"
 #include "CookSurfaceEndpoint.h"
+#include "CookTopEndpoint.h"
+#include "OvenEndpoint.h"
 
 #include "AppEvent.h"
 
 #include <app-common/zap-generated/ids/Attributes.h>
-#include <app/clusters/on-off-server/on-off-server.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <app/clusters/on-off-server/on-off-server.h>
 #include <lib/core/DataModelTypes.h>
 
 class OvenManager
