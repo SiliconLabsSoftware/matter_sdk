@@ -162,7 +162,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     if (endpointId == kCookTopEndpoint3)
     {
         InitiateAction(AppEvent::kEventType_Oven, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value);
-        
+
         // Update CookSurface states accordingly
         mCookSurfaceEndpoint4.SetOnOffState(*value);
         mCookSurfaceEndpoint5.SetOnOffState(*value);
@@ -183,7 +183,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
 
 void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size)
 {
-    VerifyOrReturn(endpointId == kTemperatureControlledCabinetEndpoint2, 
+    VerifyOrReturn(endpointId == kTemperatureControlledCabinetEndpoint2,
                     ChipLogError(AppServer, "Command received over Unsupported Endpoint"));
     // TODO: Update the LCD with the new Oven Mode
     return;
