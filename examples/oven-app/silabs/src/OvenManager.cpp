@@ -17,7 +17,6 @@
  */
 
 #include "OvenManager.h"
-// Corrected relative paths to shared oven-app-common headers (src/ -> ../../)
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"

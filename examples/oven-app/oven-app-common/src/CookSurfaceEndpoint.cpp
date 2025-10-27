@@ -28,7 +28,6 @@ CHIP_ERROR CookSurfaceEndpoint::Init()
 {
     bool state = false;
     OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
-    currentOnOffState = state;
     return CHIP_NO_ERROR;
 }
 
