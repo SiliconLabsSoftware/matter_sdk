@@ -119,7 +119,6 @@ void vTaskCreated(void * xTask)
     if (stats != NULL)
     {
         stats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
-        return;
     }
 }
 
