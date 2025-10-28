@@ -27,8 +27,4 @@ CHIP_ERROR CookTopEndpoint::Init()
     return CHIP_NO_ERROR;
 }
 
-void CookTopEndpoint::HandleOffCommand()
-{
-    // TODO: Implement the logic to handle the "off" command
-    return;
-}
+void CookTopEndpoint::HandleOffCommand() {}

@@ -27,8 +27,4 @@ CHIP_ERROR CookSurfaceEndpoint::Init()
     return CHIP_NO_ERROR;
 }
 
-void CookSurfaceEndpoint::HandleOffCommand()
-{
-    // TODO: Implement the logic to handle the "off" command
-    return;
-}
+void CookSurfaceEndpoint::HandleOffCommand() {}

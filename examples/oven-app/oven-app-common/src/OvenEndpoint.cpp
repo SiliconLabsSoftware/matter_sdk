@@ -86,7 +86,7 @@ const detail::Structs::ModeOptionStruct::Type OvenModeDelegate::skModeOptions[kM
 
 CHIP_ERROR OvenModeDelegate::Init()
 {
-    // Set the instance for the mode base delegate
+    // No initialization required for OvenModeDelegate
     return CHIP_NO_ERROR;
 }
 

@@ -25,4 +25,4 @@
 
 #define APP_TASK_NAME "Oven"
 
-#define BLE_DEV_NAME "Silabs-Oven"
+#define BLE_DEV_NAME "SL-" APP_TASK_NAME

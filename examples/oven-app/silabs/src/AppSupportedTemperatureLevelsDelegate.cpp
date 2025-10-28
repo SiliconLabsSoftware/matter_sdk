@@ -24,7 +24,7 @@ using namespace chip;
 using namespace chip::app::Clusters;
 using namespace chip::app::DataModel;
 
-bool AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels,
+CHIP_ERROR AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels,
                                                                     uint8_t levelCount)
 {
     if (levels == nullptr || levelCount == 0)
@@ -54,7 +54,6 @@ bool AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(EndpointId e
 
 uint8_t AppSupportedTemperatureLevelsDelegate::Size()
 {
-    ChipLogProgress(AppServer, "AppSupportedTemperatureLevelsDelegate::Size() called for endpoint %d", mEndpoint);
     for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
     {
         const EndpointPair & endpointPair = supportedOptionsByEndpoints[i];
@@ -70,7 +69,6 @@ uint8_t AppSupportedTemperatureLevelsDelegate::Size()
 
 CHIP_ERROR AppSupportedTemperatureLevelsDelegate::Next(MutableCharSpan & item)
 {
-    ChipLogProgress(AppServer, "AppSupportedTemperatureLevelsDelegate::Next() called for endpoint %d, index %d", mEndpoint, mIndex);
     for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
     {
         const EndpointPair & endpointPair = supportedOptionsByEndpoints[i];
@@ -78,9 +76,6 @@ CHIP_ERROR AppSupportedTemperatureLevelsDelegate::Next(MutableCharSpan & item)
         {
             if (mIndex < endpointPair.mSize)
             {
-                ChipLogProgress(AppServer, "Returning temperature level: %.*s",
-                                static_cast<int>(endpointPair.mTemperatureLevels[mIndex].size()),
-                                endpointPair.mTemperatureLevels[mIndex].data());
                 CHIP_ERROR err = CopyCharSpanToMutableCharSpan(endpointPair.mTemperatureLevels[mIndex], item);
                 if (err == CHIP_NO_ERROR)
                 {
@@ -88,7 +83,6 @@ CHIP_ERROR AppSupportedTemperatureLevelsDelegate::Next(MutableCharSpan & item)
                 }
                 return err;
             }
-            ChipLogProgress(AppServer, "List exhausted at index %d", mIndex);
             return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
         }
     }

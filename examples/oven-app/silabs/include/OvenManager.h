@@ -53,11 +53,11 @@ private:
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
     // Define the endpoint ID for the Oven
-    static constexpr chip::EndpointId kOvenEndpoint1                         = 1;
-    static constexpr chip::EndpointId kTemperatureControlledCabinetEndpoint2 = 2;
-    static constexpr chip::EndpointId kCookTopEndpoint3                      = 3;
-    static constexpr chip::EndpointId kCookSurfaceEndpoint4                  = 4;
-    static constexpr chip::EndpointId kCookSurfaceEndpoint5                  = 5;
+    static constexpr chip::EndpointId kOvenEndpoint                         = 1;
+    static constexpr chip::EndpointId kTemperatureControlledCabinetEndpoint = 2;
+    static constexpr chip::EndpointId kCookTopEndpoint                      = 3;
+    static constexpr chip::EndpointId kCookSurfaceEndpoint1                  = 4;
+    static constexpr chip::EndpointId kCookSurfaceEndpoint2                  = 5;
 
     chip::app::Clusters::Oven::OvenEndpoint mOvenEndpoint1;
     chip::app::Clusters::TemperatureControlledCabinet::TemperatureControlledCabinetEndpoint mTemperatureControlledCabinetEndpoint2{
