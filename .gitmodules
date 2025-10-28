@@ -46,6 +46,9 @@
 	url = https://github.com/SiliconLabs/ot-efr32.git
 	branch  = matter_sve
 	platforms = silabs,silabs_docker
+[submodule "third_party/jsoncpp/repo"]
+	path = third_party/jsoncpp/repo
+	url = https://github.com/open-source-parsers/jsoncpp.git
 [submodule "third_party/silabs/matter_support"]
 	path = third_party/silabs/matter_support
 	url = https://github.com/SiliconLabsSoftware/matter_support.git
