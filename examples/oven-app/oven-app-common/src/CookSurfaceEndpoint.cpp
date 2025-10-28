@@ -26,24 +26,22 @@ using namespace chip::app::Clusters::CookSurface;
 
 CHIP_ERROR CookSurfaceEndpoint::Init()
 {
-    bool state = false;
-    OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
     return CHIP_NO_ERROR;
 }
 
-bool CookSurfaceEndpoint::GetOnOffState()
+chip::Protocols::InteractionModel::Status CookSurfaceEndpoint::GetOnOffState(bool &state)
 {
-    bool state = false;
-    OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
-    return state;
+    auto status = OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
+    VerifyOrReturnValue(status == Protocols::InteractionModel::Status::Success, status, 
+                        ChipLogError(AppServer, "ERR: reading on/off %x", to_underlying(status)));
+    return status;
 }
 
-void CookSurfaceEndpoint::SetOnOffState(bool state)
+chip::Protocols::InteractionModel::Status CookSurfaceEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
     auto status         = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
-    if (status != Protocols::InteractionModel::Status::Success)
-    {
-        ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status));
-    }
+    VerifyOrReturnValue(status == Protocols::InteractionModel::Status::Success, status, 
+                        ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status)));
+    return status;
 }
