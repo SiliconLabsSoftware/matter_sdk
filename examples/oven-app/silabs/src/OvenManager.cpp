@@ -99,7 +99,8 @@ CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoin
 
 CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId temperatureControlledCabinetEndpoint)
 {
-    Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(temperatureControlledCabinetEndpoint, MIN_TEMPERATURE);
+    Status tcStatus =
+        TemperatureControl::Attributes::TemperatureSetpoint::Set(temperatureControlledCabinetEndpoint, MIN_TEMPERATURE);
     VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(AppServer, "Setting TemperatureSetpoint failed : %u", to_underlying(tcStatus)));
 
@@ -112,7 +113,8 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
                         ChipLogError(AppServer, "Setting MaxTemperature failed : %u", to_underlying(tcStatus)));
 
     tcStatus = TemperatureControl::Attributes::Step::Set(temperatureControlledCabinetEndpoint, 500);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Setting Step failed : %u", to_underlying(tcStatus)));
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "Setting Step failed : %u", to_underlying(tcStatus)));
 
     return CHIP_NO_ERROR;
 }
