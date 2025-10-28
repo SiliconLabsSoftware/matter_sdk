@@ -34,13 +34,14 @@ public:
 
     /**
      * @brief Initialize the CookSurface endpoint.
+     * 
+     * @return returns CHIP_NO_ERROR on success, or an error code on failure.
      */
     CHIP_ERROR Init();
 
-    /**
-     * @brief Handle the "off" command for the CookSurface.
-     */
     void HandleOffCommand();
+
+    EndpointId GetEndpointId() const { return mEndpointId; }
 
 private:
     bool currentOnOffState = false;

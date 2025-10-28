@@ -35,49 +35,77 @@ void OvenManager::Init()
 {
     DeviceLayer::PlatformMgr().LockChipStack();
     // Endpoint initializations
-    VerifyOrReturn(mOvenEndpoint1.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "OvenEndpoint1 Init failed"));
+    VerifyOrReturn(mOvenEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "OvenEndpoint Init failed"));
 
-    VerifyOrReturn(mTemperatureControlledCabinetEndpoint2.Init() == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint2 Init failed"));
+    VerifyOrReturn(mTemperatureControlledCabinetEndpoint.Init() == CHIP_NO_ERROR,
+                   ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint Init failed"));
 
-    VerifyOrReturn(mCookTopEndpoint3.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookTopEndpoint3 Init failed"));
+    // Set initial state for TemperatureControlledCabinetEndpoint
+    VerifyOrReturn(SetTemperatureControlledCabinetInitialState(kTemperatureControlledCabinetEndpoint) == CHIP_NO_ERROR,
+                   ChipLogError(AppServer, "SetTemperatureControlledCabinetInitialState failed"));
+
+    VerifyOrReturn(mCookTopEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookTopEndpoint Init failed"));
 
     // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
     TemperatureControl::SetInstance(&mTemperatureControlDelegate);
-    VerifyOrReturn(mCookSurfaceEndpoint4.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint4 Init failed"));
-    VerifyOrReturn(mCookSurfaceEndpoint5.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint5 Init failed"));
 
-    // Set the initial temperature-measurement values for CookSurfaceEndpoint4 and CookSurfaceEndpoint5
-    Status status = TemperatureMeasurement::Attributes::MeasuredValue::Set(kCookSurfaceEndpoint4, 0);
-    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint4 MeasuredValue init failed"));
-    status = TemperatureMeasurement::Attributes::MeasuredValue::Set(kCookSurfaceEndpoint5, 0);
-    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint5 MeasuredValue init failed"));
+    VerifyOrReturn(mCookSurfaceEndpoint1.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint1 Init failed"));
+    VerifyOrReturn(mCookSurfaceEndpoint2.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint2 Init failed"));
 
-    // Initialize min/max measured values (range: 0 to 30000 -> 0.00C to 300.00C if unit is 0.01C) for both cook surface endpoints
-    status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(kCookSurfaceEndpoint4, 0);
-    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint4 MinMeasuredValue init failed"));
-    status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(kCookSurfaceEndpoint4, 30000);
-    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint4 MaxMeasuredValue init failed"));
+    // Set initial state for CookSurface endpoints
+    VerifyOrReturn(SetCookSurfaceInitialState(mCookSurfaceEndpoint1.GetEndpointId()) == CHIP_NO_ERROR,
+                   ChipLogError(AppServer, "SetCookSurfaceInitialState failed for CookSurfaceEndpoint1"));
+    VerifyOrReturn(SetCookSurfaceInitialState(mCookSurfaceEndpoint2.GetEndpointId()) == CHIP_NO_ERROR,
+                   ChipLogError(AppServer, "SetCookSurfaceInitialState failed for CookSurfaceEndpoint2"));
 
-    status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(kCookSurfaceEndpoint5, 0);
-    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint5 MinMeasuredValue init failed"));
-    status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(kCookSurfaceEndpoint5, 30000);
-    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "CookSurfaceEndpoint5 MaxMeasuredValue init failed"));
-
-    // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 4 and 5
+    // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 1 and 2
     static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),
                                                    CharSpan::fromCharString("High") };
-    bool err                                   = mTemperatureControlDelegate.RegisterSupportedLevels(
-        kCookSurfaceEndpoint4, kCookSurfaceLevels,
+    CHIP_ERROR err                             = mTemperatureControlDelegate.RegisterSupportedLevels(
+        kCookSurfaceEndpoint1, kCookSurfaceLevels,
         static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
 
-    VerifyOrReturn(err, ChipLogError(AppServer, "RegisterSupportedLevels failed for endpoint 4"));
+    VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint1"));
 
     err = mTemperatureControlDelegate.RegisterSupportedLevels(
-        kCookSurfaceEndpoint5, kCookSurfaceLevels,
+        kCookSurfaceEndpoint2, kCookSurfaceLevels,
         static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
 
-    VerifyOrReturn(err, ChipLogError(AppServer, "RegisterSupportedLevels failed for endpoint 5"));
+    VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
+}
+
+CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
+{
+    // Set the initial temperature-measurement values for CookSurfaceEndpoint
+    Status status = TemperatureMeasurement::Attributes::MeasuredValue::Set(cookSurfaceEndpoint, 0);
+    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Setting MeasuredValue failed : %u",
+                                                                                      to_underlying(status)));
+
+    // Initialize min/max measured values (range: 0 to 30000 -> 0.00C to 300.00C if unit is 0.01C) for cook surface endpoint
+    status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(cookSurfaceEndpoint, 0);
+    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Setting MinMeasuredValue failed : %u",
+                                                                                      to_underlying(status)));
+    status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(cookSurfaceEndpoint, 30000);
+    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Setting MaxMeasuredValue failed : %u",
+                                                                                      to_underlying(status)));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId temperatureControlledCabinetEndpoint)
+{
+    Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(temperatureControlledCabinetEndpoint, 0);
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
+
+    tcStatus = TemperatureControl::Attributes::MinTemperature::Set(temperatureControlledCabinetEndpoint, 0);
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
+
+    tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(temperatureControlledCabinetEndpoint, 30000);
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
+
+    tcStatus = TemperatureControl::Attributes::Step::Set(temperatureControlledCabinetEndpoint, 500);
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 Step init failed"));
+
+    return CHIP_NO_ERROR;
 }

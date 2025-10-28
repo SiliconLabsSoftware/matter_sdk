@@ -48,6 +48,10 @@ public:
      */
     static OvenManager & GetInstance() { return sOvenMgr; }
 
+    CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
+
+    CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
+
 private:
     static OvenManager sOvenMgr;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
@@ -56,14 +60,14 @@ private:
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;
     static constexpr chip::EndpointId kTemperatureControlledCabinetEndpoint = 2;
     static constexpr chip::EndpointId kCookTopEndpoint                      = 3;
-    static constexpr chip::EndpointId kCookSurfaceEndpoint1                  = 4;
-    static constexpr chip::EndpointId kCookSurfaceEndpoint2                  = 5;
+    static constexpr chip::EndpointId kCookSurfaceEndpoint1                 = 4;
+    static constexpr chip::EndpointId kCookSurfaceEndpoint2                 = 5;
 
-    chip::app::Clusters::Oven::OvenEndpoint mOvenEndpoint1;
-    chip::app::Clusters::TemperatureControlledCabinet::TemperatureControlledCabinetEndpoint mTemperatureControlledCabinetEndpoint2{
-        kTemperatureControlledCabinetEndpoint2
+    chip::app::Clusters::Oven::OvenEndpoint mOvenEndpoint;
+    chip::app::Clusters::TemperatureControlledCabinet::TemperatureControlledCabinetEndpoint mTemperatureControlledCabinetEndpoint{
+        kTemperatureControlledCabinetEndpoint
     };
-    chip::app::Clusters::CookTop::CookTopEndpoint mCookTopEndpoint3{ kCookTopEndpoint3 };
-    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint4{ kCookSurfaceEndpoint4 };
-    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint5{ kCookSurfaceEndpoint5 };
+    chip::app::Clusters::CookTop::CookTopEndpoint mCookTopEndpoint{ kCookTopEndpoint };
+    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint1{ kCookSurfaceEndpoint1 };
+    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint2{ kCookSurfaceEndpoint2 };
 };

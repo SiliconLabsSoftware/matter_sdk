@@ -33,7 +33,7 @@ namespace Clusters {
 struct EndpointPair
 {
     /// An endpoint having temperature control cluster.
-    EndpointId mEndpointId = 0;
+    EndpointId mEndpointId = kInvalidEndpointId;
     /// Temperature levels supported by the temperature control cluster in this endpoint.
     const CharSpan * mTemperatureLevels = nullptr;
     /// Size of the temperature levels array.
@@ -67,9 +67,11 @@ public:
      * @brief Register supported temperature level strings for a given endpoint.
      *
      * The caller supplies an array of CharSpan entries whose lifetime exceeds that of this delegate.
-     * Returns true on success, false if capacity exceeded or duplicate endpoint provided.
+     * @return CHIP_NO_ERROR on success,
+     *         CHIP_ERROR_NO_MEMORY if capacity exceeded,
+     *         CHIP_ERROR_ENDPOINT_EXISTS if duplicate endpoint provided.
      */
-    bool RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels, uint8_t levelCount);
+    CHIP_ERROR RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels, uint8_t levelCount);
 
     uint8_t Size() override;
 

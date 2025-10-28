@@ -33,17 +33,20 @@ namespace TemperatureControlledCabinet {
 class OvenModeDelegate : public ModeBase::Delegate
 {
 public:
-    // Oven mode constants - made static and public for potential reuse
-    static constexpr uint8_t kModeBake            = 0;
-    static constexpr uint8_t kModeConvection      = 1;
-    static constexpr uint8_t kModeGrill           = 2;
-    static constexpr uint8_t kModeRoast           = 3;
-    static constexpr uint8_t kModeClean           = 4;
-    static constexpr uint8_t kModeConvectionBake  = 5;
-    static constexpr uint8_t kModeConvectionRoast = 6;
-    static constexpr uint8_t kModeWarming         = 7;
-    static constexpr uint8_t kModeProofing        = 8;
-    static constexpr uint8_t kModeCount           = 9;
+    // Oven mode enum for better type safety and code clarity
+    enum class OvenModes : uint8_t
+    {
+        kModeBake            = 0,
+        kModeConvection      = 1,
+        kModeGrill           = 2,
+        kModeRoast           = 3,
+        kModeClean           = 4,
+        kModeConvectionBake  = 5,
+        kModeConvectionRoast = 6,
+        kModeWarming         = 7,
+        kModeProofing        = 8,
+        kModeCount           = 9,
+    };
 
     OvenModeDelegate(EndpointId endpointId) : mEndpointId(endpointId) {}
 
@@ -75,11 +78,13 @@ class TemperatureControlledCabinetEndpoint
 {
 public:
     TemperatureControlledCabinetEndpoint(EndpointId endpointId) :
-        mEndpointId(endpointId), mOvenModeDelegate(endpointId), mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, 0)
+        mEndpointId(endpointId), mOvenModeDelegate(mEndpointId), mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, 0)
     {}
 
     /**
-     * Initialize the temperature controlled cabinet endpoint.
+     * @brief Initialize the temperature controlled cabinet endpoint. Sets the oven mode cluster instance with the appropriate delegate.
+     * 
+     * @return returns CHIP_NO_ERROR on success, or an error code on failure.
      */
     CHIP_ERROR Init();
 
@@ -102,6 +107,8 @@ public:
 
     /**
      * @brief Initialize the oven endpoint.
+     * 
+     * @return returns CHIP_NO_ERROR on success, or an error code on failure.
      */
     CHIP_ERROR Init();
 };

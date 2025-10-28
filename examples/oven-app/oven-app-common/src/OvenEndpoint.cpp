@@ -54,33 +54,33 @@ const detail::Structs::ModeTagStruct::Type OvenModeDelegate::sModeTagsWarming[1]
 const detail::Structs::ModeTagStruct::Type OvenModeDelegate::sModeTagsProofing[1] = { { .value =
                                                                                             to_underlying(ModeTag::kProofing) } };
 
-const detail::Structs::ModeOptionStruct::Type OvenModeDelegate::skModeOptions[kModeCount] = {
+const detail::Structs::ModeOptionStruct::Type OvenModeDelegate::skModeOptions[to_underlying(OvenModes::kModeCount)] = {
     { .label    = CharSpan::fromCharString("Bake"),
-      .mode     = kModeBake,
+      .mode     = to_underlying(OvenModes::kModeBake),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsBake) },
     { .label    = CharSpan::fromCharString("Convection"),
-      .mode     = kModeConvection,
+      .mode     = to_underlying(OvenModes::kModeConvection),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsConvection) },
     { .label    = CharSpan::fromCharString("Grill"),
-      .mode     = kModeGrill,
+      .mode     = to_underlying(OvenModes::kModeGrill),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsGrill) },
     { .label    = CharSpan::fromCharString("Roast"),
-      .mode     = kModeRoast,
+      .mode     = to_underlying(OvenModes::kModeRoast),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsRoast) },
     { .label    = CharSpan::fromCharString("Clean"),
-      .mode     = kModeClean,
+      .mode     = to_underlying(OvenModes::kModeClean),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsClean) },
     { .label    = CharSpan::fromCharString("Convection Bake"),
-      .mode     = kModeConvectionBake,
+      .mode     = to_underlying(OvenModes::kModeConvectionBake),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsConvectionBake) },
     { .label    = CharSpan::fromCharString("Convection Roast"),
-      .mode     = kModeConvectionRoast,
+      .mode     = to_underlying(OvenModes::kModeConvectionRoast),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsConvectionRoast) },
     { .label    = CharSpan::fromCharString("Warming"),
-      .mode     = kModeWarming,
+      .mode     = to_underlying(OvenModes::kModeWarming),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsWarming) },
     { .label    = CharSpan::fromCharString("Proofing"),
-      .mode     = kModeProofing,
+      .mode     = to_underlying(OvenModes::kModeProofing),
       .modeTags = DataModel::List<const detail::Structs::ModeTagStruct::Type>(sModeTagsProofing) }
 };
 
@@ -99,18 +99,18 @@ void OvenModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Commands::C
 
 CHIP_ERROR OvenModeDelegate::GetModeLabelByIndex(uint8_t modeIndex, MutableCharSpan & label)
 {
-    if (modeIndex >= kModeCount)
+    if (modeIndex >= to_underlying(OvenModes::kModeCount))
     {
-        return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+        return CHIP_ERROR_INVALID_LIST_LENGTH;
     }
     return CopyCharSpanToMutableCharSpan(skModeOptions[modeIndex].label, label);
 }
 
 CHIP_ERROR OvenModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
 {
-    if (modeIndex >= kModeCount)
+    if (modeIndex >= to_underlying(OvenModes::kModeCount))
     {
-        return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+        return CHIP_ERROR_INVALID_LIST_LENGTH;
     }
     value = skModeOptions[modeIndex].mode;
     return CHIP_NO_ERROR;
@@ -120,7 +120,7 @@ CHIP_ERROR OvenModeDelegate::GetModeTagsByIndex(uint8_t modeIndex, DataModel::Li
 {
     if (modeIndex >= MATTER_ARRAY_SIZE(skModeOptions))
     {
-        return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+        return CHIP_ERROR_INVALID_LIST_LENGTH;
     }
 
     if (tags.size() < skModeOptions[modeIndex].modeTags.size())
@@ -139,8 +139,6 @@ CHIP_ERROR TemperatureControlledCabinetEndpoint::Init()
     // Initialize the Oven Mode instance and delegate
     ReturnErrorOnFailure(mOvenModeInstance.Init());
     ReturnErrorOnFailure(mOvenModeDelegate.Init());
-
-    // Set default temperature attributes if needed
 
     return CHIP_NO_ERROR;
 }

@@ -25,31 +25,24 @@ using namespace chip::app::Clusters;
 using namespace chip::app::DataModel;
 
 CHIP_ERROR AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels,
-                                                                    uint8_t levelCount)
+                                                                        uint8_t levelCount)
 {
-    if (levels == nullptr || levelCount == 0)
-    {
-        ChipLogError(AppServer, "RegisterSupportedLevels: invalid levels/null or count=0");
-        return false;
-    }
-    if (mRegisteredEndpointCount >= kNumCookSurfaceEndpoints)
-    {
-        ChipLogError(AppServer, "RegisterSupportedLevels: capacity exceeded (%zu)", mRegisteredEndpointCount);
-        return false;
-    }
+    VerifyOrReturnError(levels != nullptr && levelCount > 0, CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(AppServer, "RegisterSupportedLevels: invalid levels/null or count=0"));
+
+    VerifyOrReturnError(mRegisteredEndpointCount < kNumCookSurfaceEndpoints, CHIP_ERROR_NO_MEMORY,
+                        ChipLogError(AppServer, "RegisterSupportedLevels: capacity exceeded (%zu)", mRegisteredEndpointCount));
+    
     // Prevent duplicate endpoints
     for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
     {
-        if (supportedOptionsByEndpoints[i].mEndpointId == endpoint)
-        {
-            ChipLogError(AppServer, "RegisterSupportedLevels: duplicate endpoint %u", endpoint);
-            return false;
-        }
+        VerifyOrReturnError(supportedOptionsByEndpoints[i].mEndpointId != endpoint, CHIP_ERROR_ENDPOINT_EXISTS,
+                            ChipLogError(AppServer, "RegisterSupportedLevels: duplicate endpoint %u", endpoint));
     }
 
     supportedOptionsByEndpoints[mRegisteredEndpointCount++] = EndpointPair(endpoint, levels, levelCount);
     ChipLogProgress(AppServer, "Registered %u levels for endpoint %u", static_cast<unsigned>(levelCount), endpoint);
-    return true;
+    return CHIP_NO_ERROR;
 }
 
 uint8_t AppSupportedTemperatureLevelsDelegate::Size()
