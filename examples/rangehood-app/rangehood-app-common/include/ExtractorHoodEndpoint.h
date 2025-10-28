@@ -34,7 +34,8 @@ using Protocols::InteractionModel::Status;
 namespace chip {
 namespace app {
 namespace Clusters {
-namespace FanDelegate {
+namespace ExtractorHood {
+
 class FanDelegate : public FanControl::Delegate
 {
 public:
@@ -51,29 +52,24 @@ public:
      */
     Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override;
 
-    FanDelegate(EndpointId aEndpoint) : mEndpoint(aEndpoint) {}
+    FanDelegate(EndpointId aEndpoint)
+        : FanControl::Delegate(aEndpoint), mEndpoint(aEndpoint) {}
 
 protected:
     EndpointId mEndpoint = 0;
 };
-} // namespace FanDelegate
-namespace ExtractorHood {
 class ExtractorHoodEndpoint
 {
 public:
-    ExtractorHoodEndpoint(EndpointId endpointId) : mEndpointId(endpointId) {}
+    ExtractorHoodEndpoint(EndpointId endpointId) : mEndpointId(endpointId), mFanDelegate(mEndpointId) {}
 
     /**
      * @brief Initialize the ExtractorHood endpoint.
      */
     CHIP_ERROR Init();
 
-    /**
-     * @brief Get the FanDelegate instance for this endpoint.
-     */
-    FanDelegate & GetFanDelegate() { return mFanDelegate; }
-
-    /* Add ExtractorHoodEndpoint functions*/
+    // Accessor for registering the fan control delegate
+    FanDelegate * GetFanDelegate() { return &mFanDelegate; }
 
 private:
     EndpointId mEndpointId = kInvalidEndpointId;

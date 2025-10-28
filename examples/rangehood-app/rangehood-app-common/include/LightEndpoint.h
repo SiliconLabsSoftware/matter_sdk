@@ -29,7 +29,7 @@ namespace Light {
 class LightEndpoint
 {
 public:
-    LightEndpoint() {}
+    LightEndpoint(EndpointId endpointId) : mEndpointId(endpointId) {}
 
     /**
      * @brief Initialize the Light endpoint.

@@ -19,8 +19,9 @@
 #include "RangeHoodManager.h"
 #include "ExtractorHoodEndpoint.h"
 
-#include <lib/core/CHIPError.h>
+#include <app/clusters/fan-control-server/fan-control-delegate.h> 
 
+#include <lib/core/CHIPError.h>
 
 using namespace chip;
 using namespace chip::app::Clusters::ExtractorHood;
@@ -32,8 +33,6 @@ CHIP_ERROR ExtractorHoodEndpoint::Init()
 
 Status FanDelegate::HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff)
 {
-    ChipLogProgress(Zcl, "FanDelegate::HandleStep aDirection %d, aWrap %d, aLowestOff %d", to_underlying(aDirection),
-                    aWrap, aLowestOff);
-
-    RangeHoodManager::GetInstance().ProcessExtractorStepCommand(mEndpointId, aDirection, aWrap, aLowestOff);
+    ChipLogProgress(Zcl, "FanDelegate::HandleStep direction=%d wrap=%d lowestOff=%d", to_underlying(aDirection), aWrap, aLowestOff);
+    return RangeHoodManager::GetInstance().ProcessExtractorStepCommand(mEndpoint, aDirection, aWrap, aLowestOff);
 }

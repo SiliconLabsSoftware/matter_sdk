@@ -76,6 +76,7 @@ if (wifi_soc) {
       "${examples_plat_dir}",
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
+      "${example_rangehood_dir}/rangehood-app-common/include",
     ]
 
     defines = []

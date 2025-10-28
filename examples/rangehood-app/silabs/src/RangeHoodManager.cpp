@@ -25,6 +25,7 @@
 #include "AppTask.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
+#include <app/clusters/fan-control-server/fan-control-server.h>
 #include <platform/CHIPDeviceLayer.h>
 
 using namespace chip;
@@ -62,9 +63,7 @@ CHIP_ERROR RangeHoodManager::Init()
     bool currentLedState;
 
     // read current on/off value on light endpoint. 
-    chip::DeviceLayer::PlatformMgr().LockChipStack();
-    OnOffServer::Instance().getOnOffValue(kLightEndpoint1, &currentLedState);
-
+    OnOffServer::Instance().getOnOffValue(kLightEndpoint2, &currentLedState);
 
     chip::app::Clusters::FanControl::Attributes::SpeedMax::Get(kExtractorHoodEndpoint1, &mSpeedMax);
 
@@ -76,11 +75,38 @@ CHIP_ERROR RangeHoodManager::Init()
     uint8_t speedSettingCB                            = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
     SpeedSettingWriteCallback(speedSettingCB);
 
-    FanControl::SetDefaultDelegate(kExtractorHoodEndpoint1, &mExtractorHoodEndpoint1.GetFanDelegate());
+    // Register FanControl delegate (GetFanDelegate returns pointer)
+    FanControl::SetDefaultDelegate(kExtractorHoodEndpoint1, mExtractorHoodEndpoint1.GetFanDelegate());
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
     
     return CHIP_NO_ERROR;
+}
+
+void RangeHoodManager::SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB)
+{
+    mActionInitiated_CB = aActionInitiated_CB;
+    mActionCompleted_CB = aActionCompleted_CB;
+}
+
+bool RangeHoodManager::IsActionInProgress()
+{
+    return (mState == kState_OffInitiated || mState == kState_OnInitiated);
+}
+
+bool RangeHoodManager::IsLightOn()
+{
+    return (mState == kState_OnCompleted);
+}
+
+void RangeHoodManager::EnableAutoTurnOff(bool aOn)
+{
+    mAutoTurnOff = aOn;
+}
+
+void RangeHoodManager::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
+{
+    mAutoTurnOffDuration = aDurationInSecs;
 }
 
 bool RangeHoodManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue)
@@ -285,8 +311,8 @@ void RangeHoodManager::OnTriggerOffWithEffect(OnOffEffect * effect)
         }
     }
 
-    sRangeHoodMgr->mOffEffectArmed = true;
-    sRangeHoodMgr->StartTimer(offEffectDuration);
+    sRangeHoodMgr.mOffEffectArmed = true;
+    sRangeHoodMgr.StartTimer(offEffectDuration);
 }
  
 Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff)
