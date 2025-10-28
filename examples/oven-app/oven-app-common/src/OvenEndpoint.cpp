@@ -99,34 +99,22 @@ void OvenModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Commands::C
 
 CHIP_ERROR OvenModeDelegate::GetModeLabelByIndex(uint8_t modeIndex, MutableCharSpan & label)
 {
-    if (modeIndex >= to_underlying(OvenModes::kModeCount))
-    {
-        return CHIP_ERROR_INVALID_LIST_LENGTH;
-    }
+    VerifyOrReturnError(modeIndex < to_underlying(OvenModes::kModeCount), CHIP_ERROR_INVALID_LIST_LENGTH);
     return CopyCharSpanToMutableCharSpan(skModeOptions[modeIndex].label, label);
 }
 
 CHIP_ERROR OvenModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
 {
-    if (modeIndex >= to_underlying(OvenModes::kModeCount))
-    {
-        return CHIP_ERROR_INVALID_LIST_LENGTH;
-    }
+    VerifyOrReturnError(modeIndex < to_underlying(OvenModes::kModeCount), CHIP_ERROR_INVALID_LIST_LENGTH);
     value = skModeOptions[modeIndex].mode;
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR OvenModeDelegate::GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<detail::Structs::ModeTagStruct::Type> & tags)
 {
-    if (modeIndex >= MATTER_ARRAY_SIZE(skModeOptions))
-    {
-        return CHIP_ERROR_INVALID_LIST_LENGTH;
-    }
+    VerifyOrReturnError(modeIndex < MATTER_ARRAY_SIZE(skModeOptions), CHIP_ERROR_INVALID_LIST_LENGTH);
 
-    if (tags.size() < skModeOptions[modeIndex].modeTags.size())
-    {
-        return CHIP_ERROR_INVALID_ARGUMENT;
-    }
+    VerifyOrReturnError(tags.size() >= skModeOptions[modeIndex].modeTags.size(), CHIP_ERROR_INVALID_ARGUMENT);
 
     std::copy(skModeOptions[modeIndex].modeTags.begin(), skModeOptions[modeIndex].modeTags.end(), tags.begin());
     tags.reduce_size(skModeOptions[modeIndex].modeTags.size());

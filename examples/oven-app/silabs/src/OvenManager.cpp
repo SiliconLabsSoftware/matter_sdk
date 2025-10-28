@@ -24,6 +24,10 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#define MAX_TEMPERATURE 10000
+#define MIN_TEMPERATURE 0
+#define TEMPERATURE_STEP 500
+
 using namespace chip;
 using namespace chip::app;
 using namespace chip::app::Clusters;
@@ -79,15 +83,15 @@ void OvenManager::Init()
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
 {
     // Set the initial temperature-measurement values for CookSurfaceEndpoint
-    Status status = TemperatureMeasurement::Attributes::MeasuredValue::Set(cookSurfaceEndpoint, 0);
+    Status status = TemperatureMeasurement::Attributes::MeasuredValue::Set(cookSurfaceEndpoint, MIN_TEMPERATURE);
     VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(AppServer, "Setting MeasuredValue failed : %u", to_underlying(status)));
 
-    // Initialize min/max measured values (range: 0 to 30000 -> 0.00C to 300.00C if unit is 0.01C) for cook surface endpoint
-    status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(cookSurfaceEndpoint, 0);
+    // Initialize min/max measured values (range: 0 to 10000 -> 0.00C to 100.00C if unit is 0.01C) for cook surface endpoint
+    status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(cookSurfaceEndpoint, MIN_TEMPERATURE);
     VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(AppServer, "Setting MinMeasuredValue failed : %u", to_underlying(status)));
-    status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(cookSurfaceEndpoint, 30000);
+    status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(cookSurfaceEndpoint, MAX_TEMPERATURE);
     VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(AppServer, "Setting MaxMeasuredValue failed : %u", to_underlying(status)));
     return CHIP_NO_ERROR;
@@ -95,20 +99,20 @@ CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoin
 
 CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId temperatureControlledCabinetEndpoint)
 {
-    Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(temperatureControlledCabinetEndpoint, 0);
+    Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(temperatureControlledCabinetEndpoint, MIN_TEMPERATURE);
     VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
+                        ChipLogError(AppServer, "Setting TemperatureSetpoint failed : %u", to_underlying(tcStatus)));
 
-    tcStatus = TemperatureControl::Attributes::MinTemperature::Set(temperatureControlledCabinetEndpoint, 0);
+    tcStatus = TemperatureControl::Attributes::MinTemperature::Set(temperatureControlledCabinetEndpoint, MIN_TEMPERATURE);
     VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
+                        ChipLogError(AppServer, "Setting MinTemperature failed : %u", to_underlying(tcStatus)));
 
-    tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(temperatureControlledCabinetEndpoint, 30000);
+    tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(temperatureControlledCabinetEndpoint, MAX_TEMPERATURE);
     VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
+                        ChipLogError(AppServer, "Setting MaxTemperature failed : %u", to_underlying(tcStatus)));
 
     tcStatus = TemperatureControl::Attributes::Step::Set(temperatureControlledCabinetEndpoint, 500);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 Step init failed"));
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Setting Step failed : %u", to_underlying(tcStatus)));
 
     return CHIP_NO_ERROR;
 }
