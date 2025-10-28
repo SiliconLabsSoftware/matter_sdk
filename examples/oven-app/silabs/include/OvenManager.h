@@ -56,6 +56,8 @@ public:
         kState_OffCompleted,
         kState_OnInitiated,
         kState_OnCompleted,
+        kState_ActionInProgress,
+        kState_NoAction,
     } State;
 
     bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);

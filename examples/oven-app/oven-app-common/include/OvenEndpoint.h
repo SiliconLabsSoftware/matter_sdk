@@ -57,8 +57,13 @@ public:
     CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t & value) override;
     CHIP_ERROR GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<detail::Structs::ModeTagStruct::Type> & tags) override;
 
-    // Public helper to query support status without exposing internal tables
-    static bool IsSupportedMode(uint8_t mode);
+    /**
+     * @brief Checks if the provided mode is supported.
+     *
+     * @param mode The mode to check.
+     * @return true if the mode is supported, false otherwise.
+     */
+    bool IsSupportedMode(uint8_t mode);
 
 private:
     EndpointId mEndpointId;

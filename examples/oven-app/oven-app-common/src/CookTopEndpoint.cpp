@@ -27,13 +27,11 @@ CHIP_ERROR CookTopEndpoint::Init()
     return CHIP_NO_ERROR;
 }
 
-void CookTopEndpoint::SetOnOffState(bool state)
+chip::Protocols::InteractionModel::Status CookTopEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
     auto status         = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
-    if (status == chip::Protocols::InteractionModel::Status::Success)
-    {
-        currentOnOffState = state;
-    }
-    return;
+    VerifyOrReturnValue(status == Protocols::InteractionModel::Status::Success, status, 
+                        ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status)));
+    return status;
 }

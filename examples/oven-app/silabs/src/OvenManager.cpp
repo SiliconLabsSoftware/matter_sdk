@@ -57,21 +57,6 @@ void OvenManager::Init()
 
     VerifyOrReturn(mCookTopEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookTopEndpoint Init failed"));
 
-    // Initialize TemperatureControl cluster numeric temperature attributes for endpoint 2 (silent on failure)
-    {
-        Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(kTemperatureControlledCabinetEndpoint2, 0);
-        VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
-
-        tcStatus = TemperatureControl::Attributes::MinTemperature::Set(kTemperatureControlledCabinetEndpoint2, 0);
-        VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
-
-        tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(kTemperatureControlledCabinetEndpoint2, 30000);
-        VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
-
-        tcStatus = TemperatureControl::Attributes::Step::Set(kTemperatureControlledCabinetEndpoint2, 500);
-        VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 Step init failed"));
-    }
-
     // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
     TemperatureControl::SetInstance(&mTemperatureControlDelegate);
 
@@ -167,35 +152,42 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
 
 void OvenManager::TempCtrlAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
 {
-    if (endpointId == kTemperatureControlledCabinetEndpoint2)
+    switch (endpointId)
     {
+    case kTemperatureControlledCabinetEndpoint:
         // TODO: Update the LCD with the new Temperature Control attribute value
+        break;
+    default:
+        break;
     }
-    return;
 }
 
 void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
 {
-    if (endpointId == kCookTopEndpoint3)
+    switch (endpointId)
     {
+    case kCookTopEndpoint3:
         InitiateAction(AppEvent::kEventType_Oven, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value);
-
         // Update CookSurface states accordingly
-        mCookSurfaceEndpoint4.SetOnOffState(*value);
-        mCookSurfaceEndpoint5.SetOnOffState(*value);
-    }
-    else if (endpointId == kCookSurfaceEndpoint4 || endpointId == kCookSurfaceEndpoint5)
-    {
+        mCookSurfaceEndpoint1.SetOnOffState(*value);
+        mCookSurfaceEndpoint2.SetOnOffState(*value);
+        break;
+    case kCookSurfaceEndpoint1:
+    case kCookSurfaceEndpoint2:
         // Handle On/Off attribute changes for the cook surface endpoints
-        bool cookSurfaceEndpoint4State = mCookSurfaceEndpoint4.GetOnOffState();
-        bool cookSurfaceEndpoint5State = mCookSurfaceEndpoint5.GetOnOffState();
-        // Check if both cooksurfaces are off. If yes, turn off the cooktop (call cooktop.TurnOffCookTop)
-        if (cookSurfaceEndpoint4State == false && cookSurfaceEndpoint5State == false)
         {
-            mCookTopEndpoint3.SetOnOffState(false);
+            bool cookSurfaceEndpoint1State = mCookSurfaceEndpoint1.GetOnOffState();
+            bool cookSurfaceEndpoint2State = mCookSurfaceEndpoint2.GetOnOffState();
+            // Check if both cooksurfaces are off. If yes, turn off the cooktop (call cooktop.TurnOffCookTop)
+            if (cookSurfaceEndpoint1State == false  && cookSurfaceEndpoint2State == false)
+            {
+                mCookTopEndpoint3.SetOnOffState(false);
+            }
         }
+        break;
+    default:
+        break;
     }
-    return;
 }
 
 void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
