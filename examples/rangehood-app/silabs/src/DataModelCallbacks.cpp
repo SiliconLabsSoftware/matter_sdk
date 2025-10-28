@@ -47,20 +47,14 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     switch (clusterId)
     {
     case FanControl::Id:
-        // Fan control should only be on FAN_ENDPOINT
-        if (endpointId == FAN_ENDPOINT)
-        {
-            RangehoodMgr().HandleFanControlAttributeChange(attributeId, type, size, value);
-        }
+        // Fan control should only be on FAN ENDPOINT
+        RangeHoodMgr().HandleFanControlAttributeChange(attributeId, type, size, value);
         break;
         
     case OnOff::Id:
         // Light on/off control should only be on LIGHT_ENDPOINT
-        if (endpointId == LIGHT_ENDPOINT && attributeId == OnOff::Attributes::OnOff::Id)
-        {            
-            RangehoodMgr().InitiateAction(AppEvent::kEventType_Light, *value ? RangeHoodManager::ON_ACTION : RangeHoodManager::OFF_ACTION,
+        RangeHoodMgr().InitiateAction(AppEvent::kEventType_RangeHood, *value ? RangeHoodManager::ON_ACTION : RangeHoodManager::OFF_ACTION,
                                       value);
-        }
         break;
         
     case Identify::Id:

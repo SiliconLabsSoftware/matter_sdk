@@ -50,6 +50,8 @@
 
 #include <platform/CHIPDeviceLayer.h>
 
+#define LIGHT_LED 1
+
 #define APP_FUNCTION_BUTTON 0
 #define APP_ACTION_BUTTON 1
 
@@ -59,6 +61,8 @@ using namespace chip::TLV;
 using namespace ::chip::DeviceLayer;
 using namespace chip::app::Clusters::FanControl;
 using namespace chip::app::Clusters;
+
+LEDWidget sLightLED; // Use LEDWidget for basic LED functionality
 
 /**********************************************************
  * AppTask Definitions
@@ -89,6 +93,8 @@ CHIP_ERROR AppTask::AppInit()
     }
 #endif // QR_CODE_ENABLED
 #endif
+    sLightLED.Init(LIGHT_LED);
+    sLightLED.Set(RangeHoodMgr().IsLightOn());
 
     return err;
 }
@@ -141,10 +147,10 @@ void AppTask::ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor
     bool lightOn = aAction == RangeHoodManager::ON_ACTION;
     SILABS_LOG("Turning light %s", (lightOn) ? "On" : "Off");
 
-    // TODO: Update LED state
+    sLightLED.Set(lightOn);
 
 #ifdef DISPLAY_ENABLED
-    sAppTask.GetLCD().WriteDemoUI(lightOn);
+        sAppTask.GetLCD().WriteDemoUI(lightOn);
 #endif
 
     if (aActor == AppEvent::kEventType_Button)
@@ -172,12 +178,12 @@ void AppTask::ActionCompleted(RangeHoodManager::Action_t aAction)
     }
 }
 
-void AppTask::PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction)
+void AppTask::PostLightActionRequest(int32_t aActor, RangeHoodManager::Action_t aAction)
 {
     AppEvent event;
-    event.Type              = AppEvent::kEventType_Light;
-    event.LightEvent.Actor  = aActor;
-    event.LightEvent.Action = aAction;
-    event.Handler           = LightActionEventHandler;
+    event.Type              = AppEvent::kEventType_RangeHood;
+    event.RangeHoodEvent.Actor  = aActor;
+    event.RangeHoodEvent.Action = aAction;
+   // event.Handler           = LightActionEventHandler;
     PostEvent(&event);
 }

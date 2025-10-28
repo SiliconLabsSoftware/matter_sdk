@@ -35,6 +35,8 @@
 #include <lib/core/CHIPError.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#include "RangeHoodManager.h"
+
 /**********************************************************
  * Defines
  *********************************************************/
@@ -77,7 +79,7 @@ public:
      *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
-    void PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction);
+    void PostLightActionRequest(int32_t aActor, RangeHoodManager::Action_t aAction);
 
 private:
     static AppTask sAppTask;

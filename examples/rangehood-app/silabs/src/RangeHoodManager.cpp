@@ -30,7 +30,11 @@
 using namespace chip;
 using namespace chip::app;
 using namespace ::chip::app::Clusters;
+using namespace ::chip::app::Clusters::FanControl;
+
+using namespace ::chip::app::Clusters::OnOff;
 using Protocols::InteractionModel::Status;
+using namespace ::chip::DeviceLayer;
 
 RangeHoodManager RangeHoodManager::sRangeHoodMgr;
 
@@ -38,10 +42,9 @@ CHIP_ERROR RangeHoodManager::Init()
 {
     DeviceLayer::PlatformMgr().LockChipStack();
     // Endpoint initializations
-    VerifyOrReturn(mExtractorHoodEndpoint1.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "mExtractorHoodEndpoint1 Init failed"));
+    VerifyOrReturnError(mExtractorHoodEndpoint1.Init() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
 
-    VerifyOrReturn(mLightEndpoint2.Init() == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "mLightEndpoint2 Init failed"));
+    VerifyOrReturnError(mLightEndpoint2.Init() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
 
         // Create cmsis os sw timer for light timer.
     mLightTimer = osTimerNew(TimerEventHandler, // timer callback handler
@@ -60,10 +63,10 @@ CHIP_ERROR RangeHoodManager::Init()
 
     // read current on/off value on light endpoint. 
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    OnOffServer::Instance().getOnOffValue(LIGHT_ENDPOINT, &currentLedState);
+    OnOffServer::Instance().getOnOffValue(kLightEndpoint1, &currentLedState);
 
 
-    Attributes::SpeedMax::Get(kExtractorHoodEndpoint1, &mSpeedMax);
+    chip::app::Clusters::FanControl::Attributes::SpeedMax::Get(kExtractorHoodEndpoint1, &mSpeedMax);
 
     DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
     uint8_t percentSettingCB                            = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
@@ -175,7 +178,7 @@ void RangeHoodManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 {
     RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
     int32_t actor           = AppEvent::kEventType_Timer;
-    uint8_t value           = aEvent->LightEvent.Value;
+    uint8_t value           = aEvent->RangeHoodEvent.Value;
 
     // Make sure auto turn off timer is still armed.
     if (!light->mAutoTurnOffTimerArmed)
@@ -194,7 +197,7 @@ void RangeHoodManager::OffEffectTimerEventHandler(AppEvent * aEvent)
 {
     RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
     int32_t actor           = AppEvent::kEventType_Timer;
-    uint8_t value           = aEvent->LightEvent.Value;
+    uint8_t value           = aEvent->RangeHoodEvent.Value;
 
     // Make sure auto turn off timer is still armed.
     if (!light->mOffEffectArmed)
@@ -282,8 +285,8 @@ void RangeHoodManager::OnTriggerOffWithEffect(OnOffEffect * effect)
         }
     }
 
-    this->mOffEffectArmed = true;
-    this->StartTimer(offEffectDuration);
+    sRangeHoodMgr->mOffEffectArmed = true;
+    sRangeHoodMgr->StartTimer(offEffectDuration);
 }
  
 Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff)
@@ -352,23 +355,23 @@ void RangeHoodManager::UpdateClusterState(intptr_t arg)
     RangeHoodManager::AttributeUpdateInfo * data = reinterpret_cast<RangeHoodManager::AttributeUpdateInfo *>(arg);
     if (data->isSpeedCurrent)
     {
-        Attributes::SpeedCurrent::Set(data->endPoint, data->speedCurrent);
+        chip::app::Clusters::FanControl::Attributes::SpeedCurrent::Set(data->endPoint, data->speedCurrent);
     }
     else if (data->isPercentCurrent)
     {
-        Attributes::PercentCurrent::Set(data->endPoint, data->percentCurrent);
+        chip::app::Clusters::FanControl::Attributes::PercentCurrent::Set(data->endPoint, data->percentCurrent);
     }
     else if (data->isSpeedSetting)
     {
-        Attributes::SpeedSetting::Set(data->endPoint, data->speedSetting);
+        chip::app::Clusters::FanControl::Attributes::SpeedSetting::Set(data->endPoint, data->speedSetting);
     }
     else if (data->isFanMode)
     {
-        Attributes::FanMode::Set(data->endPoint, data->fanMode);
+        chip::app::Clusters::FanControl::Attributes::FanMode::Set(data->endPoint, data->fanMode);
     }
     else if (data->isPercentSetting)
     {
-        Attributes::PercentSetting::Set(data->endPoint, data->percentSetting);
+        chip::app::Clusters::FanControl::Attributes::PercentSetting::Set(data->endPoint, data->percentSetting);
     }
     chip::Platform::Delete(data);
 }
@@ -377,12 +380,12 @@ void RangeHoodManager::HandleFanControlAttributeChange(AttributeId attributeId, 
 {
     switch (attributeId)
     {
-    case Attributes::PercentSetting::Id: {
+    case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
         PercentSettingWriteCallback(*value);
         break;
     }
 
-    case Attributes::FanMode::Id: {
+    case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
         mFanMode = *reinterpret_cast<FanModeEnum *>(value);
         FanModeWriteCallback(mFanMode);
         break;
@@ -533,7 +536,7 @@ DataModel::Nullable<uint8_t> RangeHoodManager::GetSpeedSetting()
 {
     DataModel::Nullable<uint8_t> speedSetting;
 
-    Status status = Attributes::SpeedSetting::Get(kExtractorHoodEndpoint1, speedSetting);
+    Status status = chip::app::Clusters::FanControl::Attributes::SpeedSetting::Get(kExtractorHoodEndpoint1, speedSetting);
     if (status != Status::Success)
     {
         ChipLogError(NotSpecified, "RangeHoodManager::GetSpeedSetting: failed to get SpeedSetting attribute: %d",
@@ -547,7 +550,7 @@ DataModel::Nullable<Percent> RangeHoodManager::GetPercentSetting()
 {
     DataModel::Nullable<Percent> percentSetting;
 
-    Status status = Attributes::PercentSetting::Get(kExtractorHoodEndpoint1, percentSetting);
+    Status status = chip::app::Clusters::FanControl::Attributes::PercentSetting::Get(kExtractorHoodEndpoint1, percentSetting);
     if (status != Status::Success)
     {
         ChipLogError(NotSpecified, "RangeHoodManager::GetPercentSetting: failed to get PercentSetting attribute: %d",

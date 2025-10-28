@@ -30,7 +30,3 @@
 // Time it takes in ms for the simulated actuator to move from one
 // state to another.
 #define ACTUATOR_MOVEMENT_PERIOD_MS 10
-
-// Endpoint definitions for rangehood app
-#define FAN_ENDPOINT 1
-#define LIGHT_ENDPOINT 2

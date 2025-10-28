@@ -1,4 +1,3 @@
-  GNU nano 6.2                                                                               ExtractorHoodEndpoint.h                                                                                        
 /*
  *
  *    Copyright (c) 2024 Project CHIP Authors
@@ -27,11 +26,15 @@
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <lib/core/CHIPError.h>
 
+using namespace chip;
+using namespace chip::app;
+using namespace chip::app::Clusters::FanControl;
+using Protocols::InteractionModel::Status;
+
 namespace chip {
 namespace app {
 namespace Clusters {
-namespace ExtractorHood {
-
+namespace FanDelegate {
 class FanDelegate : public FanControl::Delegate
 {
 public:
@@ -46,14 +49,15 @@ public:
      *   @return Success On success.
      *   @return Other Value indicating it failed to execute the command.
      */
-    Protocols::InteractionModel::Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override;
+    Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override;
 
     FanDelegate(EndpointId aEndpoint) : mEndpoint(aEndpoint) {}
 
 protected:
     EndpointId mEndpoint = 0;
 };
-
+} // namespace FanDelegate
+namespace ExtractorHood {
 class ExtractorHoodEndpoint
 {
 public:

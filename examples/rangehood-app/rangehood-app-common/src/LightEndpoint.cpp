@@ -27,11 +27,6 @@ using namespace chip::app::Clusters::Light;
 
 CHIP_ERROR LightEndpoint::Init()
 {
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR LightEndpoint::Init()
-{
     bool state = false;
     OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
     return CHIP_NO_ERROR;

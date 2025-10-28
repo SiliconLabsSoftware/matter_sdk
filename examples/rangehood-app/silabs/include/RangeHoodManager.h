@@ -33,7 +33,16 @@
 
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app/clusters/on-off-server/on-off-server.h>
+#include <app/clusters/fan-control-server/fan-control-server.h>
+
 #include <lib/core/DataModelTypes.h>
+
+using namespace chip;
+using namespace chip::app;
+using namespace chip::app::Clusters::FanControl;
+using chip::Percent;
+using chip::EndpointId;
+using Protocols::InteractionModel::Status;
 
 class RangeHoodManager
 {
@@ -69,15 +78,17 @@ public:
     /**
      * @brief Central handler for  delegate requests, Handle the step command from the Fan Control Cluster 
      */
-    void ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff);
+    Status ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff);
+
+    void HandleFanControlAttributeChange(AttributeId attributeId, uint8_t type, uint16_t size, uint8_t * value);
 
     void PercentSettingWriteCallback(uint8_t aNewPercentSetting);
     void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting);
     void FanModeWriteCallback(FanModeEnum aNewFanMode);
 
     void SetPercentSetting(Percent aNewPercentSetting);
-    DataModel::Nullable<uint8_t> GetSpeedSetting();
-    DataModel::Nullable<Percent> GetPercentSetting();
+   // DataModel::Nullable<uint8_t> GetSpeedSetting();
+   // DataModel::Nullable<Percent> GetPercentSetting();
     void UpdateFanMode();
 
     static void UpdateClusterState(intptr_t arg);
@@ -87,12 +98,7 @@ public:
     void UpdateFanControlLCD();
     EndpointId GetEndPoint();
 
-    /**
-     * @brief Handle the step command from the Fan Control Cluster
-     */
-    Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override;
-
-    struct AttributeUpdateInfo
+   struct AttributeUpdateInfo
     {
         FanModeEnum fanMode;
         uint8_t speedCurrent;
@@ -107,8 +113,23 @@ public:
         EndpointId endPoint;
     };
 
+    /**
+     * @brief Returns the singleton instance of the RangeHoodManager.
+     *
+     * @return Reference to the singleton RangeHoodManager instance.
+     */
+    static RangeHoodManager & GetInstance() { return sRangeHoodMgr; }
+
+    /**
+     * @brief Initializes the RangeHoodManager and its associated resources.
+     *
+     */
+    CHIP_ERROR Init();
+
+    // ...existing public methods...
+
 private:
-    friend RangeHoodManager & RangehoodMgr(void);
+    friend RangeHoodManager & RangeHoodMgr(void);
     State_t mState;
 
     Callback_fn_initiated mActionInitiated_CB;
@@ -128,9 +149,8 @@ private:
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);
     static void OffEffectTimerEventHandler(AppEvent * aEvent);
 
-    EndpointId mEndPoint = FAN_ENDPOINT;
+    FanModeEnum mFanMode;
     uint8_t mSpeedMax;
-
     uint8_t percentCurrent;
     uint8_t speedCurrent;
 
@@ -145,25 +165,12 @@ private:
     static constexpr int kaLowestOffTrue  = 0;
     static constexpr int kaLowestOffFalse = 1;
 
-    /**
-     * @brief Initializes the RangeHoodManager and its associated resources.
-     *
-     */
-    CHIP_ERROR Init();
+    DataModel::Nullable<Percent> GetPercentSetting();
+    DataModel::Nullable<uint8_t> GetSpeedSetting();
 
-    /**
-     * @brief Returns the singleton instance of the RangeHoodManager.
-     *
-     * @return Reference to the singleton RangeHoodManager instance.
-     */
-    static RangeHoodManager & GetInstance() { return sRangeHoodMgr; }
-
-    static  sRangeHoodMgr;
+    static RangeHoodManager sRangeHoodMgr;
     
     // FanControlDelegate object
-
-    Callback_fn_initiated mActionInitiated_CB;
-    Callback_fn_completed mActionCompleted_CB;
 
     // Define the endpoint ID for the RangeHood
     static constexpr chip::EndpointId kExtractorHoodEndpoint1                         = 1;

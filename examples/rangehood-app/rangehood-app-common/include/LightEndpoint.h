@@ -1,4 +1,3 @@
-@@ -0,0 +1,52 @@
 /*
  *
  *    Copyright (c) 2025 Project CHIP Authors
@@ -30,7 +29,7 @@ namespace Light {
 class LightEndpoint
 {
 public:
-    LightEndpoint(EndpointId endpointId) : mEndpointId(endpointId) {}
+    LightEndpoint() {}
 
     /**
      * @brief Initialize the Light endpoint.
