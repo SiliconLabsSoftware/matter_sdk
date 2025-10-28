@@ -25,7 +25,7 @@ using namespace chip::app::Clusters;
 using namespace chip::app::DataModel;
 
 CHIP_ERROR AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels,
-                                                                        uint8_t levelCount)
+                                                                          uint8_t levelCount)
 {
     VerifyOrReturnError(levels != nullptr && levelCount > 0, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(AppServer, "RegisterSupportedLevels: invalid levels/null or count=0"));

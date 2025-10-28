@@ -80,29 +80,32 @@ CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoin
 {
     // Set the initial temperature-measurement values for CookSurfaceEndpoint
     Status status = TemperatureMeasurement::Attributes::MeasuredValue::Set(cookSurfaceEndpoint, 0);
-    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Setting MeasuredValue failed : %u",
-                                                                                      to_underlying(status)));
+    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "Setting MeasuredValue failed : %u", to_underlying(status)));
 
     // Initialize min/max measured values (range: 0 to 30000 -> 0.00C to 300.00C if unit is 0.01C) for cook surface endpoint
     status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(cookSurfaceEndpoint, 0);
-    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Setting MinMeasuredValue failed : %u",
-                                                                                      to_underlying(status)));
+    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "Setting MinMeasuredValue failed : %u", to_underlying(status)));
     status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(cookSurfaceEndpoint, 30000);
-    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Setting MaxMeasuredValue failed : %u",
-                                                                                      to_underlying(status)));
+    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "Setting MaxMeasuredValue failed : %u", to_underlying(status)));
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId temperatureControlledCabinetEndpoint)
 {
     Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(temperatureControlledCabinetEndpoint, 0);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
 
     tcStatus = TemperatureControl::Attributes::MinTemperature::Set(temperatureControlledCabinetEndpoint, 0);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
 
     tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(temperatureControlledCabinetEndpoint, 30000);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
+    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
 
     tcStatus = TemperatureControl::Attributes::Step::Set(temperatureControlledCabinetEndpoint, 500);
     VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Endpoint2 Step init failed"));
