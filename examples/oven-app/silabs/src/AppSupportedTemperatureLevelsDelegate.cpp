@@ -32,7 +32,6 @@ CHIP_ERROR AppSupportedTemperatureLevelsDelegate::RegisterSupportedLevels(Endpoi
 
     VerifyOrReturnError(mRegisteredEndpointCount < kNumCookSurfaceEndpoints, CHIP_ERROR_NO_MEMORY,
                         ChipLogError(AppServer, "RegisterSupportedLevels: capacity exceeded (%zu)", mRegisteredEndpointCount));
-
     // Prevent duplicate endpoints
     for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
     {
