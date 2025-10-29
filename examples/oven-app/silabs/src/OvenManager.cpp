@@ -160,7 +160,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
             OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
 
             context->localEndpointId = kCookTopEndpoint;
-            context->commandId = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
+            context->commandId       = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
 
             CookTopOnOffBindingTrigger(context);
         }

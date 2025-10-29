@@ -5,9 +5,9 @@
 
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app-common/zap-generated/ids/Commands.h>
-#include <lib/core/CHIPError.h>
-#include <lib/core/CHIPCallback.h>
 #include <app/util/basic-types.h>
+#include <lib/core/CHIPCallback.h>
+#include <lib/core/CHIPError.h>
 
 struct OnOffBindingContext
 {
