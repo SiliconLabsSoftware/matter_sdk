@@ -282,7 +282,7 @@ bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aVa
         event.OvenEvent.Action  = aAction;
         event.OvenEvent.Actor   = endpointId; // Store endpoint ID in Actor field
         event.Handler = ActuatorMovementHandler;
-        
+
         AppTask::GetAppTask().PostEvent(&event);
     }
 
