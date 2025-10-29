@@ -171,14 +171,14 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         // Update CookSurface states accordingly
         mCookSurfaceEndpoint1.SetOnOffState(*value);
         mCookSurfaceEndpoint2.SetOnOffState(*value);
-        
+
         // Trigger binding for CookTop OnOff changes
         {
             OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
-            
+
             context->localEndpointId = kCookTopEndpoint;
             context->commandId = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
-            
+
             CookTopOnOffBindingTrigger(context);
         }
         break;
