@@ -136,9 +136,9 @@ void AppTask::ActionInitiated(OvenManager::Action_t aAction, int32_t aActor, uin
     {
         bool lightOn = aAction == OvenManager::ON_ACTION;
         ChipLogProgress(AppServer, "Turning CookTop %s", (lightOn) ? "On" : "Off");
-    
+
         // TODO: Update LED state
-    
+
 #ifdef DISPLAY_ENABLED
         sAppTask.GetLCD().WriteDemoUI(lightOn);
 #endif

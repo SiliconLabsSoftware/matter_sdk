@@ -45,12 +45,12 @@ OvenManager OvenManager::sOvenMgr;
 void OvenManager::Init()
 {
     DeviceLayer::PlatformMgr().LockChipStack();
-    
+
     // Initialize states
     mCookTopState = kCookTopState_OffCompleted;
     mCookSurfaceState1 = kCookSurfaceState_OffCompleted;
     mCookSurfaceState2 = kCookSurfaceState_OffCompleted;
-    
+
     // Endpoint initializations
     VerifyOrReturn(mOvenEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "OvenEndpoint Init failed"));
 
