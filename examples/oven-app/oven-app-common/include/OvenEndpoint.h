@@ -89,14 +89,18 @@ public:
     {}
 
     /**
-     * @brief Initialize the temperature controlled cabinet endpoint. Sets the oven mode cluster instance with the appropriate
-     * delegate.
-     *
+     * @brief Initialize the temperature controlled cabinet endpoint. Sets the oven mode cluster instance with the appropriate delegate.
+     * 
      * @return returns CHIP_NO_ERROR on success, or an error code on failure.
      */
     CHIP_ERROR Init();
 
-private:
+    /**
+     * @brief Get the oven mode delegate instance.
+     * 
+     * @return Reference to the oven mode delegate.
+     */
+    OvenModeDelegate & GetOvenModeDelegate() { return mOvenModeDelegate; }private:
     EndpointId mEndpointId = kInvalidEndpointId;
     OvenModeDelegate mOvenModeDelegate;
     ModeBase::Instance mOvenModeInstance;

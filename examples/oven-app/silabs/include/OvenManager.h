@@ -52,15 +52,22 @@ public:
 
     enum State_t
     {
-        kState_OffInitiated = 0,
-        kState_OffCompleted,
-        kState_OnInitiated,
-        kState_OnCompleted,
-        kState_ActionInProgress,
-        kState_NoAction,
+        kCookTopState_OffInitiated = 0,
+        kCookTopState_OffCompleted,
+        kCookTopState_OnInitiated,
+        kCookTopState_OnCompleted,
+
+        // Cook Surface states
+        kCookSurfaceState_OffInitiated,
+        kCookSurfaceState_OffCompleted,
+        kCookSurfaceState_OnInitiated,
+        kCookSurfaceState_OnCompleted,
+        kCookSurfaceState_ActionInProgress,
+        kCookSurfaceState_NoAction,
     } State;
 
     bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);
+    bool InitiateCookSurfaceAction(int32_t aActor, Action_t aAction, uint8_t * aValue, chip::EndpointId endpointId);
     typedef void (*Callback_fn_initiated)(Action_t, int32_t aActor, uint8_t * value);
     typedef void (*Callback_fn_completed)(Action_t);
     void SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB);
@@ -122,7 +129,9 @@ private:
     static OvenManager sOvenMgr;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
-    State_t mState;
+    State_t mCookTopState;
+    State_t mCookSurfaceState1;
+    State_t mCookSurfaceState2;
 
     Callback_fn_initiated mActionInitiated_CB;
     Callback_fn_completed mActionCompleted_CB;

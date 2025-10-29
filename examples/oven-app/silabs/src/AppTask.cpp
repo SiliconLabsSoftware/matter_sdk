@@ -132,14 +132,23 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
 void AppTask::ActionInitiated(OvenManager::Action_t aAction, int32_t aActor, uint8_t * aValue)
 {
-    bool lightOn = aAction == OvenManager::ON_ACTION;
-    SILABS_LOG("Turning light %s", (lightOn) ? "On" : "Off");
-
-    // TODO: Update LED state
-
+    if (aActor == AppEvent::kEventType_CookTop)
+    {
+        bool lightOn = aAction == OvenManager::ON_ACTION;
+        ChipLogProgress(AppServer, "Turning CookTop %s", (lightOn) ? "On" : "Off");
+    
+        // TODO: Update LED state
+    
 #ifdef DISPLAY_ENABLED
-    sAppTask.GetLCD().WriteDemoUI(lightOn);
+        sAppTask.GetLCD().WriteDemoUI(lightOn);
 #endif
+    }
+
+    if (aActor == AppEvent::kEventType_CookSurface)
+    {
+        bool lightOn = aAction == OvenManager::ON_ACTION;
+        ChipLogProgress(AppServer, "Turning CookSurface %s", (lightOn) ? "On" : "Off");
+    }
 
     if (aActor == AppEvent::kEventType_Button)
     {
@@ -152,11 +161,11 @@ void AppTask::ActionCompleted(OvenManager::Action_t aAction)
     // Action has been completed on the oven
     if (aAction == OvenManager::ON_ACTION)
     {
-        SILABS_LOG("Oven ON");
+        ChipLogProgress(AppServer, "ON action completed");
     }
     else if (aAction == OvenManager::OFF_ACTION)
     {
-        SILABS_LOG("Oven OFF");
+        ChipLogProgress(AppServer, "OFF action completed");
     }
 
     if (sAppTask.mSyncClusterToButtonAction)
