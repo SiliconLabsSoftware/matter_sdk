@@ -52,8 +52,7 @@ public:
      */
     Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override;
 
-    FanDelegate(EndpointId aEndpoint)
-        : FanControl::Delegate(aEndpoint), mEndpoint(aEndpoint) {}
+    FanDelegate(EndpointId aEndpoint) : FanControl::Delegate(aEndpoint), mEndpoint(aEndpoint) {}
 
 protected:
     EndpointId mEndpoint = 0;

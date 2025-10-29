@@ -51,7 +51,7 @@ CHIP_ERROR RangeHoodManager::Init()
 
     VerifyOrReturnError(mLightEndpoint2.Init() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
 
-        // Create cmsis os sw timer for light timer.
+    // Create cmsis os sw timer for light timer.
     mLightTimer = osTimerNew(TimerEventHandler, // timer callback handler
                              osTimerOnce,       // no timer reload (one-shot timer)
                              (void *) this,     // pass the app task obj context
@@ -80,7 +80,7 @@ CHIP_ERROR RangeHoodManager::Init()
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    mState                 = currentLedState ? kState_OnCompleted : kState_OffCompleted;
+    mState = currentLedState ? kState_OnCompleted : kState_OffCompleted;
 
     return CHIP_NO_ERROR;
 }
@@ -205,8 +205,8 @@ void RangeHoodManager::TimerEventHandler(void * timerCbArg)
 void RangeHoodManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 {
     RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
-    int32_t actor           = AppEvent::kEventType_Timer;
-    uint8_t value           = aEvent->RangeHoodEvent.Value;
+    int32_t actor            = AppEvent::kEventType_Timer;
+    uint8_t value            = aEvent->RangeHoodEvent.Value;
 
     // Make sure auto turn off timer is still armed.
     if (!light->mAutoTurnOffTimerArmed)
@@ -224,8 +224,8 @@ void RangeHoodManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 void RangeHoodManager::OffEffectTimerEventHandler(AppEvent * aEvent)
 {
     RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
-    int32_t actor           = AppEvent::kEventType_Timer;
-    uint8_t value           = aEvent->RangeHoodEvent.Value;
+    int32_t actor            = AppEvent::kEventType_Timer;
+    uint8_t value            = aEvent->RangeHoodEvent.Value;
 
     // Make sure auto turn off timer is still armed.
     if (!light->mOffEffectArmed)
@@ -317,10 +317,11 @@ void RangeHoodManager::OnTriggerOffWithEffect(OnOffEffect * effect)
     sRangeHoodMgr.StartTimer(offEffectDuration);
 }
 
-Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff)
+Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap,
+                                                     bool aLowestOff)
 {
-    ChipLogProgress(AppServer, "RangeHoodManager::ProcessExtractorStepCommand  ep=%u  aDirection %d, aWrap %d, aLowestOff %d", endpointId, to_underlying(aDirection),
-                    aWrap, aLowestOff);
+    ChipLogProgress(AppServer, "RangeHoodManager::ProcessExtractorStepCommand  ep=%u  aDirection %d, aWrap %d, aLowestOff %d",
+                    endpointId, to_underlying(aDirection), aWrap, aLowestOff);
 
     VerifyOrReturnError(aDirection != StepDirectionEnum::kUnknownEnumValue, Status::InvalidCommand);
 

@@ -16,8 +16,8 @@
  *    limitations under the License.
  */
 
-#include "RangeHoodManager.h"
 #include "ExtractorHoodEndpoint.h"
+#include "RangeHoodManager.h"
 
 #include <app/clusters/fan-control-server/fan-control-delegate.h>
 

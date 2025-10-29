@@ -33,12 +33,12 @@
 
 #include "RangeHoodManager.h"
 #include <app-common/zap-generated/attribute-type.h>
+#include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app/clusters/fan-control-server/fan-control-delegate.h>
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
-#include <app-common/zap-generated/attributes/Accessors.h>
 
 #include <assert.h>
 
@@ -52,7 +52,6 @@
 
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-
 
 #define LIGHT_LED 1
 
@@ -84,7 +83,7 @@ CHIP_ERROR AppTask::AppInit()
     GetLCD().SetCustomUI(RangeHoodUI::DrawUI);
 #endif
 
-   // Initialization of RangeHoodManager and endpoints of range hood.
+    // Initialization of RangeHoodManager and endpoints of range hood.
     RangeHoodManager::GetInstance().Init();
     RangeHoodManager::GetInstance().SetCallbacks(ActionInitiated, ActionCompleted);
 
@@ -148,7 +147,8 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
     // Only invoke our RangeHood ButtonHandler for BTN1 (APP_ACTION_BUTTON) presses.
-    if (button == APP_ACTION_BUTTON && btnAction == static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
+    if (button == APP_ACTION_BUTTON &&
+        btnAction == static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
     {
         button_event.Handler = ButtonHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
@@ -166,7 +166,7 @@ void AppTask::ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor
     bool lightOn = aAction == RangeHoodManager::ON_ACTION;
     SILABS_LOG("Turning light %s", (lightOn) ? "On" : "Off");
 
-   sLightLED.Set(lightOn);
+    sLightLED.Set(lightOn);
 
     // Defer LCD refresh until ActionCompleted so RangeHoodMgr().IsLightOn() reflects final state.
 
@@ -216,7 +216,8 @@ void AppTask::SetFanOnOff(intptr_t context)
 void AppTask::ButtonHandler(AppEvent * aEvent)
 {
     // Distinguish between function and action buttons
-    if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
+    if (aEvent->ButtonEvent.Action ==
+        static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
     {
         // Fan toggle using same button for now (could be separated if button id available)
         // Schedule fan mode toggle on CHIP stack thread to avoid direct access causing locking errors.

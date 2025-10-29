@@ -32,40 +32,29 @@
 #include "AppEvent.h"
 
 #include <app-common/zap-generated/ids/Attributes.h>
-#include <app/clusters/on-off-server/on-off-server.h>
 #include <app/clusters/fan-control-server/fan-control-server.h>
+#include <app/clusters/on-off-server/on-off-server.h>
 
-#include <lib/core/DataModelTypes.h>
 #include <app/data-model/Nullable.h>
+#include <lib/core/DataModelTypes.h>
 
 using namespace chip;
 using namespace chip::app;
 using namespace chip::app::Clusters::FanControl;
-using chip::Percent;
 using chip::EndpointId;
+using chip::Percent;
 using Protocols::InteractionModel::Status;
 
 class RangeHoodManager
 {
 public:
-     RangeHoodManager()
-        : mState(kState_OffCompleted),
-          mActionInitiated_CB(nullptr),
-          mActionCompleted_CB(nullptr),
-          mAutoTurnOff(false),
-          mAutoTurnOffDuration(0),
-          mAutoTurnOffTimerArmed(false),
-          mOffEffectArmed(false),
-          mLightTimer(nullptr),
-          mFanMode(FanModeEnum::kOff),
-          mSpeedMax(0),
-          percentCurrent(0),
-          speedCurrent(0),
-          // initialize endpoint helpers with the required EndpointIds:
-          mExtractorHoodEndpoint1(kExtractorHoodEndpoint1),
-          mLightEndpoint2(kLightEndpoint2)
+    RangeHoodManager() :
+        mState(kState_OffCompleted), mActionInitiated_CB(nullptr), mActionCompleted_CB(nullptr), mAutoTurnOff(false),
+        mAutoTurnOffDuration(0), mAutoTurnOffTimerArmed(false), mOffEffectArmed(false), mLightTimer(nullptr),
+        mFanMode(FanModeEnum::kOff), mSpeedMax(0), percentCurrent(0), speedCurrent(0),
+        // initialize endpoint helpers with the required EndpointIds:
+        mExtractorHoodEndpoint1(kExtractorHoodEndpoint1), mLightEndpoint2(kLightEndpoint2)
     {}
-
 
     enum Action_t
     {
@@ -101,7 +90,7 @@ public:
 
     void HandleFanControlAttributeChange(AttributeId attributeId, uint8_t type, uint16_t size, uint8_t * value);
 
-   void PercentSettingWriteCallback(uint8_t aNewPercentSetting);
+    void PercentSettingWriteCallback(uint8_t aNewPercentSetting);
     void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting);
     void FanModeWriteCallback(FanModeEnum aNewFanMode);
 
@@ -118,7 +107,7 @@ public:
     EndpointId GetExtractorEndpoint() { return kExtractorHoodEndpoint1; }
     EndpointId GetLightEndpoint() { return kLightEndpoint2; }
 
-   struct AttributeUpdateInfo
+    struct AttributeUpdateInfo
     {
         FanModeEnum fanMode;
         uint8_t speedCurrent;
@@ -174,7 +163,7 @@ private:
     uint8_t percentCurrent;
     uint8_t speedCurrent;
 
-    //Fan Mode Limits
+    // Fan Mode Limits
     static constexpr int kFanModeLowLowerBound    = 1;
     static constexpr int kFanModeLowUpperBound    = 3;
     static constexpr int kFanModeMediumLowerBound = 4;
@@ -193,8 +182,8 @@ private:
     // FanControlDelegate object
 
     // Define the endpoint ID for the RangeHood
-    static constexpr chip::EndpointId kExtractorHoodEndpoint1                         = 1;
-    static constexpr chip::EndpointId kLightEndpoint2                                 = 2;
+    static constexpr chip::EndpointId kExtractorHoodEndpoint1 = 1;
+    static constexpr chip::EndpointId kLightEndpoint2         = 2;
 
     chip::app::Clusters::ExtractorHood::ExtractorHoodEndpoint mExtractorHoodEndpoint1;
     chip::app::Clusters::Light::LightEndpoint mLightEndpoint2;

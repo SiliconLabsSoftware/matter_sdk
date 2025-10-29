@@ -80,7 +80,7 @@ void RangeHoodUI::DrawHeader(GLIB_Context_t * glibContext)
     GLIB_drawBitmap(glibContext, MATTER_ICON_POSITION_X, STATUS_ICON_LINE, MATTER_LOGO_WIDTH, MATTER_LOGO_HEIGHT, matterLogoBitmap);
 
     // Draw application name on a dedicated line below icons.
-        GLIB_drawStringOnLine(glibContext, "RangeHood-App", 3, GLIB_ALIGN_CENTER, 0, 0, true);
+    GLIB_drawStringOnLine(glibContext, "RangeHood-App", 3, GLIB_ALIGN_CENTER, 0, 0, true);
 #if SL_LCDCTRL_MUX
     sl_wfx_host_pre_lcd_spi_transfer();
 #endif // SL_LCDCTRL_MUX
@@ -127,7 +127,7 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
 }
 
 void RangeHoodUI::DrawFont(GLIB_Context_t * glibContext, uint8_t initial_x, uint8_t initial_y, uint8_t width, uint8_t * data,
-                            uint32_t size)
+                           uint32_t size)
 {
     uint8_t x = initial_x, y = initial_y;
     for (uint16_t i = 0; i < size; i++)

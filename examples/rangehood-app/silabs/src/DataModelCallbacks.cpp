@@ -53,8 +53,8 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
 
     case OnOff::Id:
         // Light on/off control should only be on LIGHT_ENDPOINT
-        RangeHoodMgr().InitiateAction(AppEvent::kEventType_RangeHood, *value ? RangeHoodManager::ON_ACTION : RangeHoodManager::OFF_ACTION,
-                                      value);
+        RangeHoodMgr().InitiateAction(AppEvent::kEventType_RangeHood,
+                                      *value ? RangeHoodManager::ON_ACTION : RangeHoodManager::OFF_ACTION, value);
         break;
 
     case Identify::Id:
