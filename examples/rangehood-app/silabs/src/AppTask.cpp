@@ -24,6 +24,7 @@
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
+#include "RangeHoodUI.h"
 #include "lcd.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
@@ -37,6 +38,7 @@
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
+#include <app-common/zap-generated/attributes/Accessors.h>
 
 #include <assert.h>
 
@@ -49,6 +51,8 @@
 #include <lib/support/CodeUtils.h>
 
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+
 
 #define LIGHT_LED 1
 
@@ -75,7 +79,12 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
-   // Initialization of Oven Manager and endpoints of oven.
+#ifdef DISPLAY_ENABLED
+    GetLCD().Init((uint8_t *) "Rangehood-App");
+    GetLCD().SetCustomUI(RangeHoodUI::DrawUI);
+#endif
+
+   // Initialization of RangeHoodManager and endpoints of range hood.
     RangeHoodManager::GetInstance().Init();
     RangeHoodManager::GetInstance().SetCallbacks(ActionInitiated, ActionCompleted);
 
@@ -138,8 +147,18 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
-    button_event.Handler            = BaseApplication::ButtonHandler;
-    AppTask::GetAppTask().PostEvent(&button_event);
+    // Only invoke our RangeHood ButtonHandler for BTN1 (APP_ACTION_BUTTON) presses.
+    if (button == APP_ACTION_BUTTON && btnAction == static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
+    {
+        button_event.Handler = ButtonHandler;
+        AppTask::GetAppTask().PostEvent(&button_event);
+    }
+    else if (button == APP_FUNCTION_BUTTON)
+    {
+        // Defer other button events to generic base handler (factory reset, etc.)
+        button_event.Handler = BaseApplication::ButtonHandler;
+        AppTask::GetAppTask().PostEvent(&button_event);
+    }
 }
 
 void AppTask::ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor, uint8_t * aValue)
@@ -147,11 +166,9 @@ void AppTask::ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor
     bool lightOn = aAction == RangeHoodManager::ON_ACTION;
     SILABS_LOG("Turning light %s", (lightOn) ? "On" : "Off");
 
-    sLightLED.Set(lightOn);
+   sLightLED.Set(lightOn);
 
-#ifdef DISPLAY_ENABLED
-        sAppTask.GetLCD().WriteDemoUI(lightOn);
-#endif
+    // Defer LCD refresh until ActionCompleted so RangeHoodMgr().IsLightOn() reflects final state.
 
     if (aActor == AppEvent::kEventType_Button)
     {
@@ -165,11 +182,18 @@ void AppTask::ActionCompleted(RangeHoodManager::Action_t aAction)
     if (aAction == RangeHoodManager::ON_ACTION)
     {
         SILABS_LOG("Light ON");
+        sLightLED.Set(true);
     }
     else if (aAction == RangeHoodManager::OFF_ACTION)
     {
         SILABS_LOG("Light OFF");
+        sLightLED.Set(false);
     }
+
+#if DISPLAY_ENABLED
+    // Refresh LCD now that RangeHoodMgr().IsLightOn() is authoritative.
+    AppTask::GetAppTask().UpdateRangeHoodUI();
+#endif
 
     if (sAppTask.mSyncClusterToButtonAction)
     {
@@ -178,12 +202,32 @@ void AppTask::ActionCompleted(RangeHoodManager::Action_t aAction)
     }
 }
 
-void AppTask::PostLightActionRequest(int32_t aActor, RangeHoodManager::Action_t aAction)
+void AppTask::SetFanOnOff(intptr_t context)
 {
-    AppEvent event;
-    event.Type              = AppEvent::kEventType_RangeHood;
-    event.RangeHoodEvent.Actor  = aActor;
-    event.RangeHoodEvent.Action = aAction;
-   // event.Handler           = LightActionEventHandler;
-    PostEvent(&event);
+    EndpointId endpoint = RangeHoodMgr().GetExtractorEndpoint();
+    FanModeEnum currentFanMode;
+    if (FanControl::Attributes::FanMode::Get(endpoint, &currentFanMode) == Protocols::InteractionModel::Status::Success)
+    {
+        FanModeEnum target = (currentFanMode == FanModeEnum::kOff) ? FanModeEnum::kHigh : FanModeEnum::kOff;
+        FanControl::Attributes::FanMode::Set(endpoint, target);
+    }
+}
+
+void AppTask::ButtonHandler(AppEvent * aEvent)
+{
+    // Distinguish between function and action buttons
+    if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
+    {
+        // Fan toggle using same button for now (could be separated if button id available)
+        // Schedule fan mode toggle on CHIP stack thread to avoid direct access causing locking errors.
+        chip::DeviceLayer::PlatformMgr().ScheduleWork(SetFanOnOff, 0);
+    }
+}
+
+void AppTask::UpdateRangeHoodUI()
+{
+    // Update the LCD with the Stored value. Show QR Code if not provisioned
+#ifdef DISPLAY_ENABLED
+    GetLCD().WriteDemoUI(false);
+#endif // DISPLAY_ENABLED
 }

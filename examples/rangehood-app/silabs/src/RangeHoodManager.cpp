@@ -28,6 +28,10 @@
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#if DISPLAY_ENABLED
+#include "RangeHoodUI.h"
+#endif
+
 using namespace chip;
 using namespace chip::app;
 using namespace ::chip::app::Clusters;
@@ -71,14 +75,12 @@ CHIP_ERROR RangeHoodManager::Init()
     uint8_t percentSettingCB                            = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
     PercentSettingWriteCallback(percentSettingCB);
 
-    DataModel::Nullable<uint8_t> speedSettingNullable = GetSpeedSetting();
-    uint8_t speedSettingCB                            = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
-    SpeedSettingWriteCallback(speedSettingCB);
-
     // Register FanControl delegate (GetFanDelegate returns pointer)
     FanControl::SetDefaultDelegate(kExtractorHoodEndpoint1, mExtractorHoodEndpoint1.GetFanDelegate());
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
+    
+    mState                 = currentLedState ? kState_OnCompleted : kState_OffCompleted;
     
     return CHIP_NO_ERROR;
 }
@@ -414,6 +416,9 @@ void RangeHoodManager::HandleFanControlAttributeChange(AttributeId attributeId, 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
         mFanMode = *reinterpret_cast<FanModeEnum *>(value);
         FanModeWriteCallback(mFanMode);
+#if DISPLAY_ENABLED
+        UpdateRangeHoodLCD();
+#endif
         break;
     }
 
@@ -439,43 +444,6 @@ void RangeHoodManager::PercentSettingWriteCallback(uint8_t aNewPercentSetting)
     {
         ChipLogError(NotSpecified, "RangeHoodManager::PercentSettingWriteCallback: failed to set PercentCurrent attribute");
     }
-}
-
-void RangeHoodManager::SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
-{
-    VerifyOrReturn(aNewSpeedSetting != speedCurrent);
-    VerifyOrReturn(mFanMode != FanModeEnum::kAuto);
-    ChipLogDetail(NotSpecified, "RangeHoodManager::SpeedSettingWriteCallback: %d", aNewSpeedSetting);
-    speedCurrent = aNewSpeedSetting;
-
-    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
-    data->endPoint             = kExtractorHoodEndpoint1;
-    data->speedCurrent         = speedCurrent;
-    data->isSpeedCurrent       = true;
-
-    if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "RangeHoodManager::SpeedSettingWriteCallback: failed to set SpeedCurrent attribute");
-    }
-
-    // Update the fan mode as per the current speed.
-    if (speedCurrent == 0)
-    {
-        mFanMode = FanModeEnum::kOff;
-    }
-    else if (speedCurrent <= kFanModeLowUpperBound)
-    {
-        mFanMode = FanModeEnum::kLow;
-    }
-    else if (speedCurrent <= kFanModeMediumUpperBound)
-    {
-        mFanMode = FanModeEnum::kMedium;
-    }
-    else if (speedCurrent <= kFanModeHighUpperBound)
-    {
-        mFanMode = FanModeEnum::kHigh;
-    }
-    UpdateFanMode();
 }
 
 void RangeHoodManager::UpdateFanMode()
@@ -558,6 +526,11 @@ void RangeHoodManager::SetPercentSetting(Percent aNewPercentSetting)
     }
 }
 
+FanModeEnum RangeHoodManager::GetFanMode()
+{
+    return mFanMode;
+}
+
 DataModel::Nullable<uint8_t> RangeHoodManager::GetSpeedSetting()
 {
     DataModel::Nullable<uint8_t> speedSetting;
@@ -584,4 +557,9 @@ DataModel::Nullable<Percent> RangeHoodManager::GetPercentSetting()
     }
 
     return percentSetting;
+}
+
+void RangeHoodManager::UpdateRangeHoodLCD()
+{
+    AppTask::GetAppTask().UpdateRangeHoodUI();
 }

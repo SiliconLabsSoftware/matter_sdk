@@ -112,9 +112,11 @@ public:
     static void UpdateClusterState(intptr_t arg);
 
     FanModeEnum GetFanMode();
-    void UpdateFanControlLED();
-    void UpdateFanControlLCD();
-    EndpointId GetEndPoint();
+    void UpdateRangeHoodLCD();
+
+    // Explicit getters for individual endpoints
+    EndpointId GetExtractorEndpoint() { return kExtractorHoodEndpoint1; }
+    EndpointId GetLightEndpoint() { return kLightEndpoint2; }
 
    struct AttributeUpdateInfo
     {
