@@ -19,6 +19,7 @@
 #include "OvenManager.h"
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
+#include "OvenBindingHandler.h"
 #include "OvenEndpoint.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
@@ -29,7 +30,16 @@
 #include "AppTask.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
+#include <app-common/zap-generated/cluster-objects.h>
+#include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <platform/CHIPDeviceLayer.h>
+
+#include "AppConfig.h"
+#include "AppTask.h"
+
+#include <app-common/zap-generated/attributes/Accessors.h>
+#include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #define MAX_TEMPERATURE 30000
 #define MIN_TEMPERATURE 0
@@ -95,6 +105,9 @@ void OvenManager::Init()
     // mCookTopState                 = currentLedState ? kState_OnCompleted : kState_OffCompleted;
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
+
+    // Initialize binding manager (after stack unlock to avoid long hold)
+    InitOvenBindingHandler();
 }
 
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
@@ -158,6 +171,16 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         // Update CookSurface states accordingly
         mCookSurfaceEndpoint1.SetOnOffState(*value);
         mCookSurfaceEndpoint2.SetOnOffState(*value);
+
+        // Trigger binding for CookTop OnOff changes
+        {
+            OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
+
+            context->localEndpointId = kCookTopEndpoint;
+            context->commandId       = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
+
+            CookTopOnOffBindingTrigger(context);
+        }
         break;
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
