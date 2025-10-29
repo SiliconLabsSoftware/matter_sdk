@@ -17,9 +17,11 @@
  */
 
 #include "CookSurfaceEndpoint.h"
-#include <lib/core/CHIPError.h>
+#include <app/clusters/on-off-server/on-off-server.h>
+#include <protocols/interaction_model/StatusCode.h>
 
 using namespace chip;
+using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::CookSurface;
 
 CHIP_ERROR CookSurfaceEndpoint::Init()
@@ -27,4 +29,19 @@ CHIP_ERROR CookSurfaceEndpoint::Init()
     return CHIP_NO_ERROR;
 }
 
-void CookSurfaceEndpoint::HandleOffCommand() {}
+chip::Protocols::InteractionModel::Status CookSurfaceEndpoint::GetOnOffState(bool & state)
+{
+    auto status = OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
+    VerifyOrReturnValue(status == Protocols::InteractionModel::Status::Success, status,
+                        ChipLogError(AppServer, "ERR: reading on/off %x", to_underlying(status)));
+    return status;
+}
+
+chip::Protocols::InteractionModel::Status CookSurfaceEndpoint::SetOnOffState(bool state)
+{
+    CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
+    auto status         = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    VerifyOrReturnValue(status == Protocols::InteractionModel::Status::Success, status,
+                        ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status)));
+    return status;
+}

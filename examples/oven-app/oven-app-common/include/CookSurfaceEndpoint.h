@@ -39,12 +39,24 @@ public:
      */
     CHIP_ERROR Init();
 
-    void HandleOffCommand();
+    /**
+     * @brief Gets the current On/Off state from server.
+     * @param state Reference to store the current On/Off state.
+     * @return Returns Status::Success on success, or an error code on failure.
+     */
+
+    chip::Protocols::InteractionModel::Status GetOnOffState(bool & state);
+
+    /**
+     * @brief Set On/Off state for the CookSurface.
+     * @param state Desired On/Off state.
+     * @return Returns Status::Success on success, or an error code on failure.
+     */
+    chip::Protocols::InteractionModel::Status SetOnOffState(bool state);
 
     EndpointId GetEndpointId() const { return mEndpointId; }
 
 private:
-    bool currentOnOffState = false;
     EndpointId mEndpointId = kInvalidEndpointId;
 };
 

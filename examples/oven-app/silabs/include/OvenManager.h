@@ -31,11 +31,48 @@
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
 #include "OvenEndpoint.h"
+
+#include "AppEvent.h"
+
+#include <app-common/zap-generated/ids/Attributes.h>
+#include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <app/clusters/on-off-server/on-off-server.h>
 #include <lib/core/DataModelTypes.h>
+#include <lib/support/TypeTraits.h>
+#include <platform/CHIPDeviceLayer.h>
 
 class OvenManager
 {
 public:
+    enum Action_t
+    {
+        ON_ACTION = 0,
+        OFF_ACTION,
+
+        INVALID_ACTION
+    } Action;
+
+    enum State_t
+    {
+        kCookTopState_OffInitiated = 0,
+        kCookTopState_OffCompleted,
+        kCookTopState_OnInitiated,
+        kCookTopState_OnCompleted,
+
+        // Cook Surface states
+        kCookSurfaceState_OffInitiated,
+        kCookSurfaceState_OffCompleted,
+        kCookSurfaceState_OnInitiated,
+        kCookSurfaceState_OnCompleted,
+        kCookSurfaceState_ActionInProgress,
+        kCookSurfaceState_NoAction,
+    } State;
+
+    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue, chip::EndpointId endpointId = kCookTopEndpoint);
+    typedef void (*Callback_fn_initiated)(Action_t, int32_t aActor, uint8_t * value);
+    typedef void (*Callback_fn_completed)(Action_t);
+    void SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB);
+
     /**
      * @brief Initializes the OvenManager and its associated resources.
      *
@@ -52,10 +89,73 @@ public:
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
+    /**
+     * @brief Handles temperature control attribute changes.
+     *
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
+    void TempCtrlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+
+    /**
+     * @brief Handles on/off attribute changes.
+     *
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
+    void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+
+    /**
+     * @brief Handles oven mode attribute changes.
+     *
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
+    void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+
+    /**
+     * @brief Checks if a transition between two oven modes is blocked.
+     *
+     * @param fromMode The current mode.
+     * @param toMode The desired mode.
+     * @return True if the transition is blocked, false otherwise.
+     */
+    bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
 
 private:
+    struct BlockedTransition
+    {
+        uint8_t fromMode;
+        uint8_t toMode;
+    };
+
+    // Disallowed OvenMode Transitions.
+    static constexpr BlockedTransition kBlockedTransitions[3] = {
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeGrill),
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing) },
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing),
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean) },
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean),
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake) },
+    };
+
     static OvenManager sOvenMgr;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
+
+    State_t mCookTopState;
+    State_t mCookSurfaceState1;
+    State_t mCookSurfaceState2;
+
+    Callback_fn_initiated mActionInitiated_CB;
+    Callback_fn_completed mActionCompleted_CB;
+
+    static void ActuatorMovementHandler(AppEvent * aEvent);
 
     // Define the endpoint ID for the Oven
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;

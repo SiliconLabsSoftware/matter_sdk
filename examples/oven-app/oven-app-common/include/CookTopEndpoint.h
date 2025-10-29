@@ -38,7 +38,12 @@ public:
      */
     CHIP_ERROR Init();
 
-    void HandleOffCommand();
+    /**
+     * @brief Set On/Off state for the CookSurface.
+     * @param state Desired On/Off state.
+     * @return Returns Status::Success on success, or an error code on failure.
+     */
+    chip::Protocols::InteractionModel::Status SetOnOffState(bool state);
 
 private:
     bool currentOnOffState = false;

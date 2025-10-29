@@ -26,6 +26,8 @@ struct AppEvent : public BaseAppEvent
     enum AppEventTypes
     {
         kEventType_Oven = BaseAppEvent::kEventType_Max + 1,
+        kEventType_CookTop,
+        kEventType_CookSurface,
         kEventType_Install,
     };
 
@@ -35,6 +37,7 @@ struct AppEvent : public BaseAppEvent
         {
             uint8_t Action;
             int32_t Actor;
+            void * Context;
         } OvenEvent;
     };
 };

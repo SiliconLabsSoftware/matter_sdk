@@ -28,6 +28,7 @@
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
+#include "OvenManager.h"
 
 #include "FreeRTOS.h"
 #include "timers.h" // provides FreeRTOS timer support
@@ -80,6 +81,9 @@ public:
 
 private:
     static AppTask sAppTask;
+
+    static void ActionInitiated(OvenManager::Action_t aAction, int32_t aActor, uint8_t * value);
+    static void ActionCompleted(OvenManager::Action_t aAction);
 
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()

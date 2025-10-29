@@ -57,10 +57,17 @@ public:
     CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t & value) override;
     CHIP_ERROR GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<detail::Structs::ModeTagStruct::Type> & tags) override;
 
+    /**
+     * @brief Checks if the provided mode is supported.
+     *
+     * @param mode The mode to check.
+     * @return true if the mode is supported, false otherwise.
+     */
+    bool IsSupportedMode(uint8_t mode);
+
 private:
     EndpointId mEndpointId;
 
-    // Static arrays moved to implementation file to reduce header size
     static const detail::Structs::ModeTagStruct::Type sModeTagsBake[];
     static const detail::Structs::ModeTagStruct::Type sModeTagsConvection[];
     static const detail::Structs::ModeTagStruct::Type sModeTagsGrill[];
@@ -88,6 +95,13 @@ public:
      * @return returns CHIP_NO_ERROR on success, or an error code on failure.
      */
     CHIP_ERROR Init();
+
+    /**
+     * @brief Get the oven mode delegate instance.
+     *
+     * @return Reference to the oven mode delegate.
+     */
+    OvenModeDelegate & GetOvenModeDelegate() { return mOvenModeDelegate; }
 
 private:
     EndpointId mEndpointId = kInvalidEndpointId;
