@@ -112,7 +112,10 @@ silabs_executable("oven_app") {
     "src/OvenManager.cpp",
   ]
 
-  deps = [ ":sdk" ]
+  deps = [
+    ":sdk",
+    "${chip_root}/src/app/clusters/bindings:binding-manager",
+  ]
 
   if (wifi_soc) {
     deps += [ "${examples_plat_dir}:siwx917-common" ]

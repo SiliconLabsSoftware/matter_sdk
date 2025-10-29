@@ -30,6 +30,7 @@
 #include "AppTask.h"
 
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #define MAX_TEMPERATURE 30000
 #define MIN_TEMPERATURE 0
@@ -154,6 +155,15 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
                        ChipLogError(AppServer, "Failed to set CookSurfaceEndpoint2 state"));
 
         action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
+        // Trigger binding for CookTop OnOff changes
+        {
+            OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
+            
+            context->localEndpointId = kCookTopEndpoint;
+            context->commandId = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
+            
+            CookTopOnOffBindingTrigger(context);
+        }
         break;
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
