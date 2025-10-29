@@ -173,7 +173,8 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     switch (endpointId)
     {
     case kCookTopEndpoint:
-        InitiateAction(AppEvent::kEventType_CookTop, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value, kCookTopEndpoint);
+        InitiateAction(AppEvent::kEventType_CookTop, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value,
+                       kCookTopEndpoint);
         // Update CookSurface states accordingly
         mCookSurfaceEndpoint1.SetOnOffState(*value);
         mCookSurfaceEndpoint2.SetOnOffState(*value);
@@ -181,7 +182,8 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
         // Handle On/Off attribute changes for the cook surface endpoints
-        InitiateAction(AppEvent::kEventType_CookSurface, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value, endpointId);
+        InitiateAction(AppEvent::kEventType_CookSurface, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value,
+                       endpointId);
         {
             bool cookSurfaceEndpoint1State;
             bool cookSurfaceEndpoint2State;
@@ -225,17 +227,17 @@ bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aVa
     if (endpointId == kCookTopEndpoint)
     {
         currentState = &mCookTopState;
-        eventType = AppEvent::kEventType_CookTop;
+        eventType    = AppEvent::kEventType_CookTop;
     }
     else if (endpointId == kCookSurfaceEndpoint1)
     {
         currentState = &mCookSurfaceState1;
-        eventType = AppEvent::kEventType_CookSurface;
+        eventType    = AppEvent::kEventType_CookSurface;
     }
     else if (endpointId == kCookSurfaceEndpoint2)
     {
         currentState = &mCookSurfaceState2;
-        eventType = AppEvent::kEventType_CookSurface;
+        eventType    = AppEvent::kEventType_CookSurface;
     }
     else
     {
@@ -249,12 +251,12 @@ bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aVa
         if (*currentState == kCookTopState_OffCompleted && aAction == ON_ACTION)
         {
             action_initiated = true;
-            new_state = kCookTopState_OnInitiated;
+            new_state        = kCookTopState_OnInitiated;
         }
         else if (*currentState == kCookTopState_OnCompleted && aAction == OFF_ACTION)
         {
             action_initiated = true;
-            new_state = kCookTopState_OffInitiated;
+            new_state        = kCookTopState_OffInitiated;
         }
     }
     else
@@ -263,12 +265,12 @@ bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aVa
         if (*currentState == kCookSurfaceState_OffCompleted && aAction == ON_ACTION)
         {
             action_initiated = true;
-            new_state = kCookSurfaceState_OnInitiated;
+            new_state        = kCookSurfaceState_OnInitiated;
         }
         else if (*currentState == kCookSurfaceState_OnCompleted && aAction == OFF_ACTION)
         {
             action_initiated = true;
-            new_state = kCookSurfaceState_OffInitiated;
+            new_state        = kCookSurfaceState_OffInitiated;
         }
     }
 
@@ -277,11 +279,11 @@ bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aVa
         *currentState = new_state;
 
         AppEvent event;
-        event.Type = eventType;
+        event.Type              = eventType;
         event.OvenEvent.Context = this;
         event.OvenEvent.Action  = aAction;
         event.OvenEvent.Actor   = endpointId; // Store endpoint ID in Actor field
-        event.Handler = ActuatorMovementHandler;
+        event.Handler           = ActuatorMovementHandler;
 
         AppTask::GetAppTask().PostEvent(&event);
     }

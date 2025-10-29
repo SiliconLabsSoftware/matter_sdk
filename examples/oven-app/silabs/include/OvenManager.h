@@ -68,7 +68,6 @@ public:
         kCookSurfaceState_NoAction,
     } State;
 
-
     bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue, chip::EndpointId endpointId = kCookTopEndpoint);
     typedef void (*Callback_fn_initiated)(Action_t, int32_t aActor, uint8_t * value);
     typedef void (*Callback_fn_completed)(Action_t);
@@ -139,11 +138,11 @@ private:
     // Disallowed OvenMode Transitions.
     static constexpr BlockedTransition kBlockedTransitions[3] = {
         { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeGrill),
-        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing) },
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing) },
         { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing),
-        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean) },
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean) },
         { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean),
-        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake) },
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake) },
     };
 
     static OvenManager sOvenMgr;
