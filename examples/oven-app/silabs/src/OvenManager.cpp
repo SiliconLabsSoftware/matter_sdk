@@ -19,11 +19,11 @@
 #include "OvenManager.h"
 #include "CookSurfaceEndpoint.h"
 #include "CookTopEndpoint.h"
-#include "OvenEndpoint.h"
 #include "OvenBindingHandler.h"
+#include "OvenEndpoint.h"
 
-#include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/attributes/Accessors.h>
+#include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 
 #include "AppConfig.h"
@@ -177,7 +177,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
             OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
 
             context->localEndpointId = kCookTopEndpoint;
-            context->commandId = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
+            context->commandId       = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
 
             CookTopOnOffBindingTrigger(context);
         }
