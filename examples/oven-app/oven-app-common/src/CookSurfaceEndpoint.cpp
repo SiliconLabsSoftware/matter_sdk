@@ -29,7 +29,7 @@ CHIP_ERROR CookSurfaceEndpoint::Init()
     return CHIP_NO_ERROR;
 }
 
-chip::Protocols::InteractionModel::Status CookSurfaceEndpoint::GetOnOffState(bool &state)
+chip::Protocols::InteractionModel::Status CookSurfaceEndpoint::GetOnOffState(bool & state)
 {
     auto status = OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
     VerifyOrReturnValue(status == Protocols::InteractionModel::Status::Success, status,
