@@ -18,8 +18,9 @@
 
 /*
  * @class OvenManager
- * @brief Manages the initialization and operations related to oven and
- *        oven panel endpoints in the application.
+ * @brief Manages the initialization and operations related to oven,
+ *        temperature controlled cabinet, cook top, and cook surface endpoints
+ *        in the application.
  *
  * @note This class is part of the oven application example
  */
