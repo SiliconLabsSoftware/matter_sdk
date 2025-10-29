@@ -78,6 +78,18 @@ public:
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
+    /**
+     * @brief Updates the LED display with the current state
+     * 
+     * @param value Current state value to display
+     */
+    void UpdateLED(int8_t value);
+
+    /**
+     * @brief Updates the LCD display with current cook-top and oven-mode states
+     */
+    void UpdateLCD();
+
 private:
     static AppTask sAppTask;
 
@@ -87,4 +99,19 @@ private:
      * @return CHIP_ERROR
      */
     CHIP_ERROR AppInit() override;
+
+    /**
+     * @brief PB1 Button event processing function for oven functionality
+     *        Press and release will toggle cooktop and cook surface states
+     *
+     * @param aEvent button event being processed
+     */
+    static void OvenButtonHandler(AppEvent * aEvent);
+
+    /**
+     * @brief Updates the cluster state for button actions
+     *
+     * @param context Context parameter (unused)
+     */
+    static void UpdateClusterState(intptr_t context);
 };

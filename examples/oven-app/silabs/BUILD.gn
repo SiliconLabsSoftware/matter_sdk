@@ -110,6 +110,7 @@ silabs_executable("oven_app") {
     "src/DataModelCallbacks.cpp",
     "src/OvenBindingHandler.cpp",
     "src/OvenManager.cpp",
+    "src/OvenUI.cpp",
   ]
 
   deps = [ ":sdk" ]

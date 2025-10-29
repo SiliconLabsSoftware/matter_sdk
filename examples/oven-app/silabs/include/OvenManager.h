@@ -115,6 +115,41 @@ public:
      */
     bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
 
+    /**
+     * @brief Gets the current state of the CookTop.
+     */
+    State_t GetCookTopState() const { return mCookTopState; }
+
+    /**
+     * @brief Gets the current oven mode.
+     */
+    uint8_t GetCurrentOvenMode() { return mCurrentOvenMode; };
+
+    /**
+     * @brief Get the endpoint ID for the Oven endpoint
+     */
+    static constexpr chip::EndpointId GetOvenEndpoint() { return kOvenEndpoint; }
+
+    /**
+     * @brief Get the endpoint ID for the Temperature Controlled Cabinet endpoint
+     */
+    static constexpr chip::EndpointId GetTemperatureControlledCabinetEndpoint() { return kTemperatureControlledCabinetEndpoint; }
+
+    /**
+     * @brief Get the endpoint ID for the CookTop endpoint
+     */
+    static constexpr chip::EndpointId GetCookTopEndpoint() { return kCookTopEndpoint; }
+
+    /**
+     * @brief Get the endpoint ID for the first CookSurface endpoint
+     */
+    static constexpr chip::EndpointId GetCookSurfaceEndpoint1() { return kCookSurfaceEndpoint1; }
+
+    /**
+     * @brief Get the endpoint ID for the second CookSurface endpoint
+     */
+    static constexpr chip::EndpointId GetCookSurfaceEndpoint2() { return kCookSurfaceEndpoint2; }
+
 private:
     static constexpr uint8_t kBlockedTransitionCount = 3; // Number of blocked transitions
     struct BlockedTransition
@@ -134,6 +169,7 @@ private:
     };
 
     static OvenManager sOvenMgr;
+    uint8_t mCurrentOvenMode;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
     State_t mCookTopState;
@@ -147,7 +183,7 @@ private:
      */
     static void OvenActionHandler(AppEvent * aEvent);
 
-    // Define the endpoint ID for the Oven
+    // Define the endpoint ID constants
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;
     static constexpr chip::EndpointId kTemperatureControlledCabinetEndpoint = 2;
     static constexpr chip::EndpointId kCookTopEndpoint                      = 3;

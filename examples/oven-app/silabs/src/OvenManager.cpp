@@ -45,11 +45,6 @@ void OvenManager::Init()
 {
     DeviceLayer::PlatformMgr().LockChipStack();
 
-    // Initialize states
-    mCookTopState      = kCookTopState_Off;
-    mCookSurfaceState1 = kCookSurfaceState_Off;
-    mCookSurfaceState2 = kCookSurfaceState_Off;
-
     // Endpoint initializations
     VerifyOrReturn(mTemperatureControlledCabinetEndpoint.Init() == CHIP_NO_ERROR,
                    ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint Init failed"));
@@ -81,6 +76,24 @@ void OvenManager::Init()
         static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
 
     VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
+
+    // Get CookTop On/Off value
+    bool currentState = false;
+    chip::Protocols::InteractionModel::Status status = OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &currentState);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "Failed to get CookTop OnOff value"));
+    mCookTopState = currentState ? kCookTopState_On : kCookTopState_Off;
+
+    status = OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint1, &currentState);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "Failed to get CookSurface OnOff value"));
+    mCookSurfaceState1 = currentState ? kCookSurfaceState_On : kCookSurfaceState_Off;
+
+    status = OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &currentState);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "Failed to get CookSurface OnOff value"));
+    mCookSurfaceState2 = currentState ? kCookSurfaceState_On : kCookSurfaceState_Off;
+
+    // Get current oven mode
+    status = OvenMode::Attributes::CurrentMode::Get(kTemperatureControlledCabinetEndpoint, &mCurrentOvenMode);
+    VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "Unable to get the current oven mode"));
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
@@ -166,6 +179,8 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
                 ChipLogError(AppServer, "Failed to schedule CookTopOnOffBindingTrigger, context freed");
             }
         }
+        AppTask::GetAppTask().UpdateLED(*value);
+        AppTask::GetAppTask().UpdateLCD();
         break;
     }
     case kCookSurfaceEndpoint1:
@@ -198,11 +213,13 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
 void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                                  uint16_t size)
 {
+    mCurrentOvenMode       = *value;
     AppEvent event         = {};
     event.Type             = AppEvent::kEventType_Oven;
     event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
     event.Handler          = OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
+    return;
 }
 
 void OvenManager::OvenActionHandler(AppEvent * aEvent)
