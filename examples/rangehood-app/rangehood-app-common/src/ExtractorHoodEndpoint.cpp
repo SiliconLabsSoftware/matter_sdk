@@ -19,7 +19,7 @@
 #include "RangeHoodManager.h"
 #include "ExtractorHoodEndpoint.h"
 
-#include <app/clusters/fan-control-server/fan-control-delegate.h> 
+#include <app/clusters/fan-control-server/fan-control-delegate.h>
 
 #include <lib/core/CHIPError.h>
 

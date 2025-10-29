@@ -88,7 +88,7 @@ private:
 
     static void ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor, uint8_t * value);
     static void ActionCompleted(RangeHoodManager::Action_t aAction);
-        
+
     static void LightActionEventHandler(AppEvent * aEvent);
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()

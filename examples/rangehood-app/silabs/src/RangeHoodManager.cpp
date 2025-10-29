@@ -66,7 +66,7 @@ CHIP_ERROR RangeHoodManager::Init()
 
     bool currentLedState;
 
-    // read current on/off value on light endpoint. 
+    // read current on/off value on light endpoint.
     OnOffServer::Instance().getOnOffValue(kLightEndpoint2, &currentLedState);
 
     chip::app::Clusters::FanControl::Attributes::SpeedMax::Get(kExtractorHoodEndpoint1, &mSpeedMax);
@@ -79,9 +79,9 @@ CHIP_ERROR RangeHoodManager::Init()
     FanControl::SetDefaultDelegate(kExtractorHoodEndpoint1, mExtractorHoodEndpoint1.GetFanDelegate());
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
-    
+
     mState                 = currentLedState ? kState_OnCompleted : kState_OffCompleted;
-    
+
     return CHIP_NO_ERROR;
 }
 
@@ -316,7 +316,7 @@ void RangeHoodManager::OnTriggerOffWithEffect(OnOffEffect * effect)
     sRangeHoodMgr.mOffEffectArmed = true;
     sRangeHoodMgr.StartTimer(offEffectDuration);
 }
- 
+
 Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff)
 {
     ChipLogProgress(AppServer, "RangeHoodManager::ProcessExtractorStepCommand  ep=%u  aDirection %d, aWrap %d, aLowestOff %d", endpointId, to_underlying(aDirection),

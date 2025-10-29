@@ -41,7 +41,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
     EndpointId endpointId   = attributePath.mEndpointId;
-    
+
     ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI " on endpoint %u", ChipLogValueMEI(clusterId), endpointId);
 
     switch (clusterId)
@@ -50,18 +50,18 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         // Fan control should only be on FAN ENDPOINT
         RangeHoodMgr().HandleFanControlAttributeChange(attributeId, type, size, value);
         break;
-        
+
     case OnOff::Id:
         // Light on/off control should only be on LIGHT_ENDPOINT
         RangeHoodMgr().InitiateAction(AppEvent::kEventType_RangeHood, *value ? RangeHoodManager::ON_ACTION : RangeHoodManager::OFF_ACTION,
                                       value);
         break;
-        
+
     case Identify::Id:
         ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
                         ChipLogValueMEI(attributeId), type, *value, size, endpointId);
         break;
-        
+
     default:
         ChipLogProgress(Zcl, "Unhandled cluster " ChipLogFormatMEI " on endpoint %u", ChipLogValueMEI(clusterId), endpointId);
         break;

@@ -65,7 +65,7 @@ public:
           mExtractorHoodEndpoint1(kExtractorHoodEndpoint1),
           mLightEndpoint2(kLightEndpoint2)
     {}
-    
+
 
     enum Action_t
     {
@@ -95,7 +95,7 @@ public:
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
     /**
-     * @brief Central handler for  delegate requests, Handle the step command from the Fan Control Cluster 
+     * @brief Central handler for  delegate requests, Handle the step command from the Fan Control Cluster
      */
     Status ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff);
 
@@ -189,7 +189,7 @@ private:
     DataModel::Nullable<uint8_t> GetSpeedSetting();
 
     static RangeHoodManager sRangeHoodMgr;
-    
+
     // FanControlDelegate object
 
     // Define the endpoint ID for the RangeHood
