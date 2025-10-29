@@ -96,7 +96,50 @@ CHIP_ERROR OvenModeDelegate::Init()
 void OvenModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Commands::ChangeToModeResponse::Type & response)
 {
     ChipLogProgress(Zcl, "OvenModeDelegate forwarding mode change to OvenManager (ep=%u newMode=%u)", mEndpointId, NewMode);
-    OvenManager::GetInstance().ProcessOvenModeChange(mEndpointId, NewMode, response);
+    // Verify newMode is among supported modes
+    bool supported = IsSupportedMode(NewMode);
+    if (!supported)
+    {
+        response.status = to_underlying(ModeBase::StatusCode::kUnsupportedMode);
+        return;
+    }
+
+    // Read Current Oven Mode
+    uint8_t currentMode;
+    Status attrStatus = OvenMode::Attributes::CurrentMode::Get(mEndpointId, &currentMode);
+    if (attrStatus != Status::Success)
+    {
+        ChipLogError(AppServer, "OvenManager: Failed to read CurrentMode");
+        response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
+        response.statusText.SetValue(CharSpan::fromCharString("Read CurrentMode failed"));
+        return;
+    }
+
+    // No action needed if current mode is the same as new mode
+    if (currentMode == NewMode)
+    {
+        response.status = to_underlying(ModeBase::StatusCode::kSuccess);
+        return;
+    }
+
+    if (OvenManager::GetInstance().IsTransitionBlocked(currentMode, NewMode))
+    {
+        ChipLogProgress(AppServer, "OvenManager: Blocked transition %u -> %u", currentMode, NewMode);
+        response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
+        response.statusText.SetValue(CharSpan::fromCharString("Transition blocked"));
+        return;
+    }
+
+    // Write new mode
+    Status writeStatus = OvenMode::Attributes::CurrentMode::Set(mEndpointId, NewMode);
+    if (writeStatus != Status::Success)
+    {
+        ChipLogError(AppServer, "OvenManager: Failed to write CurrentMode");
+        response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
+        response.statusText.SetValue(CharSpan::fromCharString("Write CurrentMode failed"));
+        return;
+    }
+    response.status = to_underlying(ModeBase::StatusCode::kSuccess);
 }
 
 CHIP_ERROR OvenModeDelegate::GetModeLabelByIndex(uint8_t modeIndex, MutableCharSpan & label)

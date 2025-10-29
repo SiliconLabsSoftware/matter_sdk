@@ -173,7 +173,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     switch (endpointId)
     {
     case kCookTopEndpoint:
-        InitiateAction(AppEvent::kEventType_CookTop, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value);
+        InitiateAction(AppEvent::kEventType_CookTop, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value, kCookTopEndpoint);
         // Update CookSurface states accordingly
         mCookSurfaceEndpoint1.SetOnOffState(*value);
         mCookSurfaceEndpoint2.SetOnOffState(*value);
@@ -181,8 +181,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
         // Handle On/Off attribute changes for the cook surface endpoints
-        InitiateCookSurfaceAction(AppEvent::kEventType_CookSurface, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION,
-                                  value, endpointId);
+        InitiateAction(AppEvent::kEventType_CookSurface, *value ? OvenManager::ON_ACTION : OvenManager::OFF_ACTION, value, endpointId);
         {
             bool cookSurfaceEndpoint1State;
             bool cookSurfaceEndpoint2State;
@@ -215,72 +214,62 @@ void OvenManager::SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callba
     mActionCompleted_CB = aActionCompleted_CB;
 }
 
-bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue)
-{
-    bool action_initiated = false;
-    State_t new_state;
-
-    // Initiate Turn On/Off Action only when the previous one is complete.
-    if (mCookTopState == kCookTopState_OffCompleted && aAction == ON_ACTION)
-    {
-        action_initiated = true;
-        new_state        = kCookTopState_OnInitiated;
-    }
-    else if (mCookTopState == kCookTopState_OnCompleted && aAction == OFF_ACTION)
-    {
-        action_initiated = true;
-        new_state        = kCookTopState_OffInitiated;
-    }
-
-    if (action_initiated && (aAction == ON_ACTION || aAction == OFF_ACTION))
-    {
-        mCookTopState = new_state;
-
-        AppEvent event;
-        event.Type              = AppEvent::kEventType_CookTop;
-        event.OvenEvent.Context = this;
-        event.Handler           = ActuatorMovementHandler;
-        AppTask::GetAppTask().PostEvent(&event);
-    }
-
-    if (action_initiated && mActionInitiated_CB)
-    {
-        mActionInitiated_CB(aAction, aActor, aValue);
-    }
-
-    return action_initiated;
-}
-
-bool OvenManager::InitiateCookSurfaceAction(int32_t aActor, Action_t aAction, uint8_t * aValue, chip::EndpointId endpointId)
+bool OvenManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue, chip::EndpointId endpointId)
 {
     bool action_initiated = false;
     State_t new_state;
     State_t * currentState = nullptr;
+    uint8_t eventType;
 
-    // Get the appropriate state pointer based on endpoint
-    if (endpointId == kCookSurfaceEndpoint1)
+    // Determine which state to manage based on endpoint
+    if (endpointId == kCookTopEndpoint)
+    {
+        currentState = &mCookTopState;
+        eventType = AppEvent::kEventType_CookTop;
+    }
+    else if (endpointId == kCookSurfaceEndpoint1)
     {
         currentState = &mCookSurfaceState1;
+        eventType = AppEvent::kEventType_CookSurface;
     }
     else if (endpointId == kCookSurfaceEndpoint2)
     {
         currentState = &mCookSurfaceState2;
+        eventType = AppEvent::kEventType_CookSurface;
     }
     else
     {
         return false; // Invalid endpoint
     }
 
-    // Initiate Turn On/Off Action only when the previous one is complete.
-    if (*currentState == kCookSurfaceState_OffCompleted && aAction == ON_ACTION)
+    // Determine the appropriate state transitions based on endpoint type
+    if (endpointId == kCookTopEndpoint)
     {
-        action_initiated = true;
-        new_state        = kCookSurfaceState_OnInitiated;
+        // CookTop state transitions
+        if (*currentState == kCookTopState_OffCompleted && aAction == ON_ACTION)
+        {
+            action_initiated = true;
+            new_state = kCookTopState_OnInitiated;
+        }
+        else if (*currentState == kCookTopState_OnCompleted && aAction == OFF_ACTION)
+        {
+            action_initiated = true;
+            new_state = kCookTopState_OffInitiated;
+        }
     }
-    else if (*currentState == kCookSurfaceState_OnCompleted && aAction == OFF_ACTION)
+    else
     {
-        action_initiated = true;
-        new_state        = kCookSurfaceState_OffInitiated;
+        // CookSurface state transitions
+        if (*currentState == kCookSurfaceState_OffCompleted && aAction == ON_ACTION)
+        {
+            action_initiated = true;
+            new_state = kCookSurfaceState_OnInitiated;
+        }
+        else if (*currentState == kCookSurfaceState_OnCompleted && aAction == OFF_ACTION)
+        {
+            action_initiated = true;
+            new_state = kCookSurfaceState_OffInitiated;
+        }
     }
 
     if (action_initiated && (aAction == ON_ACTION || aAction == OFF_ACTION))
@@ -288,11 +277,12 @@ bool OvenManager::InitiateCookSurfaceAction(int32_t aActor, Action_t aAction, ui
         *currentState = new_state;
 
         AppEvent event;
-        event.Type              = AppEvent::kEventType_CookSurface;
+        event.Type = eventType;
         event.OvenEvent.Context = this;
         event.OvenEvent.Action  = aAction;
         event.OvenEvent.Actor   = endpointId; // Store endpoint ID in Actor field
-        event.Handler           = ActuatorMovementHandler;
+        event.Handler = ActuatorMovementHandler;
+        
         AppTask::GetAppTask().PostEvent(&event);
     }
 
@@ -370,26 +360,7 @@ void OvenManager::ActuatorMovementHandler(AppEvent * aEvent)
     }
 }
 
-// ---------------- Oven Mode Handling ----------------
-
-namespace {
-struct BlockedTransition
-{
-    uint8_t fromMode;
-    uint8_t toMode;
-};
-
-// Disallowed OvenMode Transitions.
-static constexpr BlockedTransition kBlockedTransitions[] = {
-    { to_underlying(TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeGrill),
-      to_underlying(TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing) },
-    { to_underlying(TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing),
-      to_underlying(TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean) },
-    { to_underlying(TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean),
-      to_underlying(TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake) },
-};
-
-static bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
+bool OvenManager::IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
 {
     for (auto const & bt : kBlockedTransitions)
     {
@@ -399,59 +370,4 @@ static bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
         }
     }
     return false;
-}
-} // namespace
-
-void OvenManager::ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t newMode,
-                                        chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response)
-{
-    using namespace chip::app::Clusters;
-    using chip::Protocols::InteractionModel::Status;
-    ChipLogProgress(AppServer, "OvenManager::ProcessOvenModeChange ep=%u newMode=%u", endpointId, newMode);
-
-    // Verify newMode is among supported modes
-    bool supported = mTemperatureControlledCabinetEndpoint.GetOvenModeDelegate().IsSupportedMode(newMode);
-    if (!supported)
-    {
-        response.status = to_underlying(ModeBase::StatusCode::kUnsupportedMode);
-        return;
-    }
-
-    // Read Current Oven Mode
-    uint8_t currentMode;
-    Status attrStatus = OvenMode::Attributes::CurrentMode::Get(endpointId, &currentMode);
-    if (attrStatus != Status::Success)
-    {
-        ChipLogError(AppServer, "OvenManager: Failed to read CurrentMode");
-        response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
-        response.statusText.SetValue(CharSpan::fromCharString("Read CurrentMode failed"));
-        return;
-    }
-
-    // No action needed if current mode is the same as new mode
-    if (currentMode == newMode)
-    {
-        response.status = to_underlying(ModeBase::StatusCode::kSuccess);
-        return;
-    }
-
-    // Check if the mode transition is possible
-    if (IsTransitionBlocked(currentMode, newMode))
-    {
-        ChipLogProgress(AppServer, "OvenManager: Blocked transition %u -> %u", currentMode, newMode);
-        response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
-        response.statusText.SetValue(CharSpan::fromCharString("Transition blocked"));
-        return;
-    }
-
-    // Write new mode
-    Status writeStatus = OvenMode::Attributes::CurrentMode::Set(endpointId, newMode);
-    if (writeStatus != Status::Success)
-    {
-        ChipLogError(AppServer, "OvenManager: Failed to write CurrentMode");
-        response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
-        response.statusText.SetValue(CharSpan::fromCharString("Write CurrentMode failed"));
-        return;
-    }
-    response.status = to_underlying(ModeBase::StatusCode::kSuccess);
 }
