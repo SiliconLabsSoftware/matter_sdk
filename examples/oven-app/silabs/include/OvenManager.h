@@ -127,16 +127,6 @@ public:
                                chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response);
 
     /**
-     * @brief Handles oven mode attribute changes.
-     *
-     * @param endpointId The ID of the endpoint.
-     * @param attributeId The ID of the attribute.
-     * @param value Pointer to the new value.
-     * @param size Size of the new value.
-     */
-    void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
-
-    /**
      * @brief Checks if a transition between two oven modes is blocked.
      *
      * @param fromMode The current mode.

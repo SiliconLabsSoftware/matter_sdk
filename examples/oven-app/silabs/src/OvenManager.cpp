@@ -39,6 +39,7 @@
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #define MAX_TEMPERATURE 30000
 #define MIN_TEMPERATURE 0
@@ -71,24 +72,6 @@ void OvenManager::Init()
                    ChipLogError(AppServer, "SetTemperatureControlledCabinetInitialState failed"));
 
     VerifyOrReturn(mCookTopEndpoint.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookTopEndpoint Init failed"));
-
-    // Initialize TemperatureControl cluster numeric temperature attributes for endpoint 2 (silent on failure)
-    {
-    Status tcStatus = TemperatureControl::Attributes::TemperatureSetpoint::Set(kTemperatureControlledCabinetEndpoint2, 0);
-    VerifyOrReturn(tcStatus == Status::Success,
-               ChipLogError(AppServer, "Endpoint2 TemperatureSetpoint init failed"));
-
-    tcStatus = TemperatureControl::Attributes::MinTemperature::Set(kTemperatureControlledCabinetEndpoint2, 0);
-    VerifyOrReturn(tcStatus == Status::Success,
-               ChipLogError(AppServer, "Endpoint2 MinTemperature init failed"));
-
-    tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(kTemperatureControlledCabinetEndpoint2, 30000);
-    VerifyOrReturn(tcStatus == Status::Success,
-               ChipLogError(AppServer, "Endpoint2 MaxTemperature init failed"));
-
-    tcStatus = TemperatureControl::Attributes::Step::Set(kTemperatureControlledCabinetEndpoint2, 500);
-    VerifyOrReturn(tcStatus == Status::Success, ChipLogError(AppServer, "Endpoint2 Step init failed"));
-    }
 
     // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
     TemperatureControl::SetInstance(&mTemperatureControlDelegate);
@@ -188,6 +171,16 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         // Update CookSurface states accordingly
         mCookSurfaceEndpoint1.SetOnOffState(*value);
         mCookSurfaceEndpoint2.SetOnOffState(*value);
+        
+        // Trigger binding for CookTop OnOff changes
+        {
+            OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
+            
+            context->localEndpointId = kCookTopEndpoint;
+            context->commandId = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
+            
+            CookTopOnOffBindingTrigger(context);
+        }
         break;
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
