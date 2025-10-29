@@ -38,6 +38,8 @@
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <lib/core/DataModelTypes.h>
+#include <lib/support/TypeTraits.h>
+#include <platform/CHIPDeviceLayer.h>
 
 class OvenManager
 {
@@ -66,8 +68,8 @@ public:
         kCookSurfaceState_NoAction,
     } State;
 
-    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);
-    bool InitiateCookSurfaceAction(int32_t aActor, Action_t aAction, uint8_t * aValue, chip::EndpointId endpointId);
+
+    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue, chip::EndpointId endpointId = kCookTopEndpoint);
     typedef void (*Callback_fn_initiated)(Action_t, int32_t aActor, uint8_t * value);
     typedef void (*Callback_fn_completed)(Action_t);
     void SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB);
@@ -119,13 +121,31 @@ public:
     void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
 
     /**
-     * @brief Central handler for OvenMode delegate requests. Applies validation, blocked-transition policy,
-     *        and writes the CurrentMode attribute if allowed.
+     * @brief Checks if a transition between two oven modes is blocked.
+     *
+     * @param fromMode The current mode.
+     * @param toMode The desired mode.
+     * @return True if the transition is blocked, false otherwise.
      */
-    void ProcessOvenModeChange(chip::EndpointId endpointId, uint8_t newMode,
-                               chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response);
+    bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
 
 private:
+    struct BlockedTransition
+    {
+        uint8_t fromMode;
+        uint8_t toMode;
+    };
+
+    // Disallowed OvenMode Transitions.
+    static constexpr BlockedTransition kBlockedTransitions[3] = {
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeGrill),
+        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing) },
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing),
+        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean) },
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean),
+        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake) },
+    };
+
     static OvenManager sOvenMgr;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
