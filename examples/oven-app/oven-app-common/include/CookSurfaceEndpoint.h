@@ -45,7 +45,7 @@ public:
      * @return Returns Status::Success on success, or an error code on failure.
      */
 
-    chip::Protocols::InteractionModel::Status GetOnOffState(bool &state);
+    chip::Protocols::InteractionModel::Status GetOnOffState(bool & state);
 
     /**
      * @brief Set On/Off state for the CookSurface.
