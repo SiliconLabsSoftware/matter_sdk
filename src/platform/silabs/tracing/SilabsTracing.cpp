@@ -915,14 +915,15 @@ void SilabsTracer::RegisterPowerManagerTracing()
 {
 #if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
     memset(mTimeInEnergyState, 0, sizeof(mTimeInEnergyState));
-    sl_power_manager_subscribe_em_transition_event(&power_manager_em_transition_event_handle,
-                                                   &power_manager_em_transition_event_info);
+    mCurrentEnergyMode             = static_cast<sl_power_manager_em_t>(0);
+    mLastEnergyStateTransitionTime = SILABS_GET_TIME();
+    sl_power_manager_subscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle, &mPowerManagerEmTransitionEventInfo);
 #endif // SILABS_TRACING_ENERGY_STATS
 }
 
 CHIP_ERROR SilabsTracer::OutputPowerManagerStatistics()
 {
-#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS != 1
+#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
 
     auto currentTime = SILABS_GET_TIME();
@@ -934,9 +935,9 @@ CHIP_ERROR SilabsTracer::OutputPowerManagerStatistics()
     ChipLogProgress(DeviceLayer, "| %-12s| %-12s | %-10s |", "Energy Mode", "Time (ms)", "Percentage");
     ChipLogProgress(DeviceLayer, "|%-13s|%-14s|%-12s|", "-------------", "--------------", "------------");
 
+    auto currentTime = SILABS_GET_TIME();
     for (size_t em = 0; em <= SL_POWER_MANAGER_EM2; em++)
     {
-        auto currentTime                              = SILABS_GET_TIME();
         System::Clock::Milliseconds32 totalTimeInMode = mTimeInEnergyState[em];
         if (mCurrentEnergyMode == static_cast<sl_power_manager_em_t>(em))
         {
