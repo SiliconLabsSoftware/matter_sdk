@@ -26,6 +26,7 @@ declare_args() {
   #  - Runtime statistics timer configuration
   #  - Task switching hooks for statistics collection
   silabs_tracing_runtime_stats = false
+  silabs_tracing_energy_stats = false
 }
 
 buildconfig_header("silabs_tracing_config") {
@@ -33,6 +34,10 @@ buildconfig_header("silabs_tracing_config") {
   header_dir = "platform/silabs/tracing"
 
   defines = []
+
+  if (silabs_tracing_energy_stats == true) {
+    defines += [ "SILABS_TRACING_ENERGY_STATS=1" ]
+  }
 
   if (silabs_tracing_runtime_stats == true) {
     defines += [
