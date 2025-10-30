@@ -821,8 +821,8 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
     VerifyOrReturnError(taskCount > 0, CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Failed to get task information"));
 
     ChipLogProgress(DeviceLayer, "=== Task Statistics ===");
-    ChipLogProgress(DeviceLayer, "Active tasks: %lu | Terminated tasks: %lu | Total tasks: %lu", systemStats.activeTaskCount,
-                    systemStats.terminatedTaskCount, systemStats.totalTaskCount);
+    ChipLogProgress(DeviceLayer, "Active tasks: %lu | Terminated tasks: %lu", systemStats.activeTaskCount,
+                    systemStats.terminatedTaskCount);
     ChipLogProgress(DeviceLayer, "Total Runtime: %lu ms", systemStats.totalRunTime);
     ChipLogProgress(DeviceLayer, "System Preemption Ratio: %lu.%02lu%% (%lu/%lu switches)",
                     (systemStats.systemPreemptionRatio / 100), (systemStats.systemPreemptionRatio % 100),
