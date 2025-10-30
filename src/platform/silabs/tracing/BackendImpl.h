@@ -52,6 +52,8 @@ public:
      *  SilabsTracer.Init() needs to be called before this is called.
      */
     void LogMetricEvent(const MetricEvent &) override;
+
+    void RegisterPowerManagerTracing();
 };
 
 } // namespace Silabs
