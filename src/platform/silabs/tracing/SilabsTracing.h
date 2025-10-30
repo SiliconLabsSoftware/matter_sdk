@@ -24,6 +24,12 @@
 #include <lib/support/LinkedList.h>
 #include <lib/support/Span.h>
 #include <platform/silabs/tracing/SilabsTracingConfig.h>
+#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+#include <sl_power_manager.h>
+#define SLEEP_EM_EVENT_MASK                                                                                                        \
+    (SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM0 | SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM1 |                             \
+     SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM2)
+#endif // SILABS_TRACING_ENERGY_STATS
 #include <stdint.h>
 #include <system/SystemClock.h>
 
@@ -283,6 +289,18 @@ public:
      */
     CHIP_ERROR OutputTaskStatistics();
 
+    /**
+     * @brief Registers the power manager tracing functionality with the power manager to receive notifications when the device
+     *        changes its power state.
+     */
+    void RegisterPowerManagerTracing();
+
+    /** @brief Output power manager energy mode statistics
+     * This function outputs the total time spent in each energy mode and the percentage of total time.
+     *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the feature or logs are not initialized
+     */
+    CHIP_ERROR OutputPowerManagerStatistics();
+
 private:
     struct TimeTrackerList
     {
@@ -358,6 +376,16 @@ private:
     PersistentStorageDelegate * mStorage = nullptr;
 
     size_t mBufferedTrackerCount = 0;
+#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+
+    System::Clock::Milliseconds32 mTimeInEnergyState[SL_POWER_MANAGER_EM2 + 1];
+    System::Clock::Milliseconds32 mLastEnergyStateTransitionTime;
+    sl_power_manager_em_t mCurrentEnergyMode;
+    sl_power_manager_em_transition_event_handle_t mPowerManagerEmTransitionEventHandle;
+    sl_power_manager_em_transition_event_info_t mPowerManagerEmTransitionEventInfo = { .event_mask = SLEEP_EM_EVENT_MASK,
+                                                                                       .on_event =
+                                                                                           StaticPowerManagerTransitionCallback };
+#endif // SILABS_TRACING_ENERGY_STATS
 
     /** @brief Clear the trace buffer */
     void TraceBufferClear();
@@ -397,6 +425,24 @@ private:
      * @return CHIP_ERROR, returns CHIP_ERROR_INVALID_ARGUMENT if the format is not respected.
      */
     CHIP_ERROR SplitNamedTraceString(CharSpan appOperationKey, CharSpan & groupSpan, CharSpan & labelSpan) const;
+
+#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+
+    /** @brief Callback for power manager energy mode transitions
+     * This function is called by the power manager when the device transitions between energy modes.
+     * It updates the time spent in each energy mode.
+     *  @param from The energy mode the device is transitioning from
+     *  @param to The energy mode the device is transitioning to
+     */
+    void PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to);
+
+    /** @brief Static callback for power manager energy mode transitions
+     * This function is a static wrapper that calls the instance method PowerManagerTransitionCallback.
+     *  @param from The energy mode the device is transitioning from
+     *  @param to The energy mode the device is transitioning to
+     */
+    static void StaticPowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to);
+#endif // SILABS_TRACING_ENERGY_STATS
 };
 
 } // namespace Silabs
