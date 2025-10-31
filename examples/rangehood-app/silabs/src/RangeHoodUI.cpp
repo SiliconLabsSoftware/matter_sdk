@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "AppConfig.h"
 #include "AppTask.h"
 #include "RangeHoodManager.h"
 #include "RangeHoodUI.h"
@@ -80,7 +81,7 @@ void RangeHoodUI::DrawHeader(GLIB_Context_t * glibContext)
     GLIB_drawBitmap(glibContext, MATTER_ICON_POSITION_X, STATUS_ICON_LINE, MATTER_LOGO_WIDTH, MATTER_LOGO_HEIGHT, matterLogoBitmap);
 
     // Draw application name on a dedicated line below icons.
-    GLIB_drawStringOnLine(glibContext, "RangeHood-App", 3, GLIB_ALIGN_CENTER, 0, 0, true);
+    GLIB_drawStringOnLine(glibContext, APP_TASK_NAME, 3, GLIB_ALIGN_CENTER, 0, 0, true);
 #if SL_LCDCTRL_MUX
     sl_wfx_host_pre_lcd_spi_transfer();
 #endif // SL_LCDCTRL_MUX
@@ -124,32 +125,4 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
 #if SL_LCDCTRL_MUX
     sl_wfx_host_post_lcd_spi_transfer();
 #endif // SL_LCDCTRL_MUX
-}
-
-void RangeHoodUI::DrawFont(GLIB_Context_t * glibContext, uint8_t initial_x, uint8_t initial_y, uint8_t width, uint8_t * data,
-                           uint32_t size)
-{
-    uint8_t x = initial_x, y = initial_y;
-    for (uint16_t i = 0; i < size; i++)
-    {
-        for (uint8_t mask = 0; mask < 8; mask++)
-        {
-            if (!(data[i] & (0x01 << mask)))
-            {
-                GLIB_drawPixel(glibContext, x, y);
-            }
-            // Check line changes
-            if (((x - initial_x) % width) == 0 && x != initial_x)
-            {
-                x = initial_x;
-                y++;
-                // Font is 8 bit align with paddings bits;
-                mask = 8;
-            }
-            else
-            {
-                x++;
-            }
-        }
-    }
 }

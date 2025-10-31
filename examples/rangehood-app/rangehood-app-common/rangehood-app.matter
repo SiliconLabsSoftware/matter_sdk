@@ -2346,8 +2346,10 @@ endpoint 1 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 0;
+    ram      attribute featureMap default = 16;
     ram      attribute clusterRevision default = 5;
+
+    handle command Step;
   }
 }
 endpoint 2 {

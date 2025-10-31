@@ -89,7 +89,6 @@ private:
     static void ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor, uint8_t * value);
     static void ActionCompleted(RangeHoodManager::Action_t aAction);
 
-    static void LightActionEventHandler(AppEvent * aEvent);
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
      *
@@ -98,13 +97,12 @@ private:
     CHIP_ERROR AppInit() override;
 
     /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
+     * @brief Handle FAN ON/OFF when BTN1 pressed
      *
-     * @param aEvent button event being processed
+     * @param aEvent event received
      */
-    static void ButtonHandler(AppEvent * aEvent);
+    static void FanControlButtonHandler(AppEvent * aEvent);
+    
     // Work item executed on CHIP stack thread to toggle fan mode safely
     static void SetFanOnOff(intptr_t context);
 };

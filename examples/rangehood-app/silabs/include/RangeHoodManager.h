@@ -51,7 +51,7 @@ public:
     RangeHoodManager() :
         mState(kState_OffCompleted), mActionInitiated_CB(nullptr), mActionCompleted_CB(nullptr), mAutoTurnOff(false),
         mAutoTurnOffDuration(0), mAutoTurnOffTimerArmed(false), mOffEffectArmed(false), mLightTimer(nullptr),
-        mFanMode(FanModeEnum::kOff), mSpeedMax(0), percentCurrent(0), speedCurrent(0),
+        mFanMode(FanModeEnum::kOff), percentCurrent(0),
         // initialize endpoint helpers with the required EndpointIds:
         mExtractorHoodEndpoint1(kExtractorHoodEndpoint1), mLightEndpoint2(kLightEndpoint2)
     {}
@@ -91,11 +91,8 @@ public:
     void HandleFanControlAttributeChange(AttributeId attributeId, uint8_t type, uint16_t size, uint8_t * value);
 
     void PercentSettingWriteCallback(uint8_t aNewPercentSetting);
-    void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting);
     void FanModeWriteCallback(FanModeEnum aNewFanMode);
-
     void SetPercentSetting(Percent aNewPercentSetting);
-
     void UpdateFanMode();
 
     static void UpdateClusterState(intptr_t arg);
@@ -110,13 +107,9 @@ public:
     struct AttributeUpdateInfo
     {
         FanModeEnum fanMode;
-        uint8_t speedCurrent;
         uint8_t percentCurrent;
-        uint8_t speedSetting;
         uint8_t percentSetting;
         bool isPercentCurrent = false;
-        bool isSpeedCurrent   = false;
-        bool isSpeedSetting   = false;
         bool isFanMode        = false;
         bool isPercentSetting = false;
         EndpointId endPoint;
@@ -159,23 +152,20 @@ private:
     static void OffEffectTimerEventHandler(AppEvent * aEvent);
 
     FanModeEnum mFanMode;
-    uint8_t mSpeedMax;
     uint8_t percentCurrent;
-    uint8_t speedCurrent;
 
-    // Fan Mode Limits
-    static constexpr int kFanModeLowLowerBound    = 1;
-    static constexpr int kFanModeLowUpperBound    = 3;
-    static constexpr int kFanModeMediumLowerBound = 4;
-    static constexpr int kFanModeMediumUpperBound = 7;
-    static constexpr int kFanModeHighLowerBound   = 8;
-    static constexpr int kFanModeHighUpperBound   = 10;
+    // Fan Mode Percent Mappings (since SPEED features are not enabled)
+    static constexpr uint8_t kFanModeOffPercent    = 0;    // Off: 0%
+    static constexpr uint8_t kFanModeLowPercent    = 30;   // Low: 30%
+    static constexpr uint8_t kFanModeMediumPercent = 60;   // Medium: 60%
+    static constexpr uint8_t kFanModeHighPercent   = 100;  // High: 100%
 
-    static constexpr int kaLowestOffTrue  = 0;
-    static constexpr int kaLowestOffFalse = 1;
+    // Step command minimum values (for aLowestOff parameter)
+    static constexpr uint8_t kaLowestOffTrue  = 0;   // Can step down to 0% (off)
+    static constexpr uint8_t kaLowestOffFalse = 1;   // Can only step down to 1% (minimum on)
+    static constexpr uint8_t kStepSizePercent  = 10; // Step by 10% increments
 
     DataModel::Nullable<Percent> GetPercentSetting();
-    DataModel::Nullable<uint8_t> GetSpeedSetting();
 
     static RangeHoodManager sRangeHoodMgr;
 

@@ -45,7 +45,6 @@ RangeHoodManager RangeHoodManager::sRangeHoodMgr;
 
 CHIP_ERROR RangeHoodManager::Init()
 {
-    DeviceLayer::PlatformMgr().LockChipStack();
     // Endpoint initializations
     VerifyOrReturnError(mExtractorHoodEndpoint1.Init() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
 
@@ -66,10 +65,9 @@ CHIP_ERROR RangeHoodManager::Init()
 
     bool currentLedState;
 
+    DeviceLayer::PlatformMgr().LockChipStack();
     // read current on/off value on light endpoint.
     OnOffServer::Instance().getOnOffValue(kLightEndpoint2, &currentLedState);
-
-    chip::app::Clusters::FanControl::Attributes::SpeedMax::Get(kExtractorHoodEndpoint1, &mSpeedMax);
 
     DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
     uint8_t percentSettingCB                            = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
@@ -325,35 +323,35 @@ Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId
 
     VerifyOrReturnError(aDirection != StepDirectionEnum::kUnknownEnumValue, Status::InvalidCommand);
 
-    // if aLowestOff is true, Step command can reduce the fan speed to 0, else 1.
-    uint8_t speedMin = aLowestOff ? kaLowestOffTrue : kaLowestOffFalse;
+    // if aLowestOff is true, Step command can reduce the fan to 0%, else 1%.
+    uint8_t percentMin = aLowestOff ? kaLowestOffTrue : kaLowestOffFalse;
+    uint8_t percentMax = 100;  // Maximum percent value
 
-    DataModel::Nullable<uint8_t> speedSettingNullable = GetSpeedSetting();
+    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
+    uint8_t curPercentSetting = percentSettingNullable.IsNull() ? percentMin : percentSettingNullable.Value();
 
-    uint8_t curSpeedSetting = speedSettingNullable.IsNull() ? speedMin : speedSettingNullable.Value();
-
-    // increase or decrease the fan speed by one step
+    // increase or decrease the fan percent by step size
     switch (aDirection)
     {
     case StepDirectionEnum::kIncrease: {
-        if (curSpeedSetting >= mSpeedMax)
+        if (curPercentSetting >= percentMax)
         {
-            curSpeedSetting = aWrap ? speedMin : mSpeedMax;
+            curPercentSetting = aWrap ? percentMin : percentMax;
         }
         else
         {
-            curSpeedSetting++;
+            curPercentSetting = std::min(percentMax, static_cast<uint8_t>(curPercentSetting + kStepSizePercent));
         }
         break;
     }
     case StepDirectionEnum::kDecrease: {
-        if (curSpeedSetting <= speedMin)
+        if (curPercentSetting <= percentMin)
         {
-            curSpeedSetting = aWrap ? mSpeedMax : speedMin;
+            curPercentSetting = aWrap ? percentMax : percentMin;
         }
         else
         {
-            curSpeedSetting--;
+            curPercentSetting = std::max(percentMin, static_cast<uint8_t>(curPercentSetting - kStepSizePercent));
         }
         break;
     }
@@ -361,9 +359,6 @@ Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId
         break;
     }
     }
-
-    // Convert SpeedSetting to PercentSetting
-    uint8_t curPercentSetting = ((static_cast<uint16_t>(curSpeedSetting) * 100) / mSpeedMax);
 
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
     data->percentSetting       = curPercentSetting;
@@ -382,17 +377,10 @@ Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId
 void RangeHoodManager::UpdateClusterState(intptr_t arg)
 {
     RangeHoodManager::AttributeUpdateInfo * data = reinterpret_cast<RangeHoodManager::AttributeUpdateInfo *>(arg);
-    if (data->isSpeedCurrent)
-    {
-        chip::app::Clusters::FanControl::Attributes::SpeedCurrent::Set(data->endPoint, data->speedCurrent);
-    }
-    else if (data->isPercentCurrent)
+    
+    if (data->isPercentCurrent)
     {
         chip::app::Clusters::FanControl::Attributes::PercentCurrent::Set(data->endPoint, data->percentCurrent);
-    }
-    else if (data->isSpeedSetting)
-    {
-        chip::app::Clusters::FanControl::Attributes::SpeedSetting::Set(data->endPoint, data->speedSetting);
     }
     else if (data->isFanMode)
     {
@@ -462,39 +450,35 @@ void RangeHoodManager::UpdateFanMode()
 void RangeHoodManager::FanModeWriteCallback(FanModeEnum aNewFanMode)
 {
     ChipLogDetail(NotSpecified, "RangeHoodManager::FanModeWriteCallback: %d", (uint8_t) aNewFanMode);
-    // Set Percent Settings, which will update the Speed Settings through callback.
+    // Set Percent Settings directly
     switch (aNewFanMode)
     {
     case FanModeEnum::kOff: {
-        if (speedCurrent != 0)
+        if (percentCurrent != kFanModeOffPercent)
         {
-            Percent percentSetting = 0;
-            SetPercentSetting(percentSetting);
+            SetPercentSetting(kFanModeOffPercent);
         }
         break;
     }
     case FanModeEnum::kLow: {
-        if (speedCurrent < kFanModeLowLowerBound || speedCurrent > kFanModeLowUpperBound)
+        if (percentCurrent != kFanModeLowPercent)
         {
-            Percent percentSetting = kFanModeLowUpperBound * mSpeedMax;
-            SetPercentSetting(percentSetting);
+            SetPercentSetting(kFanModeLowPercent);
         }
         break;
     }
     case FanModeEnum::kMedium: {
-        if (speedCurrent < kFanModeMediumLowerBound || speedCurrent > kFanModeMediumUpperBound)
+        if (percentCurrent != kFanModeMediumPercent)
         {
-            Percent percentSetting = kFanModeMediumLowerBound * mSpeedMax;
-            SetPercentSetting(percentSetting);
+            SetPercentSetting(kFanModeMediumPercent);
         }
         break;
     }
     case FanModeEnum::kOn:
     case FanModeEnum::kHigh: {
-        if (speedCurrent < kFanModeHighLowerBound || speedCurrent > kFanModeHighUpperBound)
+        if (percentCurrent != kFanModeHighPercent)
         {
-            Percent percentSetting = kFanModeHighLowerBound * mSpeedMax;
-            SetPercentSetting(percentSetting);
+            SetPercentSetting(kFanModeHighPercent);
         }
         break;
     }
@@ -530,20 +514,6 @@ void RangeHoodManager::SetPercentSetting(Percent aNewPercentSetting)
 FanModeEnum RangeHoodManager::GetFanMode()
 {
     return mFanMode;
-}
-
-DataModel::Nullable<uint8_t> RangeHoodManager::GetSpeedSetting()
-{
-    DataModel::Nullable<uint8_t> speedSetting;
-
-    Status status = chip::app::Clusters::FanControl::Attributes::SpeedSetting::Get(kExtractorHoodEndpoint1, speedSetting);
-    if (status != Status::Success)
-    {
-        ChipLogError(NotSpecified, "RangeHoodManager::GetSpeedSetting: failed to get SpeedSetting attribute: %d",
-                     to_underlying(status));
-    }
-
-    return speedSetting;
 }
 
 DataModel::Nullable<Percent> RangeHoodManager::GetPercentSetting()

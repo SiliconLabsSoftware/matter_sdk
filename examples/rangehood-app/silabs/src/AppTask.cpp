@@ -150,12 +150,12 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_ACTION_BUTTON &&
         btnAction == static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = ButtonHandler;
+        button_event.Handler = FanControlButtonHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
-        // Defer other button events to generic base handler (factory reset, etc.)
+        // Defer other button events to generic base handler
         button_event.Handler = BaseApplication::ButtonHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
     }
@@ -213,13 +213,16 @@ void AppTask::SetFanOnOff(intptr_t context)
     }
 }
 
-void AppTask::ButtonHandler(AppEvent * aEvent)
+void AppTask::FanControlButtonHandler(AppEvent * aEvent)
 {
-    // Distinguish between function and action buttons
+    /**
+     * Handle button press events for range hood control
+     * This function processes button events specifically for the action button (BTN1)
+     * which controls the fan operation in the range hood application.
+     */  
     if (aEvent->ButtonEvent.Action ==
         static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        // Fan toggle using same button for now (could be separated if button id available)
         // Schedule fan mode toggle on CHIP stack thread to avoid direct access causing locking errors.
         chip::DeviceLayer::PlatformMgr().ScheduleWork(SetFanOnOff, 0);
     }
