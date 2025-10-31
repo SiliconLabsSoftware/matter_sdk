@@ -403,6 +403,10 @@ def getGlobalTemplatesTargets():
         example_name = example_name[example_name.index('examples/') + 9:]
         example_name = example_name[:example_name.index('/')]
 
+        if "zigbee" in example_name:
+            # TODO silabs docker image doesn't have the zigbee zcl template need, as it was scrub for size reasons.
+            logging.info("-- Skipping zigbee-matter examples regen --")
+            continue
         if example_name == "chef":
             if os.path.join("chef", "devices") not in str(filepath):
                 continue
