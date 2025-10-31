@@ -35,14 +35,18 @@ CHIP_ERROR LightEndpoint::Init()
 bool LightEndpoint::GetOnOffState()
 {
     bool state = false;
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
     OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
     return state;
 }
 
 void LightEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
     auto status         = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
     if (status != Protocols::InteractionModel::Status::Success)
     {
         ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status));

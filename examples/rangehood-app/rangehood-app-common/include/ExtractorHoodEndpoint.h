@@ -55,7 +55,7 @@ public:
     FanDelegate(EndpointId aEndpoint) : FanControl::Delegate(aEndpoint), mEndpoint(aEndpoint) {}
 
 protected:
-    EndpointId mEndpoint = 0;
+    EndpointId mEndpoint = kInvalidEndpointId;
 };
 class ExtractorHoodEndpoint
 {
