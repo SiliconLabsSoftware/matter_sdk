@@ -379,6 +379,7 @@ private:
 #if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
 
     System::Clock::Milliseconds32 mTimeInEnergyState[SL_POWER_MANAGER_EM2 + 1];
+    uint16_t mTransitionCountToEnergyState[SL_POWER_MANAGER_EM2 + 1];
     System::Clock::Milliseconds32 mLastEnergyStateTransitionTime;
     sl_power_manager_em_t mCurrentEnergyMode;
     sl_power_manager_em_transition_event_handle_t mPowerManagerEmTransitionEventHandle;
