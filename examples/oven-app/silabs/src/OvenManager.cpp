@@ -78,8 +78,13 @@ void OvenManager::Init()
     VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
 
     // Get CookTop On/Off value
+<<<<<<< HEAD
     bool currentState = false;
     chip::Protocols::InteractionModel::Status status = OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &currentState);
+=======
+    bool currentLedState                             = false;
+    chip::Protocols::InteractionModel::Status status = OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &currentLedState);
+>>>>>>> 3c958a2913 (Restyled by clang-format)
     VerifyOrReturn(status == Status::Success, ChipLogError(AppServer, "Failed to get CookTop OnOff value"));
     mCookTopState = currentState ? kCookTopState_On : kCookTopState_Off;
 

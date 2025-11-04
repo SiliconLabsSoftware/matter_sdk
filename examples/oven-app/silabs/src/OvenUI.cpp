@@ -124,36 +124,36 @@ void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
     // Display oven mode on line 6
     switch (currentMode)
     {
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeBake):
-            GLIB_drawStringOnLine(glibContext, "MODE: BAKE", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvection):
-            GLIB_drawStringOnLine(glibContext, "MODE: CONVECTION", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeGrill):
-            GLIB_drawStringOnLine(glibContext, "MODE: GRILL", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeRoast):
-            GLIB_drawStringOnLine(glibContext, "MODE: ROAST", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeClean):
-            GLIB_drawStringOnLine(glibContext, "MODE: CLEAN", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvectionBake):
-            GLIB_drawStringOnLine(glibContext, "MODE: CONV BAKE", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvectionRoast):
-            GLIB_drawStringOnLine(glibContext, "MODE: CONV ROAST", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeWarming):
-            GLIB_drawStringOnLine(glibContext, "MODE: WARMING", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        case chip::to_underlying(OvenModeDelegate::OvenModes::kModeProofing):
-            GLIB_drawStringOnLine(glibContext, "MODE: PROOFING", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
-        default:
-            GLIB_drawStringOnLine(glibContext, "MODE: UNKNOWN", 6, GLIB_ALIGN_LEFT, 0, 0, true);
-            break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeBake):
+        GLIB_drawStringOnLine(glibContext, "MODE: BAKE", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvection):
+        GLIB_drawStringOnLine(glibContext, "MODE: CONVECTION", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeGrill):
+        GLIB_drawStringOnLine(glibContext, "MODE: GRILL", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeRoast):
+        GLIB_drawStringOnLine(glibContext, "MODE: ROAST", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeClean):
+        GLIB_drawStringOnLine(glibContext, "MODE: CLEAN", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvectionBake):
+        GLIB_drawStringOnLine(glibContext, "MODE: CONV BAKE", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvectionRoast):
+        GLIB_drawStringOnLine(glibContext, "MODE: CONV ROAST", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeWarming):
+        GLIB_drawStringOnLine(glibContext, "MODE: WARMING", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    case chip::to_underlying(OvenModeDelegate::OvenModes::kModeProofing):
+        GLIB_drawStringOnLine(glibContext, "MODE: PROOFING", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
+    default:
+        GLIB_drawStringOnLine(glibContext, "MODE: UNKNOWN", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        break;
     }
 
 #if SL_LCDCTRL_MUX

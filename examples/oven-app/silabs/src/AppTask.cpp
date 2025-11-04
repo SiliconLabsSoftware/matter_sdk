@@ -25,8 +25,8 @@
 #include "OvenUI.h"
 
 #ifdef DISPLAY_ENABLED
-#include "lcd.h"
 #include "OvenUI.h"
+#include "lcd.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
 #endif // QR_CODE_ENABLED
@@ -173,7 +173,7 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
         OvenManager::Action_t action = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On) 
                                      ? OvenManager::COOK_TOP_OFF_ACTION 
                                      : OvenManager::COOK_TOP_ON_ACTION;
-        
+
         // Toggle CookTop
         chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
 
@@ -184,7 +184,8 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
             context->localEndpointId = OvenManager::GetCookTopEndpoint(); // CookTop endpoint
             context->commandId = (action == OvenManager::COOK_TOP_ON_ACTION) ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
 
-            ChipLogProgress(AppServer, "Triggering binding for cooktop endpoint with command %lu", static_cast<unsigned long>(context->commandId));
+            ChipLogProgress(AppServer, "Triggering binding for cooktop endpoint with command %lu",
+                            static_cast<unsigned long>(context->commandId));
             CookTopOnOffBindingTrigger(context);
         }
     }
@@ -198,7 +199,8 @@ void AppTask::UpdateClusterState(intptr_t context)
     ChipLogProgress(AppServer, "Updating cooktop OnOff cluster state to %s", currentState ? "On" : "Off");
 
     // Set the OnOff attribute value for the cooktop endpoint
-    Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), currentState, false);
+    Protocols::InteractionModel::Status status =
+        OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), currentState, false);
 
     if (status != Protocols::InteractionModel::Status::Success)
     {
