@@ -82,22 +82,10 @@ public:
 private:
     static AppTask sAppTask;
 
-    static void ActionInitiated(OvenManager::Action_t aAction, int32_t aActor, uint8_t * value);
-    static void ActionCompleted(OvenManager::Action_t aAction);
-
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
      *
      * @return CHIP_ERROR
      */
     CHIP_ERROR AppInit() override;
-
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commissioned
-     *
-     * @param aEvent button event being processed
-     */
-    static void ButtonHandler(AppEvent * aEvent);
 };

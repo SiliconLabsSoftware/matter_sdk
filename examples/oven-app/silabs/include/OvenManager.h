@@ -43,35 +43,15 @@
 
 class OvenManager
 {
+
 public:
-    enum Action_t
-    {
-        ON_ACTION = 0,
-        OFF_ACTION,
-
-        INVALID_ACTION
-    } Action;
-
     enum State_t
     {
-        kCookTopState_OffInitiated = 0,
-        kCookTopState_OffCompleted,
-        kCookTopState_OnInitiated,
-        kCookTopState_OnCompleted,
-
-        // Cook Surface states
-        kCookSurfaceState_OffInitiated,
-        kCookSurfaceState_OffCompleted,
-        kCookSurfaceState_OnInitiated,
-        kCookSurfaceState_OnCompleted,
-        kCookSurfaceState_ActionInProgress,
-        kCookSurfaceState_NoAction,
-    } State;
-
-    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue, chip::EndpointId endpointId = kCookTopEndpoint);
-    typedef void (*Callback_fn_initiated)(Action_t, int32_t aActor, uint8_t * value);
-    typedef void (*Callback_fn_completed)(Action_t);
-    void SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB);
+        kCookTopState_Off = 0,
+        kCookTopState_On,
+        kCookSurfaceState_Off,
+        kCookSurfaceState_On
+    };
 
     /**
      * @brief Initializes the OvenManager and its associated resources.
@@ -152,10 +132,12 @@ private:
     State_t mCookSurfaceState1;
     State_t mCookSurfaceState2;
 
-    Callback_fn_initiated mActionInitiated_CB;
-    Callback_fn_completed mActionCompleted_CB;
-
-    static void ActuatorMovementHandler(AppEvent * aEvent);
+    /**
+     * @brief Updates the oven hardware state and UI (LEDs, LCD) in response to an event.
+     *
+     * @param aEvent Pointer to the event structure.
+     */
+    static void OvenActionHandler(AppEvent * aEvent);
 
     // Define the endpoint ID for the Oven
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;

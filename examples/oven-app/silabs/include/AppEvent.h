@@ -29,6 +29,7 @@ struct AppEvent : public BaseAppEvent
         kEventType_CookTop,
         kEventType_CookSurface,
         kEventType_Install,
+        kEventType_UIUpdate,
     };
 
     union

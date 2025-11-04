@@ -41,6 +41,14 @@ public:
     /**
      * @brief Set On/Off state for the CookSurface.
      * @param state Desired On/Off state.
+     *
+     * Note: This helper writes the OnOff attribute to the CHIP attribute storage and
+     * therefore must be invoked from the CHIP/DeviceLayer task context or while holding
+     * the CHIP stack lock (DeviceLayer::PlatformMgr().LockChipStack()). Calling this
+     * API from an arbitrary thread can cause asserts / crashes in the CHIP stack.
+     * If you are not in the CHIP task, schedule work onto the CHIP task using
+     * PlatformMgr().ScheduleWork(...) and call this helper from there.
+     * 
      * @return Returns Status::Success on success, or an error code on failure.
      */
     chip::Protocols::InteractionModel::Status SetOnOffState(bool state);
