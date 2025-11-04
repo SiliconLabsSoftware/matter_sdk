@@ -80,7 +80,7 @@ public:
 
     /**
      * @brief Updates the LED display with the current state
-     * 
+     *
      * @param value Current state value to display
      */
     void UpdateLED(int8_t value);

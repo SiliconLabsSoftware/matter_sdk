@@ -142,7 +142,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
-    
+
     // Handle button1 specifically for oven functionality
     if (button == APP_ACTION_BUTTON)
     {
@@ -152,7 +152,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
     }
-    
+
     AppTask::GetAppTask().PostEvent(&button_event);
 }
 
@@ -164,11 +164,11 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
         ChipLogProgress(AppServer, "Oven button pressed - starting toggle action");
         return; // Only handle button release
     }
-    
+
     if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonReleased))
     {
         ChipLogProgress(AppServer, "Oven button released - toggling cooktop and cook surface");
-        
+
         // Determine new state (toggle current state)
         OvenManager::Action_t action = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On) 
                                      ? OvenManager::COOK_TOP_OFF_ACTION 
@@ -183,7 +183,7 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
         {
             context->localEndpointId = OvenManager::GetCookTopEndpoint(); // CookTop endpoint
             context->commandId = (action == OvenManager::COOK_TOP_ON_ACTION) ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
-            
+
             ChipLogProgress(AppServer, "Triggering binding for cooktop endpoint with command %lu", static_cast<unsigned long>(context->commandId));
             CookTopOnOffBindingTrigger(context);
         }
@@ -194,9 +194,9 @@ void AppTask::UpdateClusterState(intptr_t context)
 {
     // Update the OnOff cluster state for the cooktop endpoint based on the current state
     bool currentState = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On);
-    
+
     ChipLogProgress(AppServer, "Updating cooktop OnOff cluster state to %s", currentState ? "On" : "Off");
-    
+
     // Set the OnOff attribute value for the cooktop endpoint
     Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), currentState, false);
 

@@ -96,7 +96,7 @@ void OvenUI::DrawCookTopState(GLIB_Context_t * glibContext)
 {
     // Get CookTop state from OvenManager
     OvenManager::State_t cookTopState = OvenManager::GetInstance().GetCookTopState();
-    
+
     // Display CookTop state on line 4
     if (cookTopState == OvenManager::kCookTopState_OnCompleted)
     {
@@ -120,7 +120,7 @@ void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
 {
     // Get current oven mode from the Temperature Controlled Cabinet endpoint
     uint8_t currentMode = OvenManager::GetInstance().GetCurrentOvenMode();
-    
+
     // Display oven mode on line 6
     switch (currentMode)
     {
