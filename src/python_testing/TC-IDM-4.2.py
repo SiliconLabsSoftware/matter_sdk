@@ -15,10 +15,11 @@
 #    limitations under the License.
 #
 
-"""Legacy entry point for TC-IDM-4.2 python test case.
+"""Hyphenated entry point for TC-IDM-4.2 python certification test.
 
-This module re-exports the implementation that lives in
-`tc_idm_4_2_base` so existing import paths keep working.
+This mirrors the style used by TC-IDM-4.1 so automated tooling that
+expects the hyphenated filename can locate the implementation while
+sharing the core logic with existing infrastructure.
 """
 
 from tc_idm_4_2_base import TC_IDM_4_2
