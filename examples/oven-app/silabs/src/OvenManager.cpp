@@ -89,8 +89,6 @@ void OvenManager::Init()
 
     VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
 
-    VerifyOrReturn(mCookSurfaceEndpoint1.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint1 Init failed"));
-
     DeviceLayer::PlatformMgr().UnlockChipStack();
 }
 
