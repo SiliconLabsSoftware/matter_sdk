@@ -86,7 +86,8 @@ class TemperatureControlledCabinetEndpoint
 public:
     static constexpr uint8_t kModeBaseFeatures = 0; // No specific features for ModeBase::Instance
     TemperatureControlledCabinetEndpoint(EndpointId endpointId) :
-        mEndpointId(endpointId), mOvenModeDelegate(mEndpointId), mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, kModeBaseFeatures)
+        mEndpointId(endpointId), mOvenModeDelegate(mEndpointId),
+        mOvenModeInstance(&mOvenModeDelegate, mEndpointId, OvenMode::Id, kModeBaseFeatures)
     {}
 
     /**

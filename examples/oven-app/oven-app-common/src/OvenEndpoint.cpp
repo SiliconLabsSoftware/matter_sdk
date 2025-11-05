@@ -37,8 +37,7 @@ using detail::Structs::ModeTagStruct::Type;
 // Static member definitions
 const Type OvenModeDelegate::sModeTagsBake[1] = { { .value = to_underlying(ModeTag::kBake) } };
 
-const Type OvenModeDelegate::sModeTagsConvection[1] = { { .value = to_underlying(
-                                                                                              ModeTag::kConvection) } };
+const Type OvenModeDelegate::sModeTagsConvection[1] = { { .value = to_underlying(ModeTag::kConvection) } };
 
 const Type OvenModeDelegate::sModeTagsGrill[1] = { { .value = to_underlying(ModeTag::kGrill) } };
 
@@ -46,17 +45,13 @@ const Type OvenModeDelegate::sModeTagsRoast[1] = { { .value = to_underlying(Mode
 
 const Type OvenModeDelegate::sModeTagsClean[1] = { { .value = to_underlying(ModeTag::kClean) } };
 
-const Type OvenModeDelegate::sModeTagsConvectionBake[1] = { { .value = to_underlying(
-                                                                                                  ModeTag::kConvectionBake) } };
+const Type OvenModeDelegate::sModeTagsConvectionBake[1] = { { .value = to_underlying(ModeTag::kConvectionBake) } };
 
-const Type OvenModeDelegate::sModeTagsConvectionRoast[1] = { { .value = to_underlying(
-                                                                                                   ModeTag::kConvectionRoast) } };
+const Type OvenModeDelegate::sModeTagsConvectionRoast[1] = { { .value = to_underlying(ModeTag::kConvectionRoast) } };
 
-const Type OvenModeDelegate::sModeTagsWarming[1] = { { .value =
-                                                                                           to_underlying(ModeTag::kWarming) } };
+const Type OvenModeDelegate::sModeTagsWarming[1] = { { .value = to_underlying(ModeTag::kWarming) } };
 
-const Type OvenModeDelegate::sModeTagsProofing[1] = { { .value =
-                                                                                            to_underlying(ModeTag::kProofing) } };
+const Type OvenModeDelegate::sModeTagsProofing[1] = { { .value = to_underlying(ModeTag::kProofing) } };
 
 const detail::Structs::ModeOptionStruct::Type OvenModeDelegate::skModeOptions[to_underlying(OvenModes::kModeCount)] = {
     { .label    = CharSpan::fromCharString("Bake"),
