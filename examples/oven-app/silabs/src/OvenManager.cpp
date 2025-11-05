@@ -91,28 +91,6 @@ void OvenManager::Init()
     VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
 
     VerifyOrReturn(mCookSurfaceEndpoint1.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint1 Init failed"));
-    VerifyOrReturn(mCookSurfaceEndpoint2.Init() == CHIP_NO_ERROR, ChipLogError(AppServer, "CookSurfaceEndpoint2 Init failed"));
-
-    // Set initial state for CookSurface endpoints
-    VerifyOrReturn(SetCookSurfaceInitialState(mCookSurfaceEndpoint1.GetEndpointId()) == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "SetCookSurfaceInitialState failed for CookSurfaceEndpoint1"));
-    VerifyOrReturn(SetCookSurfaceInitialState(mCookSurfaceEndpoint2.GetEndpointId()) == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "SetCookSurfaceInitialState failed for CookSurfaceEndpoint2"));
-
-    // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 1 and 2
-    static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),
-                                                   CharSpan::fromCharString("High") };
-    CHIP_ERROR err                             = mTemperatureControlDelegate.RegisterSupportedLevels(
-        kCookSurfaceEndpoint1, kCookSurfaceLevels,
-        static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
-
-    VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint1"));
-
-    err = mTemperatureControlDelegate.RegisterSupportedLevels(
-        kCookSurfaceEndpoint2, kCookSurfaceLevels,
-        static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
-
-    VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
 }
