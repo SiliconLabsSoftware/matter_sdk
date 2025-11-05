@@ -180,8 +180,8 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
 
     // Post an event to AppTask for the hardware actions (like LCD and LED update).
     AppEvent event = {};
-    event.Type = AppEvent::kEventType_UIUpdate;
-    event.Handler = OvenActionHandler;
+    event.Type     = AppEvent::kEventType_UIUpdate;
+    event.Handler  = OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
 }
 
@@ -192,8 +192,8 @@ void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, ch
                    ChipLogError(AppServer, "Command received over Unsupported Endpoint"));
     // Post an event to AppTask for the hardware actions (like LCD and LED update).
     AppEvent event = {};
-    event.Type = AppEvent::kEventType_UIUpdate;
-    event.Handler = OvenActionHandler;
+    event.Type     = AppEvent::kEventType_UIUpdate;
+    event.Handler  = OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
     return;
 }
