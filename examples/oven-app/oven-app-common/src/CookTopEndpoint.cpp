@@ -24,14 +24,12 @@ using namespace chip::app::Clusters::CookTop;
 
 CHIP_ERROR CookTopEndpoint::Init()
 {
+    // Placeholder for user Init
     return CHIP_NO_ERROR;
 }
 
 chip::Protocols::InteractionModel::Status CookTopEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
-    auto status         = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
-    VerifyOrReturnValue(status == Protocols::InteractionModel::Status::Success, status,
-                        ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status)));
-    return status;
+    return OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
 }
