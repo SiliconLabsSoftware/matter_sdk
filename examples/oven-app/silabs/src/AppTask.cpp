@@ -128,4 +128,3 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     button_event.Handler            = BaseApplication::ButtonHandler;
     AppTask::GetAppTask().PostEvent(&button_event);
 }
-
