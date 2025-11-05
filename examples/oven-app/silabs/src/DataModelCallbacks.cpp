@@ -42,22 +42,22 @@ void MatterPostAttributeChangeCallback(const app::ConcreteAttributePath & attrib
     switch (clusterId)
     {
     case app::Clusters::Identify::Id:
-        ChipLogDetail(Zcl, "Identify cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
+        ChipLogDetail(Zcl, "Identify cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
+                      type, *value, size);
         break;
     case app::Clusters::OnOff::Id:
         ChipLogDetail(Zcl, "OnOff cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
-                        type, *value, size);
+                      type, *value, size);
         OvenManager::GetInstance().OnOffAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     case app::Clusters::TemperatureControl::Id:
         ChipLogDetail(Zcl, "TemperatureControl cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
+                      ChipLogValueMEI(attributeId), type, *value, size);
         OvenManager::GetInstance().TempCtrlAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     case app::Clusters::OvenMode::Id:
-        ChipLogDetail(Zcl, "OvenMode cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
+        ChipLogDetail(Zcl, "OvenMode cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
+                      type, *value, size);
         OvenManager::GetInstance().OvenModeAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     default:
