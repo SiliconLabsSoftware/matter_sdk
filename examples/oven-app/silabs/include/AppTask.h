@@ -28,7 +28,6 @@
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
-#include "OvenManager.h"
 
 #include "FreeRTOS.h"
 #include "timers.h" // provides FreeRTOS timer support
