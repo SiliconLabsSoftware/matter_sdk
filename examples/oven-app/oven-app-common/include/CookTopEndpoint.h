@@ -39,7 +39,7 @@ public:
     CHIP_ERROR Init();
 
     /**
-     * @brief Set On/Off state for the CookSurface.
+     * @brief Set On/Off state for the CookTop
      * @param state Desired On/Off state.
      *
      * Note: This helper writes the OnOff attribute to the CHIP attribute storage and

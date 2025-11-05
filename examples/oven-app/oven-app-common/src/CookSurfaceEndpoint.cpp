@@ -26,6 +26,7 @@ using namespace chip::app::Clusters::CookSurface;
 
 CHIP_ERROR CookSurfaceEndpoint::Init()
 {
+    // Placeholder for user Init
     return CHIP_NO_ERROR;
 }
 

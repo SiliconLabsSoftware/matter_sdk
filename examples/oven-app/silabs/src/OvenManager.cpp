@@ -28,7 +28,6 @@
 #include "AppConfig.h"
 #include "AppTask.h"
 
-#include <app-common/zap-generated/attributes/Accessors.h>
 #include <platform/CHIPDeviceLayer.h>
 
 #define MAX_TEMPERATURE 30000
@@ -195,7 +194,6 @@ void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, ch
     event.Type     = AppEvent::kEventType_UIUpdate;
     event.Handler  = OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
-    return;
 }
 
 void OvenManager::OvenActionHandler(AppEvent * aEvent)
