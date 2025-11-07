@@ -170,8 +170,8 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
         ChipLogProgress(AppServer, "Oven button released - toggling cooktop and cook surface");
 
         // Determine new state (toggle current state)
-        OvenManager::Action_t action = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On) 
-                                     ? OvenManager::COOK_TOP_OFF_ACTION 
+        OvenManager::Action_t action = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On)
+                                     ? OvenManager::COOK_TOP_OFF_ACTION
                                      : OvenManager::COOK_TOP_ON_ACTION;
 
         // Toggle CookTop
