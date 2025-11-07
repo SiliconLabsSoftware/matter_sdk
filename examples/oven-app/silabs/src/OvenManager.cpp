@@ -18,8 +18,8 @@
 
 #include "OvenManager.h"
 #include "CookEndpoints.h"
-#include "OvenEndpoint.h"
 #include "OvenBindingHandler.h"
+#include "OvenEndpoint.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
