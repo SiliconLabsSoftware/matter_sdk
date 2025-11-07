@@ -18,8 +18,8 @@
 
 #include "CookEndpoints.h"
 #include <app/clusters/on-off-server/on-off-server.h>
-#include <protocols/interaction_model/StatusCode.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <protocols/interaction_model/StatusCode.h>
 
 using namespace chip;
 using namespace chip::app::Clusters;

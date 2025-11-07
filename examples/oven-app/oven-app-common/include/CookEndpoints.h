@@ -78,6 +78,7 @@ public:
      * @brief Get the Endpoint ID.
      */
     EndpointId GetEndpointId() const { return mEndpointId; }
+
 private:
     EndpointId mEndpointId = kInvalidEndpointId;
 };

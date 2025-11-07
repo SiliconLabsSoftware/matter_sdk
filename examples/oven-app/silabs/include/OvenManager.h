@@ -44,7 +44,6 @@ class OvenManager
 {
 
 public:
-
     enum Action_t
     {
         COOK_TOP_ON_ACTION = 0,

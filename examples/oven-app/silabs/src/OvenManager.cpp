@@ -17,8 +17,8 @@
  */
 
 #include "OvenManager.h"
-#include "OvenEndpoint.h"
 #include "CookEndpoints.h"
+#include "OvenEndpoint.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
@@ -170,18 +170,18 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         break;
     }
 
-    event.Type     = AppEvent::kEventType_Oven;
-    event.Handler  = OvenActionHandler;
+    event.Type    = AppEvent::kEventType_Oven;
+    event.Handler = OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
 }
 
 void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                                  uint16_t size)
 {
-    AppEvent event = {};
-    event.Type     = AppEvent::kEventType_Oven;
+    AppEvent event         = {};
+    event.Type             = AppEvent::kEventType_Oven;
     event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
-    event.Handler  = OvenActionHandler;
+    event.Handler          = OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
 }
 
