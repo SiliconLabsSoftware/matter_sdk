@@ -102,8 +102,7 @@ silabs_executable("oven_app") {
   }
 
   sources = [
-    "${example_oven_dir}/oven-app-common/src/CookSurfaceEndpoint.cpp",
-    "${example_oven_dir}/oven-app-common/src/CookTopEndpoint.cpp",
+    "${example_oven_dir}/oven-app-common/src/CookEndpoints.cpp",
     "${example_oven_dir}/oven-app-common/src/OvenEndpoint.cpp",
     "${examples_common_plat_dir}/main.cpp",
     "src/AppSupportedTemperatureLevelsDelegate.cpp",

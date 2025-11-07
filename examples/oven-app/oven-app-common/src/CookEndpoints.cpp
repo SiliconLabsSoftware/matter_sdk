@@ -16,27 +16,30 @@
  *    limitations under the License.
  */
 
-#include "CookSurfaceEndpoint.h"
+#include "CookEndpoints.h"
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <protocols/interaction_model/StatusCode.h>
+#include <platform/CHIPDeviceLayer.h>
 
 using namespace chip;
 using namespace chip::app::Clusters;
+using namespace chip::app::Clusters::CookTop;
 using namespace chip::app::Clusters::CookSurface;
-
-CHIP_ERROR CookSurfaceEndpoint::Init()
-{
-    // Placeholder for user Init
-    return CHIP_NO_ERROR;
-}
-
-chip::Protocols::InteractionModel::Status CookSurfaceEndpoint::GetOnOffState(bool & state)
-{
-    return OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
-}
 
 chip::Protocols::InteractionModel::Status CookSurfaceEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
-    return OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    DeviceLayer::PlatformMgr().LockChipStack();
+    Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    DeviceLayer::PlatformMgr().UnlockChipStack();
+    return status;
+}
+
+chip::Protocols::InteractionModel::Status CookTopEndpoint::SetOnOffState(bool state)
+{
+    CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
+    DeviceLayer::PlatformMgr().LockChipStack();
+    Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    DeviceLayer::PlatformMgr().UnlockChipStack();
+    return status;
 }

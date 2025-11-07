@@ -57,14 +57,6 @@ public:
     CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t & value) override;
     CHIP_ERROR GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<detail::Structs::ModeTagStruct::Type> & tags) override;
 
-    /**
-     * @brief Checks if the provided mode is supported.
-     *
-     * @param mode The mode to check.
-     * @return true if the mode is supported, false otherwise.
-     */
-    bool IsSupportedMode(uint8_t mode);
-
 private:
     EndpointId mEndpointId;
 
@@ -79,6 +71,14 @@ private:
     static const detail::Structs::ModeTagStruct::Type sModeTagsProofing[];
 
     static const detail::Structs::ModeOptionStruct::Type skModeOptions[];
+
+    /**
+     * @brief Checks if the provided mode is supported.
+     *
+     * @param mode The mode to check.
+     * @return true if the mode is supported, false otherwise.
+     */
+    bool IsSupportedMode(uint8_t mode);
 };
 
 class TemperatureControlledCabinetEndpoint
@@ -121,13 +121,6 @@ class OvenEndpoint
 {
 public:
     OvenEndpoint() {}
-
-    /**
-     * @brief Initialize the oven endpoint.
-     *
-     * @return returns CHIP_NO_ERROR on success, or an error code on failure.
-     */
-    CHIP_ERROR Init();
 };
 
 } // namespace Oven

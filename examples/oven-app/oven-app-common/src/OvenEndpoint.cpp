@@ -172,11 +172,6 @@ CHIP_ERROR TemperatureControlledCabinetEndpoint::Init()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR OvenEndpoint::Init()
-{
-    return CHIP_NO_ERROR;
-}
-
 bool OvenModeDelegate::IsSupportedMode(uint8_t mode)
 {
     for (auto const & opt : skModeOptions)

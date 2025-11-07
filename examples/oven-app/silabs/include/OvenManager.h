@@ -28,8 +28,7 @@
 #pragma once
 
 #include "AppSupportedTemperatureLevelsDelegate.h"
-#include "CookSurfaceEndpoint.h"
-#include "CookTopEndpoint.h"
+#include "CookEndpoints.h"
 #include "OvenEndpoint.h"
 
 #include "AppEvent.h"
@@ -45,6 +44,15 @@ class OvenManager
 {
 
 public:
+
+    enum Action_t
+    {
+        COOK_TOP_ON_ACTION = 0,
+        COOK_TOP_OFF_ACTION,
+        OVEN_MODE_UPDATE_ACTION,
+
+        INVALID_ACTION
+    } Action;
     enum State_t
     {
         kCookTopState_Off = 0,
@@ -109,6 +117,7 @@ public:
     bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
 
 private:
+    static constexpr uint8_t kBlockedTransitionCount = 3; // Number of blocked transitions
     struct BlockedTransition
     {
         uint8_t fromMode;
@@ -116,7 +125,7 @@ private:
     };
 
     // Disallowed OvenMode Transitions.
-    static constexpr BlockedTransition kBlockedTransitions[3] = {
+    static constexpr BlockedTransition kBlockedTransitions[kBlockedTransitionCount] = {
         { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeGrill),
           chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing) },
         { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing),
