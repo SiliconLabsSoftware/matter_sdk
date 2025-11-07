@@ -37,17 +37,51 @@ public:
     CHIP_ERROR Init();
 
     /**
-     * @brief Handle the "on/off" command for the Light.
+     * @brief Get the current On/Off state from the Matter attribute
+     * @return true if light is on, false if off
      */
     bool GetOnOffState();
+
+    /**
+     * @brief Check if the light is currently on
+     * @return true if light is on, false if off
+     * @note This is a convenience method that calls GetOnOffState()
+     */
+    bool IsLightOn() { return GetOnOffState(); }
 
     /**
      * @brief Set On/Off state for the Light.
      */
     void SetOnOffState(bool state);
 
+    /**
+     * @brief Enable or disable auto turn-off feature
+     * @param aOn true to enable auto turn-off, false to disable
+     */
+    void EnableAutoTurnOff(bool aOn);
+
+    /**
+     * @brief Set the duration for auto turn-off in seconds
+     * @param aDurationInSecs Duration in seconds before auto turn-off
+     */
+    void SetAutoTurnOffDuration(uint32_t aDurationInSecs);
+
+    /**
+     * @brief Get auto turn-off enabled state
+     * @return true if auto turn-off is enabled, false otherwise
+     */
+    bool IsAutoTurnOffEnabled() const { return mAutoTurnOff; }
+
+    /**
+     * @brief Get auto turn-off duration
+     * @return Duration in seconds
+     */
+    uint32_t GetAutoTurnOffDuration() const { return mAutoTurnOffDuration; }
+
 private:
     EndpointId mEndpointId = kInvalidEndpointId;
+    bool mAutoTurnOff = false;
+    uint32_t mAutoTurnOffDuration = 0;
 };
 
 } // namespace Light

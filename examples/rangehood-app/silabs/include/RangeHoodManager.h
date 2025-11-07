@@ -17,11 +17,11 @@
  */
 
 /*
- * @class OvenManager
- * @brief Manages the initialization and operations related to oven and
- *        oven panel endpoints in the application.
+ * @class RangeHoodManager
+ * @brief Manages the initialization and operations related to range hood
+ *        extractor hood and light endpoints in the application.
  *
- * @note This class is part of the oven application example
+ * @note This class is part of the range hood application example
  */
 
 #pragma once
@@ -35,8 +35,6 @@
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 
-#include <app/data-model/Nullable.h>
-#include <lib/core/DataModelTypes.h>
 
 using namespace chip;
 using namespace chip::app;
@@ -49,9 +47,9 @@ class RangeHoodManager
 {
 public:
     RangeHoodManager() :
-        mState(kState_OffCompleted), mActionInitiated_CB(nullptr), mActionCompleted_CB(nullptr), mAutoTurnOff(false),
-        mAutoTurnOffDuration(0), mAutoTurnOffTimerArmed(false), mOffEffectArmed(false), mLightTimer(nullptr),
-        mFanMode(FanModeEnum::kOff), percentCurrent(0),
+        mState(kState_OffCompleted), mActionInitiated_CB(nullptr), mActionCompleted_CB(nullptr),
+        mAutoTurnOffTimerArmed(false), mOffEffectArmed(false), mLightTimer(nullptr),
+        mFanMode(FanModeEnum::kOff),
         // initialize endpoint helpers with the required EndpointIds:
         mExtractorHoodEndpoint1(kExtractorHoodEndpoint1), mLightEndpoint2(kLightEndpoint2)
     {}
@@ -84,36 +82,23 @@ public:
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
     /**
-     * @brief Central handler for  delegate requests, Handle the step command from the Fan Control Cluster
+     * @brief Handle the step command from the Fan Control Cluster
+     * @note This method delegates to FanDelegate::HandleStep for actual processing
+     * @param endpointId The endpoint ID (currently unused, kept for API compatibility)
+     * @param aDirection The step direction (increase/decrease)
+     * @param aWrap Whether to wrap around at min/max
+     * @param aLowestOff Whether lowest setting is considered off
+     * @return Status Success on success, error code otherwise
      */
     Status ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff);
 
     void HandleFanControlAttributeChange(AttributeId attributeId, uint8_t type, uint16_t size, uint8_t * value);
 
-    void PercentSettingWriteCallback(uint8_t aNewPercentSetting);
-    void FanModeWriteCallback(FanModeEnum aNewFanMode);
-    void SetPercentSetting(Percent aNewPercentSetting);
-    void UpdateFanMode();
-
-    static void UpdateClusterState(intptr_t arg);
-
-    FanModeEnum GetFanMode();
     void UpdateRangeHoodLCD();
 
     // Explicit getters for individual endpoints
     EndpointId GetExtractorEndpoint() { return kExtractorHoodEndpoint1; }
     EndpointId GetLightEndpoint() { return kLightEndpoint2; }
-
-    struct AttributeUpdateInfo
-    {
-        FanModeEnum fanMode;
-        uint8_t percentCurrent;
-        uint8_t percentSetting;
-        bool isPercentCurrent = false;
-        bool isFanMode        = false;
-        bool isPercentSetting = false;
-        EndpointId endPoint;
-    };
 
     /**
      * @brief Returns the singleton instance of the RangeHoodManager.
@@ -137,9 +122,7 @@ private:
     Callback_fn_initiated mActionInitiated_CB;
     Callback_fn_completed mActionCompleted_CB;
 
-    bool mAutoTurnOff;
-    uint32_t mAutoTurnOffDuration;
-    bool mAutoTurnOffTimerArmed;
+    bool mAutoTurnOffTimerArmed;  // Timer state managed by RangeHoodManager, auto-turn-off config in LightEndpoint
     bool mOffEffectArmed;
     osTimerId_t mLightTimer;
 
@@ -151,27 +134,14 @@ private:
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);
     static void OffEffectTimerEventHandler(AppEvent * aEvent);
 
-    FanModeEnum mFanMode;
-    uint8_t percentCurrent;
+    FanModeEnum mFanMode;  // Cached fan mode for quick access (also available via endpoint GetFanMode)
 
-    // Fan Mode Percent Mappings (since SPEED features are not enabled)
-    static constexpr uint8_t kFanModeOffPercent    = 0;    // Off: 0%
-    static constexpr uint8_t kFanModeLowPercent    = 30;   // Low: 30%
-    static constexpr uint8_t kFanModeMediumPercent = 60;   // Medium: 60%
-    static constexpr uint8_t kFanModeHighPercent   = 100;  // High: 100%
-
-    // Step command minimum values (for aLowestOff parameter)
-    static constexpr uint8_t kaLowestOffTrue  = 0;   // Can step down to 0% (off)
-    static constexpr uint8_t kaLowestOffFalse = 1;   // Can only step down to 1% (minimum on)
-    static constexpr uint8_t kStepSizePercent  = 10; // Step by 10% increments
-
-    DataModel::Nullable<Percent> GetPercentSetting();
+    // Fan Mode Percent Mappings are now in ExtractorHoodEndpoint
+    // Step command constants are now in ExtractorHoodEndpoint
 
     static RangeHoodManager sRangeHoodMgr;
 
-    // FanControlDelegate object
-
-    // Define the endpoint ID for the RangeHood
+    // Define the endpoint IDs for the RangeHood
     static constexpr chip::EndpointId kExtractorHoodEndpoint1 = 1;
     static constexpr chip::EndpointId kLightEndpoint2         = 2;
 

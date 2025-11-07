@@ -99,7 +99,8 @@ void RangeHoodUI::DrawHeader(GLIB_Context_t * glibContext)
 void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
 {
     SILABS_LOG("Updating Rangehood Status on LCD");
-    FanModeEnum mode = RangeHoodMgr().GetFanMode();
+    FanModeEnum mode = FanModeEnum::kUnknownEnumValue;
+    RangeHoodMgr().mExtractorHoodEndpoint1.GetFanMode(mode);
     bool lightOn     = RangeHoodMgr().IsLightOn();
     // Print fan mode
     if (mode == FanModeEnum::kOff)

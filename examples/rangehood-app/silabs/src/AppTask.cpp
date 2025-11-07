@@ -204,12 +204,14 @@ void AppTask::ActionCompleted(RangeHoodManager::Action_t aAction)
 
 void AppTask::SetFanOnOff(intptr_t context)
 {
-    EndpointId endpoint = RangeHoodMgr().GetExtractorEndpoint();
-    FanModeEnum currentFanMode;
-    if (FanControl::Attributes::FanMode::Get(endpoint, &currentFanMode) == Protocols::InteractionModel::Status::Success)
+    // Use endpoint method to get and set fan mode
+    FanModeEnum currentFanMode = FanModeEnum::kUnknownEnumValue;
+    RangeHoodMgr().mExtractorHoodEndpoint1.GetFanMode(currentFanMode);
+    
+    if (currentFanMode != FanModeEnum::kUnknownEnumValue)
     {
         FanModeEnum target = (currentFanMode == FanModeEnum::kOff) ? FanModeEnum::kHigh : FanModeEnum::kOff;
-        FanControl::Attributes::FanMode::Set(endpoint, target);
+        RangeHoodMgr().mExtractorHoodEndpoint1.UpdateFanModeAttribute(target);
     }
 }
 

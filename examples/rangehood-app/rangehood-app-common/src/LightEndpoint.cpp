@@ -37,7 +37,7 @@ bool LightEndpoint::GetOnOffState()
     bool state = false;
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
-    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
     return state;
 }
 
@@ -51,4 +51,14 @@ void LightEndpoint::SetOnOffState(bool state)
     {
         ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status));
     }
+}
+
+void LightEndpoint::EnableAutoTurnOff(bool aOn)
+{
+    mAutoTurnOff = aOn;
+}
+
+void LightEndpoint::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
+{
+    mAutoTurnOffDuration = aDurationInSecs;
 }

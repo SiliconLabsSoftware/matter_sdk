@@ -69,14 +69,14 @@ CHIP_ERROR RangeHoodManager::Init()
     // read current on/off value on light endpoint.
     OnOffServer::Instance().getOnOffValue(kLightEndpoint2, &currentLedState);
 
-    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
-    uint8_t percentSettingCB                            = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
-    PercentSettingWriteCallback(percentSettingCB);
-
     // Register FanControl delegate (GetFanDelegate returns pointer)
     FanControl::SetDefaultDelegate(kExtractorHoodEndpoint1, mExtractorHoodEndpoint1.GetFanDelegate());
-
     DeviceLayer::PlatformMgr().UnlockChipStack();
+
+    // Initialize percent current from percent setting (outside lock since endpoint methods handle their own locks)
+    DataModel::Nullable<Percent> percentSettingNullable = mExtractorHoodEndpoint1.GetPercentSetting();
+    uint8_t percentSettingCB                            = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
+    mExtractorHoodEndpoint1.HandlePercentSettingChange(percentSettingCB);
 
     mState = currentLedState ? kState_OnCompleted : kState_OffCompleted;
 
@@ -96,17 +96,20 @@ bool RangeHoodManager::IsActionInProgress()
 
 bool RangeHoodManager::IsLightOn()
 {
-    return (mState == kState_OnCompleted);
+    // Delegate to LightEndpoint to get the actual state from Matter attribute
+    return mLightEndpoint2.IsLightOn();
 }
 
 void RangeHoodManager::EnableAutoTurnOff(bool aOn)
 {
-    mAutoTurnOff = aOn;
+    // Delegate to LightEndpoint for common code
+    mLightEndpoint2.EnableAutoTurnOff(aOn);
 }
 
 void RangeHoodManager::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
 {
-    mAutoTurnOffDuration = aDurationInSecs;
+    // Delegate to LightEndpoint for common code
+    mLightEndpoint2.SetAutoTurnOffDuration(aDurationInSecs);
 }
 
 bool RangeHoodManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue)
@@ -262,14 +265,14 @@ void RangeHoodManager::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
             light->mActionCompleted_CB(actionCompleted);
         }
 
-        if (light->mAutoTurnOff && actionCompleted == ON_ACTION)
+        if (light->mLightEndpoint2.IsAutoTurnOffEnabled() && actionCompleted == ON_ACTION)
         {
             // Start the timer for auto turn off
-            light->StartTimer(light->mAutoTurnOffDuration * 1000);
+            light->StartTimer(light->mLightEndpoint2.GetAutoTurnOffDuration() * 1000);
 
             light->mAutoTurnOffTimerArmed = true;
 
-            SILABS_LOG("Auto Turn off enabled. Will be triggered in %u seconds", light->mAutoTurnOffDuration);
+            SILABS_LOG("Auto Turn off enabled. Will be triggered in %u seconds", light->mLightEndpoint2.GetAutoTurnOffDuration());
         }
     }
 }
@@ -320,77 +323,9 @@ Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId
 {
     ChipLogProgress(AppServer, "RangeHoodManager::ProcessExtractorStepCommand  ep=%u  aDirection %d, aWrap %d, aLowestOff %d",
                     endpointId, to_underlying(aDirection), aWrap, aLowestOff);
-
-    VerifyOrReturnError(aDirection != StepDirectionEnum::kUnknownEnumValue, Status::InvalidCommand);
-
-    // if aLowestOff is true, Step command can reduce the fan to 0%, else 1%.
-    uint8_t percentMin = aLowestOff ? kaLowestOffTrue : kaLowestOffFalse;
-    uint8_t percentMax = 100;  // Maximum percent value
-
-    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
-    uint8_t curPercentSetting = percentSettingNullable.IsNull() ? percentMin : percentSettingNullable.Value();
-
-    // increase or decrease the fan percent by step size
-    switch (aDirection)
-    {
-    case StepDirectionEnum::kIncrease: {
-        if (curPercentSetting >= percentMax)
-        {
-            curPercentSetting = aWrap ? percentMin : percentMax;
-        }
-        else
-        {
-            curPercentSetting = std::min(percentMax, static_cast<uint8_t>(curPercentSetting + kStepSizePercent));
-        }
-        break;
-    }
-    case StepDirectionEnum::kDecrease: {
-        if (curPercentSetting <= percentMin)
-        {
-            curPercentSetting = aWrap ? percentMax : percentMin;
-        }
-        else
-        {
-            curPercentSetting = std::max(percentMin, static_cast<uint8_t>(curPercentSetting - kStepSizePercent));
-        }
-        break;
-    }
-    default: {
-        break;
-    }
-    }
-
-    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
-    data->percentSetting       = curPercentSetting;
-    data->endPoint             = kExtractorHoodEndpoint1;
-    data->isPercentSetting     = true;
-
-    if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "RangeHoodManager::HandleStep: Failed to update PercentSetting attribute");
-        return Status::Failure;
-    }
-
-    return Status::Success;
-}
-
-void RangeHoodManager::UpdateClusterState(intptr_t arg)
-{
-    RangeHoodManager::AttributeUpdateInfo * data = reinterpret_cast<RangeHoodManager::AttributeUpdateInfo *>(arg);
     
-    if (data->isPercentCurrent)
-    {
-        chip::app::Clusters::FanControl::Attributes::PercentCurrent::Set(data->endPoint, data->percentCurrent);
-    }
-    else if (data->isFanMode)
-    {
-        chip::app::Clusters::FanControl::Attributes::FanMode::Set(data->endPoint, data->fanMode);
-    }
-    else if (data->isPercentSetting)
-    {
-        chip::app::Clusters::FanControl::Attributes::PercentSetting::Set(data->endPoint, data->percentSetting);
-    }
-    chip::Platform::Delete(data);
+    // Delegate to the FanDelegate's HandleStep method for actual processing
+    return mExtractorHoodEndpoint1.GetFanDelegate()->HandleStep(aDirection, aWrap, aLowestOff);
 }
 
 void RangeHoodManager::HandleFanControlAttributeChange(AttributeId attributeId, uint8_t type, uint16_t size, uint8_t * value)
@@ -398,13 +333,16 @@ void RangeHoodManager::HandleFanControlAttributeChange(AttributeId attributeId, 
     switch (attributeId)
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
-        PercentSettingWriteCallback(*value);
+        mExtractorHoodEndpoint1.HandlePercentSettingChange(*value);
         break;
     }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
-        mFanMode = *reinterpret_cast<FanModeEnum *>(value);
-        FanModeWriteCallback(mFanMode);
+        FanModeEnum newFanMode = *reinterpret_cast<FanModeEnum *>(value);
+        // Cache the fan mode for quick access
+        mFanMode = newFanMode;
+        // Delegate to the endpoint to handle the fan mode change
+        mExtractorHoodEndpoint1.HandleFanModeChange(newFanMode);
 #if DISPLAY_ENABLED
         UpdateRangeHoodLCD();
 #endif
@@ -415,119 +353,6 @@ void RangeHoodManager::HandleFanControlAttributeChange(AttributeId attributeId, 
         break;
     }
     }
-}
-
-void RangeHoodManager::PercentSettingWriteCallback(uint8_t aNewPercentSetting)
-{
-    VerifyOrReturn(aNewPercentSetting != percentCurrent);
-    VerifyOrReturn(mFanMode != FanModeEnum::kAuto);
-    ChipLogDetail(NotSpecified, "RangeHoodManager::PercentSettingWriteCallback: %d", aNewPercentSetting);
-    percentCurrent = aNewPercentSetting;
-
-    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
-    data->endPoint             = kExtractorHoodEndpoint1;
-    data->percentCurrent       = percentCurrent;
-    data->isPercentCurrent     = true;
-
-    if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "RangeHoodManager::PercentSettingWriteCallback: failed to set PercentCurrent attribute");
-    }
-}
-
-void RangeHoodManager::UpdateFanMode()
-{
-    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
-    data->endPoint             = kExtractorHoodEndpoint1;
-    data->fanMode              = mFanMode;
-    data->isFanMode            = true;
-    if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "RangeHoodManager::UpdateFanMode: failed to update FanMode attribute");
-    }
-}
-
-void RangeHoodManager::FanModeWriteCallback(FanModeEnum aNewFanMode)
-{
-    ChipLogDetail(NotSpecified, "RangeHoodManager::FanModeWriteCallback: %d", (uint8_t) aNewFanMode);
-    // Set Percent Settings directly
-    switch (aNewFanMode)
-    {
-    case FanModeEnum::kOff: {
-        if (percentCurrent != kFanModeOffPercent)
-        {
-            SetPercentSetting(kFanModeOffPercent);
-        }
-        break;
-    }
-    case FanModeEnum::kLow: {
-        if (percentCurrent != kFanModeLowPercent)
-        {
-            SetPercentSetting(kFanModeLowPercent);
-        }
-        break;
-    }
-    case FanModeEnum::kMedium: {
-        if (percentCurrent != kFanModeMediumPercent)
-        {
-            SetPercentSetting(kFanModeMediumPercent);
-        }
-        break;
-    }
-    case FanModeEnum::kOn:
-    case FanModeEnum::kHigh: {
-        if (percentCurrent != kFanModeHighPercent)
-        {
-            SetPercentSetting(kFanModeHighPercent);
-        }
-        break;
-    }
-    case FanModeEnum::kSmart:
-    case FanModeEnum::kAuto: {
-        UpdateFanMode();
-        break;
-    }
-    case FanModeEnum::kUnknownEnumValue: {
-        ChipLogProgress(NotSpecified, "RangeHoodManager::FanModeWriteCallback: Unknown");
-        break;
-    }
-    default:
-        break;
-    }
-}
-
-void RangeHoodManager::SetPercentSetting(Percent aNewPercentSetting)
-{
-    if (aNewPercentSetting != percentCurrent)
-    {
-        AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
-        data->percentCurrent       = aNewPercentSetting;
-        data->endPoint             = kExtractorHoodEndpoint1;
-        data->isPercentCurrent     = true;
-        if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
-        {
-            ChipLogError(NotSpecified, "RangeHoodManager::SetPercentSetting: failed to update PercentSetting attribute");
-        }
-    }
-}
-
-FanModeEnum RangeHoodManager::GetFanMode()
-{
-    return mFanMode;
-}
-
-DataModel::Nullable<Percent> RangeHoodManager::GetPercentSetting()
-{
-    DataModel::Nullable<Percent> percentSetting;
-
-    Status status = chip::app::Clusters::FanControl::Attributes::PercentSetting::Get(kExtractorHoodEndpoint1, percentSetting);
-    if (status != Status::Success)
-    {
-        ChipLogError(NotSpecified, "RangeHoodManager::GetPercentSetting: failed to get PercentSetting attribute: %d",
-                     to_underlying(status));
-    }
-
-    return percentSetting;
 }
 
 void RangeHoodManager::UpdateRangeHoodLCD()
