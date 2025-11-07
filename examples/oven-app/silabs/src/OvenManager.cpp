@@ -224,7 +224,6 @@ void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, ch
     event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
     event.Handler          = OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
-    return;
 }
 
 void OvenManager::OvenActionHandler(AppEvent * aEvent)

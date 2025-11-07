@@ -25,7 +25,6 @@
 #include "OvenUI.h"
 
 #ifdef DISPLAY_ENABLED
-#include "OvenUI.h"
 #include "lcd.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
@@ -196,11 +195,11 @@ void AppTask::UpdateClusterState(intptr_t context)
     // Update the OnOff cluster state for the cooktop endpoint based on the current state
     bool currentState = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On);
 
-    ChipLogProgress(AppServer, "Updating cooktop OnOff cluster state to %s", currentState ? "On" : "Off");
+    ChipLogProgress(AppServer, "Updating cooktop OnOff cluster state to %s", !currentState ? "On" : "Off");
 
     // Set the OnOff attribute value for the cooktop endpoint
     Protocols::InteractionModel::Status status =
-        OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), currentState, false);
+        OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), !currentState, false);
 
     if (status != Protocols::InteractionModel::Status::Success)
     {
