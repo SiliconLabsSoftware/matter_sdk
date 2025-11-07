@@ -171,8 +171,8 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
 
         // Determine new state (toggle current state)
         OvenManager::Action_t action = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On)
-                                     ? OvenManager::COOK_TOP_OFF_ACTION
-                                     : OvenManager::COOK_TOP_ON_ACTION;
+            ? OvenManager::COOK_TOP_OFF_ACTION
+            : OvenManager::COOK_TOP_ON_ACTION;
 
         // Toggle CookTop
         chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));

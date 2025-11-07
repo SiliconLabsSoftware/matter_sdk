@@ -79,7 +79,7 @@ void OvenManager::Init()
 
     // Get CookTop On/Off value
 <<<<<<< HEAD
-    bool currentState = false;
+    bool currentState                                = false;
     chip::Protocols::InteractionModel::Status status = OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &currentState);
 =======
     bool currentLedState                             = false;
