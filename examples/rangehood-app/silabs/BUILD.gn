@@ -109,10 +109,12 @@ silabs_executable("rangehood_app") {
     "src/AppTask.cpp",
     "src/DataModelCallbacks.cpp",
     "src/RangeHoodManager.cpp",
-    "src/RangeHoodUI.cpp",
   ]
 
-  deps = [ ":sdk" ]
+  deps = [
+    ":sdk",
+    app_data_model,
+  ]
 
   if (wifi_soc) {
     deps += [ "${examples_plat_dir}:siwx917-common" ]

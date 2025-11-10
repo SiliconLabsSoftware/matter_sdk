@@ -20,16 +20,12 @@
 
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <lib/core/CHIPError.h>
-
-namespace chip {
-namespace app {
-namespace Clusters {
-namespace Light {
+#include <lib/core/DataModelTypes.h>
 
 class LightEndpoint
 {
 public:
-    LightEndpoint(EndpointId endpointId) : mEndpointId(endpointId) {}
+    LightEndpoint(chip::EndpointId endpointId) : mEndpointId(endpointId) {}
 
     /**
      * @brief Initialize the Light endpoint.
@@ -79,12 +75,7 @@ public:
     uint32_t GetAutoTurnOffDuration() const { return mAutoTurnOffDuration; }
 
 private:
-    EndpointId mEndpointId = kInvalidEndpointId;
+    chip::EndpointId mEndpointId = chip::kInvalidEndpointId;
     bool mAutoTurnOff = false;
     uint32_t mAutoTurnOffDuration = 0;
 };
-
-} // namespace Light
-} // namespace Clusters
-} // namespace app
-} // namespace chip

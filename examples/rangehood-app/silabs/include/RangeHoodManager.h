@@ -46,59 +46,54 @@ using Protocols::InteractionModel::Status;
 class RangeHoodManager
 {
 public:
-    RangeHoodManager() :
-        mState(kState_OffCompleted), mActionInitiated_CB(nullptr), mActionCompleted_CB(nullptr),
-        mAutoTurnOffTimerArmed(false), mOffEffectArmed(false), mLightTimer(nullptr),
-        mFanMode(FanModeEnum::kOff),
-        // initialize endpoint helpers with the required EndpointIds:
-        mExtractorHoodEndpoint1(kExtractorHoodEndpoint1), mLightEndpoint2(kLightEndpoint2)
-    {}
-
     enum Action_t
     {
-        ON_ACTION = 0,
-        OFF_ACTION,
+        LIGHT_ON_ACTION = 0,
+        LIGHT_OFF_ACTION,
+        FAN_PERCENT_CHANGE_ACTION,
+        FAN_MODE_CHANGE_ACTION,
 
         INVALID_ACTION
     } Action;
 
-    enum State_t
-    {
-        kState_OffInitiated = 0,
-        kState_OffCompleted,
-        kState_OnInitiated,
-        kState_OnCompleted,
-    } State;
+    RangeHoodManager() :
+        mAutoTurnOffTimerArmed(false), mOffEffectArmed(false), mLightTimer(nullptr)
+    {}
 
     bool IsLightOn();
-    void EnableAutoTurnOff(bool aOn);
-    void SetAutoTurnOffDuration(uint32_t aDurationInSecs);
-    bool IsActionInProgress();
-    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);
-    typedef void (*Callback_fn_initiated)(Action_t, int32_t aActor, uint8_t * value);
-    typedef void (*Callback_fn_completed)(Action_t);
-    void SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB);
+    bool HandleLightAction(Action_t aAction);
 
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
     /**
-     * @brief Handle the step command from the Fan Control Cluster
-     * @note This method delegates to FanDelegate::HandleStep for actual processing
-     * @param endpointId The endpoint ID (currently unused, kept for API compatibility)
-     * @param aDirection The step direction (increase/decrease)
-     * @param aWrap Whether to wrap around at min/max
-     * @param aLowestOff Whether lowest setting is considered off
-     * @return Status Success on success, error code otherwise
+     * @brief Handles FanControl attribute changes.
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
      */
-    Status ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap, bool aLowestOff);
+    void FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
 
-    void HandleFanControlAttributeChange(AttributeId attributeId, uint8_t type, uint16_t size, uint8_t * value);
+    /**
+     * @brief Handles on/off attribute changes.
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
+    void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
 
-    void UpdateRangeHoodLCD();
+    /**
+     * @brief Get reference to the ExtractorHood endpoint object
+     * @return Reference to ExtractorHoodEndpoint
+     */
+    ExtractorHoodEndpoint & GetExtractorHoodEndpoint() { return mExtractorHoodEndpoint; }
 
-    // Explicit getters for individual endpoints
-    EndpointId GetExtractorEndpoint() { return kExtractorHoodEndpoint1; }
-    EndpointId GetLightEndpoint() { return kLightEndpoint2; }
+    /**
+     * @brief Get reference to the Light endpoint object
+     * @return Reference to LightEndpoint
+     */
+    LightEndpoint & GetLightEndpoint() { return mLightEndpoint; }
 
     /**
      * @brief Returns the singleton instance of the RangeHoodManager.
@@ -113,14 +108,14 @@ public:
      */
     CHIP_ERROR Init();
 
-    // ...existing public methods...
+    /**
+     * @brief Shutdown and cleanup resources.
+     * Should be called during application teardown to free timer resources.
+     */
+    void Shutdown();
 
 private:
     friend RangeHoodManager & RangeHoodMgr(void);
-    State_t mState;
-
-    Callback_fn_initiated mActionInitiated_CB;
-    Callback_fn_completed mActionCompleted_CB;
 
     bool mAutoTurnOffTimerArmed;  // Timer state managed by RangeHoodManager, auto-turn-off config in LightEndpoint
     bool mOffEffectArmed;
@@ -131,22 +126,17 @@ private:
 
     static void TimerEventHandler(void * timerCbArg);
     static void AutoTurnOffTimerEventHandler(AppEvent * aEvent);
-    static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);
     static void OffEffectTimerEventHandler(AppEvent * aEvent);
 
-    FanModeEnum mFanMode;  // Cached fan mode for quick access (also available via endpoint GetFanMode)
-
-    // Fan Mode Percent Mappings are now in ExtractorHoodEndpoint
-    // Step command constants are now in ExtractorHoodEndpoint
 
     static RangeHoodManager sRangeHoodMgr;
 
     // Define the endpoint IDs for the RangeHood
-    static constexpr chip::EndpointId kExtractorHoodEndpoint1 = 1;
-    static constexpr chip::EndpointId kLightEndpoint2         = 2;
+    static constexpr chip::EndpointId kExtractorHoodEndpoint = 1;
+    static constexpr chip::EndpointId kLightEndpoint         = 2;
 
-    chip::app::Clusters::ExtractorHood::ExtractorHoodEndpoint mExtractorHoodEndpoint1;
-    chip::app::Clusters::Light::LightEndpoint mLightEndpoint2;
+    ExtractorHoodEndpoint mExtractorHoodEndpoint{kExtractorHoodEndpoint};
+    LightEndpoint mLightEndpoint{kLightEndpoint};
 };
 
 inline RangeHoodManager & RangeHoodMgr(void)

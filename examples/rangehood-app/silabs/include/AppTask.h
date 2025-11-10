@@ -79,15 +79,16 @@ public:
      *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
-    void PostLightActionRequest(int32_t aActor, RangeHoodManager::Action_t aAction);
 
-    void UpdateRangeHoodUI();
+    /**
+     * @brief Handle range hood action trigger event (unified handler for light and fan actions)
+     *
+     * @param aEvent event received
+     */
+    static void ActionTriggerHandler(AppEvent * aEvent);
 
 private:
     static AppTask sAppTask;
-
-    static void ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor, uint8_t * value);
-    static void ActionCompleted(RangeHoodManager::Action_t aAction);
 
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
@@ -102,7 +103,4 @@ private:
      * @param aEvent event received
      */
     static void FanControlButtonHandler(AppEvent * aEvent);
-    
-    // Work item executed on CHIP stack thread to toggle fan mode safely
-    static void SetFanOnOff(intptr_t context);
 };

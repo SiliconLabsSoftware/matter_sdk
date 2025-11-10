@@ -24,7 +24,6 @@
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
-#include "RangeHoodUI.h"
 #include "lcd.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
@@ -80,12 +79,10 @@ CHIP_ERROR AppTask::AppInit()
 
 #ifdef DISPLAY_ENABLED
     GetLCD().Init((uint8_t *) "Rangehood-App");
-    GetLCD().SetCustomUI(RangeHoodUI::DrawUI);
 #endif
 
     // Initialization of RangeHoodManager and endpoints of range hood.
     RangeHoodManager::GetInstance().Init();
-    RangeHoodManager::GetInstance().SetCallbacks(ActionInitiated, ActionCompleted);
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -102,7 +99,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
     sLightLED.Init(LIGHT_LED);
-    sLightLED.Set(RangeHoodMgr().IsLightOn());
+    sLightLED.Set(RangeHoodManager::GetInstance().IsLightOn());
 
     return err;
 }
@@ -161,30 +158,17 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     }
 }
 
-void AppTask::ActionInitiated(RangeHoodManager::Action_t aAction, int32_t aActor, uint8_t * aValue)
+void AppTask::ActionTriggerHandler(AppEvent * aEvent)
 {
-    bool lightOn = aAction == RangeHoodManager::ON_ACTION;
-    SILABS_LOG("Turning light %s", (lightOn) ? "On" : "Off");
-
-    sLightLED.Set(lightOn);
-
-    // Defer LCD refresh until ActionCompleted so RangeHoodMgr().IsLightOn() reflects final state.
-
-    if (aActor == AppEvent::kEventType_Button)
-    {
-        sAppTask.mSyncClusterToButtonAction = true;
-    }
-}
-
-void AppTask::ActionCompleted(RangeHoodManager::Action_t aAction)
-{
-    // Action has been completed on the Light
-    if (aAction == RangeHoodManager::ON_ACTION)
+    // Direct action trigger without initiated/completed separation
+    RangeHoodManager::Action_t action = static_cast<RangeHoodManager::Action_t>(aEvent->RangeHoodEvent.Action);
+    
+    if (action == RangeHoodManager::LIGHT_ON_ACTION)
     {
         SILABS_LOG("Light ON");
         sLightLED.Set(true);
     }
-    else if (aAction == RangeHoodManager::OFF_ACTION)
+    else if (action == RangeHoodManager::LIGHT_OFF_ACTION)
     {
         SILABS_LOG("Light OFF");
         sLightLED.Set(false);
@@ -192,27 +176,8 @@ void AppTask::ActionCompleted(RangeHoodManager::Action_t aAction)
 
 #if DISPLAY_ENABLED
     // Refresh LCD now that RangeHoodMgr().IsLightOn() is authoritative.
-    AppTask::GetAppTask().UpdateRangeHoodUI();
+    GetLCD().WriteDemoUI(false);
 #endif
-
-    if (sAppTask.mSyncClusterToButtonAction)
-    {
-        // TODO: Schedule work to Update Light Endpoints (turn on/off)
-        sAppTask.mSyncClusterToButtonAction = false;
-    }
-}
-
-void AppTask::SetFanOnOff(intptr_t context)
-{
-    // Use endpoint method to get and set fan mode
-    FanModeEnum currentFanMode = FanModeEnum::kUnknownEnumValue;
-    RangeHoodMgr().mExtractorHoodEndpoint1.GetFanMode(currentFanMode);
-    
-    if (currentFanMode != FanModeEnum::kUnknownEnumValue)
-    {
-        FanModeEnum target = (currentFanMode == FanModeEnum::kOff) ? FanModeEnum::kHigh : FanModeEnum::kOff;
-        RangeHoodMgr().mExtractorHoodEndpoint1.UpdateFanModeAttribute(target);
-    }
 }
 
 void AppTask::FanControlButtonHandler(AppEvent * aEvent)
@@ -226,14 +191,7 @@ void AppTask::FanControlButtonHandler(AppEvent * aEvent)
         static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
     {
         // Schedule fan mode toggle on CHIP stack thread to avoid direct access causing locking errors.
-        chip::DeviceLayer::PlatformMgr().ScheduleWork(SetFanOnOff, 0);
+        chip::DeviceLayer::PlatformMgr().ScheduleWork(
+            [](intptr_t) { RangeHoodMgr().GetExtractorHoodEndpoint().ToggleFanMode(); }, 0);
     }
-}
-
-void AppTask::UpdateRangeHoodUI()
-{
-    // Update the LCD with the Stored value. Show QR Code if not provisioned
-#ifdef DISPLAY_ENABLED
-    GetLCD().WriteDemoUI(false);
-#endif // DISPLAY_ENABLED
 }

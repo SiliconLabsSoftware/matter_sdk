@@ -28,75 +28,28 @@
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
 
-using namespace chip;
-using namespace chip::app;
-using namespace chip::app::Clusters::FanControl;
-using Protocols::InteractionModel::Status;
-
-namespace chip {
-namespace app {
-namespace Clusters {
-namespace ExtractorHood {
-
-class FanDelegate : public FanControl::Delegate
-{
-public:
-    /**
-     * @brief
-     *   This method handles the step command. This will happen as fast as possible.
-     *   The step command logic is implemented directly here for better encapsulation.
-     *   Since this is called from the CHIP stack thread, we can update attributes directly.
-     *
-     *   @param[in]  aDirection     the direction in which the speed should step
-     *   @param[in]  aWrap          whether the speed should wrap or not
-     *   @param[in]  aLowestOff     whether the device should consider the lowest setting as off
-     *
-     *   @return Success On success.
-     *   @return Other Value indicating it failed to execute the command.
-     */
-    Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override;
-
-    FanDelegate(EndpointId aEndpoint) 
-        : FanControl::Delegate(aEndpoint), mEndpoint(aEndpoint) {}
-
-protected:
-    EndpointId mEndpoint = kInvalidEndpointId;
-};
-
 class ExtractorHoodEndpoint
 {
 public:
-    ExtractorHoodEndpoint(EndpointId endpointId) : mEndpointId(endpointId), mFanDelegate(mEndpointId) {}
+    ExtractorHoodEndpoint(chip::EndpointId endpointId) : mEndpointId(endpointId) {}
 
     /**
      * @brief Initialize the ExtractorHood endpoint.
+     * @param offPercent Percent value for Off mode (typically 0)
+     * @param lowPercent Percent value for Low mode (typically 30)
+     * @param mediumPercent Percent value for Medium mode (typically 60)
+     * @param highPercent Percent value for High/On mode (typically 100)
      */
-    CHIP_ERROR Init();
+    CHIP_ERROR Init(chip::Percent offPercent, chip::Percent lowPercent, 
+                    chip::Percent mediumPercent, chip::Percent highPercent);
 
-    // Accessor for registering the fan control delegate
-    FanDelegate * GetFanDelegate() { return &mFanDelegate; }
+    chip::EndpointId GetEndpointId() const { return mEndpointId; }
 
+    chip::app::DataModel::Nullable<chip::Percent> GetPercentSetting() const;
 
-    /**
-     * @brief Get the endpoint ID
-     */
-    EndpointId GetEndpointId() const { return mEndpointId; }
+    chip::Protocols::InteractionModel::Status GetFanMode(chip::app::Clusters::FanControl::FanModeEnum & fanMode) const;
 
-    /**
-     * @brief Get current percent setting from the attribute
-     */
-    DataModel::Nullable<Percent> GetPercentSetting() const;
-
-    /**
-     * @brief Get current fan mode from the attribute
-     */
-    Status GetFanMode(FanModeEnum & fanMode) const;
-
-    /**
-     * @brief Set percent current (actual fan speed)
-     * This updates the PercentCurrent attribute which represents the actual fan speed
-     */
-    Status SetPercentCurrent(Percent aNewPercentSetting);
+    chip::Protocols::InteractionModel::Status SetPercentCurrent(chip::Percent aNewPercentSetting);
 
     /**
      * @brief Handle percent setting change and update percent current accordingly
@@ -106,7 +59,7 @@ public:
      * @param aNewPercentSetting The new percent setting value
      * @return Status Success on success, error code otherwise
      */
-    Status HandlePercentSettingChange(Percent aNewPercentSetting);
+    chip::Protocols::InteractionModel::Status HandlePercentSettingChange(chip::Percent aNewPercentSetting);
 
     /**
      * @brief Handle fan mode change and update percent current accordingly
@@ -115,30 +68,26 @@ public:
      * @param aNewFanMode The new fan mode to apply
      * @return Status Success on success, error code otherwise
      */
-    Status HandleFanModeChange(FanModeEnum aNewFanMode);
+    chip::Protocols::InteractionModel::Status HandleFanModeChange(chip::app::Clusters::FanControl::FanModeEnum aNewFanMode);
 
     /**
      * @brief Update the FanMode attribute
-     * This is used for modes like Auto/Smart that don't have fixed percent values
      */
-    Status UpdateFanModeAttribute(FanModeEnum aFanMode);
+    chip::Protocols::InteractionModel::Status UpdateFanModeAttribute(chip::app::Clusters::FanControl::FanModeEnum aFanMode);
 
-    // Step command configuration constants
-    static constexpr uint8_t kStepSizePercent  = 10;  // Step by 10% increments
-    static constexpr uint8_t kaLowestOffTrue    = 0;   // Can step down to 0% (off)
-    static constexpr uint8_t kaLowestOffFalse   = 1;   // Can only step down to 1% (minimum on)
-
-    // Fan Mode Percent Mappings (since SPEED features are not enabled)
-    static constexpr uint8_t kFanModeOffPercent    = 0;    // Off: 0%
-    static constexpr uint8_t kFanModeLowPercent    = 30;   // Low: 30%
-    static constexpr uint8_t kFanModeMediumPercent = 60;   // Medium: 60%
-    static constexpr uint8_t kFanModeHighPercent   = 100;  // High: 100%
+    /**
+     * @brief Toggle fan mode between Off and High
+     * This is typically used for button press toggles
+     * @return Status Success on success, error code otherwise
+     */
+    chip::Protocols::InteractionModel::Status ToggleFanMode();
 
 private:
-    EndpointId mEndpointId = kInvalidEndpointId;
-    FanDelegate mFanDelegate;
-
-} // namespace ExtractorHood
-} // namespace Clusters
-} // namespace app
-} // namespace chip
+    chip::EndpointId mEndpointId = chip::kInvalidEndpointId;
+    
+    // Fan Mode Percent Mappings (set during initialization)
+    chip::Percent mFanModeOffPercent    = 0;    // Off: 0%
+    chip::Percent mFanModeLowPercent    = 30;   // Low: 30%
+    chip::Percent mFanModeMediumPercent = 60;   // Medium: 60%
+    chip::Percent mFanModeHighPercent   = 100;  // High: 100%
+};

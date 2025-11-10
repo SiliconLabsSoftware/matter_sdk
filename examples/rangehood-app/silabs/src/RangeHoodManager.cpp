@@ -26,11 +26,8 @@
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/clusters/fan-control-server/fan-control-server.h>
+#include <lib/support/TypeTraits.h>
 #include <platform/CHIPDeviceLayer.h>
-
-#if DISPLAY_ENABLED
-#include "RangeHoodUI.h"
-#endif
 
 using namespace chip;
 using namespace chip::app;
@@ -38,17 +35,37 @@ using namespace ::chip::app::Clusters;
 using namespace ::chip::app::Clusters::FanControl;
 
 using namespace ::chip::app::Clusters::OnOff;
-using Protocols::InteractionModel::Status;
+using namespace chip::Protocols::InteractionModel;
 using namespace ::chip::DeviceLayer;
 
 RangeHoodManager RangeHoodManager::sRangeHoodMgr;
 
-CHIP_ERROR RangeHoodManager::Init()
-{
-    // Endpoint initializations
-    VerifyOrReturnError(mExtractorHoodEndpoint1.Init() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
+namespace {
 
-    VerifyOrReturnError(mLightEndpoint2.Init() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
+/**********************************************************
+ * OffWithEffect Callbacks
+ *********************************************************/
+
+OnOffEffect gEffect = {
+    chip::EndpointId{ 2 }, // kLightEndpoint
+    RangeHoodManager::OnTriggerOffWithEffect,
+    EffectIdentifierEnum::kDelayedAllOff,
+    to_underlying(DelayedAllOffEffectVariantEnum::kDelayedOffFastFade),
+};
+
+} // namespace
+
+CHIP_ERROR RangeHoodManager::Init()
+{   
+    // Endpoint initializations with fan mode percent mappings
+    VerifyOrReturnError(mExtractorHoodEndpoint.Init(
+        0,    // Off: 0%
+        30,   // Low: 30%
+        60,   // Medium: 60%
+        100   // High: 100%
+    ) == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
+
+    VerifyOrReturnError(mLightEndpoint.Init() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
 
     // Create cmsis os sw timer for light timer.
     mLightTimer = osTimerNew(TimerEventHandler, // timer callback handler
@@ -63,96 +80,75 @@ CHIP_ERROR RangeHoodManager::Init()
         return APP_ERROR_CREATE_TIMER_FAILED;
     }
 
-    bool currentLedState;
-
-    DeviceLayer::PlatformMgr().LockChipStack();
-    // read current on/off value on light endpoint.
-    OnOffServer::Instance().getOnOffValue(kLightEndpoint2, &currentLedState);
-
-    // Register FanControl delegate (GetFanDelegate returns pointer)
-    FanControl::SetDefaultDelegate(kExtractorHoodEndpoint1, mExtractorHoodEndpoint1.GetFanDelegate());
-    DeviceLayer::PlatformMgr().UnlockChipStack();
-
-    // Initialize percent current from percent setting (outside lock since endpoint methods handle their own locks)
-    DataModel::Nullable<Percent> percentSettingNullable = mExtractorHoodEndpoint1.GetPercentSetting();
-    uint8_t percentSettingCB                            = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
-    mExtractorHoodEndpoint1.HandlePercentSettingChange(percentSettingCB);
-
-    mState = currentLedState ? kState_OnCompleted : kState_OffCompleted;
-
     return CHIP_NO_ERROR;
 }
 
-void RangeHoodManager::SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Callback_fn_completed aActionCompleted_CB)
+void RangeHoodManager::Shutdown()
 {
-    mActionInitiated_CB = aActionInitiated_CB;
-    mActionCompleted_CB = aActionCompleted_CB;
-}
-
-bool RangeHoodManager::IsActionInProgress()
-{
-    return (mState == kState_OffInitiated || mState == kState_OnInitiated);
+    if (mLightTimer != nullptr)
+    {
+        CancelTimer();  // Stop timer if running
+        osTimerDelete(mLightTimer);
+        mLightTimer = nullptr;
+    }
 }
 
 bool RangeHoodManager::IsLightOn()
 {
-    // Delegate to LightEndpoint to get the actual state from Matter attribute
-    return mLightEndpoint2.IsLightOn();
+    return mLightEndpoint.IsLightOn();
 }
 
-void RangeHoodManager::EnableAutoTurnOff(bool aOn)
-{
-    // Delegate to LightEndpoint for common code
-    mLightEndpoint2.EnableAutoTurnOff(aOn);
-}
-
-void RangeHoodManager::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
-{
-    // Delegate to LightEndpoint for common code
-    mLightEndpoint2.SetAutoTurnOffDuration(aDurationInSecs);
-}
-
-bool RangeHoodManager::InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue)
+bool RangeHoodManager::HandleLightAction(Action_t aAction)
 {
     bool action_initiated = false;
-    State_t new_state;
+    bool currentLightState = IsLightOn();
 
-    // Initiate Turn On/Off Action only when the previous one is complete.
-    if (((mState == kState_OffCompleted) || mOffEffectArmed) && aAction == ON_ACTION)
+    // Initiate Turn On/Off Action only when it would change the state
+    // Allow ON if light is off or if off effect is armed (can interrupt off effect)
+    if ((!currentLightState || mOffEffectArmed) && aAction == LIGHT_ON_ACTION)
     {
         action_initiated = true;
 
-        new_state = kState_OnInitiated;
         if (mOffEffectArmed)
         {
             CancelTimer();
             mOffEffectArmed = false;
         }
     }
-    else if (mState == kState_OnCompleted && aAction == OFF_ACTION && mOffEffectArmed == false)
+    // Allow OFF if light is on and off effect is not armed
+    else if (currentLightState && aAction == LIGHT_OFF_ACTION && !mOffEffectArmed)
     {
         action_initiated = true;
 
-        new_state = kState_OffInitiated;
         if (mAutoTurnOffTimerArmed)
         {
             // If auto turn off timer has been armed and someone initiates turning off,
             // cancel the timer and continue as normal.
             mAutoTurnOffTimerArmed = false;
-
             CancelTimer();
         }
     }
 
-    if (action_initiated && (aAction == ON_ACTION || aAction == OFF_ACTION))
+    if (action_initiated && (aAction == LIGHT_ON_ACTION || aAction == LIGHT_OFF_ACTION))
     {
-        StartTimer(ACTUATOR_MOVEMENT_PERIOD_MS);
-        mState = new_state;
-    }
+        // Post event directly to AppTask - actions complete instantly
+        AppEvent event;
+        event.Type = AppEvent::kEventType_RangeHood;
+        event.RangeHoodEvent.Action = aAction;
+        event.Handler = AppTask::ActionTriggerHandler;
+        AppTask::GetAppTask().PostEvent(&event);
 
-    if (action_initiated && mActionInitiated_CB)
-    {
-        mActionInitiated_CB(aAction, aActor, aValue);
+        // Handle auto turn-off for LIGHT_ON_ACTION
+        if (aAction == LIGHT_ON_ACTION && mLightEndpoint.IsAutoTurnOffEnabled())
+        {
+            uint32_t duration = mLightEndpoint.GetAutoTurnOffDuration();
+            if (duration > 0)
+            {
+                StartTimer(duration * 1000);
+                mAutoTurnOffTimerArmed = true;
+                SILABS_LOG("Auto Turn off enabled. Will be triggered in %u seconds", duration);
+            }
+        }
     }
 
     return action_initiated;
@@ -182,6 +178,12 @@ void RangeHoodManager::TimerEventHandler(void * timerCbArg)
     // The callback argument is the light obj context assigned at timer creation.
     RangeHoodManager * light = static_cast<RangeHoodManager *>(timerCbArg);
 
+    if (light == nullptr)
+    {
+        ChipLogError(NotSpecified, "TimerEventHandler: null context, ignoring timer event");
+        return;
+    }
+
     // The timer event handler will be called in the context of the timer task
     // once mLightTimer expires. Post an event to apptask queue with the actual handler
     // so that the event can be handled in the context of the apptask.
@@ -191,25 +193,19 @@ void RangeHoodManager::TimerEventHandler(void * timerCbArg)
     if (light->mAutoTurnOffTimerArmed)
     {
         event.Handler = AutoTurnOffTimerEventHandler;
+        AppTask::GetAppTask().PostEvent(&event);
     }
     else if (light->mOffEffectArmed)
     {
         event.Handler = OffEffectTimerEventHandler;
+        AppTask::GetAppTask().PostEvent(&event);
     }
-    else
-    {
-        event.Handler = ActuatorMovementTimerEventHandler;
-    }
-    AppTask::GetAppTask().PostEvent(&event);
 }
 
 void RangeHoodManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 {
     RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
-    int32_t actor            = AppEvent::kEventType_Timer;
-    uint8_t value            = aEvent->RangeHoodEvent.Value;
 
-    // Make sure auto turn off timer is still armed.
     if (!light->mAutoTurnOffTimerArmed)
     {
         return;
@@ -219,16 +215,13 @@ void RangeHoodManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 
     SILABS_LOG("Auto Turn Off has been triggered!");
 
-    light->InitiateAction(actor, OFF_ACTION, &value);
+    light->HandleLightAction(LIGHT_OFF_ACTION);
 }
 
 void RangeHoodManager::OffEffectTimerEventHandler(AppEvent * aEvent)
 {
     RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
-    int32_t actor            = AppEvent::kEventType_Timer;
-    uint8_t value            = aEvent->RangeHoodEvent.Value;
 
-    // Make sure auto turn off timer is still armed.
     if (!light->mOffEffectArmed)
     {
         return;
@@ -238,43 +231,7 @@ void RangeHoodManager::OffEffectTimerEventHandler(AppEvent * aEvent)
 
     SILABS_LOG("OffEffect completed");
 
-    light->InitiateAction(actor, OFF_ACTION, &value);
-}
-
-void RangeHoodManager::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
-{
-    Action_t actionCompleted = INVALID_ACTION;
-
-    RangeHoodManager * light = static_cast<RangeHoodManager *>(aEvent->TimerEvent.Context);
-
-    if (light->mState == kState_OffInitiated)
-    {
-        light->mState   = kState_OffCompleted;
-        actionCompleted = OFF_ACTION;
-    }
-    else if (light->mState == kState_OnInitiated)
-    {
-        light->mState   = kState_OnCompleted;
-        actionCompleted = ON_ACTION;
-    }
-
-    if (actionCompleted != INVALID_ACTION)
-    {
-        if (light->mActionCompleted_CB)
-        {
-            light->mActionCompleted_CB(actionCompleted);
-        }
-
-        if (light->mLightEndpoint2.IsAutoTurnOffEnabled() && actionCompleted == ON_ACTION)
-        {
-            // Start the timer for auto turn off
-            light->StartTimer(light->mLightEndpoint2.GetAutoTurnOffDuration() * 1000);
-
-            light->mAutoTurnOffTimerArmed = true;
-
-            SILABS_LOG("Auto Turn off enabled. Will be triggered in %u seconds", light->mLightEndpoint2.GetAutoTurnOffDuration());
-        }
-    }
+    light->HandleLightAction(LIGHT_OFF_ACTION);
 }
 
 void RangeHoodManager::OnTriggerOffWithEffect(OnOffEffect * effect)
@@ -283,8 +240,6 @@ void RangeHoodManager::OnTriggerOffWithEffect(OnOffEffect * effect)
     auto effectVariant         = effect->mEffectVariant;
     uint32_t offEffectDuration = 0;
 
-    // Temporary print outs and delay to test OffEffect behaviour
-    // Until dimming is supported for dev boards.
     if (effectId == EffectIdentifierEnum::kDelayedAllOff)
     {
         auto typedEffectVariant = static_cast<DelayedAllOffEffectVariantEnum>(effectVariant);
@@ -318,44 +273,69 @@ void RangeHoodManager::OnTriggerOffWithEffect(OnOffEffect * effect)
     sRangeHoodMgr.StartTimer(offEffectDuration);
 }
 
-Status RangeHoodManager::ProcessExtractorStepCommand(chip::EndpointId endpointId, StepDirectionEnum aDirection, bool aWrap,
-                                                     bool aLowestOff)
+void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size)
 {
-    ChipLogProgress(AppServer, "RangeHoodManager::ProcessExtractorStepCommand  ep=%u  aDirection %d, aWrap %d, aLowestOff %d",
-                    endpointId, to_underlying(aDirection), aWrap, aLowestOff);
-    
-    // Delegate to the FanDelegate's HandleStep method for actual processing
-    return mExtractorHoodEndpoint1.GetFanDelegate()->HandleStep(aDirection, aWrap, aLowestOff);
-}
+    if (endpointId != kExtractorHoodEndpoint)
+    {
+        ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId, kExtractorHoodEndpoint);
+        return;
+    }
 
-void RangeHoodManager::HandleFanControlAttributeChange(AttributeId attributeId, uint8_t type, uint16_t size, uint8_t * value)
-{
+    if (value == nullptr)
+    {
+        ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid value pointer");
+        return;
+    }
+
+    Action_t action = INVALID_ACTION;
+    
     switch (attributeId)
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
-        mExtractorHoodEndpoint1.HandlePercentSettingChange(*value);
+        mExtractorHoodEndpoint.HandlePercentSettingChange(*value);
+        action = FAN_PERCENT_CHANGE_ACTION;
         break;
     }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
-        FanModeEnum newFanMode = *reinterpret_cast<FanModeEnum *>(value);
-        // Cache the fan mode for quick access
-        mFanMode = newFanMode;
-        // Delegate to the endpoint to handle the fan mode change
-        mExtractorHoodEndpoint1.HandleFanModeChange(newFanMode);
-#if DISPLAY_ENABLED
-        UpdateRangeHoodLCD();
-#endif
+        mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
+        action = FAN_MODE_CHANGE_ACTION;
         break;
     }
 
     default: {
-        break;
+        // Unknown attribute, don't process
+        return;
     }
+    }
+
+    // After handling the change, notify AppTask by posting event
+    // PostEvent is thread-safe and can be called from any thread
+    if (action != INVALID_ACTION)
+    {
+        AppEvent event;
+        event.Type = AppEvent::kEventType_RangeHood;
+        event.RangeHoodEvent.Action = action;
+        event.Handler = AppTask::ActionTriggerHandler;
+        AppTask::GetAppTask().PostEvent(&event);
     }
 }
 
-void RangeHoodManager::UpdateRangeHoodLCD()
+void RangeHoodManager::OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size)
 {
-    AppTask::GetAppTask().UpdateRangeHoodUI();
+    if (endpointId != kLightEndpoint)
+    {
+        ChipLogError(NotSpecified, "OnOffAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId, kLightEndpoint);
+        return;
+    }
+
+    if (value == nullptr || size < sizeof(uint8_t))
+    {
+        ChipLogError(NotSpecified, "OnOffAttributeChangeHandler: Invalid value or size");
+        return;
+    }
+
+    // Call HandleLightAction directly - it will handle posting event to AppTask if needed
+    Action_t action = *value ? LIGHT_ON_ACTION : LIGHT_OFF_ACTION;
+    HandleLightAction(action);
 }

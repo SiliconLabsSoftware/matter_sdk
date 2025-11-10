@@ -19,4 +19,5 @@ import("${chip_root}/src/platform/silabs/wifi/args.gni")
 
 sl_enable_test_event_trigger = false
 chip_enable_ota_requestor = true
-app_data_model = "${chip_root}/examples/rangehood-app/rangehood-app-common"
+app_data_model =
+    "${chip_root}/examples/rangehood-app/silabs/data_model:silabs-rangehood"

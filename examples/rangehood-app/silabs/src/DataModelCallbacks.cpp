@@ -47,18 +47,19 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     switch (clusterId)
     {
     case FanControl::Id:
-        // Fan control should only be on FAN ENDPOINT
-        RangeHoodMgr().HandleFanControlAttributeChange(attributeId, type, size, value);
+        ChipLogDetail(Zcl, "FanControl attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
+                        ChipLogValueMEI(attributeId), type, *value, size, endpointId);
+        RangeHoodManager::GetInstance().FanControlAttributeChangeHandler(endpointId, attributeId, value, size);
         break;
 
     case OnOff::Id:
-        // Light on/off control should only be on LIGHT_ENDPOINT
-        RangeHoodMgr().InitiateAction(AppEvent::kEventType_RangeHood,
-                                      *value ? RangeHoodManager::ON_ACTION : RangeHoodManager::OFF_ACTION, value);
+        ChipLogDetail(Zcl, "OnOff attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
+                        ChipLogValueMEI(attributeId), type, *value, size, endpointId);
+        RangeHoodManager::GetInstance().OnOffAttributeChangeHandler(endpointId, attributeId, value, size);
         break;
 
     case Identify::Id:
-        ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
+        ChipLogDetail(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
                         ChipLogValueMEI(attributeId), type, *value, size, endpointId);
         break;
 

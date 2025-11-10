@@ -20,15 +20,23 @@
 #include "LightEndpoint.h"
 
 #include <app/clusters/on-off-server/on-off-server.h>
+#include <platform/CHIPDeviceLayer.h>
 #include <protocols/interaction_model/StatusCode.h>
 
 using namespace chip;
-using namespace chip::app::Clusters::Light;
+using namespace chip::DeviceLayer;
+using namespace chip::Protocols::InteractionModel;
+using namespace chip::app::Clusters::OnOff;
+using namespace chip::app::Clusters;
 
 CHIP_ERROR LightEndpoint::Init()
 {
+    // Initialize light state from Matter attribute
+    // This ensures the endpoint is aware of its current state
     bool state = false;
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
     OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
     return CHIP_NO_ERROR;
 }
 
