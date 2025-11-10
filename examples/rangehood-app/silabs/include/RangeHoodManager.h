@@ -35,14 +35,6 @@
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 
-
-using namespace chip;
-using namespace chip::app;
-using namespace chip::app::Clusters::FanControl;
-using chip::EndpointId;
-using chip::Percent;
-using Protocols::InteractionModel::Status;
-
 class RangeHoodManager
 {
 public:

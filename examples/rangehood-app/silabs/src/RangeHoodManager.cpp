@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2024 Project CHIP Authors
+ *    Copyright (c) 2025 Project CHIP Authors
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -87,7 +87,7 @@ void RangeHoodManager::Shutdown()
 {
     if (mLightTimer != nullptr)
     {
-        CancelTimer();  // Stop timer if running
+        CancelTimer();
         osTimerDelete(mLightTimer);
         mLightTimer = nullptr;
     }
@@ -131,14 +131,12 @@ bool RangeHoodManager::HandleLightAction(Action_t aAction)
 
     if (action_initiated && (aAction == LIGHT_ON_ACTION || aAction == LIGHT_OFF_ACTION))
     {
-        // Post event directly to AppTask - actions complete instantly
         AppEvent event;
         event.Type = AppEvent::kEventType_RangeHood;
         event.RangeHoodEvent.Action = aAction;
         event.Handler = AppTask::ActionTriggerHandler;
         AppTask::GetAppTask().PostEvent(&event);
 
-        // Handle auto turn-off for LIGHT_ON_ACTION
         if (aAction == LIGHT_ON_ACTION && mLightEndpoint.IsAutoTurnOffEnabled())
         {
             uint32_t duration = mLightEndpoint.GetAutoTurnOffDuration();
@@ -156,7 +154,6 @@ bool RangeHoodManager::HandleLightAction(Action_t aAction)
 
 void RangeHoodManager::StartTimer(uint32_t aTimeoutMs)
 {
-    // Starts or restarts the function timer
     if (osTimerStart(mLightTimer, pdMS_TO_TICKS(aTimeoutMs)) != osOK)
     {
         SILABS_LOG("mLightTimer timer start() failed");
@@ -304,13 +301,10 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
     }
 
     default: {
-        // Unknown attribute, don't process
         return;
     }
     }
 
-    // After handling the change, notify AppTask by posting event
-    // PostEvent is thread-safe and can be called from any thread
     if (action != INVALID_ACTION)
     {
         AppEvent event;

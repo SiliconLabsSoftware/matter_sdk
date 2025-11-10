@@ -26,16 +26,10 @@ struct AppEvent : public BaseAppEvent
     enum AppEventTypes
     {
         kEventType_RangeHood = BaseAppEvent::kEventType_Max + 1,
-        kEventType_Install,
     };
 
-    union
+    struct
     {
-        struct
-        {
-            uint8_t Action;
-            int32_t Actor;
-            uint8_t Value;
-        } RangeHoodEvent;
-    };
+        uint8_t Action;
+    } RangeHoodEvent;
 };

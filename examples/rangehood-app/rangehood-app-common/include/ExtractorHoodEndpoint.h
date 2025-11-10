@@ -1,7 +1,7 @@
 /*
  *
- *    Copyright (c) 2024 Project CHIP Authors
- *    Copyright (c) 2019 Google LLC.
+ *    Copyright (c) 2025 Project CHIP Authors
+ *    Copyright (c) 2025 Google LLC.
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <app/clusters/fan-control-server/fan-control-delegate.h>
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <app/data-model/Nullable.h>
 #include <lib/core/CHIPError.h>
