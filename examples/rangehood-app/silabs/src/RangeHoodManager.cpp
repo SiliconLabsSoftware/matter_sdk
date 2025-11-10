@@ -38,7 +38,7 @@ using namespace ::chip::DeviceLayer;
 RangeHoodManager RangeHoodManager::sRangeHoodMgr;
 
 CHIP_ERROR RangeHoodManager::Init()
-{   
+{
     // Endpoint initializations with fan mode percent mappings
     VerifyOrReturnError(mExtractorHoodEndpoint.Init(
         0,    // Off: 0%
@@ -66,7 +66,7 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
     }
 
     Action_t action = INVALID_ACTION;
-    
+
     switch (attributeId)
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
@@ -111,7 +111,7 @@ void RangeHoodManager::OnOffAttributeChangeHandler(chip::EndpointId endpointId, 
     }
 
     Action_t action = *value ? LIGHT_ON_ACTION : LIGHT_OFF_ACTION;
-    
+
     AppEvent event;
     event.Type = AppEvent::kEventType_RangeHood;
     event.RangeHoodEvent.Action = action;

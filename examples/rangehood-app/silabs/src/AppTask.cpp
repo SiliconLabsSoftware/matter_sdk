@@ -159,7 +159,7 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
 {
     // Direct action trigger without initiated/completed separation
     RangeHoodManager::Action_t action = static_cast<RangeHoodManager::Action_t>(aEvent->RangeHoodEvent.Action);
-    
+
     if (action == RangeHoodManager::LIGHT_ON_ACTION)
     {
         SILABS_LOG("Light ON");
@@ -178,7 +178,7 @@ void AppTask::FanControlButtonHandler(AppEvent * aEvent)
      * Handle button press events for range hood control
      * This function processes button events specifically for the action button (BTN1)
      * which controls the fan operation in the range hood application.
-     */  
+     */
     if (aEvent->ButtonEvent.Action ==
         static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
     {

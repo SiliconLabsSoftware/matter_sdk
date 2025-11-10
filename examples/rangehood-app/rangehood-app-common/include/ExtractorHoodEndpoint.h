@@ -39,7 +39,7 @@ public:
      * @param mediumPercent Percent value for Medium mode (typically 60)
      * @param highPercent Percent value for High/On mode (typically 100)
      */
-    CHIP_ERROR Init(chip::Percent offPercent, chip::Percent lowPercent, 
+    CHIP_ERROR Init(chip::Percent offPercent, chip::Percent lowPercent,
                     chip::Percent mediumPercent, chip::Percent highPercent);
 
     chip::EndpointId GetEndpointId() const { return mEndpointId; }
@@ -54,7 +54,7 @@ public:
      * @brief Handle percent setting change and update percent current accordingly
      * This is called when the PercentSetting attribute changes and updates PercentCurrent
      * if the fan mode is not Auto and the value is different
-     * 
+     *
      * @param aNewPercentSetting The new percent setting value
      * @return Status Success on success, error code otherwise
      */
@@ -63,7 +63,7 @@ public:
     /**
      * @brief Handle fan mode change and update percent current accordingly
      * This maps fan modes to their corresponding percent values and updates the PercentCurrent attribute
-     * 
+     *
      * @param aNewFanMode The new fan mode to apply
      * @return Status Success on success, error code otherwise
      */
@@ -83,7 +83,7 @@ public:
 
 private:
     chip::EndpointId mEndpointId = chip::kInvalidEndpointId;
-    
+
     // Fan Mode Percent Mappings (set during initialization)
     chip::Percent mFanModeOffPercent    = 0;    // Off: 0%
     chip::Percent mFanModeLowPercent    = 30;   // Low: 30%
