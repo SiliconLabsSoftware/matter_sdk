@@ -89,10 +89,7 @@ def postprocess_symbols(config: Config, symbols: SymbolDF) -> SymbolDF:
     current_file = ''
     current_arm = ''
     has_file = False
-    if config['collect.prefix-file']:
-        prefixes = config.get_re('collect.prefix')
-    else:
-        prefixes = None
+    prefixes = config.get_re('collect.prefix')
     if 'type' in symbols.columns:
         for symbol in symbols.itertuples():
             if symbol.type == 'FILE':
