@@ -85,10 +85,12 @@ public:
      */
     void UpdateLED(int8_t value);
 
+#ifdef DISPLAY_ENABLED
     /**
      * @brief Updates the LCD display with current cook-top and oven-mode states
      */
     void UpdateLCD();
+#endif // DISPLAY_ENABLED
 
 private:
     static AppTask sAppTask;

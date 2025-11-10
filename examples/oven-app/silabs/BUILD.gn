@@ -110,8 +110,10 @@ silabs_executable("oven_app") {
     "src/DataModelCallbacks.cpp",
     "src/OvenBindingHandler.cpp",
     "src/OvenManager.cpp",
-    "src/OvenUI.cpp",
   ]
+  if (!disable_lcd) {
+    sources += [ "src/OvenUI.cpp" ]
+  }
 
   deps = [ ":sdk" ]
 

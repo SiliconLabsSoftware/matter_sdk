@@ -98,7 +98,7 @@ void OvenUI::DrawCookTopState(GLIB_Context_t * glibContext)
     OvenManager::State_t cookTopState = OvenManager::GetInstance().GetCookTopState();
 
     // Display CookTop state on line 4
-    if (cookTopState == OvenManager::kCookTopState_OnCompleted)
+    if (cookTopState == OvenManager::kCookTopState_On)
     {
         GLIB_drawStringOnLine(glibContext, "COOKTOP: ON", 4, GLIB_ALIGN_LEFT, 0, 0, true);
     }

@@ -22,10 +22,10 @@
 #include "AppEvent.h"
 #include "LEDWidget.h"
 #include "OvenBindingHandler.h"
-#include "OvenUI.h"
 
 #ifdef DISPLAY_ENABLED
 #include "lcd.h"
+#include "OvenUI.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
 #endif // QR_CODE_ENABLED
@@ -212,10 +212,10 @@ void AppTask::UpdateLED(int8_t value)
     sLightLED.Set(value);
 }
 
+#ifdef DISPLAY_ENABLED
 void AppTask::UpdateLCD()
 {
     // Update the LCD with the Stored value.
-#ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
-#endif // DISPLAY_ENABLED
 }
+#endif // DISPLAY_ENABLED
