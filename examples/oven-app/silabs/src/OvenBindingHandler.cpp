@@ -21,7 +21,7 @@ void ProcessOnOffUnicast(CommandId commandId, const Binding::TableEntry & bindin
                          const SessionHandle & sessionHandle)
 {
     auto onSuccess = [](const ConcreteCommandPath &, const StatusIB &, const auto &) {
-        ChipLogProgress(AppServer, "CookTop OnOff bound unicast command success");
+        ChipLogDetail(AppServer, "CookTop OnOff bound unicast command success");
     };
     auto onFailure = [](CHIP_ERROR error) { ChipLogError(AppServer, "CookTop OnOff bound unicast failed: %s", error.AsString()); };
 
@@ -75,7 +75,7 @@ void InitBindingMgrWork(intptr_t)
         { &server.GetFabricTable(), server.GetCASESessionManager(), &server.GetPersistentStorage() });
     Binding::Manager::GetInstance().RegisterBoundDeviceChangedHandler(BoundDeviceChangedHandler);
     Binding::Manager::GetInstance().RegisterBoundDeviceContextReleaseHandler(ContextReleaseHandler);
-    ChipLogProgress(AppServer, "Oven binding manager initialized");
+    ChipLogDetail(AppServer, "Oven binding manager initialized");
 }
 
 void TriggerBindingWork(intptr_t context)
