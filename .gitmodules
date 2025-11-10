@@ -189,13 +189,13 @@
 	platforms = silabs,silabs_docker,unit_tests
 [submodule "third_party/silabs/simplicity_sdk"]
 	path = third_party/silabs/simplicity_sdk
-	url = https://github.com/SiliconLabs/simplicity_sdk.git
-	branch = v2025.6.0
+	url = https://github.com/SiliconLabsSoftware/sisdk-prerelease.git
+	branch = sisdk-2025.12
 	platforms = silabs
 [submodule "third_party/silabs/wifi_sdk"]
 	path = third_party/silabs/wifi_sdk
-	url = https://github.com/SiliconLabs/wiseconnect.git
-	branch = v3.5.0
+	url = https://github.com/SiliconLabsSoftware/wiseconnect-prerelease.git
+	branch = wiseconnect-2025.12
 	platforms = silabs
 [submodule "editline"]
 	path = third_party/editline/repo
