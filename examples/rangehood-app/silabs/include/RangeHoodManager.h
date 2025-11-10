@@ -33,7 +33,6 @@
 
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app/clusters/fan-control-server/fan-control-server.h>
-#include <app/clusters/on-off-server/on-off-server.h>
 
 class RangeHoodManager
 {
@@ -48,14 +47,7 @@ public:
         INVALID_ACTION
     } Action;
 
-    RangeHoodManager() :
-        mAutoTurnOffTimerArmed(false), mOffEffectArmed(false), mLightTimer(nullptr)
-    {}
-
-    bool IsLightOn();
-    bool HandleLightAction(Action_t aAction);
-
-    static void OnTriggerOffWithEffect(OnOffEffect * effect);
+    RangeHoodManager() = default;
 
     /**
      * @brief Handles FanControl attribute changes.
@@ -100,25 +92,8 @@ public:
      */
     CHIP_ERROR Init();
 
-    /**
-     * @brief Shutdown and cleanup resources.
-     * Should be called during application teardown to free timer resources.
-     */
-    void Shutdown();
-
 private:
     friend RangeHoodManager & RangeHoodMgr(void);
-
-    bool mAutoTurnOffTimerArmed;  // Timer state managed by RangeHoodManager, auto-turn-off config in LightEndpoint
-    bool mOffEffectArmed;
-    osTimerId_t mLightTimer;
-
-    void CancelTimer(void);
-    void StartTimer(uint32_t aTimeoutMs);
-
-    static void TimerEventHandler(void * timerCbArg);
-    static void AutoTurnOffTimerEventHandler(AppEvent * aEvent);
-    static void OffEffectTimerEventHandler(AppEvent * aEvent);
 
 
     static RangeHoodManager sRangeHoodMgr;

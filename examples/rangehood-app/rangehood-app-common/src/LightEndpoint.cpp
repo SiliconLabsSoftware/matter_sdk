@@ -29,17 +29,6 @@ using namespace chip::Protocols::InteractionModel;
 using namespace chip::app::Clusters::OnOff;
 using namespace chip::app::Clusters;
 
-CHIP_ERROR LightEndpoint::Init()
-{
-    // Initialize light state from Matter attribute
-    // This ensures the endpoint is aware of its current state
-    bool state = false;
-    chip::DeviceLayer::PlatformMgr().LockChipStack();
-    OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
-    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
-    return CHIP_NO_ERROR;
-}
-
 bool LightEndpoint::GetOnOffState()
 {
     bool state = false;
@@ -59,14 +48,4 @@ void LightEndpoint::SetOnOffState(bool state)
     {
         ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status));
     }
-}
-
-void LightEndpoint::EnableAutoTurnOff(bool aOn)
-{
-    mAutoTurnOff = aOn;
-}
-
-void LightEndpoint::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
-{
-    mAutoTurnOffDuration = aDurationInSecs;
 }

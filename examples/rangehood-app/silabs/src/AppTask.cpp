@@ -96,7 +96,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
     sLightLED.Init(LIGHT_LED);
-    sLightLED.Set(RangeHoodManager::GetInstance().IsLightOn());
+    sLightLED.Set(RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState());
 
     return err;
 }
@@ -170,11 +170,6 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
         SILABS_LOG("Light OFF");
         sLightLED.Set(false);
     }
-
-#if DISPLAY_ENABLED
-    // Refresh LCD now that RangeHoodMgr().IsLightOn() is authoritative.
-    GetLCD().WriteDemoUI(false);
-#endif
 }
 
 void AppTask::FanControlButtonHandler(AppEvent * aEvent)
