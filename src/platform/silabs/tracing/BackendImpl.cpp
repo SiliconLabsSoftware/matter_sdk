@@ -96,11 +96,6 @@ void BackendImpl::LogMetricEvent(const MetricEvent & event)
     }
 }
 
-void BackendImpl::RegisterPowerManagerTracing()
-{
-    SilabsTracer::Instance().RegisterPowerManagerTracing();
-}
-
 } // namespace Silabs
 } // namespace Tracing
 } // namespace chip

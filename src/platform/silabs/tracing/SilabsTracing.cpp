@@ -39,6 +39,7 @@ extern "C" {
 #endif
 
 #if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
+#include "sl_sleeptimer.h"
 #include <rail.h>
 // RAIL_GetTime() returns time in usec
 #define SILABS_GET_TIME() System::Clock::Milliseconds32(RAIL_GetTime() / 1000)
@@ -306,7 +307,17 @@ CHIP_ERROR SilabsTracer::Init()
     {
         mNamedTraces[i] = NamedTrace{};
     }
+#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+    memset(mTimeInEnergyState, 0, sizeof(mTimeInEnergyState));
+    memset(mLongestTimeInEnergyState, 0, sizeof(mLongestTimeInEnergyState));
+    memset(mTransitionCountToEnergyState, 0, sizeof(mTransitionCountToEnergyState));
 
+    mCurrentEnergyMode             = static_cast<sl_power_manager_em_t>(0);
+    mLastEnergyStateTransitionTime = System::Clock::Milliseconds32(0);
+
+    sl_power_manager_init();
+    sl_power_manager_subscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle, &mPowerManagerEmTransitionEventInfo);
+#endif // SILABS_TRACING_ENERGY_STATS
     return CHIP_NO_ERROR;
 }
 
@@ -889,11 +900,23 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
 
 void SilabsTracer::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
 {
+    // Using the sleeptimer instead of the RAIL timer. It may be less precise, but it runs even in EM2. At this point, there is no
+    // guarantee the RAIL timer has been adjusted if the device is woken up from EM2.
+    // (RAIL timer uses the same power manager callback to adjust itself)
+    uint64_t ticks = sl_sleeptimer_get_tick_count64();
+    uint32_t freq  = sl_sleeptimer_get_timer_frequency();
+
     if (from == mCurrentEnergyMode)
     {
-        auto currentTime = SILABS_GET_TIME();
+        auto currentTime = System::Clock::Milliseconds32((ticks * 1000ULL) / freq);
         auto timeDiff    = currentTime - mLastEnergyStateTransitionTime;
         mTimeInEnergyState[from] += timeDiff;
+
+        // Check if this is a new longest time record for this EM state
+        if (timeDiff > mLongestTimeInEnergyState[from])
+        {
+            mLongestTimeInEnergyState[from] = timeDiff;
+        }
         mTransitionCountToEnergyState[to]++;
     }
     else
@@ -904,12 +927,7 @@ void SilabsTracer::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl
 
     // Update time spent in previous energy mode
     mCurrentEnergyMode             = to;
-    mLastEnergyStateTransitionTime = SILABS_GET_TIME();
-
-    if (mCurrentEnergyMode == SL_POWER_MANAGER_EM1)
-    {
-        OutputPowerManagerStatistics();
-    }
+    mLastEnergyStateTransitionTime = System::Clock::Milliseconds32(static_cast<uint64_t>(ticks) * 1000ULL / freq);
 }
 
 void SilabsTracer::StaticPowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
@@ -919,18 +937,7 @@ void SilabsTracer::StaticPowerManagerTransitionCallback(sl_power_manager_em_t fr
 
 #endif // SILABS_TRACING_ENERGY_STATS
 
-void SilabsTracer::RegisterPowerManagerTracing()
-{
-#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
-    memset(mTimeInEnergyState, 0, sizeof(mTimeInEnergyState));
-    memset(mTransitionCountToEnergyState, 0, sizeof(mTransitionCountToEnergyState));
-    mCurrentEnergyMode             = static_cast<sl_power_manager_em_t>(0);
-    mLastEnergyStateTransitionTime = SILABS_GET_TIME();
-
-    sl_power_manager_init();
-    sl_power_manager_subscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle, &mPowerManagerEmTransitionEventInfo);
-#endif // SILABS_TRACING_ENERGY_STATS
-}
+void SilabsTracer::RegisterPowerManagerTracing() {}
 
 CHIP_ERROR SilabsTracer::OutputPowerManagerStatistics()
 {
@@ -943,8 +950,10 @@ CHIP_ERROR SilabsTracer::OutputPowerManagerStatistics()
     ChipLogProgress(DeviceLayer, "Total Runtime: %lu ms", currentTime.count());
 
     // Table header
-    ChipLogProgress(DeviceLayer, "| %-12s| %-12s | %-10s | %-10s |", "Energy Mode", "Time (ms)", "Percentage", "Transitions");
-    ChipLogProgress(DeviceLayer, "|%-13s|%-14s|%-12s|%-12s|", "-------------", "--------------", "------------", "------------");
+    ChipLogProgress(DeviceLayer, "| %-12s| %-12s | %-10s | %-12s | %-10s |", "Energy Mode", "Time (ms)", "Percentage",
+                    "Longest (ms)", "Transitions");
+    ChipLogProgress(DeviceLayer, "|%-13s|%-14s|%-12s|%-14s|%-12s|", "-------------", "--------------", "------------",
+                    "--------------", "------------");
 
     for (size_t em = 0; em <= SL_POWER_MANAGER_EM2; em++)
     {
@@ -956,12 +965,11 @@ CHIP_ERROR SilabsTracer::OutputPowerManagerStatistics()
         // Use 64-bit arithmetic to avoid overflow, then calculate percentage with 4 decimal places
         uint64_t percentage =
             currentTime.count() > 0 ? (static_cast<uint64_t>(totalTimeInMode.count()) * 1000000) / currentTime.count() : 0;
-        ChipLogProgress(DeviceLayer, "| EM%-10d| %-12lu |  %3lu.%04lu%% | %-10u |", static_cast<int>(em), totalTimeInMode.count(),
-                        static_cast<uint32_t>(percentage / 10000), static_cast<uint32_t>(percentage % 10000),
+        ChipLogProgress(DeviceLayer, "| EM%-10d| %-12lu |  %3lu.%04lu%% | %-12lu | %-10u |", static_cast<int>(em),
+                        totalTimeInMode.count(), static_cast<uint32_t>(percentage / 10000),
+                        static_cast<uint32_t>(percentage % 10000), mLongestTimeInEnergyState[em].count(),
                         mTransitionCountToEnergyState[em]);
     }
-
-    sl_power_manager_debug_print_em_requirements();
 
     return CHIP_NO_ERROR;
 #else  // SILABS_TRACING_ENERGY_STATS != 1

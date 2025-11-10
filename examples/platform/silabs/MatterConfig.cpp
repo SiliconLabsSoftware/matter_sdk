@@ -374,7 +374,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #if MATTER_TRACING_ENABLED
     static Tracing::Silabs::BackendImpl backend;
     Tracing::Register(backend);
-    backend.RegisterPowerManagerTracing();
 #endif // MATTER_TRACING_ENABLED
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
