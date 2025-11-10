@@ -49,19 +49,19 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     {
     case FanControl::Id:
         ChipLogDetail(Zcl, "FanControl attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
-                        ChipLogValueMEI(attributeId), type, *value, size, endpointId);
+                      ChipLogValueMEI(attributeId), type, *value, size, endpointId);
         RangeHoodManager::GetInstance().FanControlAttributeChangeHandler(endpointId, attributeId, value, size);
         break;
 
     case OnOff::Id:
         ChipLogDetail(Zcl, "OnOff attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
-                        ChipLogValueMEI(attributeId), type, *value, size, endpointId);
+                      ChipLogValueMEI(attributeId), type, *value, size, endpointId);
         RangeHoodManager::GetInstance().OnOffAttributeChangeHandler(endpointId, attributeId, value, size);
         break;
 
     case Identify::Id:
         ChipLogDetail(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
-                        ChipLogValueMEI(attributeId), type, *value, size, endpointId);
+                      ChipLogValueMEI(attributeId), type, *value, size, endpointId);
         break;
 
     default:

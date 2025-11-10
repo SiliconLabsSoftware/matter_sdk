@@ -37,6 +37,7 @@ public:
      * @brief Set On/Off state for the Light.
      */
     void SetOnOffState(bool state);
+
 private:
     chip::EndpointId mEndpointId = chip::kInvalidEndpointId;
 };

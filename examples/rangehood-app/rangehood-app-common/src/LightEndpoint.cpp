@@ -42,7 +42,7 @@ void LightEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    auto status         = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
     if (status != Protocols::InteractionModel::Status::Success)
     {

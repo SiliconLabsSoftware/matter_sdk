@@ -183,7 +183,7 @@ void AppTask::FanControlButtonHandler(AppEvent * aEvent)
         static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
     {
         // Schedule fan mode toggle on CHIP stack thread to avoid direct access causing locking errors.
-        chip::DeviceLayer::PlatformMgr().ScheduleWork(
-            [](intptr_t) { RangeHoodMgr().GetExtractorHoodEndpoint().ToggleFanMode(); }, 0);
+        chip::DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t) { RangeHoodMgr().GetExtractorHoodEndpoint().ToggleFanMode(); },
+                                                      0);
     }
 }

@@ -40,22 +40,23 @@ RangeHoodManager RangeHoodManager::sRangeHoodMgr;
 CHIP_ERROR RangeHoodManager::Init()
 {
     // Endpoint initializations with fan mode percent mappings
-    VerifyOrReturnError(mExtractorHoodEndpoint.Init(
-        0,    // Off: 0%
-        30,   // Low: 30%
-        60,   // Medium: 60%
-        100   // High: 100%
-    ) == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
-
+    VerifyOrReturnError(mExtractorHoodEndpoint.Init(0,  // Off: 0%
+                                                    30, // Low: 30%
+                                                    60, // Medium: 60%
+                                                    100 // High: 100%
+                                                    ) == CHIP_NO_ERROR,
+                        CHIP_ERROR_INTERNAL);
 
     return CHIP_NO_ERROR;
 }
 
-void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size)
+void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                                        uint16_t size)
 {
     if (endpointId != kExtractorHoodEndpoint)
     {
-        ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId, kExtractorHoodEndpoint);
+        ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId,
+                     kExtractorHoodEndpoint);
         return;
     }
 
@@ -89,14 +90,15 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
     if (action != INVALID_ACTION)
     {
         AppEvent event;
-        event.Type = AppEvent::kEventType_RangeHood;
+        event.Type                  = AppEvent::kEventType_RangeHood;
         event.RangeHoodEvent.Action = action;
-        event.Handler = AppTask::ActionTriggerHandler;
+        event.Handler               = AppTask::ActionTriggerHandler;
         AppTask::GetAppTask().PostEvent(&event);
     }
 }
 
-void RangeHoodManager::OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size)
+void RangeHoodManager::OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                                   uint16_t size)
 {
     if (endpointId != kLightEndpoint)
     {
@@ -113,8 +115,8 @@ void RangeHoodManager::OnOffAttributeChangeHandler(chip::EndpointId endpointId, 
     Action_t action = *value ? LIGHT_ON_ACTION : LIGHT_OFF_ACTION;
 
     AppEvent event;
-    event.Type = AppEvent::kEventType_RangeHood;
+    event.Type                  = AppEvent::kEventType_RangeHood;
     event.RangeHoodEvent.Action = action;
-    event.Handler = AppTask::ActionTriggerHandler;
+    event.Handler               = AppTask::ActionTriggerHandler;
     AppTask::GetAppTask().PostEvent(&event);
 }

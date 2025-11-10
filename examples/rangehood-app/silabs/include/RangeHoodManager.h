@@ -56,7 +56,8 @@ public:
      * @param value Pointer to the new value.
      * @param size Size of the new value.
      */
-    void FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+    void FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                          uint16_t size);
 
     /**
      * @brief Handles on/off attribute changes.
@@ -95,15 +96,14 @@ public:
 private:
     friend RangeHoodManager & RangeHoodMgr(void);
 
-
     static RangeHoodManager sRangeHoodMgr;
 
     // Define the endpoint IDs for the RangeHood
     static constexpr chip::EndpointId kExtractorHoodEndpoint = 1;
     static constexpr chip::EndpointId kLightEndpoint         = 2;
 
-    ExtractorHoodEndpoint mExtractorHoodEndpoint{kExtractorHoodEndpoint};
-    LightEndpoint mLightEndpoint{kLightEndpoint};
+    ExtractorHoodEndpoint mExtractorHoodEndpoint{ kExtractorHoodEndpoint };
+    LightEndpoint mLightEndpoint{ kLightEndpoint };
 };
 
 inline RangeHoodManager & RangeHoodMgr(void)
