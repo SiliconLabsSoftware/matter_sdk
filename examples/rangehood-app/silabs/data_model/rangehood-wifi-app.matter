@@ -2346,10 +2346,8 @@ endpoint 1 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 16;
+    ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 5;
-
-    handle command Step;
   }
 }
 endpoint 2 {
@@ -2391,10 +2389,6 @@ endpoint 2 {
 
   server cluster OnOff {
     ram      attribute onOff;
-    ram      attribute globalSceneControl;
-    ram      attribute onTime;
-    ram      attribute offWaitTime;
-    ram      attribute startUpOnOff;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
@@ -2404,9 +2398,6 @@ endpoint 2 {
     handle command Off;
     handle command On;
     handle command Toggle;
-    handle command OffWithEffect;
-    handle command OnWithRecallGlobalScene;
-    handle command OnWithTimedOff;
   }
 
   server cluster Descriptor {
