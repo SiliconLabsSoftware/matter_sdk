@@ -1,11 +1,7 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdlib>
-#include <lib/core/CHIPError.h>
-#include <system/SystemClock.h>
-
 #include "cmsis_os2.h"
+#include <lib/core/CHIPError.h>
 #include <sl_power_manager.h>
 
 namespace chip {
@@ -14,7 +10,7 @@ namespace Silabs {
 
 struct EnergyTrace
 {
-    System::Clock::Milliseconds32 mEntryTime;
+    uint32_t mEntryTime;
     sl_power_manager_em_t mEnergyMode;
 };
 

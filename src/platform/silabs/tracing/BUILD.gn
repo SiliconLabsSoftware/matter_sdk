@@ -78,10 +78,7 @@ static_library("SilabsPowerTracing") {
   ]
 
   deps = [
-    "${chip_root}/src/lib/core",
-    "${chip_root}/src/lib/support",
-    "${chip_root}/src/system",
-    "${chip_root}/src/platform:platform_base",
+   "${chip_root}/src/lib/core",
   ]
 
   public_deps = [

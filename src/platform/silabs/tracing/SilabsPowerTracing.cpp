@@ -1,11 +1,7 @@
 #include "SilabsPowerTracing.h"
-#include <lib/core/CHIPError.h>
-#include <lib/support/CodeUtils.h>
-#include <lib/support/logging/CHIPLogging.h>
-#include <platform/silabs/tracing/SilabsTracingConfig.h>
-#include <system/SystemClock.h>
-
 #include "cmsis_os2.h"
+#include <lib/support/CodeUtils.h>
+#include <platform/silabs/tracing/SilabsTracingConfig.h>
 
 #if !CONFIG_BUILD_FOR_HOST_UNIT_TEST
 #include <platform/silabs/Logging.h> // for isLogInitialized
@@ -14,8 +10,7 @@
 // Need to use the sleeptimer for power tracing. The RAIL timer doesn't tick in EM2 and creates invalid timestamps for this
 // application.
 #ifndef SILABS_GET_SLEEPTIMER_TIME
-#define SILABS_GET_SLEEPTIMER_TIME()                                                                                               \
-    System::Clock::Milliseconds32((sl_sleeptimer_get_tick_count64() * 1000ULL) / sl_sleeptimer_get_timer_frequency())
+#define SILABS_GET_SLEEPTIMER_TIME() uint32_t((sl_sleeptimer_get_tick_count64() * 1000ULL) / sl_sleeptimer_get_timer_frequency())
 #endif // SILABS_GET_SLEEPTIMER_TIME
 
 namespace chip {
@@ -74,9 +69,8 @@ CHIP_ERROR SilabsPowerTracing::Init()
         return CHIP_ERROR_NO_MEMORY;
     }
 
-    // Convert seconds to milliseconds, then to ticks
-    uint32_t intervalMs = SILABS_TRACING_ENERGY_TRACES_SECONDS * 1000;
-    uint32_t ticks      = (intervalMs * osKernelGetTickFreq()) / 1000;
+    // Convert seconds to ticks
+    uint32_t ticks = SILABS_TRACING_ENERGY_TRACES_SECONDS * osKernelGetTickFreq();
     if (osTimerStart(mStatisticsTimer, ticks) != osOK)
     {
         ChipLogError(DeviceLayer, "Failed to start power manager statistics timer");
@@ -111,11 +105,9 @@ SilabsPowerTracing::~SilabsPowerTracing()
 
 void SilabsPowerTracing::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
 {
-    auto currentTime = SILABS_GET_SLEEPTIMER_TIME();
-
     if (mEnergyTraces != nullptr && mEnergyTraceCount < SILABS_TRACING_ENERGY_TRACES_MAX)
     {
-        mEnergyTraces[mEnergyTraceCount].mEntryTime  = currentTime;
+        mEnergyTraces[mEnergyTraceCount].mEntryTime  = SILABS_GET_SLEEPTIMER_TIME();
         mEnergyTraces[mEnergyTraceCount].mEnergyMode = to;
         mEnergyTraceCount++;
     }
@@ -137,7 +129,7 @@ CHIP_ERROR SilabsPowerTracing::OutputPowerManagerTraces()
     {
         for (size_t i = 0; i < mEnergyTraceCount; i++)
         {
-            ChipLogProgress(DeviceLayer, "%u | %lu | EM%d", i, mEnergyTraces[i].mEntryTime.count(), mEnergyTraces[i].mEnergyMode);
+            ChipLogProgress(DeviceLayer, "%u | %lu | EM%d", i, mEnergyTraces[i].mEntryTime, mEnergyTraces[i].mEnergyMode);
             // Delay so the output is not mangled or skipped.
             // 10 is enough for UART, but only 1 is required for RTT.
             // No delay results in missed or mangled output for both.
