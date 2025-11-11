@@ -62,8 +62,9 @@ DataModel::Nullable<Percent> ExtractorHoodEndpoint::GetPercentSetting() const
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     VerifyOrReturnValue(status == Status::Success, DataModel::Nullable<Percent>(),
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::GetPercentSetting: failed to get PercentSetting attribute: %d",
-                     to_underlying(status)));
+                        ChipLogError(NotSpecified,
+                                     "ExtractorHoodEndpoint::GetPercentSetting: failed to get PercentSetting attribute: %d",
+                                     to_underlying(status)));
     return percentSetting;
 }
 
@@ -78,7 +79,8 @@ Status ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) cons
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     VerifyOrReturnValue(status == Status::Success, status,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::GetFanMode: failed to get FanMode attribute: %d", to_underlying(status)));
+                        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::GetFanMode: failed to get FanMode attribute: %d",
+                                     to_underlying(status)));
 
     return Status::Success;
 }
@@ -95,7 +97,7 @@ Status ExtractorHoodEndpoint::SetPercentCurrent(Percent aNewPercentSetting)
     Status getStatus = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
-     // Return error if we can't read current value
+    // Return error if we can't read current value
     VerifyOrReturnValue(getStatus == Status::Success, getStatus,
                         ChipLogError(NotSpecified,
                                      "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get currentPercentCurrent: %d",
@@ -146,9 +148,8 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent aNewPercentSett
 
     // Fail if we can't read fan mode
     VerifyOrReturnValue(fanModeStatus == Status::Success, Status::Failure,
-                       ChipLogError(NotSpecified,
-                                    "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get FanMode: %d",
-                                    to_underlying(fanModeStatus)));
+                        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get FanMode: %d",
+                                     to_underlying(fanModeStatus)));
 
     // Don't update PercentCurrent if fan mode is Auto
     VerifyOrReturnValue(currentFanMode != FanControl::FanModeEnum::kAuto, Status::Success);
@@ -158,10 +159,11 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent aNewPercentSett
     Status setStatus = FanControl::Attributes::PercentCurrent::Set(mEndpointId, aNewPercentSetting);
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    VerifyOrReturnValue(setStatus == Status::Success, Status::Failure,
-                        ChipLogError(NotSpecified,
-                                     "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to update PercentCurrent attribute: %d",
-                                     to_underlying(setStatus)));
+    VerifyOrReturnValue(
+        setStatus == Status::Success, Status::Failure,
+        ChipLogError(NotSpecified,
+                     "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to update PercentCurrent attribute: %d",
+                     to_underlying(setStatus)));
     return Status::Success;
 }
 
@@ -208,8 +210,9 @@ Status ExtractorHoodEndpoint::UpdateFanModeAttribute(FanControl::FanModeEnum aFa
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     VerifyOrReturnValue(setStatus == Status::Success, Status::Failure,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::UpdateFanModeAttribute: failed to update FanMode attribute: %d",
-                     to_underlying(setStatus)));
+                        ChipLogError(NotSpecified,
+                                     "ExtractorHoodEndpoint::UpdateFanModeAttribute: failed to update FanMode attribute: %d",
+                                     to_underlying(setStatus)));
     return Status::Success;
 }
 

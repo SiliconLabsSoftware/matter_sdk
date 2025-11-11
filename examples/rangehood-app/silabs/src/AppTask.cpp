@@ -98,15 +98,14 @@ CHIP_ERROR AppTask::AppInit()
     sLightLED.Init(LIGHT_LED);
     {
         bool lightState = false;
-        auto status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
+        auto status     = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
         if (status == chip::Protocols::InteractionModel::Status::Success)
         {
             sLightLED.Set(lightState);
         }
         else
         {
-            ChipLogError(AppServer, "AppTask.Init: failed to read initial light state: %x",
-                         chip::to_underlying(status));
+            ChipLogError(AppServer, "AppTask.Init: failed to read initial light state: %x", chip::to_underlying(status));
         }
     }
 
