@@ -137,7 +137,7 @@ void OvenManager::TempCtrlAttributeChangeHandler(EndpointId endpointId, Attribut
 
 void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
 {
-    AppEvent event = {};
+    Action_t action = INVALID_ACTION;
     switch (endpointId)
     {
     case kCookTopEndpoint:
@@ -148,7 +148,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         VerifyOrReturn(mCookSurfaceEndpoint2.SetOnOffState(*value) == Status::Success,
                        ChipLogError(AppServer, "Failed to set CookSurfaceEndpoint2 state"));
 
-        event.OvenEvent.Action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
+        action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
         break;
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
@@ -170,8 +170,10 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         break;
     }
 
-    event.Type    = AppEvent::kEventType_Oven;
-    event.Handler = OvenActionHandler;
+    AppEvent event         = {};
+    event.Type             = AppEvent::kEventType_Oven;
+    event.OvenEvent.Action = action;
+    event.Handler          = OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
 }
 
