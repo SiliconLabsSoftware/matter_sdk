@@ -1,4 +1,4 @@
-name: Daily Sync of the csa branch
+name: Daily Sync of the csa-v1.5-branch branch
 
 on:
     schedule:
