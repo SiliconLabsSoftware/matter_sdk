@@ -161,9 +161,7 @@ silabs_executable("rangehood_app") {
 
     deps += pw_build_LINK_DEPS
 
-    include_dirs += [
-      "${chip_root}/examples/common",
-    ]
+    include_dirs += [ "${chip_root}/examples/common" ]
   }
 
   ldscript = "${examples_common_plat_dir}/ldscripts/${silabs_family}.ld"
