@@ -35,8 +35,8 @@ jobs:
             - name: Create Pull Request
               uses: peter-evans/create-pull-request@v7
               with:
-                  branch: automation/update_release-2.8-1.5
-                  base: release-2.8-1.5
+                  branch: automation/update_release_2.8-1.5
+                  base: release_2.8-1.5
                   title: "Sync v1.5-branch branch with csa-v1.5-branch"
                   body: |
                       This PR syncs the v1.5-branch branch with the csa-v1.5-branch branch.
