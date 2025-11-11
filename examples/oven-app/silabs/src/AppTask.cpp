@@ -70,9 +70,8 @@ CHIP_ERROR AppTask::AppInit()
     GetLCD().Init((uint8_t *) "Oven-App");
 #endif
 
-    // Initialization of Oven Manager and endpoints of oven and ovenpanel.
+    // Initialization of Oven Manager and endpoints of oven.
     OvenManager::GetInstance().Init();
-
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
