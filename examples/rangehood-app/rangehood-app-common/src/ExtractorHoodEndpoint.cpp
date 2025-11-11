@@ -79,7 +79,7 @@ Status ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) cons
 
     VerifyOrReturnValue(status == Status::Success, status,
         ChipLogError(NotSpecified, "ExtractorHoodEndpoint::GetFanMode: failed to get FanMode attribute: %d", to_underlying(status)));
-    
+
     return Status::Success;
 }
 
@@ -103,10 +103,10 @@ Status ExtractorHoodEndpoint::SetPercentCurrent(Percent aNewPercentSetting)
 
     // No update needed if value is unchanged
     VerifyOrReturnValue(aNewPercentSetting != currentPercentCurrent, Status::Success);
-    
+
     DeviceLayer::PlatformMgr().LockChipStack();
     Status setStatus = FanControl::Attributes::PercentCurrent::Set(mEndpointId, aNewPercentSetting);
-    DeviceLayer::PlatformMgr().UnlockChipStack();    
+    DeviceLayer::PlatformMgr().UnlockChipStack();
 
     VerifyOrReturnValue(setStatus == Status::Success, Status::Failure,
                         ChipLogError(NotSpecified,
@@ -128,7 +128,7 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent aNewPercentSett
     DeviceLayer::PlatformMgr().LockChipStack();
     Status getStatus = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
     DeviceLayer::PlatformMgr().UnlockChipStack();
-    
+
     // Return error if we can't read current value
     VerifyOrReturnValue(getStatus == Status::Success, getStatus,
                         ChipLogError(NotSpecified,
@@ -150,7 +150,7 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent aNewPercentSett
                                     "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get FanMode: %d",
                                     to_underlying(fanModeStatus)));
 
-    // Don't update PercentCurrent if fan mode is Auto 
+    // Don't update PercentCurrent if fan mode is Auto
     VerifyOrReturnValue(currentFanMode != FanControl::FanModeEnum::kAuto, Status::Success);
 
     DeviceLayer::PlatformMgr().LockChipStack();
