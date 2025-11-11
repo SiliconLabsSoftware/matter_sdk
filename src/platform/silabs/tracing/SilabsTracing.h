@@ -289,12 +289,6 @@ public:
      */
     CHIP_ERROR OutputTaskStatistics();
 
-    /**
-     * @brief Registers the power manager tracing functionality with the power manager to receive notifications when the device
-     *        changes its power state.
-     */
-    void RegisterPowerManagerTracing();
-
     /** @brief Output power manager energy mode statistics
      * This function outputs the total time spent in each energy mode and the percentage of total time.
      *  @return CHIP_ERROR, returns CHIP_ERROR_UNINITIALIZED if the feature or logs are not initialized
