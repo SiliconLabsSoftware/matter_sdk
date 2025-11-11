@@ -53,12 +53,9 @@ CHIP_ERROR RangeHoodManager::Init()
 void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                                         uint16_t size)
 {
-    if (endpointId != kExtractorHoodEndpoint)
-    {
-        ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId,
-                     kExtractorHoodEndpoint);
-        return;
-    }
+    VerifyOrReturn(endpointId == kExtractorHoodEndpoint,
+                   ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId,
+                                kExtractorHoodEndpoint));
 
     if (value == nullptr)
     {
@@ -100,11 +97,9 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
 void RangeHoodManager::OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                                    uint16_t size)
 {
-    if (endpointId != kLightEndpoint)
-    {
-        ChipLogError(NotSpecified, "OnOffAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId, kLightEndpoint);
-        return;
-    }
+    VerifyOrReturn(
+        endpointId == kLightEndpoint,
+        ChipLogError(NotSpecified, "OnOffAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId, kLightEndpoint));
 
     if (value == nullptr || size < sizeof(uint8_t))
     {

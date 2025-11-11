@@ -163,7 +163,6 @@ silabs_executable("rangehood_app") {
 
     include_dirs += [
       "${chip_root}/examples/common",
-      "${chip_root}/examples/common/pigweed/efr32",
     ]
   }
 

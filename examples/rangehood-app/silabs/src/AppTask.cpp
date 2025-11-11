@@ -96,7 +96,19 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
     sLightLED.Init(LIGHT_LED);
-    sLightLED.Set(RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState());
+    {
+        bool lightState = false;
+        auto status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
+        if (status == chip::Protocols::InteractionModel::Status::Success)
+        {
+            sLightLED.Set(lightState);
+        }
+        else
+        {
+            ChipLogError(AppServer, "AppTask.Init: failed to read initial light state: %x",
+                         chip::to_underlying(status));
+        }
+    }
 
     return err;
 }

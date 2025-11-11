@@ -41,8 +41,6 @@ public:
      */
     CHIP_ERROR Init(chip::Percent offPercent, chip::Percent lowPercent, chip::Percent mediumPercent, chip::Percent highPercent);
 
-    chip::EndpointId GetEndpointId() const { return mEndpointId; }
-
     chip::app::DataModel::Nullable<chip::Percent> GetPercentSetting() const;
 
     chip::Protocols::InteractionModel::Status GetFanMode(chip::app::Clusters::FanControl::FanModeEnum & fanMode) const;
