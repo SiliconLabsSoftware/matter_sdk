@@ -937,8 +937,6 @@ void SilabsTracer::StaticPowerManagerTransitionCallback(sl_power_manager_em_t fr
 
 #endif // SILABS_TRACING_ENERGY_STATS
 
-void SilabsTracer::RegisterPowerManagerTracing() {}
-
 CHIP_ERROR SilabsTracer::OutputPowerManagerStatistics()
 {
 #if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
