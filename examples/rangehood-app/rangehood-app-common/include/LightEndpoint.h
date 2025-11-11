@@ -28,15 +28,18 @@ public:
     LightEndpoint(chip::EndpointId endpointId) : mEndpointId(endpointId) {}
 
     /**
-     * @brief Get the current On/Off state from the Matter attribute
-     * @return true if light is on, false if off
+     * @brief Get the current On/Off state from the Matter attribute.
+     * @param[out] state true if light is on, false if off on success.
+     * @return Interaction Model status code.
      */
-    bool GetOnOffState();
+    chip::Protocols::InteractionModel::Status GetOnOffState(bool & state);
 
     /**
      * @brief Set On/Off state for the Light.
+     * @param[in] state Desired state (true => On, false => Off).
+     * @return Interaction Model status code.
      */
-    void SetOnOffState(bool state);
+    chip::Protocols::InteractionModel::Status SetOnOffState(bool state);
 
 private:
     chip::EndpointId mEndpointId = chip::kInvalidEndpointId;

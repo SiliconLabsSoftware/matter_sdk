@@ -29,23 +29,32 @@ using namespace chip::Protocols::InteractionModel;
 using namespace chip::app::Clusters::OnOff;
 using namespace chip::app::Clusters;
 
-bool LightEndpoint::GetOnOffState()
+Protocols::InteractionModel::Status LightEndpoint::GetOnOffState(bool & state)
 {
-    bool state = false;
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
+    auto status = OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
-    return state;
+
+    if (status != Protocols::InteractionModel::Status::Success)
+    {
+        ChipLogError(AppServer, "ERR: reading on/off %x", to_underlying(status));
+    }
+
+    return status;
 }
 
-void LightEndpoint::SetOnOffState(bool state)
+Protocols::InteractionModel::Status LightEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
+
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
     if (status != Protocols::InteractionModel::Status::Success)
     {
         ChipLogError(AppServer, "ERR: updating on/off %x", to_underlying(status));
     }
+
+    return status;
 }
