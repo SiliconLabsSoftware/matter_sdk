@@ -92,11 +92,11 @@ Status ExtractorHoodEndpoint::SetPercentCurrent(Percent aNewPercentSetting)
     Percent currentPercentCurrent = 0;
 
     DeviceLayer::PlatformMgr().LockChipStack();
-    Status Status = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
+    Status getStatus = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
      // Return error if we can't read current value
-    VerifyOrReturnValue(Status == Status::Success, Status,
+    VerifyOrReturnValue(getStatus == Status::Success, getStatus,
                         ChipLogError(NotSpecified,
                                      "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get currentPercentCurrent: %d",
                                      to_underlying(getStatus)));
