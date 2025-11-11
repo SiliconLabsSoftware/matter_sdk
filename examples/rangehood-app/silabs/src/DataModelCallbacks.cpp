@@ -43,7 +43,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     AttributeId attributeId = attributePath.mAttributeId;
     EndpointId endpointId   = attributePath.mEndpointId;
 
-    ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI " on endpoint %u", ChipLogValueMEI(clusterId), endpointId);
+    ChipLogDetail(Zcl, "Cluster callback: " ChipLogFormatMEI " on endpoint %u", ChipLogValueMEI(clusterId), endpointId);
 
     switch (clusterId)
     {
@@ -65,7 +65,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         break;
 
     default:
-        ChipLogProgress(Zcl, "Unhandled cluster " ChipLogFormatMEI " on endpoint %u", ChipLogValueMEI(clusterId), endpointId);
+        ChipLogDetail(Zcl, "Unhandled cluster " ChipLogFormatMEI " on endpoint %u", ChipLogValueMEI(clusterId), endpointId);
         break;
     }
 }

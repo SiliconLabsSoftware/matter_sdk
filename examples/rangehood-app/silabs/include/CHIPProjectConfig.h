@@ -55,7 +55,7 @@
 /**
  * CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_ID
  *
- * 0x8005: example Closure app
+ * 0x8005: example RangeHood app
  */
 #define CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_ID 0x8005 // TODO allocate new product ID
 
