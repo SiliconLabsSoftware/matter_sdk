@@ -24,8 +24,8 @@
 #include "OvenBindingHandler.h"
 
 #ifdef DISPLAY_ENABLED
-#include "lcd.h"
 #include "OvenUI.h"
+#include "lcd.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
 #endif // QR_CODE_ENABLED
