@@ -25,7 +25,7 @@ jobs:
                     - local_branch: csa-v1.5-branch
                       pr_branch: automation/update_release_2.8-1.5
                       base_branch: release_2.8-1.5
-                      title: "Sync v1.5-branch branch with csa-v1.5-branch"
+                      title: "Sync csa-v1.5-branch branch with release_2.8-1.5"
                       body: |
                           This PR syncs the v1.5-branch branch with the csa-v1.5-branch branch.
 
