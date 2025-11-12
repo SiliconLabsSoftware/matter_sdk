@@ -1,0 +1,65 @@
+#/***************************************************************************
+# * @file BUILD.gn
+# * @brief Instrumenting for matter operation tracing for the Silicon Labs platform.
+# *******************************************************************************
+# * # License
+# * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
+# *******************************************************************************
+# *
+# * The licensor of this software is Silicon Laboratories Inc. Your use of this
+# * software is governed by the terms of Silicon Labs Master Software License
+# * Agreement (MSLA) available at
+# * www.silabs.com/about-us/legal/master-software-license-agreement. This
+# * software is distributed to you in Source Code format and is governed by the
+# * sections of the MSLA applicable to Source Code.
+# *
+# ******************************************************************************/
+
+import("//build_overrides/build.gni")
+import("//build_overrides/chip.gni")
+import("${chip_root}/build/chip/buildconfig_header.gni")
+
+declare_args() {
+  # When enabled, this sets:
+  #  - configGENERATE_RUN_TIME_STATS in FreeRTOS
+  #  - configUSE_STATS_FORMATTING_FUNCTIONS in FreeRTOS
+  #  - Runtime statistics timer configuration
+  #  - Task switching hooks for statistics collection
+  silabs_tracing_runtime_stats = false
+}
+
+buildconfig_header("silabs_tracing_config") {
+  header = "SilabsTracingConfig.h"
+  header_dir = "platform/silabs/tracing"
+
+  defines = []
+
+  if (silabs_tracing_runtime_stats == true) {
+    defines += [
+      "TRACING_RUNTIME_STATS=1",
+      "TRACING_RUNTIME_STATS_MAX_TASKS=16",
+    ]
+  }
+  defines += [ "SERIALIZED_TIME_TRACKERS_SIZE_BYTES=512" ]
+}
+
+static_library("SilabsTracing") {
+  sources = [
+    "BackendImpl.cpp",
+    "BackendImpl.h",
+    "SilabsTracing.cpp",
+    "SilabsTracing.h",
+    "SilabsTracingTypes.h",
+  ]
+
+  deps = [
+    "${chip_root}/src/lib/core",
+    "${chip_root}/src/lib/support",
+    "${chip_root}/src/system",
+  ]
+
+  public_deps = [
+    ":silabs_tracing_config",
+    "${chip_root}/src/tracing:tracing",
+  ]
+}
