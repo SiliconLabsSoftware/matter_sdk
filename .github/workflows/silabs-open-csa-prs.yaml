@@ -27,7 +27,7 @@ jobs:
                       base_branch: release_2.8-1.5
                       title: "Sync csa-v1.5-branch branch with release_2.8-1.5"
                       body: |
-                          This PR syncs the v1.5-branch branch with the csa-v1.5-branch branch.
+                          This PR syncs the csa-v1.5-branch branch with the release_2.8-1.5 branch.
 
                           **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
 
