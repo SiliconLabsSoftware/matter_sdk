@@ -102,7 +102,7 @@ private:
     static constexpr chip::EndpointId kExtractorHoodEndpoint = 1;
     static constexpr chip::EndpointId kLightEndpoint         = 2;
 
-    ExtractorHoodEndpoint mExtractorHoodEndpoint{ kExtractorHoodEndpoint };
+    ExtractorHoodEndpoint mExtractorHoodEndpoint{ kExtractorHoodEndpoint, 30, 60, 100 }; // Low=30%, Med=60%, High=100%
     LightEndpoint mLightEndpoint{ kLightEndpoint };
 };
 

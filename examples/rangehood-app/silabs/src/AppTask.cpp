@@ -108,11 +108,7 @@ CHIP_ERROR AppTask::AppInit()
     {
         ChipLogError(AppServer, "AppTask.Init: failed to  read initial light state");
     }
-    chip::app::Clusters::FanControl::FanModeSequenceEnum fanModeSequence;
-        chip::DeviceLayer::PlatformMgr().LockChipStack();
-    chip::app::Clusters::FanControl::Attributes::FanModeSequence::Get(1, &fanModeSequence);  
-        chip::DeviceLayer::PlatformMgr().UnlockChipStack();  
-    ChipLogProgress(AppServer, "FanModeSequence: %u", chip::to_underlying(fanModeSequence));
+   
     return err;
 }
 

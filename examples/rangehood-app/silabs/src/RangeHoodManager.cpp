@@ -40,11 +40,7 @@ RangeHoodManager RangeHoodManager::sRangeHoodMgr;
 CHIP_ERROR RangeHoodManager::Init()
 {
     // Endpoint initializations with fan mode percent mappings
-    VerifyOrReturnError(mExtractorHoodEndpoint.Init(30, // Low: 30%
-                                                    60, // Medium: 60%
-                                                    100 // High: 100%
-                                                    ) == CHIP_NO_ERROR,
-                        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(mExtractorHoodEndpoint.Init() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
 
     return CHIP_NO_ERROR;
 }

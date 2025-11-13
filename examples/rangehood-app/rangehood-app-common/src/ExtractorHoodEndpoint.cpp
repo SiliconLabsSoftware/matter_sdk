@@ -33,18 +33,19 @@ using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::FanControl;
 using Status = chip::Protocols::InteractionModel::Status;
 
-CHIP_ERROR ExtractorHoodEndpoint::Init(Percent lowPercent, Percent mediumPercent, Percent highPercent)
+CHIP_ERROR ExtractorHoodEndpoint::Init()
 {
-    // Off percent is implicitly 0 (spec mandates 0 maps uniquely to Off)
-    mFanModeLowPercent    = lowPercent;
-    mFanModeMediumPercent = mediumPercent;
-    mFanModeHighPercent   = highPercent;
-
     // Initialize percent current from percent setting
     // This ensures the fan speed reflects the current setting on startup
     DataModel::Nullable<chip::Percent> percentSettingNullable = GetPercentSetting();
     Percent percentSetting = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
-    HandlePercentSettingChange(percentSetting);
+    Status status = HandlePercentSettingChange(percentSetting);
+    if (status != Status::Success)
+    {
+        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::Init: Failed to initialize PercentCurrent");
+        return CHIP_ERROR_INTERNAL;
+    }
+    
     return CHIP_NO_ERROR;
 }
 

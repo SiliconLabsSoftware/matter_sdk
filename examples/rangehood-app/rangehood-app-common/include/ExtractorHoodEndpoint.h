@@ -30,17 +30,34 @@
 class ExtractorHoodEndpoint
 {
 public:
-    ExtractorHoodEndpoint(chip::EndpointId endpointId) : mEndpointId(endpointId) {}
-
     /**
-     * @brief Initialize the ExtractorHood endpoint.
-     * @param lowPercent   Percent value for Low mode (30)
-     * @param mediumPercent Percent value for Medium mode (60)
-     * @param highPercent  Percent value for High/On mode (100)
+     * @brief Construct the ExtractorHood endpoint.
+     * @param endpointId   The endpoint ID
+     * @param lowPercent   Percent value for Low mode (default: 30)
+     * @param mediumPercent Percent value for Medium mode (default: 60)
+     * @param highPercent  Percent value for High/On mode (default: 100)
      *
      * Off is always 0 per spec: "The value 0 SHALL map to Off and be its own range".
      */
-    CHIP_ERROR Init(chip::Percent lowPercent, chip::Percent mediumPercent, chip::Percent highPercent);
+    ExtractorHoodEndpoint(chip::EndpointId endpointId, 
+                          chip::Percent lowPercent = 30, 
+                          chip::Percent mediumPercent = 60, 
+                          chip::Percent highPercent = 100) :
+        mEndpointId(endpointId),
+        mFanModeOffPercent(0),
+        mFanModeLowPercent(lowPercent),
+        mFanModeMediumPercent(mediumPercent),
+        mFanModeHighPercent(highPercent)
+    {}
+
+    /**
+     * @brief Initialize the ExtractorHood endpoint runtime state.
+     * Reads current PercentSetting and synchronizes PercentCurrent.
+     * 
+     * @note Must be called after construction and after the Matter stack is initialized.
+     * @return CHIP_NO_ERROR on success, error code otherwise
+     */
+    CHIP_ERROR Init();
 
     chip::app::DataModel::Nullable<chip::Percent> GetPercentSetting() const;
 
