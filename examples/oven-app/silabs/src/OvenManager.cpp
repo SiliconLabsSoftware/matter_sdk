@@ -161,7 +161,11 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
             context->localEndpointId = kCookTopEndpoint;
             context->commandId       = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
 
-            CookTopOnOffBindingTrigger(context);
+            if (CookTopOnOffBindingTrigger(context) != CHIP_NO_ERROR)
+            {
+                Platform::Delete(context);
+                ChipLogError(AppServer, "Failed to schedule CookTopOnOffBindingTrigger, context freed");
+            }
         }
         break;
     }

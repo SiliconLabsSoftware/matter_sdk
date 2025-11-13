@@ -19,4 +19,4 @@ struct OnOffBindingContext
 CHIP_ERROR InitOvenBindingHandler();
 
 // Notify that CookTop OnOff cluster changed using pre-filled context
-void CookTopOnOffBindingTrigger(OnOffBindingContext * context);
+CHIP_ERROR CookTopOnOffBindingTrigger(OnOffBindingContext * context);

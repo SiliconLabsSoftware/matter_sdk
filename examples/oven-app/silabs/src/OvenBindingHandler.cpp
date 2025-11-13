@@ -85,6 +85,7 @@ void TriggerBindingWork(intptr_t context)
 
     // Notify all OnOff bindings from the specified endpoint
     Binding::Manager::GetInstance().NotifyBoundClusterChanged(ctx->localEndpointId, Clusters::OnOff::Id, ctx);
+    Platform::Delete(ctx);
 }
 
 } // namespace
@@ -95,8 +96,9 @@ CHIP_ERROR InitOvenBindingHandler()
     return CHIP_NO_ERROR;
 }
 
-void CookTopOnOffBindingTrigger(OnOffBindingContext * context)
+CHIP_ERROR CookTopOnOffBindingTrigger(OnOffBindingContext * context)
 {
-    VerifyOrReturn(context != nullptr, ChipLogError(AppServer, "CookTopOnOffBindingTrigger: null context"));
+    VerifyOrReturnError(context != nullptr, CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "CookTopOnOffBindingTrigger: null context"));
     DeviceLayer::PlatformMgr().ScheduleWork(TriggerBindingWork, reinterpret_cast<intptr_t>(context));
+    return CHIP_NO_ERROR;
 }

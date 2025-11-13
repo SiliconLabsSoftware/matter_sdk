@@ -5124,6 +5124,14 @@
               "source": "client",
               "isIncoming": 0,
               "isEnabled": 1
+            },
+            {
+              "name": "On",
+              "code": 1,
+              "mfgCode": null,
+              "source": "client",
+              "isIncoming": 0,
+              "isEnabled": 1
             }
           ]
         },
