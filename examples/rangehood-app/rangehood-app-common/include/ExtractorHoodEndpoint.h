@@ -34,42 +34,43 @@ public:
 
     /**
      * @brief Initialize the ExtractorHood endpoint.
-     * @param offPercent Percent value for Off mode (typically 0)
-     * @param lowPercent Percent value for Low mode (typically 30)
-     * @param mediumPercent Percent value for Medium mode (typically 60)
-     * @param highPercent Percent value for High/On mode (typically 100)
+     * @param lowPercent   Percent value for Low mode (30)
+     * @param mediumPercent Percent value for Medium mode (60)
+     * @param highPercent  Percent value for High/On mode (100)
+     *
+     * Off is always 0 per spec: "The value 0 SHALL map to Off and be its own range".
      */
-    CHIP_ERROR Init(chip::Percent offPercent, chip::Percent lowPercent, chip::Percent mediumPercent, chip::Percent highPercent);
+    CHIP_ERROR Init(chip::Percent lowPercent, chip::Percent mediumPercent, chip::Percent highPercent);
 
     chip::app::DataModel::Nullable<chip::Percent> GetPercentSetting() const;
 
     chip::Protocols::InteractionModel::Status GetFanMode(chip::app::Clusters::FanControl::FanModeEnum & fanMode) const;
 
-    chip::Protocols::InteractionModel::Status SetPercentCurrent(chip::Percent aNewPercentSetting);
+    chip::Protocols::InteractionModel::Status SetPercentCurrent(chip::Percent newPercentSetting);
 
     /**
      * @brief Handle percent setting change and update percent current accordingly
      * This is called when the PercentSetting attribute changes and updates PercentCurrent
      * if the fan mode is not Auto and the value is different
      *
-     * @param aNewPercentSetting The new percent setting value
+     * @param newPercentSetting The new percent setting value
      * @return Status Success on success, error code otherwise
      */
-    chip::Protocols::InteractionModel::Status HandlePercentSettingChange(chip::Percent aNewPercentSetting);
+    chip::Protocols::InteractionModel::Status HandlePercentSettingChange(chip::Percent newPercentSetting);
 
     /**
      * @brief Handle fan mode change and update percent current accordingly
      * This maps fan modes to their corresponding percent values and updates the PercentCurrent attribute
      *
-     * @param aNewFanMode The new fan mode to apply
+     * @param newFanMode The new fan mode to apply
      * @return Status Success on success, error code otherwise
      */
-    chip::Protocols::InteractionModel::Status HandleFanModeChange(chip::app::Clusters::FanControl::FanModeEnum aNewFanMode);
+    chip::Protocols::InteractionModel::Status HandleFanModeChange(chip::app::Clusters::FanControl::FanModeEnum newFanMode);
 
     /**
      * @brief Update the FanMode attribute
      */
-    chip::Protocols::InteractionModel::Status UpdateFanModeAttribute(chip::app::Clusters::FanControl::FanModeEnum aFanMode);
+    chip::Protocols::InteractionModel::Status UpdateFanModeAttribute(chip::app::Clusters::FanControl::FanModeEnum newFanMode);
 
     /**
      * @brief Toggle fan mode between Off and High
@@ -82,8 +83,8 @@ private:
     chip::EndpointId mEndpointId = chip::kInvalidEndpointId;
 
     // Fan Mode Percent Mappings (set during initialization)
-    chip::Percent mFanModeOffPercent    = 0;   // Off: 0%
-    chip::Percent mFanModeLowPercent    = 30;  // Low: 30%
-    chip::Percent mFanModeMediumPercent = 60;  // Medium: 60%
-    chip::Percent mFanModeHighPercent   = 100; // High: 100%
+    chip::Percent mFanModeOffPercent;
+    chip::Percent mFanModeLowPercent;
+    chip::Percent mFanModeMediumPercent;
+    chip::Percent mFanModeHighPercent;
 };

@@ -37,6 +37,7 @@
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
+#include <lib/support/logging/CHIPLogging.h>
 
 #include <assert.h>
 
@@ -60,6 +61,7 @@ using namespace chip::TLV;
 using namespace ::chip::DeviceLayer;
 using namespace chip::app::Clusters::FanControl;
 using namespace chip::app::Clusters;
+using namespace chip::app::Clusters::FanControl::Attributes;
 
 LEDWidget sLightLED; // Use LEDWidget for basic LED functionality
 
@@ -96,19 +98,21 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
     sLightLED.Init(LIGHT_LED);
+    bool lightState = false;
+    CHIP_ERROR status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
+    if (status == CHIP_NO_ERROR)
     {
-        bool lightState = false;
-        auto status     = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
-        if (status == chip::Protocols::InteractionModel::Status::Success)
-        {
-            sLightLED.Set(lightState);
-        }
-        else
-        {
-            ChipLogError(AppServer, "AppTask.Init: failed to read initial light state: %x", chip::to_underlying(status));
-        }
+        sLightLED.Set(lightState);
     }
-
+    else
+    {
+        ChipLogError(AppServer, "AppTask.Init: failed to  read initial light state");
+    }
+    chip::app::Clusters::FanControl::FanModeSequenceEnum fanModeSequence;
+        chip::DeviceLayer::PlatformMgr().LockChipStack();
+    chip::app::Clusters::FanControl::Attributes::FanModeSequence::Get(1, &fanModeSequence);  
+        chip::DeviceLayer::PlatformMgr().UnlockChipStack();  
+    ChipLogProgress(AppServer, "FanModeSequence: %u", chip::to_underlying(fanModeSequence));
     return err;
 }
 
@@ -181,6 +185,7 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
         SILABS_LOG("Light OFF");
         sLightLED.Set(false);
     }
+    // TODO: Handle FAN control actions
 }
 
 void AppTask::FanControlButtonHandler(AppEvent * aEvent)

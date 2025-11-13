@@ -35,11 +35,10 @@ silabs_project_dir = "${chip_root}/examples/rangehood-app/silabs"
 examples_common_plat_dir = "${chip_root}/examples/platform/silabs"
 example_rangehood_dir = "${chip_root}/examples/rangehood-app"
 
-#if (wifi_soc) {
-import("${chip_root}/third_party/silabs/SiWx917_sdk.gni")
-examples_plat_dir = "${chip_root}/examples/platform/silabs/SiWx917"
-
-#}
+if (wifi_soc) {
+  import("${chip_root}/third_party/silabs/SiWx917_sdk.gni")
+  examples_plat_dir = "${chip_root}/examples/platform/silabs/SiWx917"
+}
 
 import("${examples_common_plat_dir}/args.gni")
 

@@ -32,14 +32,14 @@ public:
      * @param[out] state true if light is on, false if off on success.
      * @return Interaction Model status code.
      */
-    chip::Protocols::InteractionModel::Status GetOnOffState(bool & state);
+    CHIP_ERROR GetOnOffState(bool & state);
 
     /**
      * @brief Set On/Off state for the Light.
      * @param[in] state Desired state (true => On, false => Off).
      * @return Interaction Model status code.
      */
-    chip::Protocols::InteractionModel::Status SetOnOffState(bool state);
+    CHIP_ERROR SetOnOffState(bool state);
 
 private:
     chip::EndpointId mEndpointId = chip::kInvalidEndpointId;
