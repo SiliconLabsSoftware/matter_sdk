@@ -28,8 +28,6 @@
 
 #include "AppConfig.h"
 #include "AppTask.h"
-
-#include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #define MAX_TEMPERATURE 30000
@@ -147,6 +145,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     switch (endpointId)
     {
     case kCookTopEndpoint:
+    {
         mCookTopState = (*value != 0) ? kCookTopState_On : kCookTopState_Off;
         // Turn on/off the associated cook surfaces.
         VerifyOrReturn(mCookSurfaceEndpoint1.SetOnOffState(*value) == Status::Success,
@@ -156,15 +155,16 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
 
         action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
         // Trigger binding for CookTop OnOff changes
+        OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
+        if (context != nullptr)
         {
-            OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
-
             context->localEndpointId = kCookTopEndpoint;
             context->commandId       = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
 
             CookTopOnOffBindingTrigger(context);
         }
         break;
+    }
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
         if (endpointId == kCookSurfaceEndpoint1)
