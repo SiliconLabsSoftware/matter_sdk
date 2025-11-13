@@ -52,13 +52,6 @@ public:
 
         INVALID_ACTION
     } Action;
-    enum State_t
-    {
-        kCookTopState_Off = 0,
-        kCookTopState_On,
-        kCookSurfaceState_Off,
-        kCookSurfaceState_On
-    };
 
     /**
      * @brief Initializes the OvenManager and its associated resources.
@@ -117,8 +110,10 @@ public:
 
     /**
      * @brief Gets the current state of the CookTop.
+     *
+     * @return true if CookTop is On, false if Off
      */
-    State_t GetCookTopState() const { return mCookTopState; }
+    bool GetCookTopState() const { return mCookTopState; }
 
     /**
      * @brief Gets the current oven mode.
@@ -172,9 +167,9 @@ private:
     uint8_t mCurrentOvenMode;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
-    State_t mCookTopState;
-    State_t mCookSurfaceState1;
-    State_t mCookSurfaceState2;
+    bool mCookTopState;
+    bool mCookSurfaceState1;
+    bool mCookSurfaceState2;
 
     /**
      * @brief Updates the oven hardware state and UI (LEDs, LCD) in response to an event.

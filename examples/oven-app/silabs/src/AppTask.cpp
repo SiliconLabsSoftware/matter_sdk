@@ -86,7 +86,7 @@ CHIP_ERROR AppTask::AppInit()
     OvenManager::GetInstance().Init();
 
     sLightLED.Init(LIGHT_LED);
-    UpdateLED(OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On);
+    UpdateLED(OvenManager::GetInstance().GetCookTopState() ? 1 : 0);
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -119,9 +119,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         appError(err);
     }
 
-#if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
     sAppTask.StartStatusLEDTimer();
-#endif
 
     ChipLogProgress(AppServer, "App Task started");
 
@@ -161,45 +159,24 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
     if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
         ChipLogProgress(AppServer, "Oven button pressed - starting toggle action");
-        return; // Only handle button release
-    }
-
-    if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonReleased))
-    {
-        ChipLogProgress(AppServer, "Oven button released - toggling cooktop and cook surface");
 
         // Determine new state (toggle current state)
-        OvenManager::Action_t action = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On)
-            ? OvenManager::COOK_TOP_OFF_ACTION
-            : OvenManager::COOK_TOP_ON_ACTION;
+        bool newOnOffState = !OvenManager::GetInstance().GetCookTopState();
 
-        // Toggle CookTop
-        chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
-
-        // Trigger binding for cooktop endpoint (this will send commands to bound Matter devices)
-        OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
-        if (context != nullptr)
-        {
-            context->localEndpointId = OvenManager::GetCookTopEndpoint(); // CookTop endpoint
-            context->commandId = (action == OvenManager::COOK_TOP_ON_ACTION) ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
-
-            ChipLogProgress(AppServer, "Triggering binding for cooktop endpoint with command %lu",
-                            static_cast<unsigned long>(context->commandId));
-            CookTopOnOffBindingTrigger(context);
-        }
+        // Schedule work to set the OnOff attribute.
+        chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, static_cast<intptr_t>(newOnOffState));
     }
 }
 
 void AppTask::UpdateClusterState(intptr_t context)
 {
-    // Update the OnOff cluster state for the cooktop endpoint based on the current state
-    bool currentState = (OvenManager::GetInstance().GetCookTopState() == OvenManager::kCookTopState_On);
+    bool newOnOffState = static_cast<bool>(context);
 
-    ChipLogProgress(AppServer, "Updating cooktop OnOff cluster state to %s", !currentState ? "On" : "Off");
+    ChipLogProgress(AppServer, "Updating cooktop OnOff cluster state to %s", newOnOffState ? "On" : "Off");
 
     // Set the OnOff attribute value for the cooktop endpoint
     Protocols::InteractionModel::Status status =
-        OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), !currentState, false);
+        OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), newOnOffState, false);
 
     if (status != Protocols::InteractionModel::Status::Success)
     {

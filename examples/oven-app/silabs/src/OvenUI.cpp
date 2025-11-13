@@ -95,10 +95,10 @@ void OvenUI::DrawHeader(GLIB_Context_t * glibContext)
 void OvenUI::DrawCookTopState(GLIB_Context_t * glibContext)
 {
     // Get CookTop state from OvenManager
-    OvenManager::State_t cookTopState = OvenManager::GetInstance().GetCookTopState();
+    bool cookTopState = OvenManager::GetInstance().GetCookTopState();
 
     // Display CookTop state on line 4
-    if (cookTopState == OvenManager::kCookTopState_On)
+    if (cookTopState)
     {
         GLIB_drawStringOnLine(glibContext, "COOKTOP: ON", 4, GLIB_ALIGN_LEFT, 0, 0, true);
     }
@@ -122,39 +122,42 @@ void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
     uint8_t currentMode = OvenManager::GetInstance().GetCurrentOvenMode();
 
     // Display oven mode on line 6
+    char modeStr[32] = {0};
     switch (currentMode)
     {
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeBake):
-        GLIB_drawStringOnLine(glibContext, "MODE: BAKE", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: BAKE");
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvection):
-        GLIB_drawStringOnLine(glibContext, "MODE: CONVECTION", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: CONVECTION");
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeGrill):
-        GLIB_drawStringOnLine(glibContext, "MODE: GRILL", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: GRILL");
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeRoast):
-        GLIB_drawStringOnLine(glibContext, "MODE: ROAST", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: ROAST");
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeClean):
-        GLIB_drawStringOnLine(glibContext, "MODE: CLEAN", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: CLEAN");
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvectionBake):
-        GLIB_drawStringOnLine(glibContext, "MODE: CONV BAKE", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: CONV BAKE");
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvectionRoast):
-        GLIB_drawStringOnLine(glibContext, "MODE: CONV ROAST", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: CONV ROAST");
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeWarming):
-        GLIB_drawStringOnLine(glibContext, "MODE: WARMING", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: WARMING");
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeProofing):
-        GLIB_drawStringOnLine(glibContext, "MODE: PROOFING", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: PROOFING");
         break;
     default:
-        GLIB_drawStringOnLine(glibContext, "MODE: UNKNOWN", 6, GLIB_ALIGN_LEFT, 0, 0, true);
+        strcpy(modeStr, "MODE: UNKNOWN");
         break;
     }
+
+    GLIB_drawStringOnLine(glibContext, modeStr, 6, GLIB_ALIGN_LEFT, 0, 0, true);
 
 #if SL_LCDCTRL_MUX
     sl_wfx_host_pre_lcd_spi_transfer();
@@ -163,32 +166,4 @@ void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
 #if SL_LCDCTRL_MUX
     sl_wfx_host_post_lcd_spi_transfer();
 #endif // SL_LCDCTRL_MUX
-}
-
-void OvenUI::DrawFont(GLIB_Context_t * glibContext, uint8_t initial_x, uint8_t initial_y, uint8_t width, uint8_t * data,
-                      uint32_t size)
-{
-    uint8_t x = initial_x, y = initial_y;
-    for (uint16_t i = 0; i < size; i++)
-    {
-        for (uint8_t mask = 0; mask < 8; mask++)
-        {
-            if (!(data[i] & (0x01 << mask)))
-            {
-                GLIB_drawPixel(glibContext, x, y);
-            }
-            // Check line changes
-            if (((x - initial_x) % width) == 0 && x != initial_x)
-            {
-                x = initial_x;
-                y++;
-                // Font is 8 bit align with paddings bits;
-                mask = 8;
-            }
-            else
-            {
-                x++;
-            }
-        }
-    }
 }

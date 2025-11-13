@@ -79,9 +79,9 @@ public:
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
     /**
-     * @brief Updates the LED display with the current state
+     * @brief Updates the LED display with the current state of CookTop
      *
-     * @param value Current state value to display
+     * @param value Current state value to display (CookTop On/Off)
      */
     void UpdateLED(int8_t value);
 
@@ -113,7 +113,12 @@ private:
     /**
      * @brief Updates the cluster state for button actions
      *
-     * @param context Context parameter (unused)
+     * The context parameter contains the desired OnOff state encoded as an intptr_t
+     * (0 == Off, non-zero == On). This value is provided by the caller via
+     * PlatformMgr().ScheduleWork. The worker will set the OnOff attribute to
+     * this boolean value.
+     *
+     * @param context bool value encoded as intptr_t
      */
     static void UpdateClusterState(intptr_t context);
 };
