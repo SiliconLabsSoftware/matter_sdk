@@ -68,9 +68,9 @@ def getClangFormatBinary():
                 print('WARNING: clang-format may not be the right version:')
                 print('   PIGWEED TAG:    %s' % clang_config['tags'][0])
                 print('   ACTUAL VERSION: %s' % version_string)
-        except Exception:
+        except Exception as e:
             print("Failed to validate clang version.")
-            traceback.print_last()
+            traceback.print_exc()
 
         return binary
 
