@@ -521,7 +521,9 @@
  *  @param[in]  error  A ChipError object to be evaluated against success (CHIP_NO_ERROR).
  *
  */
+#ifndef SuccessOrExit
 #define SuccessOrExit(error) nlEXPECT(::chip::ChipError::IsSuccess((error)), exit)
+#endif
 
 /**
  *  @def SuccessOrExitAction(error, anAction)
@@ -566,7 +568,9 @@
  *                          assertion fails.
  *
  */
+#ifndef VerifyOrExit
 #define VerifyOrExit(aCondition, anAction) nlEXPECT_ACTION(aCondition, exit, anAction)
+#endif
 
 /**
  *  @def ExitNow(...)
@@ -603,11 +607,13 @@
  *  @param[in]  ...         Statements to execute. Optional.
  */
 // clang-format off
+#ifndef ExitNow
 #define ExitNow(...)                                                   \
     do {                                                               \
         __VA_ARGS__;                                                   \
         goto exit;                                                     \
     } while (0)
+#endif
 // clang-format on
 
 /**
