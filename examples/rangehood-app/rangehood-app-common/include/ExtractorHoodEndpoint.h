@@ -39,14 +39,10 @@ public:
      *
      * Off is always 0 per spec: "The value 0 SHALL map to Off and be its own range".
      */
-    ExtractorHoodEndpoint(chip::EndpointId endpointId,
-                          chip::Percent lowPercent = 30,
-                          chip::Percent mediumPercent = 60,
+    ExtractorHoodEndpoint(chip::EndpointId endpointId, chip::Percent lowPercent = 30, chip::Percent mediumPercent = 60,
                           chip::Percent highPercent = 100) :
         mEndpointId(endpointId),
-        mFanModeOffPercent(0),
-        mFanModeLowPercent(lowPercent),
-        mFanModeMediumPercent(mediumPercent),
+        mFanModeOffPercent(0), mFanModeLowPercent(lowPercent), mFanModeMediumPercent(mediumPercent),
         mFanModeHighPercent(highPercent)
     {}
 

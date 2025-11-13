@@ -48,7 +48,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     switch (clusterId)
     {
     case FanControl::Id:
-       if (value != nullptr)
+        if (value != nullptr)
         {
             ChipLogDetail(Zcl, "FanControl attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
                           ChipLogValueMEI(attributeId), type, *value, size, endpointId);
@@ -69,7 +69,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         if (value != nullptr)
         {
             ChipLogDetail(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
-                      ChipLogValueMEI(attributeId), type, *value, size, endpointId);
+                          ChipLogValueMEI(attributeId), type, *value, size, endpointId);
         }
         break;
 

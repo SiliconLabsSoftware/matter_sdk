@@ -98,7 +98,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
     sLightLED.Init(LIGHT_LED);
-    bool lightState = false;
+    bool lightState   = false;
     CHIP_ERROR status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
     if (status == CHIP_NO_ERROR)
     {

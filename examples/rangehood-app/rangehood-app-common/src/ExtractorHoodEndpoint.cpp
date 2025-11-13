@@ -39,7 +39,7 @@ CHIP_ERROR ExtractorHoodEndpoint::Init()
     // This ensures the fan speed reflects the current setting on startup
     DataModel::Nullable<chip::Percent> percentSettingNullable = GetPercentSetting();
     Percent percentSetting = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
-    Status status = HandlePercentSettingChange(percentSetting);
+    Status status          = HandlePercentSettingChange(percentSetting);
     if (status != Status::Success)
     {
         ChipLogError(NotSpecified, "ExtractorHoodEndpoint::Init: Failed to initialize PercentCurrent");
