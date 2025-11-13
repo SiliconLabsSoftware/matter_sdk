@@ -45,7 +45,7 @@ CHIP_ERROR ExtractorHoodEndpoint::Init()
         ChipLogError(NotSpecified, "ExtractorHoodEndpoint::Init: Failed to initialize PercentCurrent");
         return CHIP_ERROR_INTERNAL;
     }
-    
+
     return CHIP_NO_ERROR;
 }
 

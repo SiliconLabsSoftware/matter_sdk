@@ -39,9 +39,9 @@ public:
      *
      * Off is always 0 per spec: "The value 0 SHALL map to Off and be its own range".
      */
-    ExtractorHoodEndpoint(chip::EndpointId endpointId, 
-                          chip::Percent lowPercent = 30, 
-                          chip::Percent mediumPercent = 60, 
+    ExtractorHoodEndpoint(chip::EndpointId endpointId,
+                          chip::Percent lowPercent = 30,
+                          chip::Percent mediumPercent = 60,
                           chip::Percent highPercent = 100) :
         mEndpointId(endpointId),
         mFanModeOffPercent(0),
@@ -53,7 +53,7 @@ public:
     /**
      * @brief Initialize the ExtractorHood endpoint runtime state.
      * Reads current PercentSetting and synchronizes PercentCurrent.
-     * 
+     *
      * @note Must be called after construction and after the Matter stack is initialized.
      * @return CHIP_NO_ERROR on success, error code otherwise
      */

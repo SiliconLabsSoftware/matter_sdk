@@ -53,7 +53,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
             ChipLogDetail(Zcl, "FanControl attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
                           ChipLogValueMEI(attributeId), type, *value, size, endpointId);
             RangeHoodManager::GetInstance().FanControlAttributeChangeHandler(endpointId, attributeId, value, size);
-        }       
+        }
         break;
 
     case OnOff::Id:

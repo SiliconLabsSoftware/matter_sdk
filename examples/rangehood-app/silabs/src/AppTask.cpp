@@ -108,7 +108,7 @@ CHIP_ERROR AppTask::AppInit()
     {
         ChipLogError(AppServer, "AppTask.Init: failed to  read initial light state");
     }
-   
+
     return err;
 }
 
