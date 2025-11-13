@@ -144,8 +144,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     Action_t action = INVALID_ACTION;
     switch (endpointId)
     {
-    case kCookTopEndpoint:
-    {
+    case kCookTopEndpoint: {
         mCookTopState = (*value != 0) ? kCookTopState_On : kCookTopState_Off;
         // Turn on/off the associated cook surfaces.
         VerifyOrReturn(mCookSurfaceEndpoint1.SetOnOffState(*value) == Status::Success,
