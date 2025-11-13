@@ -40,7 +40,7 @@ CHIP_ERROR ExtractorHoodEndpoint::Init()
     DeviceLayer::PlatformMgr().LockChipStack();
     DataModel::Nullable<chip::Percent> percentSettingNullable = GetPercentSetting();
     DeviceLayer::PlatformMgr().UnlockChipStack();
-    
+
     Percent percentSetting = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
     Status status          = HandlePercentSettingChange(percentSetting);
     if (status != Status::Success)
