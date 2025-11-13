@@ -97,7 +97,7 @@ CHIP_ERROR InitOvenBindingHandler()
 
 CHIP_ERROR CookTopOnOffBindingTrigger(OnOffBindingContext * context)
 {
-    VerifyOrReturnError(context != nullptr, CHIP_ERROR_INTERNAL,
+    VerifyOrReturnError(context != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
                         ChipLogError(AppServer, "CookTopOnOffBindingTrigger: null context"));
     DeviceLayer::PlatformMgr().ScheduleWork(TriggerBindingWork, reinterpret_cast<intptr_t>(context));
     return CHIP_NO_ERROR;
