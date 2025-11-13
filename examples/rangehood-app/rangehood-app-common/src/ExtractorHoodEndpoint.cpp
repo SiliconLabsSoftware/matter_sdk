@@ -160,7 +160,6 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentSetti
     return Status::Success;
 }
 
-
 Status ExtractorHoodEndpoint::HandleFanModeChange(chip::app::Clusters::FanControl::FanModeEnum newFanMode)
 {
     ChipLogDetail(NotSpecified, "ExtractorHoodEndpoint::HandleFanModeChange: %d", (uint8_t) newFanMode);
