@@ -85,7 +85,6 @@ void TriggerBindingWork(intptr_t context)
 
     // Notify all OnOff bindings from the specified endpoint
     Binding::Manager::GetInstance().NotifyBoundClusterChanged(ctx->localEndpointId, Clusters::OnOff::Id, ctx);
-    Platform::Delete(ctx);
 }
 
 } // namespace
