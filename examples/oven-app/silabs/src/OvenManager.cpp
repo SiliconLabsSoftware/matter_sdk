@@ -170,31 +170,31 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         }
         break;
     }
-    case kCookSurfaceEndpoint1:
-    case kCookSurfaceEndpoint2:
-        if (endpointId == kCookSurfaceEndpoint1)
-            mCookSurfaceState1 = (*value != 0);
-        else
-            mCookSurfaceState2 = (*value != 0);
+case kCookSurfaceEndpoint1:
+case kCookSurfaceEndpoint2:
+    if (endpointId == kCookSurfaceEndpoint1)
+        mCookSurfaceState1 = (*value != 0);
+    else
+        mCookSurfaceState2 = (*value != 0);
 
-        // Turn off CookTop if both the CookSurfaces are off.
-        if (!mCookSurfaceState1 && !mCookSurfaceState2)
-        {
-            VerifyOrReturn(mCookTopEndpoint.SetOnOffState(false) == Status::Success,
-                           ChipLogError(AppServer, "Failed to set CookTopEndpoint state"));
+    // Turn off CookTop if both the CookSurfaces are off.
+    if (!mCookSurfaceState1 && !mCookSurfaceState2)
+    {
+        VerifyOrReturn(mCookTopEndpoint.SetOnOffState(false) == Status::Success,
+                       ChipLogError(AppServer, "Failed to set CookTopEndpoint state"));
 
-            mCookTopState = false;
-        }
-        break;
-    default:
-        break;
+        mCookTopState = false;
     }
+    break;
+default:
+    break;
+}
 
-    AppEvent event         = {};
-    event.Type             = AppEvent::kEventType_Oven;
-    event.OvenEvent.Action = action;
-    event.Handler          = OvenActionHandler;
-    AppTask::GetAppTask().PostEvent(&event);
+AppEvent event         = {};
+event.Type             = AppEvent::kEventType_Oven;
+event.OvenEvent.Action = action;
+event.Handler          = OvenActionHandler;
+AppTask::GetAppTask().PostEvent(&event);
 }
 
 void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,

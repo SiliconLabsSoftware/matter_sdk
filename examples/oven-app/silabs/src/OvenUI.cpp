@@ -122,7 +122,7 @@ void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
     uint8_t currentMode = OvenManager::GetInstance().GetCurrentOvenMode();
 
     // Display oven mode on line 6
-    char modeStr[32] = {0};
+    char modeStr[32] = { 0 };
     switch (currentMode)
     {
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeBake):
