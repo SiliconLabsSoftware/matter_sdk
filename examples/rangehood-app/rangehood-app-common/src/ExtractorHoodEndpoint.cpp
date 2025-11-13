@@ -41,8 +41,8 @@ CHIP_ERROR ExtractorHoodEndpoint::Init()
     DataModel::Nullable<chip::Percent> percentSettingNullable = GetPercentSetting();
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    Percent percentSetting = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
-    Status status          = HandlePercentSettingChange(percentSetting);
+    Percent initialPercentSetting = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
+    Status status                 = HandlePercentSettingChange(initialPercentSetting);
     if (status != Status::Success)
     {
         ChipLogError(NotSpecified, "ExtractorHoodEndpoint::Init: Failed to initialize PercentCurrent");
@@ -54,7 +54,8 @@ CHIP_ERROR ExtractorHoodEndpoint::Init()
 
 /**
  * @brief Get the PercentSetting attribute.
- *
+ * The caller MUST hold the CHIP stack lock before calling this function,
+ * unless calling from a CHIP task context where the lock is already held.
  */
 DataModel::Nullable<Percent> ExtractorHoodEndpoint::GetPercentSetting() const
 {
@@ -71,7 +72,8 @@ DataModel::Nullable<Percent> ExtractorHoodEndpoint::GetPercentSetting() const
 
 /**
  * @brief Get the FanMode attribute.
- *  The caller MUST hold the CHIP stack lock before calling this function.
+ * The caller MUST hold the CHIP stack lock before calling this function,
+ * unless calling from a CHIP task context where the lock is already held.
  */
 Status ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) const
 {
@@ -86,7 +88,8 @@ Status ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) cons
 
 /**
  * @brief Set the PercentCurrent attribute if it differs from the current value.
- *  The caller MUST hold the CHIP stack lock before calling this function.
+ * The caller MUST hold the CHIP stack lock before calling this function,
+ * unless calling from a CHIP task context where the lock is already held.
  */
 Status ExtractorHoodEndpoint::SetPercentCurrent(Percent newPercentSetting)
 {
@@ -114,7 +117,8 @@ Status ExtractorHoodEndpoint::SetPercentCurrent(Percent newPercentSetting)
 
 /**
  * @brief Handle a change to the PercentSetting attribute, updating PercentCurrent as needed.
- *
+ * The caller MUST hold the CHIP stack lock before calling this function,
+ * unless calling from a CHIP task context where the lock is already held.
  */
 Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentSetting)
 {
@@ -122,9 +126,7 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentSetti
     // Get current PercentCurrent to check if it's different
     Percent currentPercentCurrent = 0;
 
-    DeviceLayer::PlatformMgr().LockChipStack();
     Status getStatus = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
-    DeviceLayer::PlatformMgr().UnlockChipStack();
 
     // Return error if we can't read current value
     VerifyOrReturnValue(getStatus == Status::Success, getStatus,
@@ -137,9 +139,7 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentSetti
     // Get current fan mode to check if it's Auto
     FanControl::FanModeEnum currentFanMode;
 
-    DeviceLayer::PlatformMgr().LockChipStack();
     Status fanModeStatus = FanControl::Attributes::FanMode::Get(mEndpointId, &currentFanMode);
-    DeviceLayer::PlatformMgr().UnlockChipStack();
 
     // Fail if we can't read fan mode
     VerifyOrReturnValue(fanModeStatus == Status::Success, Status::Failure,
@@ -149,10 +149,8 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentSetti
     // Don't update PercentCurrent if fan mode is Auto
     VerifyOrReturnValue(currentFanMode != FanControl::FanModeEnum::kAuto, Status::Success);
 
-    DeviceLayer::PlatformMgr().LockChipStack();
     // Update PercentCurrent to match PercentSetting
     Status setStatus = FanControl::Attributes::PercentCurrent::Set(mEndpointId, newPercentSetting);
-    DeviceLayer::PlatformMgr().UnlockChipStack();
 
     VerifyOrReturnValue(
         setStatus == Status::Success, Status::Failure,
@@ -161,6 +159,7 @@ Status ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentSetti
                      to_underlying(setStatus)));
     return Status::Success;
 }
+
 
 Status ExtractorHoodEndpoint::HandleFanModeChange(chip::app::Clusters::FanControl::FanModeEnum newFanMode)
 {
@@ -197,6 +196,8 @@ Status ExtractorHoodEndpoint::HandleFanModeChange(chip::app::Clusters::FanContro
 
 /**
  * @brief Update the FanMode attribute.
+ * The caller MUST hold the CHIP stack lock before calling this function,
+ * unless calling from a CHIP task context where the lock is already held.
  */
 Status ExtractorHoodEndpoint::UpdateFanModeAttribute(FanControl::FanModeEnum newFanMode)
 {
