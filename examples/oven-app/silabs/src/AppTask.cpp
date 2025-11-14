@@ -188,11 +188,10 @@ void AppTask::UpdateClusterState(intptr_t context)
 void AppTask::OvenActionHandler(AppEvent * aEvent)
 {
     // Emulate hardware Action : Update the LEDs and LCD of oven-app as required.
-    switch(aEvent->OvenEvent.Action)
+    switch (aEvent->OvenEvent.Action)
     {
     case OvenManager::COOK_TOP_ON_ACTION:
-    case OvenManager::COOK_TOP_OFF_ACTION:
-    {
+    case OvenManager::COOK_TOP_OFF_ACTION: {
         int8_t value = (aEvent->OvenEvent.Action == OvenManager::COOK_TOP_ON_ACTION) ? 1 : 0;
         sLightLED.Set(value);
 #ifdef DISPLAY_ENABLED

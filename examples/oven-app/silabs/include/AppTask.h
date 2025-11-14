@@ -78,7 +78,6 @@ public:
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
-
     /**
      * @brief Handle oven-related AppEvents to update UI and LEDs.
      *
