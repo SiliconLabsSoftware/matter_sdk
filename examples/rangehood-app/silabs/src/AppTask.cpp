@@ -81,7 +81,12 @@ CHIP_ERROR AppTask::AppInit()
 #endif
 
     // Initialization of RangeHoodManager and endpoints of range hood.
-    RangeHoodManager::GetInstance().Init();
+    err = RangeHoodManager::GetInstance().Init();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "RangeHoodManager initialization failed");
+        return err;
+    }
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -170,18 +175,31 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
 {
     // Direct action trigger without initiated/completed separation
     RangeHoodManager::Action_t action = static_cast<RangeHoodManager::Action_t>(aEvent->RangeHoodEvent.Action);
-
-    if (action == RangeHoodManager::LIGHT_ON_ACTION)
+    
+    switch (action)
     {
+    case RangeHoodManager::LIGHT_ON_ACTION:
         SILABS_LOG("Light ON");
         sLightLED.Set(true);
-    }
-    else if (action == RangeHoodManager::LIGHT_OFF_ACTION)
-    {
+        break;
+
+    case RangeHoodManager::LIGHT_OFF_ACTION:
         SILABS_LOG("Light OFF");
         sLightLED.Set(false);
+        break;
+
+    case RangeHoodManager::FAN_MODE_CHANGE_ACTION:
+        // TODO: Update LCD with new fan mode
+        break;
+
+    case RangeHoodManager::FAN_PERCENT_CHANGE_ACTION:
+        // TODO: Update LCD with new fan percent
+        break;
+
+    default:
+        ChipLogError(AppServer, "Unknown action: %d", action);
+        break;
     }
-    // TODO: Handle FAN control actions
 }
 
 void AppTask::FanControlButtonHandler(AppEvent * aEvent)

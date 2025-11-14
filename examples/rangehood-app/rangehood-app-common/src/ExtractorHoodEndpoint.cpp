@@ -42,7 +42,9 @@ CHIP_ERROR ExtractorHoodEndpoint::Init()
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     Percent initialPercentSetting = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
+    DeviceLayer::PlatformMgr().LockChipStack();
     Status status                 = HandlePercentSettingChange(initialPercentSetting);
+    DeviceLayer::PlatformMgr().UnlockChipStack();
     if (status != Status::Success)
     {
         ChipLogError(NotSpecified, "ExtractorHoodEndpoint::Init: Failed to initialize PercentCurrent");
@@ -70,9 +72,7 @@ DataModel::Nullable<Percent> ExtractorHoodEndpoint::GetPercentSetting() const
     return percentSetting;
 }
 
-/**
- * @brief Get the FanMode attribute.
- * The caller MUST hold the CHIP stack lock before calling this function,
+/* The caller MUST hold the CHIP stack lock before calling this function,
  * unless calling from a CHIP task context where the lock is already held.
  */
 Status ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) const
@@ -87,7 +87,6 @@ Status ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) cons
 }
 
 /**
- * @brief Set the PercentCurrent attribute if it differs from the current value.
  * The caller MUST hold the CHIP stack lock before calling this function,
  * unless calling from a CHIP task context where the lock is already held.
  */

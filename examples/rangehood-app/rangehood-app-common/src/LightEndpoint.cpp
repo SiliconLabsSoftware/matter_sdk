@@ -35,10 +35,7 @@ CHIP_ERROR LightEndpoint::GetOnOffState(bool & state)
     auto status = OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    if (status != Protocols::InteractionModel::Status::Success)
-    {
-        return CHIP_ERROR_INTERNAL;
-    }
+    VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
 
     return CHIP_NO_ERROR;
 }
@@ -51,10 +48,7 @@ CHIP_ERROR LightEndpoint::SetOnOffState(bool state)
     auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    if (status != Protocols::InteractionModel::Status::Success)
-    {
-        return CHIP_ERROR_INTERNAL;
-    }
+    VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
 
     return CHIP_NO_ERROR;
 }

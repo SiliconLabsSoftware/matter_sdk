@@ -57,8 +57,14 @@ public:
 
     chip::app::DataModel::Nullable<chip::Percent> GetPercentSetting() const;
 
+    /**
+    * @brief Get the FanMode attribute.
+    **/
     chip::Protocols::InteractionModel::Status GetFanMode(chip::app::Clusters::FanControl::FanModeEnum & fanMode) const;
 
+    /** @brief Set the PercentCurrent attribute if it differs from the current value.
+     * 
+     **/
     chip::Protocols::InteractionModel::Status SetPercentCurrent(chip::Percent newPercentSetting);
 
     /**

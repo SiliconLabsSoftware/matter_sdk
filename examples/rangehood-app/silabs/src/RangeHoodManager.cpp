@@ -63,14 +63,30 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
     switch (attributeId)
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
-        mExtractorHoodEndpoint.HandlePercentSettingChange(*value);
-        action = FAN_PERCENT_CHANGE_ACTION;
+        Status status = mExtractorHoodEndpoint.HandlePercentSettingChange(*value);
+        if (status == Status::Success)
+        {
+            action = FAN_PERCENT_CHANGE_ACTION;
+        }
+        else
+        {
+            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed with status %d",
+                         to_underlying(status));
+        }
         break;
     }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
-        mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
-        action = FAN_MODE_CHANGE_ACTION;
+        Status status =mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
+        if (status == Status::Success)
+        {
+            action = FAN_MODE_CHANGE_ACTION;
+        }
+        else
+        {
+            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed with status %d",
+                         to_underlying(status));
+        }
         break;
     }
 
@@ -78,7 +94,8 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
         return;
     }
     }
-
+    
+    // Only post event if the operation succeeded
     if (action != INVALID_ACTION)
     {
         AppEvent event;
