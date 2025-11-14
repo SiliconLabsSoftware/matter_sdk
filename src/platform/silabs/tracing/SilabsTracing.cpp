@@ -21,8 +21,6 @@
 #include <lib/support/PersistentData.h>
 #include <string> // Include the necessary header for std::string
 
-#include "sl_power_manager_debug.h"
-
 // Include FreeRTOS configuration first
 #if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS
 extern "C" {
