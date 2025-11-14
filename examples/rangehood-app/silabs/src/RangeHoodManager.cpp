@@ -77,7 +77,7 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
     }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
-        Status status =mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
+        Status status = mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
         if (status == Status::Success)
         {
             action = FAN_MODE_CHANGE_ACTION;
