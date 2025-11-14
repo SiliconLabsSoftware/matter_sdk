@@ -76,4 +76,3 @@ void sl_power_manager_unsubscribe_em_transition_event(void * handle);
 #ifdef __cplusplus
 }
 #endif
-
