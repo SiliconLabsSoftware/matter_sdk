@@ -1,0 +1,61 @@
+#!groovy
+@Library('gsdk-shared-lib@master')
+
+def commit_sha = ""
+def pr_number = ""
+{
+    options { buildDiscarder(logRotator(artifactNumToKeepStr: '10')) }
+    stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    pipelineFunctions = load 'jenkins_integration/jenkinsFunctions.groovy'
+                    echo "pipelineFunctions loaded: ${pipelineFunctions != null}"
+                }
+            }
+        }
+        stage('Static Analysis with SonarQube') {
+            steps {
+                script {
+                    // Declare variables outside the Docker container block
+                    def staticAnalysisStatus = ""
+                    def staticAnalysisOutput = ""
+                    def sonarCommitSha = ""
+
+                    withDockerContainer(image: 'sonarsource/sonar-scanner-cli:latest') {
+                        def sonarResult = pipelineFunctions.publishSonarAnalysis()
+
+                        // Extract results for GitHub posting outside Docker
+                        staticAnalysisStatus = sonarResult.status
+                        staticAnalysisOutput = sonarResult.output
+                        sonarCommitSha = sonarResult.commit_sha
+
+                        echo "Static Analysis Status: ${staticAnalysisStatus}"
+                        echo "Commit SHA from SonarQube: ${sonarCommitSha}"
+                    }
+                    
+                    // Post to GitHub outside of Docker container
+                    try {
+                        if (env.CHANGE_ID) {
+                            pipelineFunctions.send_sonar_results_to_github(
+                                sonarCommitSha,
+                                staticAnalysisStatus,
+                                staticAnalysisOutput,
+                                env.CHANGE_ID,
+                                env.CHANGE_BRANCH,
+                                env.CHANGE_TARGET,
+                                null  // sonar_token will be fetched from Jenkins credentials using the credentials ID defined in jenkinsFunctions.groovy (see 'withCredentials' usage for details)
+                            )
+                            echo "✅ Posted SonarQube results to GitHub PR #${env.CHANGE_ID}"
+                        } else {
+                            echo "ℹ️  Skipping GitHub PR comment (not a PR)"
+                        }
+                    } catch (Exception githubEx) {
+                        echo "❌ Failed to post to GitHub PR: ${githubEx.getMessage()}"
+                        githubEx.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+}
