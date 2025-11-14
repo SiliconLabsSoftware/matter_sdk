@@ -59,8 +59,7 @@ void OvenManager::Init()
                    ChipLogError(AppServer, "Setting CookSurfaceEndpoint2 initial state failed"));
 
     // Initialize binding manager
-    VerifyOrReturn(InitOvenBindingHandler() == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "Initializing OvenBindingHandler failed"));
+    VerifyOrReturn(InitOvenBindingHandler() == CHIP_NO_ERROR, ChipLogError(AppServer, "Initializing OvenBindingHandler failed"));
 
     // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 1 and 2
     static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),

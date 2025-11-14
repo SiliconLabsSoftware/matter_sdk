@@ -138,11 +138,12 @@ private:
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
     // Default values for the states of the endpoints
-    bool mCookTopState       = false;
-    bool mCookSurfaceState1  = false;
-    bool mCookSurfaceState2  = false;
+    bool mCookTopState      = false;
+    bool mCookSurfaceState1 = false;
+    bool mCookSurfaceState2 = false;
     // Default value for the current oven mode
-    uint8_t mCurrentOvenMode = chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
+    uint8_t mCurrentOvenMode =
+        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
 
     // Define the endpoint ID constants
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;
