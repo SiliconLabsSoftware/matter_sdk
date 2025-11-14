@@ -108,6 +108,7 @@ silabs_executable("oven_app") {
     "src/AppSupportedTemperatureLevelsDelegate.cpp",
     "src/AppTask.cpp",
     "src/DataModelCallbacks.cpp",
+    "src/OvenBindingHandler.cpp",
     "src/OvenManager.cpp",
   ]
 

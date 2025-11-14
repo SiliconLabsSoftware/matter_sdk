@@ -18,16 +18,17 @@
 
 #include "OvenManager.h"
 #include "CookEndpoints.h"
+#include "OvenBindingHandler.h"
 #include "OvenEndpoint.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <platform/CHIPDeviceLayer.h>
 
 #include "AppConfig.h"
 #include "AppTask.h"
-
-#include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #define MAX_TEMPERATURE 30000
 #define MIN_TEMPERATURE 0
@@ -82,6 +83,9 @@ void OvenManager::Init()
     VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
+
+    // Initialize binding manager (after stack unlock to avoid long hold)
+    InitOvenBindingHandler();
 }
 
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
@@ -140,7 +144,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     Action_t action = INVALID_ACTION;
     switch (endpointId)
     {
-    case kCookTopEndpoint:
+    case kCookTopEndpoint: {
         mCookTopState = (*value != 0) ? kCookTopState_On : kCookTopState_Off;
         // Turn on/off the associated cook surfaces.
         VerifyOrReturn(mCookSurfaceEndpoint1.SetOnOffState(*value) == Status::Success,
@@ -149,7 +153,21 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
                        ChipLogError(AppServer, "Failed to set CookSurfaceEndpoint2 state"));
 
         action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
+        // Trigger binding for CookTop OnOff changes
+        OnOffBindingContext * context = Platform::New<OnOffBindingContext>();
+        if (context != nullptr)
+        {
+            context->localEndpointId = kCookTopEndpoint;
+            context->commandId       = *value ? Clusters::OnOff::Commands::On::Id : Clusters::OnOff::Commands::Off::Id;
+
+            if (CookTopOnOffBindingTrigger(context) != CHIP_NO_ERROR)
+            {
+                Platform::Delete(context);
+                ChipLogError(AppServer, "Failed to schedule CookTopOnOffBindingTrigger, context freed");
+            }
+        }
         break;
+    }
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
         if (endpointId == kCookSurfaceEndpoint1)
