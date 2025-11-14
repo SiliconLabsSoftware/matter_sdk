@@ -130,18 +130,6 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
     return CHIP_NO_ERROR;
 }
 
-void OvenManager::TempCtrlAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
-{
-    switch (endpointId)
-    {
-    case kTemperatureControlledCabinetEndpoint:
-        // TODO: Update the LCD with the new Temperature Control attribute value
-        break;
-    default:
-        break;
-    }
-}
-
 void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
 {
     VerifyOrReturn(value != nullptr, ChipLogError(AppServer, "OnOffAttributeChangeHandler: value pointer is null"));

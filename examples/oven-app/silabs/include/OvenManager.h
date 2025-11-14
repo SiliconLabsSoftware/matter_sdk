@@ -69,15 +69,6 @@ public:
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
-    /**
-     * @brief Handles temperature control attribute changes.
-     *
-     * @param endpointId The ID of the endpoint.
-     * @param attributeId The ID of the attribute.
-     * @param value Pointer to the new value.
-     * @param size Size of the new value.
-     */
-    void TempCtrlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
 
     /**
      * @brief Handles on/off attribute changes.
