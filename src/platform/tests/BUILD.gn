@@ -99,9 +99,16 @@ if (chip_device_platform != "none" && chip_device_platform != "fake") {
       test_sources += [ "TestConnectivityMgr.cpp" ]
     }
 
-    test_sources += [ "TestSilabsTracing.cpp" ]
-    public_deps += [ "${chip_root}/src/platform/silabs/tracing:SilabsTracing" ]
-  }
+    test_sources += [
+      "TestSilabsPowerTracing.cpp",
+      "TestSilabsTracing.cpp",
+    ]
+    public_deps += [
+      "${chip_root}/src/platform/silabs/tracing:SilabsPowerTracingStubs",
+      "${chip_root}/src/platform/silabs/tracing:SilabsTracing",
+      "${chip_root}/src/platform/silabs/tracing:silabs_tracing_config",
+    ]
+}
 } else {
   import("${chip_root}/build/chip/chip_test_group.gni")
   chip_test_group("tests") {
