@@ -175,7 +175,17 @@ extern "C" void sl_ot_create_instance(void)
 {
     VerifyOrDie(chip::Platform::MemoryInit() == CHIP_NO_ERROR);
     mbedtls_platform_set_calloc_free(CHIPPlatformMemoryCalloc, CHIPPlatformMemoryFree);
+#if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+    // Initialize multiple OT instances for Multi-PAN support
+    // Instance 0: Matter protocol stack
+    // Instance 1: Secondary Thread network
+    otInstance * matterInstance = otInstanceInitMultiple(0);
+    otInstanceInitMultiple(1); // Secondary instance for CLI
+    sOTInstance = matterInstance;
+#else
+    // Standard single instance initialization
     sOTInstance = otInstanceInitSingle();
+#endif // CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
 }
 
 extern "C" void sl_ot_cli_init(void)
