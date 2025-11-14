@@ -53,7 +53,6 @@ void MatterPostAttributeChangeCallback(const app::ConcreteAttributePath & attrib
     case app::Clusters::TemperatureControl::Id:
         ChipLogDetail(Zcl, "TemperatureControl cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                       ChipLogValueMEI(attributeId), type, *value, size);
-        OvenManager::GetInstance().TempCtrlAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     case app::Clusters::OvenMode::Id:
         ChipLogDetail(Zcl, "OvenMode cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
