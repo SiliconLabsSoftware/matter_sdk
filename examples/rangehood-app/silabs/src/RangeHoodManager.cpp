@@ -94,7 +94,7 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
         return;
     }
     }
-    
+
     // Only post event if the operation succeeded
     if (action != INVALID_ACTION)
     {

@@ -175,7 +175,7 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
 {
     // Direct action trigger without initiated/completed separation
     RangeHoodManager::Action_t action = static_cast<RangeHoodManager::Action_t>(aEvent->RangeHoodEvent.Action);
-    
+
     switch (action)
     {
     case RangeHoodManager::LIGHT_ON_ACTION:
