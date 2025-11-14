@@ -5,7 +5,7 @@
 #include <sl_power_manager.h>
 #else
 // Use stub headers for unit tests
-#include <platform/silabs/tracing/mocks/cmsis_os2_stub.h> // nogncheck
+#include <platform/silabs/tracing/mocks/cmsis_os2_stub.h>        // nogncheck
 #include <platform/silabs/tracing/mocks/sl_power_manager_stub.h> // nogncheck
 #endif
 
