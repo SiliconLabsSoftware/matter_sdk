@@ -44,8 +44,7 @@ OvenManager OvenManager::sOvenMgr;
 void OvenManager::Init()
 {
     // Endpoint initializations
-    VerifyOrDie(mTemperatureControlledCabinetEndpoint.Init() == CHIP_NO_ERROR,
-                ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint Init failed"));
+    VerifyOrDie(mTemperatureControlledCabinetEndpoint.Init() == CHIP_NO_ERROR);
 
     // Set initial state for TemperatureControlledCabinetEndpoint
     VerifyOrReturn(SetTemperatureControlledCabinetInitialState(kTemperatureControlledCabinetEndpoint) == CHIP_NO_ERROR,
@@ -60,7 +59,8 @@ void OvenManager::Init()
                    ChipLogError(AppServer, "Setting CookSurfaceEndpoint2 initial state failed"));
 
     // Initialize binding manager
-    VerifyOrReturn(InitOvenBindingHandler() == CHIP_NO_ERROR, ChipLogError(AppServer, "Initializing OvenBindingHandler failed"));
+    VerifyOrReturn(InitOvenBindingHandler() == CHIP_NO_ERROR,
+                   ChipLogError(AppServer, "Initializing OvenBindingHandler failed"));
 
     // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 1 and 2
     static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),
@@ -83,6 +83,7 @@ void OvenManager::Init()
 
     VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &mCookSurfaceState2) == Status::Success,
                    ChipLogError(AppServer, "Getting CookSurfaceEndpoint2 OnOff state failed"));
+
     // Get current oven mode
     VerifyOrReturn(OvenMode::Attributes::CurrentMode::Get(kTemperatureControlledCabinetEndpoint, &mCurrentOvenMode) ==
                        Status::Success,
@@ -179,11 +180,15 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         break;
     }
 
-    AppEvent event         = {};
-    event.Type             = AppEvent::kEventType_Oven;
-    event.OvenEvent.Action = action;
-    event.Handler          = AppTask::OvenActionHandler;
-    AppTask::GetAppTask().PostEvent(&event);
+    // Only post event if action is valid
+    if (action != INVALID_ACTION)
+    {
+        AppEvent event         = {};
+        event.Type             = AppEvent::kEventType_Oven;
+        event.OvenEvent.Action = action;
+        event.Handler          = AppTask::OvenActionHandler;
+        AppTask::GetAppTask().PostEvent(&event);
+    }
 }
 
 void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,

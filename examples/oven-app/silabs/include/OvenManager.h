@@ -109,7 +109,7 @@ public:
     /**
      * @brief Gets the current oven mode.
      */
-    uint8_t GetCurrentOvenMode() { return mCurrentOvenMode; };
+    uint8_t GetCurrentOvenMode() const { return mCurrentOvenMode; }
 
     /**
      * @brief Get the endpoint ID for the CookTop endpoint
@@ -135,12 +135,14 @@ private:
     };
 
     static OvenManager sOvenMgr;
-    uint8_t mCurrentOvenMode;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
-    bool mCookTopState;
-    bool mCookSurfaceState1;
-    bool mCookSurfaceState2;
+    // Default values for the states of the endpoints
+    bool mCookTopState       = false;
+    bool mCookSurfaceState1  = false;
+    bool mCookSurfaceState2  = false;
+    // Default value for the current oven mode
+    uint8_t mCurrentOvenMode = chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
 
     // Define the endpoint ID constants
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;
