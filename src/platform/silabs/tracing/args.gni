@@ -15,7 +15,6 @@
 # *
 # ******************************************************************************/
 
-
 declare_args() {
   # When enabled, this sets:
   #  - configGENERATE_RUN_TIME_STATS in FreeRTOS
@@ -29,8 +28,10 @@ declare_args() {
 
   # Debug output of each energy state transition, external analysis required. Can be enabled independantly from tracing.
   silabs_tracing_energy_traces = false
+
   # Time to wait before outputting the results
   silabs_tracing_energy_traces_seconds = 600
+
   # Maximum number of energy traces to store
   silabs_tracing_energy_traces_max = 3000
 }
