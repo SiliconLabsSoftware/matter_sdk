@@ -18,8 +18,8 @@ import("${chip_root}/build/chip/buildconfig_header.gni")
 import("${chip_root}/src/crypto/crypto.gni")
 import("${chip_root}/src/platform/device.gni")
 import("${chip_root}/src/platform/silabs/multi-ota/args.gni")
-import("${chip_root}/src/tracing/tracing_args.gni")
 import("${chip_root}/src/platform/silabs/tracing/args.gni")
+import("${chip_root}/src/tracing/tracing_args.gni")
 import("${chip_root}/third_party/silabs/efr32_sdk.gni")
 import("${chip_root}/third_party/silabs/silabs_board.gni")
 import("${matter_support_root}/provision/args.gni")
@@ -106,11 +106,9 @@ static_library("efr32") {
     ]
   }
 
-  if (silabs_tracing_energy_traces)
-  {
-    public_deps += [
-      "${chip_root}/src/platform/silabs/tracing:SilabsPowerTracing",
-    ]
+  if (silabs_tracing_energy_traces) {
+    public_deps +=
+        [ "${chip_root}/src/platform/silabs/tracing:SilabsPowerTracing" ]
   }
 
   # Add platform crypto implementation
