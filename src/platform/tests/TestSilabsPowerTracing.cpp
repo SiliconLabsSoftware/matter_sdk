@@ -191,4 +191,3 @@ TEST_F(TestSilabsPowerTracing, TestBufferFull)
     EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), static_cast<size_t>(SILABS_TRACING_ENERGY_TRACES_MAX));
     EXPECT_EQ(SilabsPowerTracing::Instance().OutputPowerManagerTraces(), CHIP_NO_ERROR);
 }
-

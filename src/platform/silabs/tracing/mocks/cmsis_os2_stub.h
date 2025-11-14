@@ -63,4 +63,3 @@ osStatus_t osDelay(uint32_t ticks);
 #ifdef __cplusplus
 }
 #endif
-
