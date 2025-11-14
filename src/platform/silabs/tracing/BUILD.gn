@@ -20,7 +20,6 @@ import("//build_overrides/chip.gni")
 import("${chip_root}/build/chip/buildconfig_header.gni")
 import("${chip_root}/src/platform/silabs/tracing/args.gni")
 
-
 buildconfig_header("silabs_tracing_config") {
   header = "SilabsTracingConfig.h"
   header_dir = "platform/silabs/tracing"
@@ -38,11 +37,12 @@ buildconfig_header("silabs_tracing_config") {
     ]
   }
 
-  if (silabs_tracing_energy_traces)
-  {
-    defines += ["SILABS_TRACING_ENERGY_TRACES=1",
-    "SILABS_TRACING_ENERGY_TRACES_SECONDS=${silabs_tracing_energy_traces_seconds}",
-    "SILABS_TRACING_ENERGY_TRACES_MAX=${silabs_tracing_energy_traces_max}"]
+  if (silabs_tracing_energy_traces) {
+    defines += [
+      "SILABS_TRACING_ENERGY_TRACES=1",
+      "SILABS_TRACING_ENERGY_TRACES_SECONDS=${silabs_tracing_energy_traces_seconds}",
+      "SILABS_TRACING_ENERGY_TRACES_MAX=${silabs_tracing_energy_traces_max}",
+    ]
   }
 
   defines += [ "SERIALIZED_TIME_TRACKERS_SIZE_BYTES=512" ]
@@ -69,8 +69,6 @@ static_library("SilabsTracing") {
   ]
 }
 
-# Independent module for power manager tracing
-# Can be used without the full SilabsTracing infrastructure
 static_library("SilabsPowerTracing") {
   sources = [
     "SilabsPowerTracing.cpp",
@@ -78,10 +76,22 @@ static_library("SilabsPowerTracing") {
   ]
 
   deps = [
-   "${chip_root}/src/lib/core",
+    "${chip_root}/src/lib/core",
+    "${chip_root}/src/lib/support",
+    "${chip_root}/src/system",
   ]
 
   public_deps = [
     ":silabs_tracing_config",
+    "${chip_root}/src/tracing:tracing",
+  ]
+}
+
+static_library("SilabsPowerTracingStubs") {
+  sources = [
+    "mocks/cmsis_os2_stub.cpp",
+    "mocks/cmsis_os2_stub.h",
+    "mocks/sl_power_manager_stub.cpp",
+    "mocks/sl_power_manager_stub.h",
   ]
 }
