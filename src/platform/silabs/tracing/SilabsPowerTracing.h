@@ -1,8 +1,15 @@
 #pragma once
 
+#if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
 #include "cmsis_os2.h"
-#include <lib/core/CHIPError.h>
 #include <sl_power_manager.h>
+#else
+// Use stub headers for unit tests
+#include <platform/silabs/tracing/mocks/cmsis_os2_stub.h> // nogncheck
+#include <platform/silabs/tracing/mocks/sl_power_manager_stub.h> // nogncheck
+#endif
+
+#include <lib/core/CHIPError.h>
 
 namespace chip {
 namespace Tracing {
@@ -22,7 +29,16 @@ public:
 
     static SilabsPowerTracing & Instance() { return sInstance; }
 
+    /** @brief Initialize the power tracing system
+     * Allocates energy trace storage, subscribes to power manager events, and starts the statistics timer.
+     * @return CHIP_NO_ERROR on success, CHIP_ERROR_NO_MEMORY if allocation fails, CHIP_ERROR_INTERNAL on timer errors
+     */
     CHIP_ERROR Init();
+
+    /** @brief Output all recorded power manager energy mode traces
+     * Logs the collected energy traces showing timestamps and energy modes to the device layer.
+     * @return CHIP_NO_ERROR on success
+     */
     CHIP_ERROR OutputPowerManagerTraces();
 
     /** @brief Check if the power tracing system is initialized
@@ -30,9 +46,27 @@ public:
      */
     bool IsInitialized() const { return mInitialized; }
 
+    /** @brief Get the number of recorded energy traces
+     *  @return The count of energy traces currently in the buffer
+     */
+    size_t GetEnergyTraceCount() const { return mEnergyTraceCount; }
+
+    /** @brief Get a specific energy trace by index
+     *  @param index The index of the trace to retrieve
+     *  @return Pointer to the energy trace, or nullptr if index is out of bounds
+     */
+    const EnergyTrace * GetEnergyTrace(size_t index) const
+    {
+        if (index >= mEnergyTraceCount || mEnergyTraces == nullptr)
+        {
+            return nullptr;
+        }
+        return &mEnergyTraces[index];
+    }
+
     /** @brief Callback for power manager energy mode transitions
      * This function is called by the power manager when the device transitions between energy modes.
-     * It updates the time spent in each energy mode.
+     * It records the timestamp and new energy mode in the trace buffer.
      *  @param from The energy mode the device is transitioning from
      *  @param to The energy mode the device is transitioning to
      */

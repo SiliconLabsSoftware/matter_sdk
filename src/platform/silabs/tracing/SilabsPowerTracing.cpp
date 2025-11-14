@@ -1,16 +1,20 @@
 #include "SilabsPowerTracing.h"
-#include "cmsis_os2.h"
 #include <lib/support/CodeUtils.h>
 #include <platform/silabs/tracing/SilabsTracingConfig.h>
+// #include <cstdlib>
 
-#if !CONFIG_BUILD_FOR_HOST_UNIT_TEST
-#include <platform/silabs/Logging.h> // for isLogInitialized
-#endif
 
 // Need to use the sleeptimer for power tracing. The RAIL timer doesn't tick in EM2 and creates invalid timestamps for this
 // application.
 #ifndef SILABS_GET_SLEEPTIMER_TIME
+#if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
+#include "sl_sleeptimer.h"
 #define SILABS_GET_SLEEPTIMER_TIME() uint32_t((sl_sleeptimer_get_tick_count64() * 1000ULL) / sl_sleeptimer_get_timer_frequency())
+#else
+// For unit tests, this should be defined by the test file before including the implementation
+// If not defined, provide a minimal default
+#define SILABS_GET_SLEEPTIMER_TIME() 0
+#endif
 #endif // SILABS_GET_SLEEPTIMER_TIME
 
 namespace chip {
@@ -69,7 +73,6 @@ CHIP_ERROR SilabsPowerTracing::Init()
         return CHIP_ERROR_NO_MEMORY;
     }
 
-    // Convert seconds to ticks
     uint32_t ticks = SILABS_TRACING_ENERGY_TRACES_SECONDS * osKernelGetTickFreq();
     if (osTimerStart(mStatisticsTimer, ticks) != osOK)
     {
@@ -120,8 +123,6 @@ void SilabsPowerTracing::StaticPowerManagerTransitionCallback(sl_power_manager_e
 
 CHIP_ERROR SilabsPowerTracing::OutputPowerManagerTraces()
 {
-    VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
-
     ChipLogProgress(DeviceLayer, "=== Power Manager Energy Mode Traces ===");
     ChipLogProgress(DeviceLayer, "Index | Entry Time | Energy Mode");
 
@@ -129,9 +130,9 @@ CHIP_ERROR SilabsPowerTracing::OutputPowerManagerTraces()
     {
         for (size_t i = 0; i < mEnergyTraceCount; i++)
         {
-            ChipLogProgress(DeviceLayer, "%u | %lu | EM%d", i, mEnergyTraces[i].mEntryTime, mEnergyTraces[i].mEnergyMode);
+            ChipLogProgress(DeviceLayer, "%zu | %u | EM%d", i, mEnergyTraces[i].mEntryTime, mEnergyTraces[i].mEnergyMode);
             // Delay so the output is not mangled or skipped.
-            // 10 is enough for UART, but only 1 is required for RTT.
+            // 5 (ticks) is enough for UART, but only 1 is required for RTT.
             // No delay results in missed or mangled output for both.
             osDelay(5);
         }
