@@ -78,19 +78,13 @@ public:
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
+    
     /**
-     * @brief Updates the LED display with the current state of CookTop
+     * @brief Handle oven-related AppEvents to update UI and LEDs.
      *
-     * @param value Current state value to display (CookTop On/Off)
+     * @param aEvent Oven Event to process
      */
-    void UpdateLED(int8_t value);
-
-#ifdef DISPLAY_ENABLED
-    /**
-     * @brief Updates the LCD display with current cook-top and oven-mode states
-     */
-    void UpdateLCD();
-#endif // DISPLAY_ENABLED
+    static void OvenActionHandler(AppEvent * aEvent);
 
 private:
     static AppTask sAppTask;

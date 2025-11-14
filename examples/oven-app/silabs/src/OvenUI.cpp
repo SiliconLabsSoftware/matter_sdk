@@ -30,6 +30,10 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 
+// State display positions
+#define COOKTOP_STATE_DISPLAY_LINE 4
+#define OVEN_MODE_DISPLAY_LINE 6
+
 using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::TemperatureControlledCabinet;
 using namespace chip::app::Clusters::OvenMode;
@@ -42,12 +46,6 @@ const uint8_t matterLogoBitmap[] = { MATTER_LOGO_BITMAP };
 const uint8_t wifiLogo[]   = { WIFI_BITMAP };
 const uint8_t threadLogo[] = { THREAD_BITMAP };
 const uint8_t bleLogo[]    = { BLUETOOTH_ICON_SMALL };
-
-#ifdef SL_WIFI
-constexpr bool UI_WIFI = true;
-#else
-constexpr bool UI_WIFI = false;
-#endif
 } // namespace
 
 void OvenUI::DrawUI(GLIB_Context_t * glibContext)
@@ -79,17 +77,13 @@ void OvenUI::DrawHeader(GLIB_Context_t * glibContext)
     // Draw BLE Icon
     GLIB_drawBitmap(glibContext, BLE_ICON_POSITION_X, STATUS_ICON_LINE, BLUETOOTH_ICON_SIZE, BLUETOOTH_ICON_SIZE, bleLogo);
     // Draw WiFi/OpenThread Icon
-    GLIB_drawBitmap(glibContext, NETWORK_ICON_POSITION_X, STATUS_ICON_LINE, (UI_WIFI) ? WIFI_BITMAP_WIDTH : THREAD_BITMAP_WIDTH,
-                    WIFI_BITMAP_HEIGHT, (UI_WIFI) ? wifiLogo : threadLogo);
+#ifdef SL_WIFI
+    GLIB_drawBitmap(glibContext, NETWORK_ICON_POSITION_X, STATUS_ICON_LINE, WIFI_BITMAP_WIDTH, WIFI_BITMAP_HEIGHT, wifiLogo);
+#else
+    GLIB_drawBitmap(glibContext, NETWORK_ICON_POSITION_X, STATUS_ICON_LINE, THREAD_BITMAP_WIDTH, THREAD_BITMAP_HEIGHT, threadLogo);
+#endif // SL_WIFI
     // Draw Matter Icon
     GLIB_drawBitmap(glibContext, MATTER_ICON_POSITION_X, STATUS_ICON_LINE, MATTER_LOGO_WIDTH, MATTER_LOGO_HEIGHT, matterLogoBitmap);
-#if SL_LCDCTRL_MUX
-    sl_wfx_host_pre_lcd_spi_transfer();
-#endif // SL_LCDCTRL_MUX
-    DMD_updateDisplay();
-#if SL_LCDCTRL_MUX
-    sl_wfx_host_post_lcd_spi_transfer();
-#endif // SL_LCDCTRL_MUX
 }
 
 void OvenUI::DrawCookTopState(GLIB_Context_t * glibContext)
@@ -97,23 +91,14 @@ void OvenUI::DrawCookTopState(GLIB_Context_t * glibContext)
     // Get CookTop state from OvenManager
     bool cookTopState = OvenManager::GetInstance().GetCookTopState();
 
-    // Display CookTop state on line 4
     if (cookTopState)
     {
-        GLIB_drawStringOnLine(glibContext, "COOKTOP: ON", 4, GLIB_ALIGN_LEFT, 0, 0, true);
+        GLIB_drawStringOnLine(glibContext, "COOKTOP: ON", COOKTOP_STATE_DISPLAY_LINE, GLIB_ALIGN_LEFT, 0, 0, true);
     }
     else
     {
-        GLIB_drawStringOnLine(glibContext, "COOKTOP: OFF", 4, GLIB_ALIGN_LEFT, 0, 0, true);
+        GLIB_drawStringOnLine(glibContext, "COOKTOP: OFF", COOKTOP_STATE_DISPLAY_LINE, GLIB_ALIGN_LEFT, 0, 0, true);
     }
-
-#if SL_LCDCTRL_MUX
-    sl_wfx_host_pre_lcd_spi_transfer();
-#endif // SL_LCDCTRL_MUX
-    DMD_updateDisplay();
-#if SL_LCDCTRL_MUX
-    sl_wfx_host_post_lcd_spi_transfer();
-#endif // SL_LCDCTRL_MUX
 }
 
 void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
@@ -121,49 +106,45 @@ void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
     // Get current oven mode from the Temperature Controlled Cabinet endpoint
     uint8_t currentMode = OvenManager::GetInstance().GetCurrentOvenMode();
 
-    // Display oven mode on line 6
-    char modeStr[32] = { 0 };
+    // LCD Display line max length is 16 characters, so allocate 17 bytes for the message (MODE: + mode text + null terminator)
+    char message[17];
+    const char * modeText;
+
     switch (currentMode)
     {
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeBake):
-        strcpy(modeStr, "MODE: BAKE");
+        modeText = "BAKE";
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvection):
-        strcpy(modeStr, "MODE: CONVECTION");
+        modeText = "CONVECTION";
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeGrill):
-        strcpy(modeStr, "MODE: GRILL");
+        modeText = "GRILL";
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeRoast):
-        strcpy(modeStr, "MODE: ROAST");
+        modeText = "ROAST";
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeClean):
-        strcpy(modeStr, "MODE: CLEAN");
+        modeText = "CLEAN";
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvectionBake):
-        strcpy(modeStr, "MODE: CONV BAKE");
+        modeText = "CONV BAKE";
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeConvectionRoast):
-        strcpy(modeStr, "MODE: CONV ROAST");
+        modeText = "CONV ROAST";
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeWarming):
-        strcpy(modeStr, "MODE: WARMING");
+        modeText = "WARMING";
         break;
     case chip::to_underlying(OvenModeDelegate::OvenModes::kModeProofing):
-        strcpy(modeStr, "MODE: PROOFING");
+        modeText = "PROOFING";
         break;
     default:
-        strcpy(modeStr, "MODE: UNKNOWN");
+        modeText = "UNKNOWN";
         break;
     }
 
-    GLIB_drawStringOnLine(glibContext, modeStr, 6, GLIB_ALIGN_LEFT, 0, 0, true);
+    snprintf(message, sizeof(message), "MODE: %s", modeText);
 
-#if SL_LCDCTRL_MUX
-    sl_wfx_host_pre_lcd_spi_transfer();
-#endif // SL_LCDCTRL_MUX
-    DMD_updateDisplay();
-#if SL_LCDCTRL_MUX
-    sl_wfx_host_post_lcd_spi_transfer();
-#endif // SL_LCDCTRL_MUX
+    GLIB_drawStringOnLine(glibContext, message, OVEN_MODE_DISPLAY_LINE, GLIB_ALIGN_LEFT, 0, 0, true);
 }

@@ -81,16 +81,17 @@ CHIP_ERROR AppTask::AppInit()
     GetLCD().Init((uint8_t *) "Oven-App");
     GetLCD().SetCustomUI(OvenUI::DrawUI);
 #endif
-
+    DeviceLayer::PlatformMgr().LockChipStack();
     // Initialization of Oven Manager and endpoints of oven.
     OvenManager::GetInstance().Init();
+    DeviceLayer::PlatformMgr().UnlockChipStack();
 
     sLightLED.Init(LIGHT_LED);
-    UpdateLED(OvenManager::GetInstance().GetCookTopState() ? 1 : 0);
+    sLightLED.Set(OvenManager::GetInstance().GetCookTopState() ? 1 : 0);
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
-    UpdateLCD();
+    GetLCD().WriteDemoUI(false);
 #ifdef QR_CODE_ENABLED
     if (!BaseApplication::GetProvisionStatus())
     {
@@ -158,7 +159,7 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
     // Handle button press to toggle cooktop and cook surface
     if (aEvent->ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        ChipLogProgress(AppServer, "Oven button pressed - starting toggle action");
+        ChipLogDetail(AppServer, "Oven button pressed - starting toggle action");
 
         // Determine new state (toggle current state)
         bool newOnOffState = !OvenManager::GetInstance().GetCookTopState();
@@ -172,7 +173,7 @@ void AppTask::UpdateClusterState(intptr_t context)
 {
     bool newOnOffState = static_cast<bool>(context);
 
-    ChipLogProgress(AppServer, "Updating cooktop OnOff cluster state to %s", newOnOffState ? "On" : "Off");
+    ChipLogDetail(AppServer, "Updating cooktop OnOff cluster state to %s", newOnOffState ? "On" : "Off");
 
     // Set the OnOff attribute value for the cooktop endpoint
     Protocols::InteractionModel::Status status =
@@ -184,15 +185,27 @@ void AppTask::UpdateClusterState(intptr_t context)
     }
 }
 
-void AppTask::UpdateLED(int8_t value)
+void AppTask::OvenActionHandler(AppEvent * aEvent)
 {
-    sLightLED.Set(value);
-}
-
+    // Emulate hardware Action : Update the LEDs and LCD of oven-app as required.
+    switch(aEvent->OvenEvent.Action)
+    {
+    case OvenManager::COOK_TOP_ON_ACTION:
+    case OvenManager::COOK_TOP_OFF_ACTION:
+    {
+        int8_t value = (aEvent->OvenEvent.Action == OvenManager::COOK_TOP_ON_ACTION) ? 1 : 0;
+        sLightLED.Set(value);
 #ifdef DISPLAY_ENABLED
-void AppTask::UpdateLCD()
-{
-    // Update the LCD with the Stored value.
-    GetLCD().WriteDemoUI(false);
-}
+        GetLCD().WriteDemoUI(false);
 #endif // DISPLAY_ENABLED
+        break;
+    }
+    case OvenManager::OVEN_MODE_UPDATE_ACTION:
+#ifdef DISPLAY_ENABLED
+        GetLCD().WriteDemoUI(false);
+#endif // DISPLAY_ENABLED
+        break;
+    default:
+        break;
+    }
+}

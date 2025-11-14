@@ -121,29 +121,9 @@ public:
     uint8_t GetCurrentOvenMode() { return mCurrentOvenMode; };
 
     /**
-     * @brief Get the endpoint ID for the Oven endpoint
-     */
-    static constexpr chip::EndpointId GetOvenEndpoint() { return kOvenEndpoint; }
-
-    /**
-     * @brief Get the endpoint ID for the Temperature Controlled Cabinet endpoint
-     */
-    static constexpr chip::EndpointId GetTemperatureControlledCabinetEndpoint() { return kTemperatureControlledCabinetEndpoint; }
-
-    /**
      * @brief Get the endpoint ID for the CookTop endpoint
      */
     static constexpr chip::EndpointId GetCookTopEndpoint() { return kCookTopEndpoint; }
-
-    /**
-     * @brief Get the endpoint ID for the first CookSurface endpoint
-     */
-    static constexpr chip::EndpointId GetCookSurfaceEndpoint1() { return kCookSurfaceEndpoint1; }
-
-    /**
-     * @brief Get the endpoint ID for the second CookSurface endpoint
-     */
-    static constexpr chip::EndpointId GetCookSurfaceEndpoint2() { return kCookSurfaceEndpoint2; }
 
 private:
     static constexpr uint8_t kBlockedTransitionCount = 3; // Number of blocked transitions
@@ -170,13 +150,6 @@ private:
     bool mCookTopState;
     bool mCookSurfaceState1;
     bool mCookSurfaceState2;
-
-    /**
-     * @brief Updates the oven hardware state and UI (LEDs, LCD) in response to an event.
-     *
-     * @param aEvent Pointer to the event structure.
-     */
-    static void OvenActionHandler(AppEvent * aEvent);
 
     // Define the endpoint ID constants
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;
