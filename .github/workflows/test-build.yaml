@@ -1,0 +1,10 @@
+name: Test Build Matter SDK
+on: [pull_request]  # Triggers on PR events
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Run Vulnerable Script
+        run: ./scripts/run_in_build_env.sh "echo 'Building PR: ${{ github.event.pull_request.title }}'"
