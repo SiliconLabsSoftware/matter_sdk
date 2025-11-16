@@ -1,4 +1,4 @@
-name: Test Build Matter SDK
+name: Vuln Demo - Test Build Matter SDK
 on: [pull_request]  # Triggers on PR events
 jobs:
   build:
