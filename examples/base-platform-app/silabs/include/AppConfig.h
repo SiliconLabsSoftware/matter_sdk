@@ -23,6 +23,6 @@
 
 // ---- Platform Example App Config ----
 
-#define APP_TASK_NAME "Platform"
+#define APP_TASK_NAME "Template"
 
 #define BLE_DEV_NAME "SL-" APP_TASK_NAME
