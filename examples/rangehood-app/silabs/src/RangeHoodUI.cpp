@@ -108,9 +108,8 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
 
     PlatformMgr().LockChipStack();
     RangeHoodMgr().GetExtractorHoodEndpoint().GetFanMode(mode);
-    RangeHoodMgr().GetLightEndpoint().GetOnOffState(lightOn);
     PlatformMgr().UnlockChipStack();
-
+    RangeHoodMgr().GetLightEndpoint().GetOnOffState(lightOn);
     // Print fan mode
     if (mode == FanModeEnum::kOff)
     {
