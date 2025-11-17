@@ -221,11 +221,37 @@ sl_status_t BackgroundScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t 
         chip::CopySpanToMutableSpan(inBssid, outBssid);
 
         // TODO: We should revisit this to make sure we are setting the correct values
-        currentScanResult.security = static_cast<wfx_sec_t>(result->scan_info[i].security_mode);
+        currentScanResult.security = WFX_SEC_WPA2;
+        // currentScanResult.security = static_cast<wfx_sec_t>(result->scan_info[i].security_mode);
         currentScanResult.rssi     = (-1) * result->scan_info[i].rssi_val; // The returned value is positive - we need to flip it
         currentScanResult.chan     = result->scan_info[i].rf_channel;
         // TODO: change this when SDK provides values
         currentScanResult.wiFiBand = WiFiBandEnum::k2g4;
+
+        // Detailed logging of the scan result for debugging
+        // SSID (print up to ssid_length, safely)
+        ChipLogProgress(DeviceLayer, "Scan result[%u]: SSID='%.*s' (len=%zu)",
+                        static_cast<unsigned>(i), static_cast<int>(currentScanResult.ssid_length), currentScanResult.ssid,
+                        currentScanResult.ssid_length);
+
+        // BSSID (print as hex bytes)
+        char bssidStr[3 * kWifiMacAddressLength] = { 0 };
+        for (size_t b = 0; b < kWifiMacAddressLength; ++b)
+        {
+            snprintf(&bssidStr[b * 3], 4, "%02X:", currentScanResult.bssid[b]);
+        }
+        // Remove trailing ':' if present
+        if (kWifiMacAddressLength > 0)
+        {
+            bssidStr[(kWifiMacAddressLength * 3) - 1] = '\0';
+        }
+        ChipLogProgress(DeviceLayer, "Scan result[%u]: BSSID=%s", static_cast<unsigned>(i), bssidStr);
+
+        // Other numeric fields
+        ChipLogProgress(DeviceLayer, "Scan result[%u]: security=%u, rssi=%d, chan=%u, wiFiBand=%u",
+                        static_cast<unsigned>(i), static_cast<unsigned>(currentScanResult.security),
+                        static_cast<int>(currentScanResult.rssi), static_cast<unsigned>(currentScanResult.chan),
+                        static_cast<unsigned>(currentScanResult.wiFiBand));
 
         // if user has provided ssid, check if the current scan result ssid matches the user provided ssid
         if (!requestedSsidSpan.empty())
