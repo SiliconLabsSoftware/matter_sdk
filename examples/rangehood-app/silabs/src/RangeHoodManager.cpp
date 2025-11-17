@@ -28,6 +28,10 @@
 #include <app/clusters/fan-control-server/fan-control-server.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#if DISPLAY_ENABLED
+#include "RangeHoodUI.h"
+#endif
+
 using namespace chip;
 using namespace chip::app;
 using namespace ::chip::app::Clusters;

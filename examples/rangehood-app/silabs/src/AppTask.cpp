@@ -24,6 +24,7 @@
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
+#include "RangeHoodUI.h"
 #include "lcd.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
@@ -76,9 +77,10 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
-#ifdef DISPLAY_ENABLED
+ #ifdef DISPLAY_ENABLED
     GetLCD().Init((uint8_t *) "Rangehood-App");
-#endif
+    GetLCD().SetCustomUI(RangeHoodUI::DrawUI);
+ #endif // DISPLAY_ENABLED
 
     // Initialization of RangeHoodManager and endpoints of range hood.
     err = RangeHoodManager::GetInstance().Init();
@@ -86,6 +88,18 @@ CHIP_ERROR AppTask::AppInit()
     {
         ChipLogError(AppServer, "RangeHoodManager initialization failed");
         return err;
+    }
+
+    sLightLED.Init(LIGHT_LED);
+    bool lightState   = false;
+    CHIP_ERROR status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
+    if (status == CHIP_NO_ERROR)
+    {
+        sLightLED.Set(lightState);
+    }
+    else
+    {
+        ChipLogError(AppServer, "AppTask.Init: failed to  read initial light state");
     }
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
@@ -101,18 +115,7 @@ CHIP_ERROR AppTask::AppInit()
         GetLCD().ShowQRCode(true);
     }
 #endif // QR_CODE_ENABLED
-#endif
-    sLightLED.Init(LIGHT_LED);
-    bool lightState   = false;
-    CHIP_ERROR status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
-    if (status == CHIP_NO_ERROR)
-    {
-        sLightLED.Set(lightState);
-    }
-    else
-    {
-        ChipLogError(AppServer, "AppTask.Init: failed to  read initial light state");
-    }
+#endif // DISPLAY_ENABLED
 
     return err;
 }
@@ -181,15 +184,23 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
     case RangeHoodManager::LIGHT_ON_ACTION:
         SILABS_LOG("Light ON");
         sLightLED.Set(true);
+#ifdef DISPLAY_ENABLED
+        GetLCD().WriteDemoUI(false);
+#endif // DISPLAY_ENABLED
         break;
 
     case RangeHoodManager::LIGHT_OFF_ACTION:
         SILABS_LOG("Light OFF");
         sLightLED.Set(false);
+#ifdef DISPLAY_ENABLED
+        GetLCD().WriteDemoUI(false);
+#endif // DISPLAY_ENABLED
         break;
 
     case RangeHoodManager::FAN_MODE_CHANGE_ACTION:
-        // TODO: Update LCD with new fan mode
+#ifdef DISPLAY_ENABLED
+        GetLCD().WriteDemoUI(false);
+#endif // DISPLAY_ENABLED
         break;
 
     case RangeHoodManager::FAN_PERCENT_CHANGE_ACTION:
