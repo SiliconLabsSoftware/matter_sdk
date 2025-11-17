@@ -150,6 +150,8 @@ if (is_si917_board) {
   silabs_family = "efr32mg24"
   silabs_mcu = "EFR32MG24B310F1536IM48"
 
+  sl_enable_rgb_led = true
+
   # ThunderBoards don't have a LCD,
   show_qr_code = false
   disable_lcd = true
@@ -195,6 +197,8 @@ if (is_si917_board) {
 } else if (silabs_board == "BRD2704A") {
   silabs_family = "mgm24"
   silabs_mcu = "MGM240PB32VNA"
+
+  sl_enable_rgb_led = true
 
   # Explorer Kits do not have an external flash, buttons nor a LCD
   use_wstk_buttons = false
