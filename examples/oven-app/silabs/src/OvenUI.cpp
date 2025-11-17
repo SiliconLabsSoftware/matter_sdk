@@ -34,6 +34,8 @@
 #define COOKTOP_STATE_DISPLAY_LINE 4
 #define OVEN_MODE_DISPLAY_LINE 6
 
+#define LCD_MAX_LINE_LEN 16
+
 using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::TemperatureControlledCabinet;
 using namespace chip::app::Clusters::OvenMode;
@@ -107,8 +109,8 @@ void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
     uint8_t currentMode = OvenManager::GetInstance().GetCurrentOvenMode();
 
     // LCD Display line max length is 16 characters, so allocate 17 bytes for the message (MODE: + mode text + null terminator)
-    char message[17];
-    const char * modeText;
+    char message[LCD_MAX_LINE_LEN + 1];
+    const char * modeText = nullptr;
 
     switch (currentMode)
     {
@@ -144,7 +146,8 @@ void OvenUI::DrawOvenMode(GLIB_Context_t * glibContext)
         break;
     }
 
-    snprintf(message, sizeof(message), "MODE: %s", modeText);
+    VerifyOrReturn(modeText != nullptr);
+    snprintf(message, LCD_MAX_LINE_LEN + 1, "MODE: %s", modeText);
 
     GLIB_drawStringOnLine(glibContext, message, OVEN_MODE_DISPLAY_LINE, GLIB_ALIGN_LEFT, 0, 0, true);
 }

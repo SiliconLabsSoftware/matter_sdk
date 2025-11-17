@@ -44,7 +44,13 @@ OvenManager OvenManager::sOvenMgr;
 void OvenManager::Init()
 {
     // Endpoint initializations
-    VerifyOrDie(mTemperatureControlledCabinetEndpoint.Init() == CHIP_NO_ERROR);
+    
+    CHIP_ERROR initErr = mTemperatureControlledCabinetEndpoint.Init();
+    if (initErr != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint initialization failed");
+    }
+    VerifyOrDie(initErr == CHIP_NO_ERROR);
 
     // Set initial state for TemperatureControlledCabinetEndpoint
     VerifyOrReturn(SetTemperatureControlledCabinetInitialState(kTemperatureControlledCabinetEndpoint) == CHIP_NO_ERROR,
@@ -74,13 +80,13 @@ void OvenManager::Init()
                        static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels)) == CHIP_NO_ERROR,
                    ChipLogError(AppServer, "Registering supported levels for CookSurfaceEndpoint2 failed"));
 
-    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &mCookTopState) == Status::Success,
+    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &mIsCookTopOn) == Status::Success,
                    ChipLogError(AppServer, "Getting CookTop OnOff state failed"));
 
-    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint1, &mCookSurfaceState1) == Status::Success,
+    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint1, &mIsCookSurface1On) == Status::Success,
                    ChipLogError(AppServer, "Getting CookSurfaceEndpoint1 OnOff state failed"));
 
-    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &mCookSurfaceState2) == Status::Success,
+    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &mIsCookSurface2On) == Status::Success,
                    ChipLogError(AppServer, "Getting CookSurfaceEndpoint2 OnOff state failed"));
 
     // Get current oven mode
@@ -136,7 +142,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     switch (endpointId)
     {
     case kCookTopEndpoint: {
-        mCookTopState = (*value != 0);
+        mIsCookTopOn = (*value != 0);
         // Turn on/off the associated cook surfaces.
         VerifyOrReturn(mCookSurfaceEndpoint1.SetOnOffState(*value) == Status::Success,
                        ChipLogError(AppServer, "Failed to set CookSurfaceEndpoint1 state"));
@@ -162,17 +168,17 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
         if (endpointId == kCookSurfaceEndpoint1)
-            mCookSurfaceState1 = (*value != 0);
+            mIsCookSurface1On = (*value != 0);
         else
-            mCookSurfaceState2 = (*value != 0);
+            mIsCookSurface2On = (*value != 0);
 
         // Turn off CookTop if both the CookSurfaces are off.
-        if (!mCookSurfaceState1 && !mCookSurfaceState2)
+        if (!mIsCookSurface1On && !mIsCookSurface2On)
         {
             VerifyOrReturn(mCookTopEndpoint.SetOnOffState(false) == Status::Success,
                            ChipLogError(AppServer, "Failed to set CookTopEndpoint state"));
 
-            mCookTopState = false;
+            mIsCookTopOn = false;
         }
         break;
     default:

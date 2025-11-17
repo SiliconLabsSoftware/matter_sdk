@@ -87,7 +87,7 @@ CHIP_ERROR AppTask::AppInit()
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     sLightLED.Init(LIGHT_LED);
-    sLightLED.Set(OvenManager::GetInstance().GetCookTopState() ? 1 : 0);
+    sLightLED.Set(OvenManager::GetInstance().GetCookTopState());
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -192,8 +192,7 @@ void AppTask::OvenActionHandler(AppEvent * aEvent)
     {
     case OvenManager::COOK_TOP_ON_ACTION:
     case OvenManager::COOK_TOP_OFF_ACTION: {
-        int8_t value = (aEvent->OvenEvent.Action == OvenManager::COOK_TOP_ON_ACTION) ? 1 : 0;
-        sLightLED.Set(value);
+        sLightLED.Set(OvenManager::GetInstance().GetCookTopState());
 #ifdef DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
 #endif // DISPLAY_ENABLED

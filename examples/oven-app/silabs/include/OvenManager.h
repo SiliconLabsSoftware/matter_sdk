@@ -104,7 +104,7 @@ public:
      *
      * @return true if CookTop is On, false if Off
      */
-    bool GetCookTopState() const { return mCookTopState; }
+    bool GetCookTopState() const { return mIsCookTopOn; }
 
     /**
      * @brief Gets the current oven mode.
@@ -138,9 +138,9 @@ private:
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
     // Default values for the states of the endpoints
-    bool mCookTopState      = false;
-    bool mCookSurfaceState1 = false;
-    bool mCookSurfaceState2 = false;
+    bool mIsCookTopOn      = false;
+    bool mIsCookSurface1On = false;
+    bool mIsCookSurface2On = false;
     // Default value for the current oven mode
     uint8_t mCurrentOvenMode =
         chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
