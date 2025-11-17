@@ -44,7 +44,7 @@ OvenManager OvenManager::sOvenMgr;
 void OvenManager::Init()
 {
     // Endpoint initializations
-    
+
     CHIP_ERROR initErr = mTemperatureControlledCabinetEndpoint.Init();
     if (initErr != CHIP_NO_ERROR)
     {
