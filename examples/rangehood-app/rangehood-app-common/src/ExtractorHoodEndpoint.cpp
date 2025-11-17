@@ -180,8 +180,8 @@ Status ExtractorHoodEndpoint::HandleFanModeChange(chip::app::Clusters::FanContro
     }
     case FanControl::FanModeEnum::kSmart:
     case FanControl::FanModeEnum::kAuto: {
-        // For Auto/Smart modes, update the FanMode attribute to reflect the current mode
-        return UpdateFanModeAttribute(newFanMode);
+        ChipLogProgress(NotSpecified, "ExtractorHoodEndpoint::HandleFanModeChange: Auto");
+        return Status::Success;
     }
     case FanControl::FanModeEnum::kUnknownEnumValue: {
         ChipLogProgress(NotSpecified, "ExtractorHoodEndpoint::HandleFanModeChange: Unknown");
