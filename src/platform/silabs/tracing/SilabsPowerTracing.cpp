@@ -43,6 +43,9 @@ SilabsPowerTracing::SilabsPowerTracing() :
 
 CHIP_ERROR SilabsPowerTracing::Init()
 {
+    CHIP_ERROR err = CHIP_NO_ERROR;
+    bool powerManagerSubscribed = false;
+
     // Return early if already initialized
     if (mInitialized)
     {
@@ -55,34 +58,65 @@ CHIP_ERROR SilabsPowerTracing::Init()
         mEnergyTraces = static_cast<EnergyTrace *>(calloc(SILABS_TRACING_ENERGY_TRACES_MAX, sizeof(EnergyTrace)));
         if (mEnergyTraces == nullptr)
         {
-            return CHIP_ERROR_NO_MEMORY;
+            err = CHIP_ERROR_NO_MEMORY;
         }
     }
-    mEnergyTraceCount = 0;
 
-    // Initialize power manager and subscribe to events
-    sl_power_manager_init();
-    sl_power_manager_subscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle, &mPowerManagerEmTransitionEventInfo);
-
-    // Create and start one-shot timer for statistics output
-    mStatisticsTimer = osTimerNew(OnPowerManagerStatisticsTimer, osTimerOnce, nullptr, nullptr);
-    if (mStatisticsTimer == nullptr)
+    if (err == CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "Failed to create power manager statistics timer");
-        return CHIP_ERROR_NO_MEMORY;
+        mEnergyTraceCount = 0;
+
+        // Initialize power manager and subscribe to events
+        sl_power_manager_init();
+        sl_power_manager_subscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle, &mPowerManagerEmTransitionEventInfo);
+        powerManagerSubscribed = true;
+
+        // Create and start one-shot timer for statistics output
+        mStatisticsTimer = osTimerNew(OnPowerManagerStatisticsTimer, osTimerOnce, nullptr, nullptr);
+        if (mStatisticsTimer == nullptr)
+        {
+            ChipLogError(DeviceLayer, "Failed to create power manager statistics timer");
+            err = CHIP_ERROR_NO_MEMORY;
+        }
     }
 
-    uint32_t ticks = SILABS_TRACING_ENERGY_TRACES_SECONDS * osKernelGetTickFreq();
-    if (osTimerStart(mStatisticsTimer, ticks) != osOK)
+    if (err == CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "Failed to start power manager statistics timer");
-        osTimerDelete(mStatisticsTimer);
-        mStatisticsTimer = nullptr;
-        return CHIP_ERROR_INTERNAL;
+        uint32_t ticks = SILABS_TRACING_ENERGY_TRACES_SECONDS * osKernelGetTickFreq();
+        if (osTimerStart(mStatisticsTimer, ticks) != osOK)
+        {
+            ChipLogError(DeviceLayer, "Failed to start power manager statistics timer");
+            err = CHIP_ERROR_INTERNAL;
+        }
     }
 
-    mInitialized = true;
-    return CHIP_NO_ERROR;
+    // Cleanup on error
+    if (err != CHIP_NO_ERROR)
+    {
+        if (mStatisticsTimer != nullptr)
+        {
+            osTimerDelete(mStatisticsTimer);
+            mStatisticsTimer = nullptr;
+        }
+
+        if (powerManagerSubscribed)
+        {
+            sl_power_manager_unsubscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle);
+        }
+
+        if (mEnergyTraces != nullptr)
+        {
+            free(mEnergyTraces);
+            mEnergyTraces = nullptr;
+            mEnergyTraceCount = 0;
+        }
+    }
+    else
+    {
+        mInitialized = true;
+    }
+
+    return err;
 }
 
 SilabsPowerTracing::~SilabsPowerTracing()
