@@ -116,8 +116,8 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
     {
         GLIB_drawStringOnLine(glibContext, "FAN   : OFF", 5, GLIB_ALIGN_LEFT, 0, 0, true);
     }
-    else if (mode == FanModeEnum::kOn || mode == FanModeEnum::kHigh || mode == FanModeEnum::kLow ||
-             mode == FanModeEnum::kMedium || mode == FanModeEnum::kAuto || mode == FanModeEnum::kSmart)
+    else if (mode == FanModeEnum::kOn || mode == FanModeEnum::kHigh || mode == FanModeEnum::kLow || mode == FanModeEnum::kMedium ||
+             mode == FanModeEnum::kAuto || mode == FanModeEnum::kSmart)
     {
         GLIB_drawStringOnLine(glibContext, "FAN   : ON", 5, GLIB_ALIGN_LEFT, 0, 0, true);
     }
