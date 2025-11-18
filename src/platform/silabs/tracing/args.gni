@@ -26,7 +26,7 @@ declare_args() {
   # This shows a simple output about energy states and their statistics. Use "tracing energy" in matterCli.
   silabs_tracing_energy_stats = false
 
-  # Debug output of each energy state transition, external analysis required. Can be enabled independantly from tracing.
+  # Debug output of each energy state transition, external analysis required. Can be enabled independently from tracing.
   silabs_tracing_energy_traces = false
 
   # Time to wait before outputting the results
