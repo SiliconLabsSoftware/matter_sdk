@@ -90,18 +90,6 @@ CHIP_ERROR AppTask::AppInit()
         return err;
     }
 
-    sLightLED.Init(LIGHT_LED);
-    bool lightState   = false;
-    CHIP_ERROR status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
-    if (status == CHIP_NO_ERROR)
-    {
-        sLightLED.Set(lightState);
-    }
-    else
-    {
-        ChipLogError(AppServer, "AppTask.Init: failed to  read initial light state");
-    }
-
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);

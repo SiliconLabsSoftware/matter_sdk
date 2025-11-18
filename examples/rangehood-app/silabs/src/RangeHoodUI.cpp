@@ -108,20 +108,22 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
 
     PlatformMgr().LockChipStack();
     RangeHoodMgr().GetExtractorHoodEndpoint().GetFanMode(mode);
-    PlatformMgr().UnlockChipStack();
     RangeHoodMgr().GetLightEndpoint().GetOnOffState(lightOn);
+    PlatformMgr().UnlockChipStack();
+
     // Print fan mode
     if (mode == FanModeEnum::kOff)
     {
         GLIB_drawStringOnLine(glibContext, "FAN   : OFF", 5, GLIB_ALIGN_LEFT, 0, 0, true);
     }
-    else if (mode == FanModeEnum::kUnknownEnumValue)
+    else if (mode == FanModeEnum::kOn || mode == FanModeEnum::kHigh || mode == FanModeEnum::kLow ||
+             mode == FanModeEnum::kMedium || mode == FanModeEnum::kAuto || mode == FanModeEnum::kSmart)
     {
-        GLIB_drawStringOnLine(glibContext, "FAN   : UNKNOWN", 5, GLIB_ALIGN_LEFT, 0, 0, true);
+        GLIB_drawStringOnLine(glibContext, "FAN   : ON", 5, GLIB_ALIGN_LEFT, 0, 0, true);
     }
     else
     {
-        GLIB_drawStringOnLine(glibContext, "FAN   : ON", 5, GLIB_ALIGN_LEFT, 0, 0, true);
+        GLIB_drawStringOnLine(glibContext, "FAN   : UNKNOWN", 5, GLIB_ALIGN_LEFT, 0, 0, true);
     }
 
     // Draw Light status below fan information
