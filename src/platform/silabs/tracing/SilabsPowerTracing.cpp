@@ -162,7 +162,8 @@ CHIP_ERROR SilabsPowerTracing::OutputPowerManagerTraces()
     {
         for (uint32_t i = 0; i < mEnergyTraceCount; i++)
         {
-            ChipLogProgress(DeviceLayer, "%lu | %lu | EM%d", i, mEnergyTraces[i].mEntryTime, mEnergyTraces[i].mEnergyMode);
+            // Casting to unsigned long to remove ambiguity for the unit tests.
+            ChipLogProgress(DeviceLayer, "%lu | %lu | EM%d", (unsigned long ) i, (unsigned long ) mEnergyTraces[i].mEntryTime, mEnergyTraces[i].mEnergyMode);
             // Delay so the output is not mangled or skipped.
             // 5 (ticks) is enough for UART, but only 1 is required for RTT.
             // No delay results in missed or mangled output for both.
