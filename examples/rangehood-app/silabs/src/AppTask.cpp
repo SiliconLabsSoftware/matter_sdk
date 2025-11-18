@@ -104,7 +104,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif
     sLightLED.Init(LIGHT_LED);
     bool lightState = false;
-    
+
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     CHIP_ERROR status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
