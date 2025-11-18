@@ -14,7 +14,7 @@
  * sections of the MSLA applicable to Source Code.
  *
  ******************************************************************************/
-                                                                            
+
 #include "sl_power_manager_stub.h"
 
 // Minimal stub implementations for unit tests
