@@ -116,6 +116,20 @@ CHIP_ERROR AppTask::AppInit()
     }
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
+    sLightLED.Init(LIGHT_LED);
+    bool lightState = false;
+
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    CHIP_ERROR status = RangeHoodManager::GetInstance().GetLightEndpoint().GetOnOffState(lightState);
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+    if (status == CHIP_NO_ERROR)
+    {
+        sLightLED.Set(lightState);
+    }
+    else
+    {
+        ChipLogError(AppServer, "AppTask.Init: failed to  read initial light state");
+    }
 
     return err;
 }
@@ -182,7 +196,7 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
     switch (action)
     {
     case RangeHoodManager::LIGHT_ON_ACTION:
-        SILABS_LOG("Light ON");
+        ChipLogProgress(AppServer, "Light ON");
         sLightLED.Set(true);
 #ifdef DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
@@ -190,7 +204,7 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
         break;
 
     case RangeHoodManager::LIGHT_OFF_ACTION:
-        SILABS_LOG("Light OFF");
+        ChipLogProgress(AppServer, "Light OFF");
         sLightLED.Set(false);
 #ifdef DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);

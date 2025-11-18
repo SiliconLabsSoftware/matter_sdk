@@ -29,6 +29,8 @@ public:
 
     /**
      * @brief Get the current On/Off state from the Matter attribute.
+     * The caller MUST hold the CHIP stack lock before calling this function,
+     * unless calling from a CHIP task context where the lock is already held.
      * @param[out] state true if light is on, false if off on success.
      * @return Interaction Model status code.
      */
@@ -36,6 +38,8 @@ public:
 
     /**
      * @brief Set On/Off state for the Light.
+     * The caller MUST hold the CHIP stack lock before calling this function,
+     * unless calling from a CHIP task context where the lock is already held.
      * @param[in] state Desired state (true => On, false => Off).
      * @return Interaction Model status code.
      */

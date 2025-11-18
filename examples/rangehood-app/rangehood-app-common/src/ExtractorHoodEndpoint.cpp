@@ -99,7 +99,7 @@ Status ExtractorHoodEndpoint::SetPercentCurrent(Percent newPercentSetting)
     // Return error if we can't read current value
     VerifyOrReturnValue(getStatus == Status::Success, getStatus,
                         ChipLogError(NotSpecified,
-                                     "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get currentPercentCurrent: %d",
+                                     "ExtractorHoodEndpoint::SetPercentCurrent: failed to get currentPercentCurrent: %d",
                                      to_underlying(getStatus)));
 
     // No update needed if value is unchanged
