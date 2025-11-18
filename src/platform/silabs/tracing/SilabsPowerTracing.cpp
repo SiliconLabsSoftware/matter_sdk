@@ -2,7 +2,6 @@
 #include <lib/support/CodeUtils.h>
 #include <platform/silabs/tracing/SilabsTracingConfig.h>
 
-
 // Need to use the sleeptimer for power tracing. The RAIL timer doesn't tick in EM2 and creates invalid timestamps for this
 // application.
 #ifndef SILABS_GET_SLEEPTIMER_TIME
@@ -43,7 +42,7 @@ SilabsPowerTracing::SilabsPowerTracing() :
 
 CHIP_ERROR SilabsPowerTracing::Init()
 {
-    CHIP_ERROR err = CHIP_NO_ERROR;
+    CHIP_ERROR err              = CHIP_NO_ERROR;
     bool powerManagerSubscribed = false;
 
     // Return early if already initialized
@@ -107,7 +106,7 @@ CHIP_ERROR SilabsPowerTracing::Init()
         if (mEnergyTraces != nullptr)
         {
             free(mEnergyTraces);
-            mEnergyTraces = nullptr;
+            mEnergyTraces     = nullptr;
             mEnergyTraceCount = 0;
         }
     }
