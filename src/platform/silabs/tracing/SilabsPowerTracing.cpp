@@ -129,7 +129,7 @@ CHIP_ERROR SilabsPowerTracing::OutputPowerManagerTraces()
     {
         for (size_t i = 0; i < mEnergyTraceCount; i++)
         {
-            ChipLogProgress(DeviceLayer, "%zu | %u | EM%d", i, mEnergyTraces[i].mEntryTime, mEnergyTraces[i].mEnergyMode);
+            ChipLogProgress(DeviceLayer, "%u | %lu | EM%d", i, mEnergyTraces[i].mEntryTime, mEnergyTraces[i].mEnergyMode);
             // Delay so the output is not mangled or skipped.
             // 5 (ticks) is enough for UART, but only 1 is required for RTT.
             // No delay results in missed or mangled output for both.
