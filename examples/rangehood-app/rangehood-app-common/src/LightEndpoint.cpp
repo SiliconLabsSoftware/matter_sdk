@@ -31,9 +31,7 @@ using namespace chip::app::Clusters;
 
 CHIP_ERROR LightEndpoint::GetOnOffState(bool & state)
 {
-    chip::DeviceLayer::PlatformMgr().LockChipStack();
     auto status = OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
-    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
 
@@ -44,9 +42,7 @@ CHIP_ERROR LightEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
 
-    chip::DeviceLayer::PlatformMgr().LockChipStack();
     auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
-    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
 
