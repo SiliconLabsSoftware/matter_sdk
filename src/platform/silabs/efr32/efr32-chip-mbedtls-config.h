@@ -58,7 +58,7 @@
 #define MBEDTLS_SSL_PROTO_DTLS
 #define MBEDTLS_CIPHER_MODE_CBC
 #define MBEDTLS_CCM_C
-#define MBEDTLS_GCM_C // Enable GCM mode for AES-GCM cipher suites
+#define MBEDTLS_GCM_C    // Enable GCM mode for AES-GCM cipher suites
 #define MBEDTLS_SHA256_C // Enable SHA256 (required for SHA256 cipher suites)
 #define MBEDTLS_PK_HAVE_CURVE_SECP256R1
 #define MBEDTLS_PK_HAVE_JPAKE
@@ -114,7 +114,7 @@
 // #define MBEDTLS_AES_FEWER_TABLES /* Check if we want this */
 
 #define MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
-#define MBEDTLS_SHA256_SMALLER /* Check if we want this */
+#define MBEDTLS_SHA256_SMALLER    /* Check if we want this */
 #define MBEDTLS_MPI_WINDOW_SIZE 1 /**< Maximum windows size used. */
 
 // Includes generated file for all generic defines.
