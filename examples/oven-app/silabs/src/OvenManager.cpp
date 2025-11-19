@@ -51,7 +51,6 @@ void OvenManager::Init()
         ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint initialization failed");
         chipDie();
     }
-    VerifyOrDie(initErr == CHIP_NO_ERROR);
 
     // Set initial state for TemperatureControlledCabinetEndpoint
     VerifyOrReturn(SetTemperatureControlledCabinetInitialState(kTemperatureControlledCabinetEndpoint) == CHIP_NO_ERROR,
