@@ -71,22 +71,6 @@ static_library("efr32") {
     "../../SingletonConfigurationManager.cpp",
   ]
 
-  if (sl_matter_enable_siwx_ble) {
-    sources += [
-      "../rs911x/BLEManagerImpl.cpp",
-      "../rs911x/rsi_ble_config.h",
-      "../rs911x/wfx_sl_ble_init.cpp",
-      "../rs911x/wfx_sl_ble_init.h",
-    ]
-  } else {
-    sources += [
-      "BLEChannel.h",
-      "BLEChannelImpl.cpp",
-      "BLEChannelImpl.h",
-      "BLEManagerImpl.cpp",
-    ]
-  }
-
   public_deps = [
     "${chip_root}/src/platform:platform_base",
     "${chip_root}/src/platform/logging:headers",
@@ -102,7 +86,12 @@ static_library("efr32") {
       "${silabs_platform_dir}/SiWx/ble/BLEManagerImpl.cpp",
     ]
   } else {
-    sources += [ "BLEManagerImpl.cpp" ]
+    sources += [
+      "BLEChannel.h",
+      "BLEChannelImpl.cpp",
+      "BLEChannelImpl.h",
+      "BLEManagerImpl.cpp",
+    ]
   }
   deps = [
     "${chip_root}/src/app/common:ids",
