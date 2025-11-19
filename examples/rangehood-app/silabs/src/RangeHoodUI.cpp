@@ -101,7 +101,7 @@ void RangeHoodUI::DrawHeader(GLIB_Context_t * glibContext)
  */
 void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
 {
-     ChipLogDetail(NotSpecified,"Updating Rangehood Status on LCD");
+    ChipLogDetail(NotSpecified, "Updating Rangehood Status on LCD");
 
     FanModeEnum mode = FanModeEnum::kUnknownEnumValue;
     bool lightOn     = false;
