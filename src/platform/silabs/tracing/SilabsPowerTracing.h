@@ -37,9 +37,9 @@ public:
 
     /** @brief Output all recorded power manager energy mode traces
      * Logs the collected energy traces showing timestamps and energy modes to the device layer.
-     * @return void
+     * @return CHIP_NO_ERROR on success, CHIP_ERROR_UNINITIALIZED if not initialized
      */
-    void OutputPowerManagerTraces();
+    CHIP_ERROR OutputPowerManagerTraces();
 
     /** @brief Check if the power tracing system is initialized
      *  @return true if initialized, false otherwise
@@ -55,14 +55,7 @@ public:
      *  @param index The index of the trace to retrieve
      *  @return Pointer to the energy trace, or nullptr if index is out of bounds
      */
-    const EnergyTrace * GetEnergyTrace(size_t index) const
-    {
-        if (index >= mEnergyTraceCount || mEnergyTraces == nullptr)
-        {
-            return nullptr;
-        }
-        return &mEnergyTraces[index];
-    }
+    const EnergyTrace * GetEnergyTrace(size_t index) const;
 
     /** @brief Callback for power manager energy mode transitions
      * This function is called by the power manager when the device transitions between energy modes.

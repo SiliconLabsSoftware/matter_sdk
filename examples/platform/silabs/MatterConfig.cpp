@@ -381,7 +381,8 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #endif // MATTER_TRACING_ENABLED
 
 #if defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
-    chip::Tracing::Silabs::SilabsPowerTracing::Instance().Init();
+    VerifyOrDo(chip::Tracing::Silabs::SilabsPowerTracing::Instance().Init() == CHIP_NO_ERROR,
+               ChipLogError(DeviceLayer, "SilabsPowerTracing init failed"));
 #endif // defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();

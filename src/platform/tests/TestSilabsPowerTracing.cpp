@@ -191,3 +191,41 @@ TEST_F(TestSilabsPowerTracing, TestBufferFull)
     EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), static_cast<size_t>(SL_TRACING_ENERGY_TRACES_MAX));
     EXPECT_EQ(SilabsPowerTracing::Instance().OutputPowerManagerTraces(), CHIP_NO_ERROR);
 }
+
+TEST_F(TestSilabsPowerTracing, TestInitFailureHandling)
+{
+    gMockClock.SetMonotonic(0_ms64);
+
+    // Reset the singleton and reinitialize with nullptr to simulate allocation failure
+    SilabsPowerTracing::Instance().~SilabsPowerTracing();
+    new (&SilabsPowerTracing::Instance()) SilabsPowerTracing();
+    
+    // Verify the system is not initialized
+    EXPECT_FALSE(SilabsPowerTracing::Instance().IsInitialized());
+
+    // Attempt to record energy mode transitions - should be ignored gracefully
+    SilabsPowerTracing::StaticPowerManagerTransitionCallback(SL_POWER_MANAGER_EM0, SL_POWER_MANAGER_EM1);
+    gMockClock.AdvanceMonotonic(100_ms64);
+    SilabsPowerTracing::StaticPowerManagerTransitionCallback(SL_POWER_MANAGER_EM1, SL_POWER_MANAGER_EM2);
+    
+    // Verify no traces were recorded
+    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), 0u);
+    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTrace(0), nullptr);
+
+    // Verify output operation doesn't crash when not initialized
+    EXPECT_EQ(SilabsPowerTracing::Instance().OutputPowerManagerTraces(), CHIP_ERROR_UNINITIALIZED);
+
+    // Now initialize properly and verify system recovers
+    EXPECT_EQ(SilabsPowerTracing::Instance().Init(), CHIP_NO_ERROR);
+    EXPECT_TRUE(SilabsPowerTracing::Instance().IsInitialized());
+
+    // Verify system works after proper initialization
+    SilabsPowerTracing::StaticPowerManagerTransitionCallback(SL_POWER_MANAGER_EM2, SL_POWER_MANAGER_EM0);
+    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), 1u);
+
+    const EnergyTrace * trace = SilabsPowerTracing::Instance().GetEnergyTrace(0);
+    ASSERT_NE(trace, nullptr);
+    EXPECT_EQ(trace->mEnergyMode, SL_POWER_MANAGER_EM0);
+
+    EXPECT_EQ(SilabsPowerTracing::Instance().OutputPowerManagerTraces(), CHIP_NO_ERROR);
+}
