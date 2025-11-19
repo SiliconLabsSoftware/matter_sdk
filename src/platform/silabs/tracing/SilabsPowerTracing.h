@@ -37,9 +37,9 @@ public:
 
     /** @brief Output all recorded power manager energy mode traces
      * Logs the collected energy traces showing timestamps and energy modes to the device layer.
-     * @return CHIP_NO_ERROR on success
+     * @return void
      */
-    CHIP_ERROR OutputPowerManagerTraces();
+    void OutputPowerManagerTraces();
 
     /** @brief Check if the power tracing system is initialized
      *  @return true if initialized, false otherwise
@@ -70,7 +70,7 @@ public:
      *  @param from The energy mode the device is transitioning from
      *  @param to The energy mode the device is transitioning to
      */
-    void PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to);
+    void PowerManagerTransitionCallback([[maybe_unused]] sl_power_manager_em_t from, sl_power_manager_em_t to);
 
     /** @brief Static callback for power manager energy mode transitions
      * This function is a static wrapper that calls the instance method PowerManagerTransitionCallback.
@@ -80,6 +80,11 @@ public:
     static void StaticPowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to);
 
 private:
+    /** @brief Cleanup resources (timer, power manager subscription, energy traces)
+     * This method is called by both the destructor and the Init() error path.
+     */
+    void Cleanup();
+
     static SilabsPowerTracing sInstance;
 
     // Energy trace storage

@@ -46,38 +46,30 @@ CHIP_ERROR SilabsPowerTracing::Init()
     bool powerManagerSubscribed = false;
 
     // Return early if already initialized
-    if (mInitialized)
-    {
-        return CHIP_NO_ERROR;
-    }
+    VerifyOrReturnError(!mInitialized, CHIP_NO_ERROR);
 
     // Allocate energy trace storage
     if (mEnergyTraces == nullptr)
     {
         mEnergyTraces = static_cast<EnergyTrace *>(calloc(SL_TRACING_ENERGY_TRACES_MAX, sizeof(EnergyTrace)));
-        if (mEnergyTraces == nullptr)
-        {
-            err = CHIP_ERROR_NO_MEMORY;
-        }
+        VerifyOrReturnError(mEnergyTraces != nullptr, CHIP_ERROR_NO_MEMORY);
     }
 
-    if (err == CHIP_NO_ERROR)
+    mEnergyTraceCount = 0;
+
+    // Initialize power manager and subscribe to events
+    sl_power_manager_init();
+    sl_power_manager_subscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle, &mPowerManagerEmTransitionEventInfo);
+    powerManagerSubscribed = true;
+
+    // Create and start one-shot timer for statistics output
+    mStatisticsTimer = osTimerNew(OnPowerManagerStatisticsTimer, osTimerOnce, nullptr, nullptr);
+    if (mStatisticsTimer == nullptr)
     {
-        mEnergyTraceCount = 0;
-
-        // Initialize power manager and subscribe to events
-        sl_power_manager_init();
-        sl_power_manager_subscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle, &mPowerManagerEmTransitionEventInfo);
-        powerManagerSubscribed = true;
-
-        // Create and start one-shot timer for statistics output
-        mStatisticsTimer = osTimerNew(OnPowerManagerStatisticsTimer, osTimerOnce, nullptr, nullptr);
-        if (mStatisticsTimer == nullptr)
-        {
-            ChipLogError(DeviceLayer, "Failed to create power manager statistics timer");
-            err = CHIP_ERROR_NO_MEMORY;
-        }
+        ChipLogError(DeviceLayer, "Failed to create power manager statistics timer");
+        err = CHIP_ERROR_NO_MEMORY;
     }
+    
 
     if (err == CHIP_NO_ERROR)
     {
@@ -92,23 +84,11 @@ CHIP_ERROR SilabsPowerTracing::Init()
     // Cleanup on error
     if (err != CHIP_NO_ERROR)
     {
-        if (mStatisticsTimer != nullptr)
-        {
-            osTimerDelete(mStatisticsTimer);
-            mStatisticsTimer = nullptr;
-        }
-
         if (powerManagerSubscribed)
         {
             sl_power_manager_unsubscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle);
         }
-
-        if (mEnergyTraces != nullptr)
-        {
-            free(mEnergyTraces);
-            mEnergyTraces     = nullptr;
-            mEnergyTraceCount = 0;
-        }
+        Cleanup();
     }
     else
     {
@@ -118,11 +98,10 @@ CHIP_ERROR SilabsPowerTracing::Init()
     return err;
 }
 
-SilabsPowerTracing::~SilabsPowerTracing()
+void SilabsPowerTracing::Cleanup()
 {
     if (mStatisticsTimer != nullptr)
     {
-        osTimerStop(mStatisticsTimer);
         osTimerDelete(mStatisticsTimer);
         mStatisticsTimer = nullptr;
     }
@@ -138,7 +117,12 @@ SilabsPowerTracing::~SilabsPowerTracing()
     mInitialized = false;
 }
 
-void SilabsPowerTracing::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
+SilabsPowerTracing::~SilabsPowerTracing()
+{
+    Cleanup();
+}
+
+void SilabsPowerTracing::PowerManagerTransitionCallback([[maybe_unused]] sl_power_manager_em_t from, sl_power_manager_em_t to)
 {
     if (mEnergyTraces != nullptr && mEnergyTraceCount < SL_TRACING_ENERGY_TRACES_MAX)
     {
@@ -153,8 +137,11 @@ void SilabsPowerTracing::StaticPowerManagerTransitionCallback(sl_power_manager_e
     Instance().PowerManagerTransitionCallback(from, to);
 }
 
-CHIP_ERROR SilabsPowerTracing::OutputPowerManagerTraces()
+void SilabsPowerTracing::OutputPowerManagerTraces()
 {
+    // Stop further power manager event callbacks while outputting traces
+    sl_power_manager_unsubscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle);
+
     ChipLogProgress(DeviceLayer, "=== Power Manager Energy Mode Traces ===");
     ChipLogProgress(DeviceLayer, "Index | Entry Time | Energy Mode");
 
@@ -175,8 +162,6 @@ CHIP_ERROR SilabsPowerTracing::OutputPowerManagerTraces()
     {
         ChipLogProgress(DeviceLayer, "No energy traces recorded");
     }
-
-    return CHIP_NO_ERROR;
 }
 
 } // namespace Silabs
