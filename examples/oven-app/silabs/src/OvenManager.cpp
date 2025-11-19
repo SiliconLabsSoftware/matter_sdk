@@ -49,6 +49,7 @@ void OvenManager::Init()
     if (initErr != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint initialization failed");
+        chipDie();
     }
     VerifyOrDie(initErr == CHIP_NO_ERROR);
 
