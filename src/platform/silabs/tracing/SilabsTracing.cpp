@@ -923,7 +923,7 @@ void SilabsTracer::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl
 
     // Update time spent in previous energy mode
     mCurrentEnergyMode             = to;
-    mLastEnergyStateTransitionTime = System::Clock::Milliseconds32(static_cast<uint64_t>(ticks) * 1000ULL / freq);
+    mLastEnergyStateTransitionTime = System::Clock::Milliseconds32(SL_GET_SLEEPTIMER_TIME());
 }
 
 void SilabsTracer::StaticPowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
