@@ -91,7 +91,7 @@ CHIP_ERROR ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) 
 CHIP_ERROR ExtractorHoodEndpoint::SetPercentCurrent(Percent newPercentSetting)
 {
     Percent currentPercentCurrent = 0;
-    Status getStatus                = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
+    Status getStatus              = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
     VerifyOrReturnError(getStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(NotSpecified,
                                      "ExtractorHoodEndpoint::SetPercentCurrent: failed to get currentPercentCurrent: %d",
@@ -116,7 +116,7 @@ CHIP_ERROR ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentS
 {
     ChipLogDetail(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: %d", newPercentSetting);
     Percent currentPercentCurrent = 0;
-    Status getStatus                = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
+    Status getStatus              = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
     VerifyOrReturnError(getStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(NotSpecified,
                                      "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get PercentCurrent: %d",
