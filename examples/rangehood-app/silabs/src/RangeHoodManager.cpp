@@ -57,15 +57,17 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
     switch (attributeId)
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
-        VerifyOrReturnError(mExtractorHoodEndpoint.HandlePercentSettingChange(*value) == CHIP_NO_ERROR,
-                            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed"));
+        CHIP_ERROR err = mExtractorHoodEndpoint.HandlePercentSettingChange(*value);
+        VerifyOrReturnError(err == CHIP_NO_ERROR,
+            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed: %s", err.Format()));
         action = FAN_PERCENT_CHANGE_ACTION;
         break;
     }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
-        VerifyOrReturnError(mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value)) == CHIP_NO_ERROR,
-                            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed"));
+        CHIP_ERROR err = mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
+        VerifyOrReturnError(err == CHIP_NO_ERROR,
+            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed: %s", err.Format()));
         action = FAN_MODE_CHANGE_ACTION;
         break;
     }
