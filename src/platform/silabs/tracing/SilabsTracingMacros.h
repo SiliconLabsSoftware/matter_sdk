@@ -85,7 +85,6 @@ private:
 
 #define SILABS_TRACE_FLUSH_ALL() _MATTER_TRACE_DISABLE()
 
-
 #endif // MATTER_TRACING_ENABLED
 
 // Need to use the sleeptimer for power tracing. The RAIL timer doesn't tick in EM2 and creates invalid timestamps for this
