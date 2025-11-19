@@ -83,8 +83,12 @@ static void MatterAwsMqttConnCb(mqtt_client_t * client, void * arg, mqtt_connect
     ChipLogProgress(AppServer, "[MATTER_AWS] MQTT connection status: %u", status);
     if (status != MQTT_CONNECT_ACCEPTED)
     {
-        if (matterAwsTask)
+        /* Signal the task to exit cleanly instead of setting flag only */
+        if (matterAwsTask != NULL && matterAwsEvents != NULL)
+        {
             end_loop = true;
+            xEventGroupSetBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE);
+        }
         return;
     }
     if (gSubsCB != NULL)
@@ -128,9 +132,16 @@ void MatterAwsTcpConnectCb(err_t err)
     }
     init_complete = false;
 exit:
-    vTaskDelete(matterAwsTask);
-    vEventGroupDelete(matterAwsEvents);
-    matterAwsTask = NULL;
+    /* Instead of deleting the task from callback context (which causes hardfault),
+     * signal the task to exit and let it clean up itself. The callback is called
+     * from TCP/IP thread context, and deleting a task from another task's context
+     * can corrupt FreeRTOS internal structures. */
+    if (matterAwsTask != NULL && matterAwsEvents != NULL)
+    {
+        end_loop = true;
+        /* Signal the task to wake up and exit cleanly */
+        xEventGroupSetBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE);
+    }
     return;
 }
 
@@ -202,9 +213,17 @@ static void MatterAwsTaskFn(void * args)
     init_complete = false;
 
 exit:
-    vTaskDelete(matterAwsTask);
+    /* Clean up resources before task deletion */
+    if (matterAwsEvents != NULL)
+    {
+        vEventGroupDelete(matterAwsEvents);
+        matterAwsEvents = NULL;
+    }
+    /* Clear task handle before deletion to prevent issues */
     matterAwsTask = NULL;
-    vEventGroupDelete(matterAwsEvents);
+    /* Delete the current task - use NULL to delete self */
+    vTaskDelete(NULL);
+    /* This line should never be reached */
     return;
 }
 
