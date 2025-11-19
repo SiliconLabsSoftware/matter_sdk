@@ -71,7 +71,7 @@ static_library("efr32") {
     "../../SingletonConfigurationManager.cpp",
   ]
 
-  if (chip_enable_ble_rs911x) {
+  if (sl_matter_enable_siwx_ble) {
     sources += [
       "../rs911x/BLEManagerImpl.cpp",
       "../rs911x/rsi_ble_config.h",
