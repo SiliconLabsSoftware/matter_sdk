@@ -111,7 +111,7 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
     RangeHoodMgr().GetLightEndpoint().GetOnOffState(lightOn);
     PlatformMgr().UnlockChipStack();
 
-    char fanLine[32];
+    char fanLine[17];
     const char * modeText = nullptr;
     switch (mode)
     {
