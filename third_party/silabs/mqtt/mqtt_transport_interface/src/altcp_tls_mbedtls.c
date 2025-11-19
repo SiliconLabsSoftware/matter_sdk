@@ -279,7 +279,7 @@ err_t altcp_mbedtls_lower_recv_process(struct altcp_pcb *conn)
   if (!(state->flags & ALTCP_MBEDTLS_FLAGS_HANDSHAKE_DONE)) {
     /* handle connection setup (handshake not done) */
     int ret = mbedtls_ssl_handshake(&state->ssl_context);
-    
+
     /* try to send data... (only if connection is still valid) */
     if (conn->inner_conn != NULL) {
       altcp_output(conn->inner_conn);

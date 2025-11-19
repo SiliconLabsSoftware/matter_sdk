@@ -233,12 +233,12 @@ static void transport_err_cb(void *arg, err_t err)
   TRANSPORT_UNUSED_ARG(err); /* only used for debug output */
   TRANSPORT_DEBUGF(("transport_err_cb: TCP error callback: error %d, arg: %p\n", err, arg));
   TRANSPORT_ASSERT("transport_err_cb: client != NULL", client != NULL);
-  
+
   /* Safety check: if client is NULL, return early to prevent hardfault */
   if (client == NULL) {
     return;
   }
-  
+
   /* Set conn to null before calling close as pcb is already deallocated*/
   if (client->conn_state && client->events != NULL) {
     xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_CONN_CLOSE);
