@@ -15,11 +15,11 @@
  *
  ******************************************************************************/
 #include "SilabsTracing.h"
-#include <platform/silabs/tracing/SilabsTracingMacros.h>
 #include <cstdio> // for snprintf
 #include <cstring>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/PersistentData.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 #include <string> // Include the necessary header for std::string
 
 // Include FreeRTOS configuration first
@@ -901,9 +901,9 @@ void SilabsTracer::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl
 
     if (from == mCurrentEnergyMode)
     {
-        // Using the sleeptimer instead of the RAIL timer. It may be less precise, but it runs even in EM2. At this point, there is no
-        // guarantee the RAIL timer has been adjusted if the device is woken up from EM2.
-        // (RAIL timer uses the same power manager callback to adjust itself)
+        // Using the sleeptimer instead of the RAIL timer. It may be less precise, but it runs even in EM2. At this point, there is
+        // no guarantee the RAIL timer has been adjusted if the device is woken up from EM2. (RAIL timer uses the same power manager
+        // callback to adjust itself)
         auto currentTime = System::Clock::Milliseconds32(SL_GET_SLEEPTIMER_TIME());
         auto timeDiff    = currentTime - mLastEnergyStateTransitionTime;
         mTimeInEnergyState[from] += timeDiff;

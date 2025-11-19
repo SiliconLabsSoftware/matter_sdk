@@ -30,7 +30,7 @@ SilabsPowerTracing::SilabsPowerTracing() :
 
 CHIP_ERROR SilabsPowerTracing::Init()
 {
-    CHIP_ERROR err              = CHIP_NO_ERROR;
+    CHIP_ERROR err = CHIP_NO_ERROR;
 
     // Return early if already initialized
     VerifyOrReturnError(!mInitialized, CHIP_NO_ERROR);
@@ -53,7 +53,6 @@ CHIP_ERROR SilabsPowerTracing::Init()
         ChipLogError(DeviceLayer, "Failed to create power manager statistics timer");
         err = CHIP_ERROR_NO_MEMORY;
     }
-
 
     if (err == CHIP_NO_ERROR)
     {
@@ -121,7 +120,7 @@ void SilabsPowerTracing::StaticPowerManagerTransitionCallback(sl_power_manager_e
 
 const EnergyTrace * SilabsPowerTracing::GetEnergyTrace(size_t index) const
 {
-    if (!mInitialized || mEnergyTraces == nullptr ||index >= mEnergyTraceCount )
+    if (!mInitialized || mEnergyTraces == nullptr || index >= mEnergyTraceCount)
     {
         return nullptr;
     }
@@ -155,7 +154,6 @@ CHIP_ERROR SilabsPowerTracing::OutputPowerManagerTraces()
     }
 
     return CHIP_NO_ERROR;
-
 }
 
 } // namespace Silabs
