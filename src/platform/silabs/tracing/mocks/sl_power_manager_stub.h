@@ -21,11 +21,11 @@
 #include <stdint.h>
 
 // Default values for tracing config constants if not defined by build system
-#ifndef SILABS_TRACING_ENERGY_TRACES_MAX
-#define SILABS_TRACING_ENERGY_TRACES_MAX 100
+#ifndef SL_TRACING_ENERGY_TRACES_MAX
+#define SL_TRACING_ENERGY_TRACES_MAX 100
 #endif
-#ifndef SILABS_TRACING_ENERGY_TRACES_SECONDS
-#define SILABS_TRACING_ENERGY_TRACES_SECONDS 10
+#ifndef SL_TRACING_ENERGY_TRACES_SECONDS
+#define SL_TRACING_ENERGY_TRACES_SECONDS 10
 #endif
 
 #ifdef __cplusplus

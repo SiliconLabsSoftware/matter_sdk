@@ -54,7 +54,7 @@ CHIP_ERROR SilabsPowerTracing::Init()
     // Allocate energy trace storage
     if (mEnergyTraces == nullptr)
     {
-        mEnergyTraces = static_cast<EnergyTrace *>(calloc(SILABS_TRACING_ENERGY_TRACES_MAX, sizeof(EnergyTrace)));
+        mEnergyTraces = static_cast<EnergyTrace *>(calloc(SL_TRACING_ENERGY_TRACES_MAX, sizeof(EnergyTrace)));
         if (mEnergyTraces == nullptr)
         {
             err = CHIP_ERROR_NO_MEMORY;
@@ -81,7 +81,7 @@ CHIP_ERROR SilabsPowerTracing::Init()
 
     if (err == CHIP_NO_ERROR)
     {
-        uint32_t ticks = SILABS_TRACING_ENERGY_TRACES_SECONDS * osKernelGetTickFreq();
+        uint32_t ticks = SL_TRACING_ENERGY_TRACES_SECONDS * osKernelGetTickFreq();
         if (osTimerStart(mStatisticsTimer, ticks) != osOK)
         {
             ChipLogError(DeviceLayer, "Failed to start power manager statistics timer");
@@ -140,7 +140,7 @@ SilabsPowerTracing::~SilabsPowerTracing()
 
 void SilabsPowerTracing::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
 {
-    if (mEnergyTraces != nullptr && mEnergyTraceCount < SILABS_TRACING_ENERGY_TRACES_MAX)
+    if (mEnergyTraces != nullptr && mEnergyTraceCount < SL_TRACING_ENERGY_TRACES_MAX)
     {
         mEnergyTraces[mEnergyTraceCount].mEntryTime  = SILABS_GET_SLEEPTIMER_TIME();
         mEnergyTraces[mEnergyTraceCount].mEnergyMode = to;

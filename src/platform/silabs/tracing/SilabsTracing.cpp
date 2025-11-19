@@ -305,7 +305,7 @@ CHIP_ERROR SilabsTracer::Init()
     {
         mNamedTraces[i] = NamedTrace{};
     }
-#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+#if defined(SL_TRACING_ENERGY_STATS) && SL_TRACING_ENERGY_STATS == 1
     memset(mTimeInEnergyState, 0, sizeof(mTimeInEnergyState));
     memset(mLongestTimeInEnergyState, 0, sizeof(mLongestTimeInEnergyState));
     memset(mTransitionCountToEnergyState, 0, sizeof(mTransitionCountToEnergyState));
@@ -315,7 +315,7 @@ CHIP_ERROR SilabsTracer::Init()
 
     sl_power_manager_init();
     sl_power_manager_subscribe_em_transition_event(&mPowerManagerEmTransitionEventHandle, &mPowerManagerEmTransitionEventInfo);
-#endif // SILABS_TRACING_ENERGY_STATS
+#endif // SL_TRACING_ENERGY_STATS
     return CHIP_NO_ERROR;
 }
 
@@ -894,7 +894,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
 
 #endif // configGENERATE_RUN_TIME_STATS == 1
 
-#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+#if defined(SL_TRACING_ENERGY_STATS) && SL_TRACING_ENERGY_STATS == 1
 
 void SilabsTracer::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
 {
@@ -933,11 +933,11 @@ void SilabsTracer::StaticPowerManagerTransitionCallback(sl_power_manager_em_t fr
     Instance().PowerManagerTransitionCallback(from, to);
 }
 
-#endif // SILABS_TRACING_ENERGY_STATS
+#endif // SL_TRACING_ENERGY_STATS
 
 CHIP_ERROR SilabsTracer::OutputPowerManagerStatistics()
 {
-#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+#if defined(SL_TRACING_ENERGY_STATS) && SL_TRACING_ENERGY_STATS == 1
     VerifyOrReturnError(isLogInitialized(), CHIP_ERROR_UNINITIALIZED);
 
     auto currentTime = SILABS_GET_TIME();
@@ -968,10 +968,10 @@ CHIP_ERROR SilabsTracer::OutputPowerManagerStatistics()
     }
 
     return CHIP_NO_ERROR;
-#else  // SILABS_TRACING_ENERGY_STATS != 1
-    ChipLogError(DeviceLayer, "Power Manager statistics not available - SILABS_TRACING_ENERGY_STATS not enabled");
+#else  // SL_TRACING_ENERGY_STATS != 1
+    ChipLogError(DeviceLayer, "Power Manager statistics not available - SL_TRACING_ENERGY_STATS not enabled");
     return CHIP_ERROR_UNINITIALIZED;
-#endif // SILABS_TRACING_ENERGY_STATS
+#endif // SL_TRACING_ENERGY_STATS
 }
 
 } // namespace Silabs

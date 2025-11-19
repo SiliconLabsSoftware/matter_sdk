@@ -24,12 +24,12 @@
 #include <lib/support/LinkedList.h>
 #include <lib/support/Span.h>
 #include <platform/silabs/tracing/SilabsTracingConfig.h>
-#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+#if defined(SL_TRACING_ENERGY_STATS) && SL_TRACING_ENERGY_STATS == 1
 #include <sl_power_manager.h>
 #define SLEEP_EM_EVENT_MASK                                                                                                        \
     (SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM0 | SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM1 |                             \
      SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM2)
-#endif // SILABS_TRACING_ENERGY_STATS
+#endif // SL_TRACING_ENERGY_STATS
 #include <stdint.h>
 #include <system/SystemClock.h>
 
@@ -370,7 +370,7 @@ private:
     PersistentStorageDelegate * mStorage = nullptr;
 
     size_t mBufferedTrackerCount = 0;
-#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+#if defined(SL_TRACING_ENERGY_STATS) && SL_TRACING_ENERGY_STATS == 1
 
     System::Clock::Milliseconds32 mTimeInEnergyState[SL_POWER_MANAGER_EM2 + 1];
     System::Clock::Milliseconds32 mLongestTimeInEnergyState[SL_POWER_MANAGER_EM2 + 1];
@@ -381,7 +381,7 @@ private:
     sl_power_manager_em_transition_event_info_t mPowerManagerEmTransitionEventInfo = { .event_mask = SLEEP_EM_EVENT_MASK,
                                                                                        .on_event =
                                                                                            StaticPowerManagerTransitionCallback };
-#endif // SILABS_TRACING_ENERGY_STATS
+#endif // SL_TRACING_ENERGY_STATS
 
     /** @brief Clear the trace buffer */
     void TraceBufferClear();
@@ -422,7 +422,7 @@ private:
      */
     CHIP_ERROR SplitNamedTraceString(CharSpan appOperationKey, CharSpan & groupSpan, CharSpan & labelSpan) const;
 
-#if defined(SILABS_TRACING_ENERGY_STATS) && SILABS_TRACING_ENERGY_STATS == 1
+#if defined(SL_TRACING_ENERGY_STATS) && SL_TRACING_ENERGY_STATS == 1
 
     /** @brief Callback for power manager energy mode transitions
      * This function is called by the power manager when the device transitions between energy modes.
@@ -438,7 +438,7 @@ private:
      *  @param to The energy mode the device is transitioning to
      */
     static void StaticPowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to);
-#endif // SILABS_TRACING_ENERGY_STATS
+#endif // SL_TRACING_ENERGY_STATS
 };
 
 } // namespace Silabs

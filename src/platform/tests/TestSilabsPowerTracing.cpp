@@ -31,12 +31,12 @@
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 
 // Define test configuration constants if not already defined
-#ifndef SILABS_TRACING_ENERGY_TRACES_MAX
-#define SILABS_TRACING_ENERGY_TRACES_MAX 100
+#ifndef SL_TRACING_ENERGY_TRACES_MAX
+#define SL_TRACING_ENERGY_TRACES_MAX 100
 #endif
 
-#ifndef SILABS_TRACING_ENERGY_TRACES_SECONDS
-#define SILABS_TRACING_ENERGY_TRACES_SECONDS 10
+#ifndef SL_TRACING_ENERGY_TRACES_SECONDS
+#define SL_TRACING_ENERGY_TRACES_SECONDS 10
 #endif
 
 // Mock clock for testing
@@ -147,7 +147,7 @@ TEST_F(TestSilabsPowerTracing, TestBufferFull)
     EXPECT_EQ(SilabsPowerTracing::Instance().Init(), CHIP_NO_ERROR);
 
     // Fill the buffer to capacity
-    for (size_t i = 0; i < SILABS_TRACING_ENERGY_TRACES_MAX; i++)
+    for (size_t i = 0; i < SL_TRACING_ENERGY_TRACES_MAX; i++)
     {
         sl_power_manager_em_t from = static_cast<sl_power_manager_em_t>(i % 4);
         sl_power_manager_em_t to   = static_cast<sl_power_manager_em_t>((i + 1) % 4);
@@ -156,7 +156,7 @@ TEST_F(TestSilabsPowerTracing, TestBufferFull)
     }
 
     // Verify buffer is at capacity
-    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), static_cast<size_t>(SILABS_TRACING_ENERGY_TRACES_MAX));
+    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), static_cast<size_t>(SL_TRACING_ENERGY_TRACES_MAX));
 
     // Verify sample traces at beginning, middle, and end
     const EnergyTrace * trace0 = SilabsPowerTracing::Instance().GetEnergyTrace(0);
@@ -176,7 +176,7 @@ TEST_F(TestSilabsPowerTracing, TestBufferFull)
 
     // Verify additional transitions don't overflow the buffer
     SilabsPowerTracing::StaticPowerManagerTransitionCallback(SL_POWER_MANAGER_EM0, SL_POWER_MANAGER_EM1);
-    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), static_cast<size_t>(SILABS_TRACING_ENERGY_TRACES_MAX));
+    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), static_cast<size_t>(SL_TRACING_ENERGY_TRACES_MAX));
 
     // Verify output works with full buffer
     EXPECT_EQ(SilabsPowerTracing::Instance().OutputPowerManagerTraces(), CHIP_NO_ERROR);
@@ -188,6 +188,6 @@ TEST_F(TestSilabsPowerTracing, TestBufferFull)
         gMockClock.AdvanceMonotonic(5_ms64);
     }
 
-    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), static_cast<size_t>(SILABS_TRACING_ENERGY_TRACES_MAX));
+    EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), static_cast<size_t>(SL_TRACING_ENERGY_TRACES_MAX));
     EXPECT_EQ(SilabsPowerTracing::Instance().OutputPowerManagerTraces(), CHIP_NO_ERROR);
 }

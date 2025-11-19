@@ -27,7 +27,7 @@ buildconfig_header("silabs_tracing_config") {
   defines = []
 
   if (silabs_tracing_energy_stats == true) {
-    defines += [ "SILABS_TRACING_ENERGY_STATS=1" ]
+    defines += [ "SL_TRACING_ENERGY_STATS=1" ]
   }
 
   if (silabs_tracing_runtime_stats == true) {
@@ -39,9 +39,9 @@ buildconfig_header("silabs_tracing_config") {
 
   if (silabs_tracing_energy_traces) {
     defines += [
-      "SILABS_TRACING_ENERGY_TRACES=1",
-      "SILABS_TRACING_ENERGY_TRACES_SECONDS=${silabs_tracing_energy_traces_seconds}",
-      "SILABS_TRACING_ENERGY_TRACES_MAX=${silabs_tracing_energy_traces_max}",
+      "SL_TRACING_ENERGY_TRACES=1",
+      "SL_TRACING_ENERGY_TRACES_SECONDS=${silabs_tracing_energy_traces_seconds}",
+      "SL_TRACING_ENERGY_TRACES_MAX=${silabs_tracing_energy_traces_max}",
     ]
   }
 
