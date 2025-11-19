@@ -251,9 +251,14 @@ static err_t altcp_mbedtls_lower_recv(void *arg, struct altcp_pcb *inner_conn, s
     TRANSPORT_ASSERT("rx pbuf overflow", (int)p->tot_len + (int)p->len <= 0xFFFF);
     pbuf_cat(state->rx, p);
   }
-  //return altcp_mbedtls_lower_recv_process(conn, state);
-  /* signal application to process rx packet and return success*/
-  altcp_recved(inner_conn, p->len);
+  /* During handshake, don't acknowledge TCP bytes immediately - wait for mbedTLS to consume them.
+     During application data phase, acknowledge immediately to maintain TCP flow control. */
+  if (state->flags & ALTCP_MBEDTLS_FLAGS_HANDSHAKE_DONE) {
+    /* Application data phase: acknowledge immediately */
+    altcp_recved(inner_conn, p->len);
+  }
+  /* Handshake phase: bytes will be acknowledged after mbedTLS processes them via bio_recv */
+
   altcp_mbedtls_lower_recv_signal(conn);
   return ERR_OK;
 }
@@ -274,9 +279,12 @@ err_t altcp_mbedtls_lower_recv_process(struct altcp_pcb *conn)
   if (!(state->flags & ALTCP_MBEDTLS_FLAGS_HANDSHAKE_DONE)) {
     /* handle connection setup (handshake not done) */
     int ret = mbedtls_ssl_handshake(&state->ssl_context);
-    /* try to send data... */
-    altcp_output(conn->inner_conn);
-    if (state->bio_bytes_read) {
+    
+    /* try to send data... (only if connection is still valid) */
+    if (conn->inner_conn != NULL) {
+      altcp_output(conn->inner_conn);
+    }
+    if (state->bio_bytes_read && conn->inner_conn != NULL) {
       /* acknowledge all bytes read */
       altcp_mbedtls_lower_recved(conn->inner_conn, state->bio_bytes_read);
       state->bio_bytes_read = 0;
@@ -684,10 +692,7 @@ static int dummy_rng(void *ctx, unsigned char *buffer, size_t len)
 #define ALTCP_MBEDTLS_RNG_FN dummy_rng
 #endif /* ALTCP_MBEDTLS_RNG_FN */
 
-static int ciphers[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-                         MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                         MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-                         MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+static int ciphers[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                          MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
                          MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
                          0 };
@@ -855,7 +860,7 @@ static struct altcp_tls_config *altcp_tls_create_config_client_common(const u8_t
     mbedtls_x509_crt_init(conf->ca);
     ret = mbedtls_x509_crt_parse(conf->ca, ca, ca_len);
     if (ret != 0) {
-      TRANSPORT_DEBUGF(("mbedtls_x509_crt_parse ca failed: %d 0x%x", ret, -1 * ret));
+      mbedtls_x509_crt_free(conf->ca);
       altcp_mbedtls_free_config(conf);
       return NULL;
     }
@@ -896,8 +901,8 @@ struct altcp_tls_config *altcp_tls_create_config_client_2wayauth(const u8_t *ca,
   mbedtls_x509_crt_init(conf->cert);
   ret = mbedtls_x509_crt_parse(conf->cert, cert, cert_len);
   if (ret != 0) {
-    SILABS_LOG("mbedtls_x509_crt_parse cert failed: %d 0x%x", ret, -1 * ret);
-    altcp_mbedtls_free_config(conf->cert);
+    mbedtls_x509_crt_free(conf->cert);
+    altcp_mbedtls_free_config(conf);
     return NULL;
   }
 
@@ -909,14 +914,18 @@ struct altcp_tls_config *altcp_tls_create_config_client_2wayauth(const u8_t *ca,
     mbedtls_pk_parse_key(conf->pkey, privkey, privkey_len, privkey_pass, privkey_pass_len, ALTCP_MBEDTLS_RNG_FN, NULL);
 #endif
   if (ret != 0) {
-    SILABS_LOG("mbedtls_pk_parse_key failed: %d 0x%x", ret, -1 * ret);
+    TRANSPORT_DEBUGF(("mbedtls_pk_parse_key failed: %d (0x%x)\n", ret, (unsigned int)ret));
+    mbedtls_x509_crt_free(conf->cert);
+    mbedtls_pk_free(conf->pkey);
     altcp_mbedtls_free_config(conf);
     return NULL;
   }
 
   ret = mbedtls_ssl_conf_own_cert(&conf->conf, conf->cert, conf->pkey);
   if (ret != 0) {
-    SILABS_LOG("mbedtls_ssl_conf_own_cert failed: %d 0x%x", ret, -1 * ret);
+    TRANSPORT_DEBUGF(("mbedtls_ssl_conf_own_cert failed: %d (0x%x)\n", ret, (unsigned int)ret));
+    mbedtls_x509_crt_free(conf->cert);
+    mbedtls_pk_free(conf->pkey);
     altcp_mbedtls_free_config(conf);
     return NULL;
   }
@@ -1107,8 +1116,10 @@ static err_t altcp_mbedtls_write(struct altcp_pcb *conn, const void *dataptr, u1
     }
   }
   ret = mbedtls_ssl_write(&state->ssl_context, (const unsigned char *)dataptr, len);
-  /* try to send data... */
-  altcp_output(conn->inner_conn);
+  /* try to send data... (only if connection is still valid) */
+  if (conn->inner_conn != NULL) {
+    altcp_output(conn->inner_conn);
+  }
   if (ret >= 0) {
     if (ret == len) {
       state->flags |= ALTCP_MBEDTLS_FLAGS_APPLDATA_SENT;
@@ -1144,6 +1155,11 @@ static int altcp_mbedtls_bio_send(void *ctx, const unsigned char *dataptr, size_
     return MBEDTLS_ERR_NET_INVALID_CONTEXT;
   }
 
+  /* Safety check: verify connection state is valid before writing */
+  if (conn->state == NULL) {
+    return MBEDTLS_ERR_NET_INVALID_CONTEXT;
+  }
+
   while (size_left) {
     u16_t write_len = (u16_t)TRANSPORT_MIN(size_left, 0xFFFF);
     err_t err       = altcp_write(conn->inner_conn, (const void *)dataptr, write_len, apiflags);
@@ -1161,8 +1177,10 @@ static int altcp_mbedtls_bio_send(void *ctx, const unsigned char *dataptr, size_
       return MBEDTLS_ERR_NET_SEND_FAILED;
     }
   }
-  // Send data immediately after write to avoid queuing
-  altcp_output(conn->inner_conn);
+  // Send data immediately after write to avoid queuing (only if connection is still valid)
+  if (conn->inner_conn != NULL) {
+    altcp_output(conn->inner_conn);
+  }
   return written;
 }
 
