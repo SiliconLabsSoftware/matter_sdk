@@ -65,7 +65,7 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
         }
         action = FAN_PERCENT_CHANGE_ACTION;
         break;
-        }
+    }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
         CHIP_ERROR err = mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
@@ -76,7 +76,7 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
         }
         action = FAN_MODE_CHANGE_ACTION;
         break;
-        }
+    }
 
     default: {
         return;
