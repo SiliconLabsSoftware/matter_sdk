@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2024 Project CHIP Authors
+ *    Copyright (c) 2025 Project CHIP Authors
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -101,7 +101,7 @@ void RangeHoodUI::DrawHeader(GLIB_Context_t * glibContext)
  */
 void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
 {
-    SILABS_LOG("Updating Rangehood Status on LCD");
+     ChipLogDetail(NotSpecified,"Updating Rangehood Status on LCD");
 
     FanModeEnum mode = FanModeEnum::kUnknownEnumValue;
     bool lightOn     = false;
@@ -111,20 +111,37 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
     RangeHoodMgr().GetLightEndpoint().GetOnOffState(lightOn);
     PlatformMgr().UnlockChipStack();
 
-    // Print fan mode
-    if (mode == FanModeEnum::kOff)
+    char fanLine[32];
+    const char * modeText = nullptr;
+    switch (mode)
     {
-        GLIB_drawStringOnLine(glibContext, "FAN   : OFF", 5, GLIB_ALIGN_LEFT, 0, 0, true);
+    case FanModeEnum::kOff:
+        modeText = "OFF";
+        break;
+    case FanModeEnum::kLow:
+        modeText = "LOW";
+        break;
+    case FanModeEnum::kMedium:
+        modeText = "MEDIUM";
+        break;
+    case FanModeEnum::kHigh:
+        modeText = "HIGH";
+        break;
+    case FanModeEnum::kOn:
+        modeText = "ON";
+        break;
+    case FanModeEnum::kAuto:
+        modeText = "AUTO";
+        break;
+    case FanModeEnum::kSmart:
+        modeText = "SMART";
+        break;
+    default:
+        modeText = "UNKNOWN";
+        break;
     }
-    else if (mode == FanModeEnum::kOn || mode == FanModeEnum::kHigh || mode == FanModeEnum::kLow || mode == FanModeEnum::kMedium ||
-             mode == FanModeEnum::kAuto || mode == FanModeEnum::kSmart)
-    {
-        GLIB_drawStringOnLine(glibContext, "FAN   : ON", 5, GLIB_ALIGN_LEFT, 0, 0, true);
-    }
-    else
-    {
-        GLIB_drawStringOnLine(glibContext, "FAN   : UNKNOWN", 5, GLIB_ALIGN_LEFT, 0, 0, true);
-    }
+    snprintf(fanLine, sizeof(fanLine), "FAN   : %s", modeText);
+    GLIB_drawStringOnLine(glibContext, fanLine, 5, GLIB_ALIGN_LEFT, 0, 0, true);
 
     // Draw Light status below fan information
     GLIB_drawStringOnLine(glibContext, lightOn ? "LIGHT : ON" : "LIGHT : OFF", 7, GLIB_ALIGN_LEFT, 0, 0, true);
