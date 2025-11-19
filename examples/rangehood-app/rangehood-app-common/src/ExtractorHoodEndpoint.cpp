@@ -32,7 +32,6 @@ using namespace chip::DeviceLayer;
 using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::FanControl;
 
-
 CHIP_ERROR ExtractorHoodEndpoint::Init()
 {
     // Initialize percent current from percent setting
@@ -64,9 +63,9 @@ DataModel::Nullable<Percent> ExtractorHoodEndpoint::GetPercentSetting() const
     DataModel::Nullable<Percent> percentSetting;
     auto imStatus = Clusters::FanControl::Attributes::PercentSetting::Get(mEndpointId, percentSetting);
     VerifyOrReturnValue(imStatus == chip::Protocols::InteractionModel::Status::Success, DataModel::Nullable<Percent>(),
-        ChipLogError(NotSpecified,
-            "ExtractorHoodEndpoint::GetPercentSetting: failed to get PercentSetting attribute: %d",
-            to_underlying(imStatus)));
+                        ChipLogError(NotSpecified,
+                                     "ExtractorHoodEndpoint::GetPercentSetting: failed to get PercentSetting attribute: %d",
+                                     to_underlying(imStatus)));
     return percentSetting;
 }
 
@@ -78,7 +77,8 @@ CHIP_ERROR ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) 
 {
     auto status = FanControl::Attributes::FanMode::Get(mEndpointId, &fanMode);
     VerifyOrReturnError(status == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::GetFanMode: failed to get FanMode attribute: %d", to_underlying(status)));
+                        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::GetFanMode: failed to get FanMode attribute: %d",
+                                     to_underlying(status)));
     return CHIP_NO_ERROR;
 }
 
@@ -90,15 +90,19 @@ CHIP_ERROR ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) 
 CHIP_ERROR ExtractorHoodEndpoint::SetPercentCurrent(Percent newPercentSetting)
 {
     Percent currentPercentCurrent = 0;
-    auto getStatus = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
+    auto getStatus                = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
     VerifyOrReturnError(getStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::SetPercentCurrent: failed to get currentPercentCurrent: %d", to_underlying(getStatus)));
+                        ChipLogError(NotSpecified,
+                                     "ExtractorHoodEndpoint::SetPercentCurrent: failed to get currentPercentCurrent: %d",
+                                     to_underlying(getStatus)));
     // No update needed if value is unchanged
     if (newPercentSetting == currentPercentCurrent)
         return CHIP_NO_ERROR;
     auto setStatus = FanControl::Attributes::PercentCurrent::Set(mEndpointId, newPercentSetting);
     VerifyOrReturnError(setStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::SetPercentCurrent: failed to update PercentCurrent attribute: %d", to_underlying(setStatus)));
+                        ChipLogError(NotSpecified,
+                                     "ExtractorHoodEndpoint::SetPercentCurrent: failed to update PercentCurrent attribute: %d",
+                                     to_underlying(setStatus)));
     return CHIP_NO_ERROR;
 }
 
@@ -112,23 +116,28 @@ CHIP_ERROR ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentS
 {
     ChipLogDetail(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: %d", newPercentSetting);
     Percent currentPercentCurrent = 0;
-    auto getStatus = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
+    auto getStatus                = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
     VerifyOrReturnError(getStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get PercentCurrent: %d", to_underlying(getStatus)));
+                        ChipLogError(NotSpecified,
+                                     "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get PercentCurrent: %d",
+                                     to_underlying(getStatus)));
     if (newPercentSetting == currentPercentCurrent)
         return CHIP_NO_ERROR;
     FanControl::FanModeEnum currentFanMode;
     auto fanModeStatus = FanControl::Attributes::FanMode::Get(mEndpointId, &currentFanMode);
     VerifyOrReturnError(fanModeStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get FanMode: %d", to_underlying(fanModeStatus)));
+                        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get FanMode: %d",
+                                     to_underlying(fanModeStatus)));
     if (currentFanMode == FanControl::FanModeEnum::kAuto)
         return CHIP_NO_ERROR;
     auto setStatus = FanControl::Attributes::PercentCurrent::Set(mEndpointId, newPercentSetting);
-    VerifyOrReturnError(setStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to update PercentCurrent attribute: %d", to_underlying(setStatus)));
+    VerifyOrReturnError(
+        setStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
+        ChipLogError(NotSpecified,
+                     "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to update PercentCurrent attribute: %d",
+                     to_underlying(setStatus)));
     return CHIP_NO_ERROR;
 }
-
 
 CHIP_ERROR ExtractorHoodEndpoint::HandleFanModeChange(chip::app::Clusters::FanControl::FanModeEnum newFanMode)
 {
@@ -166,7 +175,9 @@ CHIP_ERROR ExtractorHoodEndpoint::UpdateFanModeAttribute(FanControl::FanModeEnum
 {
     auto setStatus = FanControl::Attributes::FanMode::Set(mEndpointId, newFanMode);
     VerifyOrReturnError(setStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
-        ChipLogError(NotSpecified, "ExtractorHoodEndpoint::UpdateFanModeAttribute: failed to update FanMode attribute: %d", to_underlying(setStatus)));
+                        ChipLogError(NotSpecified,
+                                     "ExtractorHoodEndpoint::UpdateFanModeAttribute: failed to update FanMode attribute: %d",
+                                     to_underlying(setStatus)));
     return CHIP_NO_ERROR;
 }
 
@@ -178,7 +189,7 @@ CHIP_ERROR ExtractorHoodEndpoint::UpdateFanModeAttribute(FanControl::FanModeEnum
 CHIP_ERROR ExtractorHoodEndpoint::ToggleFanMode()
 {
     FanControl::FanModeEnum currentFanMode = FanControl::FanModeEnum::kUnknownEnumValue;
-    CHIP_ERROR err = GetFanMode(currentFanMode);
+    CHIP_ERROR err                         = GetFanMode(currentFanMode);
     if (err != CHIP_NO_ERROR || currentFanMode == FanControl::FanModeEnum::kUnknownEnumValue)
     {
         ChipLogError(NotSpecified, "ExtractorHoodEndpoint::ToggleFanMode: failed to get current fan mode");

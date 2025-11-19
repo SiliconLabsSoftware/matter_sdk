@@ -60,7 +60,6 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
 
     Action_t action = INVALID_ACTION;
 
-
     switch (attributeId)
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
