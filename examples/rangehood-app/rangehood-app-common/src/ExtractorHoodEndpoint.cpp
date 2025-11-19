@@ -195,7 +195,8 @@ CHIP_ERROR ExtractorHoodEndpoint::ToggleFanMode()
     }
     FanControl::FanModeEnum target =
         (currentFanMode == FanControl::FanModeEnum::kOff) ? FanControl::FanModeEnum::kHigh : FanControl::FanModeEnum::kOff;
-    VerifyOrReturnError(UpdateFanModeAttribute(target) == CHIP_NO_ERROR, err);
+    CHIP_ERROR Err = UpdateFanModeAttribute(target);
+    VerifyOrReturnError(Err == CHIP_NO_ERROR, Err);
     // Ensure PercentCurrent is updated to match the new mode
     return HandleFanModeChange(target);
 }
