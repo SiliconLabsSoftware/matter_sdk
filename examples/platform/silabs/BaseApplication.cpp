@@ -90,6 +90,10 @@
 #include <performance_test_commands.h>
 #endif // PERFORMANCE_TEST_ENABLED
 
+#ifdef SL_OPENTHREAD_MULTIPAN_CLI_ENABLED
+#include <openthread_instance_handler.h>
+#endif // SL_OPENTHREAD_MULTIPAN_CLI_ENABLED
+
 // SL-Only
 #include "sl_component_catalog.h"
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
@@ -417,6 +421,10 @@ CHIP_ERROR BaseApplication::BaseInit()
 #ifdef PERFORMANCE_TEST_ENABLED
     RegisterPerfTestCommands();
 #endif // PERFORMANCE_TEST_ENABLED
+
+#ifdef SL_OPENTHREAD_MULTIPAN_CLI_ENABLED
+    RegisterOpenThreadCommands();
+#endif // SL_OPENTHREAD_MULTIPAN_CLI_ENABLED
 
     PlatformMgr().AddEventHandler(OnPlatformEvent, 0);
 #ifdef SL_WIFI
@@ -985,6 +993,10 @@ void BaseApplication::InitOTARequestorHandler(System::Layer * systemLayer, void 
 
 void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 {
+#ifdef SL_OPENTHREAD_MULTIPAN_CLI_ENABLED
+    ProcessOpenThreadInstanceChange();
+#endif // SL_OPENTHREAD_MULTIPAN_CLI_ENABLED
+
     switch (event->Type)
     {
     case DeviceEventType::kServiceProvisioningChange: {
