@@ -52,39 +52,21 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
                    ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId,
                                 kExtractorHoodEndpoint));
 
-    if (value == nullptr)
-    {
-        ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid value pointer");
-        return;
-    }
-
     Action_t action = INVALID_ACTION;
 
     switch (attributeId)
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
-        CHIP_ERROR err = mExtractorHoodEndpoint.HandlePercentSettingChange(*value);
-        if (err == CHIP_NO_ERROR)
-        {
-            action = FAN_PERCENT_CHANGE_ACTION;
-        }
-        else
-        {
-            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed with error");
-        }
+        VerifyOrReturnError(mExtractorHoodEndpoint.HandlePercentSettingChange(*value) == CHIP_NO_ERROR,
+            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed"));
+        action = FAN_PERCENT_CHANGE_ACTION;
         break;
     }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
-        CHIP_ERROR err = mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
-        if (err == CHIP_NO_ERROR)
-        {
-            action = FAN_MODE_CHANGE_ACTION;
-        }
-        else
-        {
-            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed with error");
-        }
+        VerifyOrReturnError(mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value)) == CHIP_NO_ERROR,
+            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed"));
+        action = FAN_MODE_CHANGE_ACTION;
         break;
     }
 
