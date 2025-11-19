@@ -53,7 +53,7 @@ CHIP_ERROR SilabsPowerTracing::Init()
         ChipLogError(DeviceLayer, "Failed to create power manager statistics timer");
         err = CHIP_ERROR_NO_MEMORY;
     }
-    
+
 
     if (err == CHIP_NO_ERROR)
     {

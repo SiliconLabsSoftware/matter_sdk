@@ -199,7 +199,7 @@ TEST_F(TestSilabsPowerTracing, TestInitFailureHandling)
     // Reset the singleton and reinitialize with nullptr to simulate allocation failure
     SilabsPowerTracing::Instance().~SilabsPowerTracing();
     new (&SilabsPowerTracing::Instance()) SilabsPowerTracing();
-    
+
     // Verify the system is not initialized
     EXPECT_FALSE(SilabsPowerTracing::Instance().IsInitialized());
 
@@ -207,7 +207,7 @@ TEST_F(TestSilabsPowerTracing, TestInitFailureHandling)
     SilabsPowerTracing::StaticPowerManagerTransitionCallback(SL_POWER_MANAGER_EM0, SL_POWER_MANAGER_EM1);
     gMockClock.AdvanceMonotonic(100_ms64);
     SilabsPowerTracing::StaticPowerManagerTransitionCallback(SL_POWER_MANAGER_EM1, SL_POWER_MANAGER_EM2);
-    
+
     // Verify no traces were recorded
     EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTraceCount(), 0u);
     EXPECT_EQ(SilabsPowerTracing::Instance().GetEnergyTrace(0), nullptr);

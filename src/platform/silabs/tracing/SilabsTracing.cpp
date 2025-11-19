@@ -898,7 +898,7 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
 
 void SilabsTracer::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
 {
-    
+
     if (from == mCurrentEnergyMode)
     {
         // Using the sleeptimer instead of the RAIL timer. It may be less precise, but it runs even in EM2. At this point, there is no
