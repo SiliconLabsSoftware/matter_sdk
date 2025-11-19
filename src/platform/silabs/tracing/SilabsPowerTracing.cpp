@@ -1,19 +1,7 @@
 #include "SilabsPowerTracing.h"
 #include <lib/support/CodeUtils.h>
 #include <platform/silabs/tracing/SilabsTracingConfig.h>
-
-// Need to use the sleeptimer for power tracing. The RAIL timer doesn't tick in EM2 and creates invalid timestamps for this
-// application.
-#ifndef SILABS_GET_SLEEPTIMER_TIME
-#if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
-#include "sl_sleeptimer.h"
-#define SILABS_GET_SLEEPTIMER_TIME() uint32_t((sl_sleeptimer_get_tick_count64() * 1000ULL) / sl_sleeptimer_get_timer_frequency())
-#else
-// For unit tests, this should be defined by the test file before including the implementation
-// If not defined, provide a minimal default
-#define SILABS_GET_SLEEPTIMER_TIME() 0
-#endif
-#endif // SILABS_GET_SLEEPTIMER_TIME
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 
 namespace chip {
 namespace Tracing {
@@ -121,7 +109,7 @@ void SilabsPowerTracing::PowerManagerTransitionCallback([[maybe_unused]] sl_powe
         return;
     }
 
-    mEnergyTraces[mEnergyTraceCount].mEntryTime  = SILABS_GET_SLEEPTIMER_TIME();
+    mEnergyTraces[mEnergyTraceCount].mEntryTime  = SL_GET_SLEEPTIMER_TIME();
     mEnergyTraces[mEnergyTraceCount].mEnergyMode = to;
     mEnergyTraceCount++;
 }

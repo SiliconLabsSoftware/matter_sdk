@@ -15,6 +15,7 @@
  *
  ******************************************************************************/
 #include "SilabsTracing.h"
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 #include <cstdio> // for snprintf
 #include <cstring>
 #include <lib/support/CodeUtils.h>
@@ -37,7 +38,6 @@ extern "C" {
 #endif
 
 #if defined(SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT) && SL_RAIL_LIB_MULTIPROTOCOL_SUPPORT
-#include "sl_sleeptimer.h"
 #include <rail.h>
 // RAIL_GetTime() returns time in usec
 #define SILABS_GET_TIME() System::Clock::Milliseconds32(RAIL_GetTime() / 1000)
@@ -898,15 +898,13 @@ CHIP_ERROR SilabsTracer::OutputTaskStatistics()
 
 void SilabsTracer::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl_power_manager_em_t to)
 {
-    // Using the sleeptimer instead of the RAIL timer. It may be less precise, but it runs even in EM2. At this point, there is no
-    // guarantee the RAIL timer has been adjusted if the device is woken up from EM2.
-    // (RAIL timer uses the same power manager callback to adjust itself)
-    uint64_t ticks = sl_sleeptimer_get_tick_count64();
-    uint32_t freq  = sl_sleeptimer_get_timer_frequency();
-
+    
     if (from == mCurrentEnergyMode)
     {
-        auto currentTime = System::Clock::Milliseconds32((ticks * 1000ULL) / freq);
+        // Using the sleeptimer instead of the RAIL timer. It may be less precise, but it runs even in EM2. At this point, there is no
+        // guarantee the RAIL timer has been adjusted if the device is woken up from EM2.
+        // (RAIL timer uses the same power manager callback to adjust itself)
+        auto currentTime = System::Clock::Milliseconds32(SL_GET_SLEEPTIMER_TIME());
         auto timeDiff    = currentTime - mLastEnergyStateTransitionTime;
         mTimeInEnergyState[from] += timeDiff;
 

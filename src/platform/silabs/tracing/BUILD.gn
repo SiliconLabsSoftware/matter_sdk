@@ -86,12 +86,3 @@ static_library("SilabsPowerTracing") {
     "${chip_root}/src/tracing:tracing",
   ]
 }
-
-static_library("SilabsPowerTracingStubs") {
-  sources = [
-    "mocks/cmsis_os2_stub.cpp",
-    "mocks/cmsis_os2_stub.h",
-    "mocks/sl_power_manager_stub.cpp",
-    "mocks/sl_power_manager_stub.h",
-  ]
-}

@@ -24,8 +24,8 @@
 #include <cstdint>
 #include <pw_unit_test/framework.h>
 
-#include <lib/core/StringBuilderAdapters.h>
-#include <lib/support/UnitTestUtils.h>
+// #include <lib/core/StringBuilderAdapters.h>
+// #include <lib/support/UnitTestUtils.h>
 #include <system/SystemClock.h>
 
 #include <platform/internal/CHIPDeviceLayerInternal.h>
@@ -52,7 +52,7 @@ extern "C" uint32_t TestTimeSource_GetMilliseconds()
 }
 
 // Define the macro before including the implementation
-#define SILABS_GET_SLEEPTIMER_TIME() TestTimeSource_GetMilliseconds()
+#define SL_GET_SLEEPTIMER_TIME() TestTimeSource_GetMilliseconds()
 
 // Include the implementation with our custom time source
 #include <platform/silabs/tracing/SilabsPowerTracing.cpp> // nogncheck
