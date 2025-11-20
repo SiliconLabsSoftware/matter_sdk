@@ -39,10 +39,7 @@ CHIP_ERROR ExtractorHoodEndpoint::Init()
     // This ensures the fan speed reflects the current setting on startup
     DeviceLayer::PlatformMgr().LockChipStack();
     DataModel::Nullable<chip::Percent> percentSettingNullable = GetPercentSetting();
-    DeviceLayer::PlatformMgr().UnlockChipStack();
-
     Percent initialPercentSetting = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
-    DeviceLayer::PlatformMgr().LockChipStack();
     CHIP_ERROR err = HandlePercentSettingChange(initialPercentSetting);
     DeviceLayer::PlatformMgr().UnlockChipStack();
     if (err != CHIP_NO_ERROR)
