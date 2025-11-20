@@ -130,7 +130,7 @@ CHIP_ERROR ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentS
     VerifyOrReturnError(currentFanMode != FanControl::FanModeEnum::kAuto, CHIP_NO_ERROR);
     Status setStatus = FanControl::Attributes::PercentCurrent::Set(mEndpointId, newPercentSetting);
     VerifyOrReturnError(
-        setStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
+        setStatus == Status::Success, CHIP_ERROR_INTERNAL,
         ChipLogError(NotSpecified,
                      "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to update PercentCurrent attribute: %d",
                      to_underlying(setStatus)));
