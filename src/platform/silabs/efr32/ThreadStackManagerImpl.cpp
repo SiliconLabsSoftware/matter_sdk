@@ -182,7 +182,7 @@ extern "C" void sl_ot_create_instance(void)
     // Initialize multiple OT instances for Multi-PAN support
     // Instance 0: Matter protocol stack
     // Instance 1: Secondary Thread network
-    sOTInstance = otInstanceInitMultiple(0);
+    sOTInstance       = otInstanceInitMultiple(0);
     secondaryInstance = otInstanceInitMultiple(1); // Use instance 1 directly
 #else
     // Standard single instance initialization
