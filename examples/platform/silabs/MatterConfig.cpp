@@ -109,6 +109,10 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #include <tracing/registry.h>
 #endif // MATTER_TRACING_ENABLED
 
+#if defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
+#include <platform/silabs/tracing/SilabsPowerTracing.h> // nogncheck
+#endif                                                  // SL_TRACING_ENERGY_TRACES
+
 /**********************************************************
  * Defines
  *********************************************************/
@@ -375,6 +379,11 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     static Tracing::Silabs::BackendImpl backend;
     Tracing::Register(backend);
 #endif // MATTER_TRACING_ENABLED
+
+#if defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
+    VerifyOrDo(chip::Tracing::Silabs::SilabsPowerTracing::Instance().Init() == CHIP_NO_ERROR,
+               ChipLogError(DeviceLayer, "SilabsPowerTracing init failed"));
+#endif // defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
