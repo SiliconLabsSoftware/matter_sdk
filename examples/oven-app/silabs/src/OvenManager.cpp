@@ -43,49 +43,56 @@ OvenManager OvenManager::sOvenMgr;
 
 void OvenManager::Init()
 {
-    DeviceLayer::PlatformMgr().LockChipStack();
-
-    // Initialize states
-    mCookTopState      = kCookTopState_Off;
-    mCookSurfaceState1 = kCookSurfaceState_Off;
-    mCookSurfaceState2 = kCookSurfaceState_Off;
-
     // Endpoint initializations
-    VerifyOrReturn(mTemperatureControlledCabinetEndpoint.Init() == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint Init failed"));
+
+    CHIP_ERROR initErr = mTemperatureControlledCabinetEndpoint.Init();
+    if (initErr != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "TemperatureControlledCabinetEndpoint initialization failed");
+        chipDie();
+    }
 
     // Set initial state for TemperatureControlledCabinetEndpoint
     VerifyOrReturn(SetTemperatureControlledCabinetInitialState(kTemperatureControlledCabinetEndpoint) == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "SetTemperatureControlledCabinetInitialState failed"));
-
+                   ChipLogError(AppServer, "Setting TemperatureControlledCabinet initial state failed"));
     // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
     TemperatureControl::SetInstance(&mTemperatureControlDelegate);
 
     // Set initial state for CookSurface endpoints
     VerifyOrReturn(SetCookSurfaceInitialState(mCookSurfaceEndpoint1.GetEndpointId()) == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "SetCookSurfaceInitialState failed for CookSurfaceEndpoint1"));
+                   ChipLogError(AppServer, "Setting CookSurfaceEndpoint1 initial state failed"));
     VerifyOrReturn(SetCookSurfaceInitialState(mCookSurfaceEndpoint2.GetEndpointId()) == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "SetCookSurfaceInitialState failed for CookSurfaceEndpoint2"));
+                   ChipLogError(AppServer, "Setting CookSurfaceEndpoint2 initial state failed"));
+
+    // Initialize binding manager
+    VerifyOrReturn(InitOvenBindingHandler() == CHIP_NO_ERROR, ChipLogError(AppServer, "Initializing OvenBindingHandler failed"));
 
     // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 1 and 2
     static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),
                                                    CharSpan::fromCharString("High") };
-    CHIP_ERROR err                             = mTemperatureControlDelegate.RegisterSupportedLevels(
-        kCookSurfaceEndpoint1, kCookSurfaceLevels,
-        static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
+    VerifyOrReturn(mTemperatureControlDelegate.RegisterSupportedLevels(
+                       kCookSurfaceEndpoint1, kCookSurfaceLevels,
+                       static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels)) == CHIP_NO_ERROR,
+                   ChipLogError(AppServer, "Registering supported levels for CookSurfaceEndpoint1 failed"));
 
-    VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint1"));
+    VerifyOrReturn(mTemperatureControlDelegate.RegisterSupportedLevels(
+                       kCookSurfaceEndpoint2, kCookSurfaceLevels,
+                       static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels)) == CHIP_NO_ERROR,
+                   ChipLogError(AppServer, "Registering supported levels for CookSurfaceEndpoint2 failed"));
 
-    err = mTemperatureControlDelegate.RegisterSupportedLevels(
-        kCookSurfaceEndpoint2, kCookSurfaceLevels,
-        static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels));
+    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &mIsCookTopOn) == Status::Success,
+                   ChipLogError(AppServer, "Getting CookTop OnOff state failed"));
 
-    VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(AppServer, "RegisterSupportedLevels failed for CookSurfaceEndpoint2"));
+    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint1, &mIsCookSurface1On) == Status::Success,
+                   ChipLogError(AppServer, "Getting CookSurfaceEndpoint1 OnOff state failed"));
 
-    DeviceLayer::PlatformMgr().UnlockChipStack();
+    VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &mIsCookSurface2On) == Status::Success,
+                   ChipLogError(AppServer, "Getting CookSurfaceEndpoint2 OnOff state failed"));
 
-    // Initialize binding manager (after stack unlock to avoid long hold)
-    InitOvenBindingHandler();
+    // Get current oven mode
+    VerifyOrReturn(OvenMode::Attributes::CurrentMode::Get(kTemperatureControlledCabinetEndpoint, &mCurrentOvenMode) ==
+                       Status::Success,
+                   ChipLogError(AppServer, "Getting CurrentOvenMode failed"));
 }
 
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
@@ -127,25 +134,15 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
     return CHIP_NO_ERROR;
 }
 
-void OvenManager::TempCtrlAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
-{
-    switch (endpointId)
-    {
-    case kTemperatureControlledCabinetEndpoint:
-        // TODO: Update the LCD with the new Temperature Control attribute value
-        break;
-    default:
-        break;
-    }
-}
-
 void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
 {
+    VerifyOrReturn(value != nullptr, ChipLogError(AppServer, "OnOffAttributeChangeHandler: value pointer is null"));
+
     Action_t action = INVALID_ACTION;
     switch (endpointId)
     {
     case kCookTopEndpoint: {
-        mCookTopState = (*value != 0) ? kCookTopState_On : kCookTopState_Off;
+        mIsCookTopOn = (*value != 0);
         // Turn on/off the associated cook surfaces.
         VerifyOrReturn(mCookSurfaceEndpoint1.SetOnOffState(*value) == Status::Success,
                        ChipLogError(AppServer, "Failed to set CookSurfaceEndpoint1 state"));
@@ -171,43 +168,45 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
     case kCookSurfaceEndpoint1:
     case kCookSurfaceEndpoint2:
         if (endpointId == kCookSurfaceEndpoint1)
-            mCookSurfaceState1 = (*value != 0) ? kCookSurfaceState_On : kCookSurfaceState_Off;
+            mIsCookSurface1On = (*value != 0);
         else
-            mCookSurfaceState2 = (*value != 0) ? kCookSurfaceState_On : kCookSurfaceState_Off;
+            mIsCookSurface2On = (*value != 0);
 
         // Turn off CookTop if both the CookSurfaces are off.
-        if (mCookSurfaceState1 == kCookSurfaceState_Off && mCookSurfaceState2 == kCookSurfaceState_Off)
+        if (!mIsCookSurface1On && !mIsCookSurface2On)
         {
             VerifyOrReturn(mCookTopEndpoint.SetOnOffState(false) == Status::Success,
                            ChipLogError(AppServer, "Failed to set CookTopEndpoint state"));
 
-            mCookTopState = kCookTopState_Off;
+            mIsCookTopOn = false;
         }
         break;
     default:
         break;
     }
 
-    AppEvent event         = {};
-    event.Type             = AppEvent::kEventType_Oven;
-    event.OvenEvent.Action = action;
-    event.Handler          = OvenActionHandler;
-    AppTask::GetAppTask().PostEvent(&event);
+    // Only post event if action is valid
+    if (action != INVALID_ACTION)
+    {
+        AppEvent event         = {};
+        event.Type             = AppEvent::kEventType_Oven;
+        event.OvenEvent.Action = action;
+        event.Handler          = AppTask::OvenActionHandler;
+        AppTask::GetAppTask().PostEvent(&event);
+    }
 }
 
 void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                                  uint16_t size)
 {
+    VerifyOrReturn(value != nullptr, ChipLogError(AppServer, "OvenModeAttributeChangeHandler: value pointer is null"));
+
+    mCurrentOvenMode       = *value;
     AppEvent event         = {};
     event.Type             = AppEvent::kEventType_Oven;
     event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
-    event.Handler          = OvenActionHandler;
+    event.Handler          = AppTask::OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
-}
-
-void OvenManager::OvenActionHandler(AppEvent * aEvent)
-{
-    // TODO: Emulate hardware Action : Update the LEDs and LCD of oven-app as required.
 }
 
 bool OvenManager::IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
