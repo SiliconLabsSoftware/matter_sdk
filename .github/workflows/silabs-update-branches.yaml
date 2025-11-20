@@ -1,4 +1,4 @@
-name: Daily Sync of the csa branch
+name: Daily Sync of CSA branches
 
 on:
     schedule:
@@ -9,6 +9,13 @@ jobs:
     sync:
         if: github.ref == 'refs/heads/main'
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                include:
+                    - local_branch: csa
+                      upstream_branch: master
+                    - local_branch: csa-v1.5-branch
+                      upstream_branch: v1.5-branch
 
         steps:
             - name: Generate token for the workflow
@@ -21,21 +28,21 @@ jobs:
             - name: Mask the generated token
               run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
 
-            - name: Checkout matter_sdk::csa branch
+            - name: Checkout matter_sdk::${{ matrix.local_branch }} branch
               uses: actions/checkout@v4
               with:
                   repository: SiliconLabsSoftware/matter_sdk
-                  ref: csa
+                  ref: ${{ matrix.local_branch }}
                   token: ${{ steps.generate_token.outputs.token }}
 
             - name: Add CSA repository remote
-              run:
-                  git remote add upstream
-                  https://github.com/project-chip/connectedhomeip.git
-
-            - name: Update the csa branch locally
-              run: git pull upstream master
-
-            - name: Push the update csa branch to the remote
               run: |
-                  git push origin csa
+                  git remote add upstream https://github.com/project-chip/connectedhomeip.git
+
+            - name: Update the ${{ matrix.local_branch }} branch locally
+              run: git pull upstream ${{ matrix.upstream_branch }}
+
+            - name: Push the updated ${{ matrix.local_branch }} branch to the remote
+              run: |
+                  git push origin ${{ matrix.local_branch }}
+
