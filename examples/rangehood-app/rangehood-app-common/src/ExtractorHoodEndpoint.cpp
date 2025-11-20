@@ -77,7 +77,7 @@ DataModel::Nullable<Percent> ExtractorHoodEndpoint::GetPercentSetting() const
 CHIP_ERROR ExtractorHoodEndpoint::GetFanMode(FanControl::FanModeEnum & fanMode) const
 {
     Status status = FanControl::Attributes::FanMode::Get(mEndpointId, &fanMode);
-    VerifyOrReturnError(status == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
+    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(NotSpecified, "ExtractorHoodEndpoint::GetFanMode: failed to get FanMode attribute: %d",
                                      to_underlying(status)));
     return CHIP_NO_ERROR;
