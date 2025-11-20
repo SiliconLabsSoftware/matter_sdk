@@ -117,7 +117,7 @@ CHIP_ERROR ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentS
     ChipLogDetail(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: %d", newPercentSetting);
     Percent currentPercentCurrent = 0;
     Status getStatus              = FanControl::Attributes::PercentCurrent::Get(mEndpointId, &currentPercentCurrent);
-    VerifyOrReturnError(getStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
+    VerifyOrReturnError(getStatus == Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(NotSpecified,
                                      "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get PercentCurrent: %d",
                                      to_underlying(getStatus)));
