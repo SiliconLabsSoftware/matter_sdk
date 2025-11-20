@@ -172,7 +172,7 @@ CHIP_ERROR ExtractorHoodEndpoint::HandleFanModeChange(chip::app::Clusters::FanCo
 CHIP_ERROR ExtractorHoodEndpoint::UpdateFanModeAttribute(FanControl::FanModeEnum newFanMode)
 {
     Status setStatus = FanControl::Attributes::FanMode::Set(mEndpointId, newFanMode);
-    VerifyOrReturnError(setStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
+    VerifyOrReturnError(setStatus == Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(NotSpecified,
                                      "ExtractorHoodEndpoint::UpdateFanModeAttribute: failed to update FanMode attribute: %d",
                                      to_underlying(setStatus)));
