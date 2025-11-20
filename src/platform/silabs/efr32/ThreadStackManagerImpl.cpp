@@ -180,8 +180,7 @@ extern "C" void sl_ot_create_instance(void)
     // Instance 0: Matter protocol stack
     // Instance 1: Secondary Thread network
     otInstance * matterInstance = otInstanceInitMultiple(0);
-    otInstance * secondaryInstance = otInstanceInitMultiple(1); // Secondary instance for CLI
-    sOTInstance = secondaryInstance;
+    sOTInstance = otInstanceInitMultiple(1); // Use instance 1 directly
 #else
     // Standard single instance initialization
     sOTInstance = otInstanceInitSingle();
