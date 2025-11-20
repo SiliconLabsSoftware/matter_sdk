@@ -220,7 +220,7 @@ private:
     static constexpr uint8_t kUUIDTlvSize       = 4; // 1 byte for length, 1b for type and 2b for the UUID value
     static constexpr uint8_t kDeviceNameTlvSize = (2 + kMaxDeviceNameLength); // 1 byte for length, 1b for type and + device name
 
-#if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
+#if (SLI_SI91X_ENABLE_BLE)
     // Declared in BLEChannel.h now.
     struct BLEConState
     {
@@ -244,9 +244,9 @@ private:
     PacketBufferHandle c3AdditionalDataBufferHandle;
 #endif
 
-#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
+#if !(SLI_SI91X_ENABLE_BLE)
     BLEChannel * mBleSideChannel = nullptr;
-#endif // !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
+#endif // !(SLI_SI91X_ENABLE_BLE)
 
     CHIP_ERROR MapBLEError(int bleErr);
     void DriveBLEState(void);
