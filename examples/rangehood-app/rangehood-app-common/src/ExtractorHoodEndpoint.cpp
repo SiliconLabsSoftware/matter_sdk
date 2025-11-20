@@ -124,7 +124,7 @@ CHIP_ERROR ExtractorHoodEndpoint::HandlePercentSettingChange(Percent newPercentS
     VerifyOrReturnError(newPercentSetting != currentPercentCurrent, CHIP_NO_ERROR);
     FanControl::FanModeEnum currentFanMode;
     Status fanModeStatus = FanControl::Attributes::FanMode::Get(mEndpointId, &currentFanMode);
-    VerifyOrReturnError(fanModeStatus == chip::Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL,
+    VerifyOrReturnError(fanModeStatus == Status::Success, CHIP_ERROR_INTERNAL,
                         ChipLogError(NotSpecified, "ExtractorHoodEndpoint::HandlePercentSettingChange: failed to get FanMode: %d",
                                      to_underlying(fanModeStatus)));
     VerifyOrReturnError(currentFanMode != FanControl::FanModeEnum::kAuto, CHIP_NO_ERROR);
