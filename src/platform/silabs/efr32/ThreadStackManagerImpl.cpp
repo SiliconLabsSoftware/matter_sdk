@@ -51,6 +51,9 @@ namespace chip {
 namespace DeviceLayer {
 namespace {
 otInstance * sOTInstance = NULL;
+#if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+otInstance * secondaryInstance = NULL;
+#endif // CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
 
 }; // namespace
 
@@ -179,8 +182,8 @@ extern "C" void sl_ot_create_instance(void)
     // Initialize multiple OT instances for Multi-PAN support
     // Instance 0: Matter protocol stack
     // Instance 1: Secondary Thread network
-    otInstance * matterInstance = otInstanceInitMultiple(0);
-    sOTInstance = otInstanceInitMultiple(1); // Use instance 1 directly
+    sOTInstance = otInstanceInitMultiple(0);
+    secondaryInstance = otInstanceInitMultiple(1); // Use instance 1 directly
 #else
     // Standard single instance initialization
     sOTInstance = otInstanceInitSingle();
@@ -190,8 +193,13 @@ extern "C" void sl_ot_create_instance(void)
 extern "C" void sl_ot_cli_init(void)
 {
 #if !defined(PW_RPC_ENABLED) && CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
+#if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+    VerifyOrDie(secondaryInstance != NULL);
+    otAppCliInit(secondaryInstance);
+#else
     VerifyOrDie(sOTInstance != NULL);
     otAppCliInit(sOTInstance);
+#endif // CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
 #endif
 }
 
