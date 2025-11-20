@@ -176,8 +176,10 @@ void AppTask::UpdateClusterState(intptr_t context)
     ChipLogDetail(AppServer, "Updating cooktop OnOff cluster state to %s", newOnOffState ? "On" : "Off");
 
     // Set the OnOff attribute value for the cooktop endpoint
+    DeviceLayer::PlatformMgr().LockChipStack();
     Protocols::InteractionModel::Status status =
         OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), newOnOffState, false);
+    DeviceLayer::PlatformMgr().UnlockChipStack();
 
     if (status != Protocols::InteractionModel::Status::Success)
     {
