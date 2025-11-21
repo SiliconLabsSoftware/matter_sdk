@@ -174,6 +174,15 @@ extern "C" otInstance * otGetInstance(void)
     return sOTInstance;
 }
 
+extern "C" otInstance * otGetSecondaryInstance(void)
+{
+#if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+    return secondaryInstance;
+#else
+    return NULL;
+#endif
+}
+
 extern "C" void sl_ot_create_instance(void)
 {
     VerifyOrDie(chip::Platform::MemoryInit() == CHIP_NO_ERROR);

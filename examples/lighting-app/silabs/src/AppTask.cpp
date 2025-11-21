@@ -49,6 +49,13 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 
+#if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+extern "C" {
+    otInstance * otGetSecondaryInstance(void);
+}
+#include <openthread/instance.h>
+#endif // CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+
 #ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
 #define LIGHT_LED 1
 #else
@@ -103,6 +110,23 @@ CHIP_ERROR AppTask::AppInit()
     sLightLED.Init(LIGHT_LED);
     sLightLED.Set(LightMgr().IsLightOn());
     SILABS_TRACE_NAMED_INSTANT("LightOn", "Reboot");
+
+#if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+    otInstance * myOtInstance = otGetSecondaryInstance();
+    if (myOtInstance != NULL)
+    {
+        SILABS_LOG("Multi-PAN: Secondary instance accessible at %p", myOtInstance);
+        
+        uint32_t instanceId = otInstanceGetId(myOtInstance);
+        SILABS_LOG("Multi-PAN: Secondary instance ID = %lu", instanceId);
+    }
+    else
+    {
+        SILABS_LOG("Multi-PAN: Secondary instance NOT accessible");
+    }
+#else
+    SILABS_LOG("Multi-PAN: Feature disabled at compile time");
+#endif // CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
