@@ -51,9 +51,6 @@ namespace chip {
 namespace DeviceLayer {
 namespace {
 otInstance * sOTInstance = NULL;
-#if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
-otInstance * secondaryInstance = NULL;
-#endif // CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
 
 }; // namespace
 
