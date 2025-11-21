@@ -28,10 +28,11 @@ using namespace chip::DeviceLayer;
 using namespace chip::Protocols::InteractionModel;
 using namespace chip::app::Clusters::OnOff;
 using namespace chip::app::Clusters;
+using Status = chip::Protocols::InteractionModel::Status;
 
 CHIP_ERROR LightEndpoint::GetOnOffState(bool & state)
 {
-    auto status = OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
+    Status status = OnOffServer::Instance().getOnOffValue(mEndpointId, &state);
 
     VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
 
@@ -42,7 +43,7 @@ CHIP_ERROR LightEndpoint::SetOnOffState(bool state)
 {
     CommandId commandId = state ? OnOff::Commands::On::Id : OnOff::Commands::Off::Id;
 
-    auto status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
+    Status status = OnOffServer::Instance().setOnOffValue(mEndpointId, commandId, false);
 
     VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success, CHIP_ERROR_INTERNAL);
 

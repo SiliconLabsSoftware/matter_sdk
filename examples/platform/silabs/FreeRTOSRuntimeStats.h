@@ -24,20 +24,38 @@
 #include <platform/silabs/tracing/SilabsTracingConfig.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+// Define configMAX_TASK_NAME_LEN if not already defined
+#ifndef configMAX_TASK_NAME_LEN
+#define configMAX_TASK_NAME_LEN 24
+#endif
 typedef struct
 {
-    char name[configMAX_TASK_NAME_LEN];
     TaskHandle_t handle;
-    eTaskState state;
-    UBaseType_t priority;
-    UBaseType_t stackHighWaterMark;
-    uint32_t runTimeCounter; // Total CPU time in ms
-    uint32_t cpuPercentage;
-    uint32_t switchOutCount;  // Total times switched out
-    uint32_t preemptionCount; // Times preempted (switched out while ready)
-    uint32_t preemptionPercentage;
-    uint32_t lastExecutionTime; // in ms
+    char name[configMAX_TASK_NAME_LEN];
+    uint32_t switchOutCount;
+    uint32_t preemptionCount;
+    uint32_t lastSwitchOutTime;
+    uint32_t lastMovedToReadyTime;
+    uint32_t totalReadyTime;
+    uint32_t readyTimeHighWaterMark;
+    uint32_t lastMovedToRunningTime;
+    uint32_t totalRunningTime;
+    bool isDeleted;
+} TaskStats;
+
+typedef struct
+{
+    TaskStats stats;                // Core task statistics
+    eTaskState state;               // Current task state
+    UBaseType_t priority;           // Task priority
+    UBaseType_t stackHighWaterMark; // Max stack used in bytes
+    UBaseType_t stackMaxSize;       // Total allocated stack in bytes
+    uint32_t runTimeCounter;        // Total CPU time in ms
+    uint32_t cpuPercentage;         // CPU usage percentage (in basis points)
+    uint32_t preemptionPercentage;  // Preemption percentage (in basis points)
 } TaskInfo;
+
 typedef struct
 {
     uint32_t totalRunTime; // Total system run time in ms
@@ -49,18 +67,46 @@ typedef struct
     uint32_t totalTaskCount;
 } SystemTaskStats;
 
-typedef struct
-{
-    TaskHandle_t handle;
-    char name[configMAX_TASK_NAME_LEN];
-    uint32_t switchOutCount;
-    uint32_t preemptionCount;
-    uint32_t lastSwitchOutTime;
-    bool isDeleted;
-} TaskStats;
+/**
+ * @brief Get the current runtime counter value in milliseconds.
+ * @return Current runtime in milliseconds since system start
+ */
+uint32_t ulGetRunTimeCounterValue(void);
 
 /**
- * @brief Get comprehensive task statistics for active and deleted tasks
+ * @brief Task switch out hook function called when a task is switched out.
+ */
+void vTaskSwitchedOut(void);
+
+/**
+ * @brief Task switch in hook function called when a task is switched in.
+ */
+void vTaskSwitchedIn(void);
+
+/**
+ * @brief Task deletion hook function called when a task is deleted.
+ * @param xTask Handle of the task being deleted
+ */
+void vTaskDeleted(void * xTask);
+
+/**
+ * @brief Task creation hook function called when a task is created.
+ * @param xTask Handle of the task being created
+ */
+void vTaskCreated(void * xTask);
+
+/**
+ * @brief Task ready state hook function called when a task is moved to ready state.
+ * @param xTask Handle of the task being moved to ready state
+ */
+void vTaskMovedToReadyState(void * xTask);
+
+/**
+ * @brief Get comprehensive task statistics for active and deleted tasks.
+ * All times are in milliseconds and sizes are in bytes.
+ * The statistics related to time such as Ready time and Running time should be considered approximate, as they are based on task
+ * switch hooks and a timer with a resolution of 1 ms. The values are best effort and may not be accurate. Furthermore, systems that
+ * use FreeRTOS tickless idle may have even less accuracy.
  * @param taskInfoArray Array to store task information
  * @param taskInfoArraySize Maximum number of tasks the array can hold
  * @param systemStats Pointer to store system-wide statistics (optional)

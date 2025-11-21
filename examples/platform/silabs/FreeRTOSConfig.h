@@ -130,6 +130,10 @@ extern uint32_t SystemCoreClock;
 #include "SEGGER_SYSVIEW_FreeRTOS.h"
 #endif
 
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+void sl_matter_em4_check(uint32_t expected_idle_time_ms);
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+
 /*-----------------------------------------------------------
  * Application specific definitions.
  *
@@ -145,6 +149,9 @@ extern uint32_t SystemCoreClock;
 /* Energy saving modes. */
 #if defined(SL_CATALOG_POWER_MANAGER_PRESENT)
 #define configUSE_TICKLESS_IDLE 1
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+#define configPRE_SLEEP_PROCESSING(x) sl_matter_em4_check(x)
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 #elif (SLI_SI91X_MCU_INTERFACE && SL_ICD_ENABLED)
 #define configUSE_TICKLESS_IDLE 1
 #define configEXPECTED_IDLE_TIME_BEFORE_SLEEP 70
@@ -176,20 +183,26 @@ extern uint32_t SystemCoreClock;
 /* Run time stats gathering related definitions. */
 #if defined(TRACING_RUNTIME_STATS) && TRACING_RUNTIME_STATS == 1
 
-#include "FreeRTOSRuntimeStats.c"
-#define configGENERATE_RUN_TIME_STATS (1)
-#define configUSE_STATS_FORMATTING_FUNCTIONS (1)
-
 extern uint32_t ulGetRunTimeCounterValue(void);
 extern void vTaskSwitchedOut(void);
 extern void vTaskSwitchedIn(void);
+extern void vTaskDeleted(void * xTask);
+extern void vTaskCreated(void * xTask);
+extern void vTaskMovedToReadyState(void * xTask);
+
+#define configGENERATE_RUN_TIME_STATS (1)
+#define configUSE_STATS_FORMATTING_FUNCTIONS (1)
+#define configRECORD_STACK_HIGH_ADDRESS (1)
+
 // Required for configGENERATE_RUN_TIME_STATS, but not used in this implementation.
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()                                                                                   \
     {}
 #define portGET_RUN_TIME_COUNTER_VALUE() ulGetRunTimeCounterValue()
 #define traceTASK_SWITCHED_IN() vTaskSwitchedIn()
 #define traceTASK_DELETE(xTask) vTaskDeleted(xTask)
+#define traceTASK_CREATE(xTask) vTaskCreated(xTask)
 #define traceTASK_SWITCHED_OUT() vTaskSwitchedOut()
+#define traceMOVED_TASK_TO_READY_STATE(xTask) vTaskMovedToReadyState(xTask)
 #else
 #define configGENERATE_RUN_TIME_STATS (0)
 #endif // TRACING_RUNTIME_STATS
@@ -203,7 +216,7 @@ extern void vTaskSwitchedIn(void);
 // Keep the timerTask at the highest prio as some of our stacks tasks leverage eventing with timers.
 #define configTIMER_TASK_PRIORITY (55) /* Highest priority */
 #define configTIMER_QUEUE_LENGTH (10)
-#define configTIMER_TASK_STACK_DEPTH (1024)
+#define configTIMER_TASK_STACK_DEPTH (1280 / sizeof(StackType_t))
 
 #ifdef SLI_SI91X_MCU_INTERFACE
 #ifdef __NVIC_PRIO_BITS

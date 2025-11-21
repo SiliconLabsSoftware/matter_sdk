@@ -56,41 +56,29 @@ void RangeHoodManager::FanControlAttributeChangeHandler(chip::EndpointId endpoin
                    ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId,
                                 kExtractorHoodEndpoint));
 
-    if (value == nullptr)
-    {
-        ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: Invalid value pointer");
-        return;
-    }
-
     Action_t action = INVALID_ACTION;
 
     switch (attributeId)
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
-        Status status = mExtractorHoodEndpoint.HandlePercentSettingChange(*value);
-        if (status == Status::Success)
+        CHIP_ERROR err = mExtractorHoodEndpoint.HandlePercentSettingChange(*value);
+        if (err != CHIP_NO_ERROR)
         {
-            action = FAN_PERCENT_CHANGE_ACTION;
+            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed: %ld", err.Format());
+            return;
         }
-        else
-        {
-            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed with status %d",
-                         to_underlying(status));
-        }
+        action = FAN_PERCENT_CHANGE_ACTION;
         break;
     }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
-        Status status = mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
-        if (status == Status::Success)
+        CHIP_ERROR err = mExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
+        if (err != CHIP_NO_ERROR)
         {
-            action = FAN_MODE_CHANGE_ACTION;
+            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed: %ld", err.Format());
+            return;
         }
-        else
-        {
-            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed with status %d",
-                         to_underlying(status));
-        }
+        action = FAN_MODE_CHANGE_ACTION;
         break;
     }
 

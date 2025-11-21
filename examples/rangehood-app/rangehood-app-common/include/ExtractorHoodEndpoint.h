@@ -59,44 +59,40 @@ public:
 
     /**
      * @brief Get the FanMode attribute.
-     **/
-    chip::Protocols::InteractionModel::Status GetFanMode(chip::app::Clusters::FanControl::FanModeEnum & fanMode) const;
+     * @return CHIP_ERROR on failure, CHIP_NO_ERROR on success
+     */
+    CHIP_ERROR GetFanMode(chip::app::Clusters::FanControl::FanModeEnum & fanMode) const;
 
     /** @brief Set the PercentCurrent attribute if it differs from the current value.
-     *
-     **/
-    chip::Protocols::InteractionModel::Status SetPercentCurrent(chip::Percent newPercentSetting);
+     * @return CHIP_ERROR on failure, CHIP_NO_ERROR on success
+     */
+    CHIP_ERROR SetPercentCurrent(chip::Percent newPercentSetting);
 
     /**
      * @brief Handle percent setting change and update percent current accordingly
-     * This is called when the PercentSetting attribute changes and updates PercentCurrent
-     * if the fan mode is not Auto and the value is different
-     *
      * @param newPercentSetting The new percent setting value
-     * @return Status Success on success, error code otherwise
+     * @return CHIP_ERROR on failure, CHIP_NO_ERROR on success
      */
-    chip::Protocols::InteractionModel::Status HandlePercentSettingChange(chip::Percent newPercentSetting);
+    CHIP_ERROR HandlePercentSettingChange(chip::Percent newPercentSetting);
 
     /**
      * @brief Handle fan mode change and update percent current accordingly
-     * This maps fan modes to their corresponding percent values and updates the PercentCurrent attribute
-     *
      * @param newFanMode The new fan mode to apply
-     * @return Status Success on success, error code otherwise
+     * @return CHIP_ERROR on failure, CHIP_NO_ERROR on success
      */
-    chip::Protocols::InteractionModel::Status HandleFanModeChange(chip::app::Clusters::FanControl::FanModeEnum newFanMode);
+    CHIP_ERROR HandleFanModeChange(chip::app::Clusters::FanControl::FanModeEnum newFanMode);
 
     /**
      * @brief Update the FanMode attribute
+     * @return CHIP_ERROR on failure, CHIP_NO_ERROR on success
      */
-    chip::Protocols::InteractionModel::Status UpdateFanModeAttribute(chip::app::Clusters::FanControl::FanModeEnum newFanMode);
+    CHIP_ERROR UpdateFanModeAttribute(chip::app::Clusters::FanControl::FanModeEnum newFanMode);
 
     /**
      * @brief Toggle fan mode between Off and High
-     * This is typically used for button press toggles
-     * @return Status Success on success, error code otherwise
+     * @return CHIP_ERROR on failure, CHIP_NO_ERROR on success
      */
-    chip::Protocols::InteractionModel::Status ToggleFanMode();
+    CHIP_ERROR ToggleFanMode();
 
 private:
     chip::EndpointId mEndpointId = chip::kInvalidEndpointId;

@@ -54,12 +54,9 @@ static TaskStats * createTaskStats(TaskHandle_t handle)
         return NULL;
     }
 
-    TaskStats * stats        = &sTaskStats[sTaskCount++];
-    stats->handle            = handle;
-    stats->switchOutCount    = 0;
-    stats->preemptionCount   = 0;
-    stats->lastSwitchOutTime = 0;
-    stats->isDeleted         = false;
+    TaskStats * stats = &sTaskStats[sTaskCount++];
+    memset(stats, 0, sizeof(TaskStats));
+    stats->handle = handle;
 
     // Store task name
     const char * taskName = pcTaskGetName(handle);
@@ -93,6 +90,8 @@ void vTaskDeleted(void * xTask)
         stats->handle            = NULL;
         stats->switchOutCount    = 0;
         stats->preemptionCount   = 0;
+        stats->totalReadyTime    = 0;
+        stats->totalRunningTime  = 0;
         stats->lastSwitchOutTime = ulGetRunTimeCounterValue(); // Deletion time since we don't have any other details about it
         stats->isDeleted         = true;
 
@@ -106,8 +105,44 @@ void vTaskDeleted(void * xTask)
     }
 }
 
+void vTaskCreated(void * xTask)
+{
+    if (xTask == NULL)
+        return;
+
+    TaskHandle_t handle = (TaskHandle_t) xTask;
+    TaskStats * stats   = findTaskStats(handle);
+    if (stats == NULL)
+    {
+        createTaskStats(handle);
+    }
+    if (stats != NULL)
+    {
+        stats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
+    }
+}
+
+void vTaskMovedToReadyState(void * xTask)
+{
+    if (xTask == NULL)
+        return;
+
+    TaskHandle_t handle = (TaskHandle_t) xTask;
+    TaskStats * stats   = findTaskStats(handle);
+    if (stats == NULL)
+    {
+        stats = createTaskStats(handle);
+    }
+    if (stats != NULL)
+    {
+        stats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
+    }
+}
+
 uint32_t ulGetRunTimeCounterValue(void)
 {
+    // Return time in milliseconds since system start
+    // The '1000' is for second to millisecond conversion
     return ((uint64_t) xTaskGetTickCount() * 1000) / configTICK_RATE_HZ;
 }
 
@@ -127,21 +162,48 @@ void vTaskSwitchedOut(void)
     {
         stats->switchOutCount++;
         stats->lastSwitchOutTime = ulGetRunTimeCounterValue();
+        // Don't set lastMovedToReadyTime here - we don't know the target state yet
+        if (stats->lastMovedToRunningTime != 0)
+        {
+            uint32_t timeInRunning = ulGetRunTimeCounterValue() - stats->lastMovedToRunningTime;
+            stats->totalRunningTime += timeInRunning;
+            stats->lastMovedToRunningTime = 0;
+        }
     }
 }
 
 void vTaskSwitchedIn(void)
 {
+    TaskStats * lastTaskStats = findTaskStats(sLastTaskSwitchedOut);
     // Check if last task was preempted (in Ready state right after being switched out)
-    if (sLastTaskSwitchedOut != NULL && eTaskGetState(sLastTaskSwitchedOut) == eReady)
+    if (sLastTaskSwitchedOut != NULL && eTaskGetState(sLastTaskSwitchedOut) == eReady && lastTaskStats != NULL)
     {
         sPreemptionCount++;
+        lastTaskStats->preemptionCount++;
+        lastTaskStats->lastMovedToReadyTime = ulGetRunTimeCounterValue();
+    }
 
-        TaskStats * stats = findTaskStats(sLastTaskSwitchedOut);
-        if (stats != NULL)
+    TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
+    TaskStats * currentStats = findTaskStats(currentTask);
+    if (currentStats == NULL)
+    {
+        currentStats = createTaskStats(currentTask);
+    }
+
+    if (currentStats != NULL && currentStats->lastMovedToReadyTime != 0)
+    {
+        uint32_t timeInReady = ulGetRunTimeCounterValue() - currentStats->lastMovedToReadyTime;
+        currentStats->totalReadyTime += timeInReady;
+        if (timeInReady > currentStats->readyTimeHighWaterMark)
         {
-            stats->preemptionCount++;
+            currentStats->readyTimeHighWaterMark = timeInReady;
         }
+        currentStats->lastMovedToReadyTime = 0;
+    }
+
+    if (currentStats != NULL)
+    {
+        currentStats->lastMovedToRunningTime = ulGetRunTimeCounterValue();
     }
 }
 
@@ -183,30 +245,32 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
         TaskStats * stats     = findTaskStats(status->xHandle);
 
         // Copy basic info
-        strncpy(info->name, status->pcTaskName, configMAX_TASK_NAME_LEN - 1);
-        info->name[configMAX_TASK_NAME_LEN - 1] = '\0';
-        info->handle                            = status->xHandle;
-        info->state                             = status->eCurrentState;
-        info->priority                          = status->uxCurrentPriority;
-        info->stackHighWaterMark                = status->usStackHighWaterMark;
-        info->runTimeCounter                    = status->ulRunTimeCounter;
-        info->cpuPercentage = totalRunTime > 0 ? (uint32_t) (((uint64_t) status->ulRunTimeCounter * 10000) / totalRunTime) : 0;
+        strncpy(info->stats.name, status->pcTaskName, configMAX_TASK_NAME_LEN - 1);
+        info->stats.name[configMAX_TASK_NAME_LEN - 1] = '\0';
+        info->stats.handle                            = status->xHandle;
+        info->state                                   = status->eCurrentState;
+        info->priority                                = status->uxCurrentPriority;
+
+        // Calculate stack sizes using the stack pointers
+        size_t totalStackSize = (status->pxEndOfStack - status->pxStackBase) * sizeof(StackType_t);
+        size_t usedStackSize  = totalStackSize - (status->usStackHighWaterMark * sizeof(StackType_t));
+
+        info->stackHighWaterMark = usedStackSize;  // Max stack used in bytes
+        info->stackMaxSize       = totalStackSize; // Total allocated stack in bytes
+
+        info->runTimeCounter = status->ulRunTimeCounter;
+        info->cpuPercentage  = totalRunTime > 0 ? (uint32_t) (((uint64_t) status->ulRunTimeCounter * 10000) / totalRunTime) : 0;
 
         // Add tracking stats if available
         if (stats != NULL)
         {
-            info->switchOutCount  = stats->switchOutCount;
-            info->preemptionCount = stats->preemptionCount;
+            info->stats = *stats;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
-            info->lastExecutionTime = stats->lastSwitchOutTime;
         }
         else
         {
-            info->switchOutCount       = 0;
-            info->preemptionCount      = 0;
-            info->preemptionPercentage = 0;
-            info->lastExecutionTime    = 0;
+            memset(&info->stats, 0, sizeof(TaskStats));
         }
 
         taskCount++;
@@ -222,18 +286,16 @@ uint32_t ulGetAllTaskInfo(TaskInfo * taskInfoArray, uint32_t taskInfoArraySize, 
             TaskStats * stats = &sTaskStats[i];
 
             // Copy deleted task info
-            strncpy(info->name, stats->name, configMAX_TASK_NAME_LEN - 1);
-            info->name[configMAX_TASK_NAME_LEN - 1] = '\0';
-            info->handle                            = NULL;
+            strncpy(info->stats.name, stats->name, configMAX_TASK_NAME_LEN - 1);
+            info->stats.name[configMAX_TASK_NAME_LEN - 1] = '\0';
+            info->stats.handle                            = NULL;
             info->state = eDeleted; // While technically the deleted state is something else in FreeRTOS, we use eDeleted for the
                                     // purpose of this debug feature.
             info->priority           = 0;
             info->stackHighWaterMark = 0;
             info->runTimeCounter     = 0;
             info->cpuPercentage      = 0;
-            info->switchOutCount     = stats->switchOutCount;
-            info->preemptionCount    = stats->preemptionCount;
-            info->lastExecutionTime  = stats->lastSwitchOutTime;
+            info->stats              = *stats;
             info->preemptionPercentage =
                 stats->switchOutCount > 0 ? (uint32_t) (((uint64_t) stats->preemptionCount * 10000) / stats->switchOutCount) : 0;
 
