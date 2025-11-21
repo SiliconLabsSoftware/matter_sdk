@@ -34,7 +34,7 @@
 #include "sl_bt_api.h"
 #include <BLEChannel.h>
 #include <lib/core/Optional.h>
-#endif // (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
+#endif // (SLI_SI91X_ENABLE_BLE)
 
 namespace chip {
 namespace DeviceLayer {
@@ -73,7 +73,7 @@ public:
     void HandleSoftTimerEvent(volatile sl_bt_msg_t * evt);
     bool CanHandleEvent(uint32_t event);
     void ParseEvent(volatile sl_bt_msg_t * evt);
-#endif // RSI_BLE_ENABLEHandleConnectEvent
+#endif // SLI_SI91X_ENABLE_BLE
     CHIP_ERROR StartAdvertising(void);
     CHIP_ERROR StopAdvertising(void);
 
