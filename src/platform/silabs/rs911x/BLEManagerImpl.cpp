@@ -27,6 +27,8 @@
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 
 #include "wfx_sl_ble_init.h"
+#include <platform/silabs/BLEManagerImpl.h>
+#include <platform/silabs/rs911x/BlePlatformRs911x.h>
 #include <ble/Ble.h>
 #include <crypto/RandUtils.h>
 #include <lib/support/CodeUtils.h>
@@ -310,6 +312,11 @@ CHIP_ERROR BLEManagerImpl::_Init()
     err = BleLayer::Init(this, this, &DeviceLayer::SystemLayer());
     SuccessOrExit(err);
 
+    // Initialize platform interface
+    mPlatform = &Silabs::BlePlatformRs911x::GetInstance();
+    ReturnErrorOnFailure(mPlatform->Init());
+    mPlatform->SetManager(this);
+
     memset(mBleConnections, 0, sizeof(mBleConnections));
     memset(mIndConfId, kUnusedIndex, sizeof(mIndConfId));
     mServiceMode = ConnectivityManager::kCHIPoBLEServiceMode_Enabled;
@@ -499,25 +506,47 @@ CHIP_ERROR BLEManagerImpl::CloseConnection(BLE_CONNECTION_OBJECT conId)
 
 uint16_t BLEManagerImpl::GetMTU(BLE_CONNECTION_OBJECT conId) const
 {
-    BLEConState * conState = const_cast<BLEManagerImpl *>(this)->GetConnectionState(conId);
-    return (conState != NULL) ? conState->mtu : 0;
+    if (mPlatform != nullptr)
+    {
+        return mPlatform->GetMTU(static_cast<uint8_t>(conId));
+    }
+    else
+    {
+        // Fallback to direct implementation
+        BLEConState * conState = const_cast<BLEManagerImpl *>(this)->GetConnectionState(conId);
+        return (conState != NULL) ? conState->mtu : 0;
+    }
 }
 
 CHIP_ERROR BLEManagerImpl::SendIndication(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
                                           PacketBufferHandle data)
 {
-    int32_t status = 0;
-    status         = rsi_ble_indicate_value(dev_address, rsi_ble_measurement_hndl, data->DataLength(), data->Start());
-    if (status != RSI_SUCCESS)
+    CHIP_ERROR err = CHIP_NO_ERROR;
+
+    if (mPlatform != nullptr)
     {
-        ChipLogProgress(DeviceLayer, "indication failed with error code %lx ", status);
-        return BLE_ERROR_GATT_INDICATE_FAILED;
+        ByteSpan dataSpan(data->Start(), data->DataLength());
+        err = mPlatform->SendIndication(static_cast<uint8_t>(conId), rsi_ble_measurement_hndl, dataSpan);
+    }
+    else
+    {
+        // Fallback to direct implementation
+        int32_t status = rsi_ble_indicate_value(dev_address, rsi_ble_measurement_hndl, data->DataLength(), data->Start());
+        if (status != RSI_SUCCESS)
+        {
+            ChipLogProgress(DeviceLayer, "indication failed with error code %lx ", status);
+            return BLE_ERROR_GATT_INDICATE_FAILED;
+        }
     }
 
-    // start timer for the indication Confirmation Event
-    DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Milliseconds32(BLE_SEND_INDICATION_TIMER_PERIOD_MS),
-                                          OnSendIndicationTimeout, this);
-    return CHIP_NO_ERROR;
+    if (err == CHIP_NO_ERROR)
+    {
+        // start timer for the indication Confirmation Event
+        DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Milliseconds32(BLE_SEND_INDICATION_TIMER_PERIOD_MS),
+                                              OnSendIndicationTimeout, this);
+    }
+
+    return err;
 }
 
 CHIP_ERROR BLEManagerImpl::SendWriteRequest(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
@@ -800,6 +829,33 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
 
 void BLEManagerImpl::UpdateMtu(const SilabsBleWrapper::sl_wfx_msg_t & evt)
 {
+    if (mPlatform != nullptr)
+    {
+        // Parse event through platform interface
+        Silabs::BleEvent unifiedEvent;
+        SilabsBleWrapper::BleEvent_t rsiEvent;
+        rsiEvent.eventType = SilabsBleWrapper::BleEventType::RSI_BLE_MTU_EVENT;
+        rsiEvent.eventData.rsi_ble_mtu = evt.rsi_ble_mtu;
+        
+        if (mPlatform->ParseEvent(&rsiEvent, unifiedEvent))
+        {
+            if (unifiedEvent.type == Silabs::BleEventType::kGattMtuExchanged)
+            {
+                const auto & mtuData = unifiedEvent.data.mtuExchanged;
+                
+                // Update platform interface connection state
+                Silabs::BleConnectionState * platformConnState = mPlatform->GetConnectionState(mtuData.connection, false);
+                if (platformConnState != nullptr)
+                {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+                    platformConnState->mtu = mtuData.mtu;
+#pragma GCC diagnostic pop
+                }
+            }
+        }
+    }
+
     BLEConState * bleConnState = GetConnectionState(evt.connectionHandle);
     if (bleConnState != NULL)
     {
@@ -829,13 +885,47 @@ void BLEManagerImpl::HandleBootEvent(void)
 
 void BLEManagerImpl::HandleConnectEvent(const SilabsBleWrapper::sl_wfx_msg_t & evt)
 {
-    AddConnection(evt.connectionHandle, evt.bondingHandle);
+    if (mPlatform != nullptr)
+    {
+        // Parse event through platform interface
+        Silabs::BleEvent unifiedEvent;
+        SilabsBleWrapper::BleEvent_t rsiEvent;
+        rsiEvent.eventType = SilabsBleWrapper::BleEventType::RSI_BLE_CONN_EVENT;
+        rsiEvent.eventData.resp_enh_conn = evt.resp_enh_conn;
+        
+        if (mPlatform->ParseEvent(&rsiEvent, unifiedEvent))
+        {
+            if (unifiedEvent.type == Silabs::BleEventType::kConnectionOpened)
+            {
+                const auto & connData = unifiedEvent.data.connectionOpened;
+                
+                // Add to platform interface connection state
+                bd_addr addr = {0};
+                mPlatform->AddConnection(connData.connection, connData.bonding, addr);
+                
+                // Also add to BLEManagerImpl's connection state
+                AddConnection(evt.connectionHandle, evt.bondingHandle);
+            }
+        }
+    }
+    else
+    {
+        // Fallback to direct implementation
+        AddConnection(evt.connectionHandle, evt.bondingHandle);
+    }
+    
     PlatformMgr().ScheduleWork(DriveBLEState, 0);
 }
 
 void BLEManagerImpl::HandleConnectionCloseEvent(const SilabsBleWrapper::sl_wfx_msg_t & evt)
 {
     uint8_t connHandle = 1;
+
+    if (mPlatform != nullptr)
+    {
+        // Remove from platform interface
+        mPlatform->RemoveConnection(connHandle);
+    }
 
     if (RemoveConnection(connHandle))
     {
@@ -845,17 +935,17 @@ void BLEManagerImpl::HandleConnectionCloseEvent(const SilabsBleWrapper::sl_wfx_m
 
         switch (evt.reason)
         {
-
         case RSI_BT_CTRL_REMOTE_USER_TERMINATED:
         case RSI_BT_CTRL_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES:
         case RSI_BT_CTRL_REMOTE_POWERING_OFF:
+        case RSI_BT_CTRL_CONNECTION_TIMEOUT:
             event.CHIPoBLEConnectionError.Reason = BLE_ERROR_REMOTE_DEVICE_DISCONNECTED;
             break;
         default:
             event.CHIPoBLEConnectionError.Reason = BLE_ERROR_CHIPOBLE_PROTOCOL_ABORT;
         }
 
-        ChipLogProgress(DeviceLayer, "BLE GATT connection closed (con %u, reason %x)", connHandle, evt.reason);
+        ChipLogProgress(DeviceLayer, "BLE GATT connection closed (con %u, reason 0x%04x)", connHandle, evt.reason);
 
         PlatformMgr().PostEventOrDie(&event);
 

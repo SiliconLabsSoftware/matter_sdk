@@ -28,12 +28,14 @@
 #include "timers.h"
 #if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
 #include "wfx_sl_ble_init.h"
+#include <platform/silabs/ble/BlePlatformInterface.h>
 #else
 #include "gatt_db.h"
 #include "sl_bgapi.h"
 #include "sl_bt_api.h"
 #include <BLEChannel.h>
 #include <lib/core/Optional.h>
+#include <platform/silabs/ble/BlePlatformInterface.h>
 #endif // (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
 
 namespace chip {
@@ -243,6 +245,9 @@ private:
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     PacketBufferHandle c3AdditionalDataBufferHandle;
 #endif
+
+    // Platform interface for BLE operations abstraction
+    Silabs::BlePlatformInterface * mPlatform = nullptr;
 
 #if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
     BLEChannel * mBleSideChannel = nullptr;
