@@ -95,9 +95,8 @@ void RangeHoodUI::DrawHeader(GLIB_Context_t * glibContext)
 }
 
 /**
- * @brief Draw a 2 digit Air Quality of screen. Because of this Celsius is used by default
- * @param GLIB_Context_t * pointer to the context for the GLIB library
- * @param int8_t current Air Quality
+ * @brief Draw the current fan mode and light status on the screen.
+ * @param glibContext Pointer to the context for the GLIB library.
  */
 void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
 {
@@ -107,9 +106,21 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
     bool lightOn     = false;
 
     PlatformMgr().LockChipStack();
-    RangeHoodMgr().GetExtractorHoodEndpoint().GetFanMode(mode);
-    RangeHoodMgr().GetLightEndpoint().GetOnOffState(lightOn);
+    CHIP_ERROR fanStatus = RangeHoodMgr().GetExtractorHoodEndpoint().GetFanMode(mode);
+    CHIP_ERROR lightStatus = RangeHoodMgr().GetLightEndpoint().GetOnOffState(lightOn);
     PlatformMgr().UnlockChipStack();
+
+    if (fanStatus != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "Failed to read fan mode: %" CHIP_ERROR_FORMAT, fanStatus.Format());
+        mode = FanModeEnum::kUnknownEnumValue;
+    }
+
+    if (lightStatus != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "Failed to read light state: %" CHIP_ERROR_FORMAT, lightStatus.Format());
+        lightOn = false;
+    }
 
     char fanLine[17];
     const char * modeText = nullptr;
