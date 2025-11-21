@@ -202,13 +202,8 @@ extern "C" void sl_ot_create_instance(void)
 extern "C" void sl_ot_cli_init(void)
 {
 #if !defined(PW_RPC_ENABLED) && CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
-#if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
-    VerifyOrDie(secondaryInstance != NULL);
-    otAppCliInit(secondaryInstance);
-#else
     VerifyOrDie(sOTInstance != NULL);
     otAppCliInit(sOTInstance);
-#endif // CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
 #endif
 }
 

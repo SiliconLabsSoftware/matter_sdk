@@ -51,6 +51,7 @@
 
 #if CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
 extern "C" {
+    void otAppCliInit(otInstance * aInstance);
     otInstance * otGetSecondaryInstance(void);
 }
 #include <openthread/instance.h>
@@ -119,6 +120,10 @@ CHIP_ERROR AppTask::AppInit()
         
         uint32_t instanceId = otInstanceGetId(myOtInstance);
         SILABS_LOG("Multi-PAN: Secondary instance ID = %lu", instanceId);
+        
+        SILABS_LOG("Multi-PAN: Re-initializing CLI to secondary instance (testing CLI switch)");
+        otAppCliInit(myOtInstance);
+        SILABS_LOG("Multi-PAN: CLI switched to secondary instance ID %lu", instanceId);
     }
     else
     {
