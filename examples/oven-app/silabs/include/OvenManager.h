@@ -52,13 +52,6 @@ public:
 
         INVALID_ACTION
     } Action;
-    enum State_t
-    {
-        kCookTopState_Off = 0,
-        kCookTopState_On,
-        kCookSurfaceState_Off,
-        kCookSurfaceState_On
-    };
 
     /**
      * @brief Initializes the OvenManager and its associated resources.
@@ -76,15 +69,6 @@ public:
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
-    /**
-     * @brief Handles temperature control attribute changes.
-     *
-     * @param endpointId The ID of the endpoint.
-     * @param attributeId The ID of the attribute.
-     * @param value Pointer to the new value.
-     * @param size Size of the new value.
-     */
-    void TempCtrlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
 
     /**
      * @brief Handles on/off attribute changes.
@@ -115,6 +99,23 @@ public:
      */
     bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
 
+    /**
+     * @brief Gets the current state of the CookTop.
+     *
+     * @return true if CookTop is On, false if Off
+     */
+    bool GetCookTopState() const { return mIsCookTopOn; }
+
+    /**
+     * @brief Gets the current oven mode.
+     */
+    uint8_t GetCurrentOvenMode() const { return mCurrentOvenMode; }
+
+    /**
+     * @brief Get the endpoint ID for the CookTop endpoint
+     */
+    static constexpr chip::EndpointId GetCookTopEndpoint() { return kCookTopEndpoint; }
+
 private:
     static constexpr uint8_t kBlockedTransitionCount = 3; // Number of blocked transitions
     struct BlockedTransition
@@ -136,18 +137,15 @@ private:
     static OvenManager sOvenMgr;
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
-    State_t mCookTopState;
-    State_t mCookSurfaceState1;
-    State_t mCookSurfaceState2;
+    // Default values for the states of the endpoints
+    bool mIsCookTopOn      = false;
+    bool mIsCookSurface1On = false;
+    bool mIsCookSurface2On = false;
+    // Default value for the current oven mode
+    uint8_t mCurrentOvenMode =
+        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
 
-    /**
-     * @brief Updates the oven hardware state and UI (LEDs, LCD) in response to an event.
-     *
-     * @param aEvent Pointer to the event structure.
-     */
-    static void OvenActionHandler(AppEvent * aEvent);
-
-    // Define the endpoint ID for the Oven
+    // Define the endpoint ID constants
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;
     static constexpr chip::EndpointId kTemperatureControlledCabinetEndpoint = 2;
     static constexpr chip::EndpointId kCookTopEndpoint                      = 3;

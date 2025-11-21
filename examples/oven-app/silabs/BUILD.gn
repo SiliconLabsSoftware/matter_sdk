@@ -111,6 +111,9 @@ silabs_executable("oven_app") {
     "src/OvenBindingHandler.cpp",
     "src/OvenManager.cpp",
   ]
+  if (!disable_lcd) {
+    sources += [ "src/OvenUI.cpp" ]
+  }
 
   deps = [ ":sdk" ]
 
