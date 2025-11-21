@@ -27,10 +27,19 @@
 #include <stdint.h>
 #include <string.h>
 
-// Forward declaration - bd_addr is defined in platform-specific headers
-// For EFR32: sl_bt_api.h
-// For SiWx917/rs911x: rsi_ble.h or similar
-struct bd_addr;
+// For EFR32 builds, include sl_bgapi.h to get bd_addr typedef definition
+#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
+#include "sl_bgapi.h"
+#endif
+
+// bd_addr structure definition
+// For EFR32: bd_addr is already defined as typedef in sl_bgapi.h (via SL_BT_TYPE_BDADDR)
+// For SiWx917/rs911x: define it as a struct compatible with RSI BLE address format (6 bytes)
+#ifndef SL_BT_TYPE_BDADDR
+struct bd_addr {
+    uint8_t addr[6]; /**< Bluetooth device address (6 bytes) */
+};
+#endif
 
 namespace chip {
 namespace DeviceLayer {

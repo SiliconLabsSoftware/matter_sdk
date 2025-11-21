@@ -24,6 +24,9 @@
 
 #pragma once
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
+
+#include <platform/internal/BLEManager.h>
+
 #include "FreeRTOS.h"
 #include "timers.h"
 #if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
@@ -46,6 +49,7 @@ using namespace chip::Ble;
 
 /**
  * Concrete implementation of the BLEManager singleton object for the EFR32 platforms.
+ * 
  */
 class BLEManagerImpl final : public BLEManager, private BleLayer, private BlePlatformDelegate, private BleApplicationDelegate
 {

@@ -35,7 +35,11 @@ namespace Silabs {
 
 BlePlatformEfr32::BlePlatformEfr32() : mAdvertisingHandle(kInvalidAdvertisingHandle), mManager(nullptr)
 {
-    memset(mConnections, 0, sizeof(mConnections));
+    // Initialize connections using default constructor
+    for (uint8_t i = 0; i < kMaxConnections; i++)
+    {
+        mConnections[i] = BleConnectionState();
+    }
 }
 
 BlePlatformEfr32 & BlePlatformEfr32::GetInstance()
@@ -60,7 +64,11 @@ void BlePlatformEfr32::Shutdown()
     }
 
     // Clear all connections
-    memset(mConnections, 0, sizeof(mConnections));
+    // Initialize connections using default constructor
+    for (uint8_t i = 0; i < kMaxConnections; i++)
+    {
+        mConnections[i] = BleConnectionState();
+    }
     mAdvertisingHandle = kInvalidAdvertisingHandle;
     mManager           = nullptr;
 }
@@ -167,7 +175,7 @@ bool BlePlatformEfr32::RemoveConnection(uint8_t connectionHandle)
     BleConnectionState * connState = GetConnectionState(connectionHandle, false);
     if (connState != nullptr && connState->allocated)
     {
-        memset(connState, 0, sizeof(BleConnectionState));
+        *connState = BleConnectionState(); // Use constructor to properly initialize
         return true;
     }
     return false;
@@ -312,7 +320,7 @@ bool BlePlatformEfr32::ParseEvent(void * platformEvent, BleEvent & unifiedEvent)
         unifiedEvent.type = BleEventType::kGattWriteRequest;
         unifiedEvent.data.gattWriteRequest.connection     = evt->data.evt_gatt_server_user_write_request.connection;
         unifiedEvent.data.gattWriteRequest.characteristic = evt->data.evt_gatt_server_user_write_request.characteristic;
-        unifiedEvent.data.gattWriteRequest.attValue       = evt->data.evt_gatt_server_user_write_request.value.data;
+        unifiedEvent.data.gattWriteRequest.attValue       = const_cast<uint8_t *>(evt->data.evt_gatt_server_user_write_request.value.data);
         unifiedEvent.data.gattWriteRequest.attValueLen    = evt->data.evt_gatt_server_user_write_request.value.len;
     }
     break;

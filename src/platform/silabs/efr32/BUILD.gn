@@ -84,6 +84,8 @@ static_library("efr32") {
       "BLEChannelImpl.cpp",
       "BLEChannelImpl.h",
       "BLEManagerImpl.cpp",
+      "BlePlatformEfr32.cpp",
+      "BlePlatformEfr32.h",
     ]
   }
 

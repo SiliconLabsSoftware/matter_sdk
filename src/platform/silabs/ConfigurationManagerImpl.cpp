@@ -104,7 +104,7 @@ CHIP_ERROR ConfigurationManagerImpl::IncreaseBootCount(void)
 CHIP_ERROR ConfigurationManagerImpl::GetBootReason(uint32_t & bootReason)
 {
     // rebootCause is obtained at bootup.
-    uint32_t rebootCause = Silabs::GetPlatform().GetRebootCause();
+    uint32_t rebootCause = chip::DeviceLayer::Silabs::GetPlatform().GetRebootCause();
 
     // Before looking into the bootloader reboot cause, check if we performed a matter update
     if (rebootCause == to_underlying(BootReasonType::kSoftwareUpdateCompleted))
@@ -332,7 +332,7 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
     // Block the task for 500 ms before the reset occurs to allow RPC response to be sent
     osDelay(pdMS_TO_TICKS(500));
 
-    Silabs::GetPlatform().SoftwareReset();
+    chip::DeviceLayer::Silabs::GetPlatform().SoftwareReset();
 }
 
 #ifdef SL_WIFI

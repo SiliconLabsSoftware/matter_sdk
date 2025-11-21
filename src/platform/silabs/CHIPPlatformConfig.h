@@ -27,6 +27,10 @@
 #include <app/icd/server/ICDServerConfig.h>
 #include <stdint.h>
 
+#if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
+#include <platform/silabs/BLEManagerImpl.h>
+#endif
+
 #if (SL_MATTER_GN_BUILD == 0)
 #if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && (CHIP_CONFIG_ENABLE_ICD_SERVER == 1)
 #include "sl_matter_icd_config.h"

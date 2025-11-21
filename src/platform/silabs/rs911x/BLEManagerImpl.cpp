@@ -43,6 +43,7 @@
 
 extern "C" {
 #include <rsi_utils.h>
+#include <sl_additional_status.h>
 }
 
 #define BLE_MIN_CONNECTION_INTERVAL_MS 24
@@ -58,6 +59,13 @@ using namespace ::chip::DeviceLayer::Internal;
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
+
+// Global variables used by BlePlatformRs911x
+namespace Silabs {
+uint8_t dev_address[RSI_DEV_ADDR_LEN];
+uint16_t rsi_ble_measurement_hndl;
+uint16_t rsi_ble_gatt_server_client_config_hndl;
+} // namespace Silabs
 
 namespace {
 
@@ -87,9 +95,8 @@ const uint8_t UUID_CHIPoBLEService[]      = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00
 const uint8_t ShortUUID_CHIPoBLEService[] = { 0xF6, 0xFF };
 
 // Used to send the Indication Confirmation
-uint8_t dev_address[RSI_DEV_ADDR_LEN];
-uint16_t rsi_ble_measurement_hndl;
-uint16_t rsi_ble_gatt_server_client_config_hndl;
+// Note: dev_address, rsi_ble_measurement_hndl, and rsi_ble_gatt_server_client_config_hndl
+// are now defined in the Silabs namespace above for access by BlePlatformRs911x
 
 osTimerId_t sbleAdvTimeoutTimer;
 
@@ -151,13 +158,13 @@ void rsi_ble_add_matter_service(void)
         new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION, custom_characteristic_TX);
 
     // Adding characteristic value attribute to the service
-    rsi_ble_measurement_hndl = new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION;
+    Silabs::rsi_ble_measurement_hndl = new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION;
 
     // Adding characteristic value attribute to the service
-    rsi_ble_gatt_server_client_config_hndl =
+    Silabs::rsi_ble_gatt_server_client_config_hndl =
         new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_GATT_SERVER_CLIENT_HANDLE_LOCATION;
 
-    SilabsBleWrapper::rsi_ble_add_char_val_att(new_serv_resp.serv_handler, rsi_ble_measurement_hndl, custom_characteristic_TX,
+        SilabsBleWrapper::rsi_ble_add_char_val_att(new_serv_resp.serv_handler, Silabs::rsi_ble_measurement_hndl, custom_characteristic_TX,
                                                RSI_BLE_ATT_PROPERTY_WRITE_NO_RESPONSE | RSI_BLE_ATT_PROPERTY_WRITE |
                                                    RSI_BLE_ATT_PROPERTY_READ | RSI_BLE_ATT_PROPERTY_NOTIFY |
                                                    RSI_BLE_ATT_PROPERTY_INDICATE, // Set read, write, write without response
@@ -202,7 +209,7 @@ void BLEManagerImpl::ProcessEvent(SilabsBleWrapper::BleEvent_t inEvent)
         rsi_ble_set_data_len(inEvent.eventData.resp_enh_conn.dev_addr, RSI_BLE_TX_OCTETS, RSI_BLE_TX_TIME);
 
         // Used to send the Indication confirmation
-        memcpy(dev_address, inEvent.eventData.resp_enh_conn.dev_addr, RSI_DEV_ADDR_LEN);
+        memcpy(Silabs::dev_address, inEvent.eventData.resp_enh_conn.dev_addr, RSI_DEV_ADDR_LEN);
     }
     break;
     case SilabsBleWrapper::BleEventType::RSI_BLE_DISCONN_EVENT: {
@@ -526,12 +533,12 @@ CHIP_ERROR BLEManagerImpl::SendIndication(BLE_CONNECTION_OBJECT conId, const Chi
     if (mPlatform != nullptr)
     {
         ByteSpan dataSpan(data->Start(), data->DataLength());
-        err = mPlatform->SendIndication(static_cast<uint8_t>(conId), rsi_ble_measurement_hndl, dataSpan);
+        err = mPlatform->SendIndication(static_cast<uint8_t>(conId), Silabs::rsi_ble_measurement_hndl, dataSpan);
     }
     else
     {
         // Fallback to direct implementation
-        int32_t status = rsi_ble_indicate_value(dev_address, rsi_ble_measurement_hndl, data->DataLength(), data->Start());
+        int32_t status = rsi_ble_indicate_value(Silabs::dev_address, Silabs::rsi_ble_measurement_hndl, data->DataLength(), data->Start());
         if (status != RSI_SUCCESS)
         {
             ChipLogProgress(DeviceLayer, "indication failed with error code %lx ", status);
@@ -935,10 +942,10 @@ void BLEManagerImpl::HandleConnectionCloseEvent(const SilabsBleWrapper::sl_wfx_m
 
         switch (evt.reason)
         {
-        case RSI_BT_CTRL_REMOTE_USER_TERMINATED:
-        case RSI_BT_CTRL_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES:
-        case RSI_BT_CTRL_REMOTE_POWERING_OFF:
-        case RSI_BT_CTRL_CONNECTION_TIMEOUT:
+        case SL_STATUS_SI91X_REMOTE_USER_TERMINATED_CONNECTION:
+        case SL_STATUS_SI91X_REMOTE_DEVICE_TERMINATED_CONNECTION_LOW_RESOURCES:
+        case SL_STATUS_SI91X_REMOTE_DEVICE_TERMINATED_CONNECTION_POWER_OFF:
+        case SL_STATUS_SI91X_CONNECTION_TIMEOUT:
             event.CHIPoBLEConnectionError.Reason = BLE_ERROR_REMOTE_DEVICE_DISCONNECTED;
             break;
         default:
@@ -961,7 +968,7 @@ void BLEManagerImpl::HandleWriteEvent(const SilabsBleWrapper::sl_wfx_msg_t & evt
 {
     ChipLogProgress(DeviceLayer, "Char Write Req, packet type %d", evt.rsi_ble_write.pkt_type);
 
-    if (evt.rsi_ble_write.handle[0] == (uint8_t) rsi_ble_gatt_server_client_config_hndl) // TODO:: compare the handle exactly
+    if (evt.rsi_ble_write.handle[0] == (uint8_t) Silabs::rsi_ble_gatt_server_client_config_hndl) // TODO:: compare the handle exactly
     {
         HandleTXCharCCCDWrite(evt);
     }

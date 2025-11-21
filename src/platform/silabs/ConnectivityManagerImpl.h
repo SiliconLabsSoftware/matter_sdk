@@ -26,6 +26,7 @@
 #endif
 
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
+#include <platform/silabs/BLEManagerImpl.h>
 #include <platform/internal/GenericConnectivityManagerImpl_BLE.h>
 #else
 #include <platform/internal/GenericConnectivityManagerImpl_NoBLE.h>

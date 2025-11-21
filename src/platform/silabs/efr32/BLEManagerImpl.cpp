@@ -760,7 +760,7 @@ void BLEManagerImpl::HandleReadEvent(volatile sl_bt_msg_t * evt)
     if (mPlatform != nullptr)
     {
         Silabs::BleEvent unifiedEvent;
-        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(evt)), unifiedEvent))
+        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(const_cast<sl_bt_msg_t *>(evt))), unifiedEvent))
         {
             if (unifiedEvent.type == Silabs::BleEventType::kGattReadRequest)
             {
@@ -817,7 +817,7 @@ void BLEManagerImpl::UpdateMtu(volatile sl_bt_msg_t * evt)
     if (mPlatform != nullptr)
     {
         Silabs::BleEvent unifiedEvent;
-        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(evt)), unifiedEvent))
+        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(const_cast<sl_bt_msg_t *>(evt))), unifiedEvent))
         {
             if (unifiedEvent.type == Silabs::BleEventType::kGattMtuExchanged)
             {
@@ -881,7 +881,7 @@ void BLEManagerImpl::HandleConnectEvent(volatile sl_bt_msg_t * evt)
     if (mPlatform != nullptr)
     {
         Silabs::BleEvent unifiedEvent;
-        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(evt)), unifiedEvent))
+        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(const_cast<sl_bt_msg_t *>(evt))), unifiedEvent))
         {
             if (unifiedEvent.type == Silabs::BleEventType::kConnectionOpened)
             {
@@ -965,7 +965,7 @@ void BLEManagerImpl::HandleConnectionCloseEvent(volatile sl_bt_msg_t * evt)
     if (mPlatform != nullptr)
     {
         Silabs::BleEvent unifiedEvent;
-        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(evt)), unifiedEvent))
+        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(const_cast<sl_bt_msg_t *>(evt))), unifiedEvent))
         {
             if (unifiedEvent.type == Silabs::BleEventType::kConnectionClosed)
             {
@@ -1081,7 +1081,7 @@ void BLEManagerImpl::HandleWriteEvent(volatile sl_bt_msg_t * evt)
     if (mPlatform != nullptr)
     {
         Silabs::BleEvent unifiedEvent;
-        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(evt)), unifiedEvent))
+        if (mPlatform->ParseEvent(const_cast<void *>(static_cast<const void *>(const_cast<sl_bt_msg_t *>(evt))), unifiedEvent))
         {
             if (unifiedEvent.type == Silabs::BleEventType::kGattWriteRequest)
             {

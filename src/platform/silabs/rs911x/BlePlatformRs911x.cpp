@@ -21,9 +21,8 @@
  */
 
 #include "BlePlatformRs911x.h"
-#include <platform/internal/BLEManager.h>
-#include <platform/internal/CHIPDeviceLayerInternal.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/silabs/CHIPDevicePlatformConfig.h>
 #include <cstring>
 #include <cstdlib>
 #include "wfx_sl_ble_init.h"
@@ -46,7 +45,11 @@ extern uint16_t rsi_ble_gatt_server_client_config_hndl;
 
 BlePlatformRs911x::BlePlatformRs911x() : mAdvertisingHandle(kInvalidAdvertisingHandle), mAdvertising(false), mManager(nullptr)
 {
-    memset(mConnections, 0, sizeof(mConnections));
+    // Initialize connections using default constructor
+    for (uint8_t i = 0; i < kMaxConnections; i++)
+    {
+        mConnections[i] = BleConnectionState();
+    }
 }
 
 BlePlatformRs911x & BlePlatformRs911x::GetInstance()
@@ -71,7 +74,10 @@ void BlePlatformRs911x::Shutdown()
     }
 
     // Clear all connections
-    memset(mConnections, 0, sizeof(mConnections));
+    for (uint8_t i = 0; i < kMaxConnections; i++)
+    {
+        mConnections[i] = BleConnectionState();
+    }
     mAdvertisingHandle = kInvalidAdvertisingHandle;
     mAdvertising       = false;
     mManager           = nullptr;
@@ -80,7 +86,6 @@ void BlePlatformRs911x::Shutdown()
 CHIP_ERROR BlePlatformRs911x::ConfigureAdvertising(const BleAdvertisingConfig & config)
 {
     int32_t ret;
-    CHIP_ERROR err = CHIP_NO_ERROR;
 
     // Set advertising data
     if (config.advData.size() > 0)
@@ -156,7 +161,7 @@ bool BlePlatformRs911x::RemoveConnection(uint8_t connectionHandle)
     BleConnectionState * connState = GetConnectionState(connectionHandle, false);
     if (connState != nullptr && connState->allocated)
     {
-        memset(connState, 0, sizeof(BleConnectionState));
+        *connState = BleConnectionState(); // Use constructor to properly initialize
         return true;
     }
     return false;
@@ -210,7 +215,7 @@ uint16_t BlePlatformRs911x::GetMTU(uint8_t connectionHandle) const
 CHIP_ERROR BlePlatformRs911x::SendIndication(uint8_t connectionHandle, uint16_t characteristicHandle, const ByteSpan & data)
 {
     // RSI BLE uses dev_address instead of connection handle for indication
-    int32_t ret = rsi_ble_indicate_value(dev_address, characteristicHandle, static_cast<uint16_t>(data.size()),
+    int32_t ret = rsi_ble_indicate_value(Silabs::dev_address, characteristicHandle, static_cast<uint16_t>(data.size()),
                                          const_cast<uint8_t *>(data.data()));
     if (ret != RSI_SUCCESS)
     {
@@ -236,7 +241,7 @@ CHIP_ERROR BlePlatformRs911x::SendReadResponse(uint8_t connectionHandle, uint16_
 CHIP_ERROR BlePlatformRs911x::SetConnectionParams(uint8_t connectionHandle, const BleConnectionParams & params)
 {
     // RSI BLE uses rsi_ble_conn_params_update with device address
-    int32_t ret = rsi_ble_conn_params_update(dev_address, params.intervalMin, params.intervalMax, params.latency, params.timeout);
+    int32_t ret = rsi_ble_conn_params_update(Silabs::dev_address, params.intervalMin, params.intervalMax, params.latency, params.timeout);
     return MapRSIError(ret);
 }
 
@@ -268,12 +273,11 @@ bool BlePlatformRs911x::ParseEvent(void * platformEvent, BleEvent & unifiedEvent
     {
     case SilabsBleWrapper::BleEventType::RSI_BLE_CONN_EVENT: {
         unifiedEvent.type = BleEventType::kConnectionOpened;
-        const auto & connData = rsiEvent->eventData.resp_enh_conn;
         unifiedEvent.data.connectionOpened.connection  = kDefaultConnectionHandle; // RSI uses fixed handle
         unifiedEvent.data.connectionOpened.bonding     = 0; // Not used in RSI
         unifiedEvent.data.connectionOpened.advertiser   = 0; // Not used in RSI
         // Address is in dev_address, not in event
-        memset(&unifiedEvent.data.connectionOpened.address, 0, sizeof(bd_addr));
+        unifiedEvent.data.connectionOpened.address = bd_addr{};
         unifiedEvent.data.connectionOpened.addressType = 0;
     }
     break;
@@ -290,23 +294,22 @@ bool BlePlatformRs911x::ParseEvent(void * platformEvent, BleEvent & unifiedEvent
         const auto & writeData = rsiEvent->eventData.rsi_ble_write;
         unifiedEvent.data.gattWriteRequest.connection     = kDefaultConnectionHandle;
         unifiedEvent.data.gattWriteRequest.characteristic = writeData.handle[0];
-        unifiedEvent.data.gattWriteRequest.attValue       = writeData.att_value;
+        unifiedEvent.data.gattWriteRequest.attValue       = const_cast<uint8_t *>(writeData.att_value);
         unifiedEvent.data.gattWriteRequest.attValueLen    = writeData.length;
     }
     break;
 
     case SilabsBleWrapper::BleEventType::RSI_BLE_EVENT_GATT_RD: {
         unifiedEvent.type = BleEventType::kGattReadRequest;
-        const auto & readData = rsiEvent->eventData.rsi_ble_read_req;
         unifiedEvent.data.gattReadRequest.connection     = kDefaultConnectionHandle;
-        unifiedEvent.data.gattReadRequest.characteristic = 0; // Not directly available in RSI event
+        unifiedEvent.data.gattReadRequest.characteristic = rsiEvent->eventData.rsi_ble_read_req->handle;
     }
     break;
 
     case SilabsBleWrapper::BleEventType::RSI_BLE_MTU_EVENT: {
         unifiedEvent.type = BleEventType::kGattMtuExchanged;
         const auto & mtuData = rsiEvent->eventData.rsi_ble_mtu;
-        unifiedEvent.data.mtuExchanged.connection = mtuData.connectionHandle;
+        unifiedEvent.data.mtuExchanged.connection = kDefaultConnectionHandle; // RSI uses fixed handle
         unifiedEvent.data.mtuExchanged.mtu         = mtuData.mtu_size;
     }
     break;
