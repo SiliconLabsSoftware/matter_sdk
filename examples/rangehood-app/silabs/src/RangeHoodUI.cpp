@@ -106,7 +106,7 @@ void RangeHoodUI::DrawRangehoodStatus(GLIB_Context_t * glibContext)
     bool lightOn     = false;
 
     PlatformMgr().LockChipStack();
-    CHIP_ERROR fanStatus = RangeHoodMgr().GetExtractorHoodEndpoint().GetFanMode(mode);
+    CHIP_ERROR fanStatus   = RangeHoodMgr().GetExtractorHoodEndpoint().GetFanMode(mode);
     CHIP_ERROR lightStatus = RangeHoodMgr().GetLightEndpoint().GetOnOffState(lightOn);
     PlatformMgr().UnlockChipStack();
 
