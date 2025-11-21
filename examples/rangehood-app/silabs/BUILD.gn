@@ -108,6 +108,7 @@ silabs_executable("rangehood_app") {
     "src/AppTask.cpp",
     "src/DataModelCallbacks.cpp",
     "src/RangeHoodManager.cpp",
+    "src/RangeHoodUI.cpp",
   ]
 
   deps = [
