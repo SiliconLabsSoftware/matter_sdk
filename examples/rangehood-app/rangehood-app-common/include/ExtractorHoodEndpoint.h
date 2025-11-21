@@ -59,10 +59,6 @@ public:
 
     /**
      * @brief Get the FanMode attribute.
-     **/
-
-    /**
-     * @brief Get the FanMode attribute.
      * @return CHIP_ERROR on failure, CHIP_NO_ERROR on success
      */
     CHIP_ERROR GetFanMode(chip::app::Clusters::FanControl::FanModeEnum & fanMode) const;

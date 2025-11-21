@@ -24,6 +24,7 @@
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
+#include "RangeHoodUI.h"
 #include "lcd.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
@@ -78,7 +79,8 @@ CHIP_ERROR AppTask::AppInit()
 
 #ifdef DISPLAY_ENABLED
     GetLCD().Init((uint8_t *) "Rangehood-App");
-#endif
+    GetLCD().SetCustomUI(RangeHoodUI::DrawUI);
+#endif // DISPLAY_ENABLED
 
     // Initialization of RangeHoodManager and endpoints of range hood.
     err = RangeHoodManager::GetInstance().Init();
@@ -101,7 +103,7 @@ CHIP_ERROR AppTask::AppInit()
         GetLCD().ShowQRCode(true);
     }
 #endif // QR_CODE_ENABLED
-#endif
+#endif // DISPLAY_ENABLED
     sLightLED.Init(LIGHT_LED);
     bool lightState = false;
 
@@ -184,15 +186,23 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
     case RangeHoodManager::LIGHT_ON_ACTION:
         ChipLogProgress(AppServer, "Light ON");
         sLightLED.Set(true);
+#ifdef DISPLAY_ENABLED
+        GetLCD().WriteDemoUI(false);
+#endif // DISPLAY_ENABLED
         break;
 
     case RangeHoodManager::LIGHT_OFF_ACTION:
         ChipLogProgress(AppServer, "Light OFF");
         sLightLED.Set(false);
+#ifdef DISPLAY_ENABLED
+        GetLCD().WriteDemoUI(false);
+#endif // DISPLAY_ENABLED
         break;
 
     case RangeHoodManager::FAN_MODE_CHANGE_ACTION:
-        // TODO: Update LCD with new fan mode
+#ifdef DISPLAY_ENABLED
+        GetLCD().WriteDemoUI(false);
+#endif // DISPLAY_ENABLED
         break;
 
     case RangeHoodManager::FAN_PERCENT_CHANGE_ACTION:
