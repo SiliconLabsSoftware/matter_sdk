@@ -73,7 +73,6 @@ static_library("efr32") {
     "BLEChannel.h",
     "BLEChannelImpl.cpp",
     "BLEChannelImpl.h",
-    "BLEManagerImpl.cpp",
   ]
 
   public_deps = [
