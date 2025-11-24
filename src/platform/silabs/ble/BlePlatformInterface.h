@@ -235,6 +235,13 @@ public:
     virtual bool IsChipoBleCharacteristic(uint16_t characteristic) const = 0;
 
     /**
+     * @brief Check if a characteristic handle is the TX CCCD handle
+     * @param characteristic Characteristic handle
+     * @return true if it's the TX CCCD, false otherwise
+     */
+    virtual bool IsTxCccdHandle(uint16_t characteristic) const = 0;
+
+    /**
      * @brief Check if a connection is a CHIPoBLE connection
      * @param connection Connection handle
      * @param advertiser Advertising handle that created the connection

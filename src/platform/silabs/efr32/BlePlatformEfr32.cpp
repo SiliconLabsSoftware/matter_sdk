@@ -21,9 +21,12 @@
  *          EFR32 platform-specific implementation of BlePlatformInterface
  */
 
-#include <platform/silabs/efr32/BlePlatformEfr32.h>
-#include <platform/silabs/BLEManagerImpl.h>
+// Include CHIPDeviceLayerInternal.h first to establish platform layer context
 #include <platform/internal/CHIPDeviceLayerInternal.h>
+// Then include BLE headers - BLEManagerImpl.h must come before BlePlatformEfr32.h
+// to ensure BLEManagerImpl type is complete for CRTP template instantiation
+#include <platform/silabs/BLEManagerImpl.h>
+#include <platform/silabs/efr32/BlePlatformEfr32.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <crypto/RandUtils.h>
@@ -171,7 +174,13 @@ CHIP_ERROR BlePlatformEfr32::StopAdvertising()
 CHIP_ERROR BlePlatformEfr32::SendIndication(uint8_t connection, uint16_t characteristic, ByteSpan data)
 {
     sl_status_t ret = sl_bt_gatt_server_send_indication(connection, characteristic, data.size(), const_cast<uint8_t *>(data.data()));
-    return MapPlatformError(ret);
+    CHIP_ERROR err = MapPlatformError(ret);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "sl_bt_gatt_server_send_indication failed: 0x%lx (CHIP error: %" CHIP_ERROR_FORMAT ")", 
+                     ret, err.Format());
+    }
+    return err;
 }
 
 uint16_t BlePlatformEfr32::GetMTU(uint8_t connection) const

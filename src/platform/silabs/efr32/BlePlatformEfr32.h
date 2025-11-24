@@ -68,6 +68,7 @@ public:
     CHIP_ERROR MapPlatformError(int32_t platformError) override;
     bool CanHandleEvent(uint32_t event) override;
     bool IsChipoBleCharacteristic(uint16_t characteristic) const override;
+    bool IsTxCccdHandle(uint16_t characteristic) const override { return false; } // EFR32 uses characteristic_status events
     bool IsChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t chipoBleAdvertiser) const override;
     BleConnectionState * GetConnectionState(uint8_t connection, bool allocate) override;
     void AddConnection(uint8_t connection, uint8_t bonding, const uint8_t * address) override;

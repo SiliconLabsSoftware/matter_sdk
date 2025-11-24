@@ -180,6 +180,7 @@ public:
     CHIP_ERROR MapPlatformError(int32_t platformError) override;
     bool CanHandleEvent(uint32_t event) override;
     bool IsChipoBleCharacteristic(uint16_t characteristic) const override;
+    bool IsTxCccdHandle(uint16_t characteristic) const override;
     bool IsChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t chipoBleAdvertiser) const override;
     BleConnectionState * GetConnectionState(uint8_t connection, bool allocate) override;
     void AddConnection(uint8_t connection, uint8_t bonding, const uint8_t * address) override;
@@ -194,6 +195,7 @@ public:
     static void sl_ble_event_handling_task(void * args);
 
     // Public for initialization by rsi_ble_add_matter_service
+    uint16_t mRsiBleRxValueHndl = 0;
     uint16_t mRsiBleMeasurementHndl = 0;
     uint16_t mRsiBleGattServerClientConfigHndl = 0;
 

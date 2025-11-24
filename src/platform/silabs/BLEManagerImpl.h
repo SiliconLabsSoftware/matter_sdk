@@ -216,6 +216,10 @@ private:
     char mDeviceName[kMaxDeviceNameLength + 1];
     // The advertising set handle allocated from Bluetooth stack.
     uint8_t mAdvertisingSetHandle = 0xff;
+#if SLI_SI91X_ENABLE_BLE
+    // Track if an indication is pending for SiWx (to avoid cancelling timer on spurious confirmations)
+    bool mIndicationInFlight = false;
+#endif
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     PacketBufferHandle c3AdditionalDataBufferHandle;
 #endif
