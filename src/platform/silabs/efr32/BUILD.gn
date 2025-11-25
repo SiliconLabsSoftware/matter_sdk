@@ -18,6 +18,8 @@ import("${chip_root}/build/chip/buildconfig_header.gni")
 import("${chip_root}/src/crypto/crypto.gni")
 import("${chip_root}/src/platform/device.gni")
 import("${chip_root}/src/platform/silabs/multi-ota/args.gni")
+import("${chip_root}/src/platform/silabs/tracing/args.gni")
+import("${chip_root}/src/tracing/tracing_args.gni")
 import("${chip_root}/third_party/silabs/efr32_sdk.gni")
 import("${chip_root}/third_party/silabs/silabs_board.gni")
 import("${matter_support_root}/provision/args.gni")
@@ -85,12 +87,30 @@ static_library("efr32") {
       "${silabs_platform_dir}/SiWx/ble/sl_si91x_ble_init.h",
     ]
   } else {
-    sources += [ "BLEManagerImpl.cpp" ]
+    sources += [
+      "BLEChannel.h",
+      "BLEChannelImpl.cpp",
+      "BLEChannelImpl.h",
+      "BLEManagerImpl.cpp",
+    ]
   }
   deps = [
     "${chip_root}/src/app/common:ids",
+    "${chip_root}/src/tracing/silabs:silabs_tracing",
     "${sl_provision_root}:headers",
   ]
+
+  if (matter_enable_tracing_support) {
+    public_deps += [
+      "${chip_root}/src/platform/silabs/tracing:SilabsTracing",
+      "${chip_root}/src/tracing",
+    ]
+  }
+
+  if (silabs_tracing_energy_traces) {
+    public_deps +=
+        [ "${chip_root}/src/platform/silabs/tracing:SilabsPowerTracing" ]
+  }
 
   # Add platform crypto implementation
   if (chip_crypto == "platform") {
