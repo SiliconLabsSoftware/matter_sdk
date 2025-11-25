@@ -114,6 +114,7 @@
 #define LWIP_DHCP (LWIP_IPV4)
 #endif /* LWIP_DHCP */
 
+// IGMP is disabled by default as multicast is handled using IPv6.
 #define LWIP_IGMP 0
 // IPv6 should be enabled by default
 #define LWIP_IPV6 1
