@@ -212,6 +212,6 @@
 #define PPP_DEBUG (LWIP_DBG_OFF)
 #endif /* LWIP_DEBUG */
 
-#define LWIP_DBG_TYPES_ON \
+#define LWIP_DBG_TYPES_ON                                                                                                          \
     (LWIP_DBG_ON | LWIP_DBG_TRACE) /* (LWIP_DBG_ON|LWIP_DBG_TRACE|LWIP_DBG_STATE|LWIP_DBG_FRESH|LWIP_DBG_HALT) */
-#endif /* __LWIPOPTS_H__ */
+#endif                             /* __LWIPOPTS_H__ */
