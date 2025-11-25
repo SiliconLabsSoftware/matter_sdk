@@ -55,7 +55,6 @@
 #define LWIP_SOCKET_SET_ERRNO 0
 #define IP_REASS_MAX_PBUFS 0
 #define IP_REASSEMBLY 0
-#define LWIP_IGMP 0
 #define IP_FRAG 1
 #define IP_OPTIONS_ALLOWED 1
 #define MEMP_NUM_REASSDATA 0
@@ -115,6 +114,7 @@
 #define LWIP_DHCP (LWIP_IPV4)
 #endif /* LWIP_DHCP */
 
+#define LWIP_IGMP 0
 // IPv6 should be enabled by default
 #define LWIP_IPV6 1
 #define LWIP_NETIF_API 1
