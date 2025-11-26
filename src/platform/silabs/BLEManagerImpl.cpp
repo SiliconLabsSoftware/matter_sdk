@@ -970,41 +970,8 @@ void BLEManagerImpl::HandleConnectionCloseEvent(void * platformEvent)
                     event.Type                          = DeviceEventType::kCHIPoBLEConnectionError;
                     event.CHIPoBLEConnectionError.ConId = connData.connection;
 
-                    // Map platform-specific reason codes
-                    uint16_t reason = connData.reason;
-#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-                    // EFR32 reason codes
-                    switch (reason)
-                    {
-                    case SL_STATUS_BT_CTRL_REMOTE_USER_TERMINATED:
-                    case SL_STATUS_BT_CTRL_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES:
-                    case SL_STATUS_BT_CTRL_REMOTE_POWERING_OFF:
-                        event.CHIPoBLEConnectionError.Reason = BLE_ERROR_REMOTE_DEVICE_DISCONNECTED;
-                        break;
-
-                    case SL_STATUS_BT_CTRL_CONNECTION_TERMINATED_BY_LOCAL_HOST:
-                        event.CHIPoBLEConnectionError.Reason = BLE_ERROR_APP_CLOSED_CONNECTION;
-                        break;
-
-                    default:
-                        event.CHIPoBLEConnectionError.Reason = BLE_ERROR_CHIPOBLE_PROTOCOL_ABORT;
-                        break;
-                    }
-#else
-                    // SiWx reason codes
-                    switch (reason)
-                    {
-                    case RSI_BT_CTRL_REMOTE_USER_TERMINATED:
-                    case RSI_BT_CTRL_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES:
-                    case RSI_BT_CTRL_REMOTE_POWERING_OFF:
-                        event.CHIPoBLEConnectionError.Reason = BLE_ERROR_REMOTE_DEVICE_DISCONNECTED;
-                        break;
-
-                    default:
-                        event.CHIPoBLEConnectionError.Reason = BLE_ERROR_CHIPOBLE_PROTOCOL_ABORT;
-                        break;
-                    }
-#endif
+                    // Map platform-specific reason codes using platform interface
+                    event.CHIPoBLEConnectionError.Reason = PLATFORM()->MapDisconnectReason(connData.reason);
 
                     ChipLogProgress(DeviceLayer, "BLE GATT connection closed (con %u, reason %u)", connData.connection, connData.reason);
 
@@ -1018,13 +985,11 @@ void BLEManagerImpl::HandleConnectionCloseEvent(void * platformEvent)
 
                 PlatformMgr().ScheduleWork(DriveBLEState, 0);
             }
-#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-            else if (mBleSideChannel != nullptr)
+            else
             {
-                ChipLogProgress(DeviceLayer, "Disconnect Event for the Side Channel on handle : %d", connData.connection);
-                mBleSideChannel->RemoveConnection(connData.connection);
+                // Handle non-CHIPoBLE disconnect (platform-specific logic, e.g., side channel)
+                PLATFORM()->HandleNonChipoBleDisconnect(platformEvent, connData.connection);
             }
-#endif
         }
     }
 }

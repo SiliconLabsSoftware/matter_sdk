@@ -194,6 +194,20 @@ public:
         return false;
     }
 
+    // Helper method for platform to handle side channel disconnects
+    bool HandleSideChannelDisconnect(uint8_t connection)
+    {
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        if (mBleSideChannel != nullptr)
+        {
+            ChipLogProgress(DeviceLayer, "Disconnect Event for the Side Channel on handle : %d", connection);
+            mBleSideChannel->RemoveConnection(connection);
+            return true;
+        }
+#endif
+        return false;
+    }
+
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     static void HandleC3ReadRequest(void * platformEvent);
 #endif

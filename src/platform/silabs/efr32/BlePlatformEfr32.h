@@ -81,6 +81,8 @@ public:
     bool HandleNonChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
     bool HandleNonChipoBleRead(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
     bool HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t connection) override;
+    CHIP_ERROR MapDisconnectReason(uint16_t platformReason) override;
+    bool HandleNonChipoBleDisconnect(void * platformEvent, uint8_t connection) override;
 
 private:
     BlePlatformEfr32() = default;

@@ -342,6 +342,21 @@ public:
      * @return true if MTU update was handled, false otherwise
      */
     virtual bool HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t connection) = 0;
+
+    /**
+     * @brief Map platform-specific disconnect reason code to CHIP BLE error reason
+     * @param platformReason Platform-specific reason code
+     * @return CHIP BLE error reason code
+     */
+    virtual CHIP_ERROR MapDisconnectReason(uint16_t platformReason) = 0;
+
+    /**
+     * @brief Handle non-CHIPoBLE disconnect (platform-specific logic, e.g., side channel)
+     * @param platformEvent Platform-specific event
+     * @param connection Connection handle
+     * @return true if disconnect was handled, false otherwise
+     */
+    virtual bool HandleNonChipoBleDisconnect(void * platformEvent, uint8_t connection) = 0;
 };
 
 /**

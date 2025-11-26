@@ -27,6 +27,7 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <crypto/RandUtils.h>
 #include <cstring>
+#include <ble/Ble.h>
 
 // Forward declaration to avoid circular dependency
 namespace chip {
@@ -791,6 +792,27 @@ bool BlePlatformSiWx917::HandleNonChipoBleRead(void * platformEvent, uint8_t con
 }
 
 bool BlePlatformSiWx917::HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t connection)
+{
+    // SiWx doesn't support side channel
+    return false;
+}
+
+CHIP_ERROR BlePlatformSiWx917::MapDisconnectReason(uint16_t platformReason)
+{
+    // SiWx reason codes
+    switch (platformReason)
+    {
+    case RSI_BT_CTRL_REMOTE_USER_TERMINATED:
+    case RSI_BT_CTRL_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES:
+    case RSI_BT_CTRL_REMOTE_POWERING_OFF:
+        return BLE_ERROR_REMOTE_DEVICE_DISCONNECTED;
+
+    default:
+        return BLE_ERROR_CHIPOBLE_PROTOCOL_ABORT;
+    }
+}
+
+bool BlePlatformSiWx917::HandleNonChipoBleDisconnect(void * platformEvent, uint8_t connection)
 {
     // SiWx doesn't support side channel
     return false;

@@ -39,6 +39,7 @@ extern "C" {
 #include "sl_bt_stack_config.h"
 #include "sl_bt_stack_init.h"
 #include "gatt_db.h"
+#include <ble/Ble.h>
 
 using namespace ::chip;
 using namespace ::chip::DeviceLayer;
@@ -442,6 +443,34 @@ bool BlePlatformEfr32::HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t 
     if (mManager != nullptr)
     {
         return mManager->HandleSideChannelMtuUpdate(platformEvent, connection);
+    }
+    return false;
+}
+
+CHIP_ERROR BlePlatformEfr32::MapDisconnectReason(uint16_t platformReason)
+{
+    // EFR32 reason codes
+    switch (platformReason)
+    {
+    case SL_STATUS_BT_CTRL_REMOTE_USER_TERMINATED:
+    case SL_STATUS_BT_CTRL_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES:
+    case SL_STATUS_BT_CTRL_REMOTE_POWERING_OFF:
+        return BLE_ERROR_REMOTE_DEVICE_DISCONNECTED;
+
+    case SL_STATUS_BT_CTRL_CONNECTION_TERMINATED_BY_LOCAL_HOST:
+        return BLE_ERROR_APP_CLOSED_CONNECTION;
+
+    default:
+        return BLE_ERROR_CHIPOBLE_PROTOCOL_ABORT;
+    }
+}
+
+bool BlePlatformEfr32::HandleNonChipoBleDisconnect(void * platformEvent, uint8_t connection)
+{
+    // EFR32: Handle side channel disconnect if it's not a CHIPoBLE connection
+    if (mManager != nullptr)
+    {
+        return mManager->HandleSideChannelDisconnect(connection);
     }
     return false;
 }
