@@ -49,6 +49,12 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 
+extern "C" {
+struct otInstance;
+otInstance * otInstanceInitMultiple(uint8_t idx);
+void otAppCliInit(otInstance * aInstance);
+}
+
 #ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
 #define LIGHT_LED 1
 #else
@@ -80,6 +86,9 @@ DeferredAttribute gDeferredAttributeTable[] = {
     DeferredAttribute(ConcreteAttributePath(LIGHT_ENDPOINT, ColorControl::Id, ColorControl::Attributes::CurrentHue::Id)),
     DeferredAttribute(ConcreteAttributePath(LIGHT_ENDPOINT, ColorControl::Id, ColorControl::Attributes::CurrentSaturation::Id))
 };
+
+static otInstance * sSecondaryOtInstance = nullptr;
+
 } // namespace
 
 using namespace chip::TLV;
@@ -90,6 +99,17 @@ CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    
+    sSecondaryOtInstance = otInstanceInitMultiple(1);
+    if (sSecondaryOtInstance != nullptr)
+    {
+        otAppCliInit(sSecondaryOtInstance);
+        SILABS_LOG("Multi-PAN: Secondary OpenThread instance initialized (index 1), CLI bound to secondary instance");
+    }
+    else
+    {
+        SILABS_LOG("Multi-PAN: Failed to initialize secondary OpenThread instance");
+    }
 
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
