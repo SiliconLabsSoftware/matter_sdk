@@ -1060,97 +1060,43 @@ void BLEManagerImpl::HandleTXCharCCCDWrite(void * platformEvent)
 
     CHIP_ERROR err = CHIP_NO_ERROR;
 
-#if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-    // SiWx platform: CCCD writes come as kGattWriteRequest events
-    if (unifiedEvent.type == Silabs::BleEventType::kGattWriteRequest)
-    {
-        const auto & writeData = unifiedEvent.data.gattWriteRequest;
-        BLEConState * bleConnState = GetConnectionState(writeData.connection);
+    // Use platform interface to handle TX CCCD write
+    Silabs::BlePlatformInterface::TxCccdWriteResult result = PLATFORM()->HandleTxCccdWrite(platformEvent, unifiedEvent);
 
-        if (bleConnState != NULL && PLATFORM()->IsTxCccdHandle(writeData.characteristic))
+    if (result.handled)
+    {
+        BLEConState * bleConnState = GetConnectionState(result.connection);
+        if (bleConnState != NULL)
         {
-            // CCCD value is 2 bytes: 0x0001 = notifications, 0x0002 = indications, 0x0000 = disabled
-            bool isIndicationEnabled = (writeData.length >= 2 && (writeData.data[0] != 0 || writeData.data[1] != 0));
             ChipDeviceEvent event;
 
-            ChipLogProgress(DeviceLayer, "CHIPoBLE %s received", isIndicationEnabled ? "subscribe" : "unsubscribe");
+            ChipLogProgress(DeviceLayer, "CHIPoBLE %s received", result.isIndicationEnabled ? "subscribe" : "unsubscribe");
 
-            if (isIndicationEnabled)
+            if (result.isIndicationEnabled)
             {
                 // If indications are not already enabled for the connection...
                 if (!bleConnState->subscribed)
                 {
                     bleConnState->subscribed = true;
+                    event.Type                    = DeviceEventType::kCHIPoBLESubscribe;
+                    event.CHIPoBLESubscribe.ConId = result.connection;
+                    err                           = PlatformMgr().PostEvent(&event);
                 }
-
-                event.Type                    = DeviceEventType::kCHIPoBLESubscribe;
-                event.CHIPoBLESubscribe.ConId = writeData.connection;
-                err                           = PlatformMgr().PostEvent(&event);
             }
             else
             {
                 bleConnState->subscribed      = false;
                 event.Type                    = DeviceEventType::kCHIPoBLEUnsubscribe;
-                event.CHIPoBLEUnsubscribe.ConId = writeData.connection;
+                event.CHIPoBLEUnsubscribe.ConId = result.connection;
                 err                           = PlatformMgr().PostEvent(&event);
             }
         }
     }
-#else
-    // EFR32 platform: CCCD writes come as kGattCharacteristicStatus events
-    if (unifiedEvent.type == Silabs::BleEventType::kGattCharacteristicStatus)
+    else
     {
-        const auto & statusData = unifiedEvent.data.characteristicStatus;
-        BLEConState * bleConnState = GetConnectionState(statusData.connection);
-
-        ChipLogProgress(DeviceLayer, "HandleTXCharCCCDWrite: char=%u, flags=0x%02x, bleConnState=%p",
-                        statusData.characteristic, statusData.flags, bleConnState);
-
-        if (bleConnState != NULL)
-        {
-            // EFR32-specific: Check for TX characteristic
-            // statusData.flags contains client_config_flags: 0x00=disabled, 0x01=notifications, 0x02=indications
-            if (statusData.characteristic == gattdb_CHIPoBLEChar_Tx)
-            {
-                bool isIndicationEnabled = (statusData.flags == 0x02); // Check for indications (0x02)
-                ChipDeviceEvent event;
-
-                ChipLogProgress(DeviceLayer, "HandleTXcharCCCDWrite - Config Flags value : %d", statusData.flags);
-                ChipLogProgress(DeviceLayer, "CHIPoBLE %s received", isIndicationEnabled ? "subscribe" : "unsubscribe");
-
-                if (isIndicationEnabled)
-                {
-                    // If indications are not already enabled for the connection...
-                    if (!bleConnState->subscribed)
-                    {
-                        bleConnState->subscribed = 1;
-                        event.Type                    = DeviceEventType::kCHIPoBLESubscribe;
-                        event.CHIPoBLESubscribe.ConId = statusData.connection;
-                        err                           = PlatformMgr().PostEvent(&event);
-                    }
-                }
-                else
-                {
-                    bleConnState->subscribed      = 0;
-                    event.Type                    = DeviceEventType::kCHIPoBLEUnsubscribe;
-                    event.CHIPoBLESubscribe.ConId = statusData.connection;
-                    err                           = PlatformMgr().PostEvent(&event);
-                }
-            }
-        }
-        else if (PLATFORM()->IsChipoBleCharacteristic(statusData.characteristic))
-        {
-            // Silent fail indication if the characteristic is from CHIPoBLE and the connection on Side Channel
-            return;
-        }
-        else if (mBleSideChannel != nullptr)
-        {
-            bool isNewSubscription = false;
-            err                    = mBleSideChannel->HandleCCCDWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent),
-                                                                              isNewSubscription);
-        }
+        // Handle non-CHIPoBLE CCCD write (platform-specific logic, e.g., side channel)
+        PLATFORM()->HandleNonChipoBleCccdWrite(platformEvent, unifiedEvent);
     }
-#endif
 
     LogErrorOnFailure(err);
 }

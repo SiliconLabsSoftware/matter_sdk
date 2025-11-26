@@ -474,3 +474,50 @@ bool BlePlatformEfr32::HandleNonChipoBleDisconnect(void * platformEvent, uint8_t
     }
     return false;
 }
+
+BlePlatformInterface::TxCccdWriteResult BlePlatformEfr32::HandleTxCccdWrite(void * platformEvent, const BleEvent & unifiedEvent)
+{
+    TxCccdWriteResult result = { false, false, 0 };
+
+    // EFR32 platform: CCCD writes come as kGattCharacteristicStatus events
+    if (unifiedEvent.type == BleEventType::kGattCharacteristicStatus)
+    {
+        const auto & statusData = unifiedEvent.data.characteristicStatus;
+
+        // EFR32-specific: Check for TX characteristic
+        // statusData.flags contains client_config_flags: 0x00=disabled, 0x01=notifications, 0x02=indications
+        if (statusData.characteristic == gattdb_CHIPoBLEChar_Tx)
+        {
+            result.handled            = true;
+            result.isIndicationEnabled = (statusData.flags == 0x02); // Check for indications (0x02)
+            result.connection         = statusData.connection;
+        }
+    }
+
+    return result;
+}
+
+bool BlePlatformEfr32::HandleNonChipoBleCccdWrite(void * platformEvent, const BleEvent & unifiedEvent)
+{
+    // EFR32: Handle side channel CCCD write if it's not a CHIPoBLE CCCD write
+    if (unifiedEvent.type == BleEventType::kGattCharacteristicStatus)
+    {
+        const auto & statusData = unifiedEvent.data.characteristicStatus;
+
+        // If it's a CHIPoBLE characteristic but not a CHIPoBLE connection, silent fail
+        if (IsChipoBleCharacteristic(statusData.characteristic))
+        {
+            return false; // Silent fail indication if the characteristic is from CHIPoBLE and the connection on Side Channel
+        }
+
+        // Handle side channel CCCD write
+        if (mManager != nullptr)
+        {
+            bool isNewSubscription = false;
+            CHIP_ERROR err         = mManager->HandleSideChannelCccdWrite(platformEvent, isNewSubscription);
+            return (err == CHIP_NO_ERROR);
+        }
+    }
+
+    return false;
+}

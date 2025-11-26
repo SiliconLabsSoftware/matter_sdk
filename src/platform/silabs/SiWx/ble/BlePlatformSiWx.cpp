@@ -818,6 +818,33 @@ bool BlePlatformSiWx917::HandleNonChipoBleDisconnect(void * platformEvent, uint8
     return false;
 }
 
+BlePlatformInterface::TxCccdWriteResult BlePlatformSiWx917::HandleTxCccdWrite(void * platformEvent, const BleEvent & unifiedEvent)
+{
+    TxCccdWriteResult result = { false, false, 0 };
+
+    // SiWx platform: CCCD writes come as kGattWriteRequest events
+    if (unifiedEvent.type == BleEventType::kGattWriteRequest)
+    {
+        const auto & writeData = unifiedEvent.data.gattWriteRequest;
+
+        if (IsTxCccdHandle(writeData.characteristic))
+        {
+            result.handled            = true;
+            // CCCD value is 2 bytes: 0x0001 = notifications, 0x0002 = indications, 0x0000 = disabled
+            result.isIndicationEnabled = (writeData.length >= 2 && (writeData.data[0] != 0 || writeData.data[1] != 0));
+            result.connection         = writeData.connection;
+        }
+    }
+
+    return result;
+}
+
+bool BlePlatformSiWx917::HandleNonChipoBleCccdWrite(void * platformEvent, const BleEvent & unifiedEvent)
+{
+    // SiWx doesn't support side channel
+    return false;
+}
+
 void BlePlatformSiWx917::BlePostEvent(SilabsBleWrapper::BleEvent_t * event)
 {
     if (sBleEventQueue != nullptr)

@@ -357,6 +357,32 @@ public:
      * @return true if disconnect was handled, false otherwise
      */
     virtual bool HandleNonChipoBleDisconnect(void * platformEvent, uint8_t connection) = 0;
+
+    /**
+     * @brief Result structure for TX CCCD write handling
+     */
+    struct TxCccdWriteResult
+    {
+        bool handled;              // Whether the CCCD write was handled
+        bool isIndicationEnabled;  // Whether indication is enabled (only valid if handled is true)
+        uint8_t connection;        // Connection handle (only valid if handled is true)
+    };
+
+    /**
+     * @brief Handle TX CCCD write (platform-specific logic)
+     * @param platformEvent Platform-specific event
+     * @param unifiedEvent Unified event structure
+     * @return Result structure indicating if handled and indication state
+     */
+    virtual TxCccdWriteResult HandleTxCccdWrite(void * platformEvent, const BleEvent & unifiedEvent) = 0;
+
+    /**
+     * @brief Handle non-CHIPoBLE CCCD write (platform-specific logic, e.g., side channel)
+     * @param platformEvent Platform-specific event
+     * @param unifiedEvent Unified event structure
+     * @return true if CCCD write was handled, false otherwise
+     */
+    virtual bool HandleNonChipoBleCccdWrite(void * platformEvent, const BleEvent & unifiedEvent) = 0;
 };
 
 /**

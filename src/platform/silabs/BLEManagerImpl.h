@@ -208,6 +208,18 @@ public:
         return false;
     }
 
+    // Helper method for platform to handle side channel CCCD writes
+    CHIP_ERROR HandleSideChannelCccdWrite(void * platformEvent, bool & isNewSubscription)
+    {
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        if (mBleSideChannel != nullptr)
+        {
+            return mBleSideChannel->HandleCCCDWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), isNewSubscription);
+        }
+#endif
+        return CHIP_ERROR_NOT_IMPLEMENTED;
+    }
+
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     static void HandleC3ReadRequest(void * platformEvent);
 #endif
