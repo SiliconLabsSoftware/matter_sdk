@@ -754,6 +754,48 @@ CHIP_ERROR BlePlatformSiWx917::SendWriteResponse(uint8_t connection, uint16_t ch
     return CHIP_NO_ERROR;
 }
 
+bool BlePlatformSiWx917::HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
+                                                      uint8_t chipoBleAdvertiser)
+{
+    // SiWx: Log why the connection was not identified as CHIPoBLE for diagnostics
+    ChipLogProgress(DeviceLayer, "Connect Event on handle %d was not CHIPoBLE (advertiser=%u, advHandle=%u)", connection, advertiser,
+                    chipoBleAdvertiser);
+    return false;
+}
+
+BlePlatformInterface::WriteType BlePlatformSiWx917::HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic)
+{
+    // SiWx: Check if it's a TX CCCD write first
+    if (IsTxCccdHandle(characteristic))
+    {
+        return BlePlatformInterface::WriteType::TX_CCCD;
+    }
+    // Check if it's a CHIPoBLE characteristic (RX or TX)
+    else if (IsChipoBleCharacteristic(characteristic))
+    {
+        return BlePlatformInterface::WriteType::RX_CHARACTERISTIC;
+    }
+    return BlePlatformInterface::WriteType::OTHER_CHIPOBLE;
+}
+
+bool BlePlatformSiWx917::HandleNonChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic)
+{
+    // SiWx doesn't support side channel
+    return false;
+}
+
+bool BlePlatformSiWx917::HandleNonChipoBleRead(void * platformEvent, uint8_t connection, uint16_t characteristic)
+{
+    // SiWx doesn't support side channel
+    return false;
+}
+
+bool BlePlatformSiWx917::HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t connection)
+{
+    // SiWx doesn't support side channel
+    return false;
+}
+
 void BlePlatformSiWx917::BlePostEvent(SilabsBleWrapper::BleEvent_t * event)
 {
     if (sBleEventQueue != nullptr)

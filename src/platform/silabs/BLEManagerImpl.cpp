@@ -770,17 +770,11 @@ void BLEManagerImpl::HandleReadEvent(void * platformEvent)
                 PLATFORM()->SendReadResponse(readData.connection, readData.characteristic, emptyData);
                 return;
             }
-#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-            else if (mBleSideChannel != nullptr)
+            else
             {
-                // Side channel read request
-                ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", readData.characteristic);
-
-                char dataBuff[] = "You are reading the Si-Channel TX characteristic";
-                ByteSpan dataSpan((const uint8_t *) dataBuff, sizeof(dataBuff));
-                mBleSideChannel->HandleReadRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), dataSpan);
+                // Handle non-CHIPoBLE read (platform-specific logic, e.g., side channel)
+                PLATFORM()->HandleNonChipoBleRead(platformEvent, readData.connection, readData.characteristic);
             }
-#endif
         }
     }
 }
@@ -818,12 +812,11 @@ void BLEManagerImpl::UpdateMtu(void * platformEvent)
                 bleConnState->mtu = mtuData.mtu;
 #pragma GCC diagnostic pop
             }
-#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-            else if (mBleSideChannel != nullptr)
+            else
             {
-                mBleSideChannel->UpdateMtu(static_cast<volatile sl_bt_msg_t *>(platformEvent));
+                // Handle non-CHIPoBLE MTU update (platform-specific logic, e.g., side channel)
+                PLATFORM()->HandleNonChipoBleMtuUpdate(platformEvent, mtuData.connection);
             }
-#endif
         }
     }
 }
@@ -907,24 +900,12 @@ void BLEManagerImpl::HandleConnectEvent(void * platformEvent)
                 AddConnection(connData.connection, connData.bonding);
                 PlatformMgr().ScheduleWork(DriveBLEState, 0);
             }
-#if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
             else
             {
-                // Log why the connection was not identified as CHIPoBLE for diagnostics
-                ChipLogProgress(DeviceLayer, "Connect Event on handle %d was not CHIPoBLE (advertiser=%u, advHandle=%u)",
-                                connData.connection, connData.advertiser, mAdvertisingSetHandle);
+                // Handle non-CHIPoBLE connection (platform-specific logic)
+                PLATFORM()->HandleNonChipoBleConnection(connData.connection, connData.advertiser, connData.bonding, connData.address,
+                                                        mAdvertisingSetHandle);
             }
-#endif
-#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-            else if (mBleSideChannel != nullptr)
-            {
-                // We assumed we are using the side channel from the moment we
-                // are not using the CHIPoBLE service.
-                ChipLogProgress(DeviceLayer, "Connect Event for SideChannel on handle : %d", connData.connection);
-                mBleSideChannel->AddConnection(connData.connection, connData.bonding);
-                return;
-            }
-#endif
         }
     }
 }
@@ -1065,18 +1046,16 @@ void BLEManagerImpl::HandleWriteEvent(void * platformEvent)
                 bool do_provision  = chip::DeviceLayer::Silabs::Provision::Manager::GetInstance().IsProvisionRequired();
                 ChipLogProgress(DeviceLayer, "Char Write Req, char : %d", attribute);
 
-#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-                // EFR32-specific: Check for RX characteristic
-                if (gattdb_CHIPoBLEChar_Rx == attribute)
-#else
-                // SiWx: Check if it's a CHIPoBLE characteristic
-                // TX CCCD writes need to be routed to HandleTXCharCCCDWrite
-                if (PLATFORM()->IsTxCccdHandle(attribute))
+                // Use platform interface to determine write type
+                Silabs::BlePlatformInterface::WriteType writeType = PLATFORM()->HandleChipoBleWrite(platformEvent, writeData.connection, attribute);
+
+                if (writeType == Silabs::BlePlatformInterface::WriteType::TX_CCCD)
                 {
+                    // SiWx: TX CCCD writes need to be routed to HandleTXCharCCCDWrite
                     HandleTXCharCCCDWrite(platformEvent);
                 }
-                else if (PLATFORM()->IsChipoBleCharacteristic(attribute))
-#endif
+                else if (writeType == Silabs::BlePlatformInterface::WriteType::RX_CHARACTERISTIC ||
+                         writeType == Silabs::BlePlatformInterface::WriteType::OTHER_CHIPOBLE)
                 {
                     if (do_provision)
                     {
@@ -1096,18 +1075,11 @@ void BLEManagerImpl::HandleWriteEvent(void * platformEvent)
                 PLATFORM()->SendWriteResponse(writeData.connection, writeData.characteristic, 0x01);
                 return;
             }
-#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-            else if (mBleSideChannel != nullptr)
+            else
             {
-                uint8_t dataBuff[255] = { 0 };
-                MutableByteSpan dataSpan(dataBuff);
-                mBleSideChannel->HandleWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), dataSpan);
-
-                // Buffered (&Deleted) the following data:
-                ChipLogProgress(DeviceLayer, "Buffered (&Deleted) the following data:");
-                ChipLogByteSpan(DeviceLayer, dataSpan);
+                // Handle non-CHIPoBLE write (platform-specific logic, e.g., side channel)
+                PLATFORM()->HandleNonChipoBleWrite(platformEvent, writeData.connection, writeData.characteristic);
             }
-#endif
         }
     }
 }

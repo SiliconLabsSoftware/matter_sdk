@@ -187,6 +187,12 @@ public:
     void RemoveConnection(uint8_t connection) override;
     CHIP_ERROR SendReadResponse(uint8_t connection, uint16_t characteristic, ByteSpan data) override;
     CHIP_ERROR SendWriteResponse(uint8_t connection, uint16_t characteristic, uint8_t status) override;
+    bool HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
+                                      uint8_t chipoBleAdvertiser) override;
+    BlePlatformInterface::WriteType HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
+    bool HandleNonChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
+    bool HandleNonChipoBleRead(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
+    bool HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t connection) override;
 
     // SiWx-specific methods
     void BlePostEvent(SilabsBleWrapper::BleEvent_t * event);

@@ -38,6 +38,7 @@ extern "C" {
 #include "sl_bt_api.h"
 #include "sl_bt_stack_config.h"
 #include "sl_bt_stack_init.h"
+#include "gatt_db.h"
 
 using namespace ::chip;
 using namespace ::chip::DeviceLayer;
@@ -392,4 +393,55 @@ CHIP_ERROR BlePlatformEfr32::SendWriteResponse(uint8_t connection, uint16_t char
 {
     sl_status_t ret = sl_bt_gatt_server_send_user_write_response(connection, characteristic, status);
     return MapPlatformError(ret);
+}
+
+bool BlePlatformEfr32::HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
+                                                    uint8_t chipoBleAdvertiser)
+{
+    // EFR32: Handle side channel connection if it's not a CHIPoBLE connection
+    if (mManager != nullptr)
+    {
+        return mManager->HandleSideChannelConnection(connection, bonding);
+    }
+    return false;
+}
+
+BlePlatformInterface::WriteType BlePlatformEfr32::HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic)
+{
+    // EFR32-specific: Check for RX characteristic
+    if (characteristic == gattdb_CHIPoBLEChar_Rx)
+    {
+        return BlePlatformInterface::WriteType::RX_CHARACTERISTIC;
+    }
+    return BlePlatformInterface::WriteType::OTHER_CHIPOBLE;
+}
+
+bool BlePlatformEfr32::HandleNonChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic)
+{
+    // EFR32: Handle side channel write if it's not a CHIPoBLE write
+    if (mManager != nullptr)
+    {
+        return mManager->HandleSideChannelWrite(platformEvent);
+    }
+    return false;
+}
+
+bool BlePlatformEfr32::HandleNonChipoBleRead(void * platformEvent, uint8_t connection, uint16_t characteristic)
+{
+    // EFR32: Handle side channel read if it's not a CHIPoBLE read
+    if (mManager != nullptr)
+    {
+        return mManager->HandleSideChannelRead(platformEvent, connection, characteristic);
+    }
+    return false;
+}
+
+bool BlePlatformEfr32::HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t connection)
+{
+    // EFR32: Handle side channel MTU update if it's not a CHIPoBLE connection
+    if (mManager != nullptr)
+    {
+        return mManager->HandleSideChannelMtuUpdate(platformEvent, connection);
+    }
+    return false;
 }

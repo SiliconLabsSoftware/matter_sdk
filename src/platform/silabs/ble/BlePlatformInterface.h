@@ -289,6 +289,59 @@ public:
      * @return CHIP_NO_ERROR on success, error code otherwise
      */
     virtual CHIP_ERROR SendWriteResponse(uint8_t connection, uint16_t characteristic, uint8_t status) = 0;
+
+    /**
+     * @brief Handle a non-CHIPoBLE connection (platform-specific logic)
+     * @param connection Connection handle
+     * @param advertiser Advertising handle
+     * @param bonding Bonding handle
+     * @param address Remote device address
+     * @param chipoBleAdvertiser CHIPoBLE advertising handle
+     * @return true if connection was handled, false otherwise
+     */
+    virtual bool HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
+                                             uint8_t chipoBleAdvertiser) = 0;
+
+    /**
+     * @brief Handle write event for CHIPoBLE connection (platform-specific logic)
+     * @param platformEvent Platform-specific event
+     * @param connection Connection handle
+     * @param characteristic Characteristic handle
+     * @return WriteType indicating how to handle the write (RX, TX_CCCD, or OTHER)
+     */
+    enum class WriteType
+    {
+        RX_CHARACTERISTIC,  // Handle as RX characteristic write
+        TX_CCCD,           // Handle as TX CCCD write
+        OTHER_CHIPOBLE     // Other CHIPoBLE characteristic
+    };
+    virtual WriteType HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) = 0;
+
+    /**
+     * @brief Handle non-CHIPoBLE write (platform-specific logic, e.g., side channel)
+     * @param platformEvent Platform-specific event
+     * @param connection Connection handle
+     * @param characteristic Characteristic handle
+     * @return true if write was handled, false otherwise
+     */
+    virtual bool HandleNonChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) = 0;
+
+    /**
+     * @brief Handle non-CHIPoBLE read (platform-specific logic, e.g., side channel)
+     * @param platformEvent Platform-specific event
+     * @param connection Connection handle
+     * @param characteristic Characteristic handle
+     * @return true if read was handled, false otherwise
+     */
+    virtual bool HandleNonChipoBleRead(void * platformEvent, uint8_t connection, uint16_t characteristic) = 0;
+
+    /**
+     * @brief Handle non-CHIPoBLE MTU update (platform-specific logic, e.g., side channel)
+     * @param platformEvent Platform-specific event
+     * @param connection Connection handle
+     * @return true if MTU update was handled, false otherwise
+     */
+    virtual bool HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t connection) = 0;
 };
 
 /**
