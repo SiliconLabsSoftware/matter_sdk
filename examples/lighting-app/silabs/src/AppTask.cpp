@@ -53,6 +53,7 @@ extern "C" {
 struct otInstance;
 otInstance * otInstanceInitMultiple(uint8_t idx);
 void otAppCliInit(otInstance * aInstance);
+void sl_ot_custom_cli_init(void);
 }
 
 #ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
@@ -99,11 +100,12 @@ CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
-    
+
     sSecondaryOtInstance = otInstanceInitMultiple(1);
     if (sSecondaryOtInstance != nullptr)
     {
         otAppCliInit(sSecondaryOtInstance);
+        sl_ot_custom_cli_init();
         SILABS_LOG("Multi-PAN: Secondary OpenThread instance initialized (index 1), CLI bound to secondary instance");
     }
     else
