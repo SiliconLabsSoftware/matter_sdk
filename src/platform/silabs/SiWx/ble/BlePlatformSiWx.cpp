@@ -22,12 +22,12 @@
  *          Merged from sl_si91x_ble_init.cpp
  */
 
-#include <platform/silabs/SiWx/ble/BlePlatformSiWx.h>
-#include <lib/support/CodeUtils.h>
-#include <lib/support/logging/CHIPLogging.h>
+#include <ble/Ble.h>
 #include <crypto/RandUtils.h>
 #include <cstring>
-#include <ble/Ble.h>
+#include <lib/support/CodeUtils.h>
+#include <lib/support/logging/CHIPLogging.h>
+#include <platform/silabs/SiWx/ble/BlePlatformSiWx.h>
 
 namespace chip {
 namespace DeviceLayer {
@@ -39,8 +39,8 @@ BLEManagerImpl & BLEMgrImpl();
 } // namespace chip
 
 extern "C" {
-#include <rsi_utils.h>
 #include <rsi_ble_apis.h>
+#include <rsi_utils.h>
 }
 
 extern "C" void ChipBlePlatform_NotifyStackReady();
@@ -88,7 +88,7 @@ void rsi_ble_add_matter_service(void)
                                                                     .data4 = { RSI_BLE_CUSTOM_CHARACTERISTIC_RX_VALUE_128_DATA_4 } } } };
 
     rsi_ble_resp_add_serv_t new_serv_resp = { 0 };
-    int32_t add_serv_rc = rsi_ble_add_service(custom_service, &new_serv_resp);
+    int32_t add_serv_rc                   = rsi_ble_add_service(custom_service, &new_serv_resp);
     if (add_serv_rc != RSI_SUCCESS)
     {
         ChipLogError(DeviceLayer, "rsi_ble_add_service failed: %ld", add_serv_rc);
@@ -96,8 +96,8 @@ void rsi_ble_add_matter_service(void)
     }
     else
     {
-        ChipLogProgress(DeviceLayer, "rsi_ble_add_service succeeded, serv_handler=%p, start_handle=%u",
-                        new_serv_resp.serv_handler, new_serv_resp.start_handle);
+        ChipLogProgress(DeviceLayer, "rsi_ble_add_service succeeded, serv_handler=%p, start_handle=%u", new_serv_resp.serv_handler,
+                        new_serv_resp.start_handle);
     }
 
     // Adding custom characteristic declaration to the custom service
@@ -143,13 +143,12 @@ void rsi_ble_add_matter_service(void)
             new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_GATT_SERVER_CLIENT_HANDLE_LOCATION;
     }
 
-    SilabsBleWrapper::rsi_ble_add_char_val_att(new_serv_resp.serv_handler,
-                                               new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION,
-                                               custom_characteristic_TX,
-                                               RSI_BLE_ATT_PROPERTY_WRITE_NO_RESPONSE | RSI_BLE_ATT_PROPERTY_WRITE |
-                                                   RSI_BLE_ATT_PROPERTY_READ | RSI_BLE_ATT_PROPERTY_NOTIFY |
-                                                   RSI_BLE_ATT_PROPERTY_INDICATE, // Set read, write, write without response
-                                               data, sizeof(data), ATT_REC_MAINTAIN_IN_HOST);
+    SilabsBleWrapper::rsi_ble_add_char_val_att(
+        new_serv_resp.serv_handler, new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION,
+        custom_characteristic_TX,
+        RSI_BLE_ATT_PROPERTY_WRITE_NO_RESPONSE | RSI_BLE_ATT_PROPERTY_WRITE | RSI_BLE_ATT_PROPERTY_READ |
+            RSI_BLE_ATT_PROPERTY_NOTIFY | RSI_BLE_ATT_PROPERTY_INDICATE, // Set read, write, write without response
+        data, sizeof(data), ATT_REC_MAINTAIN_IN_HOST);
 
 #ifdef CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     // C3 characteristic is of 128 bit UUID format structure - where val128 is of uuid128_t which is composed of uint32_t data1,
@@ -194,22 +193,24 @@ void SilabsBleWrapper::rsi_ble_on_gatt_write_event(uint16_t event_id, rsi_ble_ev
     {
         // Hex dump of write data
         char hexBuf[256];
-        int pos = 0;
+        int pos   = 0;
         hexBuf[0] = '\0';
-        for (uint8_t i = 0; i < rsi_ble_write->length && pos + 4 < (int)sizeof(hexBuf); ++i)
+        for (uint8_t i = 0; i < rsi_ble_write->length && pos + 4 < (int) sizeof(hexBuf); ++i)
         {
             int n = snprintf(&hexBuf[pos], sizeof(hexBuf) - pos, "%02X", rsi_ble_write->att_value[i]);
-            if (n > 0) pos += n;
-            if (i + 1 < rsi_ble_write->length && pos + 1 < (int)sizeof(hexBuf))
+            if (n > 0)
+                pos += n;
+            if (i + 1 < rsi_ble_write->length && pos + 1 < (int) sizeof(hexBuf))
             {
                 hexBuf[pos++] = ' ';
                 hexBuf[pos]   = '\0';
             }
         }
 
-        SilabsBleWrapper::BleEvent_t bleEvent = { .eventType = BleEventType::RSI_BLE_GATT_WRITE_EVENT,
-                                                  .eventData = {
-                                                      .connectionHandle = 1, .event_id = event_id, .rsi_ble_write = *rsi_ble_write } };
+        SilabsBleWrapper::BleEvent_t bleEvent = {
+            .eventType = BleEventType::RSI_BLE_GATT_WRITE_EVENT,
+            .eventData = { .connectionHandle = 1, .event_id = event_id, .rsi_ble_write = *rsi_ble_write }
+        };
         gPlatformInstance->BlePostEvent(&bleEvent);
     }
 }
@@ -375,8 +376,8 @@ CHIP_ERROR BlePlatformSiWx917::Init()
     memset(mConnections, 0, sizeof(mConnections));
     memset(mDevAddress, 0, sizeof(mDevAddress));
     mRsiBleMeasurementHndl            = 0;
-    mRsiBleGattServerClientConfigHndl  = 0;
-    mAdvertisingSetHandle              = 0xff;
+    mRsiBleGattServerClientConfigHndl = 0;
+    mAdvertisingSetHandle             = 0xff;
 
     // Create BLE event queue
     sBleEventQueue = osMessageQueueNew(WFX_QUEUE_SIZE, sizeof(SilabsBleWrapper::BleEvent_t), NULL);
@@ -397,13 +398,14 @@ CHIP_ERROR BlePlatformSiWx917::ConfigureAdvertising(const BleAdvertisingConfig &
     if (config.advData.size() > 0)
     {
         char advHexBuf[128];
-        int advPos = 0;
+        int advPos   = 0;
         advHexBuf[0] = '\0';
-        for (size_t i = 0; i < config.advData.size() && advPos + 4 < (int)sizeof(advHexBuf); ++i)
+        for (size_t i = 0; i < config.advData.size() && advPos + 4 < (int) sizeof(advHexBuf); ++i)
         {
             int n = snprintf(&advHexBuf[advPos], sizeof(advHexBuf) - advPos, "%02X", config.advData[i]);
-            if (n > 0) advPos += n;
-            if (i + 1 < config.advData.size() && advPos + 1 < (int)sizeof(advHexBuf))
+            if (n > 0)
+                advPos += n;
+            if (i + 1 < config.advData.size() && advPos + 1 < (int) sizeof(advHexBuf))
             {
                 advHexBuf[advPos++] = ' ';
                 advHexBuf[advPos]   = '\0';
@@ -420,13 +422,14 @@ CHIP_ERROR BlePlatformSiWx917::ConfigureAdvertising(const BleAdvertisingConfig &
     if (config.responseData.size() > 0)
     {
         char rspHexBuf[128];
-        int rspPos = 0;
+        int rspPos   = 0;
         rspHexBuf[0] = '\0';
-        for (size_t i = 0; i < config.responseData.size() && rspPos + 4 < (int)sizeof(rspHexBuf); ++i)
+        for (size_t i = 0; i < config.responseData.size() && rspPos + 4 < (int) sizeof(rspHexBuf); ++i)
         {
             int n = snprintf(&rspHexBuf[rspPos], sizeof(rspHexBuf) - rspPos, "%02X", config.responseData[i]);
-            if (n > 0) rspPos += n;
-            if (i + 1 < config.responseData.size() && rspPos + 1 < (int)sizeof(rspHexBuf))
+            if (n > 0)
+                rspPos += n;
+            if (i + 1 < config.responseData.size() && rspPos + 1 < (int) sizeof(rspHexBuf))
             {
                 rspHexBuf[rspPos++] = ' ';
                 rspHexBuf[rspPos]   = '\0';
@@ -447,15 +450,15 @@ CHIP_ERROR BlePlatformSiWx917::StartAdvertising(uint32_t intervalMin, uint32_t i
 {
     rsi_ble_req_adv_t ble_adv = { 0 };
 
-    ble_adv.status = RSI_BLE_START_ADV;
-    ble_adv.adv_type = connectable ? UNDIR_CONN : UNDIR_NON_CONN;
+    ble_adv.status           = RSI_BLE_START_ADV;
+    ble_adv.adv_type         = connectable ? UNDIR_CONN : UNDIR_NON_CONN;
     ble_adv.filter_type      = RSI_BLE_ADV_FILTER_TYPE;
     ble_adv.direct_addr_type = RSI_BLE_ADV_DIR_ADDR_TYPE;
     rsi_ascii_dev_address_to_6bytes_rev(ble_adv.direct_addr, (int8_t *) RSI_BLE_ADV_DIR_ADDR);
-    ble_adv.adv_int_min      = intervalMin;
-    ble_adv.adv_int_max      = intervalMax;
-    ble_adv.own_addr_type    = LE_RANDOM_ADDRESS;
-    ble_adv.adv_channel_map  = RSI_BLE_ADV_CHANNEL_MAP;
+    ble_adv.adv_int_min     = intervalMin;
+    ble_adv.adv_int_max     = intervalMax;
+    ble_adv.own_addr_type   = LE_RANDOM_ADDRESS;
+    ble_adv.adv_channel_map = RSI_BLE_ADV_CHANNEL_MAP;
 
     int32_t result = rsi_ble_start_advertising_with_values(&ble_adv);
     if (result != RSI_SUCCESS)
@@ -515,39 +518,39 @@ bool BlePlatformSiWx917::ParseEvent(void * platformEvent, BleEvent & unifiedEven
     switch (siwxEvent->eventType)
     {
     case SilabsBleWrapper::BleEventType::RSI_BLE_CONN_EVENT: {
-        unifiedEvent.type                         = BleEventType::kConnectionOpened;
+        unifiedEvent.type                             = BleEventType::kConnectionOpened;
         unifiedEvent.data.connectionOpened.connection = siwxEvent->eventData.connectionHandle;
-        unifiedEvent.data.connectionOpened.bonding   = siwxEvent->eventData.bondingHandle;
+        unifiedEvent.data.connectionOpened.bonding    = siwxEvent->eventData.bondingHandle;
         unifiedEvent.data.connectionOpened.advertiser = 0; // SiWx doesn't use advertiser handle
         memcpy(unifiedEvent.data.connectionOpened.address, siwxEvent->eventData.resp_enh_conn.dev_addr, 6);
         return true;
     }
 
     case SilabsBleWrapper::BleEventType::RSI_BLE_DISCONN_EVENT: {
-        unifiedEvent.type                        = BleEventType::kConnectionClosed;
+        unifiedEvent.type                             = BleEventType::kConnectionClosed;
         unifiedEvent.data.connectionClosed.connection = 1; // SiWx uses connection handle 1
         unifiedEvent.data.connectionClosed.reason     = siwxEvent->eventData.reason;
         return true;
     }
 
     case SilabsBleWrapper::BleEventType::RSI_BLE_GATT_WRITE_EVENT: {
-        unifiedEvent.type                                    = BleEventType::kGattWriteRequest;
-        unifiedEvent.data.gattWriteRequest.connection       = 1; // SiWx uses connection handle 1
-        unifiedEvent.data.gattWriteRequest.characteristic   = siwxEvent->eventData.rsi_ble_write.handle[0];
-        unifiedEvent.data.gattWriteRequest.length           = siwxEvent->eventData.rsi_ble_write.length;
-        unifiedEvent.data.gattWriteRequest.data             = siwxEvent->eventData.rsi_ble_write.att_value;
+        unifiedEvent.type                                 = BleEventType::kGattWriteRequest;
+        unifiedEvent.data.gattWriteRequest.connection     = 1; // SiWx uses connection handle 1
+        unifiedEvent.data.gattWriteRequest.characteristic = siwxEvent->eventData.rsi_ble_write.handle[0];
+        unifiedEvent.data.gattWriteRequest.length         = siwxEvent->eventData.rsi_ble_write.length;
+        unifiedEvent.data.gattWriteRequest.data           = siwxEvent->eventData.rsi_ble_write.att_value;
         return true;
     }
 
     case SilabsBleWrapper::BleEventType::RSI_BLE_MTU_EVENT: {
-        unifiedEvent.type                       = BleEventType::kGattMtuExchanged;
+        unifiedEvent.type                         = BleEventType::kGattMtuExchanged;
         unifiedEvent.data.mtuExchanged.connection = 1; // SiWx uses connection handle 1
         unifiedEvent.data.mtuExchanged.mtu        = siwxEvent->eventData.rsi_ble_mtu.mtu_size;
         return true;
     }
 
     case SilabsBleWrapper::BleEventType::RSI_BLE_GATT_INDICATION_CONFIRMATION: {
-        unifiedEvent.type                                    = BleEventType::kGattIndicationConfirmation;
+        unifiedEvent.type                                   = BleEventType::kGattIndicationConfirmation;
         unifiedEvent.data.indicationConfirmation.connection = 1; // SiWx uses connection handle 1
         unifiedEvent.data.indicationConfirmation.status     = siwxEvent->eventData.resp_status;
         return true;
@@ -556,10 +559,10 @@ bool BlePlatformSiWx917::ParseEvent(void * platformEvent, BleEvent & unifiedEven
     case SilabsBleWrapper::BleEventType::RSI_BLE_EVENT_GATT_RD: {
         if (siwxEvent->eventData.rsi_ble_read_req != nullptr)
         {
-            unifiedEvent.type                                      = BleEventType::kGattReadRequest;
-            unifiedEvent.data.gattReadRequest.connection          = 1; // SiWx uses connection handle 1
-            unifiedEvent.data.gattReadRequest.characteristic     = siwxEvent->eventData.rsi_ble_read_req->handle;
-            unifiedEvent.data.gattReadRequest.offset             = siwxEvent->eventData.rsi_ble_read_req->offset;
+            unifiedEvent.type                                = BleEventType::kGattReadRequest;
+            unifiedEvent.data.gattReadRequest.connection     = 1; // SiWx uses connection handle 1
+            unifiedEvent.data.gattReadRequest.characteristic = siwxEvent->eventData.rsi_ble_read_req->handle;
+            unifiedEvent.data.gattReadRequest.offset         = siwxEvent->eventData.rsi_ble_read_req->offset;
             return true;
         }
         return false;
@@ -656,7 +659,7 @@ BleConnectionState * BlePlatformSiWx917::GetConnectionState(uint8_t connection, 
     {
         memset(&mConnections[freeIndex], 0, sizeof(BleConnectionState));
         mConnections[freeIndex].connectionHandle = connection;
-        mConnections[freeIndex].allocated         = true;
+        mConnections[freeIndex].allocated        = true;
         return &mConnections[freeIndex];
     }
 
@@ -698,16 +701,17 @@ CHIP_ERROR BlePlatformSiWx917::SendWriteResponse(uint8_t connection, uint16_t ch
     return CHIP_NO_ERROR;
 }
 
-bool BlePlatformSiWx917::HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
-                                                      uint8_t chipoBleAdvertiser)
+bool BlePlatformSiWx917::HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding,
+                                                     const uint8_t * address, uint8_t chipoBleAdvertiser)
 {
     // SiWx: Log why the connection was not identified as CHIPoBLE for diagnostics
-    ChipLogProgress(DeviceLayer, "Connect Event on handle %d was not CHIPoBLE (advertiser=%u, advHandle=%u)", connection, advertiser,
-                    chipoBleAdvertiser);
+    ChipLogProgress(DeviceLayer, "Connect Event on handle %d was not CHIPoBLE (advertiser=%u, advHandle=%u)", connection,
+                    advertiser, chipoBleAdvertiser);
     return false;
 }
 
-BlePlatformInterface::WriteType BlePlatformSiWx917::HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic)
+BlePlatformInterface::WriteType BlePlatformSiWx917::HandleChipoBleWrite(void * platformEvent, uint8_t connection,
+                                                                        uint16_t characteristic)
 {
     // SiWx: Check if it's a TX CCCD write first
     if (IsTxCccdHandle(characteristic))
@@ -772,10 +776,10 @@ BlePlatformInterface::TxCccdWriteResult BlePlatformSiWx917::HandleTxCccdWrite(vo
 
         if (IsTxCccdHandle(writeData.characteristic))
         {
-            result.handled            = true;
+            result.handled = true;
             // CCCD value is 2 bytes: 0x0001 = notifications, 0x0002 = indications, 0x0000 = disabled
             result.isIndicationEnabled = (writeData.length >= 2 && (writeData.data[0] != 0 || writeData.data[1] != 0));
-            result.connection         = writeData.connection;
+            result.connection          = writeData.connection;
         }
     }
 

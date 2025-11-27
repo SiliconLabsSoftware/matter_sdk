@@ -32,8 +32,8 @@
 
 #include "sl_component_catalog.h"
 
-#include <platform/silabs/BLEManagerImpl.h>
 #include <platform/internal/BLEManager.h>
+#include <platform/silabs/BLEManagerImpl.h>
 #include <platform/silabs/ble/BlePlatformInterface.h>
 
 #if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
@@ -41,16 +41,16 @@
 #include <platform/silabs/SiWx/ble/BlePlatformSiWx.h>
 #else
 // EFR32 platform
-#include <platform/silabs/ble/efr32/BlePlatformEfr32.h>
 #include "FreeRTOS.h"
 #include "rail.h"
+#include <platform/silabs/ble/efr32/BlePlatformEfr32.h>
 extern "C" {
 #include "sl_bluetooth.h"
 }
+#include "gatt_db.h"
 #include "sl_bt_api.h"
 #include "sl_bt_stack_config.h"
 #include "sl_bt_stack_init.h"
-#include "gatt_db.h"
 #include <ble/efr32/BLEChannel.h>
 #endif
 #include "timers.h"
@@ -163,8 +163,8 @@ CHIP_ERROR BLEManagerImpl::_Init()
 
 #if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
     // Create BLE thread for event handling after platform initialization.
-    if (osThreadNew(Silabs::BlePlatformSiWx917::sl_ble_event_handling_task,
-                    &Silabs::BlePlatformSiWx917::GetInstance(), &kBleTaskAttr) == nullptr)
+    if (osThreadNew(Silabs::BlePlatformSiWx917::sl_ble_event_handling_task, &Silabs::BlePlatformSiWx917::GetInstance(),
+                    &kBleTaskAttr) == nullptr)
     {
         err = CHIP_ERROR_INCORRECT_STATE;
         SuccessOrExit(err);
@@ -368,12 +368,12 @@ CHIP_ERROR BLEManagerImpl::SendIndication(BLE_CONNECTION_OBJECT conId, const Chi
     CHIP_ERROR err         = CHIP_NO_ERROR;
     BLEConState * conState = GetConnectionState(conId);
 #if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-    uint16_t cId           = (UUIDsMatch(&Ble::CHIP_BLE_CHAR_1_UUID, charId) ? gattdb_CHIPoBLEChar_Rx : gattdb_CHIPoBLEChar_Tx);
+    uint16_t cId = (UUIDsMatch(&Ble::CHIP_BLE_CHAR_1_UUID, charId) ? gattdb_CHIPoBLEChar_Rx : gattdb_CHIPoBLEChar_Tx);
 #else
     // SiWx917: Platform implementation uses mRsiBleMeasurementHndl internally, characteristic parameter is ignored
     uint16_t cId = 0;
 #endif
-    uint8_t timerHandle    = GetTimerHandle(conId, true);
+    uint8_t timerHandle = GetTimerHandle(conId, true);
     ByteSpan dataSpan(data->Start(), data->DataLength()); // Declare early to avoid jump-to-label error
 
     VerifyOrExit(((conState != NULL) && (conState->subscribed != 0)), err = CHIP_ERROR_INVALID_ARGUMENT);
@@ -465,8 +465,8 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
     CHIP_ERROR err;
     uint8_t responseData[MAX_RESPONSE_DATA_LEN];
     uint8_t advData[MAX_ADV_DATA_LEN];
-    uint32_t advLen = 0;
-    uint32_t respLen = 0;
+    uint32_t advLen             = 0;
+    uint32_t respLen            = 0;
     uint32_t mDeviceNameLength  = 0;
     uint8_t mDeviceIdInfoLength = 0;
     Silabs::BleAdvertisingConfig advConfig;
@@ -527,7 +527,7 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
 #endif
 
     // Build scan response data
-    respLen = 0;
+    respLen                 = 0;
     responseData[respLen++] = CHIP_ADV_SHORT_UUID_LEN + 1;  // AD length
     responseData[respLen++] = CHIP_ADV_DATA_TYPE_UUID;      // AD type : uuid
     responseData[respLen++] = ShortUUID_CHIPoBLEService[0]; // AD value
@@ -539,15 +539,15 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
     respLen += mDeviceNameLength;
 
     // Use platform interface to configure advertising
-    advConfig.advData = ByteSpan(advData, advLen);
-    advConfig.responseData = ByteSpan(responseData, respLen);
+    advConfig.advData           = ByteSpan(advData, advLen);
+    advConfig.responseData      = ByteSpan(responseData, respLen);
     advConfig.advertisingHandle = mAdvertisingSetHandle;
 
 #if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
     // EFR32: Set random address if needed (handled by platform implementation)
     if (mAdvertisingSetHandle == 0xff) // Invalid advertising handle
     {
-        advConfig.advData = ByteSpan(advData, advLen);
+        advConfig.advData      = ByteSpan(advData, advLen);
         advConfig.responseData = ByteSpan(responseData, respLen);
     }
 #endif
@@ -568,7 +568,7 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
     uint32_t interval_min   = 0;
     uint32_t interval_max   = 0;
     bool postAdvChangeEvent = false;
-    bool connectable         = (NumConnections() < kMaxConnections);
+    bool connectable        = (NumConnections() < kMaxConnections);
 
     VerifyOrReturnError(mPlatform != nullptr, CHIP_ERROR_INCORRECT_STATE);
 
@@ -882,7 +882,7 @@ void BLEManagerImpl::UpdateMtu(void * platformEvent)
     VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
     if (unifiedEvent.type == Silabs::BleEventType::kGattMtuExchanged)
     {
-        const auto & mtuData = unifiedEvent.data.mtuExchanged;
+        const auto & mtuData       = unifiedEvent.data.mtuExchanged;
         BLEConState * bleConnState = GetConnectionState(mtuData.connection);
         if (bleConnState != NULL)
         {
@@ -960,7 +960,7 @@ extern "C" void ChipBlePlatform_HandleEvent(void * platformEvent, int eventType)
         BLEMgrImpl().HandleTxConfirmationEvent(1); // SiWx uses connection handle 1
         break;
 
-    /* RSI_BLE_EVENT_GATT_RD handling is conditional; ignore here */
+        /* RSI_BLE_EVENT_GATT_RD handling is conditional; ignore here */
 
     default:
         ChipLogProgress(DeviceLayer, "ChipBlePlatform_HandleEvent: unhandled eventType=%d", eventType);
@@ -1061,7 +1061,8 @@ void BLEManagerImpl::HandleConnectionCloseEvent(void * platformEvent)
                 // Map platform-specific reason codes using platform interface
                 event.CHIPoBLEConnectionError.Reason = PLATFORM()->MapDisconnectReason(connData.reason);
 
-                ChipLogProgress(DeviceLayer, "BLE GATT connection closed (con %u, reason %u)", connData.connection, connData.reason);
+                ChipLogProgress(DeviceLayer, "BLE GATT connection closed (con %u, reason %u)", connData.connection,
+                                connData.reason);
 
                 PlatformMgr().PostEventOrDie(&event);
 
@@ -1097,7 +1098,8 @@ void BLEManagerImpl::HandleWriteEvent(void * platformEvent)
         ChipLogProgress(DeviceLayer, "Char Write Req, char : %d", attribute);
 
         // Use platform interface to determine write type
-        Silabs::BlePlatformInterface::WriteType writeType = PLATFORM()->HandleChipoBleWrite(platformEvent, writeData.connection, attribute);
+        Silabs::BlePlatformInterface::WriteType writeType =
+            PLATFORM()->HandleChipoBleWrite(platformEvent, writeData.connection, attribute);
 
         if (writeType == Silabs::BlePlatformInterface::WriteType::TX_CCCD)
         {
@@ -1105,7 +1107,7 @@ void BLEManagerImpl::HandleWriteEvent(void * platformEvent)
             HandleTXCharCCCDWrite(platformEvent);
         }
         else if (writeType == Silabs::BlePlatformInterface::WriteType::RX_CHARACTERISTIC ||
-                    writeType == Silabs::BlePlatformInterface::WriteType::OTHER_CHIPOBLE)
+                 writeType == Silabs::BlePlatformInterface::WriteType::OTHER_CHIPOBLE)
         {
             if (do_provision)
             {
@@ -1157,17 +1159,17 @@ void BLEManagerImpl::HandleTXCharCCCDWrite(void * platformEvent)
         // If indications are not already enabled for the connection...
         if (result.isIndicationEnabled && !bleConnState->subscribed)
         {
-            bleConnState->subscribed = true;
+            bleConnState->subscribed      = true;
             event.Type                    = DeviceEventType::kCHIPoBLESubscribe;
             event.CHIPoBLESubscribe.ConId = result.connection;
             err                           = PlatformMgr().PostEvent(&event);
         }
         else
         {
-            bleConnState->subscribed      = false;
-            event.Type                    = DeviceEventType::kCHIPoBLEUnsubscribe;
+            bleConnState->subscribed        = false;
+            event.Type                      = DeviceEventType::kCHIPoBLEUnsubscribe;
             event.CHIPoBLEUnsubscribe.ConId = result.connection;
-            err                           = PlatformMgr().PostEvent(&event);
+            err                             = PlatformMgr().PostEvent(&event);
         }
     }
     else
@@ -1333,8 +1335,8 @@ void BLEManagerImpl::OnSendIndicationTimeout(System::Layer * aLayer, void * appS
         if (bleMgr->mBleConnections[i].allocated && bleMgr->mBleConnections[i].subscribed)
         {
             ChipDeviceEvent event;
-            event.Type                          = DeviceEventType::kCHIPoBLEConnectionError;
-            event.CHIPoBLEConnectionError.ConId = bleMgr->mBleConnections[i].connectionHandle;
+            event.Type                           = DeviceEventType::kCHIPoBLEConnectionError;
+            event.CHIPoBLEConnectionError.ConId  = bleMgr->mBleConnections[i].connectionHandle;
             event.CHIPoBLEConnectionError.Reason = BLE_ERROR_CHIPOBLE_PROTOCOL_ABORT;
             PlatformMgr().PostEventOrDie(&event);
             break;
@@ -1394,7 +1396,7 @@ void BLEManagerImpl::HandleC3ReadRequest(void * platformEvent)
         {
             ChipLogDetail(DeviceLayer, "Read request received for CHIPoBLEChar_C3");
             ByteSpan dataSpan(sInstance.c3AdditionalDataBufferHandle->Start(),
-                                sInstance.c3AdditionalDataBufferHandle->DataLength());
+                              sInstance.c3AdditionalDataBufferHandle->DataLength());
             CHIP_ERROR err = PLATFORM()->SendReadResponse(readData.connection, readData.characteristic, dataSpan);
             if (err != CHIP_NO_ERROR)
             {
@@ -1576,8 +1578,7 @@ void BLEManagerImpl::ParseEvent(void * platformEvent)
         StatusFlags = (sl_bt_gatt_server_characteristic_status_flag_t) evt->data.evt_gatt_server_characteristic_status.status_flags;
 
         ChipLogProgress(DeviceLayer, "Characteristic status event: char=%u, flags=0x%02x, client_config=0x%02x",
-                        evt->data.evt_gatt_server_characteristic_status.characteristic,
-                        StatusFlags,
+                        evt->data.evt_gatt_server_characteristic_status.characteristic, StatusFlags,
                         evt->data.evt_gatt_server_characteristic_status.client_config_flags);
 
         if (sl_bt_gatt_server_confirmation == StatusFlags)

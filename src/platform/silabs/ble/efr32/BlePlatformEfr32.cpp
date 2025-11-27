@@ -21,21 +21,21 @@
  *          EFR32 platform-specific implementation of BlePlatformInterface
  */
 
+#include <crypto/RandUtils.h>
+#include <cstring>
+#include <lib/support/CodeUtils.h>
+#include <lib/support/logging/CHIPLogging.h>
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 #include <platform/silabs/BLEManagerImpl.h>
 #include <platform/silabs/ble/efr32/BlePlatformEfr32.h>
-#include <lib/support/CodeUtils.h>
-#include <lib/support/logging/CHIPLogging.h>
-#include <crypto/RandUtils.h>
-#include <cstring>
 
 extern "C" {
 #include "sl_bluetooth.h"
 }
+#include "gatt_db.h"
 #include "sl_bt_api.h"
 #include "sl_bt_stack_config.h"
 #include "sl_bt_stack_init.h"
-#include "gatt_db.h"
 #include <ble/Ble.h>
 
 using namespace ::chip;
@@ -92,8 +92,8 @@ CHIP_ERROR BlePlatformEfr32::ConfigureAdvertising(const BleAdvertisingConfig & c
             ChipLogError(DeviceLayer, "sl_bt_advertiser_create_set() failed: %" CHIP_ERROR_FORMAT, err.Format());
         });
 
-        ret = sl_bt_advertiser_set_random_address(mAdvertisingSetHandle, sl_bt_gap_static_address, mRandomizedAddr,
-                                                   &mRandomizedAddr);
+        ret =
+            sl_bt_advertiser_set_random_address(mAdvertisingSetHandle, sl_bt_gap_static_address, mRandomizedAddr, &mRandomizedAddr);
         VerifyOrExit(ret == SL_STATUS_OK, {
             err = MapPlatformError(ret);
             ChipLogError(DeviceLayer, "sl_bt_advertiser_set_random_address() failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -129,7 +129,7 @@ exit:
 CHIP_ERROR BlePlatformEfr32::StartAdvertising(uint32_t intervalMin, uint32_t intervalMax, bool connectable)
 {
     sl_status_t ret;
-    CHIP_ERROR err = CHIP_NO_ERROR;
+    CHIP_ERROR err         = CHIP_NO_ERROR;
     uint8_t connectableAdv = connectable ? sl_bt_advertiser_connectable_scannable : sl_bt_advertiser_scannable_non_connectable;
 
     ChipLogProgress(DeviceLayer, "Starting advertising with interval_min=%u, interval_max=%u (units of 625us)",
@@ -167,12 +167,13 @@ CHIP_ERROR BlePlatformEfr32::StopAdvertising()
 
 CHIP_ERROR BlePlatformEfr32::SendIndication(uint8_t connection, uint16_t characteristic, ByteSpan data)
 {
-    sl_status_t ret = sl_bt_gatt_server_send_indication(connection, characteristic, data.size(), const_cast<uint8_t *>(data.data()));
+    sl_status_t ret =
+        sl_bt_gatt_server_send_indication(connection, characteristic, data.size(), const_cast<uint8_t *>(data.data()));
     CHIP_ERROR err = MapPlatformError(ret);
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "sl_bt_gatt_server_send_indication failed: 0x%lx (CHIP error: %" CHIP_ERROR_FORMAT ")",
-                     ret, err.Format());
+        ChipLogError(DeviceLayer, "sl_bt_gatt_server_send_indication failed: 0x%lx (CHIP error: %" CHIP_ERROR_FORMAT ")", ret,
+                     err.Format());
     }
     return err;
 }
@@ -206,18 +207,18 @@ bool BlePlatformEfr32::ParseEvent(void * platformEvent, BleEvent & unifiedEvent)
         return true;
 
     case sl_bt_evt_connection_opened_id: {
-        sl_bt_evt_connection_opened_t * conn_evt = (sl_bt_evt_connection_opened_t *) &(evt->data);
-        unifiedEvent.type                         = BleEventType::kConnectionOpened;
+        sl_bt_evt_connection_opened_t * conn_evt      = (sl_bt_evt_connection_opened_t *) &(evt->data);
+        unifiedEvent.type                             = BleEventType::kConnectionOpened;
         unifiedEvent.data.connectionOpened.connection = conn_evt->connection;
-        unifiedEvent.data.connectionOpened.bonding   = conn_evt->bonding;
+        unifiedEvent.data.connectionOpened.bonding    = conn_evt->bonding;
         unifiedEvent.data.connectionOpened.advertiser = conn_evt->advertiser;
         memcpy(unifiedEvent.data.connectionOpened.address, conn_evt->address.addr, 6);
         return true;
     }
 
     case sl_bt_evt_connection_closed_id: {
-        sl_bt_evt_connection_closed_t * conn_evt = (sl_bt_evt_connection_closed_t *) &(evt->data);
-        unifiedEvent.type                        = BleEventType::kConnectionClosed;
+        sl_bt_evt_connection_closed_t * conn_evt      = (sl_bt_evt_connection_closed_t *) &(evt->data);
+        unifiedEvent.type                             = BleEventType::kConnectionClosed;
         unifiedEvent.data.connectionClosed.connection = conn_evt->connection;
         unifiedEvent.data.connectionClosed.reason     = conn_evt->reason;
         return true;
@@ -225,7 +226,7 @@ bool BlePlatformEfr32::ParseEvent(void * platformEvent, BleEvent & unifiedEvent)
 
     case sl_bt_evt_gatt_server_attribute_value_id: {
         sl_bt_evt_gatt_server_attribute_value_t * write_evt = (sl_bt_evt_gatt_server_attribute_value_t *) &(evt->data);
-        unifiedEvent.type                                    = BleEventType::kGattWriteRequest;
+        unifiedEvent.type                                   = BleEventType::kGattWriteRequest;
         unifiedEvent.data.gattWriteRequest.connection       = write_evt->connection;
         unifiedEvent.data.gattWriteRequest.characteristic   = write_evt->attribute;
         unifiedEvent.data.gattWriteRequest.length           = write_evt->value.len;
@@ -234,8 +235,8 @@ bool BlePlatformEfr32::ParseEvent(void * platformEvent, BleEvent & unifiedEvent)
     }
 
     case sl_bt_evt_gatt_mtu_exchanged_id: {
-        sl_bt_evt_gatt_mtu_exchanged_t * mtu_evt = (sl_bt_evt_gatt_mtu_exchanged_t *) &(evt->data);
-        unifiedEvent.type                       = BleEventType::kGattMtuExchanged;
+        sl_bt_evt_gatt_mtu_exchanged_t * mtu_evt  = (sl_bt_evt_gatt_mtu_exchanged_t *) &(evt->data);
+        unifiedEvent.type                         = BleEventType::kGattMtuExchanged;
         unifiedEvent.data.mtuExchanged.connection = mtu_evt->connection;
         unifiedEvent.data.mtuExchanged.mtu        = mtu_evt->mtu;
         return true;
@@ -245,24 +246,24 @@ bool BlePlatformEfr32::ParseEvent(void * platformEvent, BleEvent & unifiedEvent)
         sl_bt_evt_gatt_server_characteristic_status_t * status_evt = (sl_bt_evt_gatt_server_characteristic_status_t *) &(evt->data);
         if (status_evt->status_flags == sl_bt_gatt_server_confirmation)
         {
-            unifiedEvent.type                                    = BleEventType::kGattIndicationConfirmation;
+            unifiedEvent.type                                   = BleEventType::kGattIndicationConfirmation;
             unifiedEvent.data.indicationConfirmation.connection = status_evt->connection;
             unifiedEvent.data.indicationConfirmation.status     = 0; // Success
         }
         else
         {
-            unifiedEvent.type                                    = BleEventType::kGattCharacteristicStatus;
-            unifiedEvent.data.characteristicStatus.connection   = status_evt->connection;
+            unifiedEvent.type                                     = BleEventType::kGattCharacteristicStatus;
+            unifiedEvent.data.characteristicStatus.connection     = status_evt->connection;
             unifiedEvent.data.characteristicStatus.characteristic = status_evt->characteristic;
-            unifiedEvent.data.characteristicStatus.flags         = status_evt->client_config_flags;
+            unifiedEvent.data.characteristicStatus.flags          = status_evt->client_config_flags;
         }
         return true;
     }
 
     case sl_bt_evt_gatt_server_user_read_request_id: {
         sl_bt_evt_gatt_server_user_read_request_t * read_evt = (sl_bt_evt_gatt_server_user_read_request_t *) &(evt->data);
-        unifiedEvent.type                                      = BleEventType::kGattReadRequest;
-        unifiedEvent.data.gattReadRequest.connection          = read_evt->connection;
+        unifiedEvent.type                                    = BleEventType::kGattReadRequest;
+        unifiedEvent.data.gattReadRequest.connection         = read_evt->connection;
         unifiedEvent.data.gattReadRequest.characteristic     = read_evt->characteristic;
         unifiedEvent.data.gattReadRequest.offset             = 0;
         return true;
@@ -378,7 +379,7 @@ void BlePlatformEfr32::RemoveConnection(uint8_t connection)
 CHIP_ERROR BlePlatformEfr32::SendReadResponse(uint8_t connection, uint16_t characteristic, ByteSpan data)
 {
     sl_status_t ret = sl_bt_gatt_server_send_user_read_response(connection, characteristic, 0, data.size(),
-                                                                 const_cast<uint8_t *>(data.data()), nullptr);
+                                                                const_cast<uint8_t *>(data.data()), nullptr);
     return MapPlatformError(ret);
 }
 
@@ -389,7 +390,7 @@ CHIP_ERROR BlePlatformEfr32::SendWriteResponse(uint8_t connection, uint16_t char
 }
 
 bool BlePlatformEfr32::HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
-                                                    uint8_t chipoBleAdvertiser)
+                                                   uint8_t chipoBleAdvertiser)
 {
     // EFR32: Handle side channel connection if it's not a CHIPoBLE connection
     if (mManager != nullptr)
@@ -399,7 +400,8 @@ bool BlePlatformEfr32::HandleNonChipoBleConnection(uint8_t connection, uint8_t a
     return false;
 }
 
-BlePlatformInterface::WriteType BlePlatformEfr32::HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic)
+BlePlatformInterface::WriteType BlePlatformEfr32::HandleChipoBleWrite(void * platformEvent, uint8_t connection,
+                                                                      uint16_t characteristic)
 {
     // EFR32-specific: Check for RX characteristic
     if (characteristic == gattdb_CHIPoBLEChar_Rx)
@@ -480,9 +482,9 @@ BlePlatformInterface::TxCccdWriteResult BlePlatformEfr32::HandleTxCccdWrite(void
         // statusData.flags contains client_config_flags: 0x00=disabled, 0x01=notifications, 0x02=indications
         if (statusData.characteristic == gattdb_CHIPoBLEChar_Tx)
         {
-            result.handled            = true;
+            result.handled             = true;
             result.isIndicationEnabled = (statusData.flags == 0x02); // Check for indications (0x02)
-            result.connection         = statusData.connection;
+            result.connection          = statusData.connection;
         }
     }
 

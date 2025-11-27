@@ -311,7 +311,7 @@ public:
      */
     enum class WriteType
     {
-        RX_CHARACTERISTIC,  // Handle as RX characteristic write
+        RX_CHARACTERISTIC, // Handle as RX characteristic write
         TX_CCCD,           // Handle as TX CCCD write
         OTHER_CHIPOBLE     // Other CHIPoBLE characteristic
     };
@@ -363,9 +363,9 @@ public:
      */
     struct TxCccdWriteResult
     {
-        bool handled;              // Whether the CCCD write was handled
-        bool isIndicationEnabled;  // Whether indication is enabled (only valid if handled is true)
-        uint8_t connection;        // Connection handle (only valid if handled is true)
+        bool handled;             // Whether the CCCD write was handled
+        bool isIndicationEnabled; // Whether indication is enabled (only valid if handled is true)
+        uint8_t connection;       // Connection handle (only valid if handled is true)
     };
 
     /**

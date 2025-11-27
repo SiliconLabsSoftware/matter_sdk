@@ -23,11 +23,11 @@
 
 #pragma once
 
-#include <platform/silabs/ble/BlePlatformInterface.h>
 #include "gatt_db.h"
 #include "sl_bt_api.h"
 #include <lib/core/CHIPError.h>
 #include <lib/support/Span.h>
+#include <platform/silabs/ble/BlePlatformInterface.h>
 
 namespace chip {
 namespace DeviceLayer {
@@ -76,7 +76,7 @@ public:
     CHIP_ERROR SendReadResponse(uint8_t connection, uint16_t characteristic, ByteSpan data) override;
     CHIP_ERROR SendWriteResponse(uint8_t connection, uint16_t characteristic, uint8_t status) override;
     bool HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
-                                      uint8_t chipoBleAdvertiser) override;
+                                     uint8_t chipoBleAdvertiser) override;
     BlePlatformInterface::WriteType HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
     bool HandleNonChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
     bool HandleNonChipoBleRead(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
@@ -87,14 +87,14 @@ public:
     bool HandleNonChipoBleCccdWrite(void * platformEvent, const BleEvent & unifiedEvent) override;
 
 private:
-    BlePlatformEfr32() = default;
+    BlePlatformEfr32()  = default;
     ~BlePlatformEfr32() = default;
 
-    BLEManagerImpl * mManager = nullptr;
-    uint8_t mAdvertisingSetHandle = 0xff;
+    BLEManagerImpl * mManager                = nullptr;
+    uint8_t mAdvertisingSetHandle            = 0xff;
     static constexpr uint8_t kMaxConnections = 8;
     BleConnectionState mConnections[kMaxConnections];
-    bd_addr mRandomizedAddr = { 0 };
+    bd_addr mRandomizedAddr    = { 0 };
     bool mRandomAddrConfigured = false;
 };
 
