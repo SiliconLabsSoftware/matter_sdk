@@ -72,9 +72,7 @@ static_library("SiWx") {
     "../../FreeRTOS/SystemTimeSupport.cpp",
     "../../SingletonConfigurationManager.cpp",
     "SiWxPlatformInterface.h",
-    "ble/BLEManagerImpl.cpp",
-    "ble/sl_si91x_ble_init.cpp",
-    "ble/sl_si91x_ble_init.h",
+    "${silabs_platform_dir}/BLEManagerImpl.cpp",
   ]
 
   public_deps = [
