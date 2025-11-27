@@ -26,7 +26,7 @@
 // Then include BLE headers - BLEManagerImpl.h must come before BlePlatformEfr32.h
 // to ensure BLEManagerImpl type is complete for CRTP template instantiation
 #include <platform/silabs/BLEManagerImpl.h>
-#include <platform/silabs/efr32/BlePlatformEfr32.h>
+#include <platform/silabs/ble/efr32/BlePlatformEfr32.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <crypto/RandUtils.h>

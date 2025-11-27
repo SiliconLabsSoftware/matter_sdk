@@ -93,12 +93,15 @@ static_library("efr32") {
     ]
   } else {
     sources += [
-      "BLEChannel.h",
-      "BLEChannelImpl.cpp",
-      "BLEChannelImpl.h",
-      "BlePlatformEfr32.cpp",
-      "BlePlatformEfr32.h",
+      "${silabs_platform_dir}/ble/efr32/BLEChannel.h",
+      "${silabs_platform_dir}/ble/efr32/BLEChannelImpl.cpp",
+      "${silabs_platform_dir}/ble/efr32/BLEChannelImpl.h",
+      "${silabs_platform_dir}/ble/efr32/BlePlatformEfr32.cpp",
+      "${silabs_platform_dir}/ble/efr32/BlePlatformEfr32.h",
     ]
+    
+    # Add include directory for BLE headers
+    include_dirs = [ "${silabs_platform_dir}" ]
   }
   deps = [
     "${chip_root}/src/app/common:ids",
