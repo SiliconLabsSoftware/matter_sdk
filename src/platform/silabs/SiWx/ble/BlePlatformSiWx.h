@@ -1,18 +1,13 @@
-/*******************************************************************************
- * @file  sl_si91x_ble_init.h
- * @brief
- *******************************************************************************
- * # License
- * <b>Copyright 2021 Silicon Laboratories Inc. www.silabs.com</b>
- *******************************************************************************
+/*
  *
- *    Copyright (c) 2022 Project CHIP Authors
+ *    Copyright (c) 2020-2021 Project CHIP Authors
+ *    Copyright (c) 2019 Nest Labs, Inc.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,11 +15,20 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+
+/**
+ *    @file
+ *          SiWx917 platform-specific implementation of BlePlatformInterface
+ *          Merged from sl_si91x_ble_init.h
+ */
+
 #pragma once
 
-// BLE include file to refer BLE APIs
+#include <platform/silabs/ble/BlePlatformInterface.h>
 #include "ble_config.h"
 #include "cmsis_os2.h"
+#include <lib/core/CHIPError.h>
+#include <lib/support/Span.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -37,6 +41,20 @@ extern "C" {
 #include <rsi_common_apis.h>
 }
 
+namespace chip {
+namespace DeviceLayer {
+namespace Internal {
+class BLEManagerImpl;
+} // namespace Internal
+} // namespace DeviceLayer
+} // namespace chip
+
+namespace chip {
+namespace DeviceLayer {
+namespace Internal {
+namespace Silabs {
+
+// Constants from sl_si91x_ble_init.h
 #define ATT_REC_IN_HOST (0)
 #define WFX_QUEUE_SIZE 10
 
@@ -82,10 +100,8 @@ extern "C" {
 #define RSI_BLE_CHAR_C3_MEASUREMENT_HANDLE_LOC (7)
 #define RSI_BLE_CHAR_C3_GATT_SERVER_CLI_HANDLE_LOC (8)
 #endif
-namespace chip {
-namespace DeviceLayer {
-namespace Internal {
 
+// SilabsBleWrapper class (merged from sl_si91x_ble_init.h)
 class SilabsBleWrapper
 {
 public:
@@ -122,7 +138,7 @@ public:
         sl_wfx_msg_t eventData;
     };
 
-    // ALL Ble functions
+    // BLE callback functions
     static void rsi_ble_on_connect_event(rsi_ble_event_conn_status_t * resp_conn);
     static void rsi_ble_on_disconnect_event(rsi_ble_event_disconnect_t * resp_disconnect, uint16_t reason);
     static void rsi_ble_on_enhance_conn_status_event(rsi_ble_event_enhance_conn_status_t * resp_enh_conn);
@@ -138,6 +154,75 @@ public:
                                          uint8_t * data, uint8_t data_len, uint8_t auth_read);
 };
 
+/**
+ * @brief SiWx917 platform implementation of BlePlatformInterface
+ */
+class BlePlatformSiWx917 : public BlePlatformInterface
+{
+public:
+    static BlePlatformSiWx917 & GetInstance()
+    {
+        static BlePlatformSiWx917 sInstance;
+        return sInstance;
+    }
+
+    // BlePlatformInterface implementation
+    CHIP_ERROR Init() override;
+    void SetManager(BLEManagerImpl * manager) override;
+    CHIP_ERROR ConfigureAdvertising(const BleAdvertisingConfig & config) override;
+    CHIP_ERROR StartAdvertising(uint32_t intervalMin, uint32_t intervalMax, bool connectable) override;
+    CHIP_ERROR StopAdvertising() override;
+    uint8_t GetAdvertisingHandle() const override { return mAdvertisingSetHandle; }
+    CHIP_ERROR SendIndication(uint8_t connection, uint16_t characteristic, ByteSpan data) override;
+    uint16_t GetMTU(uint8_t connection) const override;
+    CHIP_ERROR CloseConnection(uint8_t connection) override;
+    bool ParseEvent(void * platformEvent, BleEvent & unifiedEvent) override;
+    CHIP_ERROR MapPlatformError(int32_t platformError) override;
+    bool CanHandleEvent(uint32_t event) override;
+    bool IsChipoBleCharacteristic(uint16_t characteristic) const override;
+    bool IsTxCccdHandle(uint16_t characteristic) const override;
+    bool IsChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t chipoBleAdvertiser) const override;
+    BleConnectionState * GetConnectionState(uint8_t connection, bool allocate) override;
+    void AddConnection(uint8_t connection, uint8_t bonding, const uint8_t * address) override;
+    void RemoveConnection(uint8_t connection) override;
+    CHIP_ERROR SendReadResponse(uint8_t connection, uint16_t characteristic, ByteSpan data) override;
+    CHIP_ERROR SendWriteResponse(uint8_t connection, uint16_t characteristic, uint8_t status) override;
+    bool HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
+                                      uint8_t chipoBleAdvertiser) override;
+    BlePlatformInterface::WriteType HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
+    bool HandleNonChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
+    bool HandleNonChipoBleRead(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
+    bool HandleNonChipoBleMtuUpdate(void * platformEvent, uint8_t connection) override;
+    CHIP_ERROR MapDisconnectReason(uint16_t platformReason) override;
+    bool HandleNonChipoBleDisconnect(void * platformEvent, uint8_t connection) override;
+    TxCccdWriteResult HandleTxCccdWrite(void * platformEvent, const BleEvent & unifiedEvent) override;
+    bool HandleNonChipoBleCccdWrite(void * platformEvent, const BleEvent & unifiedEvent) override;
+
+    // SiWx-specific methods
+    void BlePostEvent(SilabsBleWrapper::BleEvent_t * event);
+    void ProcessEvent(SilabsBleWrapper::BleEvent_t inEvent);
+    void sl_ble_init();
+    static void sl_ble_event_handling_task(void * args);
+
+    // Public for initialization by rsi_ble_add_matter_service
+    uint16_t mRsiBleRxValueHndl = 0;
+    uint16_t mRsiBleMeasurementHndl = 0;
+    uint16_t mRsiBleGattServerClientConfigHndl = 0;
+
+private:
+    BlePlatformSiWx917() = default;
+    ~BlePlatformSiWx917() = default;
+
+    BLEManagerImpl * mManager = nullptr;
+    uint8_t mAdvertisingSetHandle = 0xff;
+    static constexpr uint8_t kMaxConnections = 8;
+    BleConnectionState mConnections[kMaxConnections];
+    osMessageQueueId_t sBleEventQueue = nullptr;
+    osThreadId_t sBleThread           = nullptr;
+    uint8_t mDevAddress[RSI_DEV_ADDR_LEN];
+};
+
+} // namespace Silabs
 } // namespace Internal
 } // namespace DeviceLayer
 } // namespace chip

@@ -26,19 +26,22 @@
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 #include "FreeRTOS.h"
 #include "timers.h"
-#if SLI_SI91X_ENABLE_BLE
-#include "sl_si91x_ble_init.h"
-#else
-#include "gatt_db.h"
-#include "sl_bgapi.h"
-#include "sl_bt_api.h"
-#include <BLEChannel.h>
 #include <lib/core/Optional.h>
-#endif //   SLI_SI91X_ENABLE_BLE
+#include <lib/support/BitFlags.h>
+#include <platform/internal/BLEManager.h>
 
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
+
+// Forward declaration avoided to prevent namespace conflicts with DeviceLayer::Silabs
+// Using void pointer - cast to BlePlatformInterface* in .cpp where full definition is available
+
+#if !(SLI_SI91X_ENABLE_BLE)
+// EFR32-specific side channel support
+class BLEChannel;
+struct BLEConState;
+#endif // !(SLI_SI91X_ENABLE_BLE)
 
 using namespace chip::Ble;
 
@@ -50,35 +53,21 @@ class BLEManagerImpl final : public BLEManager, private BleLayer, private BlePla
 
 public:
     void HandleBootEvent(void);
-
-#if SLI_SI91X_ENABLE_BLE
-    // Used for posting the event in the BLE queue
-    void BlePostEvent(SilabsBleWrapper::BleEvent_t * event);
-    void HandleConnectEvent(const SilabsBleWrapper::sl_wfx_msg_t & evt);
-    void HandleConnectionCloseEvent(const SilabsBleWrapper::sl_wfx_msg_t & evt);
-    void HandleWriteEvent(const SilabsBleWrapper::sl_wfx_msg_t & evt);
-    void UpdateMtu(const SilabsBleWrapper::sl_wfx_msg_t & evt);
+    void HandleConnectEvent(void * platformEvent);
+    void HandleConnectParams(void * platformEvent);
+    void HandleConnectionCloseEvent(void * platformEvent);
+    void HandleWriteEvent(void * platformEvent);
+    void UpdateMtu(void * platformEvent);
     void HandleTxConfirmationEvent(BLE_CONNECTION_OBJECT conId);
-    void HandleTXCharCCCDWrite(const SilabsBleWrapper::sl_wfx_msg_t & evt);
-    void HandleSoftTimerEvent(void);
-    int32_t SendBLEAdvertisementCommand(void);
-#else
-    void HandleConnectEvent(volatile sl_bt_msg_t * evt);
-    void HandleConnectParams(volatile sl_bt_msg_t * evt);
-    void HandleConnectionCloseEvent(volatile sl_bt_msg_t * evt);
-    void HandleWriteEvent(volatile sl_bt_msg_t * evt);
-    void UpdateMtu(volatile sl_bt_msg_t * evt);
-    void HandleTxConfirmationEvent(BLE_CONNECTION_OBJECT conId);
-    void HandleTXCharCCCDWrite(volatile sl_bt_msg_t * evt);
-    void HandleSoftTimerEvent(volatile sl_bt_msg_t * evt);
+    void HandleTXCharCCCDWrite(void * platformEvent);
+    void HandleSoftTimerEvent(void * platformEvent);
     bool CanHandleEvent(uint32_t event);
-    void ParseEvent(volatile sl_bt_msg_t * evt);
-#endif // SLI_SI91X_ENABLE_BLE
+    void ParseEvent(void * platformEvent);
     CHIP_ERROR StartAdvertising(void);
     CHIP_ERROR StopAdvertising(void);
 
 #if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-    void HandleReadEvent(volatile sl_bt_msg_t * evt);
+    void HandleReadEvent(void * platformEvent);
 
     // Side Channel
     CHIP_ERROR InjectSideChannel(BLEChannel * channel);
@@ -141,26 +130,104 @@ public:
     uint8_t SideChannelGetConnHandle(void) { return mBleSideChannel->GetConnectionHandle(); }
 #endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 
-#if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
-#if SLI_SI91X_ENABLE_BLE
-    static void HandleC3ReadRequest(const SilabsBleWrapper::sl_wfx_msg_t & rsi_ble_read_req);
-#else
-    static void HandleC3ReadRequest(volatile sl_bt_msg_t * evt);
+    // Helper method for platform to handle side channel connections
+    bool HandleSideChannelConnection(uint8_t connection, uint8_t bonding)
+    {
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        if (mBleSideChannel != nullptr)
+        {
+            ChipLogProgress(DeviceLayer, "Connect Event for SideChannel on handle : %d", connection);
+            mBleSideChannel->AddConnection(connection, bonding);
+            return true;
+        }
 #endif
+        return false;
+    }
+
+    // Helper method for platform to handle side channel writes
+    bool HandleSideChannelWrite(void * platformEvent)
+    {
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        if (mBleSideChannel != nullptr)
+        {
+            uint8_t dataBuff[255] = { 0 };
+            MutableByteSpan dataSpan(dataBuff);
+            mBleSideChannel->HandleWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), dataSpan);
+
+            // Buffered (&Deleted) the following data:
+            ChipLogProgress(DeviceLayer, "Buffered (&Deleted) the following data:");
+            ChipLogByteSpan(DeviceLayer, dataSpan);
+            return true;
+        }
+#endif
+        return false;
+    }
+
+    // Helper method for platform to handle side channel reads
+    bool HandleSideChannelRead(void * platformEvent, uint8_t connection, uint16_t characteristic)
+    {
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        if (mBleSideChannel != nullptr)
+        {
+            // Side channel read request
+            ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", characteristic);
+
+            char dataBuff[] = "You are reading the Si-Channel TX characteristic";
+            ByteSpan dataSpan((const uint8_t *) dataBuff, sizeof(dataBuff));
+            mBleSideChannel->HandleReadRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), dataSpan);
+            return true;
+        }
+#endif
+        return false;
+    }
+
+    // Helper method for platform to handle side channel MTU updates
+    bool HandleSideChannelMtuUpdate(void * platformEvent, uint8_t connection)
+    {
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        if (mBleSideChannel != nullptr)
+        {
+            mBleSideChannel->UpdateMtu(static_cast<volatile sl_bt_msg_t *>(platformEvent));
+            return true;
+        }
+#endif
+        return false;
+    }
+
+    // Helper method for platform to handle side channel disconnects
+    bool HandleSideChannelDisconnect(uint8_t connection)
+    {
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        if (mBleSideChannel != nullptr)
+        {
+            ChipLogProgress(DeviceLayer, "Disconnect Event for the Side Channel on handle : %d", connection);
+            mBleSideChannel->RemoveConnection(connection);
+            return true;
+        }
+#endif
+        return false;
+    }
+
+    // Helper method for platform to handle side channel CCCD writes
+    CHIP_ERROR HandleSideChannelCccdWrite(void * platformEvent, bool & isNewSubscription)
+    {
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        if (mBleSideChannel != nullptr)
+        {
+            return mBleSideChannel->HandleCCCDWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), isNewSubscription);
+        }
+#endif
+        return CHIP_ERROR_NOT_IMPLEMENTED;
+    }
+
+#if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
+    static void HandleC3ReadRequest(void * platformEvent);
 #endif
 
 private:
     // Allow the BLEManager interface class to delegate method calls to
     // the implementation methods provided by this class.
     friend BLEManager;
-
-#if SLI_SI91X_ENABLE_BLE
-    // rs91x BLE task handling
-    osMessageQueueId_t sBleEventQueue = NULL;
-    static void sl_ble_event_handling_task(void * args);
-    void sl_ble_init();
-    void ProcessEvent(SilabsBleWrapper::BleEvent_t inEvent);
-#endif
 
     // ===== Members that implement the BLEManager internal interface.
 
@@ -220,8 +287,7 @@ private:
     static constexpr uint8_t kUUIDTlvSize       = 4; // 1 byte for length, 1b for type and 2b for the UUID value
     static constexpr uint8_t kDeviceNameTlvSize = (2 + kMaxDeviceNameLength); // 1 byte for length, 1b for type and + device name
 
-#if (SLI_SI91X_ENABLE_BLE)
-    // Declared in BLEChannel.h now.
+    // Unified connection state structure
     struct BLEConState
     {
         uint16_t mtu : 10;
@@ -231,15 +297,19 @@ private:
         uint8_t connectionHandle;
         uint8_t bondingHandle;
     };
-#endif
 
     BLEConState mBleConnections[kMaxConnections];
+    void * mPlatform = nullptr; // BlePlatformInterface* - cast in .cpp to avoid namespace conflicts
     uint8_t mIndConfId[kMaxConnections];
     CHIPoBLEServiceMode mServiceMode;
     BitFlags<Flags> mFlags;
     char mDeviceName[kMaxDeviceNameLength + 1];
     // The advertising set handle allocated from Bluetooth stack.
     uint8_t mAdvertisingSetHandle = 0xff;
+#if SLI_SI91X_ENABLE_BLE
+    // Track if an indication is pending for SiWx (to avoid cancelling timer on spurious confirmations)
+    bool mIndicationInFlight = false;
+#endif
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     PacketBufferHandle c3AdditionalDataBufferHandle;
 #endif
@@ -255,11 +325,7 @@ private:
     CHIP_ERROR EncodeAdditionalDataTlv();
 #endif
 
-#if SLI_SI91X_ENABLE_BLE
-    void HandleRXCharWrite(const SilabsBleWrapper::sl_wfx_msg_t & evt);
-#else
-    void HandleRXCharWrite(volatile sl_bt_msg_t * evt);
-#endif
+    void HandleRXCharWrite(void * platformEvent);
     bool RemoveConnection(uint8_t connectionHandle);
     void AddConnection(uint8_t connectionHandle, uint8_t bondingHandle);
     void StartBleAdvTimeoutTimer(uint32_t aTimeoutInMs);
