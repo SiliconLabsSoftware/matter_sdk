@@ -34,9 +34,6 @@ namespace chip {
 namespace DeviceLayer {
 namespace Internal {
 
-// Forward declaration avoided to prevent namespace conflicts with DeviceLayer::Silabs
-// Using void pointer - cast to BlePlatformInterface* in .cpp where full definition is available
-
 #if !(SLI_SI91X_ENABLE_BLE)
 // EFR32-specific side channel support
 class BLEChannel;
@@ -130,95 +127,13 @@ public:
     uint8_t SideChannelGetConnHandle(void) { return mBleSideChannel->GetConnectionHandle(); }
 #endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 
-    // Helper method for platform to handle side channel connections
-    bool HandleSideChannelConnection(uint8_t connection, uint8_t bonding)
-    {
-#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-        if (mBleSideChannel != nullptr)
-        {
-            ChipLogProgress(DeviceLayer, "Connect Event for SideChannel on handle : %d", connection);
-            mBleSideChannel->AddConnection(connection, bonding);
-            return true;
-        }
-#endif
-        return false;
-    }
-
-    // Helper method for platform to handle side channel writes
-    bool HandleSideChannelWrite(void * platformEvent)
-    {
-#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-        if (mBleSideChannel != nullptr)
-        {
-            uint8_t dataBuff[255] = { 0 };
-            MutableByteSpan dataSpan(dataBuff);
-            mBleSideChannel->HandleWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), dataSpan);
-
-            // Buffered (&Deleted) the following data:
-            ChipLogProgress(DeviceLayer, "Buffered (&Deleted) the following data:");
-            ChipLogByteSpan(DeviceLayer, dataSpan);
-            return true;
-        }
-#endif
-        return false;
-    }
-
-    // Helper method for platform to handle side channel reads
-    bool HandleSideChannelRead(void * platformEvent, uint8_t connection, uint16_t characteristic)
-    {
-#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-        if (mBleSideChannel != nullptr)
-        {
-            // Side channel read request
-            ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", characteristic);
-
-            char dataBuff[] = "You are reading the Si-Channel TX characteristic";
-            ByteSpan dataSpan((const uint8_t *) dataBuff, sizeof(dataBuff));
-            mBleSideChannel->HandleReadRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), dataSpan);
-            return true;
-        }
-#endif
-        return false;
-    }
-
-    // Helper method for platform to handle side channel MTU updates
-    bool HandleSideChannelMtuUpdate(void * platformEvent, uint8_t connection)
-    {
-#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-        if (mBleSideChannel != nullptr)
-        {
-            mBleSideChannel->UpdateMtu(static_cast<volatile sl_bt_msg_t *>(platformEvent));
-            return true;
-        }
-#endif
-        return false;
-    }
-
-    // Helper method for platform to handle side channel disconnects
-    bool HandleSideChannelDisconnect(uint8_t connection)
-    {
-#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-        if (mBleSideChannel != nullptr)
-        {
-            ChipLogProgress(DeviceLayer, "Disconnect Event for the Side Channel on handle : %d", connection);
-            mBleSideChannel->RemoveConnection(connection);
-            return true;
-        }
-#endif
-        return false;
-    }
-
-    // Helper method for platform to handle side channel CCCD writes
-    CHIP_ERROR HandleSideChannelCccdWrite(void * platformEvent, bool & isNewSubscription)
-    {
-#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-        if (mBleSideChannel != nullptr)
-        {
-            return mBleSideChannel->HandleCCCDWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), isNewSubscription);
-        }
-#endif
-        return CHIP_ERROR_NOT_IMPLEMENTED;
-    }
+    // Helper methods for platform to handle side channel operations
+    bool HandleSideChannelConnection(uint8_t connection, uint8_t bonding);
+    bool HandleSideChannelWrite(void * platformEvent);
+    bool HandleSideChannelRead(void * platformEvent, uint8_t connection, uint16_t characteristic);
+    bool HandleSideChannelMtuUpdate(void * platformEvent, uint8_t connection);
+    bool HandleSideChannelDisconnect(uint8_t connection);
+    CHIP_ERROR HandleSideChannelCccdWrite(void * platformEvent, bool & isNewSubscription);
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     static void HandleC3ReadRequest(void * platformEvent);
