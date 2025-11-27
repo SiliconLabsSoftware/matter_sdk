@@ -750,7 +750,7 @@ void BLEManagerImpl::HandleReadEvent(void * platformEvent)
     VerifyOrReturn(mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
     VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
-    
+
     if (unifiedEvent.type == Silabs::BleEventType::kGattReadRequest)
     {
         const auto & readData = unifiedEvent.data.gattReadRequest;

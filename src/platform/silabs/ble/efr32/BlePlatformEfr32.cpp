@@ -171,7 +171,7 @@ CHIP_ERROR BlePlatformEfr32::SendIndication(uint8_t connection, uint16_t charact
     CHIP_ERROR err = MapPlatformError(ret);
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "sl_bt_gatt_server_send_indication failed: 0x%lx (CHIP error: %" CHIP_ERROR_FORMAT ")", 
+        ChipLogError(DeviceLayer, "sl_bt_gatt_server_send_indication failed: 0x%lx (CHIP error: %" CHIP_ERROR_FORMAT ")",
                      ret, err.Format());
     }
     return err;
