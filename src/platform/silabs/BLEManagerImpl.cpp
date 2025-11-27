@@ -41,7 +41,7 @@
 #include <platform/silabs/SiWx/ble/BlePlatformSiWx.h>
 #else
 // EFR32 platform
-#include <platform/silabs/efr32/BlePlatformEfr32.h>
+#include <platform/silabs/ble/efr32/BlePlatformEfr32.h>
 #include "FreeRTOS.h"
 #include "rail.h"
 extern "C" {
@@ -51,7 +51,7 @@ extern "C" {
 #include "sl_bt_stack_config.h"
 #include "sl_bt_stack_init.h"
 #include "gatt_db.h"
-#include <BLEChannel.h>
+#include <ble/efr32/BLEChannel.h>
 #endif
 #include "timers.h"
 #include <ble/Ble.h>
