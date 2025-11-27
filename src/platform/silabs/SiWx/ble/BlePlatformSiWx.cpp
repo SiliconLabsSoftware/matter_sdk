@@ -191,7 +191,7 @@ void SilabsBleWrapper::rsi_ble_on_mtu_event(rsi_ble_event_mtu_t * rsi_ble_mtu)
 void SilabsBleWrapper::rsi_ble_on_gatt_write_event(uint16_t event_id, rsi_ble_event_write_t * rsi_ble_write)
 {
     if (gPlatformInstance)
-    {   
+    {
         // Hex dump of write data
         char hexBuf[256];
         int pos = 0;
@@ -596,7 +596,7 @@ bool BlePlatformSiWx917::CanHandleEvent(uint32_t event)
 bool BlePlatformSiWx917::IsChipoBleCharacteristic(uint16_t characteristic) const
 {
     // Check if characteristic matches RX value, TX value, or TX CCCD handles
-    return (characteristic == mRsiBleRxValueHndl || characteristic == mRsiBleMeasurementHndl || 
+    return (characteristic == mRsiBleRxValueHndl || characteristic == mRsiBleMeasurementHndl ||
             characteristic == mRsiBleGattServerClientConfigHndl);
 }
 
