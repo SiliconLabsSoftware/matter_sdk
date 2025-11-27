@@ -44,11 +44,11 @@ void RefrigeratorAndTemperatureControlledCabinetModeDelegate::HandleChangeToMode
     }
 
     // Disallow transitions between Normal (0) and Rapid Freeze (2)
-    if ((currentMode == ModeNormal && NewMode == ModeRapidFreeze) ||
-        (currentMode == ModeRapidFreeze && NewMode == ModeNormal))
+    if ((currentMode == ModeNormal && NewMode == ModeRapidFreeze) || (currentMode == ModeRapidFreeze && NewMode == ModeNormal))
     {
         response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
-        response.statusText.SetValue(chip::CharSpan::fromCharString("Direct transition between Normal and Rapid Freeze not allowed"));
+        response.statusText.SetValue(
+            chip::CharSpan::fromCharString("Direct transition between Normal and Rapid Freeze not allowed"));
         return;
     }
 
