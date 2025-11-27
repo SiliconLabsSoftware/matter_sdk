@@ -24,11 +24,11 @@
 
 #pragma once
 
-#include <platform/silabs/ble/BlePlatformInterface.h>
 #include "ble_config.h"
 #include "cmsis_os2.h"
 #include <lib/core/CHIPError.h>
 #include <lib/support/Span.h>
+#include <platform/silabs/ble/BlePlatformInterface.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -188,7 +188,7 @@ public:
     CHIP_ERROR SendReadResponse(uint8_t connection, uint16_t characteristic, ByteSpan data) override;
     CHIP_ERROR SendWriteResponse(uint8_t connection, uint16_t characteristic, uint8_t status) override;
     bool HandleNonChipoBleConnection(uint8_t connection, uint8_t advertiser, uint8_t bonding, const uint8_t * address,
-                                      uint8_t chipoBleAdvertiser) override;
+                                     uint8_t chipoBleAdvertiser) override;
     BlePlatformInterface::WriteType HandleChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
     bool HandleNonChipoBleWrite(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
     bool HandleNonChipoBleRead(void * platformEvent, uint8_t connection, uint16_t characteristic) override;
@@ -205,16 +205,16 @@ public:
     static void sl_ble_event_handling_task(void * args);
 
     // Public for initialization by rsi_ble_add_matter_service
-    uint16_t mRsiBleRxValueHndl = 0;
-    uint16_t mRsiBleMeasurementHndl = 0;
+    uint16_t mRsiBleRxValueHndl                = 0;
+    uint16_t mRsiBleMeasurementHndl            = 0;
     uint16_t mRsiBleGattServerClientConfigHndl = 0;
 
 private:
-    BlePlatformSiWx917() = default;
+    BlePlatformSiWx917()  = default;
     ~BlePlatformSiWx917() = default;
 
-    BLEManagerImpl * mManager = nullptr;
-    uint8_t mAdvertisingSetHandle = 0xff;
+    BLEManagerImpl * mManager                = nullptr;
+    uint8_t mAdvertisingSetHandle            = 0xff;
     static constexpr uint8_t kMaxConnections = 8;
     BleConnectionState mConnections[kMaxConnections];
     osMessageQueueId_t sBleEventQueue = nullptr;
