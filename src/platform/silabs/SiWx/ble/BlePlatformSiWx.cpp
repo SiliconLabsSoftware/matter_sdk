@@ -29,7 +29,6 @@
 #include <cstring>
 #include <ble/Ble.h>
 
-// Forward declaration to avoid circular dependency
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
@@ -41,9 +40,6 @@ BLEManagerImpl & BLEMgrImpl();
 
 extern "C" {
 #include <rsi_utils.h>
-}
-
-extern "C" {
 #include <rsi_ble_apis.h>
 }
 
@@ -105,9 +101,6 @@ void rsi_ble_add_matter_service(void)
     }
 
     // Adding custom characteristic declaration to the custom service
-    ChipLogProgress(DeviceLayer, "Adding RX characteristic declaration at handle=%u, value_handle=%u",
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_RX_ATTRIBUTE_HANDLE_LOCATION,
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_RX_VALUE_HANDLE_LOCATION);
     SilabsBleWrapper::rsi_ble_add_char_serv_att(
         new_serv_resp.serv_handler, new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_RX_ATTRIBUTE_HANDLE_LOCATION,
         RSI_BLE_ATT_PROPERTY_WRITE | RSI_BLE_ATT_PROPERTY_READ, // Set read, write, write without response
@@ -123,8 +116,6 @@ void rsi_ble_add_matter_service(void)
         custom_characteristic_RX,
         RSI_BLE_ATT_PROPERTY_WRITE | RSI_BLE_ATT_PROPERTY_READ, // Set read, write, write without response
         data, sizeof(data), ATT_REC_IN_HOST);
-    ChipLogProgress(DeviceLayer, "Added RX char value attribute at handle=%u",
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_RX_VALUE_HANDLE_LOCATION);
 
     constexpr uuid_t custom_characteristic_TX = { .size     = RSI_BLE_CUSTOM_CHARACTERISTIC_TX_SIZE,
                                                   .reserved = { RSI_BLE_CUSTOM_CHARACTERISTIC_TX_RESERVED },
@@ -135,17 +126,11 @@ void rsi_ble_add_matter_service(void)
                                                                     .data4 = { RSI_BLE_CUSTOM_CHARACTERISTIC_TX_VALUE_128_DATA_4 } } } };
 
     // Adding custom characteristic declaration to the custom service
-    ChipLogProgress(DeviceLayer, "Adding TX characteristic declaration at handle=%u, value_handle=%u",
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_ATTRIBUTE_HANDLE_LOCATION,
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION);
     SilabsBleWrapper::rsi_ble_add_char_serv_att(
         new_serv_resp.serv_handler, new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_ATTRIBUTE_HANDLE_LOCATION,
         RSI_BLE_ATT_PROPERTY_WRITE_NO_RESPONSE | RSI_BLE_ATT_PROPERTY_WRITE | RSI_BLE_ATT_PROPERTY_READ |
             RSI_BLE_ATT_PROPERTY_NOTIFY | RSI_BLE_ATT_PROPERTY_INDICATE, // Set read, write, write without response
         new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION, custom_characteristic_TX);
-    ChipLogProgress(DeviceLayer, "Added TX char declaration: measurement_handle=%u, cccd_handle=%u",
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION,
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_GATT_SERVER_CLIENT_HANDLE_LOCATION);
 
     // Adding characteristic value attribute to the service
     if (gPlatformInstance)
@@ -165,18 +150,7 @@ void rsi_ble_add_matter_service(void)
                                                    RSI_BLE_ATT_PROPERTY_READ | RSI_BLE_ATT_PROPERTY_NOTIFY |
                                                    RSI_BLE_ATT_PROPERTY_INDICATE, // Set read, write, write without response
                                                data, sizeof(data), ATT_REC_MAINTAIN_IN_HOST);
-    ChipLogProgress(DeviceLayer, "Added TX char value attribute (maintain in host) for handle=%u",
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION);
-    
-    // Summary of all registered characteristics for diagnostics
-    ChipLogProgress(DeviceLayer, "=== Matter BLE Service Registration Complete ===");
-    ChipLogProgress(DeviceLayer, "Service UUID: 0xFFF6, Start Handle: %u", new_serv_resp.start_handle);
-    ChipLogProgress(DeviceLayer, "RX Char (11:9D:9F:42) - Handle: %u (properties: READ|WRITE)",
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_RX_VALUE_HANDLE_LOCATION);
-    ChipLogProgress(DeviceLayer, "TX Char (12:9D:9F:42) - Handle: %u (properties: READ|WRITE|WRITE_NO_RSP|NOTIFY|INDICATE)",
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_MEASUREMENT_HANDLE_LOCATION);
-    ChipLogProgress(DeviceLayer, "TX CCCD Handle: %u",
-                    new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_TX_GATT_SERVER_CLIENT_HANDLE_LOCATION);
+
 #ifdef CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     // C3 characteristic is of 128 bit UUID format structure - where val128 is of uuid128_t which is composed of uint32_t data1,
     // uint16_t data2, uint16_t data3, uint8_t data4[8];
@@ -203,7 +177,7 @@ void rsi_ble_add_matter_service(void)
 
 } // namespace
 
-// SilabsBleWrapper static method implementations (merged from sl_si91x_ble_init.cpp)
+// SilabsBleWrapper static method implementations
 void SilabsBleWrapper::rsi_ble_on_mtu_event(rsi_ble_event_mtu_t * rsi_ble_mtu)
 {
     if (gPlatformInstance)
@@ -217,11 +191,7 @@ void SilabsBleWrapper::rsi_ble_on_mtu_event(rsi_ble_event_mtu_t * rsi_ble_mtu)
 void SilabsBleWrapper::rsi_ble_on_gatt_write_event(uint16_t event_id, rsi_ble_event_write_t * rsi_ble_write)
 {
     if (gPlatformInstance)
-    {
-        // Diagnostic: log the GATT write event details
-        ChipLogProgress(DeviceLayer, "rsi_ble_on_gatt_write_event: event_id=0x%04X handle=0x%02X length=%u",
-                        event_id, rsi_ble_write->handle[0], rsi_ble_write->length);
-        
+    {   
         // Hex dump of write data
         char hexBuf[256];
         int pos = 0;
@@ -236,7 +206,6 @@ void SilabsBleWrapper::rsi_ble_on_gatt_write_event(uint16_t event_id, rsi_ble_ev
                 hexBuf[pos]   = '\0';
             }
         }
-        ChipLogProgress(DeviceLayer, "rsi_ble_on_gatt_write_event: data=%s", hexBuf);
 
         SilabsBleWrapper::BleEvent_t bleEvent = { .eventType = BleEventType::RSI_BLE_GATT_WRITE_EVENT,
                                                   .eventData = {
@@ -274,8 +243,6 @@ void SilabsBleWrapper::rsi_ble_on_event_indication_confirmation(uint16_t resp_st
 {
     if (gPlatformInstance)
     {
-        ChipLogProgress(DeviceLayer, "rsi_ble_on_event_indication_confirmation: resp_status=0x%04X", resp_status);
-        
         SilabsBleWrapper::BleEvent_t bleEvent = { .eventType = BleEventType::RSI_BLE_GATT_INDICATION_CONFIRMATION,
                                                   .eventData = { .resp_status               = resp_status,
                                                                  .rsi_ble_event_set_att_rsp = *rsi_ble_event_set_att_rsp } };
@@ -429,8 +396,6 @@ CHIP_ERROR BlePlatformSiWx917::ConfigureAdvertising(const BleAdvertisingConfig &
 
     if (config.advData.size() > 0)
     {
-        // Diagnostic dump of advertising bytes
-        ChipLogProgress(DeviceLayer, "ConfigureAdvertising: advData.size=%u", static_cast<unsigned>(config.advData.size()));
         char advHexBuf[128];
         int advPos = 0;
         advHexBuf[0] = '\0';
@@ -444,21 +409,16 @@ CHIP_ERROR BlePlatformSiWx917::ConfigureAdvertising(const BleAdvertisingConfig &
                 advHexBuf[advPos]   = '\0';
             }
         }
-        ChipLogProgress(DeviceLayer, "ConfigureAdvertising: advData=%s", advHexBuf);
 
         result = rsi_ble_set_advertise_data(const_cast<uint8_t *>(config.advData.data()), config.advData.size());
         if (result != RSI_SUCCESS)
         {
-            ChipLogError(DeviceLayer, "rsi_ble_set_advertise_data() failed: %ld", result);
             return MapPlatformError(result);
         }
     }
 
     if (config.responseData.size() > 0)
     {
-        // Diagnostic dump of scan response bytes
-        ChipLogProgress(DeviceLayer, "ConfigureAdvertising: responseData.size=%u",
-                        static_cast<unsigned>(config.responseData.size()));
         char rspHexBuf[128];
         int rspPos = 0;
         rspHexBuf[0] = '\0';
@@ -472,12 +432,10 @@ CHIP_ERROR BlePlatformSiWx917::ConfigureAdvertising(const BleAdvertisingConfig &
                 rspHexBuf[rspPos]   = '\0';
             }
         }
-        ChipLogProgress(DeviceLayer, "ConfigureAdvertising: responseData=%s", rspHexBuf);
 
         result = rsi_ble_set_scan_response_data(const_cast<uint8_t *>(config.responseData.data()), config.responseData.size());
         if (result != RSI_SUCCESS)
         {
-            ChipLogError(DeviceLayer, "rsi_ble_set_scan_response_data() failed: %ld", result);
             return MapPlatformError(result);
         }
     }
@@ -490,9 +448,6 @@ CHIP_ERROR BlePlatformSiWx917::StartAdvertising(uint32_t intervalMin, uint32_t i
     rsi_ble_req_adv_t ble_adv = { 0 };
 
     ble_adv.status = RSI_BLE_START_ADV;
-    // Set advertising type according to requested connectability.  Use the
-    // controller-defined constants but prefer the requested `connectable`
-    // value so that platform state matches CHIP's expectations.
     ble_adv.adv_type = connectable ? UNDIR_CONN : UNDIR_NON_CONN;
     ble_adv.filter_type      = RSI_BLE_ADV_FILTER_TYPE;
     ble_adv.direct_addr_type = RSI_BLE_ADV_DIR_ADDR_TYPE;
@@ -501,10 +456,6 @@ CHIP_ERROR BlePlatformSiWx917::StartAdvertising(uint32_t intervalMin, uint32_t i
     ble_adv.adv_int_max      = intervalMax;
     ble_adv.own_addr_type    = LE_RANDOM_ADDRESS;
     ble_adv.adv_channel_map  = RSI_BLE_ADV_CHANNEL_MAP;
-
-    ChipLogProgress(DeviceLayer, "StartAdvertising: intervalMin=%u intervalMax=%u connectable=%d adv_type=0x%02X",
-                    static_cast<unsigned>(intervalMin), static_cast<unsigned>(intervalMax), static_cast<int>(connectable),
-                    ble_adv.adv_type);
 
     int32_t result = rsi_ble_start_advertising_with_values(&ble_adv);
     if (result != RSI_SUCCESS)
@@ -516,14 +467,6 @@ CHIP_ERROR BlePlatformSiWx917::StartAdvertising(uint32_t intervalMin, uint32_t i
     // SiWx does not expose an advertising handle; use 0 as the implicit handle
     // so the higher-level BLEManager can correlate connections to CHIPoBLE advertising.
     mAdvertisingSetHandle = 0;
-    ChipLogProgress(DeviceLayer, "StartAdvertising: assigned advertising handle=%u", mAdvertisingSetHandle);
-
-    // Query controller state to help diagnose connectability reported by central apps
-    uint8_t dev_state = 0;
-    if (rsi_ble_get_device_state(&dev_state) == RSI_SUCCESS)
-    {
-        ChipLogProgress(DeviceLayer, "rsi_ble_get_device_state: 0x%02X", static_cast<unsigned>(dev_state));
-    }
 
     return CHIP_NO_ERROR;
 }
@@ -543,7 +486,7 @@ CHIP_ERROR BlePlatformSiWx917::SendIndication(uint8_t connection, uint16_t chara
     int32_t status = rsi_ble_indicate_value(mDevAddress, mRsiBleMeasurementHndl, data.size(), const_cast<uint8_t *>(data.data()));
     if (status != RSI_SUCCESS)
     {
-        ChipLogProgress(DeviceLayer, "indication failed with error code %lx ", status);
+        ChipLogError(DeviceLayer, "indication failed with error code %lx ", status);
         return MapPlatformError(status);
     }
     return CHIP_NO_ERROR;
@@ -881,10 +824,6 @@ void BlePlatformSiWx917::sl_ble_init()
     // non-resolvable private address
     randomAddrBLE[(RSI_BLE_ADDR_LENGTH - 1)] |= 0xC0;
 
-    // print random address
-    ChipLogProgress(DeviceLayer, "SiWx917 BLE Random Address: %02X:%02X:%02X:%02X:%02X:%02X", randomAddrBLE[5], randomAddrBLE[4],
-                    randomAddrBLE[3], randomAddrBLE[2], randomAddrBLE[1], randomAddrBLE[0]);
-
     // registering the GAP callback functions
     rsi_ble_gap_register_callbacks(NULL, NULL, SilabsBleWrapper::rsi_ble_on_disconnect_event, NULL, NULL, NULL,
                                    SilabsBleWrapper::rsi_ble_on_enhance_conn_status_event, NULL, NULL, NULL);
@@ -897,7 +836,6 @@ void BlePlatformSiWx917::sl_ble_init()
 
     //  Exchange of GATT info with BLE stack
     rsi_ble_add_matter_service();
-    ChipLogProgress(DeviceLayer, "SiWx917 BLE Matter Service Added");
     rsi_ble_set_random_address_with_value(randomAddrBLE);
     // Notify BLE manager that the SiWx BLE stack has booted and is ready.
     ChipBlePlatform_NotifyStackReady();
@@ -912,7 +850,6 @@ void BlePlatformSiWx917::sl_ble_event_handling_task(void * args)
     }
 
     // This function initialize BLE and start BLE advertisement.
-    ChipLogProgress(DeviceLayer, "SiWx917 BLE Init Task Started");
     platform->sl_ble_init();
 
     // Application event map

@@ -171,17 +171,17 @@ CHIP_ERROR BLEManagerImpl::_Init()
     }
 #endif
 
-// #if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-//     // EFR32: This line hasn't changed but since the BLEConState definition has moved to
-//     // BLEChannel.h, the compiler seems to think that the memset is not valid
-//     // since the size of the struct is not known here.
-// #pragma GCC diagnostic push
-// #pragma GCC diagnostic ignored "-Wmemset-elt-size"
-// #endif
+#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
+    // EFR32: This line hasn't changed but since the BLEConState definition has moved to
+    // BLEChannel.h, the compiler seems to think that the memset is not valid
+    // since the size of the struct is not known here.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmemset-elt-size"
+#endif
     memset(mBleConnections, 0, sizeof(mBleConnections));
-// #if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-// #pragma GCC diagnostic pop
-// #endif
+#if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
+#pragma GCC diagnostic pop
+#endif
     memset(mIndConfId, kUnusedIndex, sizeof(mIndConfId));
     mServiceMode = ConnectivityManager::kCHIPoBLEServiceMode_Enabled;
 
@@ -465,11 +465,11 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
     CHIP_ERROR err;
     uint8_t responseData[MAX_RESPONSE_DATA_LEN];
     uint8_t advData[MAX_ADV_DATA_LEN];
-        uint32_t advLen = 0;
-        uint32_t respLen = 0;
+    uint32_t advLen = 0;
+    uint32_t respLen = 0;
     uint32_t mDeviceNameLength  = 0;
     uint8_t mDeviceIdInfoLength = 0;
-    Silabs::BleAdvertisingConfig advConfig; // Declare early to avoid jump-to-label error
+    Silabs::BleAdvertisingConfig advConfig;
 
     VerifyOrExit((kMaxDeviceNameLength + 1) < UINT8_MAX, err = CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -549,8 +549,6 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
     {
         advConfig.advData = ByteSpan(advData, advLen);
         advConfig.responseData = ByteSpan(responseData, respLen);
-
-        ChipLogProgress(DeviceLayer, "ConfigureAdvertising: adv len=%u resp len=%u", static_cast<unsigned>(advLen), static_cast<unsigned>(respLen));
     }
 #endif
 
@@ -577,7 +575,6 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
     // If already advertising, stop it before changing values.
     if (mFlags.Has(Flags::kAdvertising))
     {
-        // Since DriveBLEState is not called the device may still be advertising; attempt to stop gracefully.
         PLATFORM()->StopAdvertising();
 
         mFlags.Clear(Flags::kAdvertising).Clear(Flags::kRestartAdvertising);
@@ -585,7 +582,6 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
         mAdvertisingSetHandle = 0xff; // invalidate handle so platform reassigns
         CancelBleAdvTimeoutTimer();
 
-        // Post a stopped event to keep state machine observers consistent with legacy behavior.
         ChipDeviceEvent advChange;
         advChange.Type                             = DeviceEventType::kCHIPoBLEAdvertisingChange;
         advChange.CHIPoBLEAdvertisingChange.Result = kActivity_Stopped;
@@ -663,9 +659,7 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
     if (mFlags.Has(Flags::kAdvertising))
     {
         VerifyOrReturnError(mPlatform != nullptr, CHIP_ERROR_INCORRECT_STATE);
-        CHIP_ERROR stopErr = PLATFORM()->StopAdvertising();
-        // Legacy flow treated platform stop failures (e.g. already stopped) as non-fatal; mimic that.
-        (void) stopErr;
+        PLATFORM()->StopAdvertising();
 
         mFlags.Clear(Flags::kAdvertising).Clear(Flags::kRestartAdvertising);
         mFlags.Set(Flags::kFastAdvertisingEnabled, true);
@@ -755,68 +749,167 @@ void BLEManagerImpl::HandleReadEvent(void * platformEvent)
 {
     VerifyOrReturn(mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
-    if (PLATFORM()->ParseEvent(platformEvent, unifiedEvent))
+    VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
+    
+    if (unifiedEvent.type == Silabs::BleEventType::kGattReadRequest)
     {
-        if (unifiedEvent.type == Silabs::BleEventType::kGattReadRequest)
-        {
-            const auto & readData = unifiedEvent.data.gattReadRequest;
+        const auto & readData = unifiedEvent.data.gattReadRequest;
 
-            // Check if this is a CHIPoBLE connection or characteristic
-            if (GetConnectionState(readData.connection) || PLATFORM()->IsChipoBleCharacteristic(readData.characteristic))
-            {
-                // Sends invalid handle if the user attempts to read a value other than C3 on CHIPoBLE
-                // or if the user attempts to read a CHIPoBLE characteristic on the side channel
-                ByteSpan emptyData(nullptr, 0);
-                PLATFORM()->SendReadResponse(readData.connection, readData.characteristic, emptyData);
-                return;
-            }
-            else
-            {
-                // Handle non-CHIPoBLE read (platform-specific logic, e.g., side channel)
-                PLATFORM()->HandleNonChipoBleRead(platformEvent, readData.connection, readData.characteristic);
-            }
+        // Check if this is a CHIPoBLE connection or characteristic
+        if (GetConnectionState(readData.connection) || PLATFORM()->IsChipoBleCharacteristic(readData.characteristic))
+        {
+            // Sends invalid handle if the user attempts to read a value other than C3 on CHIPoBLE
+            // or if the user attempts to read a CHIPoBLE characteristic on the side channel
+            ByteSpan emptyData(nullptr, 0);
+            PLATFORM()->SendReadResponse(readData.connection, readData.characteristic, emptyData);
+            return;
+        }
+        else
+        {
+            // Handle non-CHIPoBLE read (platform-specific logic, e.g., side channel)
+            PLATFORM()->HandleNonChipoBleRead(platformEvent, readData.connection, readData.characteristic);
         }
     }
 }
 #endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 
+// Helper methods for side channel
+bool BLEManagerImpl::HandleSideChannelConnection(uint8_t connection, uint8_t bonding)
+{
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+    if (mBleSideChannel != nullptr)
+    {
+        ChipLogProgress(DeviceLayer, "Connect Event for SideChannel on handle : %d", connection);
+        mBleSideChannel->AddConnection(connection, bonding);
+        return true;
+    }
+#else
+    (void) connection;
+    (void) bonding;
+#endif
+    return false;
+}
+
+bool BLEManagerImpl::HandleSideChannelWrite(void * platformEvent)
+{
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+    if (mBleSideChannel != nullptr)
+    {
+        uint8_t dataBuff[255] = { 0 };
+        MutableByteSpan dataSpan(dataBuff);
+        mBleSideChannel->HandleWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), dataSpan);
+
+        // Buffered (&Deleted) the following data:
+        ChipLogProgress(DeviceLayer, "Buffered (&Deleted) the following data:");
+        ChipLogByteSpan(DeviceLayer, dataSpan);
+        return true;
+    }
+#else
+    (void) platformEvent;
+#endif
+    return false;
+}
+
+bool BLEManagerImpl::HandleSideChannelRead(void * platformEvent, uint8_t connection, uint16_t characteristic)
+{
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+    if (mBleSideChannel != nullptr)
+    {
+        // Side channel read request
+        ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", characteristic);
+
+        char dataBuff[] = "You are reading the Si-Channel TX characteristic";
+        ByteSpan dataSpan((const uint8_t *) dataBuff, sizeof(dataBuff));
+        mBleSideChannel->HandleReadRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), dataSpan);
+        return true;
+    }
+#else
+    (void) platformEvent;
+    (void) connection;
+    (void) characteristic;
+#endif
+    return false;
+}
+
+bool BLEManagerImpl::HandleSideChannelMtuUpdate(void * platformEvent, uint8_t connection)
+{
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+    if (mBleSideChannel != nullptr)
+    {
+        mBleSideChannel->UpdateMtu(static_cast<volatile sl_bt_msg_t *>(platformEvent));
+        return true;
+    }
+#else
+    (void) platformEvent;
+    (void) connection;
+#endif
+    return false;
+}
+
+bool BLEManagerImpl::HandleSideChannelDisconnect(uint8_t connection)
+{
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+    if (mBleSideChannel != nullptr)
+    {
+        ChipLogProgress(DeviceLayer, "Disconnect Event for the Side Channel on handle : %d", connection);
+        mBleSideChannel->RemoveConnection(connection);
+        return true;
+    }
+#else
+    (void) connection;
+#endif
+    return false;
+}
+
+CHIP_ERROR BLEManagerImpl::HandleSideChannelCccdWrite(void * platformEvent, bool & isNewSubscription)
+{
+#if !(SLI_SI91X_ENABLE_BLE) && defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+    if (mBleSideChannel != nullptr)
+    {
+        return mBleSideChannel->HandleCCCDWriteRequest(static_cast<volatile sl_bt_msg_t *>(platformEvent), isNewSubscription);
+    }
+#else
+    (void) platformEvent;
+    (void) isNewSubscription;
+#endif
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+}
+
 void BLEManagerImpl::UpdateMtu(void * platformEvent)
 {
     VerifyOrReturn(mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
-    if (PLATFORM()->ParseEvent(platformEvent, unifiedEvent))
+    VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
+    if (unifiedEvent.type == Silabs::BleEventType::kGattMtuExchanged)
     {
-        if (unifiedEvent.type == Silabs::BleEventType::kGattMtuExchanged)
+        const auto & mtuData = unifiedEvent.data.mtuExchanged;
+        BLEConState * bleConnState = GetConnectionState(mtuData.connection);
+        if (bleConnState != NULL)
         {
-            const auto & mtuData = unifiedEvent.data.mtuExchanged;
-            BLEConState * bleConnState = GetConnectionState(mtuData.connection);
-            if (bleConnState != NULL)
+            // Update platform interface connection state
+            Silabs::BleConnectionState * platformConnState = PLATFORM()->GetConnectionState(mtuData.connection, false);
+            if (platformConnState != nullptr)
             {
-                // Update platform interface connection state
-                Silabs::BleConnectionState * platformConnState = PLATFORM()->GetConnectionState(mtuData.connection, false);
-                if (platformConnState != nullptr)
-                {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
-                    platformConnState->mtu = mtuData.mtu;
+                platformConnState->mtu = mtuData.mtu;
 #pragma GCC diagnostic pop
-                }
+            }
 
-                // bleConnState->MTU is a 10-bit field inside a uint16_t.  We're
-                // assigning to it from a uint16_t, and compilers warn about
-                // possibly not fitting.  There's no way to suppress that warning
-                // via explicit cast; we have to disable the warning around the
-                // assignment.
+            // bleConnState->MTU is a 10-bit field inside a uint16_t.  We're
+            // assigning to it from a uint16_t, and compilers warn about
+            // possibly not fitting.  There's no way to suppress that warning
+            // via explicit cast; we have to disable the warning around the
+            // assignment.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
-                bleConnState->mtu = mtuData.mtu;
+            bleConnState->mtu = mtuData.mtu;
 #pragma GCC diagnostic pop
-            }
-            else
-            {
-                // Handle non-CHIPoBLE MTU update (platform-specific logic, e.g., side channel)
-                PLATFORM()->HandleNonChipoBleMtuUpdate(platformEvent, mtuData.connection);
-            }
+        }
+        else
+        {
+            // Handle non-CHIPoBLE MTU update (platform-specific logic, e.g., side channel)
+            PLATFORM()->HandleNonChipoBleMtuUpdate(platformEvent, mtuData.connection);
         }
     }
 }
@@ -829,8 +922,6 @@ void BLEManagerImpl::HandleBootEvent(void)
 
 extern "C" void ChipBlePlatform_NotifyStackReady()
 {
-    // C-linkage wrapper so platform code without BLEManagerImpl header
-    // can notify the BLE manager that the stack is initialized.
     BLEMgrImpl().HandleBootEvent();
 }
 
@@ -882,30 +973,28 @@ void BLEManagerImpl::HandleConnectEvent(void * platformEvent)
 {
     VerifyOrReturn(mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
-    if (PLATFORM()->ParseEvent(platformEvent, unifiedEvent))
+    VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
+    if (unifiedEvent.type == Silabs::BleEventType::kConnectionOpened)
     {
-        if (unifiedEvent.type == Silabs::BleEventType::kConnectionOpened)
+        const auto & connData = unifiedEvent.data.connectionOpened;
+
+        // Use platform interface to check if this is a CHIPoBLE connection
+        if (PLATFORM()->IsChipoBleConnection(connData.connection, connData.advertiser, mAdvertisingSetHandle))
         {
-            const auto & connData = unifiedEvent.data.connectionOpened;
+            ChipLogProgress(DeviceLayer, "Connect Event for CHIPoBLE on handle : %d", connData.connection);
 
-            // Use platform interface to check if this is a CHIPoBLE connection
-            if (PLATFORM()->IsChipoBleConnection(connData.connection, connData.advertiser, mAdvertisingSetHandle))
-            {
-                ChipLogProgress(DeviceLayer, "Connect Event for CHIPoBLE on handle : %d", connData.connection);
+            // Add to platform interface connection state
+            PLATFORM()->AddConnection(connData.connection, connData.bonding, connData.address);
 
-                // Add to platform interface connection state
-                PLATFORM()->AddConnection(connData.connection, connData.bonding, connData.address);
-
-                // Also add to BLEManagerImpl's connection state for CHIPoBLE-specific tracking
-                AddConnection(connData.connection, connData.bonding);
-                PlatformMgr().ScheduleWork(DriveBLEState, 0);
-            }
-            else
-            {
-                // Handle non-CHIPoBLE connection (platform-specific logic)
-                PLATFORM()->HandleNonChipoBleConnection(connData.connection, connData.advertiser, connData.bonding, connData.address,
-                                                        mAdvertisingSetHandle);
-            }
+            // Also add to BLEManagerImpl's connection state for CHIPoBLE-specific tracking
+            AddConnection(connData.connection, connData.bonding);
+            PlatformMgr().ScheduleWork(DriveBLEState, 0);
+        }
+        else
+        {
+            // Handle non-CHIPoBLE connection (platform-specific logic)
+            PLATFORM()->HandleNonChipoBleConnection(connData.connection, connData.advertiser, connData.bonding, connData.address,
+                                                    mAdvertisingSetHandle);
         }
     }
 }
@@ -950,46 +1039,44 @@ void BLEManagerImpl::HandleConnectionCloseEvent(void * platformEvent)
 {
     VerifyOrReturn(mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
-    if (PLATFORM()->ParseEvent(platformEvent, unifiedEvent))
+    VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
+    if (unifiedEvent.type == Silabs::BleEventType::kConnectionClosed)
     {
-        if (unifiedEvent.type == Silabs::BleEventType::kConnectionClosed)
+        const auto & connData = unifiedEvent.data.connectionClosed;
+
+        // Check if this is a CHIPoBLE connection
+        if (nullptr != GetConnectionState(connData.connection, false))
         {
-            const auto & connData = unifiedEvent.data.connectionClosed;
+            ChipLogProgress(DeviceLayer, "Disconnect Event for CHIPoBLE on handle : %d", connData.connection);
 
-            // Check if this is a CHIPoBLE connection
-            if (nullptr != GetConnectionState(connData.connection, false))
+            // Remove from platform interface
+            PLATFORM()->RemoveConnection(connData.connection);
+
+            if (RemoveConnection(connData.connection))
             {
-                ChipLogProgress(DeviceLayer, "Disconnect Event for CHIPoBLE on handle : %d", connData.connection);
+                ChipDeviceEvent event;
+                event.Type                          = DeviceEventType::kCHIPoBLEConnectionError;
+                event.CHIPoBLEConnectionError.ConId = connData.connection;
 
-                // Remove from platform interface
-                PLATFORM()->RemoveConnection(connData.connection);
+                // Map platform-specific reason codes using platform interface
+                event.CHIPoBLEConnectionError.Reason = PLATFORM()->MapDisconnectReason(connData.reason);
 
-                if (RemoveConnection(connData.connection))
-                {
-                    ChipDeviceEvent event;
-                    event.Type                          = DeviceEventType::kCHIPoBLEConnectionError;
-                    event.CHIPoBLEConnectionError.ConId = connData.connection;
+                ChipLogProgress(DeviceLayer, "BLE GATT connection closed (con %u, reason %u)", connData.connection, connData.reason);
 
-                    // Map platform-specific reason codes using platform interface
-                    event.CHIPoBLEConnectionError.Reason = PLATFORM()->MapDisconnectReason(connData.reason);
+                PlatformMgr().PostEventOrDie(&event);
 
-                    ChipLogProgress(DeviceLayer, "BLE GATT connection closed (con %u, reason %u)", connData.connection, connData.reason);
-
-                    PlatformMgr().PostEventOrDie(&event);
-
-                    // Arrange to re-enable connectable advertising in case it was disabled due to the
-                    // maximum connection limit being reached.
-                    mFlags.Set(Flags::kRestartAdvertising);
-                    mFlags.Set(Flags::kFastAdvertisingEnabled);
-                }
-
-                PlatformMgr().ScheduleWork(DriveBLEState, 0);
+                // Arrange to re-enable connectable advertising in case it was disabled due to the
+                // maximum connection limit being reached.
+                mFlags.Set(Flags::kRestartAdvertising);
+                mFlags.Set(Flags::kFastAdvertisingEnabled);
             }
-            else
-            {
-                // Handle non-CHIPoBLE disconnect (platform-specific logic, e.g., side channel)
-                PLATFORM()->HandleNonChipoBleDisconnect(platformEvent, connData.connection);
-            }
+
+            PlatformMgr().ScheduleWork(DriveBLEState, 0);
+        }
+        else
+        {
+            // Handle non-CHIPoBLE disconnect (platform-specific logic, e.g., side channel)
+            PLATFORM()->HandleNonChipoBleDisconnect(platformEvent, connData.connection);
         }
     }
 }
@@ -998,54 +1085,50 @@ void BLEManagerImpl::HandleWriteEvent(void * platformEvent)
 {
     VerifyOrReturn(mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
-    if (PLATFORM()->ParseEvent(platformEvent, unifiedEvent))
+    VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
+    VerifyOrReturn(unifiedEvent.type == Silabs::BleEventType::kGattWriteRequest);
+    const auto & writeData = unifiedEvent.data.gattWriteRequest;
+
+    // Check if this is a CHIPoBLE connection
+    if (GetConnectionState(writeData.connection))
     {
-        if (unifiedEvent.type == Silabs::BleEventType::kGattWriteRequest)
+        uint16_t attribute = writeData.characteristic;
+        bool do_provision  = chip::DeviceLayer::Silabs::Provision::Manager::GetInstance().IsProvisionRequired();
+        ChipLogProgress(DeviceLayer, "Char Write Req, char : %d", attribute);
+
+        // Use platform interface to determine write type
+        Silabs::BlePlatformInterface::WriteType writeType = PLATFORM()->HandleChipoBleWrite(platformEvent, writeData.connection, attribute);
+
+        if (writeType == Silabs::BlePlatformInterface::WriteType::TX_CCCD)
         {
-            const auto & writeData = unifiedEvent.data.gattWriteRequest;
-
-            // Check if this is a CHIPoBLE connection
-            if (GetConnectionState(writeData.connection))
+            // SiWx: TX CCCD writes need to be routed to HandleTXCharCCCDWrite
+            HandleTXCharCCCDWrite(platformEvent);
+        }
+        else if (writeType == Silabs::BlePlatformInterface::WriteType::RX_CHARACTERISTIC ||
+                    writeType == Silabs::BlePlatformInterface::WriteType::OTHER_CHIPOBLE)
+        {
+            if (do_provision)
             {
-                uint16_t attribute = writeData.characteristic;
-                bool do_provision  = chip::DeviceLayer::Silabs::Provision::Manager::GetInstance().IsProvisionRequired();
-                ChipLogProgress(DeviceLayer, "Char Write Req, char : %d", attribute);
-
-                // Use platform interface to determine write type
-                Silabs::BlePlatformInterface::WriteType writeType = PLATFORM()->HandleChipoBleWrite(platformEvent, writeData.connection, attribute);
-
-                if (writeType == Silabs::BlePlatformInterface::WriteType::TX_CCCD)
-                {
-                    // SiWx: TX CCCD writes need to be routed to HandleTXCharCCCDWrite
-                    HandleTXCharCCCDWrite(platformEvent);
-                }
-                else if (writeType == Silabs::BlePlatformInterface::WriteType::RX_CHARACTERISTIC ||
-                         writeType == Silabs::BlePlatformInterface::WriteType::OTHER_CHIPOBLE)
-                {
-                    if (do_provision)
-                    {
-                        chip::DeviceLayer::Silabs::Provision::Channel::Update(attribute);
-                        chip::DeviceLayer::Silabs::Provision::Manager::GetInstance().Step();
-                    }
-                    else
-                    {
-                        HandleRXCharWrite(platformEvent);
-                    }
-                }
-            }
-            else if (PLATFORM()->IsChipoBleCharacteristic(writeData.characteristic))
-            {
-                // Prevent to write CHIPoBLE Characteristics from other connections
-                // This will fail if the characteristic has the WRITE_NO_RESPONSE property
-                PLATFORM()->SendWriteResponse(writeData.connection, writeData.characteristic, 0x01);
-                return;
+                chip::DeviceLayer::Silabs::Provision::Channel::Update(attribute);
+                chip::DeviceLayer::Silabs::Provision::Manager::GetInstance().Step();
             }
             else
             {
-                // Handle non-CHIPoBLE write (platform-specific logic, e.g., side channel)
-                PLATFORM()->HandleNonChipoBleWrite(platformEvent, writeData.connection, writeData.characteristic);
+                HandleRXCharWrite(platformEvent);
             }
         }
+    }
+    else if (PLATFORM()->IsChipoBleCharacteristic(writeData.characteristic))
+    {
+        // Prevent to write CHIPoBLE Characteristics from other connections
+        // This will fail if the characteristic has the WRITE_NO_RESPONSE property
+        PLATFORM()->SendWriteResponse(writeData.connection, writeData.characteristic, 0x01);
+        return;
+    }
+    else
+    {
+        // Handle non-CHIPoBLE write (platform-specific logic, e.g., side channel)
+        PLATFORM()->HandleNonChipoBleWrite(platformEvent, writeData.connection, writeData.characteristic);
     }
 }
 
@@ -1066,30 +1149,25 @@ void BLEManagerImpl::HandleTXCharCCCDWrite(void * platformEvent)
     if (result.handled)
     {
         BLEConState * bleConnState = GetConnectionState(result.connection);
-        if (bleConnState != NULL)
+        VerifyOrReturn(bleConnState != NULL);
+        ChipDeviceEvent event;
+
+        ChipLogProgress(DeviceLayer, "CHIPoBLE %s received", result.isIndicationEnabled ? "subscribe" : "unsubscribe");
+
+        // If indications are not already enabled for the connection...
+        if (result.isIndicationEnabled && !bleConnState->subscribed)
         {
-            ChipDeviceEvent event;
-
-            ChipLogProgress(DeviceLayer, "CHIPoBLE %s received", result.isIndicationEnabled ? "subscribe" : "unsubscribe");
-
-            if (result.isIndicationEnabled)
-            {
-                // If indications are not already enabled for the connection...
-                if (!bleConnState->subscribed)
-                {
-                    bleConnState->subscribed = true;
-                    event.Type                    = DeviceEventType::kCHIPoBLESubscribe;
-                    event.CHIPoBLESubscribe.ConId = result.connection;
-                    err                           = PlatformMgr().PostEvent(&event);
-                }
-            }
-            else
-            {
-                bleConnState->subscribed      = false;
-                event.Type                    = DeviceEventType::kCHIPoBLEUnsubscribe;
-                event.CHIPoBLEUnsubscribe.ConId = result.connection;
-                err                           = PlatformMgr().PostEvent(&event);
-            }
+            bleConnState->subscribed = true;
+            event.Type                    = DeviceEventType::kCHIPoBLESubscribe;
+            event.CHIPoBLESubscribe.ConId = result.connection;
+            err                           = PlatformMgr().PostEvent(&event);
+        }
+        else
+        {
+            bleConnState->subscribed      = false;
+            event.Type                    = DeviceEventType::kCHIPoBLEUnsubscribe;
+            event.CHIPoBLEUnsubscribe.ConId = result.connection;
+            err                           = PlatformMgr().PostEvent(&event);
         }
     }
     else
@@ -1105,10 +1183,7 @@ void BLEManagerImpl::HandleRXCharWrite(void * platformEvent)
 {
     VerifyOrReturn(mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
-    if (!PLATFORM()->ParseEvent(platformEvent, unifiedEvent))
-    {
-        return;
-    }
+    VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
 
     CHIP_ERROR err = CHIP_NO_ERROR;
 
@@ -1166,10 +1241,7 @@ void BLEManagerImpl::HandleSoftTimerEvent(void * platformEvent)
 #if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
     // EFR32-specific: Soft timer handling
     volatile sl_bt_msg_t * evt = static_cast<volatile sl_bt_msg_t *>(platformEvent);
-    if (evt == nullptr)
-    {
-        return;
-    }
+    VerifyOrReturn(evt != nullptr);
 
     // BLE Manager starts soft timers with timer handles less than kMaxConnections
     // If we receive a callback for unknown timer handle ignore this.
@@ -1253,10 +1325,7 @@ BLEManagerImpl::BLEConState * BLEManagerImpl::GetConnectionState(uint8_t connect
 void BLEManagerImpl::OnSendIndicationTimeout(System::Layer * aLayer, void * appState)
 {
     BLEManagerImpl * bleMgr = static_cast<BLEManagerImpl *>(appState);
-    if (bleMgr == nullptr)
-    {
-        return;
-    }
+    VerifyOrReturn(bleMgr != nullptr);
 
     // Find the connection that has a pending indication
     for (uint8_t i = 0; i < kMaxConnections; i++)
@@ -1311,28 +1380,25 @@ void BLEManagerImpl::HandleC3ReadRequest(void * platformEvent)
 {
     VerifyOrReturn(mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
-    if (PLATFORM()->ParseEvent(platformEvent, unifiedEvent))
+    VerifyOrReturn(PLATFORM()->ParseEvent(platformEvent, unifiedEvent));
+    if (unifiedEvent.type == Silabs::BleEventType::kGattReadRequest)
     {
-        if (unifiedEvent.type == Silabs::BleEventType::kGattReadRequest)
-        {
-            const auto & readData = unifiedEvent.data.gattReadRequest;
+        const auto & readData = unifiedEvent.data.gattReadRequest;
 
 #if !(SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
-            // EFR32-specific: Check for C3 characteristic
-            if (readData.characteristic == gattdb_CHIPoBLEChar_C3)
+        // EFR32-specific: Check for C3 characteristic
+        if (readData.characteristic == gattdb_CHIPoBLEChar_C3)
 #else
-            // SiWx: C3 characteristic is handled via platform interface
-            if (PLATFORM()->IsChipoBleCharacteristic(readData.characteristic))
+        if (PLATFORM()->IsChipoBleCharacteristic(readData.characteristic))
 #endif
+        {
+            ChipLogDetail(DeviceLayer, "Read request received for CHIPoBLEChar_C3");
+            ByteSpan dataSpan(sInstance.c3AdditionalDataBufferHandle->Start(),
+                                sInstance.c3AdditionalDataBufferHandle->DataLength());
+            CHIP_ERROR err = PLATFORM()->SendReadResponse(readData.connection, readData.characteristic, dataSpan);
+            if (err != CHIP_NO_ERROR)
             {
-                ChipLogDetail(DeviceLayer, "Read request received for CHIPoBLEChar_C3");
-                ByteSpan dataSpan(sInstance.c3AdditionalDataBufferHandle->Start(),
-                                  sInstance.c3AdditionalDataBufferHandle->DataLength());
-                CHIP_ERROR err = PLATFORM()->SendReadResponse(readData.connection, readData.characteristic, dataSpan);
-                if (err != CHIP_NO_ERROR)
-                {
-                    ChipLogDetail(DeviceLayer, "Failed to send read response, err:%" CHIP_ERROR_FORMAT, err.Format());
-                }
+                ChipLogDetail(DeviceLayer, "Failed to send read response, err:%" CHIP_ERROR_FORMAT, err.Format());
             }
         }
     }
@@ -1538,10 +1604,10 @@ void BLEManagerImpl::ParseEvent(void * platformEvent)
         {
             HandleC3ReadRequest(platformEvent);
         }
-// #else
-// #if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-//         HandleReadEvent(platformEvent);
-// #endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+#else
+#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+        HandleReadEvent(platformEvent);
+#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 #endif // CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     }
     break;

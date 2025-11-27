@@ -21,10 +21,7 @@
  *          EFR32 platform-specific implementation of BlePlatformInterface
  */
 
-// Include CHIPDeviceLayerInternal.h first to establish platform layer context
 #include <platform/internal/CHIPDeviceLayerInternal.h>
-// Then include BLE headers - BLEManagerImpl.h must come before BlePlatformEfr32.h
-// to ensure BLEManagerImpl type is complete for CRTP template instantiation
 #include <platform/silabs/BLEManagerImpl.h>
 #include <platform/silabs/ble/efr32/BlePlatformEfr32.h>
 #include <lib/support/CodeUtils.h>
@@ -60,8 +57,6 @@ bool isMATTERoBLECharacteristic(uint16_t characteristic)
 
 CHIP_ERROR BlePlatformEfr32::Init()
 {
-    // Check that an address was not already configured at boot.
-    // This covers the init-shutdown-init case to comply with the BLE address change at boot only requirement
     bd_addr temp = { 0 };
     if (!mRandomAddrConfigured && memcmp(&mRandomizedAddr, &temp, sizeof(bd_addr)) == 0)
     {
@@ -103,9 +98,6 @@ CHIP_ERROR BlePlatformEfr32::ConfigureAdvertising(const BleAdvertisingConfig & c
             err = MapPlatformError(ret);
             ChipLogError(DeviceLayer, "sl_bt_advertiser_set_random_address() failed: %" CHIP_ERROR_FORMAT, err.Format());
         });
-        ChipLogDetail(DeviceLayer, "BLE Static Device Address %02X:%02X:%02X:%02X:%02X:%02X", mRandomizedAddr.addr[5],
-                      mRandomizedAddr.addr[4], mRandomizedAddr.addr[3], mRandomizedAddr.addr[2], mRandomizedAddr.addr[1],
-                      mRandomizedAddr.addr[0]);
     }
 
     if (config.advData.size() > 0)
