@@ -99,7 +99,7 @@ static_library("efr32") {
       "${silabs_platform_dir}/ble/efr32/BlePlatformEfr32.cpp",
       "${silabs_platform_dir}/ble/efr32/BlePlatformEfr32.h",
     ]
-    
+
     # Add include directory for BLE headers
     include_dirs = [ "${silabs_platform_dir}" ]
   }

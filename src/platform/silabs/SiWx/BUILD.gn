@@ -41,6 +41,7 @@ source_set("logging") {
 
 static_library("SiWx") {
   sources = [
+    "${silabs_platform_dir}/BLEManagerImpl.cpp",
     "${silabs_platform_dir}/BLEManagerImpl.h",
     "${silabs_platform_dir}/BlePlatformConfig.h",
     "${silabs_platform_dir}/CHIPDevicePlatformConfig.h",
@@ -72,7 +73,6 @@ static_library("SiWx") {
     "../../FreeRTOS/SystemTimeSupport.cpp",
     "../../SingletonConfigurationManager.cpp",
     "SiWxPlatformInterface.h",
-    "${silabs_platform_dir}/BLEManagerImpl.cpp",
   ]
 
   public_deps = [
