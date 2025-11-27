@@ -1382,7 +1382,8 @@ void BLEManagerImpl::HandleC3ReadRequest(void * platformEvent)
 {
     VerifyOrReturn(sInstance.mPlatform != nullptr);
     Silabs::BleEvent unifiedEvent;
-    VerifyOrReturn(static_cast<chip::DeviceLayer::Internal::Silabs::BlePlatformInterface *>(sInstance.mPlatform)->ParseEvent(platformEvent, unifiedEvent));
+    VerifyOrReturn(static_cast<chip::DeviceLayer::Internal::Silabs::BlePlatformInterface *>(sInstance.mPlatform)
+                       ->ParseEvent(platformEvent, unifiedEvent));
     if (unifiedEvent.type == Silabs::BleEventType::kGattReadRequest)
     {
         const auto & readData = unifiedEvent.data.gattReadRequest;
@@ -1391,13 +1392,15 @@ void BLEManagerImpl::HandleC3ReadRequest(void * platformEvent)
         // EFR32-specific: Check for C3 characteristic
         if (readData.characteristic == gattdb_CHIPoBLEChar_C3)
 #else
-        if (static_cast<chip::DeviceLayer::Internal::Silabs::BlePlatformInterface *>(sInstance.mPlatform)->IsChipoBleCharacteristic(readData.characteristic))
+        if (static_cast<chip::DeviceLayer::Internal::Silabs::BlePlatformInterface *>(sInstance.mPlatform)
+                ->IsChipoBleCharacteristic(readData.characteristic))
 #endif
         {
             ChipLogDetail(DeviceLayer, "Read request received for CHIPoBLEChar_C3");
             ByteSpan dataSpan(sInstance.c3AdditionalDataBufferHandle->Start(),
                               sInstance.c3AdditionalDataBufferHandle->DataLength());
-            CHIP_ERROR err = static_cast<chip::DeviceLayer::Internal::Silabs::BlePlatformInterface *>(sInstance.mPlatform)->SendReadResponse(readData.connection, readData.characteristic, dataSpan);
+            CHIP_ERROR err = static_cast<chip::DeviceLayer::Internal::Silabs::BlePlatformInterface *>(sInstance.mPlatform)
+                                 ->SendReadResponse(readData.connection, readData.characteristic, dataSpan);
             if (err != CHIP_NO_ERROR)
             {
                 ChipLogDetail(DeviceLayer, "Failed to send read response, err:%" CHIP_ERROR_FORMAT, err.Format());
