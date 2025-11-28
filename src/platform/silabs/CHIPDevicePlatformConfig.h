@@ -117,11 +117,6 @@
 #define CHIP_DEVICE_CONFIG_ENABLE_IPV4 0
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
-#if SL_ICD_ENABLED
-#define CHIP_DEVICE_CONFIG_ICD_SLOW_POLL_INTERVAL chip::System::Clock::Milliseconds32(300)
-#define CHIP_DEVICE_CONFIG_ICD_FAST_POLL_INTERVAL chip::System::Clock::Milliseconds32(10)
-#endif /* SL_ICD_ENABLED */
-
 #endif /* SL_WIFI */
 
 // ========== Platform-specific Configuration =========
@@ -158,6 +153,16 @@
 #define CHIP_DEVICE_CONFIG_MAX_EVENT_QUEUE_SIZE 25
 
 #define CHIP_DEVICE_CONFIG_EXT_ADVERTISING SL_MATTER_BLE_EXTENDED_ADV
+
+/**
+ * CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+ *
+ * Enable Multi-PAN support for Matter over Thread devices.
+ * When enabled, allows secondary OpenThread instance.
+ */
+#ifndef CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
+#define CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN 0
+#endif // CHIP_DEVICE_CONFIG_ENABLE_MULTI_PAN
 
 /*
     ICD Configuration Defines
