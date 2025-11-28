@@ -43,7 +43,7 @@ void RefrigeratorAndTemperatureControlledCabinetModeDelegate::HandleChangeToMode
         return;
     }
     uint8_t currentMode = gRefrigeratorAndTemperatureControlledCabinetModeInstance->GetCurrentMode();
-    
+
     // Disallow transitions between Normal (0) and Rapid Freeze (2)
     if ((currentMode == ModeNormal && NewMode == ModeRapidFreeze) || (currentMode == ModeRapidFreeze && NewMode == ModeNormal))
     {
