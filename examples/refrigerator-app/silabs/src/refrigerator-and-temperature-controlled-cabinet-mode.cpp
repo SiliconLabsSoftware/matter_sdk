@@ -36,13 +36,14 @@ CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::Init()
 void RefrigeratorAndTemperatureControlledCabinetModeDelegate::HandleChangeToMode(
     uint8_t NewMode, ModeBase::Commands::ChangeToModeResponse::Type & response)
 {
-    // Get current mode from the cluster instance
-    uint8_t currentMode = 0;
-    if (gRefrigeratorAndTemperatureControlledCabinetModeInstance != nullptr)
+    if (gRefrigeratorAndTemperatureControlledCabinetModeDelegate == nullptr)
     {
-        currentMode = gRefrigeratorAndTemperatureControlledCabinetModeInstance->GetCurrentMode();
+        response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
+        response.statusText.SetValue(chip::CharSpan::fromCharString("Delegate not initialized"));
+        return;
     }
-
+    uint8_t currentMode = gRefrigeratorAndTemperatureControlledCabinetModeInstance->GetCurrentMode();
+    
     // Disallow transitions between Normal (0) and Rapid Freeze (2)
     if ((currentMode == ModeNormal && NewMode == ModeRapidFreeze) || (currentMode == ModeRapidFreeze && NewMode == ModeNormal))
     {
