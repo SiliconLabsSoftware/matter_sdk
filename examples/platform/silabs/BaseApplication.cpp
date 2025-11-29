@@ -46,7 +46,7 @@
 
 #if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
 #include <platform/internal/BLEManager.h>
-#include <platform/silabs/efr32/BLEChannelImpl.h>
+#include <platform/silabs/ble/efr32/BLEChannelImpl.h>
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
 #endif // ENABLE_CHIP_SHELL
