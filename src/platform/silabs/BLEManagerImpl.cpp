@@ -51,7 +51,7 @@ extern "C" {
 #include "sl_bt_api.h"
 #include "sl_bt_stack_config.h"
 #include "sl_bt_stack_init.h"
-#include <ble/efr32/BLEChannel.h>
+#include <ble/BLEChannel.h>
 #endif
 #include "timers.h"
 #include <ble/Ble.h>
