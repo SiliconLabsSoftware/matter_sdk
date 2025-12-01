@@ -89,7 +89,7 @@ config("wifi-platform-config") {
   }
   if (use_SiWx917 || wifi_soc) {
     include_dirs += [
-      "${chip_root}/src/platform/silabs/SiWx/ble",
+      "${chip_root}/src/platform/silabs/ble/SiWx",
       "${wifi_sdk_root}/components/device/silabs/si91x/wireless/ble/inc",
     ]
   }

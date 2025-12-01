@@ -86,10 +86,11 @@ static_library("efr32") {
 
   # BLE implementation selection: use SiWx BLE wrapper or local EFR32 implementation
   if (sl_matter_enable_siwx_ble) {
-    public_deps += [ "${silabs_platform_dir}/SiWx/ble:siwx-ble" ]
+    public_deps += [ "${silabs_platform_dir}/ble/SiWx:siwx-ble" ]
     sources += [
-      "${silabs_platform_dir}/SiWx/ble/BlePlatformSiWx.cpp",
-      "${silabs_platform_dir}/SiWx/ble/BlePlatformSiWx.h",
+      "${silabs_platform_dir}/ble/BlePlatformInterface.h",
+      "${silabs_platform_dir}/ble/SiWx/BlePlatformSiWx.cpp",
+      "${silabs_platform_dir}/ble/SiWx/BlePlatformSiWx.h",
     ]
   } else {
     sources += [

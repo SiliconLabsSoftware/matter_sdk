@@ -80,7 +80,7 @@ static_library("SiWx") {
     "${chip_root}/src/platform:platform_base",
 
     # sl_matter_enable_siwx_ble
-    "${silabs_platform_dir}/SiWx/ble:siwx-ble",
+    "${silabs_platform_dir}/ble/SiWx:siwx-ble",
     "${silabs_platform_dir}/platformAbstraction:wisemcu",
   ]
   deps = [

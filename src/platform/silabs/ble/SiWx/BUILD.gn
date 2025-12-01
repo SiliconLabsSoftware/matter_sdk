@@ -25,15 +25,18 @@ config("siwx-ble-config") {
   ]
 
   include_dirs += [
-    "${silabs_platform_dir}/SiWx/ble",
+    "${silabs_platform_dir}",
+    "${silabs_platform_dir}/ble",
+    "${silabs_platform_dir}/ble/SiWx",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/ble/inc",
   ]
 }
 
 source_set("siwx-ble") {
   sources = [
-    "${silabs_platform_dir}/SiWx/ble/BlePlatformSiWx.cpp",
-    "${silabs_platform_dir}/SiWx/ble/BlePlatformSiWx.h",
+    "${silabs_platform_dir}/ble/BlePlatformInterface.h",
+    "${silabs_platform_dir}/ble/SiWx/BlePlatformSiWx.cpp",
+    "${silabs_platform_dir}/ble/SiWx/BlePlatformSiWx.h",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/ble/src/rsi_ble_gap_apis.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/ble/src/rsi_ble_gatt_apis.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/ble/src/rsi_bt_ble.c",

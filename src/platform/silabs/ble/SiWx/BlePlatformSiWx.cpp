@@ -27,7 +27,7 @@
 #include <cstring>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include <platform/silabs/SiWx/ble/BlePlatformSiWx.h>
+#include <platform/silabs/ble/SiWx/BlePlatformSiWx.h>
 
 namespace chip {
 namespace DeviceLayer {

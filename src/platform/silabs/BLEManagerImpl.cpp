@@ -38,7 +38,7 @@
 
 #if (SLI_SI91X_ENABLE_BLE || RSI_BLE_ENABLE)
 // SiWx917 platform
-#include <platform/silabs/SiWx/ble/BlePlatformSiWx.h>
+#include <platform/silabs/ble/SiWx/BlePlatformSiWx.h>
 #else
 // EFR32 platform
 #include "FreeRTOS.h"
