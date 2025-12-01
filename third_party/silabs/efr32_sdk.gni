@@ -99,6 +99,9 @@ declare_args() {
 
   # Delay before the deferred attribute are stored in nvm, default 2000 when the feature is supported
   sl_deferred_attribute_store_delay_ms = 2000
+
+  # Enable Multi-PAN support for Matter over Thread devices
+  sl_openthread_multi_pan_enable = false
 }
 
 examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
@@ -482,6 +485,7 @@ template("efr32_sdk") {
       "SL_MATTER_GN_BUILD=1",
       "SL_MEMORY_POOL_LIGHT=1",
       "SL_OPENTHREAD_STACK_FEATURES_CONFIG_FILE=\"sl_openthread_features_config.h\"",
+      "SL_OPENTHREAD_MULTI_PAN_ENABLE=${sl_openthread_multi_pan_enable}",
       "SL_CSL_TIMEOUT=${sl_ot_csl_timeout_sec}",
       "CIRCULAR_QUEUE_USE_LOCAL_CONFIG_HEADER=1",
       "SL_RAIL_3_API=1",
