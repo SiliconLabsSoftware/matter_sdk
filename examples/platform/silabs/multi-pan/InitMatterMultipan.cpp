@@ -1,8 +1,8 @@
 
 #include "InitMatterMultipan.h"
-#include <openthread/instance.h>
-#include <openthread/cli.h>
 #include <lib/support/CodeUtils.h>
+#include <openthread/cli.h>
+#include <openthread/instance.h>
 
 extern "C" {
 #include "platform-efr32.h"
