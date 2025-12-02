@@ -1,5 +1,5 @@
 
-#include "init_matter_multipan.h"
+#include "InitMatterMultipan.h"
 #include <openthread/instance.h>
 #include <openthread/cli.h>
 #include <lib/support/CodeUtils.h>
@@ -21,7 +21,7 @@ static otInstance * myOtInstance = nullptr;
  * This file initializes a secondary OpenThread instance for Multi-PAN support
  * and initializes the OpenThread CLI to the secondary Thread instance.
  */
-extern "C" void sl_internal_app_init_second_instance()
+extern "C" void InternalAppInitSecondInstance()
 {
     myOtInstance = otInstanceInitMultiple(1);
     if (myOtInstance == nullptr)
@@ -30,7 +30,7 @@ extern "C" void sl_internal_app_init_second_instance()
     }
 }
 
-extern "C" void sl_internal_app_init_cli()
+extern "C" void InternalAppInitCli()
 {
     /* Move CLI to the secondary Thread instance */
     if (myOtInstance == nullptr)
