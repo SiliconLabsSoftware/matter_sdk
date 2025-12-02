@@ -500,6 +500,7 @@ template("efr32_sdk") {
       defines += [
         "OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE=1",
         "OPENTHREAD_CONFIG_MULTIPLE_STATIC_INSTANCE_ENABLE=1",
+        "CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI=1",
       ]
     }
 
