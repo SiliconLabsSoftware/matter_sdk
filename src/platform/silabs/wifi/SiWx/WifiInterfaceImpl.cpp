@@ -855,11 +855,11 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
     VerifyOrReturnError(error == RSI_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error));
 
-    sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
-                                                      .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
-                                                      .listen_interval   = listenInterval };
+    sl_wifi_performance_profile_v2_t wifiProfile = { .profile           = ConvertPowerSaveConfiguration(configuration),
+                                                     .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
+                                                     .listen_interval   = listenInterval };
 
-    sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
+    sl_status_t status = sl_wifi_set_performance_profile_v2(&wifiProfile);
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile_v2 failed: 0x%lx", status));
 
