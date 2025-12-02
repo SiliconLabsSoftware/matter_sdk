@@ -108,8 +108,8 @@
 
 // Multi-PAN support for Matter over Thread devices
 #ifndef SL_OPENTHREAD_MULTI_PAN_ENABLE
-#define SL_OPENTHREAD_MULTI_PAN_ENABLE 0 
-#endif 
+#define SL_OPENTHREAD_MULTI_PAN_ENABLE 0
+#endif
 
 // Use the SiLabs-supplied default platform configuration for remainder
 // of OpenThread config options.

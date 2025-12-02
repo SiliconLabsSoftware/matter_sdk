@@ -9,7 +9,7 @@ extern "C" {
 #if CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
 #include "sl_ot_custom_cli.h"
 void otAppCliInit(otInstance * aInstance);
-#endif // CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI  
+#endif // CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
 }
 
 // Global variable to store the secondary OpenThread instance
