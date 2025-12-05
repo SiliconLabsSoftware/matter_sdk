@@ -2035,9 +2035,9 @@ endpoint 0 {
 
   server cluster OtaSoftwareUpdateRequestor {
     callback attribute defaultOTAProviders;
-    ram      attribute updatePossible default = true;
-    ram      attribute updateState default = Unknown;
-    ram      attribute updateStateProgress;
+    ram      attribute updatePossible default = 1;
+    ram      attribute updateState default = 0;
+    ram      attribute updateStateProgress default = 0;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
