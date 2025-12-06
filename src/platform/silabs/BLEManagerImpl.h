@@ -77,10 +77,11 @@ public:
     CHIP_ERROR StartAdvertising(void);
     CHIP_ERROR StopAdvertising(void);
 
-#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+#if SL_BLE_SIDE_CHANNEL_ENABLED
     void HandleReadEvent(volatile sl_bt_msg_t * evt);
 
     // Side Channel
+    BLEChannel * GetSideChannel() { return mBleSideChannel; }
     CHIP_ERROR InjectSideChannel(BLEChannel * channel);
     CHIP_ERROR SideChannelConfigureAdvertisingDefaultData(void);
     CHIP_ERROR SideChannelConfigureAdvertising(ByteSpan advData, ByteSpan responseData, uint32_t intervalMin, uint32_t intervalMax,
@@ -139,7 +140,7 @@ public:
     BLEConState SideChannelGetConnectionState(void) { return mBleSideChannel->GetConnectionState(); }
     uint8_t SideChannelGetAdvHandle(void) { return mBleSideChannel->GetAdvHandle(); }
     uint8_t SideChannelGetConnHandle(void) { return mBleSideChannel->GetConnectionHandle(); }
-#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+#endif // SL_BLE_SIDE_CHANNEL_ENABLED
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
 #if SLI_SI91X_ENABLE_BLE

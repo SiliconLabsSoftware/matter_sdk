@@ -34,6 +34,10 @@
 
 #include <platform/internal/BLEManager.h>
 
+#if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
+#include <platform/silabs/efr32/BLEChannelImpl.h>
+#endif
+
 #include "FreeRTOS.h"
 #include "rail.h"
 extern "C" {
@@ -122,6 +126,10 @@ bool isMATTERoBLECharacteristic(uint16_t characteristic)
             gattdb_CHIPoBLEChar_C3 == characteristic);
 }
 
+#if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
+BLEChannelImpl sBleSideChannel;
+#endif // SL_USE_INTERNAL_BLE_SIDE_CHANNEL
+
 } // namespace
 
 BLEManagerImpl BLEManagerImpl::sInstance;
@@ -160,6 +168,11 @@ CHIP_ERROR BLEManagerImpl::_Init()
         // Set two MSBs to 11 to properly the address - BLE Static Device Address requirement
         randomizedAddr.addr[5] |= 0xC0;
     }
+
+#if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
+    ReturnErrorOnFailure(sBleSideChannel.Init());
+    BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
+#endif
 
     PlatformMgr().ScheduleWork(DriveBLEState, 0);
     return CHIP_NO_ERROR;
@@ -650,8 +663,8 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
 
     return err;
 }
-#if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
-
+#if SL_BLE_SIDE_CHANNEL_ENABLED
+#if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
 CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertisingDefaultData(void)
 {
     VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
@@ -692,6 +705,7 @@ CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertisingDefaultData(void)
                                0 };
     return mBleSideChannel->ConfigureAdvertising(config);
 }
+#endif // SL_USE_INTERNAL_BLE_SIDE_CHANNEL
 
 CHIP_ERROR BLEManagerImpl::InjectSideChannel(BLEChannel * channel)
 {
@@ -742,7 +756,7 @@ void BLEManagerImpl::HandleReadEvent(volatile sl_bt_msg_t * evt)
         mBleSideChannel->HandleReadRequest(evt, dataSpan);
     }
 }
-#endif // defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
+#endif // SL_BLE_SIDE_CHANNEL_ENABLED
 
 void BLEManagerImpl::UpdateMtu(volatile sl_bt_msg_t * evt)
 {
@@ -1237,20 +1251,13 @@ bool BLEManagerImpl::CanHandleEvent(uint32_t event)
                       event == sl_bt_evt_gatt_server_attribute_value_id || event == sl_bt_evt_gatt_mtu_exchanged_id ||
                       event == sl_bt_evt_gatt_server_characteristic_status_id || event == sl_bt_evt_system_soft_timer_id ||
                       event == sl_bt_evt_gatt_server_user_read_request_id || event == sl_bt_evt_connection_remote_used_features_id);
-    VerifyOrReturnValue(canHandle == false, true);
-
-    if (mBleSideChannel != nullptr)
-    {
-        // The side channel and the CHIPoBLE service support the same events, but we give the possibility for implementation of the
-        // side channel to support more.
-        canHandle = canHandle || mBleSideChannel->CanHandleEvent(event);
-    }
 
     return canHandle;
 }
 
 void BLEManagerImpl::ParseEvent(volatile sl_bt_msg_t * evt)
 {
+    VerifyOrReturn(CanHandleEvent(SL_BT_MSG_ID(evt->header)));
     // As this is running in a separate thread, and we determined this is a matter related event,
     // we need to block CHIP from operating, until the events are handled.
     // Todo: Move inside the MatteroBLE channel once created and verify if lock is necessary for other channels
@@ -1370,10 +1377,16 @@ extern "C" void zigbee_bt_on_event(volatile sl_bt_msg_t * evt);
 // TODO: Move this to matter_bl_event.cpp and update gn and slc build files
 extern "C" void sl_bt_on_event(sl_bt_msg_t * evt)
 {
-    if (chip::DeviceLayer::Internal::BLEMgrImpl().CanHandleEvent(SL_BT_MSG_ID(evt->header)))
+    chip::DeviceLayer::Internal::BLEMgrImpl().ParseEvent(evt);
+
+#if SL_BLE_SIDE_CHANNEL_ENABLED
+    if (chip::DeviceLayer::Internal::BLEMgrImpl().GetSideChannel() != nullptr)
     {
-        chip::DeviceLayer::Internal::BLEMgrImpl().ParseEvent(evt);
+        // The side channel may process events directly.
+        chip::DeviceLayer::Internal::BLEMgrImpl().GetSideChannel()->ParseEvent(evt);
     }
+#endif
+
 #ifdef SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT
     zigbee_bt_on_event(evt);
 #endif // SL_CATALOG_MATTER_BLE_DMP_TEST_PRESENT

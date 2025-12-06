@@ -197,6 +197,34 @@ CHIP_ERROR BLEChannelImpl::StopAdvertising(void)
     return CHIP_NO_ERROR;
 }
 
+bool BLEChannelImpl::CanHandleEvent(uint32_t event)
+{
+    return (event == sl_bt_evt_system_boot_id || event == sl_bt_evt_gatt_server_user_read_request_id);
+}
+
+void BLEChannelImpl::ParseEvent(volatile sl_bt_msg_t * evt)
+{
+    VerifyOrReturn(CanHandleEvent(SL_BT_MSG_ID(evt->header)));
+    switch (SL_BT_MSG_ID(evt->header))
+    {
+    case sl_bt_evt_system_boot_id: {
+        ChipLogProgress(DeviceLayer, "BLE boot event received by SideChannel");
+    }
+    break;
+    case sl_bt_evt_gatt_server_user_read_request_id: {
+
+        ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", evt->data.evt_gatt_server_user_read_request.characteristic);
+
+        char dataBuff[] = "You are reading the Si-Channel TX characteristic";
+        ByteSpan dataSpan((const uint8_t *) dataBuff, sizeof(dataBuff));
+        HandleReadRequest(evt, dataSpan);
+    }
+    break;
+    default: {
+    }
+    }
+}
+
 void BLEChannelImpl::AddConnection(uint8_t connectionHandle, uint8_t bondingHandle)
 {
     // TODO: Verify if we want to allow multiple connections at once, this is tied to the Endpoint usage as well
