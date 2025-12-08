@@ -36,7 +36,7 @@
 
 #if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
 #include <platform/silabs/efr32/BLEChannelImpl.h>
-#endif //SL_USE_INTERNAL_BLE_SIDE_CHANNEL
+#endif // SL_USE_INTERNAL_BLE_SIDE_CHANNEL
 
 #include "FreeRTOS.h"
 #include "rail.h"
