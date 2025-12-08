@@ -448,7 +448,7 @@ sl_status_t SetWifiConfigurations()
     VerifyOrReturnError(status == SL_STATUS_OK, status,
                         ChipLogError(DeviceLayer, "sl_wifi_set_advanced_client_configuration failed: 0x%lx", status));
 
-#if (SL_MATTER_GN_BUILD == 0)                        
+#if (SL_MATTER_GN_BUILD == 0)
     status = sl_wifi_set_join_configuration(
 #else
     status = sl_si91x_set_join_configuration(
