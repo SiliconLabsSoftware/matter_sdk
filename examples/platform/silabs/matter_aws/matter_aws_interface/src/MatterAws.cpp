@@ -174,7 +174,7 @@ static void MatterAwsTaskFn(void * args)
         VerifyOrExit(ERR_OK == ret, ChipLogError(AppServer, "[MATTER_AWS] failed to configure SSL to mqtt transport"));
     }
 
-    ret = MQTT_Transport_Connect(transport, hostname, MATTER_AWS_SERVER_PORT, MatterAwsTcpConnectCb);
+    ret = MQTT_Transport_Connect(transport, hostname, hostname_length, MATTER_AWS_SERVER_PORT, MatterAwsTcpConnectCb);
     VerifyOrExit(ERR_OK == ret, ChipLogError(AppServer, "[MATTER_AWS] transport connection failed: %d", ret));
 
     while (!end_loop)
