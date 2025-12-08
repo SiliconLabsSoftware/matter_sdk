@@ -140,13 +140,13 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t *transP,
     transP->hostname = NULL;
   }
   /* Allocate and copy hostname with explicit length */
-  size_t alloc_len = hostLen + 1;  /* +1 for null terminator */
+  size_t alloc_len = hostLen + 1; /* +1 for null terminator */
   transP->hostname = (char *)pvPortMalloc(alloc_len);
   if (transP->hostname != NULL) {
     memcpy(transP->hostname, host, hostLen);
-    transP->hostname[hostLen] = '\0';  /* Explicitly null-terminate */
+    transP->hostname[hostLen] = '\0'; /* Explicitly null-terminate */
   } else {
-    SILABS_LOG("MQTT transport connect failed: hostname allocation failed");
+    TRANSPORT_DEBUGF(("MQTT transport connect failed: hostname allocation failed"));
     return ERR_MEM;
   }
   if ((dns_ret = dns_gethostbyname(host, &ipaddr, dns_callback, transP)) != ERR_OK) {
