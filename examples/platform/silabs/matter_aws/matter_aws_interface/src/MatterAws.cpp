@@ -144,7 +144,7 @@ static void MatterAwsTaskFn(void * args)
 {
     /* Local flag to control the task loop - reset each time the task starts */
     static bool end_loop = false;
-    end_loop = false;
+    end_loop             = false;
 
     /* get MQTT client handle */
     err_t ret;
