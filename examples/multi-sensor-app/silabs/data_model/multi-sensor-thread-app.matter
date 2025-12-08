@@ -1967,8 +1967,8 @@ cluster OccupancySensing = 1030 {
   }
 
   readonly attribute OccupancyBitmap occupancy = 0;
-  readonly attribute OccupancySensorTypeEnum occupancySensorType = 1;
-  readonly attribute OccupancySensorTypeBitmap occupancySensorTypeBitmap = 2;
+  readonly attribute OccupancySensorTypeEnum occupancySensorType = 0;
+  readonly attribute OccupancySensorTypeBitmap occupancySensorTypeBitmap = 1;
   attribute access(write: manage) optional int16u holdTime = 3;
   readonly attribute optional HoldTimeLimitsStruct holdTimeLimits = 4;
   attribute access(write: manage) optional int16u PIROccupiedToUnoccupiedDelay = 16;
@@ -2355,7 +2355,7 @@ endpoint 1 {
   server cluster OccupancySensing {
     ram      attribute occupancy;
     ram      attribute occupancySensorType default = 0;
-    ram      attribute occupancySensorTypeBitmap default = 0x04;
+    ram      attribute occupancySensorTypeBitmap default = 0x01;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
