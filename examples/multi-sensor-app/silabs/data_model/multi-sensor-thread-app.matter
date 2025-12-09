@@ -1967,8 +1967,8 @@ cluster OccupancySensing = 1030 {
   }
 
   readonly attribute OccupancyBitmap occupancy = 0;
-  readonly attribute OccupancySensorTypeEnum occupancySensorType = 0;
-  readonly attribute OccupancySensorTypeBitmap occupancySensorTypeBitmap = 1;
+  readonly attribute OccupancySensorTypeEnum occupancySensorType = 1;
+  readonly attribute OccupancySensorTypeBitmap occupancySensorTypeBitmap = 2;
   attribute access(write: manage) optional int16u holdTime = 3;
   readonly attribute optional HoldTimeLimitsStruct holdTimeLimits = 4;
   attribute access(write: manage) optional int16u PIROccupiedToUnoccupiedDelay = 16;
