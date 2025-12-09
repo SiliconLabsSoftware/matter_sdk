@@ -63,21 +63,13 @@ jobs:
 
         container:
             image: ghcr.io/project-chip/chip-build:174
+            volumes:
+                - "/:/runner-root-volume"
             options: >-
                 --privileged --sysctl "net.ipv6.conf.all.disable_ipv6=0
                 net.ipv4.conf.all.forwarding=1 net.ipv6.conf.all.forwarding=1"
 
         steps:
-            - name: Free disk space
-              uses: jlumbroso/free-disk-space@main
-              with:
-                  tool-cache: false
-                  android: true
-                  dotnet: true
-                  haskell: true
-                  large-packages: false
-                  docker-images: false
-                  swap-storage: false
             - name: Checkout
               uses: actions/checkout@v5
             # To use act like:
@@ -607,6 +599,8 @@ jobs:
 
         container:
             image: ghcr.io/project-chip/chip-build:174
+            volumes:
+                - "/:/runner-root-volume"
             options: >-
                 --privileged
                 --sysctl net.ipv6.conf.all.disable_ipv6=0
@@ -614,16 +608,6 @@ jobs:
                 --sysctl net.ipv6.conf.all.forwarding=0
 
         steps:
-            - name: Free disk space
-              uses: jlumbroso/free-disk-space@main
-              with:
-                  tool-cache: false
-                  android: true
-                  dotnet: true
-                  haskell: true
-                  large-packages: false
-                  docker-images: false
-                  swap-storage: false
             - name: Checkout
               uses: actions/checkout@v5
             - name: Checkout submodules & Bootstrap
