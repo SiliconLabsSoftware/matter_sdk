@@ -68,6 +68,16 @@ jobs:
                 net.ipv4.conf.all.forwarding=1 net.ipv6.conf.all.forwarding=1"
 
         steps:
+            - name: Free disk space
+              uses: jlumbroso/free-disk-space@main
+              with:
+                  tool-cache: false
+                  android: true
+                  dotnet: true
+                  haskell: true
+                  large-packages: false
+                  docker-images: false
+                  swap-storage: false
             - name: Checkout
               uses: actions/checkout@v5
             # To use act like:
@@ -79,9 +89,6 @@ jobs:
             - uses: actions/checkout@v5
               if: ${{ env.ACT }}
               name: Checkout (ACT for local build)
-            - name: Free disk space
-              run: |
-                  rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
             - name: Checkout submodules & Bootstrap
               uses: ./.github/actions/checkout-submodules-and-bootstrap
               with:
@@ -607,11 +614,18 @@ jobs:
                 --sysctl net.ipv6.conf.all.forwarding=0
 
         steps:
+            - name: Free disk space
+              uses: jlumbroso/free-disk-space@main
+              with:
+                  tool-cache: false
+                  android: true
+                  dotnet: true
+                  haskell: true
+                  large-packages: false
+                  docker-images: false
+                  swap-storage: false
             - name: Checkout
               uses: actions/checkout@v5
-            - name: Free disk space
-              run: |
-                  rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
             - name: Checkout submodules & Bootstrap
               uses: ./.github/actions/checkout-submodules-and-bootstrap
               with:
