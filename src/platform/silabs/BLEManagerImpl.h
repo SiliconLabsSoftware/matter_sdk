@@ -49,6 +49,13 @@ class BLEManagerImpl final : public BLEManager, private BleLayer, private BlePla
 {
 
 public:
+    enum class EventFilter : uint8_t
+    {
+        UnprocessedEvent,
+        SharableEvent,
+        MatterReservedEvent
+    };
+
     void HandleBootEvent(void);
 
 #if SLI_SI91X_ENABLE_BLE
@@ -63,22 +70,22 @@ public:
     void HandleSoftTimerEvent(void);
     int32_t SendBLEAdvertisementCommand(void);
 #else
-    void HandleConnectEvent(volatile sl_bt_msg_t * evt);
-    void HandleConnectParams(volatile sl_bt_msg_t * evt);
-    void HandleConnectionCloseEvent(volatile sl_bt_msg_t * evt);
-    void HandleWriteEvent(volatile sl_bt_msg_t * evt);
-    void UpdateMtu(volatile sl_bt_msg_t * evt);
-    void HandleTxConfirmationEvent(BLE_CONNECTION_OBJECT conId);
-    void HandleTXCharCCCDWrite(volatile sl_bt_msg_t * evt);
-    void HandleSoftTimerEvent(volatile sl_bt_msg_t * evt);
+    EventFilter HandleConnectEvent(volatile sl_bt_msg_t * evt);
+    EventFilter HandleConnectParams(volatile sl_bt_msg_t * evt);
+    EventFilter HandleConnectionCloseEvent(volatile sl_bt_msg_t * evt);
+    EventFilter HandleWriteEvent(volatile sl_bt_msg_t * evt);
+    EventFilter UpdateMtu(volatile sl_bt_msg_t * evt);
+    EventFilter HandleTxConfirmationEvent(BLE_CONNECTION_OBJECT conId);
+    EventFilter HandleTXCharCCCDWrite(volatile sl_bt_msg_t * evt);
+    EventFilter HandleSoftTimerEvent(volatile sl_bt_msg_t * evt);
     bool CanHandleEvent(uint32_t event);
-    void ParseEvent(volatile sl_bt_msg_t * evt);
+    EventFilter ParseEvent(volatile sl_bt_msg_t * evt);
 #endif // SLI_SI91X_ENABLE_BLE
     CHIP_ERROR StartAdvertising(void);
     CHIP_ERROR StopAdvertising(void);
 
 #if SL_BLE_SIDE_CHANNEL_ENABLED
-    void HandleReadEvent(volatile sl_bt_msg_t * evt);
+    EventFilter HandleReadEvent(volatile sl_bt_msg_t * evt);
 
     // Side Channel
     BLEChannel * GetSideChannel() { return mBleSideChannel; }
@@ -146,7 +153,7 @@ public:
 #if SLI_SI91X_ENABLE_BLE
     static void HandleC3ReadRequest(const SilabsBleWrapper::sl_wfx_msg_t & rsi_ble_read_req);
 #else
-    static void HandleC3ReadRequest(volatile sl_bt_msg_t * evt);
+    static EventFilter HandleC3ReadRequest(volatile sl_bt_msg_t * evt);
 #endif
 #endif
 
