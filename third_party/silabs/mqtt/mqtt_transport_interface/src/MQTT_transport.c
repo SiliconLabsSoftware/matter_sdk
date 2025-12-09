@@ -129,7 +129,7 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t *transP,
   }
   /* Validate hostname length to prevent excessive allocation */
   if (hostLen > MQTT_TRANSPORT_MAX_HOSTNAME_LEN) {
-    SILABS_LOG("MQTT transport connect failed: hostname too long");
+    TRANSPORT_DEBUGF(("MQTT transport connect failed: hostname too long"));
     return ERR_ARG;
   }
   transP->sync_sem = xSemaphoreCreateCounting(1, 0);
