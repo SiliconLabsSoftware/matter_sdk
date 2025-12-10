@@ -217,39 +217,74 @@ CHIP_ERROR BLEChannelImpl::StopAdvertising(void)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR BLEChannelImpl::NotifyCharacteristic(uint16_t characteristicHandle)
+bool BLEChannelImpl::CanHandleEvent(uint32_t event)
 {
-    MutableByteSpan dataSpan;
-    ReturnErrorOnFailure(GetCharacteristicValue(characteristicHandle, dataSpan));
-    sl_status_t ret = sl_bt_gatt_server_send_notification(mConnectionState.connectionHandle, characteristicHandle, dataSpan.size(),
-                                                          dataSpan.data());
-    return MapBLEError(ret);
+    return (event == sl_bt_evt_system_boot_id || event == sl_bt_evt_connection_opened_id ||
+            event == sl_bt_evt_connection_closed_id || event == sl_bt_evt_gatt_mtu_exchanged_id ||
+            event == sl_bt_evt_gatt_server_attribute_value_id || event == sl_bt_evt_gatt_server_user_read_request_id ||
+            event == sl_bt_evt_gatt_server_characteristic_status_id);
 }
 
-CHIP_ERROR BLEChannelImpl::IndicateCharacteristic(uint16_t characteristicHandle)
+void BLEChannelImpl::ParseEvent(volatile sl_bt_msg_t * evt)
 {
-    MutableByteSpan dataSpan;
-    ReturnErrorOnFailure(GetCharacteristicValue(characteristicHandle, dataSpan));
-    sl_status_t ret = sl_bt_gatt_server_send_indication(mConnectionState.connectionHandle, characteristicHandle, dataSpan.size(),
-                                                        dataSpan.data());
-    return MapBLEError(ret);
-}
-void BLEChannelImpl::HandleIndicationTimeout(volatile sl_bt_msg_t * evt)
-{
-    sl_bt_evt_gatt_server_indication_timeout_t * indicationTimeout =
-        (sl_bt_evt_gatt_server_indication_timeout_t *) &(evt->data.evt_gatt_server_indication_timeout);
+    VerifyOrReturn(CanHandleEvent(SL_BT_MSG_ID(evt->header)));
+    switch (SL_BT_MSG_ID(evt->header))
+    {
+    case sl_bt_evt_system_boot_id: {
+        ChipLogProgress(DeviceLayer, "BLE boot event received by SideChannel");
+    }
+    break;
+    case sl_bt_evt_connection_opened_id: {
+        sl_bt_evt_connection_opened_t * conn_evt = (sl_bt_evt_connection_opened_t *) &(evt->data);
+        ChipLogProgress(DeviceLayer, "Connect Event for SideChannel on handle : %d", conn_evt->connection);
+        AddConnection(conn_evt->connection, conn_evt->bonding);
+    }
+    break;
+    case sl_bt_evt_connection_closed_id: {
+        sl_bt_evt_connection_closed_t * conn_evt = (sl_bt_evt_connection_closed_t *) &(evt->data);
+        ChipLogProgress(DeviceLayer, "Disconnect Event for the Side Channel on handle : %d", conn_evt->connection);
+        RemoveConnection(conn_evt->connection);
+    }
+    break;
+    case sl_bt_evt_gatt_mtu_exchanged_id: {
+        UpdateMtu(evt);
+    }
+    break;
+    case sl_bt_evt_gatt_server_attribute_value_id: {
+        uint8_t dataBuff[255] = { 0 };
+        MutableByteSpan dataSpan(dataBuff);
+        HandleWriteRequest(evt, dataSpan);
 
-    VerifyOrReturn(indicationTimeout->connection == mConnectionState.connectionHandle);
-    ChipLogProgress(DeviceLayer, "Indication timeout for connection: %d", indicationTimeout->connection);
-}
-void BLEChannelImpl::HandleIndicationConfirmation(volatile sl_bt_msg_t * evt)
-{
-    sl_bt_evt_gatt_server_characteristic_status_t * indicationConfirmation =
-        (sl_bt_evt_gatt_server_characteristic_status_t *) &(evt->data.evt_gatt_server_characteristic_status);
+        // Buffered (&Deleted) the following data:
+        ChipLogProgress(DeviceLayer, "Buffered (&Deleted) the following data:");
+        ChipLogByteSpan(DeviceLayer, dataSpan);
+    }
+    break;
+    case sl_bt_evt_gatt_server_characteristic_status_id: {
+        sl_bt_gatt_server_characteristic_status_flag_t StatusFlags;
 
-    VerifyOrReturn(indicationConfirmation->connection == mConnectionState.connectionHandle);
-    ChipLogProgress(DeviceLayer, "Indication confirmation for connection: %d characteristic: %d",
-                    indicationConfirmation->connection, indicationConfirmation->characteristic);
+        StatusFlags = (sl_bt_gatt_server_characteristic_status_flag_t) evt->data.evt_gatt_server_characteristic_status.status_flags;
+        if (StatusFlags != sl_bt_gatt_server_confirmation)
+        {
+            bool isNewSubscription = false;
+            LogErrorOnFailure(HandleCCCDWriteRequest(evt, isNewSubscription));
+        }
+    }
+    break;
+    case sl_bt_evt_gatt_server_user_read_request_id: {
+
+        ChipLogProgress(DeviceLayer, "Char Read Req, char : %d", evt->data.evt_gatt_server_user_read_request.characteristic);
+
+        char dataBuff[] = "You are reading the Si-Channel TX characteristic";
+        ByteSpan dataSpan((const uint8_t *) dataBuff, sizeof(dataBuff));
+        HandleReadRequest(evt, dataSpan);
+    }
+    break;
+    default: {
+        ChipLogProgress(DeviceLayer, "BLESideChannel Unknown Event id = %08" PRIx32, SL_BT_MSG_ID(evt->header));
+        break;
+    }
+    }
 }
 
 void BLEChannelImpl::AddConnection(uint8_t connectionHandle, uint8_t bondingHandle)
