@@ -286,7 +286,7 @@ template("siwx917_sdk") {
       defines += [ "CHIP_DEVICE_CONFIG_ENABLE_IPV4=1" ]
     }
     if (invoker.enable_matter_aws) {
-      _include_dirs += [ "${chip_root}/third_party/silabs/mqtt/stack" ]
+      _include_dirs += [ "${chip_root}/src/platform/silabs/mqtt/stack" ]
     }
 
     if (chip_enable_icd_server || !disable_lcd) {
@@ -877,7 +877,7 @@ template("siwx917_sdk") {
         "${_mbedtls_root}/library/ssl_tls12_client.c",
         "${_mbedtls_root}/library/ssl_tls12_server.c",
         "${_mbedtls_root}/library/x509.c",
-        "${silabs_sdk_build_root}/mqtt/stack/mqtt.c",
+        "${chip_root}/src/platform/silabs/mqtt/stack/mqtt.c",
       ]
     }
 
