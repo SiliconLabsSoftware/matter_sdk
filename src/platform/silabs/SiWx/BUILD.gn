@@ -41,6 +41,7 @@ source_set("logging") {
 
 static_library("SiWx") {
   sources = [
+    "${silabs_platform_dir}/BLEManagerImpl.cpp",
     "${silabs_platform_dir}/BLEManagerImpl.h",
     "${silabs_platform_dir}/BlePlatformConfig.h",
     "${silabs_platform_dir}/CHIPDevicePlatformConfig.h",
@@ -72,9 +73,6 @@ static_library("SiWx") {
     "../../FreeRTOS/SystemTimeSupport.cpp",
     "../../SingletonConfigurationManager.cpp",
     "SiWxPlatformInterface.h",
-    "ble/BLEManagerImpl.cpp",
-    "ble/sl_si91x_ble_init.cpp",
-    "ble/sl_si91x_ble_init.h",
   ]
 
   public_deps = [
@@ -82,7 +80,7 @@ static_library("SiWx") {
     "${chip_root}/src/platform:platform_base",
 
     # sl_matter_enable_siwx_ble
-    "${silabs_platform_dir}/SiWx/ble:siwx-ble",
+    "${silabs_platform_dir}/ble/SiWx:siwx-ble",
     "${silabs_platform_dir}/platformAbstraction:wisemcu",
   ]
   deps = [

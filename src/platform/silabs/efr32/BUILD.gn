@@ -78,21 +78,31 @@ static_library("efr32") {
     "${silabs_platform_dir}/platformAbstraction:gsdk",
   ]
 
+  # BLE implementation: unified BLEManagerImpl with platform-specific implementations
+  sources += [
+    "${silabs_platform_dir}/BLEManagerImpl.cpp",
+    "${silabs_platform_dir}/ble/BlePlatformInterface.h",
+  ]
+
   # BLE implementation selection: use SiWx BLE wrapper or local EFR32 implementation
   if (sl_matter_enable_siwx_ble) {
-    public_deps += [ "${silabs_platform_dir}/SiWx/ble:siwx-ble" ]
+    public_deps += [ "${silabs_platform_dir}/ble/SiWx:siwx-ble" ]
     sources += [
-      "${silabs_platform_dir}/SiWx/ble/BLEManagerImpl.cpp",
-      "${silabs_platform_dir}/SiWx/ble/sl_si91x_ble_init.cpp",
-      "${silabs_platform_dir}/SiWx/ble/sl_si91x_ble_init.h",
+      "${silabs_platform_dir}/ble/BlePlatformInterface.h",
+      "${silabs_platform_dir}/ble/SiWx/BlePlatformSiWx.cpp",
+      "${silabs_platform_dir}/ble/SiWx/BlePlatformSiWx.h",
     ]
   } else {
     sources += [
-      "BLEChannel.h",
-      "BLEChannelImpl.cpp",
-      "BLEChannelImpl.h",
-      "BLEManagerImpl.cpp",
+      "${silabs_platform_dir}/ble/BLEChannel.h",
+      "${silabs_platform_dir}/ble/BLEChannelImpl.h",
+      "${silabs_platform_dir}/ble/efr32/BLEChannelImpl.cpp",
+      "${silabs_platform_dir}/ble/efr32/BlePlatformEfr32.cpp",
+      "${silabs_platform_dir}/ble/efr32/BlePlatformEfr32.h",
     ]
+
+    # Add include directory for BLE headers
+    include_dirs = [ "${silabs_platform_dir}" ]
   }
   deps = [
     "${chip_root}/src/app/common:ids",

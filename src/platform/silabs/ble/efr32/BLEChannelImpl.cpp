@@ -15,7 +15,7 @@
  *
  ******************************************************************************/
 
-#include "BLEChannelImpl.h"
+#include <platform/silabs/ble/BLEChannelImpl.h>
 #include <crypto/RandUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>

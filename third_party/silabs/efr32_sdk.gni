@@ -1133,7 +1133,7 @@ template("efr32_sdk") {
 
     if (sl_matter_enable_siwx_ble) {
       public_configs +=
-          [ "${chip_root}/src/platform/silabs/SiWx/ble:siwx-ble-config" ]
+          [ "${chip_root}/src/platform/silabs/ble/SiWx:siwx-ble-config" ]
     }
   }
 }
