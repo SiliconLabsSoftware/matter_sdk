@@ -20,6 +20,7 @@ config("silabs_matterAws_config") {
     "${chip_root}/third_party/silabs/mqtt/stack",
     "${chip_root}/third_party/silabs/mqtt/mqtt_transport_interface/include",
     "${chip_root}/examples/platform/silabs/matter_aws/matter_aws_interface/include",
+    "${chip_root}/examples/platform/silabs/display",
   ]
 }
 
