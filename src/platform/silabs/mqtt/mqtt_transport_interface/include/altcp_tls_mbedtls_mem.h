@@ -58,10 +58,10 @@ extern "C" {
 #endif
 
 void altcp_mbedtls_mem_init(void);
-altcp_mbedtls_state_t *altcp_mbedtls_alloc(void *conf);
-void altcp_mbedtls_free(void *conf, altcp_mbedtls_state_t *state);
-void *altcp_mbedtls_alloc_config(size_t size);
-void altcp_mbedtls_free_config(void *item);
+altcp_mbedtls_state_t * altcp_mbedtls_alloc(void * conf);
+void altcp_mbedtls_free(void * conf, altcp_mbedtls_state_t * state);
+void * altcp_mbedtls_alloc_config(size_t size);
+void altcp_mbedtls_free_config(void * item);
 
 #ifdef __cplusplus
 }
