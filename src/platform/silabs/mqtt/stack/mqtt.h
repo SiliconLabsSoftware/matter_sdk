@@ -95,7 +95,7 @@ typedef struct mqtt_transport_intf_t mqtt_transport_intf_t;
 /*--------------------------------------------------------------------------------------------------------------------- */
 /* Output ring buffer */
 
-#define MQTT_RINGBUF_IDX_MASK ((MQTT_OUTPUT_RINGBUF_SIZE) - 1)
+#define MQTT_RINGBUF_IDX_MASK ((MQTT_OUTPUT_RINGBUF_SIZE) -1)
 
 /** Add single item to ring buffer */
 #define mqtt_ringbuf_put(rb, item) ((rb)->buf)[(rb)->put++ & MQTT_RINGBUF_IDX_MASK] = (item)
