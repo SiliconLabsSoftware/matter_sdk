@@ -169,9 +169,9 @@ constexpr osThreadAttr_t kUartTaskAttr = {
     .stack_mem  = uartStack,
     .stack_size = kUartTaskSize,
 #if SLI_SI91X_MCU_INTERFACE
-    .priority = osPriorityBelowNormal // for SOC, must be below Matter Task priority
+    .priority = osPriorityBelowNormal, // for SOC, must be below Matter Task priority
 #else
-    .priority = osPriorityRealtime6 // Must be above Matter Task priority
+    .priority = osPriorityRealtime6, // Must be above Matter Task priority
 #endif // SLI_SI91X_MCU_INTERFACE
 };
 
