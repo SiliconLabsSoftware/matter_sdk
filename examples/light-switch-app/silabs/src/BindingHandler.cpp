@@ -391,7 +391,7 @@ void SwitchWorkerFunction(intptr_t context)
 
     if (err == CHIP_ERROR_INCORRECT_STATE || err == CHIP_ERROR_HANDLER_NOT_SET || err == CHIP_ERROR_NO_MEMORY)
     {
-        // NotifyBoundClusterChanged failed earlyand won't call LightSwitchContextReleaseHandler on exit
+        // NotifyBoundClusterChanged failed early and won't call LightSwitchContextReleaseHandler on exit
         // Clear the context here to avoid memory leak.
         Platform::Delete(data);
     }
