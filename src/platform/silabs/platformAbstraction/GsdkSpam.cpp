@@ -55,7 +55,10 @@ extern "C" {
 
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 }
+#endif
 
+#if defined(SL_PROVISION_GENERATOR) && defined(SL_TRUSTZONE_NONSECURE)
+#include "gfw_tz_secure.h"
 #endif
 
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
@@ -155,26 +158,29 @@ void SilabsPlatform::SoftwareReset()
 
 CHIP_ERROR SilabsPlatform::FlashInit()
 {
-#if defined(SL_TRUSTZONE_NONSECURE)
-    return CHIP_ERROR_NOT_IMPLEMENTED;
+#if defined(SL_PROVISION_GENERATOR) && defined(SL_TRUSTZONE_NONSECURE)
+    return GFW_Flash_Init() ? CHIP_ERROR_INTERNAL : CHIP_NO_ERROR;
 #elif defined(_SILICON_LABS_32B_SERIES_2)
     MSC_Init();
+    return CHIP_NO_ERROR;
 #elif defined(_SILICON_LABS_32B_SERIES_3)
     sl_status_t status;
     status = sl_se_init();
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR(status));
     status = sl_se_init_command_context(&cmd_ctx);
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR(status));
-#endif
     return CHIP_NO_ERROR;
+#else
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 CHIP_ERROR SilabsPlatform::FlashErasePage(uint32_t addr)
 {
-#if defined(SL_TRUSTZONE_NONSECURE)
-    return CHIP_ERROR_NOT_IMPLEMENTED;
+#if defined(SL_PROVISION_GENERATOR) && defined(SL_TRUSTZONE_NONSECURE)
+    return GFW_Flash_ErasePage(addr) ? CHIP_ERROR_INTERNAL : CHIP_NO_ERROR;
 #elif defined(_SILICON_LABS_32B_SERIES_2)
-    MSC_ErasePage((uint32_t *) addr);
+    return MSC_ErasePage((uint32_t *) addr) ? CHIP_ERROR_INTERNAL : CHIP_NO_ERROR;
 #elif defined(_SILICON_LABS_32B_SERIES_3)
     sl_status_t status;
     uint32_t * data_start = NULL;
@@ -185,16 +191,18 @@ CHIP_ERROR SilabsPlatform::FlashErasePage(uint32_t addr)
     VerifyOrReturnError(GENERIC_ADDRESS(addr) > GENERIC_ADDRESS((uint32_t) data_start), CHIP_ERROR_INVALID_ADDRESS);
     status = sl_se_data_region_erase(&cmd_ctx, (void *) addr, 1); // Erase one page
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR(status));
-#endif
     return CHIP_NO_ERROR;
+#else
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 CHIP_ERROR SilabsPlatform::FlashWritePage(uint32_t addr, const uint8_t * data, size_t size)
 {
-#if defined(SL_TRUSTZONE_NONSECURE)
-    return CHIP_ERROR_NOT_IMPLEMENTED;
+#if defined(SL_PROVISION_GENERATOR) && defined(SL_TRUSTZONE_NONSECURE)
+    return GFW_Flash_WriteWord(addr, data, size) ? CHIP_ERROR_INTERNAL : CHIP_NO_ERROR;
 #elif defined(_SILICON_LABS_32B_SERIES_2)
-    MSC_WriteWord((uint32_t *) addr, data, size);
+    return MSC_WriteWord((uint32_t *) addr, data, size) ? CHIP_ERROR_INTERNAL : CHIP_NO_ERROR;
 #elif defined(_SILICON_LABS_32B_SERIES_3)
     sl_status_t status;
     uint32_t * data_start = NULL;
@@ -205,8 +213,10 @@ CHIP_ERROR SilabsPlatform::FlashWritePage(uint32_t addr, const uint8_t * data, s
     VerifyOrReturnError(GENERIC_ADDRESS(addr) > GENERIC_ADDRESS((uint32_t) data_start), CHIP_ERROR_INVALID_ADDRESS);
     status = sl_se_data_region_write(&cmd_ctx, (void *) addr, data, size);
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR(status));
-#endif
     return CHIP_NO_ERROR;
+#else
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 #ifdef ENABLE_WSTK_LEDS
