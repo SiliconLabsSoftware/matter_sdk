@@ -610,6 +610,8 @@ void mqtt_cyclic_timer(void * arg)
                 {
                     mqtt_output_append_fixed_header(&client->output, MQTT_MSG_TYPE_PINGREQ, 0, 0, 0, 0);
                     client->cyclic_tick = 0;
+                    /* Send the PINGREQ immediately - this ensures keep-alive works even when idle */
+                    mqtt_output_send(&client->output, client->conn);
                 }
             }
             else
