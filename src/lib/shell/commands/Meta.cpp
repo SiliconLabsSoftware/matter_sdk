@@ -39,8 +39,7 @@ namespace Shell {
 
 static CHIP_ERROR ExitHandler(int argc, char ** argv)
 {
-    streamer_printf(streamer_get(), "Goodbye\r\n");
-    exit(0);
+    streamer_printf(streamer_get(), "Exit command not supported\r\n");
     return CHIP_NO_ERROR;
 }
 
