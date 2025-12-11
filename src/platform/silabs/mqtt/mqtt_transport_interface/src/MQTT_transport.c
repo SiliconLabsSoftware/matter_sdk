@@ -271,11 +271,19 @@ static void transport_err_cb(void * arg, err_t err)
     TRANSPORT_UNUSED_ARG(err); /* only used for debug output */
     TRANSPORT_DEBUGF(("transport_err_cb: TCP error callback: error %d, arg: %p\n", err, arg));
     TRANSPORT_ASSERT("transport_err_cb: client != NULL", client != NULL);
+
     /* Set conn to null before calling close as pcb is already deallocated*/
-    if (client->conn_state)
+    if (client->conn_state && client->events != NULL)
+    {
         xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_CONN_CLOSE);
+    }
     client->conn_state = TRANSPORT_NOT_CONNECTED;
-    client->matter_aws_conn_cb(err);
+
+    /* Safety check: ensure callback is not NULL before calling */
+    if (client->matter_aws_conn_cb != NULL)
+    {
+        client->matter_aws_conn_cb(err);
+    }
 }
 
 static err_t transport_recv_cb(void * arg, struct altcp_pcb * pcb, struct pbuf * p, err_t err)
