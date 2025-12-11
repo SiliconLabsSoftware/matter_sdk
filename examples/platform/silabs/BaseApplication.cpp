@@ -813,6 +813,12 @@ void BaseApplication::OnTriggerIdentifyEffect(Identify * identify)
         ChipLogProgress(Zcl, "No identifier effect");
     }
 }
+
+void emberAfIdentifyClusterInitCallback(chip::EndpointId endpoint)
+{
+    IdentifyPool.CreateObject(endpoint, BaseApplication::OnIdentifyStart, BaseApplication::OnIdentifyStop,
+                              Clusters::Identify::IdentifyTypeEnum::kVisibleIndicator, BaseApplication::OnTriggerIdentifyEffect);
+}
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 
 void BaseApplication::LightTimerEventHandler(void * timerCbArg)
@@ -1080,9 +1086,4 @@ void BaseApplication::OutputQrCode(bool refreshLCD)
 bool BaseApplication::GetProvisionStatus()
 {
     return BaseApplication::sIsProvisioned;
-}
-void emberAfIdentifyClusterInitCallback(chip::EndpointId endpoint)
-{
-    IdentifyPool.CreateObject(endpoint, BaseApplication::OnIdentifyStart, BaseApplication::OnIdentifyStop,
-                              Clusters::Identify::IdentifyTypeEnum::kVisibleIndicator, BaseApplication::OnTriggerIdentifyEffect);
 }
