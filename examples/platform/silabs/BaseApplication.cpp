@@ -501,8 +501,8 @@ bool BaseApplication::ActivateStatusLedPatterns()
                 sStatusLED.Blink(onTimeMS, offTimeMS);
             }
         }
+        isPatternSet = true;
     }
-    isPatternSet = true;
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 
 #if !(CHIP_CONFIG_ENABLE_ICD_SERVER)
