@@ -454,7 +454,7 @@ bool BaseApplication::ActivateStatusLedPatterns()
     bool isIdentifyActive = false;
     for (const auto & obj : IdentifyPool)
     {
-        if (obj.mActive)
+        if (obj->mActive)
         {
             isIdentifyActive = true;
             break;
