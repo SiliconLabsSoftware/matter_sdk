@@ -120,7 +120,7 @@ extern "C" void option_install_code(sl_zigbee_sec_man_key_t * key, sl_802154_lon
 #else
     // Add the key to the transient key table.
     // This will be used while the DUT joins.
-    sl_status_t status = sl_zigbee_sec_man_import_transient_key(reverse_eui64, (sl_zigbee_sec_man_key_t *) &key);
+    sl_status_t status = sl_zigbee_sec_man_import_transient_key(eui64, (sl_zigbee_sec_man_key_t *) &key);
     SILABS_LOG("Set joining link key %lu", status);
 #endif
 
@@ -138,7 +138,7 @@ extern "C" void open_network_with_key()
     const uint8_t installCodeLength        = SL_ZIGBEE_ENCRYPTION_KEY_SIZE + SL_ZIGBEE_INSTALL_CODE_CRC_SIZE;
     uint8_t installCode[installCodeLength] = { SL_MATTER_CMP_INSTALL_CODE };
     sl_802154_long_addr_t eui64            = { SL_MATTER_CMP_INSTALL_CODE_EUID64 };
-    tokTypeMfgInstallationCode tokInstallCode;
+    tokTypeMfgInstallationCode tokInstallCode = {};
 
     status = sl_token_manager_get_data(SL_TOKEN_GET_STATIC_SECURE_TOKEN(TOKEN_MFG_INSTALLATION_CODE), (void *) &tokInstallCode,
                                        sizeof(tokTypeMfgInstallationCode));
