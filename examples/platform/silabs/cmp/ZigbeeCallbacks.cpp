@@ -135,15 +135,21 @@ extern "C" void open_network_with_key()
 {
     sl_zigbee_key_data_t keyData;
     sl_status_t status;
-    const uint8_t installCodeLength        = SL_ZIGBEE_ENCRYPTION_KEY_SIZE + SL_ZIGBEE_INSTALL_CODE_CRC_SIZE;
-    uint8_t installCode[installCodeLength] = { SL_MATTER_CMP_INSTALL_CODE };
-    sl_802154_long_addr_t eui64            = { SL_MATTER_CMP_INSTALL_CODE_EUID64 };
+    const uint8_t installCodeLength           = SL_ZIGBEE_ENCRYPTION_KEY_SIZE + SL_ZIGBEE_INSTALL_CODE_CRC_SIZE;
+    uint8_t installCode[installCodeLength]    = { SL_MATTER_CMP_INSTALL_CODE };
+    sl_802154_long_addr_t eui64               = { SL_MATTER_CMP_INSTALL_CODE_EUID64 };
     tokTypeMfgInstallationCode tokInstallCode = {};
 
     status = sl_token_manager_get_data(SL_TOKEN_GET_STATIC_SECURE_TOKEN(TOKEN_MFG_INSTALLATION_CODE), (void *) &tokInstallCode,
                                        sizeof(tokTypeMfgInstallationCode));
     if (status == SL_STATUS_OK)
     {
+        if (sizeof(tokInstallCode.value) != SL_ZIGBEE_ENCRYPTION_KEY_SIZE)
+        {
+            SILABS_LOG("ERR: Install Code size in token does not match expected size");
+            return;
+        }
+
         memcpy(installCode, tokInstallCode.value, SL_ZIGBEE_ENCRYPTION_KEY_SIZE);
         // two last bytes are the CRC
         installCode[SL_ZIGBEE_ENCRYPTION_KEY_SIZE]     = tokInstallCode.crc & 0xFF;        // CRC LSB
