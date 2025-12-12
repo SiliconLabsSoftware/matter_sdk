@@ -275,6 +275,11 @@ void BaseApplicationDelegate::OnFabricRemoved(const FabricTable & fabricTable, F
 
 CHIP_ERROR BaseApplication::StartAppTask(osThreadFunc_t taskFunction)
 {
+
+    // Fix OTA by registering the EvenHandler sooner
+    // MATTER-4889
+    PlatformMgr().AddEventHandler(OnPlatformEvent, 0);
+
     sAppEventQueue = osMessageQueueNew(APP_EVENT_QUEUE_SIZE, sizeof(AppEvent), &appEventQueueAttr);
     if (sAppEventQueue == NULL)
     {
@@ -400,7 +405,6 @@ CHIP_ERROR BaseApplication::BaseInit()
     RegisterPerfTestCommands();
 #endif // PERFORMANCE_TEST_ENABLED
 
-    PlatformMgr().AddEventHandler(OnPlatformEvent, 0);
 #ifdef SL_WIFI
     BaseApplication::sIsProvisioned = ConnectivityMgr().IsWiFiStationProvisioned();
 #endif /* SL_WIFI */
