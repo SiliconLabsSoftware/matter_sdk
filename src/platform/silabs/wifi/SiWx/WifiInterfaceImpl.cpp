@@ -430,8 +430,8 @@ sl_status_t InitiateScan()
 
 sl_status_t SetWifiConfigurations()
 {
-    sl_status_t status = SL_STATUS_OK;
-
+    sl_status_t status          = SL_STATUS_OK;
+    uint8_t join_feature_bitmap = 0;
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     sl_wifi_listen_interval_v2_t sleep_interval = {
         .listen_interval = chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()
@@ -447,13 +447,13 @@ sl_status_t SetWifiConfigurations()
     status = sl_wifi_set_advanced_client_configuration(SL_WIFI_CLIENT_INTERFACE, &client_config);
     VerifyOrReturnError(status == SL_STATUS_OK, status,
                         ChipLogError(DeviceLayer, "sl_wifi_set_advanced_client_configuration failed: 0x%lx", status));
-
+    join_feature_bitmap = (SL_SI91X_JOIN_FEAT_LISTEN_INTERVAL_VALID | SL_SI91X_JOIN_FEAT_PS_CMD_LISTEN_INTERVAL_VALID);
 #if (SL_MATTER_GN_BUILD == 0)
     status = sl_wifi_set_join_configuration(
 #else
     status = sl_si91x_set_join_configuration(
 #endif
-        SL_WIFI_CLIENT_INTERFACE, (SL_SI91X_JOIN_FEAT_LISTEN_INTERVAL_VALID | SL_SI91X_JOIN_FEAT_PS_CMD_LISTEN_INTERVAL_VALID));
+        SL_WIFI_CLIENT_INTERFACE, join_feature_bitmap);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
@@ -505,6 +505,17 @@ sl_status_t SetWifiConfigurations()
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWifiMacAddressLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWifiMacAddressLength);
         chip::CopySpanToMutableSpan(inBssid, bssidSpan);
+
+        // Enabling quick-join since we have the channel and BSSID
+        join_feature_bitmap |= SL_SI91X_JOIN_FEAT_QUICK_JOIN;
+#if (SL_MATTER_GN_BUILD == 0)
+            status = sl_wifi_set_join_configuration(
+#else
+            status = sl_si91x_set_join_configuration(
+#endif
+                SL_WIFI_CLIENT_INTERFACE, join_feature_bitmap);
+        VerifyOrReturnError(status == SL_STATUS_OK, status,
+                            ChipLogError(DeviceLayer, "sl_wifi_set_join_configuration failed: 0x%lx", status));
     }
 
     status = sl_net_set_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID, &profile);
