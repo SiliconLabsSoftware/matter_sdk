@@ -509,11 +509,11 @@ sl_status_t SetWifiConfigurations()
         // Enabling quick-join since we have the channel and BSSID
         join_feature_bitmap |= SL_SI91X_JOIN_FEAT_QUICK_JOIN;
 #if (SL_MATTER_GN_BUILD == 0)
-            status = sl_wifi_set_join_configuration(
+        status = sl_wifi_set_join_configuration(
 #else
-            status = sl_si91x_set_join_configuration(
+        status   = sl_si91x_set_join_configuration(
 #endif
-                SL_WIFI_CLIENT_INTERFACE, join_feature_bitmap);
+            SL_WIFI_CLIENT_INTERFACE, join_feature_bitmap);
         VerifyOrReturnError(status == SL_STATUS_OK, status,
                             ChipLogError(DeviceLayer, "sl_wifi_set_join_configuration failed: 0x%lx", status));
     }
