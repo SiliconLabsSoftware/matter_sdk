@@ -32,11 +32,11 @@ public:
     CHIP_ERROR StopAdvertising(void) override;
     CHIP_ERROR NotifyCharacteristic(uint16_t characteristicHandle) override;
     CHIP_ERROR IndicateCharacteristic(uint16_t characteristicHandle) override;
+    CHIP_ERROR ConfigureAdvertisingDefaultData(void);
 
     void HandleIndicationTimeout(volatile sl_bt_msg_t * evt) override;
     void HandleIndicationConfirmation(volatile sl_bt_msg_t * evt) override;
 
-    bool CanHandleEvent(uint32_t event) override;
     void ParseEvent(volatile sl_bt_msg_t * evt) override;
     void AddConnection(uint8_t connectionHandle, uint8_t bondingHandle) override;
     bool RemoveConnection(uint8_t connectionHandle) override;
