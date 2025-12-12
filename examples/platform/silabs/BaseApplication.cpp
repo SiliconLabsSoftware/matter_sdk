@@ -44,6 +44,8 @@
 #endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
+#include <app/server/OnboardingCodesUtil.h>
+
 #if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
