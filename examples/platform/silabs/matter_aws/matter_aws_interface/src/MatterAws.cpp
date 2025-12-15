@@ -82,7 +82,7 @@ static void MatterAwsMqttConnCb(mqtt_client_t * client, void * arg, mqtt_connect
     ChipLogProgress(AppServer, "[MATTER_AWS] MQTT connection status: %u", status);
     if (status != MQTT_CONNECT_ACCEPTED)
     {
-        /* Signal the task to exit cleanly - the task will handle the event and set its local end_loop flag */
+        /* Signal the task to exit cleanly - the task will handle the event and set its local endLoop flag */
         VerifyOrReturn(matterAwsTask != nullptr && matterAwsEvents != nullptr,
                        ChipLogError(AppServer, "[MATTER_AWS] Task or events not initialized in MQTT callback"));
         xEventGroupSetBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE);
@@ -135,7 +135,7 @@ exit:
      * can corrupt FreeRTOS internal structures. */
     VerifyOrReturn(matterAwsTask != nullptr && matterAwsEvents != nullptr,
                    ChipLogError(AppServer, "[MATTER_AWS] Task or events not initialized in TCP callback"));
-    /* Signal the task to wake up and exit cleanly - task will set its local end_loop flag */
+    /* Signal the task to wake up and exit cleanly - task will set its local endLoop flag */
     xEventGroupSetBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE);
     return;
 }
@@ -143,8 +143,7 @@ exit:
 static void MatterAwsTaskFn(void * args)
 {
     /* Local flag to control the task loop - reset each time the task starts */
-    static bool end_loop = false;
-    end_loop             = false;
+    bool endLoop = false;
 
     /* get MQTT client handle */
     err_t ret;
@@ -187,7 +186,7 @@ static void MatterAwsTaskFn(void * args)
     ret = MQTT_Transport_Connect(transport, hostname, hostname_length, MATTER_AWS_SERVER_PORT, MatterAwsTcpConnectCb);
     VerifyOrExit(ERR_OK == ret, ChipLogError(AppServer, "[MATTER_AWS] transport connection failed: %d", ret));
 
-    while (!end_loop)
+    while (!endLoop)
     {
         EventBits_t event;
         event = xEventGroupWaitBits(matterAwsEvents,
@@ -197,7 +196,7 @@ static void MatterAwsTaskFn(void * args)
         if (event & SIGNAL_TRANSINTF_CONN_CLOSE)
         {
             mqtt_close(mqtt_client, MQTT_CONNECT_DISCONNECTED);
-            end_loop = true;
+            endLoop = true;
         }
         else
         {
@@ -216,13 +215,9 @@ exit:
      * Save handle and nullify pointers atomically to prevent race with callbacks. */
     if (matterAwsTask != nullptr)
     {
-        EventGroupHandle_t eventsToDelete;
-
-        eventsToDelete  = matterAwsEvents;
+        vEventGroupDelete(matterAwsEvents);
         matterAwsEvents = nullptr;
         matterAwsTask   = nullptr;
-
-        vEventGroupDelete(eventsToDelete);
     }
     /* Delete the current task - use NULL to delete self */
     vTaskDelete(NULL);
