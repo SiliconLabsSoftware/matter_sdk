@@ -3841,38 +3841,29 @@
       "id": 3,
       "name": "Anonymous Endpoint Type",
       "deviceTypeRef": {
-        "code": 257,
+        "code": 269,
         "profileId": 259,
-        "label": "MA-dimmablelight",
-        "name": "MA-dimmablelight",
+        "label": "MA-extendedcolorlight",
+        "name": "MA-extendedcolorlight",
         "deviceTypeOrder": 0
       },
       "deviceTypes": [
         {
-          "code": 257,
+          "code": 269,
           "profileId": 259,
-          "label": "MA-dimmablelight",
-          "name": "MA-dimmablelight",
+          "label": "MA-extendedcolorlight",
+          "name": "MA-extendedcolorlight",
           "deviceTypeOrder": 0
-        },
-        {
-          "code": 256,
-          "profileId": 259,
-          "label": "MA-onofflight",
-          "name": "MA-onofflight",
-          "deviceTypeOrder": 1
         }
       ],
       "deviceVersions": [
-        1,
         1
       ],
       "deviceIdentifiers": [
-        257,
-        256
+        269
       ],
-      "deviceTypeName": "MA-dimmablelight",
-      "deviceTypeCode": 257,
+      "deviceTypeName": "MA-extendedcolorlight",
+      "deviceTypeCode": 269,
       "deviceTypeProfileId": 259,
       "clusters": [
         {
@@ -5406,7 +5397,7 @@
               "singleton": 0,
               "bounded": 0,
               "defaultValue": "0x00FA",
-              "reportable": 1,
+              "reportable": 0,
               "minInterval": 0,
               "maxInterval": 65279,
               "reportableChange": 0
