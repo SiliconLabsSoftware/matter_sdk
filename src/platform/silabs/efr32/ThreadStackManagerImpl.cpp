@@ -119,9 +119,9 @@ CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
     if (err == CHIP_NO_ERROR)
     {
         // To make sure that timeout is set with OT libraries
-        otThreadSetChildTimeout(otInst, OPENTHREAD_CONFIG_MLE_CHILD_TIMEOUT_DEFAULT);    
+        otThreadSetChildTimeout(otInst, OPENTHREAD_CONFIG_MLE_CHILD_TIMEOUT_DEFAULT);
     }
-    
+
     return err;
 }
 
