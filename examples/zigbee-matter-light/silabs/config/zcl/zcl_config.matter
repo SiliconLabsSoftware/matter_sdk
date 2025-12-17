@@ -4617,7 +4617,7 @@ endpoint 0 {
 
 }
 endpoint 1 {
-  device type lo_dimmablelight = 257, version 1;
+  device type lo_dimmablelight = 257, version 3;
 
   binding cluster OverTheAirBootloading;
   binding cluster OccupancySensing;
