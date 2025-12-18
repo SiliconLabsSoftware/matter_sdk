@@ -51,11 +51,18 @@
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #include <platform/CHIPDeviceLayer.h>
+
+// Side Channel
+#include "BLEChannelImpl.h"
+
 #define SYSTEM_STATE_LED 0
 #define LOCK_STATE_LED 1
 
 #define APP_FUNCTION_BUTTON 0
 #define APP_LOCK_SWITCH 1
+
+// Side Channel
+chip::DeviceLayer::Internal::BLEChannelImpl sBleSideChannel;
 
 using chip::app::Clusters::DoorLock::DlLockState;
 using chip::app::Clusters::DoorLock::OperationErrorEnum;
@@ -110,6 +117,7 @@ void StartUnlatchTimer(uint32_t timeoutMs)
 }
 
 } // namespace
+
 
 using namespace chip::TLV;
 using namespace ::chip::DeviceLayer;
@@ -252,6 +260,12 @@ void AppTask::AppTaskMain(void * pvParameter)
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
     sAppTask.StartStatusLEDTimer();
 #endif
+
+    // Side Channel
+    sBleSideChannel.Init();
+    DeviceLayer::Internal::BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
+    sBleSideChannel.ConfigureAdvertisingDefaultData();
+    sBleSideChannel.StartAdvertising();
 
     SILABS_LOG("App Task started");
 
