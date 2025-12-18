@@ -201,12 +201,11 @@ void MatterAwsIncomingDataCb(void * arg, const char * topic, uint16_t topic_len,
     std::string cmdString(cmd);
     char * _cmd    = strtok(const_cast<char *>(cmdString.c_str()), "/");
     char * value   = strtok(NULL, "/");
-    int32_t _value = 0;
+    [[maybe_unused]] int32_t _value = 0;
     if (value != NULL)
     {
         _value = std::stoi(value);
     }
-    (void) _value; // To suppress unused variable warning when cluster servers and logging are not enabled
     ChipLogDetail(AppServer, "[MATTER_AWS] _value: %ld", _value);
 
 #ifdef SL_MATTER_ENABLE_AWS_OTA_FEAT
