@@ -92,8 +92,9 @@ declare_args() {
   # Enable TestEventTrigger in GeneralDiagnostics cluster
   sl_enable_test_event_trigger = false
 
-  # BLE Side Channel
-  sl_enable_ble_side_channel = false
+  # Enables Silabs BLE Side Channel implementation for internal testing
+  # Setting this to true automatically enables sl_enable_ble_side_channel
+  sl_use_internal_ble_side_channel = false
 }
 
 examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
@@ -124,6 +125,20 @@ declare_args() {
 
   # board related generated files path (used if slc_generate or slc_reuse_files is set)
   slc_gen_path = "${chip_root}/third_party/silabs/slc_gen/${silabs_board}/"
+
+
+  # Extra ICD configuration parameter. Defaults to previously set sl_idle_mode_duration_s
+  sl_short_idle_mode_duration_s = sl_idle_mode_duration_s
+
+  # BLE Side Channel
+  sl_enable_ble_side_channel = sl_use_internal_ble_side_channel
+}
+
+if (sl_use_internal_ble_side_channel) {
+  assert(
+      sl_enable_ble_side_channel,
+      "sl_enable_ble_side_channel must be true when sl_use_internal_ble_side_channel is true")
+
 }
 
 declare_args() {
@@ -232,6 +247,7 @@ template("efr32_sdk") {
       "${efr32_sdk_root}/platform/middleware/glib/dmd",
       "${efr32_sdk_root}/protocol/bluetooth/inc/",
       "${efr32_sdk_root}/protocol/bluetooth/bgstack/ll/inc",
+      "${efr32_sdk_root}/protocol/bluetooth/config/",
       "${efr32_sdk_root}/util/plugin/plugin-common/fem-control",
       "${efr32_sdk_root}/util/silicon_labs/silabs_core/graphics",
       "${efr32_sdk_root}/util/silicon_labs/silabs_core/memory_manager",
@@ -672,8 +688,20 @@ template("efr32_sdk") {
     }
 
     if (sl_enable_ble_side_channel) {
+      defines += [ "SL_BLE_SIDE_CHANNEL_ENABLED=1" ]
+    } else {
+      defines += [ "SL_BLE_SIDE_CHANNEL_ENABLED=0" ]
+    }
+
+    if (sl_use_internal_ble_side_channel) {
+      defines += [ "SL_USE_INTERNAL_BLE_SIDE_CHANNEL=1" ]
+    } else {
+      defines += [ "SL_USE_INTERNAL_BLE_SIDE_CHANNEL=0" ]
+    }
+
+    if (sl_enable_ble_side_channel) {
+      # additional defines and lib if BLE side channel is enabled
       defines += [
-        "SL_BLE_SIDE_CHANNEL_ENABLED=1",
         "SL_BT_ADVERTISER_CONFIG_H",
         "SL_BT_CONFIG_USER_ADVERTISERS=2",
       ]
@@ -974,6 +1002,7 @@ template("efr32_sdk") {
         "${efr32_sdk_root}/protocol/bluetooth/src/sl_bt_stack_init.c",
         "${efr32_sdk_root}/protocol/bluetooth/src/sli_bt_advertiser_config.c",
         "${efr32_sdk_root}/protocol/bluetooth/src/sli_bt_connection_config.c",
+        "${efr32_sdk_root}/protocol/bluetooth/src/sli_bt_dynamic_gattdb_config.c",
         "${efr32_sdk_root}/protocol/bluetooth/src/sli_bt_host_adaptation.c",
       ]
     }
