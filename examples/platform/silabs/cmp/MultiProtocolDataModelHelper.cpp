@@ -72,11 +72,11 @@ void WriteMatterAttributeValueToZigbee(chip::EndpointId endpointId, chip::Cluste
     const MpAttributeMetadata * mpAttributeMetadata = GetMpAttributeMetadata(mpClusterMetadata, attributeId);
     VerifyOrReturn(mpAttributeMetadata != nullptr);
     // TODO handle MFG specific attributes
-    if(sl_zigbee_af_contains_attribute(endpointId, mpClusterMetadata->zigbeeClusterId, mpAttributeMetadata->zigbeeAttributeId,
-                                        CLUSTER_MASK_SERVER, mpAttributeMetadata->zigbeeMfgAttributeId) )
+    if (sl_zigbee_af_contains_attribute(endpointId, mpClusterMetadata->zigbeeClusterId, mpAttributeMetadata->zigbeeAttributeId,
+                                        CLUSTER_MASK_SERVER, mpAttributeMetadata->zigbeeMfgAttributeId))
     {
         sl_zigbee_af_write_server_attribute_without_sync(endpointId, mpClusterMetadata->zigbeeClusterId,
-                                                     mpAttributeMetadata->zigbeeAttributeId, attributeValue, dataType);
+                                                        mpAttributeMetadata->zigbeeAttributeId, attributeValue, dataType);
     }
 }
 
