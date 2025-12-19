@@ -72,8 +72,17 @@ void WriteMatterAttributeValueToZigbee(chip::EndpointId endpointId, chip::Cluste
     const MpAttributeMetadata * mpAttributeMetadata = GetMpAttributeMetadata(mpClusterMetadata, attributeId);
     VerifyOrReturn(mpAttributeMetadata != nullptr);
     // TODO handle MFG specific attributes
-    sl_zigbee_af_write_server_attribute_without_sync(endpointId, mpClusterMetadata->zigbeeClusterId,
-                                                     mpAttributeMetadata->zigbeeAttributeId, attributeValue, dataType);
+
+    // TODO MATTER-5844  remove the check below once the Zigbee stack support overriding CLI and logs outputs.
+    // They first need to decouple the output of both so that the Matter team can retrieve them separately.
+    // Otherwise either the logs are blocking and causing major delays or the CLI output will be completely mangle
+    // and some string might be lost.
+    if (sl_zigbee_af_contains_attribute(endpointId, mpClusterMetadata->zigbeeClusterId, mpAttributeMetadata->zigbeeAttributeId,
+                                        CLUSTER_MASK_SERVER, mpAttributeMetadata->zigbeeMfgAttributeId))
+    {
+        sl_zigbee_af_write_server_attribute_without_sync(endpointId, mpClusterMetadata->zigbeeClusterId,
+                                                         mpAttributeMetadata->zigbeeAttributeId, attributeValue, dataType);
+    }
 }
 
 void SynchMultiProtocolAttributes(chip::EndpointId endpointId, const MpClusterMetadata * mpClusterMetadata)
