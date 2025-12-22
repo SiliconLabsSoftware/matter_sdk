@@ -20,12 +20,16 @@
 #include <MultiProtocolDataModelHelper.h>
 #include <app/util/attribute-metadata.h>
 #include <app/util/attribute-table.h>
+#include <cmsis_os2.h>
 #include <lib/support/TypeTraits.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceLayer.h>
 #include <platform/PlatformManager.h>
 #include <protocols/interaction_model/StatusCode.h>
 #include <sl-matter-attribute-storage.h>
 #include <sl_component_catalog.h>
+#include <system/SystemClock.h>
+#include <system/SystemLayer.h>
 #include <zap-config.h>
 
 namespace MultiProtocolDataModel {
@@ -99,9 +103,12 @@ void SynchMultiProtocolAttributes(chip::EndpointId endpointId, const MpClusterMe
             uint8_t attributeSize                 = sl_zigbee_af_get_data_size(mpAttributeMap[i].zigbeeAttributeType);
             uint8_t attributeValue[attributeSize] = { 0 };
 
+            chip::DeviceLayer::PlatformMgr().LockChipStack();
             // Read the Matter attribute value and write it to Zigbee
-            if (emberAfReadAttribute(endpointId, mpClusterMetadata->matterClusterId, mpAttributeMap[i].matterAttributeId,
-                                     attributeValue, attributeSize) == chip::Protocols::InteractionModel::Status::Success)
+            chip::Protocols::InteractionModel::Status status = emberAfReadAttribute(
+                endpointId, mpClusterMetadata->matterClusterId, mpAttributeMap[i].matterAttributeId, attributeValue, attributeSize);
+            chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+            if (status == chip::Protocols::InteractionModel::Status::Success)
             {
                 sl_zigbee_af_write_server_attribute_without_sync(endpointId, mpClusterMetadata->zigbeeClusterId,
                                                                  mpAttributeMap[i].zigbeeAttributeId, attributeValue,
@@ -111,10 +118,31 @@ void SynchMultiProtocolAttributes(chip::EndpointId endpointId, const MpClusterMe
     }
 }
 
+// SL-TEMP: in some instance the Zigbee framework task is delayed
+// We can't do the multiprotocol datamodel synchronization until the Zigbee has initialized its datamodel too.
+// We implement a retry mechanism using the SystemLayer timer to re-attempt initialization until successful or 5 attempts.
+// Timer callback to retry Multiprotocol initial data model synchronization
+static void InitializeRetryCallback(chip::System::Layer * systemLayer, void * appState)
+{
+    Initialize();
+}
+
 void Initialize()
 {
+    // Check if Zigbee endpoints are available
+    // SL-TEMP: In some instance, the zigbee datamodel is not fully initialized when app task is scheduled to run.
+    // In such case the endpoint count is zero so we schedule a retry in 100 ms.
+    static uint8_t initRetryRemaining = 5;
+    uint8_t zbEndpointCount           = sl_zigbee_af_endpoint_count();
+    if (zbEndpointCount == 0 && initRetryRemaining-- > 0)
+    {
+        // Zb datamodel not initialized yet, schedule a retry
+        chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Milliseconds16(100), InitializeRetryCallback, nullptr);
+        return;
+    }
+
     // Iterate over all Zigbee endpoints
-    for (uint8_t epIdx = 0; epIdx < sl_zigbee_af_endpoint_count(); epIdx++)
+    for (uint8_t epIdx = 0; epIdx < zbEndpointCount; epIdx++)
     {
         uint8_t endpoint = sl_zigbee_af_endpoint_from_index(epIdx);
         for (uint8_t i = 0; i < mappedMpClusterCount; i++)
