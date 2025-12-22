@@ -355,6 +355,37 @@ CHIP_ERROR Storage::GetManufacturingDate(uint8_t * value, size_t max, size_t & s
     return SilabsConfig::ReadConfigValueStr(SilabsConfig::kConfigKey_ManufacturingDate, (char *) value, max, size);
 }
 
+CHIP_ERROR Storage::GetManufacturingDate(uint16_t & year, uint8_t & month, uint8_t & day)
+{
+    uint8_t buffer[kManufacturingDateLengthMax + 1] = { 0 };
+    size_t size                                     = 0;
+
+    CHIP_ERROR err = GetManufacturingDate(buffer, sizeof(buffer), size);
+
+    if (err == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND || err == CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE)
+    {
+        return err;
+    }
+    ReturnErrorOnFailure(err);
+
+    const char * dateStr = reinterpret_cast<const char *>(buffer);
+
+    if (size >= 8)
+    {
+        char yearStr[5]  = { dateStr[0], dateStr[1], dateStr[2], dateStr[3], '\0' };
+        char monthStr[3] = { dateStr[4], dateStr[5], '\0' };
+        char dayStr[3]   = { dateStr[6], dateStr[7], '\0' };
+
+        year  = static_cast<uint16_t>(strtoul(yearStr, nullptr, 10));
+        month = static_cast<uint8_t>(strtoul(monthStr, nullptr, 10));
+        day   = static_cast<uint8_t>(strtoul(dayStr, nullptr, 10));
+
+        return CHIP_NO_ERROR;
+    }
+
+    return CHIP_ERROR_INVALID_ARGUMENT;
+}
+
 CHIP_ERROR Storage::SetPersistentUniqueId(const uint8_t * value, size_t size)
 {
     return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_PersistentUniqueId, value, size);
