@@ -23,12 +23,12 @@
 #include "AppConfig.h"
 
 #include "TemperatureManager.h"
+#include "thermostat-delegate-impl.h"
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/clusters/thermostat-server/thermostat-server.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include "thermostat-delegate-impl.h"
 
 #ifdef SL_MATTER_ENABLE_AWS
 #include "MatterAwsControl.h"
