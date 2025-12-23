@@ -30,8 +30,8 @@
 
 #include "sl_component_catalog.h"
 #ifndef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-#include <app/clusters/thermostat-server/thermostat-server.h>
 #include "thermostat-delegate-impl.h"
+#include <app/clusters/thermostat-server/thermostat-server.h>
 #endif // !SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 
 #ifdef SL_MATTER_ENABLE_AWS
