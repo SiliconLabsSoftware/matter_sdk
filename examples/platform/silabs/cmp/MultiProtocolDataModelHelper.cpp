@@ -132,9 +132,10 @@ void Initialize()
     // Check if Zigbee endpoints are available
     // SL-TEMP: In some instance, the zigbee datamodel is not fully initialized when app task is scheduled to run.
     // In such case the endpoint count is zero so we schedule a retry in 100 ms.
-    static uint8_t initRetryRemaining = 5;
-    uint8_t zbEndpointCount           = sl_zigbee_af_endpoint_count();
-    if (zbEndpointCount == 0 && initRetryRemaining-- > 0)
+    constexpr uint8_t kMaxInitAttempts   = 5;
+    static uint8_t initAttemptsRemaining = kMaxInitAttempts;
+    uint8_t zbEndpointCount              = sl_zigbee_af_endpoint_count();
+    if (zbEndpointCount == 0 && initAttemptsRemaining-- > 0)
     {
         // Zb datamodel not initialized yet, schedule a retry
         chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Milliseconds16(100), InitializeRetryCallback, nullptr);
