@@ -60,7 +60,7 @@ print(slc_arguments)
 if "SISDK_ROOT" in os.environ:
     sisdk_root = os.getenv('SISDK_ROOT')
 else:
-    # If no gsdk path is set in the environment, use the standard path to the submodule
+    # If no sisdk path is set in the environment, use the standard path to the submodule
     sisdk_root = os.path.join(root_path, "third_party/silabs/simplicity_sdk/")
 
 # SLC needs to run the system python, so we force PATH to have /usr/bin in front
@@ -77,7 +77,7 @@ slc generate '{slcp_file_path}' -d '{output_path}' --with '{slc_arguments}'
 """.strip()
 
 
-# make sure we have a configured and trusted gsdk in slc
+# make sure we have a configured and trusted sisdk in slc
 subprocess.run(["bash", "-c", cmds], check=True)
 
 # cleanup of unwanted files

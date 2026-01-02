@@ -37,7 +37,7 @@ config("openthread_efr32_config") {
     "${sl_ot_platform_abstraction}/rtos",
   ]
 
-  # temporarily disable check until gsdk pulls in a more recent version of openthread
+  # temporarily disable check until sisdk pulls in a more recent version of openthread
   cflags = [ "-Wno-format-nonliteral" ]
 }
 

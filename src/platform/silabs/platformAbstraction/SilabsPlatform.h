@@ -76,7 +76,7 @@ public:
     /** VerifyIfUpdated
      * @brief Verify if the device has been updated by OTA.
      *  This check requires the NVM3 to be initialized so it is not called during the platform init.
-     *  It is common to both WiseMCU and GSDK platforms so we have it in a separate cpp file.
+     *  It is common to both WiseMCU and SISDK platforms so we have it in a separate cpp file.
      */
     CHIP_ERROR VerifyIfUpdated();
 
