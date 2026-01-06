@@ -127,21 +127,21 @@ extern "C" __attribute__((used)) void debugHardfault(uint32_t * sp)
     [[maybe_unused]] uint32_t pc    = sp[6];
     [[maybe_unused]] uint32_t psr   = sp[7];
 
-    ChipLogError(NotSpecified, "HardFault:");
-    ChipLogError(NotSpecified, "SCB->CFSR   0x%08lx", cfsr);
-    ChipLogError(NotSpecified, "SCB->HFSR   0x%08lx", hfsr);
-    ChipLogError(NotSpecified, "SCB->MMFAR  0x%08lx", mmfar);
-    ChipLogError(NotSpecified, "SCB->BFAR   0x%08lx", bfar);
-    ChipLogError(NotSpecified, "SCB->BFAR   0x%08lx", bfar);
-    ChipLogError(NotSpecified, "SP          0x%08lx", (uint32_t) sp);
-    ChipLogError(NotSpecified, "R0          0x%08lx", r0);
-    ChipLogError(NotSpecified, "R1          0x%08lx", r1);
-    ChipLogError(NotSpecified, "R2          0x%08lx", r2);
-    ChipLogError(NotSpecified, "R3          0x%08lx", r3);
-    ChipLogError(NotSpecified, "R12         0x%08lx", r12);
-    ChipLogError(NotSpecified, "LR          0x%08lx", lr);
-    ChipLogError(NotSpecified, "PC          0x%08lx", pc);
-    ChipLogError(NotSpecified, "PSR         0x%08lx", psr);
+    ChipLogError(NotSpecified, "HardFault:\r\n");
+    ChipLogError(NotSpecified, "SCB->CFSR   0x%08lx\r\n", cfsr);
+    ChipLogError(NotSpecified, "SCB->HFSR   0x%08lx\r\n", hfsr);
+    ChipLogError(NotSpecified, "SCB->MMFAR  0x%08lx\r\n", mmfar);
+    ChipLogError(NotSpecified, "SCB->BFAR   0x%08lx\r\n", bfar);
+    ChipLogError(NotSpecified, "SP          0x%08lx\r\n", (uint32_t) sp);
+    SILABS_UART_FLUSH();
+    ChipLogError(NotSpecified, "R0          0x%08lx\r\n", r0);
+    ChipLogError(NotSpecified, "R1          0x%08lx\r\n", r1);
+    ChipLogError(NotSpecified, "R2          0x%08lx\r\n", r2);
+    ChipLogError(NotSpecified, "R3          0x%08lx\r\n", r3);
+    ChipLogError(NotSpecified, "R12         0x%08lx\r\n", r12);
+    ChipLogError(NotSpecified, "LR          0x%08lx\r\n", lr);
+    ChipLogError(NotSpecified, "PC          0x%08lx\r\n", pc);
+    ChipLogError(NotSpecified, "PSR         0x%08lx\r\n", psr);
     SILABS_UART_FLUSH();
 #endif // SILABS_LOG_ENABLED
 
