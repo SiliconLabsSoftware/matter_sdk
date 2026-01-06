@@ -317,6 +317,8 @@ CHIP_ERROR BaseApplication::Init()
         appError(err);
         return err;
     }
+    GetPlatform().WatchdogInit();
+
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 #ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
     MultiProtocolDataModel::Initialize();
