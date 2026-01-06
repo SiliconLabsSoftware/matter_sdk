@@ -26,7 +26,6 @@
 #include <lib/support/CodeUtils.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/DiagnosticDataProvider.h>
-#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 // Macro to flush UART TX queue if enabled
 #if SILABS_LOG_OUT_UART
