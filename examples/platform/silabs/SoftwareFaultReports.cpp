@@ -322,10 +322,10 @@ extern "C" void RAILCb_AssertFailed(RAIL_Handle_t railHandle, uint32_t errorCode
 }
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 #endif // !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
-#endif // HARD_FAULT_LOG_ENABLE
 
 extern "C" void WDOG0_IRQHandler(void)
 {
     faultId = 0x57444F47; // 'WDOG'
     __asm volatile("b LogFault_Handler");
 }
+#endif // HARD_FAULT_LOG_ENABLE
