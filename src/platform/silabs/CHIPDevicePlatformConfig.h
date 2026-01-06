@@ -139,7 +139,7 @@
  *
  * @note It has been observed that, when using the SI91X MCU Interface, the required stack size is increased to 7184 bytes.
  * @note For a thread lighting app, the high stack watermark during commissioning is 5232 bytes.
- * @note For a thread lighting app compiled using LTK, the high stack watermark during commissioning is 6576 bytes. This is likely
+ * @note For a thread lighting app compiled using LTO, the high stack watermark during commissioning is 6576 bytes. This is likely
  * due to inlining and other optimizations.
  */
 #define CHIP_DEVICE_CONFIG_CHIP_TASK_STACK_SIZE (8 * 1024)

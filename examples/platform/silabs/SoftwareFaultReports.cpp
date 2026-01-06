@@ -128,11 +128,9 @@ extern "C" __attribute__((used)) void debugHardfault(uint32_t * sp)
     [[maybe_unused]] uint32_t psr   = sp[7];
 
     ChipLogError(NotSpecified, "HardFault:\r\n");
-    SILABS_UART_FLUSH();
     ChipLogError(NotSpecified, "SCB->CFSR   0x%08lx\r\n", cfsr);
     ChipLogError(NotSpecified, "SCB->HFSR   0x%08lx\r\n", hfsr);
     ChipLogError(NotSpecified, "SCB->MMFAR  0x%08lx\r\n", mmfar);
-    ChipLogError(NotSpecified, "SCB->BFAR   0x%08lx\r\n", bfar);
     ChipLogError(NotSpecified, "SCB->BFAR   0x%08lx\r\n", bfar);
     ChipLogError(NotSpecified, "SP          0x%08lx\r\n", (uint32_t) sp);
     SILABS_UART_FLUSH();
