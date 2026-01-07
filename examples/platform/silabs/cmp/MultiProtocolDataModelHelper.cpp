@@ -138,7 +138,10 @@ void Initialize()
     if (zbEndpointCount == 0 && initAttemptsRemaining-- > 0)
     {
         // Zb datamodel not initialized yet, schedule a retry
+        // SL-TEMP: StartTimer requires the chip stack to be locked, since we are not locked during the init.
+        chip::DeviceLayer::PlatformMgr().LockChipStack();
         chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Milliseconds16(100), InitializeRetryCallback, nullptr);
+        chip::DeviceLayer::PlatformMgr().UnlockChipStack();
         return;
     }
 
