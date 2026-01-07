@@ -108,6 +108,8 @@ extern "C" void halInternalAssertFailed(const char * filename, int linenumber)
 #endif
 
 #if HARD_FAULT_LOG_ENABLE
+volatile uint32_t faultId = 0; // Variable to identify the fault handler
+
 /**
  * Log register contents to UART when a hard fault occurs.
  */
@@ -127,7 +129,7 @@ extern "C" __attribute__((used)) void debugHardfault(uint32_t * sp)
     [[maybe_unused]] uint32_t pc    = sp[6];
     [[maybe_unused]] uint32_t psr   = sp[7];
 
-    ChipLogError(NotSpecified, "HardFault:\r\n");
+    ChipLogError(NotSpecified, "HardFault:  0x%08lx\r\n", faultId);
     ChipLogError(NotSpecified, "SCB->CFSR   0x%08lx\r\n", cfsr);
     ChipLogError(NotSpecified, "SCB->HFSR   0x%08lx\r\n", hfsr);
     ChipLogError(NotSpecified, "SCB->MMFAR  0x%08lx\r\n", mmfar);
@@ -167,28 +169,34 @@ extern "C" __attribute__((naked)) void LogFault_Handler(void)
 #ifndef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 extern "C" __attribute__((naked)) void HardFault_Handler(void)
 {
+    faultId = 0x48415244; // 'HARD'
     __asm volatile("b LogFault_Handler");
 }
 extern "C" __attribute__((naked)) void mpu_fault_handler(void)
 {
+    faultId = 0x4D505546; // 'MPUF'
     __asm volatile("b LogFault_Handler");
 }
 extern "C" __attribute__((naked)) void BusFault_Handler(void)
 {
+    faultId = 0x42555346; // 'BUSF'
     __asm volatile("b LogFault_Handler");
 }
 extern "C" __attribute__((naked)) void UsageFault_Handler(void)
 {
+    faultId = 0x55534654; // 'USFT'
     __asm volatile("b LogFault_Handler");
 }
 #if (__CORTEX_M >= 23U)
 extern "C" __attribute__((naked)) void SecureFault_Handler(void)
 {
+    faultId = 0x53464354; // 'SFCT'
     __asm volatile("b LogFault_Handler");
 }
 #endif // (__CORTEX_M >= 23U)
 extern "C" __attribute__((naked)) void DebugMon_Handler(void)
 {
+    faultId = 0x44424D4E; // 'DBMN'
     __asm volatile("b LogFault_Handler");
 }
 #endif // !SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
@@ -314,4 +322,10 @@ extern "C" void RAILCb_AssertFailed(RAIL_Handle_t railHandle, uint32_t errorCode
 }
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 #endif // !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
+
+extern "C" void WDOG0_IRQHandler(void)
+{
+    faultId = 0x57444F47; // 'WDOG'
+    __asm volatile("b LogFault_Handler");
+}
 #endif // HARD_FAULT_LOG_ENABLE
