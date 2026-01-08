@@ -1959,6 +1959,7 @@ endpoint 0 {
   }
 
   server cluster SoftwareDiagnostics {
+    callback attribute threadMetrics;
     callback attribute currentHeapFree;
     callback attribute currentHeapUsed;
     callback attribute currentHeapHighWatermark;
