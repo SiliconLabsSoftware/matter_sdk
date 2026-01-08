@@ -321,7 +321,7 @@ CHIP_ERROR BaseApplication::Init()
 
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 #ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
-    MultiProtocolDataModel::Initialize();
+    chip::DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t) { MultiProtocolDataModel::Initialize(); });
 #endif // SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
 
 #ifdef SL_MATTER_ZIGBEE_SEQUENTIAL
@@ -947,9 +947,6 @@ void BaseApplication::ScheduleFactoryReset()
         PlatformMgr().HandleServerShuttingDown(); // HandleServerShuttingDown calls OnShutdown() which is only implemented for the
                                                   // basic information cluster it seems. And triggers and Event flush, which is not
                                                   // relevant when there are no fabrics left
-#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
-        Zigbee::TokenFactoryReset();
-#endif
         ConfigurationMgr().InitiateFactoryReset();
     });
 }

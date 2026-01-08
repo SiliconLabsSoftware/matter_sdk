@@ -124,7 +124,7 @@ void SynchMultiProtocolAttributes(chip::EndpointId endpointId, const MpClusterMe
 // Timer callback to retry Multiprotocol initial data model synchronization
 static void InitializeRetryCallback(chip::System::Layer * systemLayer, void * appState)
 {
-    Initialize();
+    chip::DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t) { Initialize(); });
 }
 
 void Initialize()
@@ -137,11 +137,7 @@ void Initialize()
     uint8_t zbEndpointCount              = sl_zigbee_af_endpoint_count();
     if (zbEndpointCount == 0 && initAttemptsRemaining-- > 0)
     {
-        // Zb datamodel not initialized yet, schedule a retry
-        // SL-TEMP: StartTimer requires the chip stack to be locked, since we are not locked during the init.
-        chip::DeviceLayer::PlatformMgr().LockChipStack();
         chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Milliseconds16(100), InitializeRetryCallback, nullptr);
-        chip::DeviceLayer::PlatformMgr().UnlockChipStack();
         return;
     }
 
