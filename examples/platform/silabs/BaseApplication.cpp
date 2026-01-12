@@ -321,7 +321,7 @@ CHIP_ERROR BaseApplication::Init()
 
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 #ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
-    chip::DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t) { MultiProtocolDataModel::Initialize(); });
+    MultiProtocolDataModel::Initialize();
 #endif // SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
 
 #ifdef SL_MATTER_ZIGBEE_SEQUENTIAL
