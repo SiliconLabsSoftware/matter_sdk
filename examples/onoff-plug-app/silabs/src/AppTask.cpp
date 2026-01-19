@@ -198,7 +198,7 @@ void AppTask::ActionCallback(OnOffPlugManager::Action_t aAction, int32_t aActor)
 
     if (aActor == AppEvent::kEventType_Button)
     {
-        chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
     }
 }
 

@@ -173,7 +173,7 @@ void SensorUI(GLIB_Context_t * glibContext)
     WorkContext * context = new WorkContext{ glibContext, line };
 
     // Schedule work to get and write temperature and Humidity values
-    chip::DeviceLayer::PlatformMgr().ScheduleWork(
+    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(
         [](intptr_t contextPtr) {
             GetTemperatureHumidityWork(contextPtr);
             delete reinterpret_cast<WorkContext *>(contextPtr); // Clean up the context

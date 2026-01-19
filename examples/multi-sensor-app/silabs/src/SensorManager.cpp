@@ -31,8 +31,7 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
-#include <app/clusters/occupancy-sensor-server/occupancy-hal.h>
-#include <app/clusters/occupancy-sensor-server/occupancy-sensor-server.h>
+// #include <app/clusters/occupancy-sensor-server/occupancy-hal.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_cmsis_os2_common.h>
 
@@ -184,7 +183,13 @@ void ButtonActionTriggered(AppEvent * aEvent)
 {
     VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Button);
 
-    DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
+    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
+        // OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(endpointId);
+        // VerifyOrReturn(cluster != nullptr);
+        bool state = OccupancySensing::IsOccupied();
+        OccupancySensing::SetOccupancy(!state);
+
+#if 0
         chip::BitMask<OccupancySensing::OccupancyBitmap> state;
         OccupancySensing::Attributes::Occupancy::Get(kOccupancySensorEndpoint, &state);
 
@@ -198,6 +203,7 @@ void ButtonActionTriggered(AppEvent * aEvent)
         }
 
         OccupancySensing::Attributes::Occupancy::Set(kOccupancySensorEndpoint, state);
+#endif
     });
 }
 
@@ -239,12 +245,17 @@ Status GetMinMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value)
 
 bool IsOccupancyDetected()
 {
-    chip::BitMask<OccupancySensing::OccupancyBitmap> state;
+    // chip::BitMask<OccupancySensing::OccupancyBitmap> state;
     DeviceLayer::PlatformMgr().LockChipStack();
+    // OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(endpointId);
+    // VerifyOrReturnValue(cluster != nullptr);
+    bool state = OccupancySensing::IsOccupied();
+#if 0
     OccupancySensing::Attributes::Occupancy::Get(kOccupancySensorEndpoint, &state);
+#endif
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    return state.Has(OccupancySensing::OccupancyBitmap::kOccupied);
+    return state;
 }
 
 } // namespace SensorManager
