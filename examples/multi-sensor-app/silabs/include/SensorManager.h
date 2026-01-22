@@ -21,7 +21,7 @@
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
-#include <app/clusters/occupancy-sensor-server/occupancy-hal.h>
+#include <app/clusters/occupancy-sensor-server/CodegenIntegration.h>
 #include <app/data-model/Nullable.h>
 #include <lib/core/CHIPError.h>
 #include <protocols/interaction_model/StatusCode.h>
