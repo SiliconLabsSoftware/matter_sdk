@@ -90,6 +90,10 @@
 #include <performance_test_commands.h>
 #endif // PERFORMANCE_TEST_ENABLED
 
+#ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
+#include <app-common/zap-generated/callback.h>
+#endif
+
 // SL-Only
 #include "sl_component_catalog.h"
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
@@ -184,13 +188,7 @@ SilabsLCD slLCD;
 #ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
 Clusters::Identify::EffectIdentifierEnum sIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
 
-Identify gIdentify = {
-    chip::EndpointId{ 1 },
-    BaseApplication::OnIdentifyStart,
-    BaseApplication::OnIdentifyStop,
-    Clusters::Identify::IdentifyTypeEnum::kVisibleIndicator,
-    BaseApplication::OnTriggerIdentifyEffect,
-};
+ObjectPool<Identify, MATTER_DM_IDENTIFY_CLUSTER_SERVER_ENDPOINT_COUNT + CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT> IdentifyPool;
 
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 
@@ -427,7 +425,7 @@ CHIP_ERROR BaseApplication::BaseInit()
 #endif
 #if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
     ReturnErrorOnFailure(sBleSideChannel.Init());
-    DeviceLayer::Internal::BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
+    TEMPORARY_RETURN_IGNORED DeviceLayer::Internal::BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
 #endif
 
     err = chip::Server::GetInstance().GetFabricTable().AddFabricDelegate(&sAppDelegate);
@@ -473,7 +471,16 @@ bool BaseApplication::ActivateStatusLedPatterns()
     bool isPatternSet = false;
 #if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
 #ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
-    if (gIdentify.mActive)
+    bool isIdentifyActive = false;
+    for (const auto & obj : IdentifyPool)
+    {
+        if (obj->mActive)
+        {
+            isIdentifyActive = true;
+            break;
+        }
+    }
+    if (isIdentifyActive)
     {
         // Identify in progress
         // Do a steady blink on the status led
@@ -826,6 +833,12 @@ void BaseApplication::OnTriggerIdentifyEffect(Identify * identify)
         sIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
         ChipLogProgress(Zcl, "No identifier effect");
     }
+}
+
+void emberAfIdentifyClusterInitCallback(chip::EndpointId endpoint)
+{
+    IdentifyPool.CreateObject(endpoint, BaseApplication::OnIdentifyStart, BaseApplication::OnIdentifyStop,
+                              Clusters::Identify::IdentifyTypeEnum::kVisibleIndicator, BaseApplication::OnTriggerIdentifyEffect);
 }
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 

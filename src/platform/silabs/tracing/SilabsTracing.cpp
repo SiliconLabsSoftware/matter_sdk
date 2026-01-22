@@ -365,7 +365,7 @@ CHIP_ERROR SilabsTracer::TimeTraceEnd(TimeTraceOperation aOperation, CHIP_ERROR 
 
         auto & metric = mMetrics[to_underlying(aOperation)];
 
-        FinishMetric(metric, duration);
+        TEMPORARY_RETURN_IGNORED FinishMetric(metric, duration);
     }
     return OutputTrace(tracker);
 }
@@ -477,7 +477,7 @@ CHIP_ERROR SilabsTracer::OutputTimeTracker(const TimeTracker & tracker)
 CHIP_ERROR SilabsTracer::OutputTrace(const TimeTracker & tracker)
 {
     // We allow error here as we want to buffer even if the logs are currently uninitialized
-    OutputTimeTracker(tracker);
+    TEMPORARY_RETURN_IGNORED OutputTimeTracker(tracker);
 
     if (mBufferedTrackerCount < kMaxBufferedTraces - 1)
     {
