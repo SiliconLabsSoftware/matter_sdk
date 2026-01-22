@@ -425,7 +425,7 @@ CHIP_ERROR BaseApplication::BaseInit()
 #endif
 #if defined(SL_BLE_SIDE_CHANNEL_ENABLED) && SL_BLE_SIDE_CHANNEL_ENABLED
     ReturnErrorOnFailure(sBleSideChannel.Init());
-    DeviceLayer::Internal::BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
+    TEMPORARY_RETURN_IGNORED DeviceLayer::Internal::BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
 #endif
 
     err = chip::Server::GetInstance().GetFabricTable().AddFabricDelegate(&sAppDelegate);
