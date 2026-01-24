@@ -1,0 +1,30 @@
+name: Static Analysis
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+jobs:
+    static-analysis:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+                uses: actions/checkout@v3
+
+            - name: Install cppcheck
+                run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+            - name: Run cppcheck
+                run: |
+                    cppcheck --enable=all --inconclusive --std=c++11 --language=c++ --quiet \
+                        --suppress=missingIncludeSystem \
+                        . 2> cppcheck-report.txt
+
+            - name: Annotate cppcheck results
+                if: always()
+                uses: actions/upload-artifact@v3
+                with:
+                    name: cppcheck-report
+                    path: cppcheck-report.txt
