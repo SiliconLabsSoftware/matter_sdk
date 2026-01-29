@@ -44,6 +44,12 @@
 
 #include "ZigbeeCallbacks.h"
 
+#if SL_MATTER_CMP_SECURE_ZIGBEE
+#include "sl_token_manager_api.h"
+#include "sl_token_manager_defines.h"
+#include "sl_token_manager_manufacturing.h"
+#endif // SL_MATTER_CMP_SECURE_ZIGBEE
+
 static sl_zigbee_af_event_t start_zigbee_event;
 static sl_zigbee_af_event_t finding_and_binding_event;
 static bool pendingRestart = false;
@@ -97,77 +103,71 @@ void TokenFactoryReset()
 } // namespace Zigbee
 
 #if SL_MATTER_CMP_SECURE_ZIGBEE
-sl_802154_long_addr_t reverse_eui64 = { SL_MATTER_CMP_INSTALL_CODE_EUID64 };
-uint8_t code[18]                    = { SL_MATTER_CMP_INSTALL_CODE };
-
-extern "C" void option_install_code(void)
+extern "C" void option_install_code(sl_zigbee_sec_man_key_t * key, sl_802154_long_addr_t eui64)
 {
 #if (defined(EMBER_AF_HAS_SECURITY_PROFILE_SE_TEST) || defined(EMBER_AF_HAS_SECURITY_PROFILE_SE_FULL) ||                           \
      defined(EMBER_AF_HAS_SECURITY_PROFILE_Z3))
-
-    sl_zigbee_key_data_t key;
-    sl_status_t status;
-    uint8_t length = 18;
-
-    // Convert the install code to a key.
-    status = sli_zigbee_af_install_code_to_key(code, length, &key);
-
-    if (SL_STATUS_OK != status)
+    if (key == nullptr)
     {
-        if (SL_STATUS_INVALID_CONFIGURATION == status)
-        {
-            SILABS_LOG("ERR: Calculated CRC does not match");
-        }
-        else if (SL_STATUS_INVALID_PARAMETER == status)
-        {
-            SILABS_LOG("ERR: Install Code must be 8, 10, 14, or 18 bytes in "
-                       "length");
-        }
-        else
-        {
-            SILABS_LOG("ERR: AES-MMO hash failed: 0x%x", status);
-        }
         return;
     }
-
 #ifndef EMBER_AF_HAS_SECURITY_PROFILE_Z3
     // Add the key to the link key table.
 
-    status = sl_zigbee_sec_man_import_link_key(0, // index
-                                               reverse_eui64, (sl_zigbee_sec_man_key_t *) &key);
+    sl_status_t status = sl_zigbee_sec_man_import_link_key(0, // index
+                                                           eui64, (sl_zigbee_sec_man_key_t *) &key);
     SILABS_LOG("add link key %lu", status);
 #else
     // Add the key to the transient key table.
     // This will be used while the DUT joins.
-    if (SL_STATUS_OK == status)
-    {
-        status = sl_zigbee_sec_man_import_transient_key(reverse_eui64, (sl_zigbee_sec_man_key_t *) &key);
-        SILABS_LOG("Set joining link key %lu", status);
-    }
+    sl_status_t status = sl_zigbee_sec_man_import_transient_key(eui64, (sl_zigbee_sec_man_key_t *) &key);
+    SILABS_LOG("Set joining link key %lu", status);
 #endif
 
 #else
+    (void) key;
+    (void) eui64;
     SILABS_LOG("This command only supports the Z3 or SE application profile.");
 #endif
 }
 
-extern "C" void open_network_with_key()
+extern "C" sl_status_t open_network_with_key()
 {
     sl_zigbee_key_data_t keyData;
     sl_status_t status;
+    const uint8_t installCodeLength           = SL_ZIGBEE_ENCRYPTION_KEY_SIZE + SL_ZIGBEE_INSTALL_CODE_CRC_SIZE;
+    uint8_t installCode[installCodeLength]    = { SL_MATTER_CMP_INSTALL_CODE };
+    sl_802154_long_addr_t eui64               = { SL_MATTER_CMP_INSTALL_CODE_EUID64 };
+    tokTypeMfgInstallationCode tokInstallCode = {};
 
-    // Convert the install code to a key.
-    status = sli_zigbee_af_install_code_to_key(code, length, &key);
-
-    if (SL_STATUS_OK != status)
+    status = sl_token_manager_get_data(SL_TOKEN_GET_STATIC_SECURE_TOKEN(TOKEN_MFG_INSTALLATION_CODE), (void *) &tokInstallCode,
+                                       sizeof(tokTypeMfgInstallationCode));
+    if (status == SL_STATUS_OK)
     {
-        SILABS_LOG("%s: Failed to convert install code: 0x%X", SL_ZIGBEE_AF_PLUGIN_NETWORK_CREATOR_SECURITY_PLUGIN_NAME, status);
-        return;
+        if (sizeof(tokInstallCode.value) != SL_ZIGBEE_ENCRYPTION_KEY_SIZE)
+        {
+            return SL_STATUS_INVALID_KEY;
+        }
+
+        memcpy(installCode, tokInstallCode.value, SL_ZIGBEE_ENCRYPTION_KEY_SIZE);
+        // two last bytes are the CRC
+        installCode[SL_ZIGBEE_ENCRYPTION_KEY_SIZE]     = tokInstallCode.crc & 0xFF;        // CRC LSB
+        installCode[SL_ZIGBEE_ENCRYPTION_KEY_SIZE + 1] = (tokInstallCode.crc >> 8) & 0xFF; // CRC MSB
     }
 
-    status = sl_zigbee_af_network_creator_security_open_network_with_key_pair(reverse_eui64, keyData);
+    // Convert the install code to a key.
+    status = sli_zigbee_af_install_code_to_key(installCode, installCodeLength, &keyData);
+    if (SL_STATUS_OK != status)
+    {
+        return status;
+    }
 
-    SILABS_LOG("%s: Open network: 0x%X", SL_ZIGBEE_AF_PLUGIN_NETWORK_CREATOR_SECURITY_PLUGIN_NAME, status);
+    status = sl_zigbee_af_network_creator_security_open_network_with_key_pair(eui64, keyData);
+    if (SL_STATUS_OK == status)
+    {
+        option_install_code((sl_zigbee_sec_man_key_t *) &keyData, eui64);
+    }
+    return status;
 }
 #endif // SL_MATTER_CMP_SECURE_ZIGBEE
 
@@ -203,8 +203,7 @@ extern "C" void start_zigbee_event_handler(sl_zigbee_af_event_t * event)
     else if (sl_zigbee_af_network_state() == SL_ZIGBEE_JOINED_NETWORK)
     {
 #if SL_MATTER_CMP_SECURE_ZIGBEE
-        open_network_with_key();
-        option_install_code();
+        SILABS_LOG(" [ZB] Open network with key status: 0x%X", open_network_with_key());
 #else
         SILABS_LOG(" [ZB] Start_evt_handler: Permitting Join");
         sl_zigbee_af_permit_join(254, NULL);
@@ -275,12 +274,11 @@ extern "C" void sl_zigbee_af_main_init_cb(void)
  */
 extern "C" void sl_zigbee_af_network_creator_complete_cb(const sl_zigbee_network_parameters_t * network, bool usedSecondaryChannels)
 {
-    SILABS_LOG(" [ZB] Form Network Complete: 0x%X", SL_STATUS_OK);
+    SILABS_LOG(" [ZB] Form Network Complete");
 #if SL_MATTER_CMP_SECURE_ZIGBEE
-    open_network_with_key();
-    option_install_code();
+    SILABS_LOG(" [ZB] Open network with key status: 0x%X", open_network_with_key());
 #else
-    SILABS_LOG(" [ZB] af_network_creator_complete: Permitting Join");
+    SILABS_LOG(" [ZB] Permitting Join");
     sl_zigbee_af_permit_join(254, NULL);
 #endif // SL_MATTER_CMP_SECURE_ZIGBEE
 }
