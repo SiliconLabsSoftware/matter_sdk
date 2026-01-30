@@ -152,7 +152,7 @@ if [ "$#" == "0" ]; then
         --release
             Remove all logs and debugs features (including the LCD). Yield the smallest image size possible
         --docker
-            Change GSDK root for docker builds
+            Change SiSDK root for docker builds
         --uart_log
             Forward Logs to Uart instead of RTT
         --slc_generate
@@ -210,6 +210,14 @@ else
                 ;;
             --icd)
                 optArgs+="chip_enable_icd_server=true chip_openthread_ftd=false sl_enable_test_event_trigger=true "
+                shift
+                ;;
+            --lit-icd-internal-use-only)
+                optArgs+="chip_enable_icd_server=true chip_openthread_ftd=false sl_enable_test_event_trigger=true "
+                optArgs+="chip_subscription_timeout_resumption=false sl_use_subscription_syncing=true "
+                optArgs+="chip_enable_icd_lit=true chip_icd_report_on_active_mode=true chip_enable_icd_dsls=true "
+                optArgs+="sl_transport_idle_interval_ms=3600000 sl_transport_active_interval_ms=1000 "
+                optArgs+="sl_idle_mode_duration_s=3600 sl_active_mode_duration_ms=0 sl_active_mode_threshold_ms=5000 "
                 shift
                 ;;
             --low-power)

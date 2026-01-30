@@ -738,7 +738,7 @@ cluster Binding = 30 {
       and enforce Access Control for the Node's endpoints and their associated
       cluster instances. */
 cluster AccessControl = 31 {
-  revision 3;
+  revision 2;
 
   enum AccessControlAuxiliaryTypeEnum : enum8 {
     kSystem = 0;
@@ -5790,7 +5790,7 @@ cluster ElectricalGridConditions = 160 {
 
 /** An interface to a generic way to secure a door */
 cluster DoorLock = 257 {
-  revision 7;
+  revision 9;
 
   enum AlarmCodeEnum : enum8 {
     kLockJammed = 0;
@@ -6441,7 +6441,7 @@ cluster DoorLock = 257 {
 
 /** Provides an interface for controlling and adjusting automatic window coverings. */
 cluster WindowCovering = 258 {
-  revision 5;
+  revision 7;
 
   enum EndProductType : enum8 {
     kRollerShade = 0;
@@ -7604,7 +7604,7 @@ cluster ThermostatUserInterfaceConfiguration = 516 {
 
 /** Attributes and commands for controlling the color properties of a color-capable light. */
 cluster ColorControl = 768 {
-  revision 7;
+  revision 8;
 
   enum ColorLoopActionEnum : enum8 {
     kDeactivate = 0;

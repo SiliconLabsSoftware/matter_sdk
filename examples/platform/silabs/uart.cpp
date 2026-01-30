@@ -161,13 +161,19 @@ static osThreadId_t sUartTaskHandle;
 constexpr uint32_t kUartTaskSize = 1024;
 static uint8_t uartStack[kUartTaskSize];
 static osThread_t sUartTaskControlBlock;
-constexpr osThreadAttr_t kUartTaskAttr = { .name       = "UART",
-                                           .attr_bits  = osThreadDetached,
-                                           .cb_mem     = &sUartTaskControlBlock,
-                                           .cb_size    = osThreadCbSize,
-                                           .stack_mem  = uartStack,
-                                           .stack_size = kUartTaskSize,
-                                           .priority   = osPriorityRealtime6 }; // Must be above Matter Task priority
+constexpr osThreadAttr_t kUartTaskAttr = {
+    .name       = "UART",
+    .attr_bits  = osThreadDetached,
+    .cb_mem     = &sUartTaskControlBlock,
+    .cb_size    = osThreadCbSize,
+    .stack_mem  = uartStack,
+    .stack_size = kUartTaskSize,
+#if SLI_SI91X_MCU_INTERFACE
+    .priority = osPriorityBelowNormal, // for SOC, must be below Matter Task priority
+#else
+    .priority = osPriorityRealtime6, // Must be above Matter Task priority
+#endif // SLI_SI91X_MCU_INTERFACE
+};
 
 uint32_t sMissedLogCount = 0; // Count of logs that were not sent to the UART due to queue full
 
@@ -195,6 +201,22 @@ static Fifo_t sReceiveFifo;
 static void UART_rx_callback(UARTDRV_Handle_t handle, Ecode_t transferStatus, uint8_t * data, UARTDRV_Count_t transferCount);
 #endif // SLI_SI91X_MCU_INTERFACE == 0
 static void uartSendBytes(UartTxStruct_t & bufferStruct);
+
+#if SLI_SI91X_MCU_INTERFACE
+static void ensureNullTermination(UartTxStruct_t & bufferStruct)
+{
+    if (bufferStruct.length > 0 && bufferStruct.length < MATTER_ARRAY_SIZE(bufferStruct.data) &&
+        bufferStruct.data[bufferStruct.length - 1] != '\0')
+    {
+        bufferStruct.data[bufferStruct.length] = '\0';
+    }
+    else
+    {
+        uint16_t nullPos           = (bufferStruct.length == 0) ? 0 : MATTER_ARRAY_SIZE(bufferStruct.data) - 1;
+        bufferStruct.data[nullPos] = '\0';
+    }
+}
+#endif
 
 static bool InitFifo(Fifo_t * fifo, uint8_t * pDataBuffer, uint16_t bufferSize)
 {
@@ -494,7 +516,7 @@ int16_t uartLogWrite(const char * log, uint16_t length)
     return UART_CONSOLE_ERR;
 }
 
-/*
+/**
  *   @brief Read the data available from the console Uart
  *   @param Buffer for the data to be read, number bytes to read.
  *   @return Amount of bytes that was read from the rx fifo or ERROR (-1)
@@ -565,15 +587,7 @@ void uartMainLoop(void * args)
 void uartSendBytes(UartTxStruct_t & bufferStruct)
 {
 #if SLI_SI91X_MCU_INTERFACE
-    // ensuring null termination of buffer
-    if (bufferStruct.length < MATTER_ARRAY_SIZE(bufferStruct.data) && bufferStruct.data[bufferStruct.length - 1] != '\0')
-    {
-        bufferStruct.data[bufferStruct.length] = '\0';
-    }
-    else
-    {
-        bufferStruct.data[MATTER_ARRAY_SIZE(bufferStruct.data) - 1] = '\0';
-    }
+    ensureNullTermination(bufferStruct);
     Board_UARTPutSTR(bufferStruct.data);
 #else
 #if defined(SL_CATALOG_POWER_MANAGER_PRESENT)
@@ -616,20 +630,62 @@ void uartFlushTxQueue(void)
     while (osMessageQueueGet(sUartTxQueue, &workBuffer, nullptr, 0) == osOK)
     {
 #if SLI_SI91X_MCU_INTERFACE
-        // ensuring null termination of buffer
-        if (workBuffer.length < MATTER_ARRAY_SIZE(workBuffer.data) && workBuffer.data[workBuffer.length - 1] != '\0')
-        {
-            workBuffer.data[workBuffer.length] = '\0';
-        }
-        else
-        {
-            workBuffer.data[MATTER_ARRAY_SIZE(workBuffer.data) - 1] = '\0';
-        }
+        ensureNullTermination(workBuffer);
         Board_UARTPutSTR(workBuffer.data);
 #else
         UARTDRV_ForceTransmit(vcom_handle, workBuffer.data, workBuffer.length);
 #endif
     }
+}
+
+#if SLI_SI91X_MCU_INTERFACE
+/**
+ * @brief Blocking UART transmit using direct register polling.
+ *
+ * This function bypasses the interrupt-driven UART driver and writes directly
+ * to the UART registers. It is intended ONLY for use in crash/failure scenarios
+ * (e.g., chipDie) where interrupts may be disabled or the system is in an
+ * undefined state.
+ *
+ * @param data   Pointer to data buffer to transmit
+ * @param length Number of bytes to transmit
+ */
+static void uartBlockingTransmit(const char * data, uint16_t length)
+{
+    VerifyOrReturn(data != nullptr && length > 0);
+
+    // Matter always uses ULP_UART for debug output on SiWx917
+    USART0_Type * uart = ULP_UART;
+    VerifyOrReturn(uart != nullptr);
+
+    for (uint16_t i = 0; i < length; i++)
+    {
+        // Wait for Transmit Holding Register to be empty (LSR bit 5)
+        while (!(uart->LSR_b.THRE))
+        {
+            // Busy wait - no timeout since we're in a crash state anyway
+        }
+        // Write byte to Transmit Holding Register
+        uart->THR = data[i];
+    }
+
+    // Wait for transmitter to fully complete (LSR bit 6 - TEMT)
+    while (!(uart->LSR_b.TEMT))
+    {
+        // Busy wait for last byte to finish transmitting
+    }
+}
+#endif // SLI_SI91X_MCU_INTERFACE
+
+void uartForceTransmit(const char * data, uint16_t length)
+{
+    VerifyOrReturn(data != nullptr && length > 0);
+
+#if SLI_SI91X_MCU_INTERFACE
+    uartBlockingTransmit(data, length);
+#else
+    UARTDRV_ForceTransmit(vcom_handle, reinterpret_cast<uint8_t *>(const_cast<char *>(data)), length);
+#endif
 }
 
 #ifdef __cplusplus

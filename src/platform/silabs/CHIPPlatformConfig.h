@@ -122,6 +122,13 @@
 #define CHIP_CONFIG_ICD_CLIENTS_SUPPORTED_PER_FABRIC SL_ICD_SUPPORTED_CLIENTS_PER_FABRIC
 #endif // CHIP_CONFIG_ICD_CLIENTS_SUPPORTED_PER_FABRIC
 
+#ifdef SL_WIFI
+#ifndef CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE
+#define CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE 3
+#endif // CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE
+static_assert(CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE >= 3, "ICD Observers pool size must be at least 3");
+#endif // SL_WIFI
+
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #ifndef CHIP_CONFIG_MRP_RETRY_INTERVAL_SENDER_BOOST
@@ -149,3 +156,12 @@
 #ifndef CHIP_SHELL_MAX_TOKENS
 #define CHIP_SHELL_MAX_TOKENS 40
 #endif // CHIP_SHELL_MAX_TOKENS
+
+// ==================== Platform-Specific Overrides ====================
+// Define chipDie before CodeUtils.h includes it
+// This allows Silabs to provide custom chipDie implementation
+// The #ifndef check in CodeUtils.h will prevent the inline definition if this is declared
+#ifndef chipDie
+extern "C" void chipDie(void) __attribute((noreturn));
+#define chipDie chipDie
+#endif

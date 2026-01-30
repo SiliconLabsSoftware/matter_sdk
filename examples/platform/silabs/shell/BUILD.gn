@@ -20,11 +20,18 @@ import("${chip_root}/third_party/silabs/silabs_board.gni")
 # This is necessary since the BUILD.gn for both platforms are still split
 shell_dependency_path = "${chip_root}/examples/platform/silabs/efr32"
 if (wifi_soc) {
-  shell_dependency_path = "${chip_root}/examples/platform/silabs/SiWx917"
+  shell_dependency_path = "${chip_root}/examples/platform/silabs/SiWx"
 }
 
 config("icd-shell-config") {
   include_dirs = [ "./icd/" ]
+}
+
+config("tracing-shell-config") {
+  include_dirs = [ "./tracing/" ]
+}
+config("ble-shell-config") {
+  include_dirs = [ "./ble/" ]
 }
 
 source_set("icd") {
@@ -39,4 +46,29 @@ source_set("icd") {
     "${chip_root}/src/app/icd/server:notifier",
     "${shell_dependency_path}:matter-shell",
   ]
+}
+
+source_set("tracing") {
+  sources = [
+    "./tracing/TracingShellCommands.cpp",
+    "./tracing/TracingShellCommands.h",
+  ]
+
+  public_configs = [ ":tracing-shell-config" ]
+
+  deps = [
+    "${chip_root}/src/platform/silabs/tracing:SilabsTracing",
+    "${shell_dependency_path}:matter-shell",
+  ]
+}
+
+source_set("ble") {
+  sources = [
+    "./ble/BLEShellCommands.cpp",
+    "./ble/BLEShellCommands.h",
+  ]
+
+  public_configs = [ ":ble-shell-config" ]
+
+  deps = [ "${shell_dependency_path}:matter-shell" ]
 }
