@@ -823,7 +823,7 @@ BLEManagerImpl::EventFilter BLEManagerImpl::HandleConnectParams(volatile sl_bt_m
                                             BLE_CONFIG_LATENCY, desiredTimeout, BLE_CONFIG_MIN_CE_LENGTH, BLE_CONFIG_MAX_CE_LENGTH);
         }
 
-        RETURN_SAFELY_IGNOREDPlatformMgr().ScheduleWork(DriveBLEState, 0);
+        RETURN_SAFELY_IGNORED PlatformMgr().ScheduleWork(DriveBLEState, 0);
     }
     return eventFilter;
 }
