@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2020 Project CHIP Authors
+ *    Copyright (c) 2020-2026 Project CHIP Authors
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@
 #include "WindowCoveringManager.h"
 #include "air-quality-instance.h"
 #include "app-common/zap-generated/ids/Clusters.h"
-#include "camera-av-settings-user-level-management-instance.h"
 #include "dishwasher-mode.h"
 #include "include/diagnostic-logs-provider-delegate-impl.h"
 #include "include/tv-callbacks.h"
@@ -33,7 +32,6 @@
 #include "operational-state-delegate-impl.h"
 #include "oven-modes.h"
 #include "oven-operational-state-delegate.h"
-#include "push-av-stream-transport-delegate-impl.h"
 #include "resource-monitoring-delegates.h"
 #include "rvc-modes.h"
 #include "rvc-operational-state-delegate-impl.h"
@@ -51,7 +49,6 @@
 #include <app/clusters/laundry-dryer-controls-server/laundry-dryer-controls-server.h>
 #include <app/clusters/laundry-washer-controls-server/laundry-washer-controls-server.h>
 #include <app/clusters/mode-base-server/mode-base-server.h>
-#include <app/clusters/push-av-stream-transport-server/CodegenIntegration.h>
 #include <app/clusters/thermostat-server/thermostat-server.h>
 #include <app/clusters/time-synchronization-server/time-synchronization-cluster.h>
 #include <app/clusters/unit-localization-server/unit-localization-server.h>
@@ -119,7 +116,6 @@ Clusters::TemperatureControl::AppSupportedTemperatureLevelsDelegate sAppSupporte
 Clusters::ModeSelect::StaticSupportedModesManager sStaticSupportedModesManager;
 Clusters::ValveConfigurationAndControl::ValveControlDelegate sValveDelegate;
 Clusters::TimeSynchronization::ExtendedTimeSyncDelegate sTimeSyncDelegate;
-Clusters::PushAvStreamTransport::PushAvStreamTransportManager gPushAvStreamTransportManager;
 
 // Please refer to https://github.com/CHIP-Specifications/connectedhomeip-spec/blob/master/src/namespaces
 constexpr const uint8_t kNamespaceCommon   = 7;
@@ -193,7 +189,7 @@ void ApplicationInit()
     if ((!path.empty()) and (sChipNamedPipeCommands.Start(path, &sAllClustersCommandDelegate) != CHIP_NO_ERROR))
     {
         ChipLogError(NotSpecified, "Failed to start CHIP NamedPipeCommands");
-        sChipNamedPipeCommands.Stop();
+        TEMPORARY_RETURN_IGNORED sChipNamedPipeCommands.Stop();
     }
 
 #ifdef MATTER_DM_PLUGIN_DISHWASHER_ALARM_SERVER
@@ -213,20 +209,21 @@ void ApplicationInit()
     VerifyOrDie(Clusters::UnitLocalization::UnitLocalizationServer::Instance().SetTemperatureUnit(
                     Clusters::UnitLocalization::TempUnitEnum::kFahrenheit) == CHIP_NO_ERROR);
 
-    Clusters::PushAvStreamTransport::SetDelegate(chip::EndpointId(1), &gPushAvStreamTransportManager);
-    Clusters::PushAvStreamTransport::SetTLSClientManagementDelegate(chip::EndpointId(1),
-                                                                    &Clusters::TlsClientManagementCommandDelegate::GetInstance());
-
     VerifyOrDie(CodegenDataModelProvider::Instance().Registry().Register(gIdentifyCluster1.Registration()) == CHIP_NO_ERROR);
     VerifyOrDie(CodegenDataModelProvider::Instance().Registry().Register(gIdentifyCluster2.Registration()) == CHIP_NO_ERROR);
     VerifyOrDie(CodegenDataModelProvider::Instance().Registry().Register(gIdentifyCluster3.Registration()) == CHIP_NO_ERROR);
     VerifyOrDie(CodegenDataModelProvider::Instance().Registry().Register(gIdentifyCluster4.Registration()) == CHIP_NO_ERROR);
 
-    SetTagList(/* endpoint= */ 0, Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp0TagList));
-    SetTagList(/* endpoint= */ 1, Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp1TagList));
-    SetTagList(/* endpoint= */ 2, Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp2TagList));
-    SetTagList(/* endpoint= */ 3, Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp3TagList));
-    SetTagList(/* endpoint= */ 4, Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp4TagList));
+    TEMPORARY_RETURN_IGNORED SetTagList(/* endpoint= */ 0,
+                                        Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp0TagList));
+    TEMPORARY_RETURN_IGNORED SetTagList(/* endpoint= */ 1,
+                                        Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp1TagList));
+    TEMPORARY_RETURN_IGNORED SetTagList(/* endpoint= */ 2,
+                                        Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp2TagList));
+    TEMPORARY_RETURN_IGNORED SetTagList(/* endpoint= */ 3,
+                                        Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp3TagList));
+    TEMPORARY_RETURN_IGNORED SetTagList(/* endpoint= */ 4,
+                                        Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(gEp4TagList));
 }
 
 void ApplicationShutdown()

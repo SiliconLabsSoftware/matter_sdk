@@ -148,6 +148,8 @@ CodeDrivenClusters:
     - Basic Information
     - Binding
     - Boolean State
+    - Camera AV Stream Management
+    - Chime
     - Descriptor
     - Diagnostic Logs
     - Ethernet Network Diagnostics
@@ -162,6 +164,8 @@ CodeDrivenClusters:
     - Operational Credentials
     - Push AV Stream Transport
     - Software Diagnostics
+    - TLS Certificate Management
+    - TLS Client Management
     - Time Format Localization
     - User Label
     - Wi-Fi Network Diagnostics
