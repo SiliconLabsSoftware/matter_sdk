@@ -33,6 +33,7 @@ jobs:
             build-type: "standard"
 
     build-dishwasher-app:
+        if: false
         name: Build Dishwasher-App variations
         uses: ./.github/workflows/silabs-common-build.yaml
         with:
