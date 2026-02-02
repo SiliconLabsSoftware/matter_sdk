@@ -706,7 +706,8 @@ jobs:
     repl_tests_linux_build:
         name: REPL Tests - Linux (BUILD)
 
-        if: github.actor != 'restyled-io[bot]'
+        # [SL-ONLY]Disable this test as it runs using namespace-profile a CSA Paid for runener
+        if: false
 
         env:
             BUILD_VARIANT: ipv6only-no-ble-no-wifi
@@ -962,7 +963,8 @@ jobs:
         needs: repl_tests_linux_build
         timeout-minutes: 45
 
-        if: github.actor != 'restyled-io[bot]'
+        # [SL-ONLY]Disable this test as it runs using namespace-profile a CSA Paid for runener
+        if: false
 
         strategy:
             # Since some of these tests can be flaky, do not fail all matrix parts when a single one fails

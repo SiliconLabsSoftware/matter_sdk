@@ -23,8 +23,16 @@
 # Usage:
 #  restyle-diff.sh [-d] [ref]
 #
-# if unspecified, ref defaults to upstream/master (or master)
-# -d enables debug logging for Restyle CLI
+# Arguments:
+#   ref     - Git reference to compare against (optional)
+#
+# Options:
+#   -d      - Sets container's log level to DEBUG, if unspecified, the default log level will remain (info level)
+#   -p      - Pulls the Docker image before running the restyle paths
+#
+# Reference Selection (when ref is not specified):
+#   - If origin is https://github.com/SiliconLabsSoftware/matter_sdk.git (main repo): uses origin/main
+#   - Otherwise (fork setup): uses upstream/main if upstream remote exists, otherwise defaults to main
 #
 # Note: This script requires sudo to restore file ownership after restyle
 #  (which uses Docker and changes ownership of restyled files to root). Run this script as a regular user;
@@ -102,8 +110,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$ref" ]]; then
-    ref="master"
-    git remote | grep -qxF upstream && ref="upstream/master"
+    # Check if origin points to the main repo
+    origin_url=$(git remote get-url origin 2>/dev/null || echo "")
+    if [[ "$origin_url" == "https://github.com/SiliconLabsSoftware/matter_sdk.git" ]]; then
+        ref="origin/main"
+    else
+        # Assume fork setup - use upstream/main if available, otherwise local main
+        ref="main"
+        git remote | grep -qxF upstream && ref="upstream/main"
+    fi
 fi
 
 paths=$(git diff --ignore-submodules --name-only --merge-base "$ref")
