@@ -192,7 +192,7 @@ CHIP_ERROR OTAMultiImageProcessorImpl::SelectProcessor(ByteSpan & block)
         return CHIP_OTA_PROCESSOR_NOT_REGISTERED;
     }
 
-    ChipLogDetail(SoftwareUpdate, "Selected processor with tag: %lu", static_cast<uint32_t>(pair->first));
+    ChipLogProgress(SoftwareUpdate, "Selected processor with tag: %lu", static_cast<uint32_t>(pair->first));
     mCurrentProcessor = pair->second;
     mCurrentProcessor->SetLength(header.length);
     mCurrentProcessor->SetWasSelected(true);
