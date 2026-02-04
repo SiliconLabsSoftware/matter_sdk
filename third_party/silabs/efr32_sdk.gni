@@ -99,6 +99,12 @@ declare_args() {
 
   # Enable a Watchdog with debug features to catch software hangs
   sl_matter_debug_watchdog_enable = false
+  # Enables Silabs BLE Side Channel implementation for internal testing
+  # Setting this to true automatically enables sl_enable_ble_side_channel
+  sl_use_internal_ble_side_channel = false
+
+  # Delay before the deferred attribute are stored in nvm, default 2000 when the feature is supported
+  sl_deferred_attribute_store_delay_ms = 2000
 }
 
 examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
@@ -128,6 +134,15 @@ declare_args() {
 
   # Extra ICD configuration parameter. Defaults to previously set sl_idle_mode_duration_s
   sl_short_idle_mode_duration_s = sl_idle_mode_duration_s
+
+  # BLE Side Channel
+  sl_enable_ble_side_channel = sl_use_internal_ble_side_channel
+}
+
+if (sl_use_internal_ble_side_channel) {
+  assert(
+      sl_enable_ble_side_channel,
+      "sl_enable_ble_side_channel must be true when sl_use_internal_ble_side_channel is true")
 }
 
 declare_args() {
@@ -241,6 +256,7 @@ template("efr32_sdk") {
       "${efr32_sdk_root}/platform/middleware/glib/dmd",
       "${efr32_sdk_root}/protocol/bluetooth/inc/",
       "${efr32_sdk_root}/protocol/bluetooth/bgstack/ll/inc",
+      "${efr32_sdk_root}/protocol/bluetooth/config/",
       "${efr32_sdk_root}/util/plugin/plugin-common/fem-control",
       "${efr32_sdk_root}/util/silicon_labs/silabs_core/graphics",
       "${efr32_sdk_root}/util/silicon_labs/silabs_core/memory_manager",
@@ -288,7 +304,6 @@ template("efr32_sdk") {
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/bgstack/release/libble_host.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/bgstack/release/libbondingdb_stub.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi.a",
-          "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_stub_gatt_client.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_system/release/libble_system.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/connection_subrating/release/libble_host_connection_subrating_stub.a",
           "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/core/release/libble_host_core.a",
@@ -435,7 +450,7 @@ template("efr32_sdk") {
     }
 
     if (invoker.enable_matter_aws) {
-      _include_dirs += [ "${chip_root}/third_party/silabs/mqtt/stack" ]
+      _include_dirs += [ "${chip_root}/src/platform/silabs/mqtt/stack" ]
     }
 
     if (sl_enable_si70xx_sensor) {
@@ -464,6 +479,7 @@ template("efr32_sdk") {
       "NVM3_DEFAULT_NVM_SIZE=${sl_nvm3_nvm_size}",
       "NVM3_DEFAULT_MAX_OBJECT_SIZE=${sl_nvm3_max_object_size}",
       "KVS_MAX_ENTRIES=${kvs_max_entries}",
+      "SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS=${sl_deferred_attribute_store_delay_ms}",
       "CORTEXM3=1",
       "MICRO=EMBER_MICRO_CORTEXM3_EFR32",
       "PLAT=EMBER_PLATFORM_CORTEXM3",
@@ -632,6 +648,29 @@ template("efr32_sdk") {
       defines += [ "SL_MATTER_DEBUG_WATCHDOG_ENABLE=0" ]
     }
 
+    if (sl_enable_ble_side_channel) {
+      defines += [ "SL_BLE_SIDE_CHANNEL_ENABLED=1" ]
+    } else {
+      defines += [ "SL_BLE_SIDE_CHANNEL_ENABLED=0" ]
+    }
+
+    if (sl_use_internal_ble_side_channel) {
+      defines += [ "SL_USE_INTERNAL_BLE_SIDE_CHANNEL=1" ]
+    } else {
+      defines += [ "SL_USE_INTERNAL_BLE_SIDE_CHANNEL=0" ]
+    }
+
+    if (sl_enable_ble_side_channel) {
+      # additional defines and lib if BLE side channel is enabled
+      defines += [
+        "SL_BT_ADVERTISER_CONFIG_H",
+        "SL_BT_CONFIG_USER_ADVERTISERS=2",
+      ]
+
+      libs += [ "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_gatt_client.a" ]
+    } else if (!sl_matter_enable_siwx_ble) {
+      libs += [ "${matter_support_root}/sdk-copies/protocol/bluetooth/build/gcc/cortex-m33/ble_host/ble_bgapi/release/libble_bgapi_stub_gatt_client.a" ]
+    }
     if (chip_build_libshell) {  # matter shell
       defines += [
         "ENABLE_CHIP_SHELL",
@@ -884,7 +923,7 @@ template("efr32_sdk") {
 
     if (enable_matter_aws) {
       sources += [
-        "${chip_root}/third_party/silabs/mqtt/stack/mqtt.c",
+        "${chip_root}/src/platform/silabs/mqtt/stack/mqtt.c",
         "${efr32_sdk_root}/util/third_party/mbedtls/library/ctr_drbg.c",
         "${efr32_sdk_root}/util/third_party/mbedtls/library/entropy.c",
         "${efr32_sdk_root}/util/third_party/mbedtls/library/entropy_poll.c",
@@ -918,6 +957,7 @@ template("efr32_sdk") {
         "${efr32_sdk_root}/protocol/bluetooth/src/sl_bt_stack_init.c",
         "${efr32_sdk_root}/protocol/bluetooth/src/sli_bt_advertiser_config.c",
         "${efr32_sdk_root}/protocol/bluetooth/src/sli_bt_connection_config.c",
+        "${efr32_sdk_root}/protocol/bluetooth/src/sli_bt_dynamic_gattdb_config.c",
         "${efr32_sdk_root}/protocol/bluetooth/src/sli_bt_host_adaptation.c",
       ]
     }
@@ -1112,6 +1152,7 @@ template("efr32_sdk") {
 
     public_deps = [
       ":efr32_mbedtls_config",
+      "${chip_root}/src/platform/silabs/tracing:silabs_tracing_config",
       "${segger_rtt_root}:segger_rtt",
       "${segger_rtt_root}:segger_rtt_printf",
     ]
