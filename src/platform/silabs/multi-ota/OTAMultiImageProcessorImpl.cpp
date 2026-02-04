@@ -386,7 +386,7 @@ void OTAMultiImageProcessorImpl::HandleApply(intptr_t context)
 
     ChipLogProgress(SoftwareUpdate, "HandleApply: started");
 
-    // Force KVS to store pending keys such as data from StoreCurrentUpdateInfo()
+    // Force KVS to store pending keys such as the data from StoreCurrentUpdateInfo()
     chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().ForceKeyMapSave();
 
     if (imageProcessor == nullptr)
