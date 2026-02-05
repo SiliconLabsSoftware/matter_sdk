@@ -2961,7 +2961,7 @@
     },
     {
       "id": 2,
-      "name": "ubun",
+      "name": "MA-dimmablelight",
       "deviceTypeRef": {
         "code": 269,
         "profileId": 259,
