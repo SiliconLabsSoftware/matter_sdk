@@ -72,7 +72,8 @@ jobs:
                     ./scripts/tools/zap/generate.py examples/base-platform-app/silabs/data_model/platform-wifi-icd-app.zap &&
                     ./scripts/tools/zap/generate.py examples/thermostat/silabs/data_model/thermostat-thread-app.zap &&
                     ./scripts/tools/zap/generate.py examples/oven-app/oven-app-common/oven-app.zap &&
-                    ./scripts/tools/zap/generate.py examples/oven-app/silabs/data_model/oven-wifi-app.zap
+                    ./scripts/tools/zap/generate.py examples/oven-app/silabs/data_model/oven-wifi-app.zap &&
+                    ./scripts/tools/zap/generate.py examples/rangehood-app/silabs/data_model/rangehood-wifi-app.zap
                   '
 
             - name: Commit ZAP regeneration
