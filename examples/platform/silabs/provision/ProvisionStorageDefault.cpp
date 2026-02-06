@@ -41,7 +41,9 @@
 #endif
 
 #ifdef SL_PROVISION_GENERATOR
+#if !defined(SL_TRUSTZONE_NONSECURE)
 extern void setNvm3End(uint32_t addr);
+#endif
 #elif !SL_MATTER_GN_BUILD
 #include <sl_matter_provision_config.h>
 #endif
@@ -165,7 +167,7 @@ CHIP_ERROR Storage::Initialize(uint32_t flash_addr, uint32_t flash_size)
         base_addr = (flash_addr + flash_size - FLASH_PAGE_SIZE);
 #endif // SLI_SI91X_MCU_INTERFACE
         chip::DeviceLayer::Silabs::GetPlatform().FlashInit();
-#ifdef SL_PROVISION_GENERATOR
+#if defined(SL_PROVISION_GENERATOR) && !defined(SL_TRUSTZONE_NONSECURE)
         setNvm3End(base_addr);
 #endif
     }
