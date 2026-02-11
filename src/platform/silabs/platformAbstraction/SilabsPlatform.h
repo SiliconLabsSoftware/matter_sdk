@@ -87,12 +87,12 @@ public:
      */
     CHIP_ERROR NvmInit();
 
-#if SL_MATTER_DEBUG_WATCHDOG_ENABLE
+#if SL_MATTER_DEBUG_WATCHDOG_ENABLE && !defined(SLI_SI91X_MCU_INTERFACE)
     void WatchdogInit();
     void WatchdogFeed();
     void WatchdogEnable();
     void WatchdogDisable();
-#endif
+#endif // SL_MATTER_DEBUG_WATCHDOG_ENABLE && !defined(SLI_SI91X_MCU_INTERFACE)
 
 private:
     friend SilabsPlatform & GetPlatform(void);
