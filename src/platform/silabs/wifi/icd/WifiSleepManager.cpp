@@ -18,6 +18,9 @@
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
+#include <platform/silabs/wifi/WifiInterface.h>
+
+#include "silabs_utils.h"
 
 using namespace chip::DeviceLayer::Silabs;
 
@@ -95,6 +98,7 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
 CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 {
+    SILABS_LOG("WifiSleepManager::VerifyAndTransitionToLowPowerMode .................");
     VerifyOrDieWithMsg(mWifiStateProvider != nullptr, DeviceLayer, "WifiStateProvider is not initialized");
     VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
 
@@ -157,6 +161,11 @@ CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
 
 CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 {
+    SILABS_LOG("WifiSleepManager::DISCONNECTING FROM THE AP .................");
+    if (chip::DeviceLayer::Silabs::WifiInterface::GetInstance().TriggerDisconnection() != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "dISCONECT() failed.");
+    }
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
 
     // Allowing the device to go to sleep must be the last actions to avoid configuration failures.

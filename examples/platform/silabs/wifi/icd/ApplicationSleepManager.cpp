@@ -19,6 +19,8 @@
 #include <VendorHandlerFactory.h>
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/silabs/wifi/WifiInterface.h>
+#include "silabs_utils.h"
 
 namespace chip {
 namespace app {
@@ -133,12 +135,18 @@ bool ApplicationSleepManager::ProcessVendorIdExceptions(chip::VendorId vendorId)
 
 void ApplicationSleepManager::OnEnterActiveMode()
 {
+    SILABS_LOG("ApplicationSleepManager::OnEnterActiveMode .................");
+    if (chip::DeviceLayer::Silabs::WifiInterface::GetInstance().ConnectToAccessPoint() != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "ConnectToAccessPoint() failed.");
+    }
     mIsInActiveMode = true;
     mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
 }
 
 void ApplicationSleepManager::OnEnterIdleMode()
 {
+    SILABS_LOG("ApplicationSleepManager::OnEnterIdleMode .................");
     mIsInActiveMode = false;
     mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
 }
