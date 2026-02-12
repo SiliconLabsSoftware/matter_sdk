@@ -17,53 +17,35 @@
  *    limitations under the License.
  */
 
-#pragma once
+ #pragma once
 
-/**
- * @file AppTaskIncludes.h
- * @brief Configuration header to select between default AppTask and CustomAppTask
- *
- * This header provides a unified interface to use either the default AppTask
- * or CustomAppTask based on configuration, without hardcoding in MatterConfig.cpp
- */
-
-#include "AppConfig.h"
-#include "sl_matter_config.h"
-
-// SL_MATTER_USE_CUSTOM_APPTASK is defined in sl_matter_config.h
-// This header uses that configuration to select the appropriate AppTask implementation
-
-#if SL_MATTER_USE_CUSTOM_APPTASK == 1
-    // Use CustomAppTask implementation
-    #include "CustomAppTask.h"
-
-    // Alias CustomAppTask as AppTaskType for use in MatterConfig.cpp
-    using AppTaskType = CustomAppTask;
-
-    /**
-     * @brief Get the AppTask instance
-     *
-     * @return Reference to the CustomAppTask singleton instance
-     */
-    inline AppTaskType & GetAppTaskInstance()
-    {
-        return CustomAppTask::GetAppTask();
-    }
-#else
-    // Use default AppTask implementation
-    #include "AppTask.h"
-
-    // Alias AppTask as AppTaskType for use in MatterConfig.cpp
-    using AppTaskType = AppTask;
-
-    /**
-     * @brief Get the AppTask instance
-     *
-     * @return Reference to the AppTask singleton instance
-     */
-    inline AppTaskType & GetAppTaskInstance()
-    {
-        return AppTask::GetAppTask();
-    }
-#endif
+ /**
+  * @file AppTaskInclude.h
+  * @brief Configuration header to select between default AppTask and CustomAppTask
+  * 
+  * This header provides a unified interface to use either the default AppTask
+  * or CustomAppTask based on configuration, without hardcoding in MatterConfig.cpp
+  */
+ 
+ #include "AppConfig.h"
+ #include "sl_matter_config.h"
+ 
+ // SL_MATTER_USE_CUSTOM_APPTASK is defined in sl_matter_config.h
+ // This header just uses that configuration to select the appropriate AppTask implementation
+ 
+ #if SL_MATTER_USE_CUSTOM_APPTASK
+     // Use CustomAppTask implementation
+     #include "CustomAppTask.h"
+     using AppTaskType = CustomAppTask;
+ #else
+     // Use default AppTask implementation
+     #include "AppTask.h"
+     using AppTaskType = AppTask;
+ #endif
+ 
+ // Helper function to get the AppTask instance
+ inline AppTaskType & GetAppTaskInstance()
+ {
+     return AppTaskType::GetAppTask();
+ }
  
