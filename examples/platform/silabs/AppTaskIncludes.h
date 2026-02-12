@@ -28,12 +28,11 @@
   */
  
  #include "AppConfig.h"
- #include "sl_matter_config.h"
  
  // SL_MATTER_USE_CUSTOM_APPTASK is defined in sl_matter_config.h
  // This header just uses that configuration to select the appropriate AppTask implementation
  
- #if SL_MATTER_USE_CUSTOM_APPTASK
+ #if defined (SL_MATTER_USE_CUSTOM_APPTASK) && SL_MATTER_USE_CUSTOM_APPTASK == 1
      // Use CustomAppTask implementation
      #include "CustomAppTask.h"
      using AppTaskType = CustomAppTask;
