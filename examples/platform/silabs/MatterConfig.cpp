@@ -94,7 +94,7 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #include <performance_test_commands.h>
 #endif
 
-#include <AppTask.h>
+#include "AppTaskIncludes.h"
 
 #include <DeviceInfoProviderImpl.h>
 #include <app/server/Server.h>
@@ -216,7 +216,8 @@ void ApplicationStart(void * unused)
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     ChipLogProgress(DeviceLayer, "Starting App Task");
-    err = AppTask::GetAppTask().StartAppTask();
+    // Use GetAppTaskInstance() which returns either AppTask or CustomAppTask based on configuration
+    err = GetAppTaskInstance().StartAppTask();
     if (err != CHIP_NO_ERROR)
         appError(err);
 
