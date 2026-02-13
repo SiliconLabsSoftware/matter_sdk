@@ -21,13 +21,20 @@
 #include <AppRootNode.h>
 #include <LinuxCommissionableDataProvider.h>
 #include <TracingCommandLineArgument.h>
+#include <app/DefaultSafeAttributePersistenceProvider.h>
+#include <app/DeviceLoadStatusProvider.h>
+#include <app/InteractionModelEngine.h>
+#include <app/SafeAttributePersistenceProvider.h>
+#include <app/TestEventTriggerDelegate.h>
 #include <app/persistence/DefaultAttributePersistenceProvider.h>
 #include <app/server-cluster/ServerClusterInterfaceRegistry.h>
 #include <app/server/Dnssd.h>
+#include <app/server/Server.h>
 #include <app_options/AppOptions.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
 #include <devices/device-factory/DeviceFactory.h>
 #include <platform/CommissionableDataProvider.h>
+#include <platform/DiagnosticDataProvider.h>
 #include <platform/PlatformManager.h>
 #include <setup_payload/OnboardingCodesUtil.h>
 #include <string>
@@ -47,6 +54,7 @@ AppMainLoopImplementation * gMainLoopImplementation = nullptr;
 
 AllDevicesExampleDeviceInfoProviderImpl gExampleDeviceInfoProvider;
 Credentials::GroupDataProviderImpl gGroupDataProvider;
+chip::app::DefaultSafeAttributePersistenceProvider gSafeAttributePersistenceProvider;
 
 // To hold SPAKE2+ verifier, discriminator, passcode
 LinuxCommissionableDataProvider gCommissionableDataProvider;
@@ -85,6 +93,10 @@ public:
         Credentials::GroupDataProvider & groupDataProvider;
         SessionManager & sessionManager;
         DnssdServer & dnssdServer;
+        DeviceLoadStatusProvider & deviceLoadStatusProvider;
+        DeviceLayer::DiagnosticDataProvider & diagnosticDataProvider;
+        TestEventTriggerDelegate * testEventTriggerDelegate;
+        SafeAttributePersistenceProvider & safeAttributePersistenceProvider;
 
 #if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
         TermsAndConditionsProvider & termsAndConditionsProvider;
@@ -95,18 +107,22 @@ public:
         mContext(context), mDataModelProvider(mContext.storageDelegate, mAttributePersistence),
         mRootNode(
             {
-                .commissioningWindowManager     = mContext.commissioningWindowManager, //
-                    .configurationManager       = mContext.configurationManager,       //
-                    .deviceControlServer        = mContext.deviceControlServer,        //
-                    .fabricTable                = mContext.fabricTable,                //
-                    .accessControl              = mContext.accessControl,              //
-                    .persistentStorage          = mContext.persistentStorage,          //
-                    .failSafeContext            = mContext.failSafeContext,            //
-                    .deviceInstanceInfoProvider = mContext.deviceInstanceInfoProvider, //
-                    .platformManager            = mContext.platformManager,            //
-                    .groupDataProvider          = mContext.groupDataProvider,          //
-                    .sessionManager             = mContext.sessionManager,             //
-                    .dnssdServer                = mContext.dnssdServer,                //
+                .commissioningWindowManager           = mContext.commissioningWindowManager,       //
+                    .configurationManager             = mContext.configurationManager,             //
+                    .deviceControlServer              = mContext.deviceControlServer,              //
+                    .fabricTable                      = mContext.fabricTable,                      //
+                    .accessControl                    = mContext.accessControl,                    //
+                    .persistentStorage                = mContext.persistentStorage,                //
+                    .failSafeContext                  = mContext.failSafeContext,                  //
+                    .deviceInstanceInfoProvider       = mContext.deviceInstanceInfoProvider,       //
+                    .platformManager                  = mContext.platformManager,                  //
+                    .groupDataProvider                = mContext.groupDataProvider,                //
+                    .sessionManager                   = mContext.sessionManager,                   //
+                    .dnssdServer                      = mContext.dnssdServer,                      //
+                    .deviceLoadStatusProvider         = mContext.deviceLoadStatusProvider,         //
+                    .diagnosticDataProvider           = mContext.diagnosticDataProvider,           //
+                    .testEventTriggerDelegate         = mContext.testEventTriggerDelegate,         //
+                    .safeAttributePersistenceProvider = mContext.safeAttributePersistenceProvider, //
 
 #if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
                     .termsAndConditionsProvider = mContext.termsAndConditionsProvider,
@@ -181,20 +197,28 @@ void RunApplication(AppMainLoopImplementation * mainLoop = nullptr)
         chipDie();
     }
 
+    // Initialize the safe attribute persistence provider
+    SuccessOrDie(gSafeAttributePersistenceProvider.Init(initParams.persistentStorageDelegate));
+    SetSafeAttributePersistenceProvider(&gSafeAttributePersistenceProvider);
+
     static CodeDrivenDataModelDevices devices({
-        .storageDelegate                = *initParams.persistentStorageDelegate,                 //
-            .commissioningWindowManager = Server::GetInstance().GetCommissioningWindowManager(), //
-            .configurationManager       = DeviceLayer::ConfigurationMgr(),                       //
-            .deviceControlServer        = DeviceLayer::DeviceControlServer::DeviceControlSvr(),  //
-            .fabricTable                = Server::GetInstance().GetFabricTable(),                //
-            .accessControl              = Server::GetInstance().GetAccessControl(),              //
-            .persistentStorage          = Server::GetInstance().GetPersistentStorage(),          //
-            .failSafeContext            = Server::GetInstance().GetFailSafeContext(),            //
-            .deviceInstanceInfoProvider = *provider,                                             //
-            .platformManager            = DeviceLayer::PlatformMgr(),                            //
-            .groupDataProvider          = gGroupDataProvider,                                    //
-            .sessionManager             = Server::GetInstance().GetSecureSessionManager(),       //
-            .dnssdServer                = DnssdServer::Instance(),                               //
+        .storageDelegate                      = *initParams.persistentStorageDelegate,                 //
+            .commissioningWindowManager       = Server::GetInstance().GetCommissioningWindowManager(), //
+            .configurationManager             = DeviceLayer::ConfigurationMgr(),                       //
+            .deviceControlServer              = DeviceLayer::DeviceControlServer::DeviceControlSvr(),  //
+            .fabricTable                      = Server::GetInstance().GetFabricTable(),                //
+            .accessControl                    = Server::GetInstance().GetAccessControl(),              //
+            .persistentStorage                = Server::GetInstance().GetPersistentStorage(),          //
+            .failSafeContext                  = Server::GetInstance().GetFailSafeContext(),            //
+            .deviceInstanceInfoProvider       = *provider,                                             //
+            .platformManager                  = DeviceLayer::PlatformMgr(),                            //
+            .groupDataProvider                = gGroupDataProvider,                                    //
+            .sessionManager                   = Server::GetInstance().GetSecureSessionManager(),       //
+            .dnssdServer                      = DnssdServer::Instance(),                               //
+            .deviceLoadStatusProvider         = *InteractionModelEngine::GetInstance(),                //
+            .diagnosticDataProvider           = DeviceLayer::GetDiagnosticDataProvider(),              //
+            .testEventTriggerDelegate         = initParams.testEventTriggerDelegate,                   //
+            .safeAttributePersistenceProvider = gSafeAttributePersistenceProvider,                     //
 
 #if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
             .termsAndConditionsProvider = TermsAndConditionsManager::GetInstance(),
