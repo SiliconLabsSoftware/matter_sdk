@@ -18,7 +18,11 @@
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
+#include "lwip/timeouts.h"
 
+extern "C" {
+#include "sl_net.h"
+}
 using namespace chip::DeviceLayer::Silabs;
 
 namespace chip {
@@ -83,7 +87,7 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
         // No additional processing needed for these events at the moment
-        break;
+        break;  
 
     default:
         ChipLogError(AppServer, "Unknown Power Event");
@@ -92,9 +96,10 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     return CHIP_NO_ERROR;
 }
-
+#include "silabs_utils.h"
 CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 {
+    SILABS_LOG("VerifyAndTransitionToLowPowerMode.................");
     VerifyOrDieWithMsg(mWifiStateProvider != nullptr, DeviceLayer, "WifiStateProvider is not initialized");
     VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
 
@@ -114,11 +119,16 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 
     if (!mWifiStateProvider->IsWifiProvisioned())
     {
+        
         return ConfigureDeepSleep();
     }
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
+        // sys_timeouts_deinit();
+        (void)sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
+        return ConfigureDeepSleep();
+        // sys_timeouts_deinit();
         return ConfigureLIBasedSleep();
     }
 
@@ -157,6 +167,8 @@ CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
 
 CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 {
+    return CHIP_NO_ERROR;
+
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
 
     // Allowing the device to go to sleep must be the last actions to avoid configuration failures.

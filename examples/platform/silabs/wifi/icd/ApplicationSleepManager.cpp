@@ -83,6 +83,10 @@ void ApplicationSleepManager::OnFabricCommitted(const chip::FabricTable & fabric
     mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
 }
 
+extern "C" {
+#include "sl_net.h"
+}
+
 bool ApplicationSleepManager::CanGoToLIBasedSleep()
 {
     bool canGoToLIBasedSleep = true;
@@ -94,6 +98,8 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
     }
     else if (mIsInActiveMode)
     {
+        ChipLogProgress(AppServer,"Connecting to the AP***************");
+        (void)sl_net_up(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
         ChipLogProgress(AppServer, "Device is in active mode - Cannot go to LI based sleep");
         canGoToLIBasedSleep = false;
     }

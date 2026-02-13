@@ -48,6 +48,8 @@
 #define MEM_LIBC_MALLOC (0)
 #endif
 
+#define LWIP_TESTMODE 1
+
 #define LWIP_COMPAT_MUTEX (0)
 #define SYS_LIGHTWEIGHT_PROT (1)
 #define LWIP_AUTOIP (0)
