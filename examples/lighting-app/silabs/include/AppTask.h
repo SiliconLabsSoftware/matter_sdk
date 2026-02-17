@@ -30,8 +30,9 @@
 #endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 #include "AppEvent.h"
 #include "BaseApplication.h"
-#include "LightingManager.h"
+#include "LightTypes.h"
 
+#include <app/clusters/on-off-server/on-off-server.h>
 #include <app/persistence/DeferredAttributePersistenceProvider.h>
 #include <ble/Ble.h>
 #include <cmsis_os2.h>
@@ -85,9 +86,27 @@ public:
     void PostLightControlActionRequest(int32_t aActor, LightingManager::Action_t aAction, RGBLEDWidget::ColorData_t * aValue);
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
 
+    CHIP_ERROR InitLight();
+    bool IsLightOn() const;
+    void EnableAutoTurnOff(bool aOn);
+    void SetAutoTurnOffDuration(uint32_t aDurationInSecs);
+    bool IsActionInProgress() const;
+    bool InitiateAction(int32_t aActor, LightingManager::Action_t aAction, uint8_t * aValue);
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    bool InitiateLightCtrlAction(int32_t aActor, LightingManager::Action_t aAction, uint32_t aAttributeId, uint8_t * value);
+#endif
+    static void OnTriggerOffWithEffect(OnOffEffect * effect);
+
 private:
-    static void ActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * value);
-    static void ActionCompleted(LightingManager::Action_t aAction);
+    void OnLightActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * aValue);
+    void OnLightActionCompleted(LightingManager::Action_t aAction);
+    void StartLightTimer(uint32_t aTimeoutMs);
+    void CancelLightTimer();
+    static void LightTimerEventHandler(void * timerCbArg);
+    static void AutoTurnOffTimerEventHandler(AppEvent * aEvent);
+    static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);
+    static void OffEffectTimerEventHandler(AppEvent * aEvent);
+
     static void LightActionEventHandler(AppEvent * aEvent);
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     static void LightControlEventHandler(AppEvent * aEvent);
@@ -121,4 +140,24 @@ private:
 
     static AppTask sAppTask;
     chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
+
+    LightingManager::State_t mLightState;
+    uint8_t mCurrentLevel = 254;
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    uint8_t mCurrentHue        = 0;
+    uint8_t mCurrentSaturation = 0;
+    uint16_t mCurrentX         = 0;
+    uint16_t mCurrentY         = 0;
+    uint16_t mCurrentCTMireds  = 250;
+#endif
+    bool mAutoTurnOff           = false;
+    uint32_t mAutoTurnOffDuration = 0;
+    bool mAutoTurnOffTimerArmed = false;
+    bool mOffEffectArmed        = false;
+    osTimerId_t mLightTimer     = nullptr;
 };
+
+inline AppTask & LightMgr()
+{
+    return AppTask::GetAppTask();
+}
