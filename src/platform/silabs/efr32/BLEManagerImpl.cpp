@@ -796,7 +796,7 @@ BLEManagerImpl::EventFilter BLEManagerImpl::HandleConnectEvent(volatile sl_bt_ms
     EventFilter eventFilter                  = EventFilter::UnprocessedEvent;
     sl_bt_evt_connection_opened_t * conn_evt = (sl_bt_evt_connection_opened_t *) &(evt->data);
 
-    if (conn_evt->advertiser == mAdvertisingSetHandle)
+    if ((conn_evt->advertiser == mAdvertisingSetHandle) && (conn_evt->role == sl_bt_connection_role_peripheral))
     {
         eventFilter = EventFilter::MatterReservedEvent;
         ChipLogProgress(DeviceLayer, "Connect Event for CHIPoBLE on handle : %d", conn_evt->connection);
