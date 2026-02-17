@@ -58,6 +58,7 @@ public:
 
     void HandleBootEvent(void);
 
+    CHIP_ERROR PrintBLEInfo();
 #if SLI_SI91X_ENABLE_BLE
     // Used for posting the event in the BLE queue
     void BlePostEvent(SilabsBleWrapper::BleEvent_t * event);
