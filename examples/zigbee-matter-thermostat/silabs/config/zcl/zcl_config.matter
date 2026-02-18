@@ -3993,8 +3993,9 @@ endpoint 0 {
 
 }
 endpoint 1 {
-  device type cba_tstat = 769, version 1;
+  device type ha_tstat = 769, version 1;
 
+  binding cluster Identify;
 
   server cluster Basic {
     ram      attribute zclVersion default = 0x08;
