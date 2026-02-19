@@ -1,0 +1,54 @@
+/*
+ *
+ *    Copyright (c) 2020 Project CHIP Authors
+ *    Copyright (c) 2019 Google LLC.
+ *    All rights reserved.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+#pragma once
+
+#include <type_traits>
+
+/**
+ * CRTP macros for compile-time override dispatch with optional signature validation.
+ * Base = CRTP base class, Derived = concrete class, func = method name (Impl suffix added for dispatch).
+ */
+
+/** Cast this to Derived* (use in instance methods). */
+#define CRTP_THIS(Derived) static_cast<Derived *>(this)
+
+/** Get the app task singleton as Derived& (use in static methods that dispatch to Impl). */
+#define CRTP_APP_TASK(Derived) static_cast<Derived &>(Derived::GetAppTask())
+
+#define CRTP_RETURN_DERIVED_ONLY(Base, Derived, func) \
+    do { \
+        static_assert(std::is_base_of<Base, Derived>::value, "Derived must inherit from Base"); \
+        return static_cast<Derived *>(this)->func##Impl(); \
+    } while (0)
+
+#define CRTP_RETURN_AND_VERIFY(Base, Derived, func) \
+    return static_cast<Derived *>(this)->func##Impl()
+
+#define CRTP_RETURN_AND_VERIFY_ARGS(Base, Derived, func, ...) \
+    return static_cast<Derived *>(this)->func##Impl(__VA_ARGS__)
+
+#define CRTP_RETURN_CONST_AND_VERIFY_ARGS(Base, Derived, func, ...) \
+    return static_cast<const Derived *>(this)->func##Impl(__VA_ARGS__)
+
+#define CRTP_VOID_AND_VERIFY(Base, Derived, func, ...) \
+    static_cast<Derived *>(this)->func##Impl(__VA_ARGS__)
+
+#define CRTP_STATIC_VOID_AND_VERIFY(Base, Derived, func, ...) \
+    static_cast<Derived &>(Derived::GetAppTask()).func##Impl(__VA_ARGS__)
