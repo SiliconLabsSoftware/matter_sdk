@@ -94,10 +94,11 @@ OnOffEffect gEffect = {
 using namespace chip::TLV;
 using namespace ::chip::DeviceLayer;
 
-AppTask AppTask::sAppTask;
+// Singleton provided by CustomAppTask.cpp (AppTask::GetAppTask() returns CustomAppTask::GetAppTask()).
 
 CHIP_ERROR AppTask::AppInit()
 {
+    SILABS_LOG("AppTask: default implementation (AppInit)");
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
@@ -207,14 +208,14 @@ void AppTask::AppTaskMain(void * pvParameter)
     AttributePersistenceProvider * attributePersistence = GetAttributePersistenceProvider();
     VerifyOrDie(attributePersistence != nullptr);
 
-    sAppTask.pDeferredAttributePersister = new DeferredAttributePersistenceProvider(
+    GetAppTask().pDeferredAttributePersister = new DeferredAttributePersistenceProvider(
         *attributePersistence, Span<DeferredAttribute>(gDeferredAttributeTable, MATTER_ARRAY_SIZE(gDeferredAttributeTable)),
         System::Clock::Milliseconds32(SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS));
-    VerifyOrDie(sAppTask.pDeferredAttributePersister != nullptr);
+    VerifyOrDie(GetAppTask().pDeferredAttributePersister != nullptr);
 
-    app::SetAttributePersistenceProvider(sAppTask.pDeferredAttributePersister);
+    app::SetAttributePersistenceProvider(GetAppTask().pDeferredAttributePersister);
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = GetAppTask().Init();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("AppTask.Init() failed");
@@ -222,7 +223,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    sAppTask.StartStatusLEDTimer();
+    GetAppTask().StartStatusLEDTimer();
 #endif
 
     SILABS_LOG("App Task started");
@@ -232,7 +233,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
+            GetAppTask().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
@@ -311,6 +312,7 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
+    SILABS_LOG("AppTask: default implementation (ButtonEventHandler)");
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
@@ -329,6 +331,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
 void AppTask::OnLightActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * aValue)
 {
+    SILABS_LOG("AppTask: default implementation (OnLightActionInitiated)");
     if (aAction == LightingManager::LEVEL_ACTION)
     {
         VerifyOrReturn(aValue != nullptr);
@@ -354,6 +357,7 @@ void AppTask::OnLightActionInitiated(LightingManager::Action_t aAction, int32_t 
 
 void AppTask::OnLightActionCompleted(LightingManager::Action_t aAction)
 {
+    SILABS_LOG("AppTask: default implementation (OnLightActionCompleted)");
     if (aAction == LightingManager::ON_ACTION)
     {
         SILABS_LOG("Light ON")
