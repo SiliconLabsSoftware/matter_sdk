@@ -172,7 +172,6 @@ CHIP_ERROR BLEManagerImpl::_Init()
 #if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
     ReturnErrorOnFailure(sBleSideChannel.Init());
     BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
-    BLEMgrImpl().SideChannelConfigureAdvertisingDefaultData();
 #endif
 
     PlatformMgr().ScheduleWork(DriveBLEState, 0);
@@ -726,12 +725,9 @@ CHIP_ERROR BLEManagerImpl::InjectSideChannel(BLEChannel * channel)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertising(ByteSpan advData, ByteSpan responseData, uint32_t intervalMin,
-                                                           uint32_t intervalMax, uint16_t duration, uint8_t maxEvents)
+CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertising(const AdvConfigStruct & config)
 {
     VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
-    AdvConfigStruct config = { advData,  responseData, intervalMin, intervalMax, sl_bt_advertiser_connectable_scannable,
-                               duration, maxEvents };
     return mBleSideChannel->ConfigureAdvertising(config);
 }
 
