@@ -61,7 +61,7 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -97,11 +97,11 @@ public:
 #endif
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
-private:
-    void OnLightActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * aValue);
-    void OnLightActionCompleted(LightingManager::Action_t aAction);
-    void StartLightTimer(uint32_t aTimeoutMs);
-    void CancelLightTimer();
+protected:
+    virtual void OnLightActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * aValue);
+    virtual void OnLightActionCompleted(LightingManager::Action_t aAction);
+    virtual void StartLightTimer(uint32_t aTimeoutMs);
+    virtual void CancelLightTimer();
     static void LightTimerEventHandler(void * timerCbArg);
     static void AutoTurnOffTimerEventHandler(AppEvent * aEvent);
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);
@@ -114,31 +114,12 @@ private:
 
     static void UpdateClusterState(intptr_t context);
 
-    /**
-     * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
-     *
-     * @return CHIP_ERROR
-     */
     CHIP_ERROR AppInit() override;
 
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
-     *
-     * @param aEvent button event being processed
-     */
     static void ButtonHandler(AppEvent * aEvent);
-
-    /**
-     * @brief PB1 Button event processing function
-     *        Function triggers a switch action sent to the CHIP task
-     *
-     * @param aEvent button event being processed
-     */
     static void SwitchActionEventHandler(AppEvent * aEvent);
 
-    static AppTask sAppTask;
+private:
     chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
 
     LightingManager::State_t mLightState;
