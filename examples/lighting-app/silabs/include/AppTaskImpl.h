@@ -44,16 +44,16 @@ class AppTaskImpl : public AppTask
 public:
     /**
      * Public API: each method dispatches to Derived::*Impl() via CRTP.
-     * Derived must implement AppInitImpl(); all others may override *Impl() to customize.
+     * All *Impl() overrides are optional; default implementations call through to AppTask.
      * Static methods dispatch via GetAppTask().
      */
-    using Action_t = LightingManager::Action_t;
+     using Action_t = LightingManager::Action_t;
 
-    CHIP_ERROR AppInit() override
-    {
-        CRTP_RETURN_DERIVED_ONLY(AppTaskImpl, Derived, AppInit);
-    }
-
+     CHIP_ERROR AppInit() override
+     {
+         CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, AppInit);
+     }
+  
     CHIP_ERROR StartAppTask()
     {
         CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, StartAppTask);
@@ -201,6 +201,12 @@ private:
     /**
      * Default *Impl() implementations: call through to AppTask. Override in Derived for custom behavior.
      */
+
+     CHIP_ERROR AppInitImpl()
+     {
+         return AppTask::AppInit();
+     }
+     
     CHIP_ERROR StartAppTaskImpl()
     {
         return AppTask::StartAppTask();

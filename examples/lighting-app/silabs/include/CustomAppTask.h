@@ -36,8 +36,5 @@ public:
 private:
     friend class AppTaskImpl<CustomAppTask>;
 
-    CHIP_ERROR AppInitImpl();
-    void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction);
-
     static CustomAppTask sAppTask;
 };

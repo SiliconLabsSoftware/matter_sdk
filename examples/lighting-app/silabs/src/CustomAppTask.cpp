@@ -24,44 +24,9 @@
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 
-using namespace ::chip::DeviceLayer::Silabs;
-
-#define APP_FUNCTION_BUTTON 0
-#define APP_LIGHT_SWITCH 1
-
 CustomAppTask CustomAppTask::sAppTask;
 
 AppTask & AppTask::GetAppTask()
 {
     return CustomAppTask::GetAppTask();
-}
-
-CHIP_ERROR CustomAppTask::AppInitImpl()
-{
-    SILABS_LOG("CustomAppTask: custom implementation (AppInitImpl)");
-    CHIP_ERROR err = this->AppTask::AppInit();
-    if (err == CHIP_NO_ERROR)
-    {
-        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CustomAppTask::ButtonEventHandler);
-    }
-    return err;
-}
-
-void CustomAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
-{
-    SILABS_LOG("CustomAppTask: custom implementation (ButtonEventHandlerImpl)");
-    AppEvent button_event           = {};
-    button_event.Type               = AppEvent::kEventType_Button;
-    button_event.ButtonEvent.Action = btnAction;
-
-    if (button == APP_LIGHT_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
-    {
-        button_event.Handler = LightActionEventHandler;
-        AppTask::GetAppTask().PostEvent(&button_event);
-    }
-    else if (button == APP_FUNCTION_BUTTON)
-    {
-        button_event.Handler = BaseApplication::ButtonHandler;
-        AppTask::GetAppTask().PostEvent(&button_event);
-    }
 }
