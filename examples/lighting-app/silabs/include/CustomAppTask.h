@@ -34,7 +34,7 @@ public:
     static CustomAppTask & GetAppTask() { return sAppTask; }
 
 private:
-    friend class AppTaskImpl<CustomAppTask>;
+    friend class AppTaskImpl;
 
     static CustomAppTask sAppTask;
 };

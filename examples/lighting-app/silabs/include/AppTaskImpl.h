@@ -51,17 +51,17 @@ public:
 
      CHIP_ERROR AppInit() override
      {
-         CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, AppInit);
+         CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, AppInitImpl);
      }
   
     CHIP_ERROR StartAppTask()
     {
-        CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, StartAppTask);
+        CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, StartAppTaskImpl);
     }
 
     void PostLightActionRequest(int32_t aActor, Action_t aAction)
     {
-        CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, PostLightActionRequest, aActor, aAction);
+        CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, PostLightActionRequestImpl, aActor, aAction);
     }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
@@ -73,32 +73,32 @@ public:
 
     CHIP_ERROR InitLight()
     {
-        CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, InitLight);
+        CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, InitLightImpl);
     }
 
     bool IsLightOn() const
     {
-        CRTP_RETURN_CONST_AND_VERIFY_ARGS(AppTaskImpl, Derived, IsLightOn);
+        CRTP_RETURN_CONST_AND_VERIFY_ARGS(AppTaskImpl, Derived, IsLightOnImpl);
     }
 
     void EnableAutoTurnOff(bool aOn)
     {
-        CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, EnableAutoTurnOff, aOn);
+        CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, EnableAutoTurnOffImpl, aOn);
     }
 
     void SetAutoTurnOffDuration(uint32_t aDurationInSecs)
     {
-        CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, SetAutoTurnOffDuration, aDurationInSecs);
+        CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, SetAutoTurnOffDurationImpl, aDurationInSecs);
     }
 
     bool IsActionInProgress() const
     {
-        CRTP_RETURN_CONST_AND_VERIFY_ARGS(AppTaskImpl, Derived, IsActionInProgress);
+        CRTP_RETURN_CONST_AND_VERIFY_ARGS(AppTaskImpl, Derived, IsActionInProgressImpl);
     }
 
     bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue)
     {
-        CRTP_RETURN_AND_VERIFY_ARGS(AppTaskImpl, Derived, InitiateAction, aActor, aAction, aValue);
+        CRTP_RETURN_AND_VERIFY_ARGS(AppTaskImpl, Derived, InitiateActionImpl, aActor, aAction, aValue);
     }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
@@ -110,17 +110,17 @@ public:
 
     static void OnTriggerOffWithEffect(OnOffEffect * effect)
     {
-        CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, OnTriggerOffWithEffect, effect);
+        CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, OnTriggerOffWithEffectImpl, effect);
     }
 
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
-        CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, ButtonEventHandler, button, btnAction);
+        CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
     static void AppTaskMain(void * pvParameter)
     {
-        CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, AppTaskMain, pvParameter);
+        CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, AppTaskMainImpl, pvParameter);
     }
 
 protected:
