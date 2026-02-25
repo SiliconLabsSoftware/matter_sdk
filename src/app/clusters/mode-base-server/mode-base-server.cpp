@@ -22,7 +22,9 @@
 #include <app/InteractionModelEngine.h>
 #include <app/SafeAttributePersistenceProvider.h>
 #include <app/clusters/mode-base-server/mode-base-server.h>
+#ifdef MATTER_DM_PLUGIN_ON_OFF_SERVER
 #include <app/clusters/on-off-server/on-off-server.h>
+#endif // MATTER_DM_PLUGIN_ON_OFF_SERVER
 #include <app/reporting/reporting.h>
 #include <app/util/attribute-storage.h>
 #include <platform/DiagnosticDataProvider.h>
