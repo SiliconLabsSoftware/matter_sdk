@@ -143,7 +143,7 @@ const sl_wifi_device_configuration_t config = {
                                                 | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6
 #endif
                                                 | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
-                     .custom_feature_bit_map     = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID | RSI_CUSTOM_FEATURE_BIT_MAP),
+                     .custom_feature_bit_map = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID | RSI_CUSTOM_FEATURE_BIT_MAP),
 
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .ext_custom_feature_bit_map = (RSI_EXT_CUSTOM_FEATURE_BIT_MAP | (SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE)
@@ -152,14 +152,14 @@ const sl_wifi_device_configuration_t config = {
 #endif
 #if (defined A2DP_POWER_SAVE_ENABLE)
                                                     | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2)
-#endif //A2DP_POWER_SAVE_ENABLE
+#endif // A2DP_POWER_SAVE_ENABLE
                                                         ),
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .bt_feature_bit_map = (RSI_BT_FEATURE_BITMAP
 #if (RSI_BT_GATT_ON_CLASSIC)
-                                                    | SL_SI91X_BT_ATT_OVER_CLASSIC_ACL /* to support att over classic acl link */
-#endif // RSI_BT_GATT_ON_CLASSIC
-                                                     ),
+                                            | SL_SI91X_BT_ATT_OVER_CLASSIC_ACL /* to support att over classic acl link */
+#endif                                                                         // RSI_BT_GATT_ON_CLASSIC
+                                            ),
 #else
                      .bt_feature_bit_map         = 0,
 #endif
