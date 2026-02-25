@@ -157,7 +157,7 @@ CHIP_ERROR BLEManagerImpl::_Init()
     bool stackAlreadyBooted = mFlags.Has(Flags::kSiLabsBLEStackInitialize);
     mFlags.ClearAll().Set(Flags::kAdvertisingEnabled, CHIP_DEVICE_CONFIG_CHIPOBLE_ENABLE_ADVERTISING_AUTOSTART);
     mFlags.Set(Flags::kFastAdvertisingEnabled, true);
-    
+
     if (stackAlreadyBooted)
     {
         mFlags.Set(Flags::kSiLabsBLEStackInitialize);
