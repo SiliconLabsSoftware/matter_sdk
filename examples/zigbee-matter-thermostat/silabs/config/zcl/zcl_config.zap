@@ -4588,6 +4588,22 @@
               "reportableChange": 0
             },
             {
+              "name": "abs min heat setpoint limit",
+              "code": 3,
+              "mfgCode": null,
+              "side": "server",
+              "type": "int16s",
+              "included": 1,
+              "storageOption": "RAM",
+              "singleton": 0,
+              "bounded": 0,
+              "defaultValue": "0x02BC",
+              "reportable": 0,
+              "minInterval": 1,
+              "maxInterval": 65534,
+              "reportableChange": 0
+            },
+            {
               "name": "abs max heat setpoint limit",
               "code": 4,
               "mfgCode": null,
