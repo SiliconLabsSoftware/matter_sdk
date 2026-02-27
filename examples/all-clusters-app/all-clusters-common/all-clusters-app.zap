@@ -62,7 +62,7 @@
       ],
       "deviceVersions": [
         1,
-        3
+        5
       ],
       "deviceIdentifiers": [
         17,
@@ -2866,7 +2866,7 @@
               "storageOption": "External",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": null,
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -5548,6 +5548,22 @@
               "reportableChange": 0
             },
             {
+              "name": "GroupcastAdoption",
+              "code": 4,
+              "mfgCode": null,
+              "side": "server",
+              "type": "array",
+              "included": 1,
+              "storageOption": "External",
+              "singleton": 0,
+              "bounded": 0,
+              "defaultValue": null,
+              "reportable": 1,
+              "minInterval": 1,
+              "maxInterval": 65534,
+              "reportableChange": 0
+            },
+            {
               "name": "GeneratedCommandList",
               "code": 65528,
               "mfgCode": null,
@@ -5973,7 +5989,7 @@
         }
       ],
       "deviceVersions": [
-        1,
+        4,
         1
       ],
       "deviceIdentifiers": [
@@ -9950,6 +9966,22 @@
               "reportableChange": 0
             },
             {
+              "name": "Unmounted",
+              "code": 13,
+              "mfgCode": null,
+              "side": "server",
+              "type": "boolean",
+              "included": 1,
+              "storageOption": "RAM",
+              "singleton": 0,
+              "bounded": 0,
+              "defaultValue": "0",
+              "reportable": 1,
+              "minInterval": 1,
+              "maxInterval": 65534,
+              "reportableChange": 0
+            },
+            {
               "name": "FeatureMap",
               "code": 65532,
               "mfgCode": null,
@@ -13403,6 +13435,38 @@
               "reportable": 1,
               "minInterval": 0,
               "maxInterval": 65344,
+              "reportableChange": 0
+            },
+            {
+              "name": "TemperatureSetpointHold",
+              "code": 35,
+              "mfgCode": null,
+              "side": "server",
+              "type": "TemperatureSetpointHoldEnum",
+              "included": 1,
+              "storageOption": "RAM",
+              "singleton": 0,
+              "bounded": 0,
+              "defaultValue": "0",
+              "reportable": 1,
+              "minInterval": 1,
+              "maxInterval": 65534,
+              "reportableChange": 0
+            },
+            {
+              "name": "TemperatureSetpointHoldDuration",
+              "code": 36,
+              "mfgCode": null,
+              "side": "server",
+              "type": "int16u",
+              "included": 1,
+              "storageOption": "RAM",
+              "singleton": 0,
+              "bounded": 0,
+              "defaultValue": null,
+              "reportable": 1,
+              "minInterval": 1,
+              "maxInterval": 65534,
               "reportableChange": 0
             },
             {
@@ -21258,7 +21322,7 @@
         }
       ],
       "deviceVersions": [
-        1,
+        4,
         1
       ],
       "deviceIdentifiers": [
