@@ -394,14 +394,17 @@ sl_status_t SiWxPlatformInit(void)
 
 sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_result, uint32_t result_length, void * arg)
 {
+    ChipLogProgress(DeviceLayer, "ScanCallback");
     sl_status_t status = SL_STATUS_OK;
     if (SL_WIFI_CHECK_IF_EVENT_FAILED(event))
     {
+        ChipLogError(DeviceLayer, "ScanCallback: failed");
         if (scan_result != nullptr)
         {
             status = *reinterpret_cast<sl_status_t *>(scan_result);
             ChipLogError(DeviceLayer, "ScanCallback: failed: 0x%lx", status);
         }
+        ChipLogError(DeviceLayer, "ScanCallback: result_length: %ld", result_length);
         // SET FALLBACK VALUES FOR THE SCAN
         wfx_rsi.ap_chan = SL_WIFI_AUTO_CHANNEL;
 #if WIFI_ENABLE_SECURITY_WPA3_TRANSITION
@@ -427,9 +430,31 @@ sl_status_t ScanCallback(sl_wifi_event_t event, sl_wifi_scan_result_t * scan_res
 
 sl_status_t InitiateScan()
 {
+    ChipLogProgress(DeviceLayer, "InitiateScan");
+    ChipLogProgress(DeviceLayer, "InitiateScan: ssid length: %d", wfx_rsi.credentials.ssidLength);
+    ChipLogProgress(DeviceLayer, "InitiateScan: ssid: %s", wfx_rsi.credentials.ssid);
     sl_status_t status                                   = SL_STATUS_OK;
     sl_wifi_ssid_t ssid                                  = { 0 };
-    sl_wifi_scan_configuration_t wifi_scan_configuration = default_wifi_scan_configuration;
+    sl_wifi_scan_configuration_t wifi_scan_configuration;
+    wifi_scan_configuration.type = SL_WIFI_SCAN_TYPE_ACTIVE;
+
+    sl_wifi_advanced_client_configuration_t reconnection_config;
+    reconnection_config.beacon_missed_count = 40;
+    reconnection_config.max_retry_attempts = 1;
+  
+    status = sl_wifi_set_advanced_client_configuration(SL_WIFI_CLIENT_INTERFACE, &reconnection_config);
+    if (status != SL_STATUS_OK)
+    {
+        printf("\r\nFailed to set advanced WLAN interface configuration: 0x%lx\r\n", status);
+        return status;
+    }
+  
+    status = sl_si91x_configure_timeout(SL_SI91X_CHANNEL_ACTIVE_SCAN_TIMEOUT,30);
+    if (SL_STATUS_OK != status)
+    {
+        printf("\r\nsl_si91x_configure_timeout failed, Error Code : 0x%lX\r\n", status);
+        return status;
+    }
 
     ssid.length = wfx_rsi.credentials.ssidLen;
 
@@ -439,19 +464,39 @@ sl_status_t InitiateScan()
 
     sl_wifi_set_scan_callback(ScanCallback, NULL);
 
-    osMutexAcquire(sScanInProgressSemaphore, osWaitForever);
-
-    // This is an odd success code?
-    status = sl_wifi_start_scan(SL_WIFI_CLIENT_2_4GHZ_INTERFACE, &ssid, &wifi_scan_configuration);
-    if (status == SL_STATUS_IN_PROGRESS)
+    for(int i = 0; i < 11; i++)
     {
-        osSemaphoreAcquire(sScanCompleteSemaphore, kWifiScanTimeoutTicks);
-        status = SL_STATUS_OK;
+        osDelay(200);
+        ChipLogProgress(DeviceLayer, "InitiateScan: channel: %d", i);
+        chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
+        wifi_scan_configuration.channel_bitmap_2g4 = BIT(i);
+        osMutexAcquire(sScanInProgressSemaphore, osWaitForever);
+        status = sl_wifi_start_scan(SL_WIFI_CLIENT_2_4GHZ_INTERFACE, &ssid, &wifi_scan_configuration);
+        if (status == SL_STATUS_IN_PROGRESS)
+        {
+            osSemaphoreAcquire(sScanCompleteSemaphore, kWifiScanTimeoutTicks);
+            status = SL_STATUS_OK;
+        }
+        osMutexRelease(sScanInProgressSemaphore);
+        chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+        ChipLogProgress(DeviceLayer, "InitiateScan: sleep for 2 seconds");
     }
 
-    osMutexRelease(sScanInProgressSemaphore);
+    // osMutexAcquire(sScanInProgressSemaphore, osWaitForever);
+
+    // // This is an odd success code?
+    // status = sl_wifi_start_scan(SL_WIFI_CLIENT_2_4GHZ_INTERFACE, &ssid, &wifi_scan_configuration);
+    // if (status == SL_STATUS_IN_PROGRESS)
+    // {
+    //     osSemaphoreAcquire(sScanCompleteSemaphore, kWifiScanTimeoutTicks);
+    //     status = SL_STATUS_OK;
+    // }
+
+    // osMutexRelease(sScanInProgressSemaphore);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogProgress(DeviceLayer, "sl_wifi_start_scan failed: 0x%lx", status));
 
+    // osDelay(1000);
+    ChipLogProgress(DeviceLayer, "Scan completed successfully");
     return status;
 }
 
@@ -493,19 +538,20 @@ sl_status_t SetWifiConfigurations()
                 // static cast because the types dont match
                 .length = static_cast<uint8_t>(wfx_rsi.credentials.ssidLen),
             },
-            .channel = {
-                .channel = SL_WIFI_AUTO_CHANNEL,
-                .band = SL_WIFI_AUTO_BAND,
-                .bandwidth = SL_WIFI_AUTO_BANDWIDTH
-            },
+            // .channel = {
+            //     .channel = SL_WIFI_AUTO_CHANNEL,
+            //     .band = SL_WIFI_AUTO_BAND,
+            //     .bandwidth = SL_WIFI_AUTO_BANDWIDTH
+            // },
+
             .bssid = {{0}},
             .bss_type = SL_WIFI_BSS_TYPE_INFRASTRUCTURE,
             .security = security,
             .encryption = SL_WIFI_DEFAULT_ENCRYPTION,
             .client_options = SL_WIFI_JOIN_WITH_SCAN,
-            .credential_id = SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID,
+            .credential_id = (security == SL_WIFI_OPEN) ? SL_NET_NO_CREDENTIAL_ID : SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID,
             .channel_bitmap = {
-                .channel_bitmap_2_4 = SL_WIFI_DEFAULT_CHANNEL_BITMAP
+                .channel_bitmap_2_4 = static_cast<uint16_t>(BIT((wfx_rsi.ap_chan - 1))),
             },
         },
         .ip = {
@@ -760,10 +806,10 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK)
     {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-        // Remove High performance request that might have been added during the connect/retry process
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+// #if CHIP_CONFIG_ENABLE_ICD_SERVER
+//         // Remove High performance request that might have been added during the connect/retry process
+//         chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+// #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
         WifiPlatformEvent event = WifiPlatformEvent::kStationConnect;
         PostWifiPlatformEvent(event);
