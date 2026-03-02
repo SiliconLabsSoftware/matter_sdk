@@ -199,27 +199,27 @@ void BaseApplicationDelegate::OnCommissioningSessionStarted()
 {
     isComissioningStarted = true;
 
-#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-    WifiSleepManager::GetInstance().HandleCommissioningSessionStarted();
-#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+// #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+//     WifiSleepManager::GetInstance().HandleCommissioningSessionStarted();
+// #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
 void BaseApplicationDelegate::OnCommissioningSessionStopped()
 {
     isComissioningStarted = false;
 
-#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-    WifiSleepManager::GetInstance().HandleCommissioningSessionStopped();
-#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+// #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+//     WifiSleepManager::GetInstance().HandleCommissioningSessionStopped();
+// #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
 void BaseApplicationDelegate::OnCommissioningSessionEstablishmentError(CHIP_ERROR err)
 {
     isComissioningStarted = false;
 
-#if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
-    WifiSleepManager::GetInstance().HandleCommissioningSessionStopped();
-#endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+// #if SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+//     WifiSleepManager::GetInstance().HandleCommissioningSessionStopped();
+// #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
 }
 
 void BaseApplicationDelegate::OnCommissioningWindowOpened()

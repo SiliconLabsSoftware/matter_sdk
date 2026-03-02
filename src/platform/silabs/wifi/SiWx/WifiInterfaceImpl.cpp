@@ -490,7 +490,9 @@ sl_status_t SetWifiConfigurations()
     // This is be triggered on the disconnect use case, providing the amount of TA tries
     // Setting the TA retry to 1 and giving the control to the M4 for improved power efficiency
     // When max_retry_attempts is set to 0, TA will retry indefinitely.
-    sl_wifi_advanced_client_configuration_t client_config = { .max_retry_attempts = 1 };
+    sl_wifi_advanced_client_configuration_t client_config;
+    client_config.beacon_missed_count = 40;
+    client_config.max_retry_attempts = 1;
     status = sl_wifi_set_advanced_client_configuration(SL_WIFI_CLIENT_INTERFACE, &client_config);
     VerifyOrReturnError(status == SL_STATUS_OK, status,
                         ChipLogError(DeviceLayer, "sl_wifi_set_advanced_client_configuration failed: 0x%lx", status));
@@ -529,11 +531,8 @@ sl_status_t SetWifiConfigurations()
             .bss_type = SL_WIFI_BSS_TYPE_INFRASTRUCTURE,
             .security = security,
             .encryption = SL_WIFI_DEFAULT_ENCRYPTION,
-            .client_options = SL_WIFI_JOIN_WITH_SCAN,
+            // .client_options = SL_WIFI_JOIN_WITH_SCAN,
             .credential_id = (security == SL_WIFI_OPEN) ? SL_NET_NO_CREDENTIAL_ID : SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID,
-            .channel_bitmap = {
-                .channel_bitmap_2_4 = static_cast<uint16_t>(BIT((wfx_rsi.ap_chan - 1))),
-            },
         },
         .ip = {
             .mode = SL_IP_MANAGEMENT_DHCP,
@@ -547,16 +546,17 @@ sl_status_t SetWifiConfigurations()
     chip::ByteSpan input(wfx_rsi.credentials.ssid, wfx_rsi.credentials.ssidLength);
     chip::CopySpanToMutableSpan(input, output);
 
-    if (wfx_rsi.ap_chan != SL_WIFI_AUTO_CHANNEL)
-    {
-        // AP channel is known - This indicates that the network scan was done for a specific SSID.
-        // Providing the channel and BSSID in the profile avoids scanning all channels again.
-        profile.config.channel.channel = wfx_rsi.ap_chan;
+    // if (wfx_rsi.ap_chan != SL_WIFI_AUTO_CHANNEL)
+    // {
+    //     // AP channel is known - This indicates that the network scan was done for a specific SSID.
+    //     // Providing the channel and BSSID in the profile avoids scanning all channels again.
+    //     profile.config.channel.channel = wfx_rsi.ap_chan;
 
-        chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWifiMacAddressLength);
-        chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWifiMacAddressLength);
-        chip::CopySpanToMutableSpan(inBssid, bssidSpan);
-    }
+    //     chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWifiMacAddressLength);
+    //     chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWifiMacAddressLength);
+    //     chip::CopySpanToMutableSpan(inBssid, bssidSpan);
+    // }
+    profile.config.channel_bitmap.channel_bitmap_2_4 = BIT((wfx_rsi.ap_chan - 1));
 
     status = sl_net_set_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID, &profile);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_set_profile failed: 0x%lx", status));
