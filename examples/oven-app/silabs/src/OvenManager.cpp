@@ -24,6 +24,7 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
 #include <platform/CHIPDeviceLayer.h>
 
 #include "AppConfig.h"
@@ -97,19 +98,16 @@ void OvenManager::Init()
 
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
 {
-    // Set the initial temperature-measurement values for CookSurfaceEndpoint
-    Status status = TemperatureMeasurement::Attributes::MeasuredValue::Set(cookSurfaceEndpoint, MIN_TEMPERATURE);
-    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Setting MeasuredValue failed : %u", to_underlying(status)));
+    TemperatureMeasurementCluster * cluster = TemperatureMeasurement::FindClusterOnEndpoint(cookSurfaceEndpoint);
+    VerifyOrReturnError(cluster != nullptr, CHIP_ERROR_INTERNAL);
 
+    DataModel::Nullable<int16_t> minMeasuredValue(MIN_TEMPERATURE);
+    DataModel::Nullable<int16_t> maxMeasuredValue(MAX_TEMPERATURE);
+
+    // Set the initial temperature-measurement values for CookSurfaceEndpoint
+    ReturnErrorOnFailure(cluster->SetMeasuredValue(minMeasuredValue));
     // Initialize min/max measured values (range: 0 to 30000 -> 0.00C to 300.00C if unit is 0.01C) for cook surface endpoint
-    status = TemperatureMeasurement::Attributes::MinMeasuredValue::Set(cookSurfaceEndpoint, MIN_TEMPERATURE);
-    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Setting MinMeasuredValue failed : %u", to_underlying(status)));
-    status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Set(cookSurfaceEndpoint, MAX_TEMPERATURE);
-    VerifyOrReturnError(status == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Setting MaxMeasuredValue failed : %u", to_underlying(status)));
-    return CHIP_NO_ERROR;
+    return cluster->SetMeasuredValueRange(minMeasuredValue, maxMeasuredValue);
 }
 
 CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId temperatureControlledCabinetEndpoint)
