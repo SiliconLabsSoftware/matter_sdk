@@ -34,7 +34,7 @@
 #include "sl_bt_api.h"
 #include <BLEChannel.h>
 #include <lib/core/Optional.h>
-#endif // SLI_SI91X_ENABLE_BLE
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 
 namespace chip {
 namespace DeviceLayer {
@@ -228,7 +228,7 @@ private:
     static constexpr uint8_t kUUIDTlvSize       = 4; // 1 byte for length, 1b for type and 2b for the UUID value
     static constexpr uint8_t kDeviceNameTlvSize = (2 + kMaxDeviceNameLength); // 1 byte for length, 1b for type and + device name
 
-#if SLI_SI91X_ENABLE_BLE
+#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
     // Declared in BLEChannel.h now.
     struct BLEConState
     {
@@ -239,7 +239,7 @@ private:
         uint8_t connectionHandle;
         uint8_t bondingHandle;
     };
-#endif
+#endif //defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 
     BLEConState mBleConnections[kMaxConnections];
     uint8_t mIndConfId[kMaxConnections];
@@ -252,9 +252,9 @@ private:
     PacketBufferHandle c3AdditionalDataBufferHandle;
 #endif
 
-#if !(SLI_SI91X_ENABLE_BLE)
+#if !(defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE)
     BLEChannel * mBleSideChannel = nullptr;
-#endif // !(SLI_SI91X_ENABLE_BLE)
+#endif // !(defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE)
 
     CHIP_ERROR MapBLEError(int bleErr);
     void DriveBLEState(void);

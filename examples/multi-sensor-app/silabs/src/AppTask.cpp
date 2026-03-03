@@ -33,7 +33,7 @@
 #include <setup_payload/SetupPayload.h>
 #include <sl_cmsis_os2_common.h>
 
-#if DISPLAY_ENABLED
+#if defined (DISPLAY_ENABLED) && DISPLAY_ENABLED
 #include <SensorsUI.h>
 #endif
 

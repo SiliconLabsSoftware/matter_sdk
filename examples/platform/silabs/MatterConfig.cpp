@@ -49,9 +49,9 @@
 #endif // (defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 1)
 #endif // SL_WIFI
 
-#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 #include "ApplicationSleepManager.h"
-#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
 #if defined(PW_RPC_ENABLED) && PW_RPC_ENABLED
 #include "Rpc.h"
@@ -353,7 +353,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     CHIP_ERROR err = CHIP_NO_ERROR;
 
     // [sl-only]: Configure Wi-Fi App Sleep Manager
-#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
     err = app::Silabs::ApplicationSleepManager::GetInstance()
               .SetFabricTable(&Server::GetInstance().GetFabricTable())
               .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
@@ -367,7 +367,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 
     // Register ICDStateObserver
     chip::Server::GetInstance().GetICDManager().RegisterObserver(&app::Silabs::ApplicationSleepManager::GetInstance());
-#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);

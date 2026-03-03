@@ -109,9 +109,9 @@
 #endif // MATTER_TRACING_ENABLED
 
 // sl-only
-#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 #include <ApplicationSleepManager.h>
-#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
 /**********************************************************
  * Defines and Constants
@@ -226,16 +226,16 @@ void BaseApplicationDelegate::OnCommissioningSessionEstablishmentError(CHIP_ERRO
 
 void BaseApplicationDelegate::OnCommissioningWindowOpened()
 {
-#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
     app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowOpened();
-#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 }
 
 void BaseApplicationDelegate::OnCommissioningWindowClosed()
 {
-#if SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
     app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowClosed();
-#endif // SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
     if (BaseApplication::GetProvisionStatus())
     {
