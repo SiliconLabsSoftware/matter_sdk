@@ -21,7 +21,7 @@
 #include <platform/silabs/OTAImageProcessorImpl.h>
 #include <platform/silabs/SilabsConfig.h>
 
-#if SL_WIFI
+#if defined(SL_WIFI) && SL_WIFI
 #include <platform/silabs/wifi/ncp/spi_multiplex.h>
 #endif // SL_WIFI
 
@@ -209,7 +209,7 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
             writeBuffer[writeBufOffset] = 0;
             writeBufOffset++;
         }
-#if SL_BTLCTRL_MUX
+#if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
         err = sl_wfx_host_pre_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
         {
@@ -220,7 +220,7 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
 #endif // SL_BTLCTRL_MUX
         WRAP_BL_DFU_CALL(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
 
-#if SL_BTLCTRL_MUX
+#if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
         err = sl_wfx_host_post_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
         {
@@ -248,16 +248,16 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
 // bootloader_setImageToBootload steps - MATTER-4155 - PLATFORM_HYD-3235
 void OTAImageProcessorImpl::LockRadioProcessing()
 {
-#if !SL_WIFI && defined(_SILICON_LABS_32B_SERIES_3)
+#if (!defined(SL_WIFI) || !SL_WIFI) && defined(_SILICON_LABS_32B_SERIES_3)
     ThreadStackMgr().LockThreadStack();
-#endif // SL_WIFI
+#endif
 }
 
 void OTAImageProcessorImpl::UnlockRadioProcessing()
 {
-#if !SL_WIFI && defined(_SILICON_LABS_32B_SERIES_3)
+#if (!defined(SL_WIFI) || !SL_WIFI) && defined(_SILICON_LABS_32B_SERIES_3)
     ThreadStackMgr().UnlockThreadStack();
-#endif // SL_WIFI
+#endif
 }
 
 void OTAImageProcessorImpl::HandleApply(intptr_t context)
@@ -269,7 +269,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
 
     // Force KVS to store pending keys such as data from StoreCurrentUpdateInfo()
     PersistedStorage::KeyValueStoreMgrImpl().ForceKeyMapSave();
-#if SL_BTLCTRL_MUX
+#if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
     err = sl_wfx_host_pre_bootloader_spi_transfer();
     if (err != SL_STATUS_OK)
     {
@@ -295,7 +295,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         ChipLogError(SoftwareUpdate, "bootloader_verifyImage() error: %ld", err);
         // Call the OTARequestor API to reset the state
         GetRequestorInstance()->CancelImageUpdate();
-#if SL_BTLCTRL_MUX
+#if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
         err = sl_wfx_host_post_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
         {
@@ -314,7 +314,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         ChipLogError(SoftwareUpdate, "bootloader_setImageToBootload() error: %ld", err);
         // Call the OTARequestor API to reset the state
         GetRequestorInstance()->CancelImageUpdate();
-#if SL_BTLCTRL_MUX
+#if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
         err = sl_wfx_host_post_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
         {
@@ -325,7 +325,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         return;
     }
 
-#if SL_BTLCTRL_MUX
+#if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
     err = sl_wfx_host_post_bootloader_spi_transfer();
     if (err != SL_STATUS_OK)
     {
@@ -398,7 +398,7 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
         if (writeBufOffset == kAlignmentBytes)
         {
             writeBufOffset = 0;
-#if SL_BTLCTRL_MUX
+#if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
             err = sl_wfx_host_pre_bootloader_spi_transfer();
             if (err != SL_STATUS_OK)
             {
@@ -408,7 +408,7 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
 #endif // SL_BTLCTRL_MUX
             WRAP_BL_DFU_CALL(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
 
-#if SL_BTLCTRL_MUX
+#if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
             err = sl_wfx_host_post_bootloader_spi_transfer();
             if (err != SL_STATUS_OK)
             {

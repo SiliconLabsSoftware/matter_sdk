@@ -7,10 +7,6 @@
             },
             {
                 "boards": ["BRD4187C"],
-                "arguments": ["--docker", "--wifi wf200"]
-            },
-            {
-                "boards": ["BRD4187C"],
                 "arguments": ["--docker", "--wifi SiWx917"]
             },
             {
