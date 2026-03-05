@@ -56,6 +56,9 @@ declare_args() {
   # Disable AWS SDK OTA by default
   aws_sdk_ota = false
 
+  # Use BLE host on EFR32; false = BLE on NCP/SiWx
+  use_host_ble = false
+
   # Temperature Sensor support
   sl_enable_si70xx_sensor = false
 
@@ -70,8 +73,8 @@ declare_args() {
   # Enables LCD Qr Code on supported devices
   show_qr_code = !disable_lcd
 
-  # Enabling BLE on 917 SoC by default
-  sl_matter_enable_siwx_ble = use_SiWx917
+  # Enabling BLE on 917 when use_host_ble is false
+  sl_matter_enable_siwx_ble = use_SiWx917 && !use_host_ble
 }
 
 # TODO - This needs to be removed once multiplexing issues resolved
