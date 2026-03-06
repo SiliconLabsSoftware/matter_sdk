@@ -19,6 +19,8 @@
 
 #include "CustomAppTask.h"
 #include "AppTask.h"
+#include "AppConfig.h"
+#include "AppEvent.h"
 
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
