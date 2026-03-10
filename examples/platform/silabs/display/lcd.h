@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <include/AppConfig.h>
+#include "AppConfig.h"
 #include "glib.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
