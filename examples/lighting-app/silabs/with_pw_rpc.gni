@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # add this gni as import in your build args to use pigweed in the example
-# 'import("//with_pw_rpc.gni")'
+# 'import("//examples/lighting-app/silabs/with_pw_rpc.gni")'
 
 import("//build_overrides/chip.gni")
 import("${chip_root}/config/efr32/lib/pw_rpc/pw_rpc.gni")

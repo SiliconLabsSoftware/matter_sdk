@@ -17,15 +17,19 @@
 #
 
 # Build script for GN EFR32 examples GitHub workflow.
+# For best build performance on macOS, source this script instead of executing it:
+#   source ./scripts/examples/gn_silabs_example.sh <args...>
 
-set -e
+# Capture script path at file scope (before entering the function),
+# where both bash and zsh reliably provide the sourced file's path.
+_GN_SILABS_SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
-if [[ -z "${MATTER_ROOT}" ]]; then
-    echo "Using default path for Matter root"
-    CHIP_ROOT="$(dirname "$0")/../.."
-else
-    echo "Using ENV path for Matter root"
+_gn_silabs_build() {
+
+if [[ -n "${MATTER_ROOT}" ]]; then
     CHIP_ROOT="$MATTER_ROOT"
+else
+    CHIP_ROOT="$(cd "$_GN_SILABS_SCRIPT_PATH/../.." && pwd)"
 fi
 
 if [[ -z "${PW_ENVIRONMENT_ROOT}" ]]; then
@@ -36,10 +40,9 @@ else
     PW_PATH="$PW_ENVIRONMENT_ROOT/cipd/packages/pigweed"
 fi
 
-env
 USE_WIFI=false
 USE_DOCKER=false
-USE_GIT_SHA_FOR_VERSION=true
+USE_GIT_SHA_FOR_VERSION=false
 GN_PATH="$PW_PATH/gn"
 USE_BOOTLOADER=false
 DOTFILE=".gn"
@@ -51,7 +54,7 @@ USAGE="./scripts/examples/gn_silabs_example.sh <AppRootFolder> <outputFolder> <s
 PROTOCOL_DIR_SUFFIX="thread"
 NCP_DIR_SUFFIX=""
 
-if [ "$#" == "0" ]; then
+if [ "$#" = "0" ]; then
     echo "Build script for EFR32 Matter apps
     Format:
     $USAGE
@@ -171,7 +174,7 @@ elif [ "$#" -lt "2" ]; then
     Format:
     $USAGE"
 else
-    ROOT=$1
+    APP_ROOT=$1
     OUTDIR=$2
 
     if [ "$#" -gt "2" ]; then
@@ -190,7 +193,7 @@ else
             --wifi)
                 if [ -z "$2" ]; then
                     echo "--wifi requires SiWx917 or wf200"
-                    exit 1
+                    return 1
                 fi
 
                 if [ "$2" = "SiWx917" ]; then
@@ -199,7 +202,7 @@ else
                     optArgs+="use_wf200=true "
                 else
                     echo "Wifi usage: --wifi SiWx917|wf200"
-                    exit 1
+                    return 1
                 fi
 
                 NCP_DIR_SUFFIX="/"$2
@@ -288,7 +291,7 @@ else
             --gn_path)
                 if [ -z "$2" ]; then
                     echo "--gn_path requires a path to GN"
-                    exit 1
+                    return 1
                 else
                     GN_PATH="$2"
                 fi
@@ -301,7 +304,7 @@ else
                 shift
                 ;;
             *)
-                if [ "$1" =~ *"use_SiWx917=true"* ] || [ "$1" =~ *"use_wf200=true"* ]; then
+                if [[ "$1" == *"use_SiWx917=true"* ]] || [[ "$1" == *"use_wf200=true"* ]]; then
                     USE_WIFI=true
                     # NCP Mode so base MCU is an EFR32
                     optArgs+="chip_device_platform =\"efr32\" "
@@ -314,7 +317,7 @@ else
 
     if [ -z "$SILABS_BOARD" ]; then
         echo "SILABS_BOARD not defined"
-        exit 1
+        return 1
     fi
 
     # 917 exception. TODO find a more generic way
@@ -324,7 +327,7 @@ else
         USE_WIFI=true
     fi
 
-    if [ "$USE_GIT_SHA_FOR_VERSION" == true ]; then
+    if [ "$USE_GIT_SHA_FOR_VERSION" = true ]; then
         {
             ShortCommitSha=$(git describe --always --dirty --exclude '*')
             branchName=$(git rev-parse --abbrev-ref HEAD)
@@ -335,38 +338,37 @@ else
     # Zap generation requires activation
     source "$CHIP_ROOT/scripts/activate.sh"
 
-    if [ "$USE_WIFI" == true ]; then
-        DOTFILE="$ROOT/build_for_wifi_gnfile.gn"
+    if [ "$USE_WIFI" = true ]; then
+        DOTFILE="$APP_ROOT/build_for_wifi_gnfile.gn"
         PROTOCOL_DIR_SUFFIX="wifi"
     else
-        DOTFILE="$ROOT/openthread.gn"
+        DOTFILE="$APP_ROOT/openthread.gn"
     fi
 
     PYTHON_PATH="$(which python3)"
     BUILD_DIR=$OUTDIR/$PROTOCOL_DIR_SUFFIX/$SILABS_BOARD$NCP_DIR_SUFFIX
     echo BUILD_DIR="$BUILD_DIR"
 
-    if [ "$DIR_CLEAN" == true ]; then
+    if [ "$DIR_CLEAN" = true ]; then
         rm -rf "$BUILD_DIR"
     fi
 
-    if [ "$USE_DOCKER" == true ] && [ "$USE_WIFI" == false ]; then
+    if [ "$USE_DOCKER" = true ] && [ "$USE_WIFI" = false ]; then
         echo "Switching OpenThread ROOT"
         optArgs+="openthread_root=\"$GSDK_ROOT/util/third_party/openthread\" "
     fi
 
-    if [ "$VERBOSE_MODE" == false ]; then
+    if [ "$VERBOSE_MODE" = false ]; then
         optArgs+="chip_detail_logging=false "
     fi
 
-    "$GN_PATH" gen --check --script-executable="$PYTHON_PATH" --fail-on-unused-args --add-export-compile-commands=* --root="$ROOT" --dotfile="$DOTFILE" --args="silabs_board=\"$SILABS_BOARD\" $optArgs" "$BUILD_DIR"
-
-    ninja -C "$BUILD_DIR"/
+    "$GN_PATH" gen --root="$CHIP_ROOT" --dotfile="$DOTFILE" --args="silabs_board=\"$SILABS_BOARD\" $optArgs" "$BUILD_DIR"
+    ninja -C "$BUILD_DIR"/ "${APP_ROOT}:silabs"
 
     #print stats
     arm-none-eabi-size -A "$BUILD_DIR"/*.out
 
-    if [ "$VERBOSE_MODE" == true ]; then
+    if [ "$VERBOSE_MODE" = true ]; then
         echo "================= Warning!!!!! ================"
         echo "Verbose mode is enabled. BAUDRATE FOR UART LOGS IS SET TO 921600"
         echo "Use Simplicity Studio or commander with the following command to set the baudrate:"
@@ -375,7 +377,7 @@ else
     fi
 
     # add bootloader to generated image
-    if [ "$USE_BOOTLOADER" == true ]; then
+    if [ "$USE_BOOTLOADER" = true ]; then
 
         binName=""
         InternalBootloaderBoards=("BRD4337A" "BRD2704A" "BRD2703A" "BRD4319A")
@@ -415,3 +417,7 @@ else
         "$commanderPath" convert "$binName" "$bootloaderPath" -o "$binName"
     fi
 fi
+
+} # end _gn_silabs_build
+
+_gn_silabs_build "$@"

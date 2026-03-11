@@ -26,5 +26,5 @@ default_args = {
   chip_openthread_ftd = true
   optimize_debug_level = "s"
 
-  import("//openthread.gni")
+  import("//examples/lighting-app/silabs/openthread.gni")
 }
