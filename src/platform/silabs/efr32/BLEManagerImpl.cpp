@@ -270,7 +270,7 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
     case DeviceEventType::kCHIPoBLESubscribe: {
         ChipDeviceEvent connEstEvent;
 
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLESubscribe");
+        ChipLogDetail(DeviceLayer, "_OnPlatformEvent kCHIPoBLESubscribe");
         HandleSubscribeReceived(event->CHIPoBLESubscribe.ConId, &CHIP_BLE_SVC_ID, &Ble::CHIP_BLE_CHAR_2_UUID);
         connEstEvent.Type = DeviceEventType::kCHIPoBLEConnectionEstablished;
         PlatformMgr().PostEventOrDie(&connEstEvent);
@@ -278,32 +278,32 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
     break;
 
     case DeviceEventType::kCHIPoBLEUnsubscribe: {
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEUnsubscribe");
+        ChipLogDetail(DeviceLayer, "_OnPlatformEvent kCHIPoBLEUnsubscribe");
         HandleUnsubscribeReceived(event->CHIPoBLEUnsubscribe.ConId, &CHIP_BLE_SVC_ID, &Ble::CHIP_BLE_CHAR_2_UUID);
     }
     break;
 
     case DeviceEventType::kCHIPoBLEWriteReceived: {
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEWriteReceived");
+        ChipLogDetail(DeviceLayer, "_OnPlatformEvent kCHIPoBLEWriteReceived");
         HandleWriteReceived(event->CHIPoBLEWriteReceived.ConId, &CHIP_BLE_SVC_ID, &Ble::CHIP_BLE_CHAR_1_UUID,
                             PacketBufferHandle::Adopt(event->CHIPoBLEWriteReceived.Data));
     }
     break;
 
     case DeviceEventType::kCHIPoBLEConnectionError: {
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEConnectionError");
+        ChipLogDetail(DeviceLayer, "_OnPlatformEvent kCHIPoBLEConnectionError");
         HandleConnectionError(event->CHIPoBLEConnectionError.ConId, event->CHIPoBLEConnectionError.Reason);
     }
     break;
 
     case DeviceEventType::kCHIPoBLEIndicateConfirm: {
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEIndicateConfirm");
+        ChipLogDetail(DeviceLayer, "_OnPlatformEvent kCHIPoBLEIndicateConfirm");
         HandleIndicationConfirmation(event->CHIPoBLEIndicateConfirm.ConId, &CHIP_BLE_SVC_ID, &Ble::CHIP_BLE_CHAR_2_UUID);
     }
     break;
 
     default:
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent default:  event->Type = %d", event->Type);
+        ChipLogDetail(DeviceLayer, "_OnPlatformEvent default:  event->Type = %d", event->Type);
         break;
     }
 }
@@ -311,14 +311,14 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
 CHIP_ERROR BLEManagerImpl::SubscribeCharacteristic(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId,
                                                    const ChipBleUUID * charId)
 {
-    ChipLogProgress(DeviceLayer, "BLEManagerImpl::SubscribeCharacteristic() not supported");
+    ChipLogDetail(DeviceLayer, "BLEManagerImpl::SubscribeCharacteristic() not supported");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 
 CHIP_ERROR BLEManagerImpl::UnsubscribeCharacteristic(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId,
                                                      const ChipBleUUID * charId)
 {
-    ChipLogProgress(DeviceLayer, "BLEManagerImpl::UnsubscribeCharacteristic() not supported");
+    ChipLogDetail(DeviceLayer, "BLEManagerImpl::UnsubscribeCharacteristic() not supported");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -371,7 +371,7 @@ exit:
 CHIP_ERROR BLEManagerImpl::SendWriteRequest(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
                                             PacketBufferHandle pBuf)
 {
-    ChipLogProgress(DeviceLayer, "BLEManagerImpl::SendWriteRequest() not supported");
+    ChipLogDetail(DeviceLayer, "BLEManagerImpl::SendWriteRequest() not supported");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -1003,12 +1003,9 @@ BLEManagerImpl::EventFilter BLEManagerImpl::HandleTxConfirmationEvent(BLE_CONNEC
     ChipDeviceEvent event;
     uint8_t timerHandle = sInstance.GetTimerHandle(conId, false);
 
-    ChipLogProgress(DeviceLayer, "Tx Confirmation received");
-
     // stop indication confirmation timer
     if (timerHandle < kMaxConnections)
     {
-        ChipLogProgress(DeviceLayer, " stop soft timer");
         sl_bt_system_set_lazy_soft_timer(0, 0, timerHandle, false);
     }
 
@@ -1024,7 +1021,7 @@ BLEManagerImpl::EventFilter BLEManagerImpl::HandleSoftTimerEvent(volatile sl_bt_
     // If we receive a callback for unknown timer handle ignore this.
     VerifyOrReturnValue(evt->data.evt_system_soft_timer.handle < kMaxConnections, EventFilter::UnprocessedEvent);
 
-    ChipLogProgress(DeviceLayer, "BLEManagerImpl::HandleSoftTimerEvent CHIPOBLE_PROTOCOL_ABORT");
+    ChipLogDetail(DeviceLayer, "BLEManagerImpl::HandleSoftTimerEvent CHIPOBLE_PROTOCOL_ABORT");
     ChipDeviceEvent event;
     event.Type                                                   = DeviceEventType::kCHIPoBLEConnectionError;
     event.CHIPoBLEConnectionError.ConId                          = mIndConfId[evt->data.evt_system_soft_timer.handle];
@@ -1248,13 +1245,13 @@ BLEManagerImpl::EventFilter BLEManagerImpl::ParseEvent(volatile sl_bt_msg_t * ev
     switch (SL_BT_MSG_ID(evt->header))
     {
     case sl_bt_evt_system_boot_id: {
-        ChipLogProgress(DeviceLayer, "Bluetooth stack booted: v%d.%d.%d-b%d", evt->data.evt_system_boot.major,
-                        evt->data.evt_system_boot.minor, evt->data.evt_system_boot.patch, evt->data.evt_system_boot.build);
+        ChipLogProgress(DeviceLayer, "BLE stack: v%d.%d.%d-b%d", evt->data.evt_system_boot.major, evt->data.evt_system_boot.minor,
+                        evt->data.evt_system_boot.patch, evt->data.evt_system_boot.build);
         HandleBootEvent();
 
         RAIL_Version_t railVer;
         RAIL_GetVersion(&railVer, true);
-        ChipLogProgress(DeviceLayer, "RAIL version:, v%d.%d.%d-b%d", railVer.major, railVer.minor, railVer.rev, railVer.build);
+        ChipLogProgress(DeviceLayer, "RAIL: v%d.%d.%d-b%d", railVer.major, railVer.minor, railVer.rev, railVer.build);
         sl_bt_connection_set_default_parameters(BLE_CONFIG_MIN_INTERVAL, BLE_CONFIG_MAX_INTERVAL, BLE_CONFIG_LATENCY,
                                                 BLE_CONFIG_TIMEOUT, BLE_CONFIG_MIN_CE_LENGTH, BLE_CONFIG_MAX_CE_LENGTH);
 
@@ -1332,7 +1329,6 @@ BLEManagerImpl::EventFilter BLEManagerImpl::ParseEvent(volatile sl_bt_msg_t * ev
     break;
 
     case sl_bt_evt_gatt_server_user_read_request_id: {
-        ChipLogProgress(DeviceLayer, "GATT server user_read_request");
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
         eventFilter = HandleC3ReadRequest(evt);
 #endif // CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
@@ -1347,7 +1343,7 @@ BLEManagerImpl::EventFilter BLEManagerImpl::ParseEvent(volatile sl_bt_msg_t * ev
     break;
 
     default: {
-        ChipLogProgress(DeviceLayer, "evt_UNKNOWN id = %08" PRIx32, SL_BT_MSG_ID(evt->header));
+        ChipLogDetail(DeviceLayer, "evt_UNKNOWN id = %08" PRIx32, SL_BT_MSG_ID(evt->header));
         break;
     }
     }

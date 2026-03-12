@@ -171,7 +171,7 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
     WRAP_BL_DFU_CALL(err = bootloader_init())
     if (err != SL_BOOTLOADER_OK)
     {
-        ChipLogProgress(SoftwareUpdate, "bootloader_init Failed error: %ld", err);
+        ChipLogError(SoftwareUpdate, "bootloader_init Failed error: %ld", err);
         SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageUpload, CHIP_ERROR_INTERNAL);
     }
 
