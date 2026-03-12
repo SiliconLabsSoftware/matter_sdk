@@ -34,10 +34,11 @@ public:
         kStationDisconnect  = 1,
         kAPStart            = 2,
         kAPStop             = 3,
-        kStationStartJoin   = 5,
-        kConnectionComplete = 6, /* This combines the DHCP and Notify */
-        kStationDhcpDone    = 7,
-        kStationDhcpPoll    = 8,
+        kStationStartScan   = 5,
+        kStationStartJoin   = 6,
+        kConnectionComplete = 7, /* This combines the DHCP and Notify */
+        kStationDhcpDone    = 8,
+        kStationDhcpPoll    = 9,
     };
 
     static WifiInterfaceImpl & GetInstance() { return mInstance; }
@@ -58,9 +59,10 @@ public:
     bool IsStationReady() override;
     CHIP_ERROR TriggerDisconnection() override;
     void ClearWifiCredentials() override;
-    void SetWifiCredentials(const WifiCredentials & credentials) override;
+    CHIP_ERROR SetWifiCredentials(const WifiCredentials & credentials) override;
     CHIP_ERROR GetWifiCredentials(WifiCredentials & credentials) override;
     CHIP_ERROR ConnectToAccessPoint(void) override;
+    CHIP_ERROR QuickJoinToAccessPoint(void) override;
     bool HasAnIPv4Address() override;
     bool HasAnIPv6Address() override;
     void CancelScanNetworks() override;

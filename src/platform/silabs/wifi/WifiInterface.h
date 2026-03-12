@@ -296,8 +296,9 @@ public:
      *       The function will overwrite any existing Wi-Fi credentials.
      *
      * @param[in] credentials
+     * @return CHIP_ERROR CHIP_NO_ERROR on success, CHIP_ERROR_INVALID_ARGUMENT if ssidLength is 0 or exceeds WFX_MAX_SSID_LENGTH
      */
-    virtual void SetWifiCredentials(const WifiCredentials & credentials) = 0;
+    virtual CHIP_ERROR SetWifiCredentials(const WifiCredentials & credentials) = 0;
 
     /**
      * @brief Returns the configured Wi-Fi credentials
@@ -322,6 +323,16 @@ public:
      *                    CHIP_ERROR_INTERNAL, otherwise
      */
     virtual CHIP_ERROR ConnectToAccessPoint(void) = 0;
+
+    /**
+     * @brief Triggers join to the provisioned access point without scanning.
+     *        Use when scan info (e.g. channel, BSSID) is already known to avoid a prior scan.
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR, the join was successfully triggered
+     *                    CHIP_ERROR_INCORRECT_STATE, not provisioned or no credentials
+     *                    CHIP_ERROR_INVALID_ARGUMENT, credentials invalid
+     */
+    virtual CHIP_ERROR QuickJoinToAccessPoint(void) = 0;
 
     /**
      * @brief Cancels the on-going network scan operation.

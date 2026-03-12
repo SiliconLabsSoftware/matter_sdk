@@ -645,7 +645,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
 
     case WifiPlatformEvent::kStationDisconnect: {
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationDisconnect");
-        // TODO: This event is not being posted anywhere, seems to be a dead code or we are missing something
+        TEMPORARY_RETURN_IGNORED TriggerPlatformWifiDisconnection();
 
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
             .Clear(WifiInterface::WifiState::kStationConnecting)
@@ -664,15 +664,18 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         // TODO: Currently unimplemented
         break;
 
-    case WifiPlatformEvent::kStationStartJoin:
-        ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationStartJoin");
-
-// To avoid IOP issues, it is recommended to enable high-performance mode before joining the network.
-// TODO: Remove this once the IOP issue related to power save mode switching is fixed in the Wi-Fi SDK.
+    case WifiPlatformEvent::kStationStartScan:
+        ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationStartScan");
+        // To avoid IOP issues, enable high-performance mode before scan/join. TODO: Remove once IOP fix is in Wi-Fi SDK.
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
+        PostWifiPlatformEvent(WifiPlatformEvent::kStationStartJoin);
+        break;
+
+    case WifiPlatformEvent::kStationStartJoin:
+        ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationStartJoin");
         JoinWifiNetwork();
         break;
 
@@ -1048,9 +1051,7 @@ bool WifiInterfaceImpl::IsStationReady()
 
 CHIP_ERROR WifiInterfaceImpl::TriggerDisconnection()
 {
-    VerifyOrReturnError(TriggerPlatformWifiDisconnection() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
-    wfx_rsi.dev_state.Clear(WifiState::kStationConnected);
-
+    PostWifiPlatformEvent(WifiPlatformEvent::kStationDisconnect);
     return CHIP_NO_ERROR;
 }
 
@@ -1110,25 +1111,32 @@ bool WifiInterfaceImpl::IsWifiProvisioned()
     return wfx_rsi.dev_state.Has(WifiState::kStationProvisioned);
 }
 
-void WifiInterfaceImpl::SetWifiCredentials(const WifiCredentials & credentials)
+CHIP_ERROR WifiInterfaceImpl::SetWifiCredentials(const WifiCredentials & credentials)
 {
+    VerifyOrReturnError(credentials.ssidLength, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(credentials.ssidLength <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_INVALID_ARGUMENT);
     wfx_rsi.credentials = credentials;
     wfx_rsi.dev_state.Set(WifiState::kStationProvisioned);
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
 {
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(wfx_rsi.credentials.ssidLength, CHIP_ERROR_INCORRECT_STATE);
-
-    // TODO: We should move this validation to where we set the credentials. It is too late here.
-    VerifyOrReturnError(wfx_rsi.credentials.ssidLength <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_INVALID_ARGUMENT);
 
     ChipLogProgress(DeviceLayer, "connect to access point: %s", wfx_rsi.credentials.ssid);
 
-    WifiPlatformEvent event = WifiPlatformEvent::kStationStartJoin;
-    PostWifiPlatformEvent(event);
+    PostWifiPlatformEvent(WifiPlatformEvent::kStationStartScan);
+    return CHIP_NO_ERROR;
+}
 
+CHIP_ERROR WifiInterfaceImpl::QuickJoinToAccessPoint()
+{
+    VerifyOrReturnError(IsWifiProvisioned(), CHIP_ERROR_INCORRECT_STATE);
+
+    ChipLogProgress(DeviceLayer, "quick join to access point: %s", wfx_rsi.credentials.ssid);
+
+    PostWifiPlatformEvent(WifiPlatformEvent::kStationStartJoin);
     return CHIP_NO_ERROR;
 }
 
