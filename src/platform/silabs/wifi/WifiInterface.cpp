@@ -42,17 +42,17 @@ constexpr uint8_t kWlanMaxRetryIntervalsInSec = 60;
 uint8_t retryInterval                         = kWlanMinRetryIntervalsInSec;
 
 /**
- * @brief Retry timer callback that triggers a reconnection attempt
- *
- * TODO: The structure of the retry needs to be redone
- *
- * @param arg
+ * @brief Retry timer callback that triggers a reconnection attempt.
+ * @param arg Pointer to bool (quickJoin) written by ScheduleConnectionAttempt when the timer was started.
  */
 void RetryConnectionTimerHandler(void * arg)
 {
-    if (chip::DeviceLayer::Silabs::WifiInterface::GetInstance().ConnectToAccessPoint() != CHIP_NO_ERROR)
+    bool quickJoin = *static_cast<bool *>(arg);
+    chip::DeviceLayer::Silabs::WifiInterface & wifi = chip::DeviceLayer::Silabs::WifiInterface::GetInstance();
+    CHIP_ERROR err = quickJoin ? wifi.QuickJoinToAccessPoint() : wifi.ConnectToAccessPoint();
+    if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "ConnectToAccessPoint() failed.");
+        ChipLogError(DeviceLayer, "Connection attempt failed.");
     }
 }
 
@@ -126,8 +126,8 @@ void WifiInterface::NotifyWifiTaskInitialized(void)
     sl_wfx_startup_ind_t evt = { 0 };
 
     // TODO: We should move this to the init function and not the notification function
-    // Creating a timer which will be used to retry connection with AP
-    mRetryTimer = osTimerNew(RetryConnectionTimerHandler, osTimerOnce, NULL, NULL);
+    // Creating a timer which will be used to retry connection with AP (arg points to mRetryTimerQuickJoin, set in ScheduleConnectionAttempt).
+    mRetryTimer = osTimerNew(RetryConnectionTimerHandler, osTimerOnce, &mRetryTimerQuickJoin, NULL);
     VerifyOrReturn(mRetryTimer != NULL);
 
     evt.header.id     = to_underlying(WifiEvent::kStartUp);
@@ -148,8 +148,10 @@ void WifiInterface::NotifyWifiTaskInitialized(void)
 }
 
 // TODO: The retry stategy needs to be re-worked
-void WifiInterface::ScheduleConnectionAttempt()
+void WifiInterface::ScheduleConnectionAttempt(bool quickJoin)
 {
+    mRetryTimerQuickJoin = quickJoin;
+
     if (retryInterval > kWlanMaxRetryIntervalsInSec)
     {
         retryInterval = kWlanMaxRetryIntervalsInSec;
@@ -158,7 +160,6 @@ void WifiInterface::ScheduleConnectionAttempt()
     if (osTimerStart(mRetryTimer, pdMS_TO_TICKS(retryInterval * 1000)) != osOK)
     {
         ChipLogProgress(DeviceLayer, "Failed to start retry timer");
-        // Sending the join command if retry timer failed to start
         if (ConnectToAccessPoint() != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "ConnectToAccessPoint() failed.");

@@ -98,7 +98,7 @@ constexpr osThreadAttr_t kWlanTaskAttr = { .name       = "wlan_rsi",
                                            .cb_size    = osThreadCbSize,
                                            .stack_mem  = wlanStack,
                                            .stack_size = kWlanTaskSize,
-                                           .priority   = osPriorityAboveNormal7 };
+                                           .priority   = osPriorityHigh };
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 constexpr uint32_t kTimeToFullBeaconReception = 5000; // 5 seconds
@@ -751,7 +751,14 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     ChipLogError(DeviceLayer, "sl_net_up failed: 0x%lx", static_cast<uint32_t>(status));
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
-    ScheduleConnectionAttempt();
+    if (status == SL_STATUS_SI91X_NO_AP_FOUND)
+    {
+        ScheduleConnectionAttempt(false); // Scan and join
+    }
+    else
+    {
+        ScheduleConnectionAttempt(true); // Quick join
+    }
 
     return status;
 }
@@ -779,7 +786,14 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%lx", status);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
-        mInstance.ScheduleConnectionAttempt();
+        if (status == SL_STATUS_SI91X_NO_AP_FOUND)
+        {
+            mInstance.ScheduleConnectionAttempt(false); // Scan and join
+        }
+        else
+        {
+            mInstance.ScheduleConnectionAttempt(true); // Quick join
+        }
     }
 
     return status;

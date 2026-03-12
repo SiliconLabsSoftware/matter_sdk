@@ -414,8 +414,10 @@ protected:
      * @note The retry interval increases exponentially with each attempt, starting from a minimum value and doubling each time,
      *       up to a maximum value. For example, if the initial retry interval is 1 second, the subsequent intervals will be 2
      * seconds, 4 seconds, 8 seconds, and so on, until the maximum retry interval is reached.
+     *
+     * @param quickJoin If true, the next retry will use quick join; if false, scan then join (ConnectToAccessPoint).
      */
-    void ScheduleConnectionAttempt();
+    void ScheduleConnectionAttempt(bool quickJoin = false);
 
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
@@ -424,6 +426,7 @@ protected:
 
 private:
     osTimerId_t mRetryTimer;
+    bool mRetryTimerQuickJoin = false;
 };
 
 } // namespace Silabs
