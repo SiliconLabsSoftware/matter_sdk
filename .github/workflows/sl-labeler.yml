@@ -1,0 +1,151 @@
+name: Silabs Labeler
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release_*
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check-sl-prefix:
+    name: Check SL Prefix and Apply Labels
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'silabs-matter-ci-bot[bot]' }}
+    steps:
+      - name: Generate token for the workflow
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.SILABSSW_MATTER_CI_BOT_APP_ID }}
+          private-key: ${{ secrets.SILABSSW_MATTER_CI_BOT_APP_PRIVATE_KEY }}
+      
+      - name: Mask the generated token
+        run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
+
+      - name: Check PR title for SL prefix and apply labels
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ steps.generate_token.outputs.token }}
+          script: |
+            const prTitle = context.payload.pull_request.title;
+            const prNumber = context.payload.pull_request.number;
+            
+            // Input validation and security checks
+            if (typeof prTitle !== 'string') {
+              throw new Error('Invalid PR title: not a string');
+            }
+            
+            // Safely log the PR title to prevent injection attacks
+            console.log('Checking PR title:', JSON.stringify(prTitle));
+            
+            // Define the valid prefixes and their corresponding labels
+            const prefixMapping = {
+              '[SL-ONLY]': 'sl-only',
+              '[SL-TEMP]': 'sl-temp',
+              '[SL-UP]': 'sl-up',
+              '[CSA-CP]': 'csa-cp'
+            };
+            
+            const allSlLabels = Object.values(prefixMapping);
+            
+            // First, get current labels to check existing state
+            console.log('Getting current PR labels...');
+            const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            // Check if the title starts with any of the valid prefixes
+            let foundPrefix = null;
+            let labelToApply = null;
+            
+            for (const [prefix, label] of Object.entries(prefixMapping)) {
+              if (prTitle.startsWith(prefix)) {
+                foundPrefix = prefix;
+                labelToApply = label;
+                break;
+              }
+            }
+            
+            if (!foundPrefix) {
+              // No valid prefix found - remove any existing SL labels and fail
+              const existingSlLabels = currentLabels.filter(label => allSlLabels.includes(label.name));
+              if (existingSlLabels.length > 0) {
+                console.log(`Removing existing SL labels: ${existingSlLabels.map(l => l.name).join(', ')}`);
+                for (const label of existingSlLabels) {
+                  try {
+                    await github.rest.issues.removeLabel({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: prNumber,
+                      name: label.name
+                    });
+                    console.log(`Removed label: ${label.name}`);
+                  } catch (error) {
+                    console.log(`Warning: Could not remove label '${label.name}': ${error.message}`);
+                  }
+                }
+              }
+              // No valid prefix found - fail the workflow
+              const validPrefixes = Object.keys(prefixMapping).join(', ');
+              const errorMessage = `❌ PR title prefix is missing. Please add one of the following prefixes to your PR title: ${validPrefixes}`;
+              
+              console.log(errorMessage);
+              
+              // Fail the workflow
+              throw new Error(`PR title must start with one of: ${validPrefixes}`);
+            } else {
+              // Valid prefix found - check if the correct label is already present
+              console.log('✅ Found valid prefix:', JSON.stringify(foundPrefix), 'checking label:', JSON.stringify(labelToApply));
+              
+              const existingSlLabels = currentLabels.filter(label => allSlLabels.includes(label.name));
+              const hasCorrectLabel = currentLabels.some(label => label.name === labelToApply);
+              const hasIncorrectSlLabels = existingSlLabels.filter(label => label.name !== labelToApply);
+              
+              if (hasCorrectLabel && hasIncorrectSlLabels.length === 0) {
+                // Correct label is already present and no incorrect SL labels exist
+                console.log(`✅ Correct label '${labelToApply}' is already present, no changes needed`);
+              } else {
+                // Need to update labels
+                
+                // Remove any incorrect SL labels
+                if (hasIncorrectSlLabels.length > 0) {
+                  console.log(`Removing incorrect SL labels: ${hasIncorrectSlLabels.map(l => l.name).join(', ')}`);
+                  for (const label of hasIncorrectSlLabels) {
+                    try {
+                      await github.rest.issues.removeLabel({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: prNumber,
+                        name: label.name
+                      });
+                      console.log(`Removed label: ${label.name}`);
+                    } catch (error) {
+                      console.log(`Warning: Could not remove label '${label.name}': ${error.message}`);
+                    }
+                  }
+                }
+                
+                // Add the correct label if not already present
+                if (!hasCorrectLabel) {
+                  console.log(`Adding label: ${labelToApply}`);
+                  try {
+                    await github.rest.issues.addLabels({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: prNumber,
+                      labels: [labelToApply]
+                    });
+                    
+                    console.log(`Label '${labelToApply}' applied successfully`);
+                  } catch (error) {
+                    console.log(`Warning: Could not apply label '${labelToApply}': ${error.message}`);
+                    // Continue without failing - the prefix check passed
+                  }
+                } else {
+                  console.log(`Label '${labelToApply}' already present, no need to add`);
+                }
+              }
+            }
