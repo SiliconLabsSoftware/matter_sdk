@@ -486,6 +486,9 @@ sl_status_t SetWifiConfigurations()
             .encryption = SL_WIFI_DEFAULT_ENCRYPTION,
             .client_options = SL_WIFI_JOIN_WITH_SCAN,
             .credential_id = SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID,
+            .channel_bitmap = {
+                .channel_bitmap_2_4 = SL_WIFI_DEFAULT_CHANNEL_BITMAP
+            },
         },
         .ip = {
             .mode = SL_IP_MANAGEMENT_DHCP,
@@ -503,7 +506,8 @@ sl_status_t SetWifiConfigurations()
     {
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
-        profile.config.channel.channel = wfx_rsi.ap_chan;
+        profile.config.channel.channel                   = wfx_rsi.ap_chan;
+        profile.config.channel_bitmap.channel_bitmap_2_4 = BIT((wfx_rsi.ap_chan - 1));
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWifiMacAddressLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWifiMacAddressLength);
@@ -519,6 +523,7 @@ sl_status_t SetWifiConfigurations()
     status = sl_net_set_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID, &profile);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_set_profile failed: 0x%lx", status));
 
+    osDelay(1000);
     return status;
 }
 
@@ -753,11 +758,13 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     if (status == SL_STATUS_SI91X_NO_AP_FOUND)
     {
-        ScheduleConnectionAttempt(false); // Scan and join
+        mUseQuickJoin = false; // Scan and join
+        ScheduleConnectionAttempt();
     }
     else
     {
-        ScheduleConnectionAttempt(true); // Quick join
+        mUseQuickJoin = true; // Quick join
+        ScheduleConnectionAttempt();
     }
 
     return status;
@@ -788,11 +795,13 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
 
         if (status == SL_STATUS_SI91X_NO_AP_FOUND)
         {
-            mInstance.ScheduleConnectionAttempt(false); // Scan and join
+            mInstance.mUseQuickJoin = false; // Scan and join
+            mInstance.ScheduleConnectionAttempt();
         }
         else
         {
-            mInstance.ScheduleConnectionAttempt(true); // Quick join
+            mInstance.mUseQuickJoin = true; // Quick join
+            mInstance.ScheduleConnectionAttempt();
         }
     }
 
@@ -1138,19 +1147,9 @@ CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
 {
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_ERROR_INCORRECT_STATE);
 
-    ChipLogProgress(DeviceLayer, "connect to access point: %s", wfx_rsi.credentials.ssid);
+    ChipLogProgress(DeviceLayer, "%s to access point: %s", mUseQuickJoin ? "quick join" : "connect", wfx_rsi.credentials.ssid);
 
-    PostWifiPlatformEvent(WifiPlatformEvent::kStationStartScan);
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR WifiInterfaceImpl::QuickJoinToAccessPoint()
-{
-    VerifyOrReturnError(IsWifiProvisioned(), CHIP_ERROR_INCORRECT_STATE);
-
-    ChipLogProgress(DeviceLayer, "quick join to access point: %s", wfx_rsi.credentials.ssid);
-
-    PostWifiPlatformEvent(WifiPlatformEvent::kStationStartJoin);
+    PostWifiPlatformEvent(mUseQuickJoin ? WifiPlatformEvent::kStationStartJoin : WifiPlatformEvent::kStationStartScan);
     return CHIP_NO_ERROR;
 }
 

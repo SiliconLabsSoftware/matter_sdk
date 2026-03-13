@@ -316,6 +316,7 @@ public:
      *        connection attempt was successful or not.
      *
      *        The returned error code only indicates if the connection attempt was triggered or not.
+     *        On retry after failure, the implementation may use quick join (no scan) when channel/BSSID are known.
      *
      * @return CHIP_ERROR CHIP_NO_ERROR, the connection attempt was succesfully triggered
      *                    CHIP_ERROR_INCORRECT_STATE, the Wi-Fi station does not have any Wi-Fi credentials
@@ -323,16 +324,6 @@ public:
      *                    CHIP_ERROR_INTERNAL, otherwise
      */
     virtual CHIP_ERROR ConnectToAccessPoint(void) = 0;
-
-    /**
-     * @brief Triggers join to the provisioned access point without scanning.
-     *        Use when scan info (e.g. channel, BSSID) is already known to avoid a prior scan.
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR, the join was successfully triggered
-     *                    CHIP_ERROR_INCORRECT_STATE, not provisioned or no credentials
-     *                    CHIP_ERROR_INVALID_ARGUMENT, credentials invalid
-     */
-    virtual CHIP_ERROR QuickJoinToAccessPoint(void) = 0;
 
     /**
      * @brief Cancels the on-going network scan operation.
@@ -414,10 +405,8 @@ protected:
      * @note The retry interval increases exponentially with each attempt, starting from a minimum value and doubling each time,
      *       up to a maximum value. For example, if the initial retry interval is 1 second, the subsequent intervals will be 2
      * seconds, 4 seconds, 8 seconds, and so on, until the maximum retry interval is reached.
-     *
-     * @param quickJoin If true, the next retry will use quick join; if false, scan then join (ConnectToAccessPoint).
      */
-    void ScheduleConnectionAttempt(bool quickJoin = false);
+    void ScheduleConnectionAttempt();
 
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
@@ -426,7 +415,6 @@ protected:
 
 private:
     osTimerId_t mRetryTimer;
-    bool mRetryTimerQuickJoin = false;
 };
 
 } // namespace Silabs

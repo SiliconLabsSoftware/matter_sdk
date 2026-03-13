@@ -43,13 +43,11 @@ uint8_t retryInterval                         = kWlanMinRetryIntervalsInSec;
 
 /**
  * @brief Retry timer callback that triggers a reconnection attempt.
- * @param arg Pointer to bool (quickJoin) written by ScheduleConnectionAttempt when the timer was started.
  */
 void RetryConnectionTimerHandler(void * arg)
 {
-    bool quickJoin = *static_cast<bool *>(arg);
     chip::DeviceLayer::Silabs::WifiInterface & wifi = chip::DeviceLayer::Silabs::WifiInterface::GetInstance();
-    CHIP_ERROR err = quickJoin ? wifi.QuickJoinToAccessPoint() : wifi.ConnectToAccessPoint();
+    CHIP_ERROR err = wifi.ConnectToAccessPoint();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "Connection attempt failed.");
@@ -126,8 +124,8 @@ void WifiInterface::NotifyWifiTaskInitialized(void)
     sl_wfx_startup_ind_t evt = { 0 };
 
     // TODO: We should move this to the init function and not the notification function
-    // Creating a timer which will be used to retry connection with AP (arg points to mRetryTimerQuickJoin, set in ScheduleConnectionAttempt).
-    mRetryTimer = osTimerNew(RetryConnectionTimerHandler, osTimerOnce, &mRetryTimerQuickJoin, NULL);
+    // Creating a timer which will be used to retry connection with AP.
+    mRetryTimer = osTimerNew(RetryConnectionTimerHandler, osTimerOnce, NULL, NULL);
     VerifyOrReturn(mRetryTimer != NULL);
 
     evt.header.id     = to_underlying(WifiEvent::kStartUp);
@@ -148,10 +146,8 @@ void WifiInterface::NotifyWifiTaskInitialized(void)
 }
 
 // TODO: The retry stategy needs to be re-worked
-void WifiInterface::ScheduleConnectionAttempt(bool quickJoin)
+void WifiInterface::ScheduleConnectionAttempt()
 {
-    mRetryTimerQuickJoin = quickJoin;
-
     if (retryInterval > kWlanMaxRetryIntervalsInSec)
     {
         retryInterval = kWlanMaxRetryIntervalsInSec;
