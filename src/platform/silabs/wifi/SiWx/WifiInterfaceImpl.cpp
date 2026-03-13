@@ -650,7 +650,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
 
     case WifiPlatformEvent::kStationDisconnect: {
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationDisconnect");
-        TEMPORARY_RETURN_IGNORED TriggerPlatformWifiDisconnection();
+        TriggerPlatformWifiDisconnection();
 
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
             .Clear(WifiInterface::WifiState::kStationConnecting)
@@ -899,7 +899,10 @@ void WifiInterfaceImpl::PostWifiPlatformEvent(WifiPlatformEvent event)
 
 sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
 {
-    return sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
+    sl_status_t status = sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
+    VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_down failed: 0x%lx", status));
+
+    return SL_STATUS_OK;
 }
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
