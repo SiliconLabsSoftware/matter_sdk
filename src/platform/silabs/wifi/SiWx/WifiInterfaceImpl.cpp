@@ -98,7 +98,7 @@ constexpr osThreadAttr_t kWlanTaskAttr = { .name       = "wlan_rsi",
                                            .cb_size    = osThreadCbSize,
                                            .stack_mem  = wlanStack,
                                            .stack_size = kWlanTaskSize,
-                                           .priority   = osPriorityHigh };
+                                           .priority   = osPriorityAboveNormal7 };
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 constexpr uint32_t kTimeToFullBeaconReception = 5000; // 5 seconds

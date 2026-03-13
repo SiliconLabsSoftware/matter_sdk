@@ -102,7 +102,7 @@ constexpr osThreadAttr_t kBleTaskAttr = { .name       = "rsi_ble",
                                           .cb_size    = osThreadCbSize,
                                           .stack_mem  = bleStack,
                                           .stack_size = kBleTaskSize,
-                                          .priority   = osPriorityHigh2 };
+                                          .priority   = osPriorityHigh };
 
 void rsi_ble_add_matter_service(void)
 {
