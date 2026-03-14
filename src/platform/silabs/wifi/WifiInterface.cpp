@@ -42,17 +42,15 @@ constexpr uint8_t kWlanMaxRetryIntervalsInSec = 60;
 uint8_t retryInterval                         = kWlanMinRetryIntervalsInSec;
 
 /**
- * @brief Retry timer callback that triggers a reconnection attempt
- *
- * TODO: The structure of the retry needs to be redone
- *
- * @param arg
+ * @brief Retry timer callback that triggers a reconnection attempt.
  */
 void RetryConnectionTimerHandler(void * arg)
 {
-    if (chip::DeviceLayer::Silabs::WifiInterface::GetInstance().ConnectToAccessPoint() != CHIP_NO_ERROR)
+    chip::DeviceLayer::Silabs::WifiInterface & wifi = chip::DeviceLayer::Silabs::WifiInterface::GetInstance();
+    CHIP_ERROR err = wifi.ConnectToAccessPoint();
+    if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "ConnectToAccessPoint() failed.");
+        ChipLogError(DeviceLayer, "Connection attempt failed.");
     }
 }
 
@@ -126,7 +124,7 @@ void WifiInterface::NotifyWifiTaskInitialized(void)
     sl_wfx_startup_ind_t evt = { 0 };
 
     // TODO: We should move this to the init function and not the notification function
-    // Creating a timer which will be used to retry connection with AP
+    // Creating a timer which will be used to retry connection with AP.
     mRetryTimer = osTimerNew(RetryConnectionTimerHandler, osTimerOnce, NULL, NULL);
     VerifyOrReturn(mRetryTimer != NULL);
 
@@ -158,7 +156,6 @@ void WifiInterface::ScheduleConnectionAttempt()
     if (osTimerStart(mRetryTimer, pdMS_TO_TICKS(retryInterval * 1000)) != osOK)
     {
         ChipLogProgress(DeviceLayer, "Failed to start retry timer");
-        // Sending the join command if retry timer failed to start
         if (ConnectToAccessPoint() != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "ConnectToAccessPoint() failed.");

@@ -98,7 +98,7 @@ constexpr osThreadAttr_t kWlanTaskAttr = { .name       = "wlan_rsi",
                                            .cb_size    = osThreadCbSize,
                                            .stack_mem  = wlanStack,
                                            .stack_size = kWlanTaskSize,
-                                           .priority   = osPriorityAboveNormal7 };
+                                           .priority   = osPriorityHigh1 };
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 constexpr uint32_t kTimeToFullBeaconReception = 5000; // 5 seconds
@@ -486,6 +486,9 @@ sl_status_t SetWifiConfigurations()
             .encryption = SL_WIFI_DEFAULT_ENCRYPTION,
             .client_options = SL_WIFI_JOIN_WITH_SCAN,
             .credential_id = SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID,
+            .channel_bitmap = {
+                .channel_bitmap_2_4 = SL_WIFI_DEFAULT_CHANNEL_BITMAP
+            },
         },
         .ip = {
             .mode = SL_IP_MANAGEMENT_DHCP,
@@ -503,7 +506,8 @@ sl_status_t SetWifiConfigurations()
     {
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
-        profile.config.channel.channel = wfx_rsi.ap_chan;
+        profile.config.channel.channel                   = wfx_rsi.ap_chan;
+        profile.config.channel_bitmap.channel_bitmap_2_4 = BIT((wfx_rsi.ap_chan - 1));
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWifiMacAddressLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWifiMacAddressLength);
@@ -519,6 +523,7 @@ sl_status_t SetWifiConfigurations()
     status = sl_net_set_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID, &profile);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_set_profile failed: 0x%lx", status));
 
+    osDelay(1000);
     return status;
 }
 
@@ -645,7 +650,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
 
     case WifiPlatformEvent::kStationDisconnect: {
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationDisconnect");
-        // TODO: This event is not being posted anywhere, seems to be a dead code or we are missing something
+        TriggerPlatformWifiDisconnection();
 
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
             .Clear(WifiInterface::WifiState::kStationConnecting)
@@ -664,15 +669,18 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         // TODO: Currently unimplemented
         break;
 
-    case WifiPlatformEvent::kStationStartJoin:
-        ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationStartJoin");
-
-// To avoid IOP issues, it is recommended to enable high-performance mode before joining the network.
-// TODO: Remove this once the IOP issue related to power save mode switching is fixed in the Wi-Fi SDK.
+    case WifiPlatformEvent::kStationStartScan:
+        ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationStartScan");
+        // To avoid IOP issues, enable high-performance mode before scan/join. TODO: Remove once IOP fix is in Wi-Fi SDK.
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
+        PostWifiPlatformEvent(WifiPlatformEvent::kStationStartJoin);
+        break;
+
+    case WifiPlatformEvent::kStationStartJoin:
+        ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationStartJoin");
         JoinWifiNetwork();
         break;
 
@@ -748,7 +756,16 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     ChipLogError(DeviceLayer, "sl_net_up failed: 0x%lx", static_cast<uint32_t>(status));
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
-    ScheduleConnectionAttempt();
+    if (status == SL_STATUS_SI91X_NO_AP_FOUND)
+    {
+        mUseQuickJoin = false; // Scan and join
+        ScheduleConnectionAttempt();
+    }
+    else
+    {
+        mUseQuickJoin = true; // Quick join
+        ScheduleConnectionAttempt();
+    }
 
     return status;
 }
@@ -776,7 +793,16 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%lx", status);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
-        mInstance.ScheduleConnectionAttempt();
+        if (status == SL_STATUS_SI91X_NO_AP_FOUND)
+        {
+            mInstance.mUseQuickJoin = false; // Scan and join
+            mInstance.ScheduleConnectionAttempt();
+        }
+        else
+        {
+            mInstance.mUseQuickJoin = true; // Quick join
+            mInstance.ScheduleConnectionAttempt();
+        }
     }
 
     return status;
@@ -873,7 +899,10 @@ void WifiInterfaceImpl::PostWifiPlatformEvent(WifiPlatformEvent event)
 
 sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
 {
-    return sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
+    sl_status_t status = sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
+    VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_down failed: 0x%lx", status));
+
+    return SL_STATUS_OK;
 }
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
@@ -1048,9 +1077,7 @@ bool WifiInterfaceImpl::IsStationReady()
 
 CHIP_ERROR WifiInterfaceImpl::TriggerDisconnection()
 {
-    VerifyOrReturnError(TriggerPlatformWifiDisconnection() == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
-    wfx_rsi.dev_state.Clear(WifiState::kStationConnected);
-
+    PostWifiPlatformEvent(WifiPlatformEvent::kStationDisconnect);
     return CHIP_NO_ERROR;
 }
 
@@ -1110,25 +1137,22 @@ bool WifiInterfaceImpl::IsWifiProvisioned()
     return wfx_rsi.dev_state.Has(WifiState::kStationProvisioned);
 }
 
-void WifiInterfaceImpl::SetWifiCredentials(const WifiCredentials & credentials)
+CHIP_ERROR WifiInterfaceImpl::SetWifiCredentials(const WifiCredentials & credentials)
 {
+    VerifyOrReturnError(credentials.ssidLength, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(credentials.ssidLength <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_INVALID_ARGUMENT);
     wfx_rsi.credentials = credentials;
     wfx_rsi.dev_state.Set(WifiState::kStationProvisioned);
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
 {
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(wfx_rsi.credentials.ssidLength, CHIP_ERROR_INCORRECT_STATE);
 
-    // TODO: We should move this validation to where we set the credentials. It is too late here.
-    VerifyOrReturnError(wfx_rsi.credentials.ssidLength <= WFX_MAX_SSID_LENGTH, CHIP_ERROR_INVALID_ARGUMENT);
+    ChipLogProgress(DeviceLayer, "%s to access point: %s", mUseQuickJoin ? "quick join" : "connect", wfx_rsi.credentials.ssid);
 
-    ChipLogProgress(DeviceLayer, "connect to access point: %s", wfx_rsi.credentials.ssid);
-
-    WifiPlatformEvent event = WifiPlatformEvent::kStationStartJoin;
-    PostWifiPlatformEvent(event);
-
+    PostWifiPlatformEvent(mUseQuickJoin ? WifiPlatformEvent::kStationStartJoin : WifiPlatformEvent::kStationStartScan);
     return CHIP_NO_ERROR;
 }
 
