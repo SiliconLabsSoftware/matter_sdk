@@ -59,11 +59,11 @@ public:
     virtual CHIP_ERROR UpdateConnectionParams(BleConnectionHandle conId, const BleConnectionParams & params) = 0;
 
     // ----- GATT -----
-    virtual CHIP_ERROR SendIndication(BleConnectionHandle conId, uint16_t charHandle, const uint8_t * data, size_t length) = 0;
+    virtual CHIP_ERROR SendIndication(BleConnectionHandle conId, uint16_t charHandle, const uint8_t * data, size_t length)   = 0;
     virtual CHIP_ERROR SendWriteRequest(BleConnectionHandle conId, uint16_t charHandle, const uint8_t * data, size_t length) = 0;
-    virtual CHIP_ERROR SubscribeCharacteristic(BleConnectionHandle conId, uint16_t charHandle)   = 0;
-    virtual CHIP_ERROR UnsubscribeCharacteristic(BleConnectionHandle conId, uint16_t charHandle) = 0;
-    virtual uint16_t GetMTU(BleConnectionHandle conId) const                                   = 0;
+    virtual CHIP_ERROR SubscribeCharacteristic(BleConnectionHandle conId, uint16_t charHandle)                               = 0;
+    virtual CHIP_ERROR UnsubscribeCharacteristic(BleConnectionHandle conId, uint16_t charHandle)                             = 0;
+    virtual uint16_t GetMTU(BleConnectionHandle conId) const                                                                 = 0;
 
     // ----- Event handling -----
     /** Callback invoked when channel parses an event and produces a BleEvent (e.g. for Matter BLE). */

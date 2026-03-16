@@ -107,11 +107,11 @@ struct AdvConfigStruct
 {
     ByteSpan advData;
     ByteSpan responseData;
-    uint32_t intervalMin   = 0;
-    uint32_t intervalMax   = 0;
+    uint32_t intervalMin       = 0;
+    uint32_t intervalMax       = 0;
     uint8_t advConnectableMode = 0;
-    uint16_t duration      = 0;
-    uint8_t maxEvents      = 0;
+    uint16_t duration          = 0;
+    uint8_t maxEvents          = 0;
 };
 
 } // namespace Internal
