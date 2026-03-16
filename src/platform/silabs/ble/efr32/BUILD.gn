@@ -16,7 +16,8 @@ import("//build_overrides/chip.gni")
 
 # Matter BLE channel implementation for EFR32 (skeleton).
 source_set("ble-efr32") {
-  sources = [ "${chip_root}/src/platform/silabs/ble/efr32/BleChannelMatterEfr32.cpp" ]
+  sources =
+      [ "${chip_root}/src/platform/silabs/ble/efr32/BleChannelMatterEfr32.cpp" ]
 
   public_deps = [
     "${chip_root}/src/platform:platform_base",

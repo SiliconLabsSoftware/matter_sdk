@@ -16,7 +16,8 @@ import("//build_overrides/chip.gni")
 
 # Matter BLE channel implementation for SiWx917 (skeleton).
 source_set("ble-siwx") {
-  sources = [ "${chip_root}/src/platform/silabs/ble/SiWx/BleChannelMatterSiWx.cpp" ]
+  sources =
+      [ "${chip_root}/src/platform/silabs/ble/SiWx/BleChannelMatterSiWx.cpp" ]
 
   public_deps = [
     "${chip_root}/src/platform:platform_base",
