@@ -44,6 +44,25 @@ if (wifi_soc) {
 
 import("${examples_common_plat_dir}/args.gni")
 
+# CustomAppTask: copy .cpp and .h from platform into build directory
+_custom_app_task_gen_dir = "${root_build_dir}/config"
+action("ensure_custom_app_task") {
+  script = "${examples_common_plat_dir}/ensure_local_custom_app_task.py"
+  args = [
+    rebase_path(examples_common_plat_dir, root_build_dir),
+    rebase_path(silabs_project_dir, root_build_dir),
+    rebase_path(root_build_dir, root_build_dir),
+  ]
+  inputs = [
+    "${examples_common_plat_dir}/CustomAppTask.cpp",
+    "${examples_common_plat_dir}/CustomAppTask.h",
+  ]
+  outputs = [
+    "${_custom_app_task_gen_dir}/CustomAppTask.cpp",
+    "${_custom_app_task_gen_dir}/CustomAppTask.h",
+  ]
+}
+
 declare_args() {
   # Dump memory usage at link time.
   chip_print_memory_usage = false
@@ -71,7 +90,7 @@ if (wifi_soc) {
       "${examples_common_plat_dir}/FreeRTOSConfig.h",
       "${silabs_project_dir}/include/CHIPProjectConfig.h",
     ]
-
+    
     include_dirs = [
       "${chip_root}/src/platform/silabs/SiWx",
       "${silabs_project_dir}/include",
@@ -79,11 +98,11 @@ if (wifi_soc) {
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
     ]
-
+    
     defines = []
     if (chip_enable_pw_rpc) {
-      defines += [
-        "HAL_VCOM_ENABLE=1",
+      defines += [ 
+        "HAL_VCOM_ENABLE=1", 
         "PW_RPC_ENABLED",
       ]
     }
@@ -97,7 +116,7 @@ if (wifi_soc) {
       "${examples_common_plat_dir}/FreeRTOSConfig.h",
       "${silabs_project_dir}/include/CHIPProjectConfig.h",
     ]
-
+    
     include_dirs = [
       "${chip_root}/src/platform/silabs/efr32",
       "${silabs_project_dir}/include",
@@ -106,13 +125,13 @@ if (wifi_soc) {
       "${examples_common_plat_dir}",
       "${examples_common_plat_dir}/rgb_led",
     ]
-
+    
     defines = []
     if (chip_enable_pw_rpc) {
-      defines += [
-        "HAL_VCOM_ENABLE=1",
+      defines += [ 
+        "HAL_VCOM_ENABLE=1", 
         "PW_RPC_ENABLED",
-      ]
+         ]
     }
     if (sl_enable_rgb_led) {
       include_dirs += [ "${examples_common_plat_dir}/rgb_led" ]
@@ -121,7 +140,10 @@ if (wifi_soc) {
 }
 silabs_executable("lighting_app") {
   output_name = "matter-silabs-lighting-example.out"
-  include_dirs = [ "include" ]
+  include_dirs = [
+    "include",
+    _custom_app_task_gen_dir,
+  ]
   defines = []
 
   if (silabs_board == "BRD2704A") {
@@ -131,11 +153,12 @@ silabs_executable("lighting_app") {
   sources = [
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
-    "src/CustomAppTask.cpp",
+    "${_custom_app_task_gen_dir}/CustomAppTask.cpp",
     "src/DataModelCallbacks.cpp",
   ]
 
   deps = [
+    ":ensure_custom_app_task",
     ":sdk",
     "${chip_root}/src/app/persistence:deferred",
     "${chip_root}/src/platform/logging:default",
