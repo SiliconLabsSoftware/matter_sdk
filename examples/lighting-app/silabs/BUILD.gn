@@ -44,25 +44,6 @@ if (wifi_soc) {
 
 import("${examples_common_plat_dir}/args.gni")
 
-# CustomAppTask: copy .cpp and .h from platform into build directory
-_custom_app_task_gen_dir = "${root_build_dir}/config"
-action("ensure_custom_app_task") {
-  script = "${examples_common_plat_dir}/ensure_local_custom_app_task.py"
-  args = [
-    rebase_path(examples_common_plat_dir, root_build_dir),
-    rebase_path(silabs_project_dir, root_build_dir),
-    rebase_path(root_build_dir, root_build_dir),
-  ]
-  inputs = [
-    "${examples_common_plat_dir}/CustomAppTask.cpp",
-    "${examples_common_plat_dir}/CustomAppTask.h",
-  ]
-  outputs = [
-    "${_custom_app_task_gen_dir}/CustomAppTask.cpp",
-    "${_custom_app_task_gen_dir}/CustomAppTask.h",
-  ]
-}
-
 declare_args() {
   # Dump memory usage at link time.
   chip_print_memory_usage = false
@@ -140,10 +121,7 @@ if (wifi_soc) {
 }
 silabs_executable("lighting_app") {
   output_name = "matter-silabs-lighting-example.out"
-  include_dirs = [
-    "include",
-    _custom_app_task_gen_dir,
-  ]
+  include_dirs = [ "include" ]
   defines = []
 
   if (silabs_board == "BRD2704A") {
@@ -153,12 +131,11 @@ silabs_executable("lighting_app") {
   sources = [
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
-    "${_custom_app_task_gen_dir}/CustomAppTask.cpp",
+    "src/CustomAppTask.cpp",
     "src/DataModelCallbacks.cpp",
   ]
 
   deps = [
-    ":ensure_custom_app_task",
     ":sdk",
     "${chip_root}/src/app/persistence:deferred",
     "${chip_root}/src/platform/logging:default",
