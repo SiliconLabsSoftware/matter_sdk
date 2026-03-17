@@ -31,10 +31,19 @@ def main():
 
     base = os.getcwd()
     platform_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[1])))
+    app_project_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[2])))
     build_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[3])))
 
-    template_cpp = os.path.join(platform_dir, "CustomAppTask.cpp")
-    template_h = os.path.join(platform_dir, "CustomAppTask.h")
+    app_cpp = os.path.join(app_project_dir, "CustomAppTask.cpp")
+    app_h = os.path.join(app_project_dir, "CustomAppTask.h")
+    
+    if os.path.isfile(app_cpp) and os.path.isfile(app_h):
+        template_cpp = app_cpp
+        template_h = app_h
+    else:
+        template_cpp = os.path.join(platform_dir, "CustomAppTask.cpp")
+        template_h = os.path.join(platform_dir, "CustomAppTask.h")
+
     build_config_dir = os.path.join(build_dir, "config")
     dest_cpp = os.path.join(build_config_dir, "CustomAppTask.cpp")
     dest_h = os.path.join(build_config_dir, "CustomAppTask.h")
@@ -43,10 +52,6 @@ def main():
         if not os.path.isfile(path):
             sys.stderr.write("template not found: %s\n" % path)
             sys.exit(1)
-
-    # Only copy when build dir does not have a copy
-    if os.path.isfile(dest_cpp):
-        return
 
     os.makedirs(build_config_dir, exist_ok=True)
     shutil.copy2(template_cpp, dest_cpp)
