@@ -50,7 +50,6 @@ action("ensure_custom_app_task") {
   script = "${examples_common_plat_dir}/ensure_local_custom_app_task.py"
   args = [
     rebase_path(examples_common_plat_dir, root_build_dir),
-    rebase_path(silabs_project_dir, root_build_dir),
     rebase_path(root_build_dir, root_build_dir),
   ]
   inputs = [
