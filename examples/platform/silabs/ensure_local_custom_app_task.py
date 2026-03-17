@@ -23,15 +23,15 @@ import sys
 
 
 def main():
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 3:
         sys.stderr.write(
-            "usage: ensure_local_custom_app_task.py <platform_silabs_dir> <app_project_dir> <root_build_dir>\n"
+            "usage: ensure_local_custom_app_task.py <platform_silabs_dir> <root_build_dir>\n"
         )
         sys.exit(1)
 
     base = os.getcwd()
     platform_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[1])))
-    build_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[3])))
+    build_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[2])))
 
     template_cpp = os.path.join(platform_dir, "CustomAppTask.cpp")
     template_h = os.path.join(platform_dir, "CustomAppTask.h")
