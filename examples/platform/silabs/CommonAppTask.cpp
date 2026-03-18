@@ -17,7 +17,7 @@
  *    limitations under the License.
  */
 
-#include "CustomAppTask.h"
+#include "CommonAppTask.h"
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
@@ -31,27 +31,27 @@ using namespace ::chip::DeviceLayer::Silabs;
 #define APP_FUNCTION_BUTTON 0
 #define APP_LIGHT_SWITCH 1
 
-CustomAppTask CustomAppTask::sAppTask;
+CommonAppTask CommonAppTask::sAppTask;
 
 AppTask & AppTask::GetAppTask()
 {
-    return CustomAppTask::GetAppTask();
+    return CommonAppTask::GetAppTask();
 }
 
-CHIP_ERROR CustomAppTask::AppInitImpl()
+CHIP_ERROR CommonAppTask::AppInitImpl()
 {
-    SILABS_LOG("CustomAppTask: custom implementation (AppInitImpl)");
+    SILABS_LOG("CommonAppTask: custom implementation (AppInitImpl)");
     CHIP_ERROR err = this->AppTask::AppInit();
     if (err == CHIP_NO_ERROR)
     {
-        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CustomAppTask::ButtonEventHandler);
+        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
     }
     return err;
 }
 
-void CustomAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
+void CommonAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
 {
-    SILABS_LOG("CustomAppTask: custom implementation (ButtonEventHandlerImpl)");
+    SILABS_LOG("CommonAppTask: custom implementation (ButtonEventHandlerImpl)");
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
