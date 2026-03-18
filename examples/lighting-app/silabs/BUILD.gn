@@ -121,7 +121,10 @@ if (wifi_soc) {
 }
 silabs_executable("lighting_app") {
   output_name = "matter-silabs-lighting-example.out"
-  include_dirs = [ "include" ]
+  include_dirs = [
+    "include",
+    "${root_build_dir}/config",
+  ]
   defines = []
 
   if (silabs_board == "BRD2704A") {
@@ -130,6 +133,7 @@ silabs_executable("lighting_app") {
 
   sources = [
     "${examples_common_plat_dir}/main.cpp",
+    "${root_build_dir}/config/CustomAppTask.cpp",
     "src/AppTask.cpp",
     "src/DataModelCallbacks.cpp",
   ]
@@ -138,6 +142,7 @@ silabs_executable("lighting_app") {
     ":sdk",
     "${chip_root}/src/app/persistence:deferred",
     "${chip_root}/src/platform/logging:default",
+    "${silabs_sdk_build_root}:ensure_custom_app_task",
     app_data_model,
   ]
 

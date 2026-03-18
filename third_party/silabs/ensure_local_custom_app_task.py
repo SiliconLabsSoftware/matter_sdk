@@ -44,7 +44,7 @@ def main():
             sys.exit(1)
 
     # Only copy when build dir does not have a copy
-    if os.path.isfile(dest_cpp):
+    if os.path.isfile(dest_cpp) and os.path.isfile(dest_h):
         return
 
     os.makedirs(build_config_dir, exist_ok=True)
