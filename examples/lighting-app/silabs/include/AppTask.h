@@ -30,7 +30,6 @@
 #endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 #include "AppEvent.h"
 #include "BaseApplication.h"
-#include "LightTypes.h"
 
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <app/persistence/DeferredAttributePersistenceProvider.h>
@@ -50,6 +49,34 @@
 #define APP_ERROR_CREATE_TIMER_FAILED CHIP_APPLICATION_ERROR(0x04)
 #define APP_ERROR_START_TIMER_FAILED CHIP_APPLICATION_ERROR(0x05)
 #define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
+
+/**********************************************************
+ * LightingManager types (from former LightTypes.h)
+ *********************************************************/
+
+namespace LightingManager {
+
+enum Action_t
+{
+    ON_ACTION = 0,
+    OFF_ACTION,
+    LEVEL_ACTION,
+    COLOR_ACTION_HSV,
+    COLOR_ACTION_CT,
+    COLOR_ACTION_XY,
+
+    INVALID_ACTION
+};
+
+enum State_t
+{
+    kState_OffInitiated = 0,
+    kState_OffCompleted,
+    kState_OnInitiated,
+    kState_OnCompleted,
+};
+
+} // namespace LightingManager
 
 /**********************************************************
  * AppTask Declaration
