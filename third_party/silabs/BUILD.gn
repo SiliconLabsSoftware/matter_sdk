@@ -54,6 +54,24 @@ group("silabs_sdk") {
   public_configs = [ ":silabs_config" ]
 }
 
+# copy CustomAppTask template into build directory
+_silabs_platform_dir = "${chip_root}/examples/platform/silabs"
+action("ensure_custom_app_task") {
+  script = "ensure_local_custom_app_task.py"
+  args = [
+    rebase_path(_silabs_platform_dir, root_build_dir),
+    rebase_path(root_build_dir, root_build_dir),
+  ]
+  inputs = [
+    "${_silabs_platform_dir}/CustomAppTask.cpp",
+    "${_silabs_platform_dir}/CustomAppTask.h",
+  ]
+  outputs = [
+    "${root_build_dir}/config/CustomAppTask.cpp",
+    "${root_build_dir}/config/CustomAppTask.h",
+  ]
+}
+
 if (chip_with_lwip) {
   group("lwip") {
     public_deps = [ "silabs_lwip:lwip" ]

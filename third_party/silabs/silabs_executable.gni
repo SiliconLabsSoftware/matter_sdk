@@ -14,8 +14,11 @@
 
 import("//build_overrides/build.gni")
 import("//build_overrides/chip.gni")
+import("//build_overrides/efr32_sdk.gni")
 import("${build_root}/toolchain/flashable_executable.gni")
 import("silabs_board.gni")
+
+_custom_app_task_dep = "${silabs_sdk_build_root}:ensure_custom_app_task"
 
 template("generate_rps_file") {
   forward_variables_from(invoker,
@@ -103,10 +106,17 @@ template("silabs_executable") {
   ]
   flashbundle_name = ""  # Stop flashable_executable from making flashbundle.
 
+  # copy CustomAppTask from template into build directory
+  _custom_app_task_gen_dir = "${root_build_dir}/config"
+
   # Target to generate the s37 file, flashing script, and flashbundle.
   flash_target_name = target_name + ".flash_executable"
   flashable_executable(flash_target_name) {
     forward_variables_from(invoker, "*")
+
+    sources += [ "${_custom_app_task_gen_dir}/CustomAppTask.cpp" ]
+    include_dirs += [ _custom_app_task_gen_dir ]
+    deps += [ _custom_app_task_dep ]
   }
 
   # Target to generate the hex file.

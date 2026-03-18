@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copies CustomAppTask.cpp and CustomAppTask.h from examples/platform/silabs/
-# into the build directory.
+# Copies CustomAppTask.cpp and CustomAppTask.h from the template
 
 import os
 import shutil
@@ -23,7 +22,7 @@ import sys
 
 
 def main():
-    if len(sys.argv) < 3:
+    if len(sys.argv) != 3:
         sys.stderr.write(
             "usage: ensure_local_custom_app_task.py <platform_silabs_dir> <root_build_dir>\n"
         )
@@ -31,11 +30,11 @@ def main():
 
     base = os.getcwd()
     platform_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[1])))
-    build_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[2])))
+    root_build_dir = os.path.normpath(os.path.abspath(os.path.join(base, sys.argv[2])))
 
     template_cpp = os.path.join(platform_dir, "CustomAppTask.cpp")
     template_h = os.path.join(platform_dir, "CustomAppTask.h")
-    build_config_dir = os.path.join(build_dir, "config")
+    build_config_dir = os.path.join(root_build_dir, "config")
     dest_cpp = os.path.join(build_config_dir, "CustomAppTask.cpp")
     dest_h = os.path.join(build_config_dir, "CustomAppTask.h")
 
