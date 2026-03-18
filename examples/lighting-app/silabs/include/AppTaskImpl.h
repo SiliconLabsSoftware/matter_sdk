@@ -21,7 +21,6 @@
 
 #include "AppTask.h"
 #include "CRTPHelpers.h"
-#include "LightTypes.h"
 #include <lib/core/CHIPError.h>
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
