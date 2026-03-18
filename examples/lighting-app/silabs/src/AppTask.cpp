@@ -94,7 +94,7 @@ OnOffEffect gEffect = {
 using namespace chip::TLV;
 using namespace ::chip::DeviceLayer;
 
-// Singleton provided by CustomAppTask.cpp (AppTask::GetAppTask() returns CustomAppTask::GetAppTask()).
+// Singleton provided by CommonAppTask.cpp (AppTask::GetAppTask() returns CommonAppTask::GetAppTask()).
 
 CHIP_ERROR AppTask::AppInit()
 {

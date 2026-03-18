@@ -28,16 +28,16 @@
  * ButtonEventHandlerImpl() and add AppInitImpl() / GetAppTask() / sAppTask
  * as required by the CRTP base.
  */
-class CustomAppTask : public AppTaskImpl<CustomAppTask>
+class CommonAppTask : public AppTaskImpl<CommonAppTask>
 {
 public:
-    static CustomAppTask & GetAppTask() { return sAppTask; }
+    static CommonAppTask & GetAppTask() { return sAppTask; }
 
 private:
-    friend class AppTaskImpl<CustomAppTask>;
+    friend class AppTaskImpl<CommonAppTask>;
 
     CHIP_ERROR AppInitImpl();
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction);
 
-    static CustomAppTask sAppTask;
+    static CommonAppTask sAppTask;
 };
