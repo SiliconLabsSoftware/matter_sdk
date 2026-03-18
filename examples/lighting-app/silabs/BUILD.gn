@@ -131,7 +131,7 @@ silabs_executable("lighting_app") {
   sources = [
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
-    "${examples_common_plat_dir}/CommonAppTask.cpp",
+    "src/CommonAppTask.cpp",
     "src/DataModelCallbacks.cpp",
   ]
 
