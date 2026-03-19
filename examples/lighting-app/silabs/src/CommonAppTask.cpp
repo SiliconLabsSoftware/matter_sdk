@@ -18,7 +18,6 @@
  */
 
 #include "CommonAppTask.h"
-#include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
 
@@ -42,28 +41,5 @@ CHIP_ERROR CommonAppTask::AppInitImpl()
 {
     SILABS_LOG("CommonAppTask: custom implementation (AppInitImpl)");
     CHIP_ERROR err = this->AppTask::AppInit();
-    if (err == CHIP_NO_ERROR)
-    {
-        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
-    }
     return err;
-}
-
-void CommonAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
-{
-    SILABS_LOG("CommonAppTask: custom implementation (ButtonEventHandlerImpl)");
-    AppEvent button_event           = {};
-    button_event.Type               = AppEvent::kEventType_Button;
-    button_event.ButtonEvent.Action = btnAction;
-
-    if (button == APP_LIGHT_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
-    {
-        button_event.Handler = LightActionEventHandler;
-        AppTask::GetAppTask().PostEvent(&button_event);
-    }
-    else if (button == APP_FUNCTION_BUTTON)
-    {
-        button_event.Handler = BaseApplication::ButtonHandler;
-        AppTask::GetAppTask().PostEvent(&button_event);
-    }
 }
