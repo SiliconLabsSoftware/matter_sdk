@@ -151,11 +151,13 @@ CHIP_ERROR CustomAppTask::AppInitImpl()
     CHIP_ERROR err = this->AppTask::AppInit();
     if (err == CHIP_NO_ERROR)
     {
+        // Override the SDK default button handler registered in AppTask::AppInit().
         chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CustomAppTask::ButtonEventHandler);
     }
     return err;
 }
 
+// override code goes here
 void CustomAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
 {
     SILABS_LOG("CustomAppTask: custom implementation (ButtonEventHandlerImpl)");
