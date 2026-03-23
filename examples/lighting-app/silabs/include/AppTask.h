@@ -50,10 +50,6 @@
 #define APP_ERROR_START_TIMER_FAILED CHIP_APPLICATION_ERROR(0x05)
 #define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
 
-/**********************************************************
- * LightingManager types (from former LightTypes.h)
- *********************************************************/
-
 namespace LightingManager {
 
 enum Action_t
