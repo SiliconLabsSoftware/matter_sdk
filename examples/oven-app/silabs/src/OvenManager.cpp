@@ -24,16 +24,13 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <app/clusters/temperature-control-server/CodegenIntegration.h>
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
 #include <platform/CHIPDeviceLayer.h>
 
 #include "AppConfig.h"
 #include "AppTask.h"
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-
-#define MAX_TEMPERATURE 30000
-#define MIN_TEMPERATURE 0
-#define TEMPERATURE_STEP 500
 
 using namespace chip;
 using namespace chip::app;
@@ -53,11 +50,10 @@ void OvenManager::Init()
         chipDie();
     }
 
-    // Set initial state for TemperatureControlledCabinetEndpoint
+    // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
+    TemperatureControl::SetDelegate(&mTemperatureControlDelegate);
     VerifyOrReturn(SetTemperatureControlledCabinetInitialState(kTemperatureControlledCabinetEndpoint) == CHIP_NO_ERROR,
                    ChipLogError(AppServer, "Setting TemperatureControlledCabinet initial state failed"));
-    // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
-    TemperatureControl::SetInstance(&mTemperatureControlDelegate);
 
     // Set initial state for CookSurface endpoints
     VerifyOrReturn(SetCookSurfaceInitialState(mCookSurfaceEndpoint1.GetEndpointId()) == CHIP_NO_ERROR,
@@ -101,8 +97,12 @@ CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoin
     TemperatureMeasurementCluster * cluster = TemperatureMeasurement::FindClusterOnEndpoint(cookSurfaceEndpoint);
     VerifyOrReturnError(cluster != nullptr, CHIP_ERROR_INTERNAL);
 
-    DataModel::Nullable<int16_t> minMeasuredValue(MIN_TEMPERATURE);
-    DataModel::Nullable<int16_t> maxMeasuredValue(MAX_TEMPERATURE);
+    auto * temperatureControlCluster = TemperatureControl::FindClusterOnEndpoint(kTemperatureControlledCabinetEndpoint);
+    VerifyOrReturnError(temperatureControlCluster != nullptr, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "TemperatureControl cluster not found on endpoint"));
+
+    DataModel::Nullable<int16_t> minMeasuredValue(temperatureControlCluster->GetMinTemperature());
+    DataModel::Nullable<int16_t> maxMeasuredValue(temperatureControlCluster->GetMaxTemperature());
 
     // Set the initial temperature-measurement values for CookSurfaceEndpoint
     ReturnErrorOnFailure(cluster->SetMeasuredValue(minMeasuredValue));
@@ -112,24 +112,11 @@ CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoin
 
 CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId temperatureControlledCabinetEndpoint)
 {
-    Status tcStatus =
-        TemperatureControl::Attributes::TemperatureSetpoint::Set(temperatureControlledCabinetEndpoint, MIN_TEMPERATURE);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Setting TemperatureSetpoint failed : %u", to_underlying(tcStatus)));
+    auto * cluster = TemperatureControl::FindClusterOnEndpoint(temperatureControlledCabinetEndpoint);
+    VerifyOrReturnError(cluster != nullptr, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "TemperatureControl cluster not found on endpoint"));
 
-    tcStatus = TemperatureControl::Attributes::MinTemperature::Set(temperatureControlledCabinetEndpoint, MIN_TEMPERATURE);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Setting MinTemperature failed : %u", to_underlying(tcStatus)));
-
-    tcStatus = TemperatureControl::Attributes::MaxTemperature::Set(temperatureControlledCabinetEndpoint, MAX_TEMPERATURE);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Setting MaxTemperature failed : %u", to_underlying(tcStatus)));
-
-    tcStatus = TemperatureControl::Attributes::Step::Set(temperatureControlledCabinetEndpoint, TEMPERATURE_STEP);
-    VerifyOrReturnError(tcStatus == Status::Success, CHIP_ERROR_INTERNAL,
-                        ChipLogError(AppServer, "Setting Step failed : %u", to_underlying(tcStatus)));
-
-    return CHIP_NO_ERROR;
+    return cluster->SetTemperatureSetpoint(cluster->GetMinTemperature());
 }
 
 void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
