@@ -91,8 +91,8 @@ base declares one `*Impl()` per overridable API. Steps:
 
 ### Required Override
 
--   **`CHIP_ERROR AppInitImpl()`** — App specific initialization. This is already
-    present in the example.
+-   **`CHIP_ERROR AppInitImpl()`** — App specific initialization. This is
+    already present in the example.
 
 ### Sample Implementation
 
@@ -181,10 +181,10 @@ The base API and default AppTask behavior for this example are maintained under
 [`include/`](include/AppTaskImpl.h) and [`src/`](src/AppTask.cpp). Use them as
 the reference for overridable methods and app configuration.
 
-| File | Purpose |
-|------|--------|
-| [`include/AppTaskImpl.h`](include/AppTaskImpl.h) | Declarations of every overridable `*Impl()` method. Copy the signatures you need from here into `CommonAppTask.h`. |
-| [`src/AppTask.cpp`](src/AppTask.cpp) | Silicon Labs default implementation of AppTask. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior. |
+| File                                             | Purpose                                                                                                                                              |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`include/AppTaskImpl.h`](include/AppTaskImpl.h) | Declarations of every overridable `*Impl()` method. Copy the signatures you need from here into `CommonAppTask.h`.                                   |
+| [`src/AppTask.cpp`](src/AppTask.cpp)             | Silicon Labs default implementation of AppTask. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior. |
 
 ## Building
 
