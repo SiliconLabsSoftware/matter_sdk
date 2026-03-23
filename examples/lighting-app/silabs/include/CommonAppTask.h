@@ -19,28 +19,24 @@
 
 #pragma once
 
-#include <stdint.h>
+#include "AppTaskImpl.h"
 
-namespace LightingManager {
-
-enum Action_t
+/**
+ * @brief Minimal AppTaskImpl-derived class that overrides only ButtonEventHandler.
+ *
+ * Use this as a template when you need custom button behavior; override
+ * ButtonEventHandlerImpl() and add AppInitImpl() / GetAppTask() / sAppTask
+ * as required by the CRTP base.
+ */
+class CommonAppTask : public AppTaskImpl<CommonAppTask>
 {
-    ON_ACTION = 0,
-    OFF_ACTION,
-    LEVEL_ACTION,
-    COLOR_ACTION_HSV,
-    COLOR_ACTION_CT,
-    COLOR_ACTION_XY,
+public:
+    static CommonAppTask & GetAppTask() { return sAppTask; }
 
-    INVALID_ACTION
+private:
+    friend class AppTaskImpl<CommonAppTask>;
+
+    CHIP_ERROR AppInitImpl();
+
+    static CommonAppTask sAppTask;
 };
-
-enum State_t
-{
-    kState_OffInitiated = 0,
-    kState_OffCompleted,
-    kState_OnInitiated,
-    kState_OnCompleted,
-};
-
-} // namespace LightingManager

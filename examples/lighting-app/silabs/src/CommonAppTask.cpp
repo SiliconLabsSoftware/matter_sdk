@@ -17,27 +17,29 @@
  *    limitations under the License.
  */
 
-#pragma once
+#include "CommonAppTask.h"
+#include "AppConfig.h"
+#include "AppEvent.h"
 
-#include "AppTaskImpl.h"
+#include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 
-/**
- * @brief Minimal AppTaskImpl-derived class that overrides only ButtonEventHandler.
- *
- * Use this as a template when you need custom button behavior; override
- * ButtonEventHandlerImpl() and add AppInitImpl() / GetAppTask() / sAppTask
- * as required by the CRTP base.
- */
-class CustomAppTask : public AppTaskImpl<CustomAppTask>
+using namespace ::chip::DeviceLayer::Silabs;
+
+#define APP_FUNCTION_BUTTON 0
+#define APP_LIGHT_SWITCH 1
+
+CommonAppTask CommonAppTask::sAppTask;
+
+AppTask & AppTask::GetAppTask()
 {
-public:
-    static CustomAppTask & GetAppTask() { return sAppTask; }
+    return CommonAppTask::GetAppTask();
+}
 
-private:
-    friend class AppTaskImpl<CustomAppTask>;
-
-    CHIP_ERROR AppInitImpl();
-    void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction);
-
-    static CustomAppTask sAppTask;
-};
+CHIP_ERROR CommonAppTask::AppInitImpl()
+{
+    SILABS_LOG("CommonAppTask: custom implementation (AppInitImpl)");
+    CHIP_ERROR err = this->AppTask::AppInit();
+    return err;
+}
