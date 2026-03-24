@@ -6,6 +6,12 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
 
 -   [Matter EFR32 Lighting Example](#matter-efr32-lighting-example)
     -   [Introduction](#introduction)
+    -   [Implementing Custom App Behavior](#implementing-custom-app-behavior)
+        -   [CommonAppTask](#commonapptask)
+        -   [How to Override APIs](#how-to-override-apis)
+        -   [Required Override](#required-override)
+        -   [Sample Implementation](#sample-implementation)
+        -   [Override API Reference](#override-api-reference)
     -   [Building](#building)
     -   [Flashing the Application](#flashing-the-application)
     -   [Viewing Logging Output](#viewing-logging-output)
@@ -52,6 +58,135 @@ Rendez-vous procedure.
 The lighting example is intended to serve both as a means to explore the
 workings of Matter as well as a template for creating real products based on the
 Silicon Labs platform.
+
+## Implementing Custom App Behavior
+
+### CommonAppTask
+
+To implement custom app behavior you can override any Silicon Labs implemented
+API in the CommonAppTask file. This example provides
+[`CommonAppTask.h`](../../platform/silabs/CustomAppTask.h) and
+[`CommonAppTask.cpp`](../../platform/silabs/CustomAppTask.cpp) for that purpose.
+The base implementation and the full set of overridable `*Impl()` APIs live in
+this example's source tree under `include/` (see
+[`AppTaskImpl.h`](include/AppTaskImpl.h)). Any `*Impl()` you do not override
+keeps the Silicon Labs default behavior.
+
+### How to Override APIs
+
+`CommonAppTask` extends the base AppTask through the Curiously Recurring
+Template Pattern (CRTP). You override only the `*Impl()` methods you need, the
+base declares one `*Impl()` per overridable API. Steps:
+
+1. Find the method to override in the base API (see
+   [Override API reference](#override-api-reference) below).
+2. Declare the same method signature in `CommonAppTask` in your
+   `CommonAppTask.h` under `private:`
+3. Implement the method in `CommonAppTask.cpp`.
+4. Build the project. Each overridable API is resolved as follows: **if you
+   implemented that `*Impl()` in CommonAppTask, your implementation is used,
+   otherwise the Silicon Labs default implementation is used.** You only
+   implement what you need, everything else falls back to the default
+   automatically.
+
+### Required Override
+
+-   **`CHIP_ERROR AppInitImpl()`** — App specific initialization. This is
+    already present in the example.
+
+### Sample Implementation
+
+The following shows a minimal example `CommonAppTask` that overrides
+`AppInitImpl()` (required) and `ButtonEventHandlerImpl()`.
+
+**CommonAppTask.h**
+
+```cpp
+#pragma once
+#include "AppTaskImpl.h"
+
+/**
+ * Minimal AppTaskImpl-derived class. Override only the *Impl() methods you need;
+ * add AppInitImpl(), GetAppTask(), and sAppTask as required by the CRTP base.
+ */
+class CustomAppTask : public AppTaskImpl<CustomAppTask>
+{
+public:
+    static CustomAppTask & GetAppTask() { return sAppTask; }
+
+private:
+    friend class AppTaskImpl<CustomAppTask>;
+    CHIP_ERROR AppInitImpl();
+    void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction);
+    static CustomAppTask sAppTask;
+};
+```
+
+**CommonAppTask.cpp**
+
+```cpp
+#include "CustomAppTask.h"
+#include "AppTask.h"
+#include "AppConfig.h"
+#include "AppEvent.h"
+#include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
+
+using namespace ::chip::DeviceLayer::Silabs;
+
+#define APP_FUNCTION_BUTTON 0
+#define APP_LIGHT_SWITCH     1
+
+CustomAppTask CustomAppTask::sAppTask;
+
+AppTask & AppTask::GetAppTask()
+{
+    return CustomAppTask::GetAppTask();
+}
+
+CHIP_ERROR CustomAppTask::AppInitImpl()
+{
+    SILABS_LOG("CustomAppTask: custom implementation (AppInitImpl)");
+    CHIP_ERROR err = this->AppTask::AppInit();
+    if (err == CHIP_NO_ERROR)
+    {
+        // Override the SDK default button handler registered in AppTask::AppInit().
+        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CustomAppTask::ButtonEventHandler);
+    }
+    return err;
+}
+
+// override code goes here
+void CustomAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
+{
+    SILABS_LOG("CustomAppTask: custom implementation (ButtonEventHandlerImpl)");
+    AppEvent button_event           = {};
+    button_event.Type               = AppEvent::kEventType_Button;
+    button_event.ButtonEvent.Action = btnAction;
+    if (button == APP_LIGHT_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
+    {
+        button_event.Handler = LightActionEventHandler;
+        AppTask::GetAppTask().PostEvent(&button_event);
+    }
+    else if (button == APP_FUNCTION_BUTTON)
+    {
+        button_event.Handler = BaseApplication::ButtonHandler;
+        AppTask::GetAppTask().PostEvent(&button_event);
+    }
+}
+```
+
+### Override API Reference
+
+The base API and default AppTask behavior for this example are maintained under
+[`include/`](include/AppTaskImpl.h) and [`src/`](src/AppTask.cpp). Use them as
+the reference for overridable methods and app configuration.
+
+| File                                             | Purpose                                                                                                                                              |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`include/AppTaskImpl.h`](include/AppTaskImpl.h) | Declarations of every overridable `*Impl()` method. Copy the signatures you need from here into `CommonAppTask.h`.                                   |
+| [`src/AppTask.cpp`](src/AppTask.cpp)             | Silicon Labs default implementation of AppTask. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior. |
 
 ## Building
 
