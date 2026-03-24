@@ -108,7 +108,7 @@ CHIP_ERROR BleChannelMatterEfr32::GetDeviceName(char * buf, size_t bufSize)
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
 
-CHIP_ERROR BleChannelMatterEfr32::SetDeviceName(const char * name)
+CHIP_ERROR BleChannelMatterEfr32::SetDeviceName(const char * name, size_t nameLen)
 {
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }

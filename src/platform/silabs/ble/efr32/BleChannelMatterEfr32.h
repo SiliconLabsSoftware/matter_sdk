@@ -57,7 +57,7 @@ public:
 
     CHIP_ERROR GetAddress(uint8_t * addr, size_t * length) override;
     CHIP_ERROR GetDeviceName(char * buf, size_t bufSize) override;
-    CHIP_ERROR SetDeviceName(const char * name) override;
+    CHIP_ERROR SetDeviceName(const char * name, size_t nameLen) override;
 
     CHIP_ERROR StartIndicationTimer(BleConnectionHandle conId, uint32_t timeoutMs, void (*callback)(void *),
                                     void * context) override;

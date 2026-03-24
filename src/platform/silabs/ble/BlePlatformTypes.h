@@ -34,10 +34,11 @@ namespace DeviceLayer {
 namespace Internal {
 
 /**
- * Connection handle type for BLE operations. Platform code casts to/from
- * BLE_CONNECTION_OBJECT where required by the Matter BleLayer.
+ * Connection handle for Silabs BleChannel APIs. 
  */
-using BleConnectionHandle = void *;
+using BleConnectionHandle = uint8_t;
+
+inline constexpr BleConnectionHandle kInvalidBleConnectionHandle = 0xFF;
 
 /**
  * BLE event types delivered from platform stack to channel (ParseEvent)
@@ -63,7 +64,7 @@ enum class BleEventType : uint32_t
 struct BleEvent
 {
     BleEventType type              = BleEventType::kUnknown;
-    BleConnectionHandle connection = nullptr;
+    BleConnectionHandle connection = kInvalidBleConnectionHandle;
     void * data                    = nullptr;
     size_t dataLength              = 0;
     uint16_t attributeHandle       = 0;
