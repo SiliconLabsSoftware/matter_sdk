@@ -15,15 +15,6 @@
                     "use_rps_extension=false"
                 ]
             }
-        ],
-        "oven-app": [
-            {
-                "boards": ["BRD4338A", "BRD4342A", "BRD4343A", "BRD2605A"],
-                "arguments": [
-                    "--docker",
-                    "use_rps_extension=false"
-                ]
-            }
         ]
     }
 }
