@@ -22,11 +22,10 @@
 #include "AppTaskImpl.h"
 
 /**
- * @brief Minimal AppTaskImpl-derived class that overrides only ButtonEventHandler.
+ * @brief Minimal AppTaskImpl-derived class.
  *
- * Use this as a template when you need custom button behavior; override
- * ButtonEventHandlerImpl() and add AppInitImpl() / GetAppTask() / sAppTask
- * as required by the CRTP base.
+ * Use as a base when the default AppTask behavior is sufficient.
+ * Override *Impl() methods in a subclass to customize individual behaviors.
  */
 class CommonAppTask : public AppTaskImpl<CommonAppTask>
 {
@@ -35,8 +34,6 @@ public:
 
 private:
     friend class AppTaskImpl<CommonAppTask>;
-
-    CHIP_ERROR AppInitImpl();
 
     static CommonAppTask sAppTask;
 };
