@@ -95,7 +95,8 @@ void OvenManager::Init()
 
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
 {
-    TemperatureMeasurementCluster * temperatureMeasurementCluster = TemperatureMeasurement::FindClusterOnEndpoint(cookSurfaceEndpoint);
+    TemperatureMeasurementCluster * temperatureMeasurementCluster =
+        TemperatureMeasurement::FindClusterOnEndpoint(cookSurfaceEndpoint);
     VerifyOrReturnError(temperatureMeasurementCluster != nullptr, CHIP_ERROR_INTERNAL);
 
     auto * temperatureControlCluster = TemperatureControl::FindClusterOnEndpoint(kTemperatureControlledCabinetEndpoint);
