@@ -4,33 +4,33 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
 
 <hr>
 
--   [Matter EFR32 Lighting Example](#matter-efr32-lighting-example)
-    -   [Introduction](#introduction)
-    -   [Implementing Custom App Behavior](#implementing-custom-app-behavior)
-        -   [CommonAppTask](#commonapptask)
-        -   [How to Override APIs](#how-to-override-apis)
-        -   [Required Override](#required-override)
-        -   [Sample Implementation](#sample-implementation)
-        -   [Override API Reference](#override-api-reference)
-    -   [Building](#building)
-    -   [Flashing the Application](#flashing-the-application)
-    -   [Viewing Logging Output](#viewing-logging-output)
-        -   [SEGGER RTT (recommended)](#segger-rtt-recommended)
-        -   [Console Log](#console-log)
-            -   [Configuring the VCOM](#configuring-the-vcom)
-        -   [Using the console](#using-the-console)
-    -   [Running the Complete Example](#running-the-complete-example)
-        -   [Notes](#notes)
-    -   [Running RPC console](#running-rpc-console)
-    -   [Device Tracing](#device-tracing)
-    -   [Memory settings](#memory-settings)
-    -   [OTA Software Update](#ota-software-update)
-    -   [Group Communication (Multicast)](#group-communication-multicast)
-    -   [Building options](#building-options)
-        -   [Disabling logging](#disabling-logging)
-        -   [Debug build / release build](#debug-build--release-build)
-        -   [Disabling LCD](#disabling-lcd)
-        -   [KVS maximum entry count](#kvs-maximum-entry-count)
+- [Matter EFR32 Lighting Example](#matter-efr32-lighting-example)
+  - [Introduction](#introduction)
+  - [Implementing Custom App Behavior](#implementing-custom-app-behavior)
+    - [CommonAppTask](#commonapptask)
+    - [How to Override APIs](#how-to-override-apis)
+    - [Required Override](#required-override)
+    - [Sample Implementation](#sample-implementation)
+    - [Override API Reference](#override-api-reference)
+  - [Building](#building)
+  - [Flashing the Application](#flashing-the-application)
+  - [Viewing Logging Output](#viewing-logging-output)
+    - [SEGGER RTT (recommended)](#segger-rtt-recommended)
+    - [Console Log](#console-log)
+      - [Configuring the VCOM](#configuring-the-vcom)
+    - [Using the console](#using-the-console)
+  - [Running the Complete Example](#running-the-complete-example)
+    - [Notes](#notes)
+  - [Running RPC console](#running-rpc-console)
+  - [Device Tracing](#device-tracing)
+  - [Memory settings](#memory-settings)
+  - [OTA Software Update](#ota-software-update)
+  - [Group Communication (Multicast)](#group-communication-multicast)
+  - [Building options](#building-options)
+    - [Disabling logging](#disabling-logging)
+    - [Debug build / release build](#debug-build--release-build)
+    - [Disabling LCD](#disabling-lcd)
+    - [KVS maximum entry count](#kvs-maximum-entry-count)
 
 <hr>
 
@@ -65,8 +65,8 @@ Silicon Labs platform.
 
 To implement custom app behavior you can override any Silicon Labs implemented
 API in the CommonAppTask file. This example provides
-[`CommonAppTask.h`](../../platform/silabs/CustomAppTask.h) and
-[`CommonAppTask.cpp`](../../platform/silabs/CustomAppTask.cpp) for that purpose.
+[`CommonAppTask.h`](../../platform/silabs/CommonAppTask.h) and
+[`CommonAppTask.cpp`](../../platform/silabs/CommonAppTask.cpp) for that purpose.
 The base implementation and the full set of overridable `*Impl()` APIs live in
 this example's source tree under `include/` (see
 [`AppTaskImpl.h`](include/AppTaskImpl.h)). Any `*Impl()` you do not override
@@ -109,23 +109,23 @@ The following shows a minimal example `CommonAppTask` that overrides
  * Minimal AppTaskImpl-derived class. Override only the *Impl() methods you need;
  * add AppInitImpl(), GetAppTask(), and sAppTask as required by the CRTP base.
  */
-class CustomAppTask : public AppTaskImpl<CustomAppTask>
+class CommonAppTask : public AppTaskImpl<CommonAppTask>
 {
 public:
-    static CustomAppTask & GetAppTask() { return sAppTask; }
+    static CommonAppTask & GetAppTask() { return sAppTask; }
 
 private:
-    friend class AppTaskImpl<CustomAppTask>;
+    friend class AppTaskImpl<CommonAppTask>;
     CHIP_ERROR AppInitImpl();
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction);
-    static CustomAppTask sAppTask;
+    static CommonAppTask sAppTask;
 };
 ```
 
 **CommonAppTask.cpp**
 
 ```cpp
-#include "CustomAppTask.h"
+#include "CommonAppTask.h"
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
@@ -138,29 +138,29 @@ using namespace ::chip::DeviceLayer::Silabs;
 #define APP_FUNCTION_BUTTON 0
 #define APP_LIGHT_SWITCH     1
 
-CustomAppTask CustomAppTask::sAppTask;
+CommonAppTask CommonAppTask::sAppTask;
 
 AppTask & AppTask::GetAppTask()
 {
-    return CustomAppTask::GetAppTask();
+    return CommonAppTask::GetAppTask();
 }
 
-CHIP_ERROR CustomAppTask::AppInitImpl()
+CHIP_ERROR CommonAppTask::AppInitImpl()
 {
-    SILABS_LOG("CustomAppTask: custom implementation (AppInitImpl)");
+    SILABS_LOG("CommonAppTask: custom implementation (AppInitImpl)");
     CHIP_ERROR err = this->AppTask::AppInit();
     if (err == CHIP_NO_ERROR)
     {
         // Override the SDK default button handler registered in AppTask::AppInit().
-        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CustomAppTask::ButtonEventHandler);
+        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
     }
     return err;
 }
 
 // override code goes here
-void CustomAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
+void CommonAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
 {
-    SILABS_LOG("CustomAppTask: custom implementation (ButtonEventHandlerImpl)");
+    SILABS_LOG("CommonAppTask: custom implementation (ButtonEventHandlerImpl)");
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
