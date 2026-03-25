@@ -50,30 +50,6 @@
 #define APP_ERROR_START_TIMER_FAILED CHIP_APPLICATION_ERROR(0x05)
 #define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
 
-namespace LightingManager {
-
-enum Action_t
-{
-    ON_ACTION = 0,
-    OFF_ACTION,
-    LEVEL_ACTION,
-    COLOR_ACTION_HSV,
-    COLOR_ACTION_CT,
-    COLOR_ACTION_XY,
-
-    INVALID_ACTION
-};
-
-enum State_t
-{
-    kState_OffInitiated = 0,
-    kState_OffCompleted,
-    kState_OnInitiated,
-    kState_OnCompleted,
-};
-
-} // namespace LightingManager
-
 /**********************************************************
  * AppTask Declaration
  *********************************************************/
@@ -83,6 +59,26 @@ class AppTask : public BaseApplication
 
 public:
     AppTask() = default;
+
+    enum Action_t
+    {
+        ON_ACTION = 0,
+        OFF_ACTION,
+        LEVEL_ACTION,
+        COLOR_ACTION_HSV,
+        COLOR_ACTION_CT,
+        COLOR_ACTION_XY,
+
+        INVALID_ACTION
+    };
+
+    enum State_t
+    {
+        kState_OffInitiated = 0,
+        kState_OffCompleted,
+        kState_OnInitiated,
+        kState_OnCompleted,
+    };
 
     static AppTask & GetAppTask();
 
@@ -104,9 +100,9 @@ public:
      *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
-    void PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction);
+    void PostLightActionRequest(int32_t aActor, Action_t aAction);
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-    void PostLightControlActionRequest(int32_t aActor, LightingManager::Action_t aAction, RGBLEDWidget::ColorData_t * aValue);
+    void PostLightControlActionRequest(int32_t aActor, Action_t aAction, RGBLEDWidget::ColorData_t * aValue);
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
 
     CHIP_ERROR InitLight();
@@ -114,15 +110,15 @@ public:
     void EnableAutoTurnOff(bool aOn);
     void SetAutoTurnOffDuration(uint32_t aDurationInSecs);
     bool IsActionInProgress() const;
-    bool InitiateAction(int32_t aActor, LightingManager::Action_t aAction, uint8_t * aValue);
+    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-    bool InitiateLightCtrlAction(int32_t aActor, LightingManager::Action_t aAction, uint32_t aAttributeId, uint8_t * value);
+    bool InitiateLightCtrlAction(int32_t aActor, Action_t aAction, uint32_t aAttributeId, uint8_t * value);
 #endif
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
 protected:
-    virtual void OnLightActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * aValue);
-    virtual void OnLightActionCompleted(LightingManager::Action_t aAction);
+    virtual void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
+    virtual void OnLightActionCompleted(Action_t aAction);
     virtual void StartLightTimer(uint32_t aTimeoutMs);
     virtual void CancelLightTimer();
     static void LightTimerEventHandler(void * timerCbArg);
@@ -145,7 +141,7 @@ protected:
 private:
     chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
 
-    LightingManager::State_t mLightState;
+    State_t mLightState;
     uint8_t mCurrentLevel = 254;
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     uint8_t mCurrentHue        = 0;
@@ -160,8 +156,3 @@ private:
     bool mOffEffectArmed          = false;
     osTimerId_t mLightTimer       = nullptr;
 };
-
-inline AppTask & LightMgr()
-{
-    return AppTask::GetAppTask();
-}

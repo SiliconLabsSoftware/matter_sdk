@@ -46,7 +46,7 @@ public:
      * All *Impl() methods have defaults that call through to AppTask; override in Derived to customize.
      * Static methods dispatch via GetAppTask().
      */
-    using Action_t = LightingManager::Action_t;
+    using Action_t = AppTask::Action_t;
 
     CHIP_ERROR AppInit() override { CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, AppInit); }
 
@@ -106,12 +106,12 @@ protected:
      * AppTask overrides and static callbacks: forward to Derived::*Impl() via CRTP_THIS / CRTP_APP_TASK.
      * Override the corresponding *Impl() in Derived to customize.
      */
-    void OnLightActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * aValue) override
+    void OnLightActionInitiated(AppTask::Action_t aAction, int32_t aActor, uint8_t * aValue) override
     {
         CRTP_THIS(Derived)->OnLightActionInitiatedImpl(aAction, aActor, aValue);
     }
 
-    void OnLightActionCompleted(LightingManager::Action_t aAction) override
+    void OnLightActionCompleted(AppTask::Action_t aAction) override
     {
         CRTP_THIS(Derived)->OnLightActionCompletedImpl(aAction);
     }
@@ -190,12 +190,12 @@ private:
 
     void OnTriggerOffWithEffectImpl(OnOffEffect * effect) { AppTask::OnTriggerOffWithEffect(effect); }
 
-    void OnLightActionInitiatedImpl(LightingManager::Action_t aAction, int32_t aActor, uint8_t * aValue)
+    void OnLightActionInitiatedImpl(AppTask::Action_t aAction, int32_t aActor, uint8_t * aValue)
     {
         AppTask::OnLightActionInitiated(aAction, aActor, aValue);
     }
 
-    void OnLightActionCompletedImpl(LightingManager::Action_t aAction) { AppTask::OnLightActionCompleted(aAction); }
+    void OnLightActionCompletedImpl(AppTask::Action_t aAction) { AppTask::OnLightActionCompleted(aAction); }
 
     void StartLightTimerImpl(uint32_t aTimeoutMs) { AppTask::StartLightTimer(aTimeoutMs); }
 
