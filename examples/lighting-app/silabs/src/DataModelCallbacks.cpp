@@ -58,8 +58,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         ChipLogProgress(Zcl, "sending light state update");
         MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
 #endif // SL_MATTER_ENABLE_AWS
-        LightMgr().InitiateAction(AppEvent::kEventType_Light, *value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION,
-                                  value);
+        AppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, *value ? AppTask::ON_ACTION : AppTask::OFF_ACTION, value);
     }
     // WIP Apply attribute change to Light
     else if (clusterId == LevelControl::Id)
@@ -69,7 +68,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
 
         if (attributeId == LevelControl::Attributes::CurrentLevel::Id && value != nullptr)
         {
-            LightMgr().InitiateAction(AppEvent::kEventType_Light, LightingManager::LEVEL_ACTION, value);
+            AppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, AppTask::LEVEL_ACTION, value);
         }
     }
     // WIP Apply attribute change to Light
@@ -84,25 +83,25 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
 
-            LightMgr().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingManager::COLOR_ACTION_XY, attributeId, value);
+            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_XY, attributeId, value);
         }
         else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentY::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
-            LightMgr().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingManager::COLOR_ACTION_XY, attributeId, value);
+            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_XY, attributeId, value);
         }
         if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentHue::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
-            LightMgr().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingManager::COLOR_ACTION_HSV, attributeId, value);
+            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_HSV, attributeId, value);
         }
         else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentSaturation::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
-            LightMgr().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingManager::COLOR_ACTION_HSV, attributeId, value);
+            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_HSV, attributeId, value);
         }
         else if (attributeId == ColorControl::Attributes::ColorTemperatureMireds::Id)
         {
@@ -111,7 +110,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
                 ChipLogError(Zcl, "Wrong length for ColorControl value: %d", size);
                 return;
             }
-            LightMgr().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingManager::COLOR_ACTION_CT, attributeId, value);
+            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_CT, attributeId, value);
         }
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     }
