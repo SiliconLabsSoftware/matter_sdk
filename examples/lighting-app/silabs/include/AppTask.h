@@ -154,11 +154,11 @@ private:
     uint16_t mCurrentY         = 0;
     uint16_t mCurrentCTMireds  = 250;
 #endif
-    bool mAutoTurnOff           = false;
+    bool mAutoTurnOff             = false;
     uint32_t mAutoTurnOffDuration = 0;
-    bool mAutoTurnOffTimerArmed = false;
-    bool mOffEffectArmed        = false;
-    osTimerId_t mLightTimer     = nullptr;
+    bool mAutoTurnOffTimerArmed   = false;
+    bool mOffEffectArmed          = false;
+    osTimerId_t mLightTimer       = nullptr;
 };
 
 inline AppTask & LightMgr()
