@@ -48,15 +48,9 @@ public:
      */
     using Action_t = LightingManager::Action_t;
 
-    CHIP_ERROR AppInit() override
-    {
-        CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, AppInit);
-    }
+    CHIP_ERROR AppInit() override { CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, AppInit); }
 
-    CHIP_ERROR StartAppTask()
-    {
-        CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, StartAppTask);
-    }
+    CHIP_ERROR StartAppTask() { CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, StartAppTask); }
 
     void PostLightActionRequest(int32_t aActor, Action_t aAction)
     {
@@ -70,30 +64,18 @@ public:
     }
 #endif
 
-    CHIP_ERROR InitLight()
-    {
-        CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, InitLight);
-    }
+    CHIP_ERROR InitLight() { CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, InitLight); }
 
-    bool IsLightOn() const
-    {
-        CRTP_RETURN_CONST_AND_VERIFY_ARGS(AppTaskImpl, Derived, IsLightOn);
-    }
+    bool IsLightOn() const { CRTP_RETURN_CONST_AND_VERIFY_ARGS(AppTaskImpl, Derived, IsLightOn); }
 
-    void EnableAutoTurnOff(bool aOn)
-    {
-        CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, EnableAutoTurnOff, aOn);
-    }
+    void EnableAutoTurnOff(bool aOn) { CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, EnableAutoTurnOff, aOn); }
 
     void SetAutoTurnOffDuration(uint32_t aDurationInSecs)
     {
         CRTP_VOID_AND_VERIFY(AppTaskImpl, Derived, SetAutoTurnOffDuration, aDurationInSecs);
     }
 
-    bool IsActionInProgress() const
-    {
-        CRTP_RETURN_CONST_AND_VERIFY_ARGS(AppTaskImpl, Derived, IsActionInProgress);
-    }
+    bool IsActionInProgress() const { CRTP_RETURN_CONST_AND_VERIFY_ARGS(AppTaskImpl, Derived, IsActionInProgress); }
 
     bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue)
     {
@@ -117,10 +99,7 @@ public:
         CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, ButtonEventHandler, button, btnAction);
     }
 
-    static void AppTaskMain(void * pvParameter)
-    {
-        CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, AppTaskMain, pvParameter);
-    }
+    static void AppTaskMain(void * pvParameter) { CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, AppTaskMain, pvParameter); }
 
 protected:
     /**
@@ -137,62 +116,32 @@ protected:
         CRTP_THIS(Derived)->OnLightActionCompletedImpl(aAction);
     }
 
-    void StartLightTimer(uint32_t aTimeoutMs) override
-    {
-        CRTP_THIS(Derived)->StartLightTimerImpl(aTimeoutMs);
-    }
+    void StartLightTimer(uint32_t aTimeoutMs) override { CRTP_THIS(Derived)->StartLightTimerImpl(aTimeoutMs); }
 
-    void CancelLightTimer() override
-    {
-        CRTP_THIS(Derived)->CancelLightTimerImpl();
-    }
+    void CancelLightTimer() override { CRTP_THIS(Derived)->CancelLightTimerImpl(); }
 
-    static void LightTimerEventHandler(void * timerCbArg)
-    {
-        CRTP_APP_TASK(Derived).LightTimerEventHandlerImpl(timerCbArg);
-    }
+    static void LightTimerEventHandler(void * timerCbArg) { CRTP_APP_TASK(Derived).LightTimerEventHandlerImpl(timerCbArg); }
 
-    static void AutoTurnOffTimerEventHandler(AppEvent * aEvent)
-    {
-        CRTP_APP_TASK(Derived).AutoTurnOffTimerEventHandlerImpl(aEvent);
-    }
+    static void AutoTurnOffTimerEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).AutoTurnOffTimerEventHandlerImpl(aEvent); }
 
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent)
     {
         CRTP_APP_TASK(Derived).ActuatorMovementTimerEventHandlerImpl(aEvent);
     }
 
-    static void OffEffectTimerEventHandler(AppEvent * aEvent)
-    {
-        CRTP_APP_TASK(Derived).OffEffectTimerEventHandlerImpl(aEvent);
-    }
+    static void OffEffectTimerEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).OffEffectTimerEventHandlerImpl(aEvent); }
 
-    static void LightActionEventHandler(AppEvent * aEvent)
-    {
-        CRTP_APP_TASK(Derived).LightActionEventHandlerImpl(aEvent);
-    }
+    static void LightActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightActionEventHandlerImpl(aEvent); }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-    static void LightControlEventHandler(AppEvent * aEvent)
-    {
-        CRTP_APP_TASK(Derived).LightControlEventHandlerImpl(aEvent);
-    }
+    static void LightControlEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightControlEventHandlerImpl(aEvent); }
 #endif
 
-    static void UpdateClusterState(intptr_t context)
-    {
-        CRTP_APP_TASK(Derived).UpdateClusterStateImpl(context);
-    }
+    static void UpdateClusterState(intptr_t context) { CRTP_APP_TASK(Derived).UpdateClusterStateImpl(context); }
 
-    static void ButtonHandler(AppEvent * aEvent)
-    {
-        CRTP_APP_TASK(Derived).ButtonHandlerImpl(aEvent);
-    }
+    static void ButtonHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).ButtonHandlerImpl(aEvent); }
 
-    static void SwitchActionEventHandler(AppEvent * aEvent)
-    {
-        CRTP_APP_TASK(Derived).SwitchActionEventHandlerImpl(aEvent);
-    }
+    static void SwitchActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).SwitchActionEventHandlerImpl(aEvent); }
 
 private:
     friend Derived;
@@ -200,20 +149,11 @@ private:
     /**
      * Default *Impl() implementations: call through to AppTask. Override in Derived for custom behavior.
      */
-    CHIP_ERROR AppInitImpl()
-    {
-        return AppTask::AppInit();
-    }
+    CHIP_ERROR AppInitImpl() { return AppTask::AppInit(); }
 
-    CHIP_ERROR StartAppTaskImpl()
-    {
-        return AppTask::StartAppTask();
-    }
+    CHIP_ERROR StartAppTaskImpl() { return AppTask::StartAppTask(); }
 
-    void PostLightActionRequestImpl(int32_t aActor, Action_t aAction)
-    {
-        AppTask::PostLightActionRequest(aActor, aAction);
-    }
+    void PostLightActionRequestImpl(int32_t aActor, Action_t aAction) { AppTask::PostLightActionRequest(aActor, aAction); }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     void PostLightControlActionRequestImpl(int32_t aActor, Action_t aAction, RGBLEDWidget::ColorData_t * aValue)
@@ -222,40 +162,19 @@ private:
     }
 #endif
 
-    void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
-    {
-        AppTask::ButtonEventHandler(button, btnAction);
-    }
+    void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 
-    void AppTaskMainImpl(void * pvParameter)
-    {
-        AppTask::AppTaskMain(pvParameter);
-    }
+    void AppTaskMainImpl(void * pvParameter) { AppTask::AppTaskMain(pvParameter); }
 
-    CHIP_ERROR InitLightImpl()
-    {
-        return AppTask::InitLight();
-    }
+    CHIP_ERROR InitLightImpl() { return AppTask::InitLight(); }
 
-    bool IsLightOnImpl() const
-    {
-        return AppTask::IsLightOn();
-    }
+    bool IsLightOnImpl() const { return AppTask::IsLightOn(); }
 
-    void EnableAutoTurnOffImpl(bool aOn)
-    {
-        AppTask::EnableAutoTurnOff(aOn);
-    }
+    void EnableAutoTurnOffImpl(bool aOn) { AppTask::EnableAutoTurnOff(aOn); }
 
-    void SetAutoTurnOffDurationImpl(uint32_t aDurationInSecs)
-    {
-        AppTask::SetAutoTurnOffDuration(aDurationInSecs);
-    }
+    void SetAutoTurnOffDurationImpl(uint32_t aDurationInSecs) { AppTask::SetAutoTurnOffDuration(aDurationInSecs); }
 
-    bool IsActionInProgressImpl() const
-    {
-        return AppTask::IsActionInProgress();
-    }
+    bool IsActionInProgressImpl() const { return AppTask::IsActionInProgress(); }
 
     bool InitiateActionImpl(int32_t aActor, Action_t aAction, uint8_t * aValue)
     {
@@ -269,75 +188,36 @@ private:
     }
 #endif
 
-    void OnTriggerOffWithEffectImpl(OnOffEffect * effect)
-    {
-        AppTask::OnTriggerOffWithEffect(effect);
-    }
+    void OnTriggerOffWithEffectImpl(OnOffEffect * effect) { AppTask::OnTriggerOffWithEffect(effect); }
 
     void OnLightActionInitiatedImpl(LightingManager::Action_t aAction, int32_t aActor, uint8_t * aValue)
     {
         AppTask::OnLightActionInitiated(aAction, aActor, aValue);
     }
 
-    void OnLightActionCompletedImpl(LightingManager::Action_t aAction)
-    {
-        AppTask::OnLightActionCompleted(aAction);
-    }
+    void OnLightActionCompletedImpl(LightingManager::Action_t aAction) { AppTask::OnLightActionCompleted(aAction); }
 
-    void StartLightTimerImpl(uint32_t aTimeoutMs)
-    {
-        AppTask::StartLightTimer(aTimeoutMs);
-    }
+    void StartLightTimerImpl(uint32_t aTimeoutMs) { AppTask::StartLightTimer(aTimeoutMs); }
 
-    void CancelLightTimerImpl()
-    {
-        AppTask::CancelLightTimer();
-    }
+    void CancelLightTimerImpl() { AppTask::CancelLightTimer(); }
 
-    void LightTimerEventHandlerImpl(void * timerCbArg)
-    {
-        AppTask::LightTimerEventHandler(timerCbArg);
-    }
+    void LightTimerEventHandlerImpl(void * timerCbArg) { AppTask::LightTimerEventHandler(timerCbArg); }
 
-    void AutoTurnOffTimerEventHandlerImpl(AppEvent * aEvent)
-    {
-        AppTask::AutoTurnOffTimerEventHandler(aEvent);
-    }
+    void AutoTurnOffTimerEventHandlerImpl(AppEvent * aEvent) { AppTask::AutoTurnOffTimerEventHandler(aEvent); }
 
-    void ActuatorMovementTimerEventHandlerImpl(AppEvent * aEvent)
-    {
-        AppTask::ActuatorMovementTimerEventHandler(aEvent);
-    }
+    void ActuatorMovementTimerEventHandlerImpl(AppEvent * aEvent) { AppTask::ActuatorMovementTimerEventHandler(aEvent); }
 
-    void OffEffectTimerEventHandlerImpl(AppEvent * aEvent)
-    {
-        AppTask::OffEffectTimerEventHandler(aEvent);
-    }
+    void OffEffectTimerEventHandlerImpl(AppEvent * aEvent) { AppTask::OffEffectTimerEventHandler(aEvent); }
 
-    void LightActionEventHandlerImpl(AppEvent * aEvent)
-    {
-        AppTask::LightActionEventHandler(aEvent);
-    }
+    void LightActionEventHandlerImpl(AppEvent * aEvent) { AppTask::LightActionEventHandler(aEvent); }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-    void LightControlEventHandlerImpl(AppEvent * aEvent)
-    {
-        AppTask::LightControlEventHandler(aEvent);
-    }
+    void LightControlEventHandlerImpl(AppEvent * aEvent) { AppTask::LightControlEventHandler(aEvent); }
 #endif
 
-    void UpdateClusterStateImpl(intptr_t context)
-    {
-        AppTask::UpdateClusterState(context);
-    }
+    void UpdateClusterStateImpl(intptr_t context) { AppTask::UpdateClusterState(context); }
 
-    void ButtonHandlerImpl(AppEvent * aEvent)
-    {
-        AppTask::ButtonHandler(aEvent);
-    }
+    void ButtonHandlerImpl(AppEvent * aEvent) { AppTask::ButtonHandler(aEvent); }
 
-    void SwitchActionEventHandlerImpl(AppEvent * aEvent)
-    {
-        AppTask::SwitchActionEventHandler(aEvent);
-    }
+    void SwitchActionEventHandlerImpl(AppEvent * aEvent) { AppTask::SwitchActionEventHandler(aEvent); }
 };
