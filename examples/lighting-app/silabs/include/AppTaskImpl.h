@@ -32,8 +32,7 @@
 /**
  * @brief CRTP base for AppTask that allows overrides for all AppTask APIs (public and protected).
  *
- * Override only the *Impl methods you need; others fall back to AppTask. Derived MUST implement
- * AppInitImpl(). All other Impl methods have defaults that call through to AppTask.
+ * Override only the *Impl methods you need; all have defaults that call through to AppTask.
  *
  * @tparam Derived The derived class type (CRTP pattern)
  */
