@@ -159,11 +159,13 @@ CHIP_ERROR AppTask::InitLight()
         mCurrentLevel = brightness.Value();
     }
 
-    if (Clusters::ColorControl::Attributes::CurrentX::Get(LIGHT_ENDPOINT, &currentx) == Protocols::InteractionModel::Status::Success)
+    if (Clusters::ColorControl::Attributes::CurrentX::Get(LIGHT_ENDPOINT, &currentx) ==
+        Protocols::InteractionModel::Status::Success)
     {
         mCurrentX = currentx;
     }
-    if (Clusters::ColorControl::Attributes::CurrentY::Get(LIGHT_ENDPOINT, &currenty) == Protocols::InteractionModel::Status::Success)
+    if (Clusters::ColorControl::Attributes::CurrentY::Get(LIGHT_ENDPOINT, &currenty) ==
+        Protocols::InteractionModel::Status::Success)
     {
         mCurrentY = currenty;
     }
@@ -186,11 +188,11 @@ CHIP_ERROR AppTask::InitLight()
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    mLightState                 = currentLedState ? LightingManager::kState_OnCompleted : LightingManager::kState_OffCompleted;
-    mAutoTurnOffTimerArmed      = false;
-    mAutoTurnOff                = false;
-    mAutoTurnOffDuration        = 0;
-    mOffEffectArmed             = false;
+    mLightState            = currentLedState ? LightingManager::kState_OnCompleted : LightingManager::kState_OffCompleted;
+    mAutoTurnOffTimerArmed = false;
+    mAutoTurnOff           = false;
+    mAutoTurnOffDuration   = 0;
+    mOffEffectArmed        = false;
 
     return CHIP_NO_ERROR;
 }
@@ -403,17 +405,18 @@ bool AppTask::InitiateAction(int32_t aActor, LightingManager::Action_t aAction, 
     if (((mLightState == LightingManager::kState_OffCompleted) || mOffEffectArmed) && aAction == LightingManager::ON_ACTION)
     {
         action_initiated = true;
-        new_state       = LightingManager::kState_OnInitiated;
+        new_state        = LightingManager::kState_OnInitiated;
         if (mOffEffectArmed)
         {
             CancelLightTimer();
             mOffEffectArmed = false;
         }
     }
-    else if (mLightState == LightingManager::kState_OnCompleted && aAction == LightingManager::OFF_ACTION && mOffEffectArmed == false)
+    else if (mLightState == LightingManager::kState_OnCompleted && aAction == LightingManager::OFF_ACTION &&
+             mOffEffectArmed == false)
     {
         action_initiated = true;
-        new_state       = LightingManager::kState_OffInitiated;
+        new_state        = LightingManager::kState_OffInitiated;
         if (mAutoTurnOffTimerArmed)
         {
             mAutoTurnOffTimerArmed = false;
@@ -482,8 +485,8 @@ void AppTask::LightTimerEventHandler(void * timerCbArg)
 void AppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 {
     AppTask * task = static_cast<AppTask *>(aEvent->TimerEvent.Context);
-    int32_t actor = AppEvent::kEventType_Timer;
-    uint8_t value = 0;
+    int32_t actor  = AppEvent::kEventType_Timer;
+    uint8_t value  = 0;
 
     if (!task->mAutoTurnOffTimerArmed)
     {
@@ -500,8 +503,8 @@ void AppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 void AppTask::OffEffectTimerEventHandler(AppEvent * aEvent)
 {
     AppTask * task = static_cast<AppTask *>(aEvent->TimerEvent.Context);
-    int32_t actor = AppEvent::kEventType_Timer;
-    uint8_t value = 0;
+    int32_t actor  = AppEvent::kEventType_Timer;
+    uint8_t value  = 0;
 
     if (!task->mOffEffectArmed)
     {
@@ -523,13 +526,13 @@ void AppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
 
     if (task->mLightState == LightingManager::kState_OffInitiated)
     {
-        task->mLightState   = LightingManager::kState_OffCompleted;
-        actionCompleted     = LightingManager::OFF_ACTION;
+        task->mLightState = LightingManager::kState_OffCompleted;
+        actionCompleted   = LightingManager::OFF_ACTION;
     }
     else if (task->mLightState == LightingManager::kState_OnInitiated)
     {
-        task->mLightState   = LightingManager::kState_OnCompleted;
-        actionCompleted     = LightingManager::ON_ACTION;
+        task->mLightState = LightingManager::kState_OnCompleted;
+        actionCompleted   = LightingManager::ON_ACTION;
     }
 
     if (actionCompleted != LightingManager::INVALID_ACTION)

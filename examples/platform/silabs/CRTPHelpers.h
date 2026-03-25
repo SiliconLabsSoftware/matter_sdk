@@ -34,18 +34,24 @@
 template <typename>
 struct mfp_sig;
 template <typename C, typename Ret, typename... Args>
-struct mfp_sig<Ret (C::*)(Args...)> { using type = Ret(Args...); };
+struct mfp_sig<Ret (C::*)(Args...)>
+{
+    using type = Ret(Args...);
+};
 template <typename C, typename Ret, typename... Args>
-struct mfp_sig<Ret (C::*)(Args...) const> { using type = Ret(Args...) const; };
+struct mfp_sig<Ret (C::*)(Args...) const>
+{
+    using type = Ret(Args...) const;
+};
 
 /**
  * Asserts that if Derived overrides func##Impl, its signature matches the base default.
  * Requires Base to have a default func##Impl (i.e., only for optional overrides).
  */
 #define CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func)                                                                              \
-    static_assert(std::is_same<decltype(&Derived::func##Impl), decltype(&Base::func##Impl)>::value ||                             \
-                      std::is_same<typename mfp_sig<decltype(&Derived::func##Impl)>::type,                                        \
-                                   typename mfp_sig<decltype(&Base::func##Impl)>::type>::value,                                   \
+    static_assert(std::is_same<decltype(&Derived::func##Impl), decltype(&Base::func##Impl)>::value ||                              \
+                      std::is_same<typename mfp_sig<decltype(&Derived::func##Impl)>::type,                                         \
+                                   typename mfp_sig<decltype(&Base::func##Impl)>::type>::value,                                    \
                   #Derived "::" #func "Impl() signature does not match " #Base "::" #func "Impl()")
 
 /** Cast this to Derived* (use in instance methods). */
@@ -55,35 +61,39 @@ struct mfp_sig<Ret (C::*)(Args...) const> { using type = Ret(Args...) const; };
 #define CRTP_APP_TASK(Derived) static_cast<Derived &>(Derived::GetAppTask())
 
 /** For required overrides only (no base default). Missing Impl produces a raw compiler error. */
-#define CRTP_RETURN_DERIVED_ONLY(Base, Derived, func) \
-    return static_cast<Derived *>(this)->func##Impl()
+#define CRTP_RETURN_DERIVED_ONLY(Base, Derived, func) return static_cast<Derived *>(this)->func##Impl()
 
-#define CRTP_RETURN_AND_VERIFY(Base, Derived, func) \
-    do { \
-        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func); \
-        return static_cast<Derived *>(this)->func##Impl(); \
+#define CRTP_RETURN_AND_VERIFY(Base, Derived, func)                                                                                \
+    do                                                                                                                             \
+    {                                                                                                                              \
+        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
+        return static_cast<Derived *>(this)->func##Impl();                                                                         \
     } while (0)
 
-#define CRTP_RETURN_AND_VERIFY_ARGS(Base, Derived, func, ...) \
-    do { \
-        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func); \
-        return static_cast<Derived *>(this)->func##Impl(__VA_ARGS__); \
+#define CRTP_RETURN_AND_VERIFY_ARGS(Base, Derived, func, ...)                                                                      \
+    do                                                                                                                             \
+    {                                                                                                                              \
+        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
+        return static_cast<Derived *>(this)->func##Impl(__VA_ARGS__);                                                              \
     } while (0)
 
-#define CRTP_RETURN_CONST_AND_VERIFY_ARGS(Base, Derived, func, ...) \
-    do { \
-        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func); \
-        return static_cast<const Derived *>(this)->func##Impl(__VA_ARGS__); \
+#define CRTP_RETURN_CONST_AND_VERIFY_ARGS(Base, Derived, func, ...)                                                                \
+    do                                                                                                                             \
+    {                                                                                                                              \
+        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
+        return static_cast<const Derived *>(this)->func##Impl(__VA_ARGS__);                                                        \
     } while (0)
 
-#define CRTP_VOID_AND_VERIFY(Base, Derived, func, ...) \
-    do { \
-        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func); \
-        static_cast<Derived *>(this)->func##Impl(__VA_ARGS__); \
+#define CRTP_VOID_AND_VERIFY(Base, Derived, func, ...)                                                                             \
+    do                                                                                                                             \
+    {                                                                                                                              \
+        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
+        static_cast<Derived *>(this)->func##Impl(__VA_ARGS__);                                                                     \
     } while (0)
 
-#define CRTP_STATIC_VOID_AND_VERIFY(Base, Derived, func, ...) \
-    do { \
-        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func); \
-        static_cast<Derived &>(Derived::GetAppTask()).func##Impl(__VA_ARGS__); \
+#define CRTP_STATIC_VOID_AND_VERIFY(Base, Derived, func, ...)                                                                      \
+    do                                                                                                                             \
+    {                                                                                                                              \
+        CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
+        static_cast<Derived &>(Derived::GetAppTask()).func##Impl(__VA_ARGS__);                                                     \
     } while (0)
