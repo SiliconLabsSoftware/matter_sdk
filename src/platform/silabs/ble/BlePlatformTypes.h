@@ -41,6 +41,12 @@ using BleConnectionHandle = uint8_t;
 inline constexpr BleConnectionHandle kInvalidBleConnectionHandle = 0xFF;
 
 /**
+ * Opaque platform-event token forwarded by BLEManagerImpl to channel parsers.
+ * Implementations cast this value to their native event pointer type.
+ */
+using BlePlatformEvent = uintptr_t;
+
+/**
  * BLE event types delivered from platform stack to channel (ParseEvent)
  * and then to BLEManagerImpl via callback (OnMatterBleEvent).
  */

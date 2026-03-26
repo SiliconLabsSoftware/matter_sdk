@@ -96,7 +96,7 @@ bool BleChannelMatterEfr32::CanHandleEvent(uint32_t eventId) const
     return false;
 }
 
-void BleChannelMatterEfr32::ParseEvent(void * platformEvent) {}
+void BleChannelMatterEfr32::ParseEvent(sl_bt_msg_t * platformEvent) {}
 
 CHIP_ERROR BleChannelMatterEfr32::GetAddress(uint8_t * addr, size_t * length)
 {

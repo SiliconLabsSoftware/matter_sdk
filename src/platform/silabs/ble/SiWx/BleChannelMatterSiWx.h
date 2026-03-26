@@ -24,12 +24,13 @@
 
 #include "BleChannel.h"
 #include "BlePlatformTypes.h"
+#include <platform/silabs/SiWx/ble/sl_si91x_ble_init.h>
 
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
 
-class BleChannelMatterSiWx : public BleChannel
+class BleChannelMatterSiWx : public BleChannel<SilabsBleWrapper::BleEvent_t *>
 {
 public:
     BleChannelMatterSiWx()           = default;
@@ -53,7 +54,7 @@ public:
 
     void SetEventCallback(BleEventCallback callback, void * context) override;
     bool CanHandleEvent(uint32_t eventId) const override;
-    void ParseEvent(void * platformEvent) override;
+    void ParseEvent(SilabsBleWrapper::BleEvent_t * platformEvent) override;
 
     CHIP_ERROR GetAddress(uint8_t * addr, size_t * length) override;
     CHIP_ERROR GetDeviceName(char * buf, size_t bufSize) override;

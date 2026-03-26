@@ -40,6 +40,7 @@ namespace Internal {
  * Platform implementations: BleChannelMatterEfr32, BleChannelMatterSiWx (Matter);
  * BleSideChannelEfr32, BleSideChannelSiWx (side channel).
  */
+template <typename TPlatformEvent = BlePlatformEvent>
 class BleChannel
 {
 public:
@@ -71,7 +72,7 @@ public:
     /** Returns true if this channel handles the given platform event id. */
     virtual bool CanHandleEvent(uint32_t eventId) const = 0;
     /** Single entry point: parse platform event, optionally build BleEvent and invoke callback. */
-    virtual void ParseEvent(void * platformEvent) = 0;
+    virtual void ParseEvent(TPlatformEvent platformEvent) = 0;
 
     // ----- Address / identity -----
     virtual CHIP_ERROR GetAddress(uint8_t * addr, size_t * length)      = 0;

@@ -41,7 +41,8 @@ namespace Internal {
  * HandleReadRequest/HandleWriteRequest (ByteSpan/MutableByteSpan), HandleCCCDWriteRequest,
  * UpdateMtu, and GAP/GATT client methods.
  */
-class BleSideChannel : public BleChannel
+template <typename TPlatformEvent = BlePlatformEvent>
+class BleSideChannel : public BleChannel<TPlatformEvent>
 {
 public:
     ~BleSideChannel() override = default;
@@ -58,14 +59,14 @@ public:
     virtual bool RemoveConnection(uint8_t connectionHandle)                     = 0;
 
     // ----- GATT server (side channel) -----
-    virtual void HandleReadRequest(void * platformEvent, ByteSpan data)                       = 0;
-    virtual void HandleWriteRequest(void * platformEvent, MutableByteSpan data)               = 0;
-    virtual CHIP_ERROR HandleCCCDWriteRequest(void * platformEvent, bool & isNewSubscription) = 0;
-    virtual void UpdateMtu(void * platformEvent)                                              = 0;
+    virtual void HandleReadRequest(TPlatformEvent platformEvent, ByteSpan data)                       = 0;
+    virtual void HandleWriteRequest(TPlatformEvent platformEvent, MutableByteSpan data)               = 0;
+    virtual CHIP_ERROR HandleCCCDWriteRequest(TPlatformEvent platformEvent, bool & isNewSubscription) = 0;
+    virtual void UpdateMtu(TPlatformEvent platformEvent)                                              = 0;
 
     // ----- Event handling (side channel) -----
     virtual bool CanHandleEvent(uint32_t eventId) { return false; }
-    virtual void ParseEvent(void * platformEvent) {}
+    virtual void ParseEvent(TPlatformEvent platformEvent) {}
 
     // ----- Extended GAP -----
     virtual CHIP_ERROR GeneratAdvertisingData(uint8_t discoverMove, uint8_t connectMode, const Optional<uint16_t> & maxEvents) = 0;
@@ -75,7 +76,6 @@ public:
     virtual CHIP_ERROR SetConnectionParams(const Optional<uint8_t> & connectionHandle, uint32_t intervalMin, uint32_t intervalMax,
                                            uint16_t latency, uint16_t timeout)                                                 = 0;
     virtual CHIP_ERROR CloseConnection(void)                                                                                   = 0;
-    virtual CHIP_ERROR SetAdvHandle(uint8_t handle)                                                                            = 0;
 
     // ----- GATT client -----
     virtual CHIP_ERROR DiscoverServices()                                                           = 0;

@@ -95,7 +95,7 @@ bool BleChannelMatterSiWx::CanHandleEvent(uint32_t eventId) const
     return false;
 }
 
-void BleChannelMatterSiWx::ParseEvent(void * platformEvent) {}
+void BleChannelMatterSiWx::ParseEvent(SilabsBleWrapper::BleEvent_t * platformEvent) {}
 
 CHIP_ERROR BleChannelMatterSiWx::GetAddress(uint8_t * addr, size_t * length)
 {

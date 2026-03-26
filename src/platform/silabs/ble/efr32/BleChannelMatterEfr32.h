@@ -24,12 +24,15 @@
 
 #include "BleChannel.h"
 #include "BlePlatformTypes.h"
+extern "C" {
+#include "sl_bt_api.h"
+}
 
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
 
-class BleChannelMatterEfr32 : public BleChannel
+class BleChannelMatterEfr32 : public BleChannel<sl_bt_msg_t *>
 {
 public:
     BleChannelMatterEfr32()           = default;
@@ -53,7 +56,7 @@ public:
 
     void SetEventCallback(BleEventCallback callback, void * context) override;
     bool CanHandleEvent(uint32_t eventId) const override;
-    void ParseEvent(void * platformEvent) override;
+    void ParseEvent(sl_bt_msg_t * platformEvent) override;
 
     CHIP_ERROR GetAddress(uint8_t * addr, size_t * length) override;
     CHIP_ERROR GetDeviceName(char * buf, size_t bufSize) override;

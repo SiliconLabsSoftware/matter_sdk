@@ -20,3 +20,35 @@ source_set("ble") {
   public_deps = [ "${chip_root}/src/platform:platform_base" ]
   include_dirs = [ "${chip_root}/src/platform/silabs/ble" ]
 }
+
+# Matter BLE channel implementation for EFR32.
+source_set("ble-efr32") {
+  sources =
+      [ "${chip_root}/src/platform/silabs/ble/efr32/BleChannelMatterEfr32.cpp" ]
+
+  public_deps = [
+    "${chip_root}/src/platform:platform_base",
+    "${chip_root}/src/platform/silabs/ble:ble",
+  ]
+
+  include_dirs = [
+    "${chip_root}/src/platform/silabs/ble",
+    "${chip_root}/src/platform/silabs/ble/efr32",
+  ]
+}
+
+# Matter BLE channel implementation for SiWx917.
+source_set("ble-siwx") {
+  sources =
+      [ "${chip_root}/src/platform/silabs/ble/SiWx/BleChannelMatterSiWx.cpp" ]
+
+  public_deps = [
+    "${chip_root}/src/platform:platform_base",
+    "${chip_root}/src/platform/silabs/ble:ble",
+  ]
+
+  include_dirs = [
+    "${chip_root}/src/platform/silabs/ble",
+    "${chip_root}/src/platform/silabs/ble/SiWx",
+  ]
+}
