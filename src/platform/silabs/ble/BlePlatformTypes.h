@@ -34,7 +34,7 @@ namespace DeviceLayer {
 namespace Internal {
 
 /**
- * Connection handle for Silabs BleChannel APIs. 
+ * Connection handle for Silabs BleChannel APIs.
  */
 using BleConnectionHandle = uint8_t;
 
