@@ -59,7 +59,7 @@ The lighting example is intended to serve both as a means to explore the
 workings of Matter as well as a template for creating real products based on the
 Silicon Labs platform.
 
-## Implementing Custom App Behavior
+## Extending Base App Implementation
 
 ### CommonAppTask
 
@@ -68,8 +68,7 @@ API in the CommonAppTask file. This example provides
 [`CommonAppTask.h`](../../platform/silabs/CommonAppTask.h) and
 [`CommonAppTask.cpp`](../../platform/silabs/CommonAppTask.cpp) for that purpose.
 The base implementation and the full set of overridable `*Impl()` APIs live in
-this example's source tree under `include/` (see
-[`AppTaskImpl.h`](include/AppTaskImpl.h)). Any `*Impl()` you do not override
+this example's source tree under [`include/AppTaskImpl.h`](include/AppTaskImpl.h) and [`src/AppTask.cpp`](src/AppTask.cpp). Any `*Impl()` you do not override
 keeps the Silicon Labs default behavior.
 
 ### How to Override APIs
@@ -91,8 +90,7 @@ base declares one `*Impl()` per overridable API. Steps:
 
 ### Required Override
 
--   **`CHIP_ERROR AppInitImpl()`** — App specific initialization. This is
-    already present in the example.
+-   **`CHIP_ERROR AppInitImpl()`** — Required to override default AppTask implementation. 
 
 ### Sample Implementation
 

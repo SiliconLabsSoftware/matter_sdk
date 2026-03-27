@@ -24,8 +24,11 @@
 /**
  * @brief Minimal AppTaskImpl-derived class.
  *
- * Use as a base when the default AppTask behavior is sufficient.
- * Override *Impl() methods in a subclass to customize individual behaviors.
+ * Default AppTask behavior applies for any *Impl() methods you do not override.
+ * Override *Impl() methods in this class to customize individual behaviors.
+ *
+ * For full list of overridable methods, including required overrides for custom
+ * behavior, and further documentation see app README file.
  */
 class CommonAppTask : public AppTaskImpl<CommonAppTask>
 {
