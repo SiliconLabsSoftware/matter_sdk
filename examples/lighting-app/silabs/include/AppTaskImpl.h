@@ -110,10 +110,7 @@ protected:
         CRTP_THIS(Derived)->OnLightActionInitiatedImpl(aAction, aActor, aValue);
     }
 
-    void OnLightActionCompleted(AppTask::Action_t aAction) override
-    {
-        CRTP_THIS(Derived)->OnLightActionCompletedImpl(aAction);
-    }
+    void OnLightActionCompleted(AppTask::Action_t aAction) override { CRTP_THIS(Derived)->OnLightActionCompletedImpl(aAction); }
 
     void StartLightTimer(uint32_t aTimeoutMs) override { CRTP_THIS(Derived)->StartLightTimerImpl(aTimeoutMs); }
 
