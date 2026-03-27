@@ -93,9 +93,7 @@ static_library("efr32") {
       "BLEManagerImpl.cpp",
     ]
 
-    public_deps += [
-      "${silabs_platform_dir}/ble:ble-efr32",
-    ]
+    public_deps += [ "${silabs_platform_dir}/ble:ble-efr32" ]
 
     if (sl_use_internal_ble_side_channel) {
       sources += [
