@@ -590,8 +590,7 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
 bool AppTask::InitiateLightCtrlAction(int32_t aActor, AppTask::Action_t aAction, uint32_t aAttributeId, uint8_t * value)
 {
     bool action_initiated = false;
-    VerifyOrReturnError(aAction == COLOR_ACTION_XY || aAction == COLOR_ACTION_HSV || aAction == COLOR_ACTION_CT,
-                        action_initiated);
+    VerifyOrReturnError(aAction == COLOR_ACTION_XY || aAction == COLOR_ACTION_HSV || aAction == COLOR_ACTION_CT, action_initiated);
     RGBLEDWidget::ColorData_t colorData;
     switch (aAction)
     {
