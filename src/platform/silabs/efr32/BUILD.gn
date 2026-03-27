@@ -94,7 +94,6 @@ static_library("efr32") {
     ]
 
     public_deps += [
-      "${silabs_platform_dir}/ble:ble",
       "${silabs_platform_dir}/ble:ble-efr32",
     ]
 
