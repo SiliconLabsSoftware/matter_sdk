@@ -4,33 +4,33 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
 
 <hr>
 
-- [Matter EFR32 Lighting Example](#matter-efr32-lighting-example)
-  - [Introduction](#introduction)
-  - [Implementing Custom App Behavior](#implementing-custom-app-behavior)
-    - [CommonAppTask](#commonapptask)
-    - [How to Override APIs](#how-to-override-apis)
-    - [Required Override](#required-override)
-    - [Sample Implementation](#sample-implementation)
-    - [Override API Reference](#override-api-reference)
-  - [Building](#building)
-  - [Flashing the Application](#flashing-the-application)
-  - [Viewing Logging Output](#viewing-logging-output)
-    - [SEGGER RTT (recommended)](#segger-rtt-recommended)
-    - [Console Log](#console-log)
-      - [Configuring the VCOM](#configuring-the-vcom)
-    - [Using the console](#using-the-console)
-  - [Running the Complete Example](#running-the-complete-example)
-    - [Notes](#notes)
-  - [Running RPC console](#running-rpc-console)
-  - [Device Tracing](#device-tracing)
-  - [Memory settings](#memory-settings)
-  - [OTA Software Update](#ota-software-update)
-  - [Group Communication (Multicast)](#group-communication-multicast)
-  - [Building options](#building-options)
-    - [Disabling logging](#disabling-logging)
-    - [Debug build / release build](#debug-build--release-build)
-    - [Disabling LCD](#disabling-lcd)
-    - [KVS maximum entry count](#kvs-maximum-entry-count)
+-   [Matter EFR32 Lighting Example](#matter-efr32-lighting-example)
+    -   [Introduction](#introduction)
+    -   [Implementing Custom App Behavior](#implementing-custom-app-behavior)
+        -   [CommonAppTask](#commonapptask)
+        -   [How to Override APIs](#how-to-override-apis)
+        -   [Required Override](#required-override)
+        -   [Sample Implementation](#sample-implementation)
+        -   [Override API Reference](#override-api-reference)
+    -   [Building](#building)
+    -   [Flashing the Application](#flashing-the-application)
+    -   [Viewing Logging Output](#viewing-logging-output)
+        -   [SEGGER RTT (recommended)](#segger-rtt-recommended)
+        -   [Console Log](#console-log)
+            -   [Configuring the VCOM](#configuring-the-vcom)
+        -   [Using the console](#using-the-console)
+    -   [Running the Complete Example](#running-the-complete-example)
+        -   [Notes](#notes)
+    -   [Running RPC console](#running-rpc-console)
+    -   [Device Tracing](#device-tracing)
+    -   [Memory settings](#memory-settings)
+    -   [OTA Software Update](#ota-software-update)
+    -   [Group Communication (Multicast)](#group-communication-multicast)
+    -   [Building options](#building-options)
+        -   [Disabling logging](#disabling-logging)
+        -   [Debug build / release build](#debug-build--release-build)
+        -   [Disabling LCD](#disabling-lcd)
+        -   [KVS maximum entry count](#kvs-maximum-entry-count)
 
 <hr>
 
@@ -68,8 +68,10 @@ API in the CommonAppTask file. This example provides
 [`CommonAppTask.h`](../../platform/silabs/CommonAppTask.h) and
 [`CommonAppTask.cpp`](../../platform/silabs/CommonAppTask.cpp) for that purpose.
 The base implementation and the full set of overridable `*Impl()` APIs live in
-this example's source tree under [`include/AppTaskImpl.h`](include/AppTaskImpl.h) and [`src/AppTask.cpp`](src/AppTask.cpp). Any `*Impl()` you do not override
-keeps the Silicon Labs default behavior.
+this example's source tree under
+[`include/AppTaskImpl.h`](include/AppTaskImpl.h) and
+[`src/AppTask.cpp`](src/AppTask.cpp). Any `*Impl()` you do not override keeps
+the Silicon Labs default behavior.
 
 ### How to Override APIs
 
@@ -90,7 +92,8 @@ base declares one `*Impl()` per overridable API. Steps:
 
 ### Required Override
 
--   **`CHIP_ERROR AppInitImpl()`** — Required to override default AppTask implementation. 
+-   **`CHIP_ERROR AppInitImpl()`** — Required to override default AppTask
+    implementation.
 
 ### Sample Implementation
 
