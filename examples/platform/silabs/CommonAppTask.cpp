@@ -21,6 +21,16 @@
 
 CommonAppTask CommonAppTask::sAppTask;
 
+/**
+ * @brief Minimal AppTaskImpl-derived class.
+ *
+ * Default AppTask behavior applies for any *Impl() methods you do not override.
+ * Override *Impl() methods in this class to customize individual behaviors.
+ *
+ * For full list of overridable methods, including required overrides for custom
+ * behavior, and further documentation see app README file.
+ */
+
 AppTask & AppTask::GetAppTask()
 {
     return CommonAppTask::GetAppTask();
