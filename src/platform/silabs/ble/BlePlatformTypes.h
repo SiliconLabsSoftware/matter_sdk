@@ -66,12 +66,16 @@ enum class BleEventType : uint32_t
 
 /**
  * Unified BLE event passed from channel to BLEManagerImpl.
+ *
+ * @tparam T  Type of `data` (default `const uint8_t *` for non-owning payload octets).
+ *            Platform channels may use other instantiations when needed.
  */
+template <typename T = const uint8_t *>
 struct BleEvent
 {
     BleEventType type              = BleEventType::kUnknown;
     BleConnectionHandle connection = kInvalidBleConnectionHandle;
-    void * data                    = nullptr;
+    T data{};
     size_t dataLength              = 0;
     uint16_t attributeHandle       = 0;
     uint32_t timerId               = 0;
@@ -104,7 +108,7 @@ struct BleConnectionParams
  * Event callback type: channel calls this when it has parsed a platform event
  * and produced a BleEvent (e.g. for Matter BLE).
  */
-using BleEventCallback = void (*)(const BleEvent & event, void * context);
+using BleEventCallback = void (*)(const BleEvent<const uint8_t *> & event, void * context);
 
 /**
  * Side-channel advertising configuration (aligns with existing BLEChannel
