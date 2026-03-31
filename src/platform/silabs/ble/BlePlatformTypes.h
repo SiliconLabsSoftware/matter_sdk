@@ -76,9 +76,9 @@ struct BleEvent
     BleEventType type              = BleEventType::kUnknown;
     BleConnectionHandle connection = kInvalidBleConnectionHandle;
     T data{};
-    size_t dataLength              = 0;
-    uint16_t attributeHandle       = 0;
-    uint32_t timerId               = 0;
+    size_t dataLength        = 0;
+    uint16_t attributeHandle = 0;
+    uint32_t timerId         = 0;
 };
 
 /**
