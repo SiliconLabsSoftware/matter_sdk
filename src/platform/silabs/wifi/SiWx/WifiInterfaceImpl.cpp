@@ -163,7 +163,7 @@ const sl_wifi_device_configuration_t config = {
 #endif                                                                         // RSI_BT_GATT_ON_CLASSIC
                                             ),
 #else
-                     .bt_feature_bit_map         = 0,
+                     .bt_feature_bit_map = 0,
 #endif
 #ifdef RSI_PROCESS_MAX_RX_DATA
                      .ext_tcp_ip_feature_bit_map =
@@ -204,8 +204,8 @@ const sl_wifi_device_configuration_t config = {
 #endif
                                                  ),
 #else
-                     .ble_feature_bit_map        = 0,
-                     .ble_ext_feature_bit_map    = 0,
+                     .ble_feature_bit_map     = 0,
+                     .ble_ext_feature_bit_map = 0,
 #endif
                      .config_feature_bit_map = (SL_SI91X_FEAT_SLEEP_GPIO_SEL_BITMAP | RSI_CONFIG_FEATURE_BITMAP) }
 };
@@ -525,7 +525,7 @@ sl_status_t SetWifiConfigurations()
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
         profile.config.channel.channel                   = wfx_rsi.ap_chan;
-        profile.config.channel_bitmap.channel_bitmap_2_4 = (1UL << (wfx_rsi.ap_chan - 1));
+        // profile.config.channel_bitmap.channel_bitmap_2_4 = BIT((wfx_rsi.ap_chan - 1));
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWiFiBSSIDLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWiFiBSSIDLength);
@@ -553,7 +553,7 @@ sl_status_t SetWifiConfigurations()
  * @return sl_wifi_system_performance_profile_t SiWx Power Save Configuration; Default value is High Performance
  *                                        kHighPerformance: HIGH_PERFORMANCE
  *                                        kConnectedSleep: ASSOCIATED_POWER_SAVE
- *                                        kDeepSleep: DEEP_SLEEP_WITH_RAM_RETENTION
+ *                                        kDeepSleep / kLITDisconnectSleep: DEEP_SLEEP_WITH_RAM_RETENTION
  */
 sl_wifi_system_performance_profile_t ConvertPowerSaveConfiguration(PowerSaveInterface::PowerSaveConfiguration configuration)
 {
@@ -569,6 +569,7 @@ sl_wifi_system_performance_profile_t ConvertPowerSaveConfiguration(PowerSaveInte
         profile = ASSOCIATED_POWER_SAVE;
         break;
     case PowerSaveInterface::PowerSaveConfiguration::kDeepSleep:
+    case PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep:
         profile = DEEP_SLEEP_WITH_RAM_RETENTION;
         break;
     default:
@@ -668,17 +669,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
     case WifiPlatformEvent::kStationDisconnect: {
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationDisconnect");
         TriggerPlatformWifiDisconnection();
-
-        wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
-            .Clear(WifiInterface::WifiState::kStationConnecting)
-            .Clear(WifiInterface::WifiState::kStationConnected);
-
-        // TODO: Implement disconnect notify
-        ResetConnectivityNotificationFlags();
-#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
-        NotifyIPv4Change(false);
-#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
-        NotifyIPv6Change(false);
+        ClearWifiDisconnectedState();
     }
     break;
 
@@ -774,7 +765,12 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-    ScheduleConnectionAttempt();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    if (!mLitIntentionalSleepDisconnect)
+#endif
+    {
+        ScheduleConnectionAttempt();
+    }
 
     return status;
 }
@@ -803,7 +799,12 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
         mInstance.mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-        mInstance.ScheduleConnectionAttempt();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+        if (!mInstance.mLitIntentionalSleepDisconnect)
+#endif
+        {
+            mInstance.ScheduleConnectionAttempt();
+        }
     }
 
     return status;
@@ -912,23 +913,69 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
     return SL_STATUS_OK;
 }
 
+void WifiInterfaceImpl::ClearWifiDisconnectedState()
+{
+    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
+        .Clear(WifiInterface::WifiState::kStationConnecting)
+        .Clear(WifiInterface::WifiState::kStationConnected);
+
+    ResetConnectivityNotificationFlags();
+#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
+    NotifyIPv4Change(false);
+#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
+    NotifyIPv6Change(false);
+}
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
     // Power save configuration is already set, nothing to do
     VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
 
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    const bool enteringLitDisconnectSleep = (configuration == PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep);
+
+    if (enteringLitDisconnectSleep)
+    {
+        mLitIntentionalSleepDisconnect = true;
+        if (TriggerPlatformWifiDisconnection() != SL_STATUS_OK)
+        {
+            mLitIntentionalSleepDisconnect = false;
+            return CHIP_ERROR_INTERNAL;
+        }
+        ClearWifiDisconnectedState();
+    }
+#endif
+
     int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
-    VerifyOrReturnError(error == RSI_SUCCESS, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error));
+    if (error != RSI_SUCCESS)
+    {
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+        if (enteringLitDisconnectSleep)
+        {
+            mLitIntentionalSleepDisconnect = false;
+        }
+#endif
+        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error);
+        return CHIP_ERROR_INTERNAL;
+    }
 
     sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
                                                       .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
                                                       .listen_interval   = listenInterval };
 
     sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
-    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile_v2 failed: 0x%lx", status));
+    if (status != SL_STATUS_OK)
+    {
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+        if (enteringLitDisconnectSleep)
+        {
+            mLitIntentionalSleepDisconnect = false;
+        }
+#endif
+        ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile_v2 failed: 0x%lx", static_cast<uint32_t>(status));
+        return CHIP_ERROR_INTERNAL;
+    }
 
     mCurrentPowerSaveConfiguration = configuration;
     return CHIP_NO_ERROR;
@@ -946,6 +993,20 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilte
                         ChipLogError(DeviceLayer, "sl_wifi_filter_broadcast failed: 0x%lx", static_cast<uint32_t>(status)));
 
     return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
+{
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    mLitIntentionalSleepDisconnect = false;
+    ResetConnectionRetryInterval();
+
+    VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
+
+    return ConnectToAccessPoint();
+#else
+    return CHIP_NO_ERROR;
+#endif
 }
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 

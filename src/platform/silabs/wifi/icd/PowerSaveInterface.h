@@ -38,6 +38,8 @@ public:
         kDeepSleep        = 1,
         kConnectedSleep   = 2,
         kLIConnectedSleep = 3,
+        // Optional LIT path: disconnect from AP then deep sleep (see SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP).
+        kLITDisconnectSleep = 4,
     };
 
     /**
@@ -67,6 +69,12 @@ public:
      *                                                         or if it is a non-supported configuration
      */
     virtual CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
+
+    /**
+     * @brief Reconnect after Long Idle Time (LIT) sleep disconnect (ICD active mode / reporting window).
+     *        Platform implementations start join without periodic backoff used for unintended disconnects.
+     */
+    virtual CHIP_ERROR ConfigureLITConnect() { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
 
 protected:
     // Default power save configuration is High Performance as the device starts in high power mode and low power modes need to be

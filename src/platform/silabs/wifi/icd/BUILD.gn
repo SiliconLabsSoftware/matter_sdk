@@ -14,6 +14,16 @@
 # TODO: Once the WifiInterface refactor is done and becomes a class, we will inject an interface instead of having them in same source_set
 
 import("//build_overrides/chip.gni")
+import("${chip_root}/src/platform/silabs/wifi/silabs_wifi_icd.gni")
+
+config("silabs-wifi-lit-disconnect-define") {
+  defines = []
+  if (sl_matter_wifi_icd_lit_disconnect_sleep) {
+    defines += [ "SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP=1" ]
+  } else {
+    defines += [ "SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP=0" ]
+  }
+}
 
 source_set("power-save-interface") {
   sources = [ "${chip_root}/src/platform/silabs/wifi/icd/PowerSaveInterface.h" ]
@@ -33,4 +43,6 @@ source_set("wifi-sleep-manager") {
     "${chip_root}/src/lib/core",
     "${chip_root}/src/platform/silabs/wifi:state-provider",
   ]
+
+  public_configs = [ ":silabs-wifi-lit-disconnect-define" ]
 }

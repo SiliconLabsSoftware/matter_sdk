@@ -20,6 +20,10 @@
 
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
+#if !defined(SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP)
+#error SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP must be set by the build (GN) to 0 or 1
+#endif
+
 using namespace chip::DeviceLayer::Silabs;
 
 namespace {
@@ -31,6 +35,7 @@ public:
     {
         mConfigurePowerSaveCalled       = false;
         mConfigureBroadcastFilterCalled = false;
+        mConfigureLITConnectCalled      = false;
         mIsWifiProvisioned              = false;
         mBroadcastFilterEnabled         = false;
     }
@@ -57,6 +62,13 @@ public:
         return wasEnabled;
     }
 
+    bool WasConfigureLITConnectCalled()
+    {
+        bool wasCalled             = mConfigureLITConnectCalled;
+        mConfigureLITConnectCalled = false;
+        return wasCalled;
+    }
+
     PowerSaveConfiguration GetLastPowerSaveConfiguration() const { return mLastPowerSaveConfiguration; }
 
     // Setter for IsWifiProvisioned
@@ -76,6 +88,12 @@ public:
         return CHIP_NO_ERROR;
     }
 
+    CHIP_ERROR ConfigureLITConnect() override
+    {
+        mConfigureLITConnectCalled = true;
+        return CHIP_NO_ERROR;
+    }
+
     bool IsWifiProvisioned() override { return mIsWifiProvisioned; }
 
     bool IsStationConnected() override { return false; }
@@ -85,8 +103,9 @@ public:
     bool HasAnIPv4Address() override { return false; }
 
 private:
-    bool mConfigurePowerSaveCalled       = false;
-    bool mConfigureBroadcastFilterCalled = false;
+    bool mConfigurePowerSaveCalled        = false;
+    bool mConfigureBroadcastFilterCalled  = false;
+    bool mConfigureLITConnectCalled       = false;
     bool mBroadcastFilterEnabled         = false;
     PowerSaveConfiguration mLastPowerSaveConfiguration;
     bool mIsWifiProvisioned = false;
@@ -212,3 +231,14 @@ TEST_F(TestWifiSleepManager, TestRequestHighPerformanceWithoutProvisioning)
     EXPECT_EQ(WifiSleepManager::GetInstance().RequestHighPerformanceWithoutTransition(), CHIP_NO_ERROR);
     EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), config);
 }
+
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+TEST_F(TestWifiSleepManager, TestActiveModeInvokesLITConnect)
+{
+    (void) mMock.WasConfigurePowerSaveCalled(); // drain Init() transition
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kActiveMode),
+              CHIP_NO_ERROR);
+    EXPECT_TRUE(mMock.WasConfigureLITConnectCalled());
+    EXPECT_FALSE(mMock.WasConfigurePowerSaveCalled());
+}
+#endif

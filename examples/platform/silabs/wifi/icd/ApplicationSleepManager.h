@@ -104,14 +104,14 @@ public:
     // WifiSleepManager::ApplicationCallback implementation
 
     /**
-     * @brief Function encapsulates the application logic to determine if the Wi-Fi device can go into LI based sleep.
+     * @brief Application logic for LI / optional LIT disconnect sleep (see sl_matter_wifi_icd_lit_disconnect_sleep in GN).
      *
-     *        - 1. Check if the commissioning window is open. If it is open, the Wi-Fi device cannot go to LI based sleep.
-     *        - 2. Check if all Fabrics have at least 1 subscription. If there is at least one fabric without a subscription, the
-     *             Wi-Fi cannot go to LI based sleep.
+     *        When the GN arg is false: true selects LI sleep (associated, ICD slow poll listen interval).
+     *        When the GN arg is true: true selects LIT disconnect sleep (disconnect + deep sleep) instead of LI.
      *
-     * @return true if the device can go to LI sleep
-     *         false if the device cannot go to LI sleep
+     *        Commissioning window open or active ICD mode blocks this path (DTIM). Subscriptions / vendor rules apply as before.
+     *
+     * @return true to allow the LI or LIT-disconnect path; false for DTIM sleep
      */
     bool CanGoToLIBasedSleep() override;
 

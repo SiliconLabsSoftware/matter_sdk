@@ -42,6 +42,7 @@ public:
         kGenericEvent          = 0,
         kCommissioningComplete = 1,
         kConnectivityChange    = 2,
+        kActiveMode            = 3,
     };
 
     /**
@@ -57,8 +58,8 @@ public:
          * @brief Function informs the WifiSleepManager in which Low Power mode the device can go to.
          *        The two supported sleep modes are DTIM based sleep and LI based sleep.
          *
-         *        When the function is called, the WifiSleepManager is about to go to sleep and using this function to make decision
-         *        as too wether it can go LI based sleep, lowest power mode, or DTIM based sleep.
+         *        When the function is called, the WifiSleepManager is about to go to sleep and uses this to choose LI sleep
+         *        (or LIT disconnect sleep when SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP is enabled) versus DTIM based sleep.
          *
          *        DTIM based sleep requires the Wi-Fi devices to be synced with the DTIM beacon.
          *        In this mode, the broadcast filter is disabled and the device will process multicast and
@@ -171,7 +172,7 @@ public:
      *        1. If there are high performance requests, configure high performance mode.
      *        2. If commissioning is in progress, configure DTIM based sleep.
      *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
-     *        4. If the application callback allows, configure LI based sleep; otherwise, configure DTIM based sleep.
+     *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
      *
@@ -230,6 +231,14 @@ private:
      * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
      */
     CHIP_ERROR ConfigureLIBasedSleep();
+
+    /**
+     * @brief LIT disconnect sleep: enable broadcast filter then request kLITDisconnectSleep (disconnect + deep profile).
+     *        When SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP is 0, returns CHIP_NO_ERROR without configuring.
+     */
+    CHIP_ERROR ConfigureLITDisconnectSleep();
+
+    CHIP_ERROR ConfigureLITConnect();
 
     /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.

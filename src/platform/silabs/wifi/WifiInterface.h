@@ -45,8 +45,7 @@ constexpr size_t kWiFiMacAddressLength = 6;
 
 using ScanCallback = void (*)(chip::DeviceLayer::NetworkCommissioning::WiFiScanResponse *);
 
-typedef struct wfx_wifi_scan_ext
-{
+typedef struct wfx_wifi_scan_ext {
     uint32_t beacon_lost_count;
     uint32_t beacon_rx_count;
     uint32_t mcast_rx_count;
@@ -61,9 +60,8 @@ typedef struct wfx_wifi_scan_ext
  * This Sh%t is here to support WFXUtils - and the Matter stuff that uses it
  * We took it from the SDK (for WF200)
  */
-typedef enum
-{
-    SL_WFX_STA_INTERFACE    = 0, ///< Interface 0, linked to the station
+typedef enum {
+    SL_WFX_STA_INTERFACE = 0, ///< Interface 0, linked to the station
     SL_WFX_SOFTAP_INTERFACE = 1, ///< Interface 1, linked to the softap
 } sl_wfx_interface_t;
 #endif

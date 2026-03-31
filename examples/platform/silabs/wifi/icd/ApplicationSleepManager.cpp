@@ -20,6 +20,10 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+#if !defined(SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP)
+#error SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP must be set by the build (GN) to 0 or 1
+#endif
+
 namespace chip {
 namespace app {
 namespace Silabs {
@@ -134,7 +138,11 @@ bool ApplicationSleepManager::ProcessVendorIdExceptions(chip::VendorId vendorId)
 void ApplicationSleepManager::OnEnterActiveMode()
 {
     mIsInActiveMode = true;
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kActiveMode);
+#else
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
+#endif
 }
 
 void ApplicationSleepManager::OnEnterIdleMode()

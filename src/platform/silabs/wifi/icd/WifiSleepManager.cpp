@@ -19,6 +19,10 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
+#if !defined(SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP)
+#error SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP must be set by the build (GN) to 0 or 1
+#endif
+
 using namespace chip::DeviceLayer::Silabs;
 
 namespace chip {
@@ -82,6 +86,9 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    case PowerEvent::kActiveMode:
+#endif
         // No additional processing needed for these events at the moment
         break;
 
@@ -99,6 +106,17 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
 
     ReturnErrorOnFailure(HandlePowerEvent(event));
+
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    if (event == PowerEvent::kActiveMode)
+    {
+        ChipLogProgress(DeviceLayer, "VerifyAndTransitionToLowPowerMode: Active Mode");
+        if (mWifiStateProvider->IsWifiProvisioned() && !mWifiStateProvider->IsStationConnected())
+        {
+            return ConfigureLITConnect();
+        }
+    }
+#endif
 
     if (mHighPerformanceRequestCounter > 0)
     {
@@ -119,7 +137,11 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+        return ConfigureLITDisconnectSleep();
+#else
         return ConfigureLIBasedSleep();
+#endif
     }
 
     return ConfigureDTIMBasedSleep();
@@ -166,6 +188,25 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 
     return CHIP_NO_ERROR;
 }
+
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+CHIP_ERROR WifiSleepManager::ConfigureLITDisconnectSleep()
+{
+    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
+
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigurePowerSave(
+        PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep,
+        chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
+{
+    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
+    return mPowerSaveInterface->ConfigureLITConnect();
+}
+#endif
 
 } // namespace Silabs
 } // namespace DeviceLayer
