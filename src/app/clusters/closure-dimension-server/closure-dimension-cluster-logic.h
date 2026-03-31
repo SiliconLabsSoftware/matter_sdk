@@ -1,7 +1,6 @@
-/*
+/**
  *
  *    Copyright (c) 2026 Project CHIP Authors
- *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,19 +15,6 @@
  *    limitations under the License.
  */
 
-/**
- *    @file
- *          Example project configuration file for CHIP.
- *
- *          This is a place to put application or project-specific overrides
- *          to the default configuration values for general CHIP features.
- *
- */
-
 #pragma once
 
-// include the CHIPProjectConfig from config/standalone
-#include <CHIPProjectConfig.h>
-
-// Enable groupcast
-#define CHIP_CONFIG_ENABLE_GROUPCAST 1
+#include <app/clusters/closure-dimension-server/ClosureDimensionClusterLogic.h>

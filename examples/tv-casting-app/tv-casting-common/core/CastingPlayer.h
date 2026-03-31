@@ -129,8 +129,7 @@ public:
     }
 
     /**
-     * @brief Copy constructor. Deep-copies Endpoint objects so that each Endpoint's
-     * mCastingPlayer raw pointer points to this new CastingPlayer instance.
+     * @brief Define the copy constructor
      */
     CastingPlayer(const CastingPlayer & other);
 

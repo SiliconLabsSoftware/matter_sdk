@@ -20,7 +20,6 @@
 #include "AppConfig.h"
 #include "BaseApplication.h"
 #include <MatterConfig.h>
-#include <access/examples/GroupAuxiliaryAccessControlDelegate.h>
 #include <cmsis_os2.h>
 
 #include <mbedtls/platform.h>
@@ -356,13 +355,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     // This is needed by localization configuration cluster so we set it before the initialization
     gExampleDeviceInfoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
-
-#if CHIP_CONFIG_ENABLE_GROUPCAST
-    initParams.groupDataProvider->SetGroupcastEnabled(true);
-    // Inject group auxiliary access control delegate
-    static chip::Access::Examples::GroupAuxiliaryAccessControlDelegate sGroupAuxAccessDelegate(initParams.groupDataProvider);
-    initParams.groupAuxiliaryAccessControlDelegate = &sGroupAuxAccessDelegate;
-#endif // CHIP_CONFIG_ENABLE_GROUPCAST
 
     // [sl-only]: Configure Wi-Fi App Sleep Manager
 #if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER

@@ -5126,7 +5126,7 @@ cluster PumpConfigurationAndControl = 512 {
 
 /** An interface for configuring and controlling the functionality of a thermostat. */
 cluster Thermostat = 513 {
-  revision 11;
+  revision 9;
 
   enum ACCapacityFormatEnum : enum8 {
     kBTUh = 0;
@@ -5541,7 +5541,7 @@ cluster Thermostat = 513 {
     optional int16u timeout = 2;
   }
 
-  /** This command will raise or lower the setpoint based on the provided values. */
+  /** Upon receipt, the attributes for the indicated setpoint(s) SHALL have the amount specified in the Amount field added to them. */
   command SetpointRaiseLower(SetpointRaiseLowerRequest): DefaultSuccess = 0;
   /** This command is used to update the thermostat weekly setpoint schedule from a management system. */
   command access(invoke: manage) SetWeeklySchedule(SetWeeklyScheduleRequest): DefaultSuccess = 1;
@@ -5549,13 +5549,11 @@ cluster Thermostat = 513 {
   command GetWeeklySchedule(GetWeeklyScheduleRequest): GetWeeklyScheduleResponse = 2;
   /** This command is used to clear the weekly schedule. */
   command access(invoke: manage) ClearWeeklySchedule(): DefaultSuccess = 3;
-  /** This command will set the active schedule to the provided schedule handle. */
+  /** Upon receipt, if the Schedules attribute contains a ScheduleStruct whose ScheduleHandle field matches the value of the ScheduleHandle field, the server SHALL set the thermostat's ActiveScheduleHandle attribute to the value of the ScheduleHandle field. */
   command SetActiveScheduleRequest(SetActiveScheduleRequestRequest): DefaultSuccess = 5;
-  /** This command will set the active preset to the provided preset handle. */
+  /** ID */
   command SetActivePresetRequest(SetActivePresetRequestRequest): DefaultSuccess = 6;
-  /** This command will add a new suggestion based on the specified values. */
   command access(invoke: manage) AddThermostatSuggestion(AddThermostatSuggestionRequest): AddThermostatSuggestionResponse = 7;
-  /** This command will remove the specified suggestion. */
   command access(invoke: manage) RemoveThermostatSuggestion(RemoveThermostatSuggestionRequest): DefaultSuccess = 8;
   /** Begins, Commits or Cancels an atomic write */
   command access(invoke: manage) AtomicRequest(AtomicRequestRequest): AtomicResponse = 254;
@@ -5563,7 +5561,7 @@ cluster Thermostat = 513 {
 
 /** An interface for configuring and controlling the functionality of a thermostat. */
 cluster Thermostat = 513 {
-  revision 11;
+  revision 9;
 
   enum ACCapacityFormatEnum : enum8 {
     kBTUh = 0;
@@ -5978,7 +5976,7 @@ cluster Thermostat = 513 {
     optional int16u timeout = 2;
   }
 
-  /** This command will raise or lower the setpoint based on the provided values. */
+  /** Upon receipt, the attributes for the indicated setpoint(s) SHALL have the amount specified in the Amount field added to them. */
   command SetpointRaiseLower(SetpointRaiseLowerRequest): DefaultSuccess = 0;
   /** This command is used to update the thermostat weekly setpoint schedule from a management system. */
   command access(invoke: manage) SetWeeklySchedule(SetWeeklyScheduleRequest): DefaultSuccess = 1;
@@ -5986,13 +5984,11 @@ cluster Thermostat = 513 {
   command GetWeeklySchedule(GetWeeklyScheduleRequest): GetWeeklyScheduleResponse = 2;
   /** This command is used to clear the weekly schedule. */
   command access(invoke: manage) ClearWeeklySchedule(): DefaultSuccess = 3;
-  /** This command will set the active schedule to the provided schedule handle. */
+  /** Upon receipt, if the Schedules attribute contains a ScheduleStruct whose ScheduleHandle field matches the value of the ScheduleHandle field, the server SHALL set the thermostat's ActiveScheduleHandle attribute to the value of the ScheduleHandle field. */
   command SetActiveScheduleRequest(SetActiveScheduleRequestRequest): DefaultSuccess = 5;
-  /** This command will set the active preset to the provided preset handle. */
+  /** ID */
   command SetActivePresetRequest(SetActivePresetRequestRequest): DefaultSuccess = 6;
-  /** This command will add a new suggestion based on the specified values. */
   command access(invoke: manage) AddThermostatSuggestion(AddThermostatSuggestionRequest): AddThermostatSuggestionResponse = 7;
-  /** This command will remove the specified suggestion. */
   command access(invoke: manage) RemoveThermostatSuggestion(RemoveThermostatSuggestionRequest): DefaultSuccess = 8;
   /** Begins, Commits or Cancels an atomic write */
   command access(invoke: manage) AtomicRequest(AtomicRequestRequest): AtomicResponse = 254;
@@ -9231,7 +9227,7 @@ endpoint 0 {
     ram      attribute operationMode default = 0x00;
     ram      attribute controlMode default = 0x00;
     ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 0x0005;
+    ram      attribute clusterRevision default = 3;
   }
 
   server cluster Thermostat {
@@ -9328,7 +9324,7 @@ endpoint 0 {
     ram      attribute scaledTolerance;
     ram      attribute scale default = 0;
     ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 0x0004;
+    ram      attribute clusterRevision default = 3;
   }
 
   server cluster FlowMeasurement {
@@ -9337,7 +9333,7 @@ endpoint 0 {
     ram      attribute maxMeasuredValue;
     ram      attribute tolerance default = 0;
     ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 0x0004;
+    ram      attribute clusterRevision default = 3;
   }
 
   server cluster RelativeHumidityMeasurement {
@@ -9349,7 +9345,7 @@ endpoint 0 {
     callback attribute acceptedCommandList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 0x0004;
+    ram      attribute clusterRevision default = 3;
   }
 
   server cluster Channel {
@@ -9518,7 +9514,7 @@ endpoint 1 {
     callback attribute acceptedCommandList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0x0001;
-    ram      attribute clusterRevision default = 0x0007;
+    ram      attribute clusterRevision default = 5;
 
     handle command Off;
     handle command On;
@@ -9545,7 +9541,7 @@ endpoint 1 {
     callback attribute acceptedCommandList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 0x0007;
+    ram      attribute clusterRevision default = 6;
 
     handle command MoveToLevel;
     handle command Move;
@@ -9639,7 +9635,7 @@ endpoint 1 {
     ram      attribute coupleColorTempToLevelMinMireds;
     ram      attribute startUpColorTemperatureMireds default = 0x00FA;
     ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 0x0009;
+    ram      attribute clusterRevision default = 7;
 
     handle command MoveToHue;
     handle command MoveHue;

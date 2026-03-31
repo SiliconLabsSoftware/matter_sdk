@@ -634,12 +634,10 @@ G.C.C05.Tx=0
 GRPKEY.S=1
 # No support for the CacheAndSync feature so far
 GRPKEY.S.F00=0
-GRPKEY.S.F01=1
 GRPKEY.S.A0000=1
 GRPKEY.S.A0001=1
 GRPKEY.S.A0002=1
 GRPKEY.S.A0003=1
-GRPKEY.S.A0004=1
 
 GRPKEY.S.C00.Rsp=1
 GRPKEY.S.C01.Rsp=1
@@ -929,7 +927,6 @@ DGGEN.S.A0005=1
 DGGEN.S.A0006=1
 DGGEN.S.A0007=1
 DGGEN.S.A0008=1
-DGGEN.S.A000a=1
 DGGEN.S.C00.Rsp=1
 DGGEN.S.C03.Rsp=1
 DGGEN.S.E00=1
@@ -3193,10 +3190,10 @@ WEBRTCR.S.C03.Rsp=1  # End
 
 # Joint Fabric Administrator Cluster
 # Server
-JFADMIN.S=1
+JFPKI.S=1
 
 # Client
-JFADMIN.C=1
+JFPKI.C=1
 
 # Attributes
-JFADMIN.S.A0000=1 #AdministratorFabricIndex
+JFPKI.S.A0000=1 #AdministratorFabricIndex

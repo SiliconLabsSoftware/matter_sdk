@@ -17,7 +17,6 @@
  */
 
 #include "AppTask.h"
-#include "AliroDelegate.h"
 #include "ButtonManager.h"
 #include "LEDManager.h"
 #include <LockManager.h>
@@ -120,9 +119,6 @@ CHIP_ERROR AppTask::Init(void)
 
     // Disable auto-relock time feature.
     DoorLockServer::Instance().SetAutoRelockTime(kExampleEndpointId, 0);
-
-    // Register a Door Lock delegate to handle Aliro provisioning attributes/commands.
-    DoorLockServer::Instance().SetDelegate(kExampleEndpointId, &AliroDelegate::GetInstance());
 
     return CHIP_NO_ERROR;
 }

@@ -297,11 +297,10 @@ class CommissioningMethod(enum.StrEnum):
     BLE_WIFI = "ble-wifi"
     BLE_THREAD = "ble-thread"
     THREAD_MESHCOP = "thread-meshcop"
-    WIFIPAF_WIFI = "wifipaf-wifi"
 
     @property
     def wifi_required(self) -> bool:
-        return self in {CommissioningMethod.BLE_WIFI, CommissioningMethod.WIFIPAF_WIFI}
+        return self in {CommissioningMethod.BLE_WIFI}
 
     @property
     def thread_required(self) -> bool:
@@ -521,9 +520,6 @@ def cmd_run(context: click.Context, dry_run: bool, iterations: int, app_path: li
 
     try:
         if sys.platform == 'linux':
-            app_name = 'wlx-app' if wifi_required else 'eth-app'
-            tool_name = 'wlx-tool' if commissioning_method == 'wifipaf-wifi' else 'eth-tool'
-
             to_terminate.append(ns := chiptest.linux.IsolatedNetworkNamespace(
                 index=0,
                 # Do not bring up the app interface link automatically when doing BLE-WiFi commissioning.
@@ -531,14 +527,13 @@ def cmd_run(context: click.Context, dry_run: bool, iterations: int, app_path: li
                 add_ula=not thread_required,
                 # Change the app link name so the interface will be recognized as WiFi or Ethernet
                 # depending on the commissioning method used.
-                app_link_name='wlx-app' if wifi_required else 'eth-app',
-                tool_link_name=tool_name))
+                app_link_name='wlx-app' if wifi_required else 'eth-app'))
 
             match commissioning_method:
                 case CommissioningMethod.BLE_WIFI:
                     to_terminate.append(chiptest.linux.DBusTestSystemBus())
                     to_terminate.append(chiptest.linux.BluetoothMock())
-                    to_terminate.append(chiptest.linux.WpaSupplicantMock([app_name], "MatterAP", "MatterAPPassword", ns))
+                    to_terminate.append(chiptest.linux.WpaSupplicantMock("MatterAP", "MatterAPPassword", ns))
                     ble_controller_app = 0   # Bind app to the first BLE controller
                     ble_controller_tool = 1  # Bind tool to the second BLE controller
                 case CommissioningMethod.BLE_THREAD:
@@ -551,9 +546,6 @@ def cmd_run(context: click.Context, dry_run: bool, iterations: int, app_path: li
                     to_terminate.append(tbr := chiptest.linux.ThreadBorderRouter(TEST_THREAD_DATASET, ns))
                     thread_ba_host = tbr.get_border_agent_host()
                     thread_ba_port = tbr.get_border_agent_port()
-                case CommissioningMethod.WIFIPAF_WIFI:
-                    to_terminate.append(chiptest.linux.DBusTestSystemBus())
-                    to_terminate.append(chiptest.linux.WpaSupplicantMock([app_name, tool_name], "MatterAP", "MatterAPPassword", ns))
 
             to_terminate.append(executor := chiptest.linux.LinuxNamespacedExecutor(ns))
         elif sys.platform == 'darwin':
@@ -584,7 +576,6 @@ def cmd_run(context: click.Context, dry_run: bool, iterations: int, app_path: li
                             op_network='Thread' if thread_required else 'WiFi',
                             thread_ba_host=thread_ba_host,
                             thread_ba_port=thread_ba_port,
-                            wifipaf_wifi=commissioning_method == CommissioningMethod.WIFIPAF_WIFI
                         )))
                     if result.exception is not None:
                         if isinstance(result.exception, BaseException):

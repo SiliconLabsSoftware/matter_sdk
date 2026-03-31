@@ -468,7 +468,6 @@ class TestDefinition:
             op_network: str = 'WiFi',
             thread_ba_host: str | None = None,
             thread_ba_port: int | None = None,
-            wifipaf_wifi: bool = False
             ):
         """
         Executes the given test case using the provided runner for execution.
@@ -477,8 +476,7 @@ class TestDefinition:
         for target in self.targets:
             log.info('Executing %s::%s', self.name, target.name)
             self._RunImpl(target, runner, apps_register, subproc_info_repo, pics_file, timeout_seconds, dry_run,
-                          test_runtime, ble_controller_app, ble_controller_tool, op_network, thread_ba_host, thread_ba_port,
-                          wifipaf_wifi)
+                          test_runtime, ble_controller_app, ble_controller_tool, op_network, thread_ba_host, thread_ba_port)
 
     def _RunImpl(self, target: TestTarget, runner: Runner, apps_register: AppsRegister, subproc_info_repo: SubprocessInfoRepo,
                  pics_file: Path, timeout_seconds: int | None, dry_run: bool = False,
@@ -487,8 +485,7 @@ class TestDefinition:
                  ble_controller_tool: int | None = None,
                  op_network: str = 'WiFi',
                  thread_ba_host: str | None = None,
-                 thread_ba_port: int | None = None,
-                 wifipaf_wifi: bool = False):
+                 thread_ba_port: int | None = None):
         runner.capture_delegate = ExecutionCapture()
 
         tool_storage_dir = None
@@ -518,8 +515,6 @@ class TestDefinition:
                         subproc = subproc.with_args("--ble-controller", str(ble_controller_app))
                         if op_network == 'WiFi':
                             subproc = subproc.with_args("--wifi")
-                    elif wifipaf_wifi:
-                        subproc = subproc.with_args("--wifi", "--wifipaf", "freq_list=2437")
 
                     app = App(runner, subproc)
                     # Add the App to the register immediately, so if it fails during
@@ -580,9 +575,6 @@ class TestDefinition:
                         pairing_cmd = pairing_cmd.with_args(
                             "pairing", "code-thread", TEST_NODE_ID, f"hex:{TEST_THREAD_DATASET}", TEST_SETUP_QR_CODE)
                         pairing_server_args = ["--ble-controller", str(ble_controller_tool)]
-                elif wifipaf_wifi:
-                    pairing_cmd = pairing_cmd.with_args("pairing", "wifipaf-wifi", TEST_NODE_ID,
-                                                        "MatterAP", "MatterAPPassword", TEST_PASSCODE, TEST_DISCRIMINATOR)
                 elif op_network == 'Thread' and thread_ba_host is not None and thread_ba_port is not None:
                     pairing_cmd = pairing_cmd.with_args(
                         "pairing", "thread-meshcop", TEST_NODE_ID, f"hex:{TEST_THREAD_DATASET}", setupCode,

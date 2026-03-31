@@ -84,10 +84,7 @@ def format_decimal_and_hex(number):
         >>> format_decimal_and_hex(255)
         '255 (0xff)'
     """
-    try:
-        return f'{number} (0x{number:02x})'
-    except (TypeError, ValueError):
-        return f'{number}'
+    return f'{number} (0x{number:02x})'
 
 
 def cluster_id_with_name(id):
@@ -107,12 +104,17 @@ def cluster_id_with_name(id):
         '6 (0x06) OnOff'
         >>> cluster_id_with_name(999999)  # Unknown cluster
         '999999 (0xf423f) Unknown cluster'
+        >>> cluster_id_with_name("invalid")  # Invalid input
+        'HERE IS THE PROBLEM'
     """
     if id in Clusters.ClusterObjects.ALL_CLUSTERS:
         s = Clusters.ClusterObjects.ALL_CLUSTERS[id].__name__
     else:
         s = "Unknown cluster"
-    return f'{format_decimal_and_hex(id)} {s}'
+    try:
+        return f'{format_decimal_and_hex(id)} {s}'
+    except (TypeError, ValueError):
+        return 'HERE IS THE PROBLEM'
 
 
 if __name__ == "__main__":

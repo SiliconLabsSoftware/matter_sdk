@@ -1012,18 +1012,14 @@ JointFabricDatastore::UpdateGroupKeySetEntry(
 
 CHIP_ERROR
 JointFabricDatastore::AddAdmin(
-    const Clusters::JointFabricDatastore::Structs::DatastoreAdministratorInformationEntryStruct::Type & adminId)
+    Clusters::JointFabricDatastore::Structs::DatastoreAdministratorInformationEntryStruct::Type & adminId)
 {
     VerifyOrReturnError(IsAdminEntryPresent(adminId.nodeID) == false, CHIP_IM_GLOBAL_STATUS(ConstraintError));
     VerifyOrReturnError(mAdminEntries.size() < kMaxAdminNodes, CHIP_ERROR_NO_MEMORY);
 
-    Clusters::JointFabricDatastore::Structs::DatastoreAdministratorInformationEntryStruct::Type entryToStore;
-    entryToStore.nodeID   = adminId.nodeID;
-    entryToStore.vendorID = adminId.vendorID;
+    ReturnErrorOnFailure(SetAdminEntryWithOwnedStorage(adminId.nodeID, adminId.friendlyName, adminId.icac, adminId));
 
-    ReturnErrorOnFailure(SetAdminEntryWithOwnedStorage(adminId.nodeID, adminId.friendlyName, adminId.icac, entryToStore));
-
-    mAdminEntries.push_back(entryToStore);
+    mAdminEntries.push_back(adminId);
 
     return CHIP_NO_ERROR;
 }

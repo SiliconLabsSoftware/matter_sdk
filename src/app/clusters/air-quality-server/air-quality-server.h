@@ -18,7 +18,4 @@
 
 #pragma once
 
-// Note: This file exists for backwards compatibility only.
-// New code should directly use AirQualityCluster.h instead.
-
-#include <app/clusters/air-quality-server/CodegenIntegration.h>
+#include <app/clusters/air-quality-server/AirQualityCluster.h>

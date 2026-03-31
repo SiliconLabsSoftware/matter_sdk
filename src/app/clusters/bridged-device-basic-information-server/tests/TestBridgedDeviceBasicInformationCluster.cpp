@@ -210,6 +210,13 @@ struct TestBridgedDeviceBasicInformationCluster : public ::testing::Test
     MockDeviceInstanceInfoProvider mDeviceInfoProvider;
     MockConfigurationManager mMockConfigManager;
 
+    BasicInformationCluster::Context mBasicInfoContext = {
+        .deviceInstanceInfoProvider = mDeviceInfoProvider,
+        .configurationManager       = mMockConfigManager,
+        .platformManager            = DeviceLayer::PlatformMgr(),
+        .subscriptionsPerFabric     = 1,
+    };
+
     TestServerClusterContext mContext;
     MockDelegate mDelegate;
     MockVersionConfigurationDelegate mMockVersionConfiguration;
@@ -1061,8 +1068,7 @@ TEST_F(TestBridgedDeviceBasicInformationCluster, TestNodeLabelPersistence)
 
 TEST_F(TestBridgedDeviceBasicInformationCluster, TestBasicInformationClusterProxy)
 {
-    BasicInformationCluster basicInfo(BasicInformationOptionalAttributesSet(), mDeviceInfoProvider, mMockConfigManager,
-                                      chip::DeviceLayer::PlatformMgr(), static_cast<uint16_t>(1));
+    BasicInformationCluster basicInfo(BasicInformationCluster::OptionalAttributesSet(), mBasicInfoContext);
 
     // Initial value in our mock is 10
     EXPECT_EQ(mMockConfigManager.mConfigurationVersion, 10u);

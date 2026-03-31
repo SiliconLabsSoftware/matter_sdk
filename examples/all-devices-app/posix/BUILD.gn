@@ -17,10 +17,7 @@ import("${chip_root}/src/app/common_flags.gni")
 import("${chip_root}/src/platform/device.gni")
 
 executable("all-devices-app") {
-  sources = [
-    "include/CHIPProjectAppConfig.h",
-    "main.cpp",
-  ]
+  sources = [ "main.cpp" ]
 
   deps = [
     "${chip_root}/examples/all-devices-app/all-devices-common/devices/boolean-state-sensor",
@@ -48,10 +45,7 @@ executable("all-devices-app") {
     deps += [ "${chip_root}/examples/all-devices-app/posix/linux" ]
   }
 
-  include_dirs = [
-    "include",
-    "${chip_root}/examples/common",
-  ]
+  include_dirs = [ "${chip_root}/examples/common" ]
 
   output_dir = root_out_dir
 }

@@ -19,7 +19,7 @@
 #include <app/DefaultSafeAttributePersistenceProvider.h>
 #include <app/SafeAttributePersistenceProvider.h>
 #include <app/clusters/chime-server/chime-server.h>
-#include <app/server-cluster/testing/ClusterTester.h>
+#include <app/server-cluster/testingClusterTester.h>
 #include <data-model-providers/codegen/CodegenDataModelProvider.h>
 #include <gtest/gtest.h>
 
@@ -59,7 +59,7 @@ public:
         }
         return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
     }
-    Protocols::InteractionModel::Status PlayChimeSound(uint8_t) override
+    Protocols::InteractionModel::Status PlayChimeSound() override
     {
         playChimeSoundCalled = true;
         return Protocols::InteractionModel::Status::Success;

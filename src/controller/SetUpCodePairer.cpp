@@ -138,11 +138,6 @@ CHIP_ERROR SetUpCodePairer::Connect()
                 ChipLogProgress(Controller,
                                 "Skipping commissionable node discovery over NFC since not supported by the controller!");
             }
-            else if (err == CHIP_ERROR_NOT_FOUND)
-            {
-                ChipLogProgress(Controller,
-                                "Skipping commissionable node discovery over NFC since no NFC Reader Transport is present");
-            }
             else if (err != CHIP_NO_ERROR)
             {
                 ChipLogError(Controller, "Failed to start commissionable node discovery over NFC: %" CHIP_ERROR_FORMAT,
@@ -341,8 +336,8 @@ CHIP_ERROR SetUpCodePairer::StartDiscoveryOverNFC()
     Nfc::NFCReaderTransport * readerTransport = DeviceLayer::Internal::NFCCommissioningMgr().GetNFCReaderTransport();
     if (!readerTransport)
     {
-        // No valid NFC reader transport
-        return CHIP_ERROR_NOT_FOUND;
+        ChipLogError(Controller, "Commissionable node discovery over NFC since there is no valid NFC reader transport");
+        return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
     }
 
     readerTransport->SetDelegate(this);
@@ -369,8 +364,9 @@ CHIP_ERROR SetUpCodePairer::StopDiscoveryOverNFC()
     Nfc::NFCReaderTransport * readerTransport = DeviceLayer::Internal::NFCCommissioningMgr().GetNFCReaderTransport();
     if (!readerTransport)
     {
-        // No valid NFC reader transport.
-        return CHIP_ERROR_NOT_FOUND;
+        ChipLogError(Controller,
+                     "Failed to stop commissionable node discovery over NFC since there is no valid NFC reader transport");
+        return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
     }
 
     ChipLogProgress(Controller, "Stopping commissionable node discovery over NFC by removing delegate");
@@ -721,7 +717,7 @@ void SetUpCodePairer::StopAllDiscoveryAttempts()
     LogErrorOnFailure(StopDiscoveryOverBLE());
     LogErrorOnFailure(StopDiscoveryOverDNSSD());
     LogErrorOnFailure(StopDiscoveryOverWiFiPAF());
-    LogErrorOnFailure(StopDiscoveryOverNFC().NoErrorIf(CHIP_ERROR_NOT_FOUND));
+    LogErrorOnFailure(StopDiscoveryOverNFC());
 
     // Just in case any of those failed to reset the waiting state properly.
     for (auto & waiting : mWaitingForDiscovery)

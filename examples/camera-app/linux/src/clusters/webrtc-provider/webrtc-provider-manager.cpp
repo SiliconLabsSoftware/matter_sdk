@@ -152,12 +152,6 @@ void WebRTCProviderManager::Init()
 
 void WebRTCProviderManager::CloseConnection()
 {
-    // Cancel all pending connection timers and freeing their contexts to avoid leaks
-    while (!mConnectionTimerContexts.empty() && DeviceLayer::SystemLayer().IsInitialized())
-    {
-        CancelConnectionTimer(mConnectionTimerContexts.begin()->first);
-    }
-
     // Clean up all the Webrtc Transports
     mWebrtcTransportMap.clear();
     mSessionIdMap.clear();

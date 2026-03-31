@@ -41,10 +41,9 @@
 #include "Rpc.h"
 #endif
 
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
 K_SEM_DEFINE(gThreadPrescanDoneSem, 0, 1);
 
-class InitScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
+class InternalScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
 {
 public:
     void OnFinished(NetworkCommissioning::Status err, CharSpan debugText,
@@ -53,7 +52,6 @@ public:
         k_sem_give(&gThreadPrescanDoneSem);
     }
 };
-#endif
 
 LOG_MODULE_REGISTER(app, CONFIG_CHIP_APP_LOG_LEVEL);
 
@@ -194,8 +192,8 @@ int main(void)
 #if !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
     if (!chip::DeviceLayer::ConnectivityMgr().IsThreadProvisioned())
     {
-        static InitScanCallback sInitScanCallback;
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::ThreadStackMgrImpl().StartThreadScan(&sInitScanCallback);
+        static InternalScanCallback sInternalScanCallback;
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::ThreadStackMgrImpl().StartThreadScan(&sInternalScanCallback);
         k_sem_take(&gThreadPrescanDoneSem, K_SECONDS(15));
     }
 #endif

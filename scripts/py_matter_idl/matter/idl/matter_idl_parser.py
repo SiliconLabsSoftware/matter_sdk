@@ -300,16 +300,13 @@ class MatterIdlTransformer(Transformer):
     def command_qualities(self, attrs):
         return UnionOfAllFlags(attrs) or CommandQuality.NONE
 
-    @v_args(meta=True)
-    def struct_field(self, meta, args):
+    def struct_field(self, args):
         # Last argument is the named_member, the rest
         # are qualities
         field = args[-1]
         field.qualities = UnionOfAllFlags(args[1:-1]) or FieldQuality.NONE
         if args[0] is not None:
             field.api_maturity = args[0]
-
-        field.parse_meta = None if self.skip_meta else ParseMetaData(meta)
         return field
 
     def command_access(self, privilege):
