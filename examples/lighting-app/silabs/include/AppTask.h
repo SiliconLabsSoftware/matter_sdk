@@ -31,6 +31,7 @@
 #include "AppEvent.h"
 #include "BaseApplication.h"
 
+#include <app/ConcreteAttributePath.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <app/persistence/DeferredAttributePersistenceProvider.h>
 #include <ble/Ble.h>
@@ -132,6 +133,9 @@ protected:
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
 
     static void UpdateClusterState(intptr_t context);
+
+    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath,
+                                                             uint8_t type, uint16_t size, uint8_t * value);
 
     CHIP_ERROR AppInit() override;
 

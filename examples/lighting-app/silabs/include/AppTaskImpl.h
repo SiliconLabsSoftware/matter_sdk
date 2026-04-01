@@ -139,6 +139,12 @@ protected:
 
     static void SwitchActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).SwitchActionEventHandlerImpl(aEvent); }
 
+    void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                     uint16_t size, uint8_t * value) override
+    {
+        CRTP_THIS(Derived)->DmCallbackMatterPostAttributeChangeCallbackImpl(attributePath, type, size, value);
+    }
+
 private:
     friend Derived;
 
@@ -216,4 +222,10 @@ private:
     void ButtonHandlerImpl(AppEvent * aEvent) { AppTask::ButtonHandler(aEvent); }
 
     void SwitchActionEventHandlerImpl(AppEvent * aEvent) { AppTask::SwitchActionEventHandler(aEvent); }
+
+    void DmCallbackMatterPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+        uint8_t * value)
+    {
+        AppTask::DmCallbackMatterPostAttributeChangeCallback(attributePath, type, size, value);
+    }
 };
