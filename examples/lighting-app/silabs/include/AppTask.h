@@ -134,8 +134,8 @@ protected:
 
     static void UpdateClusterState(intptr_t context);
 
-    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath,
-                                                             uint8_t type, uint16_t size, uint8_t * value);
+    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                             uint16_t size, uint8_t * value);
 
     CHIP_ERROR AppInit() override;
 
