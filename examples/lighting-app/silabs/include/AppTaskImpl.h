@@ -223,8 +223,8 @@ private:
 
     void SwitchActionEventHandlerImpl(AppEvent * aEvent) { AppTask::SwitchActionEventHandler(aEvent); }
 
-    void DmCallbackMatterPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-        uint8_t * value)
+    void DmCallbackMatterPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                         uint16_t size, uint8_t * value)
     {
         AppTask::DmCallbackMatterPostAttributeChangeCallback(attributePath, type, size, value);
     }
