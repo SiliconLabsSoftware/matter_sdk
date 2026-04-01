@@ -117,6 +117,9 @@ public:
 #endif
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
+    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath,
+                                                             uint8_t type, uint16_t size, uint8_t * value);
+
 protected:
     virtual void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
     virtual void OnLightActionCompleted(Action_t aAction);
@@ -133,9 +136,6 @@ protected:
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
 
     static void UpdateClusterState(intptr_t context);
-
-    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                             uint16_t size, uint8_t * value);
 
     CHIP_ERROR AppInit() override;
 
