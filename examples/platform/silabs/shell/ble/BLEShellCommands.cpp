@@ -54,6 +54,7 @@ CHIP_ERROR BLECommandHandler(int argc, char ** argv)
     return sShellBLESubCommands.ExecCommand(argc, argv);
 }
 
+#if SL_BLE_SIDE_CHANNEL_ENABLED
 CHIP_ERROR StartBLESideChannelAdvertising(int argc, char ** argv)
 {
     // TODO : Configure first
@@ -72,7 +73,12 @@ CHIP_ERROR StopBLESideChannelAvertising(int argc, char ** argv)
 {
     return DeviceLayer::Internal::BLEMgrImpl().SideChannelStopAdvertising();
 }
+#endif // SL_BLE_SIDE_CHANNEL_ENABLED
 
+CHIP_ERROR PrintBLEInfo(int argc, char ** argv)
+{
+    return DeviceLayer::Internal::BLEMgrImpl().PrintBLEInfo();
+}
 } // namespace
 
 namespace BLEShellCommands {
@@ -81,10 +87,13 @@ void RegisterCommands()
 {
     static const Shell::Command sBLESubCommands[] = {
         { &BLEHelpHandler, "help", "Output the BLE Commands help menu" },
+        { &PrintBLEInfo, "info", "Print BLE information such as device name, service mode, and static address" },
+#if SL_BLE_SIDE_CHANNEL_ENABLED
         { &StartBLESideChannelAdvertising, "AdvStart", "Start BLE Side Channel advertising with default parameters" },
         { &StopBLESideChannelAvertising, "AdvStop", "Stop BLE Side Channel advertising" },
+#endif // SL_BLE_SIDE_CHANNEL_ENABLED
     };
-    static const Shell::Command sBleCmds = { &BLECommandHandler, "ble-side", "Dispatch Silicon Labs BLE Side Channel commands" };
+    static const Shell::Command sBleCmds = { &BLECommandHandler, "ble-side", "Dispatch Silicon Labs BLE commands" };
 
     sShellBLESubCommands.RegisterCommands(sBLESubCommands, MATTER_ARRAY_SIZE(sBLESubCommands));
     Engine::Root().RegisterCommands(&sBleCmds, 1);
