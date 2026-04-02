@@ -2703,7 +2703,6 @@ endpoint 1 {
 
     handle command SetpointRaiseLower;
     handle command SetActivePresetRequest;
-    handle command AtomicResponse;
     handle command AtomicRequest;
   }
 
@@ -2717,3 +2716,5 @@ endpoint 1 {
     ram      attribute clusterRevision default = 2;
   }
 }
+
+
