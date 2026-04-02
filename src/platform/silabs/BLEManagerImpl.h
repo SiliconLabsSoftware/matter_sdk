@@ -238,7 +238,7 @@ private:
         uint8_t connectionHandle;
         uint8_t bondingHandle;
     };
-#endif //defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 
     BLEConState mBleConnections[kMaxConnections];
     uint8_t mIndConfId[kMaxConnections];
