@@ -73,6 +73,7 @@ namespace DeviceLayer {
             CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) override;
             CHIP_ERROR ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval) override;
             CHIP_ERROR ConfigureLITConnect() override;
+            CHIP_ERROR ConfigureLITDisconnect() override;
 
         private:
             CHIP_ERROR SetPerformanceProfileForPowerSave(PowerSaveInterface::PowerSaveConfiguration configuration,
@@ -166,6 +167,11 @@ namespace DeviceLayer {
 #if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
             // Intentional LIT disconnect: suppress exponential reconnect until ConfigureLITConnect().
             bool mLitIntentionalSleepDisconnect = false;
+
+            bool mLitConnectCompletionPending = false;
+            CHIP_ERROR mLitConnectCompletionResult = CHIP_NO_ERROR;
+
+            void CompleteLitConnectWait(CHIP_ERROR err);
 #endif
 
             static WifiInterfaceImpl mInstance;

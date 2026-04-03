@@ -21,7 +21,13 @@
 #include <platform/silabs/wifi/WifiStateProvider.h>
 #include <platform/silabs/wifi/icd/PowerSaveInterface.h>
 
+#include <cstdint>
+
 namespace chip {
+namespace System {
+class Layer;
+} // namespace System
+
 namespace DeviceLayer {
 namespace Silabs {
 
@@ -238,7 +244,26 @@ private:
      */
     CHIP_ERROR ConfigureLITDisconnectSleep();
 
+    /**
+     * @brief LIT path: intentional STA disconnect only (see PowerSaveInterface::ConfigureLITDisconnect).
+     */
+    CHIP_ERROR ConfigureLITDisconnect();
+
     CHIP_ERROR ConfigureLITConnect();
+
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    /**
+     * Margin before end of mode-based idle interval to bring Wi-Fi up for ICD traffic (check-in / reports).
+     */
+    static constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
+
+    static void OnLitPrecheckInReconnectTimerFired(chip::System::Layer * layer, void * context);
+    static void RunLitPrecheckInReconnect(intptr_t arg);
+    static void ArmLitPrecheckInTimerWork(intptr_t arg);
+    static void CancelLitPrecheckInTimerWork(intptr_t arg);
+    void DoCancelLitPrecheckInReconnectTimer();
+    void DoStartLitPrecheckInReconnectTimer();
+#endif // SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
 
     /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.

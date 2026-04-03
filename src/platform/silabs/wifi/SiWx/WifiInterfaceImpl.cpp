@@ -102,7 +102,7 @@ constexpr osThreadAttr_t kWlanTaskAttr = { .name       = "wlan_rsi",
                                            .cb_size    = osThreadCbSize,
                                            .stack_mem  = wlanStack,
                                            .stack_size = kWlanTaskSize,
-                                           .priority   = osPriorityAboveNormal7 };
+                                           .priority   = osPriorityHigh1 };
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 constexpr uint32_t kTimeToFullBeaconReception = 5000; // 5 seconds
@@ -112,6 +112,10 @@ wfx_wifi_scan_ext_t temp_reset;
 
 osSemaphoreId_t sScanCompleteSemaphore;
 osMutexId_t sScanInProgressSemaphore;
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+osSemaphoreId_t sLitConnectCompleteSemaphore = nullptr;
+#endif
 
 osMessageQueueId_t sWifiEventQueue = nullptr;
 
@@ -223,6 +227,11 @@ constexpr uint8_t kWfxQueueSize = 10;
 
 // TODO: Figure out why we actually need this, we are already handling failure and retries somewhere else.
 constexpr uint16_t kWifiScanTimeoutTicks = 10000;
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+// Join + SLAAC/DHCP can exceed scan; timeout units match kWifiScanTimeoutTicks (CMSIS RTOS tick).
+constexpr uint32_t kLitConnectWaitTimeoutTicks = 120000;
+#endif
 
 // Convert sl_wifi_security_t to Matter WiFiSecurityBitmap flags
 static chip::BitFlags<WiFiSecurityBitmap> ConvertSlWifiSecurityToBitmap(const sl_wifi_security_t security)
@@ -647,6 +656,12 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     // Create the message queue
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiPlatformEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, CHIP_ERROR_NO_MEMORY);
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    sLitConnectCompleteSemaphore = osSemaphoreNew(1, 0, nullptr);
+    VerifyOrReturnError(sLitConnectCompleteSemaphore != nullptr, CHIP_ERROR_NO_MEMORY);
+#endif
+
 #ifndef SL_MBEDTLS_USE_TINYCRYPT
     // PSA Crypto initialization
     VerifyOrReturnError(psa_crypto_init() == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
@@ -754,7 +769,6 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
         // Remove High performance request that might have been added during the connect/retry process
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
         WifiPlatformEvent event = WifiPlatformEvent::kStationConnect;
         PostWifiPlatformEvent(event);
         return status;
@@ -929,33 +943,17 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
+    ChipLogProgress(DeviceLayer, "ConfigurePowerSave **************************");
+    ChipLogProgress(DeviceLayer, "Configuration: %d", static_cast<int>(configuration));
+    ChipLogProgress(DeviceLayer, "---------------------------------------------------------");
     // Power save configuration is already set, nothing to do
     VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
 
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
-    const bool enteringLitDisconnectSleep = (configuration == PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep);
 
-    if (enteringLitDisconnectSleep)
-    {
-        mLitIntentionalSleepDisconnect = true;
-        if (TriggerPlatformWifiDisconnection() != SL_STATUS_OK)
-        {
-            mLitIntentionalSleepDisconnect = false;
-            return CHIP_ERROR_INTERNAL;
-        }
-        ClearWifiDisconnectedState();
-    }
-#endif
 
     int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
     if (error != RSI_SUCCESS)
     {
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
-        if (enteringLitDisconnectSleep)
-        {
-            mLitIntentionalSleepDisconnect = false;
-        }
-#endif
         ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error);
         return CHIP_ERROR_INTERNAL;
     }
@@ -967,12 +965,6 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
     sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
     if (status != SL_STATUS_OK)
     {
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
-        if (enteringLitDisconnectSleep)
-        {
-            mLitIntentionalSleepDisconnect = false;
-        }
-#endif
         ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile_v2 failed: 0x%lx", static_cast<uint32_t>(status));
         return CHIP_ERROR_INTERNAL;
     }
@@ -997,16 +989,29 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilte
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
+    // declare callback arg
 #if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
     mLitIntentionalSleepDisconnect = false;
     ResetConnectionRetryInterval();
 
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
-
+    // take sem
     return ConnectToAccessPoint();
+    // take sem
+    // return
 #else
     return CHIP_NO_ERROR;
 #endif
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
+{
+    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    mLitIntentionalSleepDisconnect = true;
+    TriggerPlatformWifiDisconnection();
+#endif
+    return CHIP_NO_ERROR;
 }
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 

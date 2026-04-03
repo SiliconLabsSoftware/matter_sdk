@@ -23,6 +23,8 @@ chip_test_suite("wifi_icd_tests") {
 
   test_sources = [ "TestWifiSleepManager.cpp" ]
 
+  defines = [ "CALLER_HANDLES_CRITICAL_FAILURE=1" ]
+
   configs = [ "${chip_root}/src/platform/silabs/wifi/icd:silabs-wifi-lit-disconnect-define" ]
 
   public_deps = [

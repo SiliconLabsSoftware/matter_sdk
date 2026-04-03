@@ -36,8 +36,9 @@ public:
         mConfigurePowerSaveCalled       = false;
         mConfigureBroadcastFilterCalled = false;
         mConfigureLITConnectCalled      = false;
-        mIsWifiProvisioned              = false;
-        mBroadcastFilterEnabled         = false;
+        mConfigureLITDisconnectCalled     = false;
+        mIsWifiProvisioned                = false;
+        mBroadcastFilterEnabled           = false;
     }
 
     // Getters to check if methods were called
@@ -69,6 +70,13 @@ public:
         return wasCalled;
     }
 
+    bool WasConfigureLITDisconnectCalled()
+    {
+        bool wasCalled                = mConfigureLITDisconnectCalled;
+        mConfigureLITDisconnectCalled = false;
+        return wasCalled;
+    }
+
     PowerSaveConfiguration GetLastPowerSaveConfiguration() const { return mLastPowerSaveConfiguration; }
 
     // Setter for IsWifiProvisioned
@@ -94,6 +102,12 @@ public:
         return CHIP_NO_ERROR;
     }
 
+    CHIP_ERROR ConfigureLITDisconnect() override
+    {
+        mConfigureLITDisconnectCalled = true;
+        return CHIP_NO_ERROR;
+    }
+
     bool IsWifiProvisioned() override { return mIsWifiProvisioned; }
 
     bool IsStationConnected() override { return false; }
@@ -106,6 +120,7 @@ private:
     bool mConfigurePowerSaveCalled        = false;
     bool mConfigureBroadcastFilterCalled  = false;
     bool mConfigureLITConnectCalled       = false;
+    bool mConfigureLITDisconnectCalled    = false;
     bool mBroadcastFilterEnabled         = false;
     PowerSaveConfiguration mLastPowerSaveConfiguration;
     bool mIsWifiProvisioned = false;
@@ -240,5 +255,12 @@ TEST_F(TestWifiSleepManager, TestActiveModeInvokesLITConnect)
               CHIP_NO_ERROR);
     EXPECT_TRUE(mMock.WasConfigureLITConnectCalled());
     EXPECT_FALSE(mMock.WasConfigurePowerSaveCalled());
+}
+
+TEST_F(TestWifiSleepManager, TestConfigureLITDisconnectForwardsToPlatform)
+{
+    (void) mMock.WasConfigurePowerSaveCalled();
+    EXPECT_EQ(WifiSleepManager::GetInstance().ConfigureLITDisconnect(), CHIP_NO_ERROR);
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
 }
 #endif

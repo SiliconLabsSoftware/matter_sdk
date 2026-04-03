@@ -137,6 +137,7 @@ bool ApplicationSleepManager::ProcessVendorIdExceptions(chip::VendorId vendorId)
 
 void ApplicationSleepManager::OnEnterActiveMode()
 {
+    ChipLogProgress(AppServer, "------------------OnEnterActiveMode---------------------------");
     mIsInActiveMode = true;
 #if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kActiveMode);
@@ -147,6 +148,7 @@ void ApplicationSleepManager::OnEnterActiveMode()
 
 void ApplicationSleepManager::OnEnterIdleMode()
 {
+    ChipLogProgress(AppServer, "------------------OnEnterIdleMode---------------------------");
     mIsInActiveMode = false;
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
 }
