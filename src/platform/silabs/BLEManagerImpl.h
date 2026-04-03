@@ -91,8 +91,7 @@ public:
     BLEChannel * GetSideChannel() { return mBleSideChannel; }
     CHIP_ERROR InjectSideChannel(BLEChannel * channel);
     CHIP_ERROR SideChannelConfigureAdvertisingDefaultData(void);
-    CHIP_ERROR SideChannelConfigureAdvertising(ByteSpan advData, ByteSpan responseData, uint32_t intervalMin, uint32_t intervalMax,
-                                               uint16_t duration, uint8_t maxEvents);
+    CHIP_ERROR SideChannelConfigureAdvertising(const AdvConfigStruct & config);
     CHIP_ERROR SideChannelStartAdvertising(void);
     CHIP_ERROR SideChannelStopAdvertising(void);
 
@@ -239,7 +238,7 @@ private:
         uint8_t connectionHandle;
         uint8_t bondingHandle;
     };
-#endif //defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 
     BLEConState mBleConnections[kMaxConnections];
     uint8_t mIndConfId[kMaxConnections];
