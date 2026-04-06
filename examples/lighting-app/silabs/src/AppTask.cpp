@@ -53,10 +53,6 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 
-#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-#include <MultiProtocolDataModelHelper.h>
-#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-
 #ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
 #define LIGHT_LED 1
 #else
@@ -682,92 +678,4 @@ void AppTask::UpdateClusterState(intptr_t context)
     {
         SILABS_LOG("ERR: updating on/off %x", to_underlying(status));
     }
-}
-
-void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                          uint16_t size, uint8_t * value)
-{
-    [[maybe_unused]] EndpointId endpointId = attributePath.mEndpointId;
-    ClusterId clusterId                    = attributePath.mClusterId;
-    AttributeId attributeId                = attributePath.mAttributeId;
-    ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
-
-    if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
-    {
-#ifdef SL_MATTER_ENABLE_AWS
-        ChipLogProgress(Zcl, "sending light state update");
-        MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
-#endif // SL_MATTER_ENABLE_AWS
-        AppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, *value ? AppTask::ON_ACTION : AppTask::OFF_ACTION, value);
-    }
-    // WIP Apply attribute change to Light
-    else if (clusterId == LevelControl::Id)
-    {
-        ChipLogProgress(Zcl, "Level Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
-
-        if (attributeId == LevelControl::Attributes::CurrentLevel::Id && value != nullptr)
-        {
-            AppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, AppTask::LEVEL_ACTION, value);
-        }
-    }
-    // WIP Apply attribute change to Light
-    if (clusterId == ColorControl::Id)
-    {
-        ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
-#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-
-        if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentX::Id)
-        {
-            ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                            ChipLogValueMEI(attributeId), type, *value, size);
-
-            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_XY, attributeId, value);
-        }
-        else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentY::Id)
-        {
-            ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                            ChipLogValueMEI(attributeId), type, *value, size);
-            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_XY, attributeId, value);
-        }
-        if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentHue::Id)
-        {
-            ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                            ChipLogValueMEI(attributeId), type, *value, size);
-            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_HSV, attributeId,
-                                                          value);
-        }
-        else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentSaturation::Id)
-        {
-            ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                            ChipLogValueMEI(attributeId), type, *value, size);
-            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_HSV, attributeId,
-                                                          value);
-        }
-        else if (attributeId == ColorControl::Attributes::ColorTemperatureMireds::Id)
-        {
-            if (size != sizeof(uint16_t))
-            {
-                ChipLogError(Zcl, "Wrong length for ColorControl value: %d", size);
-                return;
-            }
-            AppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_CT, attributeId, value);
-        }
-#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-    }
-    else if (clusterId == Identify::Id)
-    {
-        ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
-    }
-#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-    MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
-#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-}
-
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value)
-{
-    AppTask::GetAppTask().DmCallbackMatterPostAttributeChangeCallback(attributePath, type, size, value);
 }

@@ -31,7 +31,6 @@
 #include "AppEvent.h"
 #include "BaseApplication.h"
 
-#include <app/ConcreteAttributePath.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <app/persistence/DeferredAttributePersistenceProvider.h>
 #include <ble/Ble.h>
@@ -116,9 +115,6 @@ public:
     bool InitiateLightCtrlAction(int32_t aActor, Action_t aAction, uint32_t aAttributeId, uint8_t * value);
 #endif
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
-
-    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath,
-                                                             uint8_t type, uint16_t size, uint8_t * value);
 
 protected:
     virtual void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
