@@ -105,6 +105,7 @@ silabs_executable("window_app") {
   defines = []
 
   sources = [
+    "${examples_common_plat_dir}/CommonAppTask.cpp",
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
   ]
