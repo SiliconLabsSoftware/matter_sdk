@@ -21,13 +21,7 @@
 #include <platform/silabs/wifi/WifiStateProvider.h>
 #include <platform/silabs/wifi/icd/PowerSaveInterface.h>
 
-#include <cstdint>
-
 namespace chip {
-namespace System {
-class Layer;
-} // namespace System
-
 namespace DeviceLayer {
 namespace Silabs {
 
@@ -49,6 +43,7 @@ public:
         kCommissioningComplete = 1,
         kConnectivityChange    = 2,
         kActiveMode            = 3,
+        kIdleMode              = 4,
     };
 
     /**
@@ -282,6 +277,7 @@ private:
     WifiStateProvider * mWifiStateProvider   = nullptr;
     bool mIsCommissioningInProgress          = false;
     uint8_t mHighPerformanceRequestCounter   = 0;
+    bool mActiveMode                         = false;
 
     ApplicationCallback * mCallback = nullptr;
 };

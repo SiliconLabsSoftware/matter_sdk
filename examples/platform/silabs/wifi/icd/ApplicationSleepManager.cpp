@@ -150,7 +150,7 @@ void ApplicationSleepManager::OnEnterIdleMode()
 {
     ChipLogProgress(AppServer, "------------------OnEnterIdleMode---------------------------");
     mIsInActiveMode = false;
-    TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
+    TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode);
 }
 
 void ApplicationSleepManager::OnTransitionToIdle()

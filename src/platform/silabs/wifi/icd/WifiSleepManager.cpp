@@ -92,8 +92,12 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     case PowerEvent::kGenericEvent:
 #if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
     case PowerEvent::kActiveMode:
+        mActiveMode = true;
 #endif
         // No additional processing needed for these events at the moment
+        break;
+    case PowerEvent::kIdleMode:
+        mActiveMode = false;
         break;
 
     default:
@@ -149,7 +153,10 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
 #if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
-        return ConfigureLITDisconnect();
+        if (!mActiveMode)
+        {
+            return ConfigureLITDisconnect();
+        }
 #else
         return ConfigureLIBasedSleep();
 #endif
@@ -217,8 +224,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
 CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
 {
     VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
-    TEMPORARY_RETURN_IGNORED mPowerSaveInterface->ConfigureLITConnect();
-    // return ConfigureDTIMBasedSleep();
+    ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
     return CHIP_NO_ERROR;
 }
 

@@ -679,6 +679,9 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnected);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting);
         ResetConnectivityNotificationFlags();
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+        CompleteLitConnectWait(CHIP_NO_ERROR);
+#endif
         break;
 
     case WifiPlatformEvent::kStationDisconnect: {
@@ -699,6 +702,10 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        // Remove High performance request that might have been added during the connect/retry process
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         PostWifiPlatformEvent(WifiPlatformEvent::kStationStartJoin);
         break;
 
@@ -765,10 +772,6 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK)
     {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-        // Remove High performance request that might have been added during the connect/retry process
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         WifiPlatformEvent event = WifiPlatformEvent::kStationConnect;
         PostWifiPlatformEvent(event);
         return status;
@@ -786,6 +789,9 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
         ScheduleConnectionAttempt();
     }
 
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+    CompleteLitConnectWait(CHIP_ERROR_INTERNAL);
+#endif
     return status;
 }
 
@@ -819,6 +825,9 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         {
             mInstance.ScheduleConnectionAttempt();
         }
+#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+        mInstance.CompleteLitConnectWait(CHIP_ERROR_INTERNAL);
+#endif
     }
 
     return status;
@@ -940,6 +949,22 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
     NotifyIPv6Change(false);
 }
 
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+void WifiInterfaceImpl::CompleteLitConnectWait(CHIP_ERROR err)
+{
+    if (!mLitConnectCompletionPending || sLitConnectCompleteSemaphore == nullptr)
+    {
+        return;
+    }
+    mLitConnectCompletionResult   = err;
+    mLitConnectCompletionPending = false;
+    if (osSemaphoreRelease(sLitConnectCompleteSemaphore) != osOK)
+    {
+        ChipLogError(DeviceLayer, "CompleteLitConnectWait: semaphore release failed");
+    }
+}
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
@@ -989,16 +1014,42 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilte
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
-    // declare callback arg
 #if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
     mLitIntentionalSleepDisconnect = false;
     ResetConnectionRetryInterval();
 
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
-    // take sem
-    return ConnectToAccessPoint();
-    // take sem
-    // return
+    VerifyOrReturnError(sLitConnectCompleteSemaphore != nullptr, CHIP_ERROR_INTERNAL);
+
+    if (IsStationConnected())
+    {
+        return CHIP_NO_ERROR;
+    }
+
+    mLitConnectCompletionResult   = CHIP_ERROR_TIMEOUT;
+    mLitConnectCompletionPending = true;
+    while (osSemaphoreAcquire(sLitConnectCompleteSemaphore, 0) == osOK)
+    {}
+
+    if (!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
+    {
+        CHIP_ERROR err = ConnectToAccessPoint();
+        if (err != CHIP_NO_ERROR)
+        {
+            mLitConnectCompletionPending = false;
+            return err;
+        }
+    }
+
+    const osStatus_t waitStatus = osSemaphoreAcquire(sLitConnectCompleteSemaphore, kLitConnectWaitTimeoutTicks);
+    if (waitStatus != osOK)
+    {
+        mLitConnectCompletionPending = false;
+        ChipLogError(DeviceLayer, "ConfigureLITConnect: timed out waiting for Wi-Fi association");
+        return CHIP_ERROR_TIMEOUT;
+    }
+
+    return mLitConnectCompletionResult;
 #else
     return CHIP_NO_ERROR;
 #endif
