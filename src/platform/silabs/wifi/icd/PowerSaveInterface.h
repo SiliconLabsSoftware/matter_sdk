@@ -34,10 +34,11 @@ public:
 
     enum class PowerSaveConfiguration : uint8_t
     {
-        kHighPerformance  = 0,
-        kDeepSleep        = 1,
-        kConnectedSleep   = 2,
-        kLIConnectedSleep = 3,
+        kHighPerformance      = 0,
+        kDeepSleep            = 1,
+        kConnectedSleep       = 2,
+        kLIConnectedSleep     = 3,
+        kLITDisconnectSleep   = 4,
     };
 
     /**
@@ -68,6 +69,17 @@ public:
      */
     virtual CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
 
+    /**
+     * @brief Reconnect after Long Idle Time (LIT) sleep disconnect (ICD active mode / reporting window).
+     *        Platform implementations start join without periodic backoff used for unintended disconnects.
+     */
+    virtual CHIP_ERROR ConfigureLITConnect() { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
+
+    /**
+     * @brief Intentional STA disconnect for LIT disconnect sleep (SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP).
+     *        Suppresses automatic reconnect until ConfigureLITConnect(); disconnect is processed on the Wi-Fi task.
+     */
+    virtual CHIP_ERROR ConfigureLITDisconnect() { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
 protected:
     // Default power save configuration is High Performance as the device starts in high power mode and low power modes need to be
     // explicitly configured

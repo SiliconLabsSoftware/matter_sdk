@@ -102,7 +102,7 @@ constexpr osThreadAttr_t kWlanTaskAttr = { .name       = "wlan_rsi",
                                            .cb_size    = osThreadCbSize,
                                            .stack_mem  = wlanStack,
                                            .stack_size = kWlanTaskSize,
-                                           .priority   = osPriorityAboveNormal7 };
+                                           .priority   = osPriorityHigh1 };
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 constexpr uint32_t kTimeToFullBeaconReception = 5000; // 5 seconds
@@ -112,6 +112,12 @@ wfx_wifi_scan_ext_t temp_reset;
 
 osSemaphoreId_t sScanCompleteSemaphore;
 osMutexId_t sScanInProgressSemaphore;
+
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+osSemaphoreId_t sLitConnectCompleteSemaphore = nullptr;
+constexpr uint32_t kLitConnectWaitTimeoutTicks = 120000; // 2 minutes
+bool mLitConnectCompletionPending = false;
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
 
 osMessageQueueId_t sWifiEventQueue = nullptr;
 
@@ -569,6 +575,7 @@ sl_wifi_system_performance_profile_t ConvertPowerSaveConfiguration(PowerSaveInte
         profile = ASSOCIATED_POWER_SAVE;
         break;
     case PowerSaveInterface::PowerSaveConfiguration::kDeepSleep:
+    case PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep:
         profile = DEEP_SLEEP_WITH_RAM_RETENTION;
         break;
     default:
@@ -646,6 +653,13 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     // Create the message queue
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiPlatformEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, CHIP_ERROR_NO_MEMORY);
+
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+    // Create Semaphore for LIT connect completion
+    sLitConnectCompleteSemaphore = osSemaphoreNew(1, 0, nullptr);
+    VerifyOrReturnError(sLitConnectCompleteSemaphore != nullptr, CHIP_ERROR_NO_MEMORY);
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+
 #ifndef SL_MBEDTLS_USE_TINYCRYPT
     // PSA Crypto initialization
     VerifyOrReturnError(psa_crypto_init() == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
@@ -663,6 +677,9 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnected);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting);
         ResetConnectivityNotificationFlags();
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+        CompleteLitConnectWait();
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
         break;
 
     case WifiPlatformEvent::kStationDisconnect: {
@@ -693,6 +710,10 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        // Remove High performance request that might have been added during the scan process
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         PostWifiPlatformEvent(WifiPlatformEvent::kStationStartJoin);
         break;
 
@@ -759,11 +780,6 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK)
     {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-        // Remove High performance request that might have been added during the connect/retry process
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
         WifiPlatformEvent event = WifiPlatformEvent::kStationConnect;
         PostWifiPlatformEvent(event);
         return status;
@@ -913,6 +929,58 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
 }
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+void WifiInterfaceImpl::CompleteLitConnectWait()
+{
+    if (!mLitConnectCompletionPending || sLitConnectCompleteSemaphore == nullptr)
+    {
+        return;
+    }
+
+    mLitConnectCompletionPending = false;
+
+    if (osSemaphoreRelease(sLitConnectCompleteSemaphore) != osOK)
+    {
+        ChipLogError(DeviceLayer, "CompleteLitConnectWait: semaphore release failed");
+    }
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
+{
+    ResetConnectionRetryInterval();
+
+    VerifyOrReturnError(sLitConnectCompleteSemaphore != nullptr, CHIP_ERROR_INTERNAL);
+
+    mLitConnectCompletionPending = true;
+    while (osSemaphoreAcquire(sLitConnectCompleteSemaphore, 0) == osOK)
+    {}
+
+    if (!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
+    {
+        ReturnErrorOnFailure(ConnectToAccessPoint());
+    }
+
+    const osStatus_t waitStatus = osSemaphoreAcquire(sLitConnectCompleteSemaphore, kLitConnectWaitTimeoutTicks);
+    if (waitStatus != osOK)
+    {
+        ChipLogError(DeviceLayer, "ConfigureLITConnect: timed out waiting for Wi-Fi association");
+        return CHIP_ERROR_TIMEOUT;
+    }
+
+    VerifyOrReturnError(IsStationConnected(), CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "ConfigureLITConnect: not associated after wait"));
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
+{
+    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
+    TriggerPlatformWifiDisconnection();
+    return CHIP_NO_ERROR;
+}
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
     // Power save configuration is already set, nothing to do

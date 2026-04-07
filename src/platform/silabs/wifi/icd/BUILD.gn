@@ -15,6 +15,10 @@
 
 import("//build_overrides/chip.gni")
 
+config("wifi_sleep_cmsis_os2_headers") {
+  include_dirs = [ "${chip_root}/third_party/silabs/simplicity_sdk/platform/CMSIS/RTOS2/Include" ]
+}
+
 source_set("power-save-interface") {
   sources = [ "${chip_root}/src/platform/silabs/wifi/icd/PowerSaveInterface.h" ]
 
@@ -32,5 +36,10 @@ source_set("wifi-sleep-manager") {
     "${chip_root}/src/app/icd/server:configuration-data",
     "${chip_root}/src/lib/core",
     "${chip_root}/src/platform/silabs/wifi:state-provider",
+  ]
+
+  public_configs = [
+    ":wifi_sleep_cmsis_os2_headers",
+    "${chip_root}/src:includes",
   ]
 }
