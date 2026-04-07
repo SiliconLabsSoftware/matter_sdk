@@ -132,6 +132,7 @@ silabs_executable("lighting_app") {
     "${examples_common_plat_dir}/CommonAppTask.cpp",
     "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
+    "src/DataModelCallbacks.cpp",
   ]
 
   deps = [
