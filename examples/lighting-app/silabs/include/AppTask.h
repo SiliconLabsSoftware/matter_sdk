@@ -117,8 +117,8 @@ public:
 #endif
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
-    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath,
-                                                             uint8_t type, uint16_t size, uint8_t * value);
+    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                             uint16_t size, uint8_t * value);
 
 protected:
     virtual void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
