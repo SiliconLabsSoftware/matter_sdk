@@ -25,7 +25,7 @@ chip_enable_ota_requestor = false
 chip_enable_read_client = true
 chip_access_control_policy_logging_verbosity = 2
 
-sl_uart_log_output=true
+sl_uart_log_output = true
 
 openthread_external_platform =
     "${chip_root}/third_party/openthread/platforms/efr32:libopenthread-efr32"

@@ -24,7 +24,6 @@ import("${chip_root}/examples/common/pigweed/pigweed_rpcs.gni")
 import("${chip_root}/src/platform/device.gni")
 import("${chip_root}/third_party/silabs/silabs_board.gni")
 
-
 assert(current_os == "freertos")
 
 silabs_project_dir = "${chip_root}/examples/wom/silabs"
@@ -114,7 +113,7 @@ silabs_executable("wom") {
   include_dirs = [ "include" ]
   defines = []
 
-  defines += ["CHIP_CONFIG_SKIP_APP_SPECIFIC_GENERATED_HEADER_INCLUDES=1",]
+  defines += [ "CHIP_CONFIG_SKIP_APP_SPECIFIC_GENERATED_HEADER_INCLUDES=1" ]
 
   if (silabs_board == "BRD2704A") {
     defines += [ "SL_STATUS_LED=0" ]
@@ -130,20 +129,20 @@ silabs_executable("wom") {
     "${chip_root}/src/platform/logging:default",
 
     # Code-driven data model dependencies
-    "${chip_root}/src/data-model-providers/codedriven",
     "${chip_root}/src/app/persistence:default",
+    "${chip_root}/src/data-model-providers/codedriven",
 
     # Root node cluster dependencies
-    "${chip_root}/src/app/clusters/descriptor",
+    "${chip_root}/src/app/clusters/access-control-server",
+    "${chip_root}/src/app/clusters/administrator-commissioning-server",
     "${chip_root}/src/app/clusters/basic-information",
+    "${chip_root}/src/app/clusters/descriptor",
     "${chip_root}/src/app/clusters/general-commissioning-server",
     "${chip_root}/src/app/clusters/general-commissioning-server:bread-crumb-tracker",
     "${chip_root}/src/app/clusters/general-diagnostics-server",
-    "${chip_root}/src/app/clusters/administrator-commissioning-server",
-    "${chip_root}/src/app/clusters/operational-credentials-server",
     "${chip_root}/src/app/clusters/group-key-mgmt-server",
-    "${chip_root}/src/app/clusters/access-control-server",
     "${chip_root}/src/app/clusters/network-commissioning",
+    "${chip_root}/src/app/clusters/operational-credentials-server",
   ]
 
   deps += [ "${examples_plat_dir}:efr32-common" ]
