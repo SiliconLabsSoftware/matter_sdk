@@ -18,6 +18,7 @@
  */
 
 #include "AppTask.h"
+#include "CommonAppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
 
@@ -85,7 +86,7 @@ DeferredAttribute gDeferredAttributeTable[] = {
 
 OnOffEffect gEffect = {
     chip::EndpointId(LIGHT_ENDPOINT),
-    AppTask::OnTriggerOffWithEffect,
+    CommonAppTask::OnTriggerOffWithEffect,
     EffectIdentifierEnum::kDelayedAllOff,
     to_underlying(DelayedAllOffEffectVariantEnum::kDelayedOffFastFade),
 };
@@ -100,7 +101,7 @@ CHIP_ERROR AppTask::AppInit()
 {
     SILABS_LOG("AppTask: default implementation (AppInit)");
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
 
     err = InitLight();
     if (err != CHIP_NO_ERROR)
@@ -199,7 +200,7 @@ CHIP_ERROR AppTask::InitLight()
 
 CHIP_ERROR AppTask::StartAppTask()
 {
-    return BaseApplication::StartAppTask(AppTaskMain);
+    return BaseApplication::StartAppTask(CommonAppTask::AppTaskMain);
 }
 
 void AppTask::AppTaskMain(void * pvParameter)
@@ -256,7 +257,7 @@ void AppTask::LightActionEventHandler(AppEvent * aEvent)
     }
     else if (aEvent->Type == AppEvent::kEventType_Button)
     {
-        action = (GetAppTask().IsLightOn()) ? OFF_ACTION : ON_ACTION;
+        action = (CommonAppTask::GetAppTask().IsLightOn()) ? OFF_ACTION : ON_ACTION;
         actor  = AppEvent::kEventType_Button;
     }
     else
@@ -266,7 +267,7 @@ void AppTask::LightActionEventHandler(AppEvent * aEvent)
 
     if (err == CHIP_NO_ERROR)
     {
-        initiated = GetAppTask().InitiateAction(actor, action, &value);
+        initiated = CommonAppTask::GetAppTask().InitiateAction(actor, action, &value);
 
         if (!initiated)
         {
@@ -286,7 +287,7 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
     status = LevelControl::Attributes::CurrentLevel::Get(LIGHT_ENDPOINT, currentlevel);
     PlatformMgr().UnlockChipStack();
     VerifyOrReturn(Protocols::InteractionModel::Status::Success == status,
-                   ChipLogError(NotSpecified, "Failed to get CurrentLevel attribute"));
+                ChipLogError(NotSpecified, "Failed to get CurrentLevel attribute"));
     if (status == Protocols::InteractionModel::Status::Success && !currentlevel.IsNull())
     {
         sLightLED.SetLevel(currentlevel.Value());
@@ -372,7 +373,7 @@ void AppTask::OnLightActionCompleted(AppTask::Action_t aAction)
     if (mSyncClusterToButtonAction)
     {
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState,
-                                                                               reinterpret_cast<intptr_t>(nullptr));
+                                                                            reinterpret_cast<intptr_t>(nullptr));
         mSyncClusterToButtonAction = false;
     }
 }
@@ -496,7 +497,7 @@ void AppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 
     SILABS_LOG("Auto Turn Off has been triggered!");
 
-    task->InitiateAction(actor, OFF_ACTION, &value);
+    CommonAppTask::GetAppTask().InitiateAction(actor, OFF_ACTION, &value);
 }
 
 void AppTask::OffEffectTimerEventHandler(AppEvent * aEvent)
@@ -514,7 +515,7 @@ void AppTask::OffEffectTimerEventHandler(AppEvent * aEvent)
 
     SILABS_LOG("OffEffect completed");
 
-    task->InitiateAction(actor, OFF_ACTION, &value);
+    CommonAppTask::GetAppTask().InitiateAction(actor, OFF_ACTION, &value);
 }
 
 void AppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
@@ -670,7 +671,7 @@ void AppTask::PostLightControlActionRequest(int32_t aActor, AppTask::Action_t aA
 
 void AppTask::UpdateClusterState(intptr_t context)
 {
-    uint8_t newValue = GetAppTask().IsLightOn();
+    uint8_t newValue = CommonAppTask::GetAppTask().IsLightOn();
 
     Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(LIGHT_ENDPOINT, newValue, false);
 
