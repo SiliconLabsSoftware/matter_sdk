@@ -135,7 +135,7 @@ CHIP_ERROR AppTask::AppInit()
 
 CHIP_ERROR AppTask::InitLight()
 {
-    mLightTimer = osTimerNew(LightTimerEventHandler, osTimerOnce, (void *) this, NULL);
+    mLightTimer = osTimerNew(CommonAppTask::LightTimerEventHandler, osTimerOnce, (void *) this, NULL);
 
     if (mLightTimer == NULL)
     {
