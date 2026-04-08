@@ -37,6 +37,5 @@ struct AppEvent : public BaseAppEvent
             int32_t Actor;
             uint8_t Value;
         } LightEvent;
-
     };
 };

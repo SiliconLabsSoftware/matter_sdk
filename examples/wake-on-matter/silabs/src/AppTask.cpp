@@ -117,25 +117,22 @@ CHIP_ERROR RegisterRootNodeClusters(CodeDrivenDataModelProvider & provider, Cred
     ReturnErrorOnFailure(provider.AddCluster(sDescriptorCluster.Registration()));
 
     // BasicInformation
-    sBasicInformationCluster.Create(BasicInformationCluster::OptionalAttributesSet(),
-                                    BasicInformationCluster::Context{
-                                        .deviceInstanceInfoProvider = *GetDeviceInstanceInfoProvider(),
-                                        .configurationManager       = ConfigurationMgr(),
-                                        .platformManager            = PlatformMgr(),
-                                        .subscriptionsPerFabric =
-                                            InteractionModelEngine::GetInstance()->GetMinGuaranteedSubscriptionsPerFabric(),
-                                    });
+    sBasicInformationCluster.Create(
+        BasicInformationCluster::OptionalAttributesSet(),
+        BasicInformationCluster::Context{
+            .deviceInstanceInfoProvider = *GetDeviceInstanceInfoProvider(),
+            .configurationManager       = ConfigurationMgr(),
+            .platformManager            = PlatformMgr(),
+            .subscriptionsPerFabric     = InteractionModelEngine::GetInstance()->GetMinGuaranteedSubscriptionsPerFabric(),
+        });
     ReturnErrorOnFailure(provider.AddCluster(sBasicInformationCluster.Registration()));
 
     // GeneralCommissioning
     sGeneralCommissioningCluster.Create(
-        GeneralCommissioningCluster::Context{
-            .commissioningWindowManager = server.GetCommissioningWindowManager(),
-            .configurationManager       = ConfigurationMgr(),
-            .deviceControlServer        = DeviceControlServer::DeviceControlSvr(),
-            .fabricTable                = server.GetFabricTable(),
-            .failSafeContext            = server.GetFailSafeContext(),
-            .platformManager            = PlatformMgr(),
+        GeneralCommissioningCluster::Context {
+            .commissioningWindowManager = server.GetCommissioningWindowManager(), .configurationManager = ConfigurationMgr(),
+            .deviceControlServer = DeviceControlServer::DeviceControlSvr(), .fabricTable = server.GetFabricTable(),
+            .failSafeContext = server.GetFailSafeContext(), .platformManager = PlatformMgr(),
 #if CHIP_CONFIG_TERMS_AND_CONDITIONS_REQUIRED
             .termsAndConditionsProvider = TermsAndConditionsManager::GetInstance(),
 #endif
@@ -157,8 +154,7 @@ CHIP_ERROR RegisterRootNodeClusters(CodeDrivenDataModelProvider & provider, Cred
 #endif
 
     // GeneralDiagnostics
-    sGeneralDiagnosticsCluster.Create(GeneralDiagnosticsCluster::OptionalAttributeSet{},
-                                      BitFlags<GeneralDiagnostics::Feature>{},
+    sGeneralDiagnosticsCluster.Create(GeneralDiagnosticsCluster::OptionalAttributeSet{}, BitFlags<GeneralDiagnostics::Feature>{},
                                       GeneralDiagnosticsCluster::Context{
                                           .deviceLoadStatusProvider = *InteractionModelEngine::GetInstance(),
                                           .diagnosticDataProvider   = GetDiagnosticDataProvider(),
@@ -274,7 +270,8 @@ void UnregisterRootNodeClusters(CodeDrivenDataModelProvider & provider)
 
 AppTask AppTask::sAppTask;
 
-CHIP_ERROR AppTask::InitCodeDrivenDataModel(PersistentStorageDelegate & storageDelegate, chip::Credentials::GroupDataProvider * groupDataProvider)
+CHIP_ERROR AppTask::InitCodeDrivenDataModel(PersistentStorageDelegate & storageDelegate,
+                                            chip::Credentials::GroupDataProvider * groupDataProvider)
 {
     ReturnErrorOnFailure(sAttributePersistence.Init(&storageDelegate));
     sDataModelProvider = std::make_unique<CodeDrivenDataModelProvider>(storageDelegate, sAttributePersistence);

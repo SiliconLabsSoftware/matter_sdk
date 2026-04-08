@@ -26,9 +26,9 @@
 #include "BaseApplication.h"
 #include <app/data-model-provider/Provider.h>
 #include <cmsis_os2.h>
+#include <credentials/GroupDataProvider.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/CHIPPersistentStorageDelegate.h>
-#include <credentials/GroupDataProvider.h>
 
 #define APP_ERROR_EVENT_QUEUE_FAILED CHIP_APPLICATION_ERROR(0x01)
 #define APP_ERROR_CREATE_TASK_FAILED CHIP_APPLICATION_ERROR(0x02)
@@ -55,7 +55,8 @@ public:
      * @param storageDelegate Persistent storage delegate for attribute persistence
      * @return CHIP_ERROR
      */
-    static CHIP_ERROR InitCodeDrivenDataModel(chip::PersistentStorageDelegate & storageDelegate, chip::Credentials::GroupDataProvider * groupDataProvider);
+    static CHIP_ERROR InitCodeDrivenDataModel(chip::PersistentStorageDelegate & storageDelegate,
+                                              chip::Credentials::GroupDataProvider * groupDataProvider);
 
     /**
      * @brief Shutdown and cleanup the code-driven data model
