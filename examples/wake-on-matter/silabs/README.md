@@ -36,8 +36,8 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
 
 ## Introduction
 
-The EFR32 wake on Matter example provides a baseline demonstration of an OT-NCP combined with a Matter node 
-that receives subscription to wake up the host.
+The EFR32 wake on Matter example provides a baseline demonstration of an OT-NCP
+combined with a Matter node that receives subscription to wake up the host.
 
 ## Building
 
@@ -140,7 +140,6 @@ the verbose mode is selected (--verbose)
 
 With any serial terminal application such as screen, putty, minicom etc.
 
-
 ### Notes
 
 -   Depending on your network settings your router might not provide native ipv6
@@ -163,16 +162,21 @@ With any serial terminal application such as screen, putty, minicom etc.
 
 # Matter Wake on Lan configuration
 
-This samples apps allows subscriptions to another Matter device. This is usefull to receive state changes and to act accordingly
+This samples apps allows subscriptions to another Matter device. This is usefull
+to receive state changes and to act accordingly
 
 Steps
+
 1. Commission this applications to a matter thread network
-2. Give ACL to the desired node with which you want to establish a subscription with the following command
+2. Give ACL to the desired node with which you want to establish a subscription
+   with the following command
+
 ```
     chip-tool accesscontrol write acl '[{"fabricIndex": 1, "privilege": 1, "authMode": 2, "subjects": [<woM node ID>], "targets": null}]' <target node id> 0
 
 3. Using the silabs_console.py or a standard CLI interface like screen or PuTTY run the following shell commands
 4. run this command in the WoM device shell so that a subscription can be establish between the node and the WoM device
-``` 
-    im subscribe <fabricIndex> <nodeId> <endpointId> <clusterId> 
-    matterCli> im subscribe 1 40 1 6 0 
+```
+
+    im subscribe <fabricIndex> <nodeId> <endpointId> <clusterId>
+    matterCli> im subscribe 1 40 1 6 0
