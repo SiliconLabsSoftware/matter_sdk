@@ -102,6 +102,8 @@ public:
 
     static void LightTimerEventHandler(void * timerCbArg) { CRTP_APP_TASK(Derived).LightTimerEventHandlerImpl(timerCbArg); }
 
+    static void LightActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightActionEventHandlerImpl(aEvent); }
+
 protected:
     /**
      * AppTask overrides and static callbacks: forward to Derived::*Impl() via CRTP_THIS / CRTP_APP_TASK.
@@ -126,8 +128,6 @@ protected:
     }
 
     static void OffEffectTimerEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).OffEffectTimerEventHandlerImpl(aEvent); }
-
-    static void LightActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightActionEventHandlerImpl(aEvent); }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     static void LightControlEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightControlEventHandlerImpl(aEvent); }

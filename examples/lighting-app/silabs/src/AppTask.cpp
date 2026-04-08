@@ -322,7 +322,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
     if (button == APP_LIGHT_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = LightActionEventHandler;
+        button_event.Handler = CommonAppTask::LightActionEventHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
@@ -652,7 +652,7 @@ void AppTask::PostLightActionRequest(int32_t aActor, AppTask::Action_t aAction)
     event.Type              = AppEvent::kEventType_Light;
     event.LightEvent.Actor  = aActor;
     event.LightEvent.Action = aAction;
-    event.Handler           = LightActionEventHandler;
+    event.Handler           = CommonAppTask::LightActionEventHandler;
     PostEvent(&event);
 }
 
