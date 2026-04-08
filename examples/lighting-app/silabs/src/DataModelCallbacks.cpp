@@ -44,8 +44,8 @@
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
 
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value)
+void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                          uint16_t size, uint8_t * value)
 {
     [[maybe_unused]] EndpointId endpointId = attributePath.mEndpointId;
     ClusterId clusterId                    = attributePath.mClusterId;
@@ -124,6 +124,12 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
     MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+}
+
+void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value)
+{
+    AppTask::GetAppTask().DmCallbackMatterPostAttributeChangeCallback(attributePath, type, size, value);
 }
 
 /** @brief OnOff Cluster Init
