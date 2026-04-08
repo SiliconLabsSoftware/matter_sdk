@@ -100,6 +100,8 @@ public:
 
     static void AppTaskMain(void * pvParameter) { CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, AppTaskMain, pvParameter); }
 
+    static void LightTimerEventHandler(void * timerCbArg) { CRTP_APP_TASK(Derived).LightTimerEventHandlerImpl(timerCbArg); }
+
 protected:
     /**
      * AppTask overrides and static callbacks: forward to Derived::*Impl() via CRTP_THIS / CRTP_APP_TASK.
@@ -115,8 +117,6 @@ protected:
     void StartLightTimer(uint32_t aTimeoutMs) override { CRTP_THIS(Derived)->StartLightTimerImpl(aTimeoutMs); }
 
     void CancelLightTimer() override { CRTP_THIS(Derived)->CancelLightTimerImpl(); }
-
-    static void LightTimerEventHandler(void * timerCbArg) { CRTP_APP_TASK(Derived).LightTimerEventHandlerImpl(timerCbArg); }
 
     static void AutoTurnOffTimerEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).AutoTurnOffTimerEventHandlerImpl(aEvent); }
 
