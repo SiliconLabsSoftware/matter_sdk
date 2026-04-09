@@ -23,265 +23,260 @@
 
 namespace chip {
 namespace DeviceLayer {
-namespace Silabs {
-
-/**
- * @brief WifiSleepManager is a singleton class that manages the sleep modes for Wi-Fi devices.
- *        The class contains the business logic associated with optimizing the sleep states based on the Matter SDK internal states
- */
-class WifiSleepManager
-{
-public:
-    WifiSleepManager(const WifiSleepManager &)             = delete;
-    WifiSleepManager & operator=(const WifiSleepManager &) = delete;
-
-    static WifiSleepManager & GetInstance() { return mInstance; }
-
-    enum class PowerEvent : uint8_t
-    {
-        kGenericEvent          = 0,
-        kCommissioningComplete = 1,
-        kConnectivityChange    = 2,
-        kActiveMode            = 3,
-        kIdleMode              = 4,
-    };
-
-    /**
-     * @brief Class implements the callbacks that the application can implement
-     *        to alter the WifiSleepManager behaviors.
-     */
-    class ApplicationCallback
-    {
-    public:
-        virtual ~ApplicationCallback() = default;
+    namespace Silabs {
 
         /**
-         * @brief Function informs the WifiSleepManager in which Low Power mode the device can go to.
-         *        The two supported sleep modes are DTIM based sleep and LI based sleep.
-         *
-         *        When the function is called, the WifiSleepManager is about to go to sleep and uses this to choose LI sleep
-         *        (or LIT disconnect sleep when SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP is enabled) versus DTIM based sleep.
-         *
-         *        DTIM based sleep requires the Wi-Fi devices to be synced with the DTIM beacon.
-         *        In this mode, the broadcast filter is disabled and the device will process multicast and
-         *        broadcast messages.
-         *
-         *        LI based sleep allows the Wi-Fi devices to sleep for configurable amounts of time without needing to be synced
-         *        with the DTIM beacon. The sleep time is configurable trough the ICD Manager feature-set.
-         *        In the LI based sleep, the broadcast filter is enabled.
-         *
-         * @return true The Wi-Fi Sleep Manager can go to LI based sleep
-         * @return false The Wi-Fi Sleep Manager cannot go to LI based sleep or an error occured in the processing.
+         * @brief WifiSleepManager is a singleton class that manages the sleep modes for Wi-Fi devices.
+         *        The class contains the business logic associated with optimizing the sleep states based on the Matter SDK internal states
          */
-        virtual bool CanGoToLIBasedSleep() = 0;
-    };
+        class WifiSleepManager {
+        public:
+            WifiSleepManager(const WifiSleepManager &) = delete;
+            WifiSleepManager & operator=(const WifiSleepManager &) = delete;
 
-    /**
-     * @brief Init function that configure the SleepManager APIs based on the type of ICD.
-     *        Function validates that the SleepManager configuration were correctly set as well.
-     *
-     *        Triggers an initial VerifyAndTransitionToLowPowerMode to set the initial sleep mode.
-     *
-     * @param[in] platformInterface PowerSaveInterface to configure the sleep modes
-     * @param[in] wifiStateProvider WifiStateProvider to provide the Wi-Fi state information
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the device was transitionned to low power
-     *                    CHIP_ERROR_INVALID_ARGUMENT if the platformInterface or wifiStateProvider is nullptr
-     *                    CHIP_ERROR_INTERNAL if an error occured
-     */
-    CHIP_ERROR Init(PowerSaveInterface * platformInterface, WifiStateProvider * wifiStateProvider);
+            static WifiSleepManager & GetInstance() { return mInstance; }
 
-    inline void HandleCommissioningSessionStarted()
-    {
-        bool wasCommissioningInProgress = mIsCommissioningInProgress;
-        mIsCommissioningInProgress      = true;
+            enum class PowerEvent : uint8_t {
+                kGenericEvent = 0,
+                kCommissioningComplete = 1,
+                kConnectivityChange = 2,
+                kActiveMode = 3,
+                kIdleMode = 4,
+            };
 
-        if (!wasCommissioningInProgress)
-        {
-            // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-            TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
-        }
-    }
+            /**
+             * @brief Class implements the callbacks that the application can implement
+             *        to alter the WifiSleepManager behaviors.
+             */
+            class ApplicationCallback {
+            public:
+                virtual ~ApplicationCallback() = default;
 
-    inline void HandleCommissioningSessionStopped()
-    {
-        bool wasCommissioningInProgress = mIsCommissioningInProgress;
-        mIsCommissioningInProgress      = false;
+                /**
+                 * @brief Function informs the WifiSleepManager in which Low Power mode the device can go to.
+                 *        The two supported sleep modes are DTIM based sleep and LI based sleep.
+                 *
+                 *        When the function is called, the WifiSleepManager is about to go to sleep and uses this to choose LI sleep
+                 *        (or LIT disconnect sleep when CHIP_CONFIG_ENABLE_ICD_LIT is enabled) versus DTIM based sleep.
+                 *
+                 *        DTIM based sleep requires the Wi-Fi devices to be synced with the DTIM beacon.
+                 *        In this mode, the broadcast filter is disabled and the device will process multicast and
+                 *        broadcast messages.
+                 *
+                 *        LI based sleep allows the Wi-Fi devices to sleep for configurable amounts of time without needing to be synced
+                 *        with the DTIM beacon. The sleep time is configurable trough the ICD Manager feature-set.
+                 *        In the LI based sleep, the broadcast filter is enabled.
+                 *
+                 * @return true The Wi-Fi Sleep Manager can go to LI based sleep
+                 * @return false The Wi-Fi Sleep Manager cannot go to LI based sleep or an error occured in the processing.
+                 */
+                virtual bool CanGoToLIBasedSleep() = 0;
+            };
 
-        if (wasCommissioningInProgress)
-        {
-            // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-            TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-        }
-    }
+            /**
+             * @brief Init function that configure the SleepManager APIs based on the type of ICD.
+             *        Function validates that the SleepManager configuration were correctly set as well.
+             *
+             *        Triggers an initial VerifyAndTransitionToLowPowerMode to set the initial sleep mode.
+             *
+             * @param[in] platformInterface PowerSaveInterface to configure the sleep modes
+             * @param[in] wifiStateProvider WifiStateProvider to provide the Wi-Fi state information
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the device was transitionned to low power
+             *                    CHIP_ERROR_INVALID_ARGUMENT if the platformInterface or wifiStateProvider is nullptr
+             *                    CHIP_ERROR_INTERNAL if an error occured
+             */
+            CHIP_ERROR Init(PowerSaveInterface * platformInterface, WifiStateProvider * wifiStateProvider);
 
-    /**
-     * @brief Set the Application Callback
-     *
-     * @param callbacks pointer to the application callbacks.
-     *                  The callback can be set to nullptr if the application wants to remove its callback
-     */
-    void SetApplicationCallback(ApplicationCallback * callback) { mCallback = callback; }
+            inline void HandleCommissioningSessionStarted()
+            {
+                bool wasCommissioningInProgress = mIsCommissioningInProgress;
+                mIsCommissioningInProgress = true;
 
-    /**
-     * @brief Public API to request the Wi-Fi chip to transition to High Performance.
-     *        Function increases the HighPerformance request counter to prevent the chip from going to sleep
-     *        while the Matter SDK is in a state that requires High Performance
-     *
-     *        It is not necessary to call VerifyAndTransitionToLowPowerMode after calling this function.
-     *        The API does the call after incrementing the HighPerformance request counter.
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the chip was set to high performance or already in high performance
-     *                    CHIP_ERROR_INTERNAL, if the high performance configuration failed
-     */
-    CHIP_ERROR RequestHighPerformanceWithTransition() { return RequestHighPerformance(true); }
+                if (!wasCommissioningInProgress) {
+                    // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
+                    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
+                }
+            }
 
-    /**
-     * @brief Public API to increase the HighPerformance request counter without transitioning the Wi-Fi chip to High Performance.
-     *        The transition to a different power mode will be done the next the VerifyAndTransitionToLowPowerMode is called.
-     *
-     *        This API does not call the VerifyAndTransitionToLowPowerMode function.
-     *        To trigger the update directly adding a high performance request, call RequestHighPerformanceWithTransition.
-     *
-     *        This API can be called before the Init function. By doing so, the device will transition to High Performance during
-     *        the Init sequence
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the chip was set to high performance or already in high performance
-     *                    CHIP_ERROR_INTERNAL, if the high performance configuration failed
-     */
-    CHIP_ERROR RequestHighPerformanceWithoutTransition() { return RequestHighPerformance(false); }
+            inline void HandleCommissioningSessionStopped()
+            {
+                bool wasCommissioningInProgress = mIsCommissioningInProgress;
+                mIsCommissioningInProgress = false;
 
-    /**
-     * @brief Public API to remove request to keep the Wi-Fi chip in High Performance.
-     *        If calling this function removes the last High performance request,
-     *        The chip will transition to sleep based on its lowest sleep level allowed
-     *
-     *
-     *        It is not necessary to call VerifyAndTransitionToLowPowerMode after calling this function.
-     *        The API does the call after decreasing the HighPerformance request counter.
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the req removal and sleep transition succeed
-     *                    CHIP_ERROR_INTERNAL, if the req removal or the transition to sleep failed
-     */
-    CHIP_ERROR RemoveHighPerformanceRequest();
+                if (wasCommissioningInProgress) {
+                    // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
+                    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+                }
+            }
 
-    /**
-     * @brief Public API to validate what is the lowest power mode the device can got to and transitions the device to the
-     *        determined low power state.
-     *
-     *        State machine logic:
-     *        1. If there are high performance requests, configure high performance mode.
-     *        2. If commissioning is in progress, configure DTIM based sleep.
-     *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
-     *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
-     *
-     * @param event PowerEvent triggering the Verify and transition to low power mode processing
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the device was transitionned to low power
-     *                    CHIP_ERROR_INTERNAL if an error occured
-     */
-    CHIP_ERROR VerifyAndTransitionToLowPowerMode(PowerEvent event);
+            /**
+             * @brief Set the Application Callback
+             *
+             * @param callbacks pointer to the application callbacks.
+             *                  The callback can be set to nullptr if the application wants to remove its callback
+             */
+            void SetApplicationCallback(ApplicationCallback * callback) { mCallback = callback; }
 
-private:
-    WifiSleepManager()  = default;
-    ~WifiSleepManager() = default;
+            /**
+             * @brief Public API to request the Wi-Fi chip to transition to High Performance.
+             *        Function increases the HighPerformance request counter to prevent the chip from going to sleep
+             *        while the Matter SDK is in a state that requires High Performance
+             *
+             *        It is not necessary to call VerifyAndTransitionToLowPowerMode after calling this function.
+             *        The API does the call after incrementing the HighPerformance request counter.
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the chip was set to high performance or already in high performance
+             *                    CHIP_ERROR_INTERNAL, if the high performance configuration failed
+             */
+            CHIP_ERROR RequestHighPerformanceWithTransition() { return RequestHighPerformance(true); }
 
-    /**
-     * @brief Function to handle the power events before transitionning the device to the appropriate low power mode.
-     *
-     * @param event PowerEvent to handle
-     * @return CHIP_ERROR CHIP_NO_ERROR if the event was handled successfully
-     *                    CHIP_ERROR_INVALID_ARGUMENT if the event is not supported
-     */
-    CHIP_ERROR HandlePowerEvent(PowerEvent event);
+            /**
+             * @brief Public API to increase the HighPerformance request counter without transitioning the Wi-Fi chip to High Performance.
+             *        The transition to a different power mode will be done the next the VerifyAndTransitionToLowPowerMode is called.
+             *
+             *        This API does not call the VerifyAndTransitionToLowPowerMode function.
+             *        To trigger the update directly adding a high performance request, call RequestHighPerformanceWithTransition.
+             *
+             *        This API can be called before the Init function. By doing so, the device will transition to High Performance during
+             *        the Init sequence
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the chip was set to high performance or already in high performance
+             *                    CHIP_ERROR_INTERNAL, if the high performance configuration failed
+             */
+            CHIP_ERROR RequestHighPerformanceWithoutTransition() { return RequestHighPerformance(false); }
 
-    /**
-     * @brief Configures the Wi-Fi chip to go to High Performance.
-     *        Function doesn't change the broad cast filter configuration.
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful,
-     *                    CHIP_ERROR_UNINITIALIZED, if the Init function was not called before calling this function,
-     *                    otherwise CHIP_ERROR_INTERNAL
-     */
-    CHIP_ERROR ConfigureHighPerformance();
+            /**
+             * @brief Public API to remove request to keep the Wi-Fi chip in High Performance.
+             *        If calling this function removes the last High performance request,
+             *        The chip will transition to sleep based on its lowest sleep level allowed
+             *
+             *
+             *        It is not necessary to call VerifyAndTransitionToLowPowerMode after calling this function.
+             *        The API does the call after decreasing the HighPerformance request counter.
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the req removal and sleep transition succeed
+             *                    CHIP_ERROR_INTERNAL, if the req removal or the transition to sleep failed
+             */
+            CHIP_ERROR RemoveHighPerformanceRequest();
 
-    /**
-     * @brief Configures the Wi-Fi chip to go Deep Sleep.
-     *        Function doesn't change the state of the broadcast filter.
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful,
-     *                    CHIP_ERROR_UNINITIALIZED, if the Init function was not called before calling this function,
-     *                    otherwise CHIP_ERROR_INTERNAL
-     */
-    CHIP_ERROR ConfigureDeepSleep();
+            /**
+             * @brief Public API to validate what is the lowest power mode the device can got to and transitions the device to the
+             *        determined low power state.
+             *
+             *        State machine logic:
+             *        1. If there are high performance requests, configure high performance mode.
+             *        2. If commissioning is in progress, configure DTIM based sleep.
+             *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
+             *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
+             *
+             * @param event PowerEvent triggering the Verify and transition to low power mode processing
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the device was transitionned to low power
+             *                    CHIP_ERROR_INTERNAL if an error occured
+             */
+            CHIP_ERROR VerifyAndTransitionToLowPowerMode(PowerEvent event);
 
-    /**
-     * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
-     *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful,
-     *                    CHIP_ERROR_UNINITIALIZED, if the Init function was not called before calling this function,
-     *                    otherwise CHIP_ERROR_INTERNAL
-     */
-    CHIP_ERROR ConfigureDTIMBasedSleep();
+        private:
+            WifiSleepManager() = default;
+            ~WifiSleepManager() = default;
 
-    /**
-     * @brief Configures the Wi-Fi Chip to go to LI based sleep.
-     *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
-     */
-    CHIP_ERROR ConfigureLIBasedSleep();
+            /**
+             * @brief Function to handle the power events before transitionning the device to the appropriate low power mode.
+             *
+             * @param event PowerEvent to handle
+             * @return CHIP_ERROR CHIP_NO_ERROR if the event was handled successfully
+             *                    CHIP_ERROR_INVALID_ARGUMENT if the event is not supported
+             */
+            CHIP_ERROR HandlePowerEvent(PowerEvent event);
 
-    /**
-     * @brief LIT disconnect sleep: enable broadcast filter then request kLITDisconnectSleep (disconnect + deep profile).
-     *        When SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP is 0, returns CHIP_NO_ERROR without configuring.
-     */
-    CHIP_ERROR ConfigureLITDisconnectSleep();
+            /**
+             * @brief Configures the Wi-Fi chip to go to High Performance.
+             *        Function doesn't change the broad cast filter configuration.
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful,
+             *                    CHIP_ERROR_UNINITIALIZED, if the Init function was not called before calling this function,
+             *                    otherwise CHIP_ERROR_INTERNAL
+             */
+            CHIP_ERROR ConfigureHighPerformance();
 
-    /**
-     * @brief LIT path: intentional STA disconnect only (see PowerSaveInterface::ConfigureLITDisconnect).
-     */
-    CHIP_ERROR ConfigureLITDisconnect();
+            /**
+             * @brief Configures the Wi-Fi chip to go Deep Sleep.
+             *        Function doesn't change the state of the broadcast filter.
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful,
+             *                    CHIP_ERROR_UNINITIALIZED, if the Init function was not called before calling this function,
+             *                    otherwise CHIP_ERROR_INTERNAL
+             */
+            CHIP_ERROR ConfigureDeepSleep();
 
-    CHIP_ERROR ConfigureLITConnect();
+            /**
+             * @brief Configures the Wi-Fi Chip to go to DTIM based sleep.
+             *        Function sets the listen interval to be synced with the DTIM beacon and disables the broadcast filter.
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful,
+             *                    CHIP_ERROR_UNINITIALIZED, if the Init function was not called before calling this function,
+             *                    otherwise CHIP_ERROR_INTERNAL
+             */
+            CHIP_ERROR ConfigureDTIMBasedSleep();
 
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
-    /**
-     * Margin before end of mode-based idle interval to bring Wi-Fi up for ICD traffic (check-in / reports).
-     */
-    static constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
+            /**
+             * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+             *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+             */
+            CHIP_ERROR ConfigureLIBasedSleep();
 
-    static void OnLitPrecheckInReconnectTimerFired(chip::System::Layer * layer, void * context);
-    static void RunLitPrecheckInReconnect(intptr_t arg);
-    static void ArmLitPrecheckInTimerWork(intptr_t arg);
-    static void CancelLitPrecheckInTimerWork(intptr_t arg);
-    void DoCancelLitPrecheckInReconnectTimer();
-    void DoStartLitPrecheckInReconnectTimer();
-#endif // SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+            /**
+             * @brief LIT disconnect sleep: enable broadcast filter then request kLITDisconnectSleep (disconnect + deep profile).
+             *        When CHIP_CONFIG_ENABLE_ICD_LIT is 0, returns CHIP_NO_ERROR without configuring.
+             */
+            CHIP_ERROR ConfigureLITDisconnectSleep();
 
-    /**
-     * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
-     *
-     * @param triggerTransition true, triggers the transition to High Performance
-     *                          false, only increments the HighPerformance request counter
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR if the req removal and sleep transition succeed
-     *                    CHIP_ERROR_INTERNAL, if the req removal or the transition to sleep failed
-     */
-    CHIP_ERROR RequestHighPerformance(bool triggerTransition);
+            /**
+             * @brief LIT path: intentional STA disconnect only (see PowerSaveInterface::ConfigureLITDisconnect).
+             */
+            CHIP_ERROR ConfigureLITDisconnect();
 
-    static WifiSleepManager mInstance;
+            CHIP_ERROR ConfigureLITConnect();
 
-    PowerSaveInterface * mPowerSaveInterface = nullptr;
-    WifiStateProvider * mWifiStateProvider   = nullptr;
-    bool mIsCommissioningInProgress          = false;
-    uint8_t mHighPerformanceRequestCounter   = 0;
-    bool mActiveMode                         = false;
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+            /**
+             * Margin before end of mode-based idle interval to bring Wi-Fi up for ICD traffic (check-in / reports).
+             */
+            static constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
 
-    ApplicationCallback * mCallback = nullptr;
-};
+            static void OnLitPrecheckInReconnectTimerFired(chip::System::Layer * layer, void * context);
+            static void RunLitPrecheckInReconnect(intptr_t arg);
+            static void ArmLitPrecheckInTimerWork(intptr_t arg);
+            static void CancelLitPrecheckInTimerWork(intptr_t arg);
+            void DoCancelLitPrecheckInReconnectTimer();
+            void DoStartLitPrecheckInReconnectTimer();
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
 
-} // namespace Silabs
+            /**
+             * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
+             *
+             * @param triggerTransition true, triggers the transition to High Performance
+             *                          false, only increments the HighPerformance request counter
+             *
+             * @return CHIP_ERROR CHIP_NO_ERROR if the req removal and sleep transition succeed
+             *                    CHIP_ERROR_INTERNAL, if the req removal or the transition to sleep failed
+             */
+            CHIP_ERROR RequestHighPerformance(bool triggerTransition);
+
+            static WifiSleepManager mInstance;
+
+            PowerSaveInterface * mPowerSaveInterface = nullptr;
+            WifiStateProvider * mWifiStateProvider = nullptr;
+            bool mIsCommissioningInProgress = false;
+            uint8_t mHighPerformanceRequestCounter = 0;
+            bool mActiveMode = false;
+
+            ApplicationCallback * mCallback = nullptr;
+        };
+
+    } // namespace Silabs
 } // namespace DeviceLayer
 } // namespace chip

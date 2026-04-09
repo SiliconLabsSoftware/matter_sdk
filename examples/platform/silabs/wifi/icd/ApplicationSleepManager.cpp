@@ -20,8 +20,8 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#if !defined(SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP)
-#error SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP must be set by the build (GN) to 0 or 1
+#if !defined(CHIP_CONFIG_ENABLE_ICD_LIT)
+#error CHIP_CONFIG_ENABLE_ICD_LIT must be set by the build (GN) to 0 or 1
 #endif
 
 namespace chip {
@@ -139,7 +139,7 @@ void ApplicationSleepManager::OnEnterActiveMode()
 {
     ChipLogProgress(AppServer, "------------------OnEnterActiveMode---------------------------");
     mIsInActiveMode = true;
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_LIT
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kActiveMode);
 #else
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);

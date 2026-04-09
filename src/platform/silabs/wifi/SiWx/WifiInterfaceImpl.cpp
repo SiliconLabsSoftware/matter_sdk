@@ -113,7 +113,7 @@ wfx_wifi_scan_ext_t temp_reset;
 osSemaphoreId_t sScanCompleteSemaphore;
 osMutexId_t sScanInProgressSemaphore;
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
 osSemaphoreId_t sLitConnectCompleteSemaphore = nullptr;
 #endif
 
@@ -228,7 +228,7 @@ constexpr uint8_t kWfxQueueSize = 10;
 // TODO: Figure out why we actually need this, we are already handling failure and retries somewhere else.
 constexpr uint16_t kWifiScanTimeoutTicks = 10000;
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
 // Join + SLAAC/DHCP can exceed scan; timeout units match kWifiScanTimeoutTicks (CMSIS RTOS tick).
 constexpr uint32_t kLitConnectWaitTimeoutTicks = 120000;
 #endif
@@ -533,7 +533,7 @@ sl_status_t SetWifiConfigurations()
     {
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
-        profile.config.channel.channel                   = wfx_rsi.ap_chan;
+        profile.config.channel.channel = wfx_rsi.ap_chan;
         // profile.config.channel_bitmap.channel_bitmap_2_4 = BIT((wfx_rsi.ap_chan - 1));
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWiFiBSSIDLength);
@@ -657,7 +657,7 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiPlatformEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, CHIP_ERROR_NO_MEMORY);
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
     sLitConnectCompleteSemaphore = osSemaphoreNew(1, 0, nullptr);
     VerifyOrReturnError(sLitConnectCompleteSemaphore != nullptr, CHIP_ERROR_NO_MEMORY);
 #endif
@@ -679,7 +679,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnected);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting);
         ResetConnectivityNotificationFlags();
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_LIT
         CompleteLitConnectWait(CHIP_NO_ERROR);
 #endif
         break;
@@ -782,14 +782,14 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
     if (!mLitIntentionalSleepDisconnect)
 #endif
     {
         ScheduleConnectionAttempt();
     }
 
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_LIT
     CompleteLitConnectWait(CHIP_ERROR_INTERNAL);
 #endif
     return status;
@@ -819,13 +819,13 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
         mInstance.mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
         if (!mInstance.mLitIntentionalSleepDisconnect)
 #endif
         {
             mInstance.ScheduleConnectionAttempt();
         }
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_LIT
         mInstance.CompleteLitConnectWait(CHIP_ERROR_INTERNAL);
 #endif
     }
@@ -949,21 +949,21 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
     NotifyIPv6Change(false);
 }
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
 void WifiInterfaceImpl::CompleteLitConnectWait(CHIP_ERROR err)
 {
     if (!mLitConnectCompletionPending || sLitConnectCompleteSemaphore == nullptr)
     {
         return;
     }
-    mLitConnectCompletionResult   = err;
+    mLitConnectCompletionResult  = err;
     mLitConnectCompletionPending = false;
     if (osSemaphoreRelease(sLitConnectCompleteSemaphore) != osOK)
     {
         ChipLogError(DeviceLayer, "CompleteLitConnectWait: semaphore release failed");
     }
 }
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
@@ -973,8 +973,6 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
     ChipLogProgress(DeviceLayer, "---------------------------------------------------------");
     // Power save configuration is already set, nothing to do
     VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
-
-
 
     int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
     if (error != RSI_SUCCESS)
@@ -1014,7 +1012,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilte
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_LIT
     mLitIntentionalSleepDisconnect = false;
     ResetConnectionRetryInterval();
 
@@ -1026,10 +1024,11 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
         return CHIP_NO_ERROR;
     }
 
-    mLitConnectCompletionResult   = CHIP_ERROR_TIMEOUT;
+    mLitConnectCompletionResult  = CHIP_ERROR_TIMEOUT;
     mLitConnectCompletionPending = true;
     while (osSemaphoreAcquire(sLitConnectCompleteSemaphore, 0) == osOK)
-    {}
+    {
+    }
 
     if (!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
     {
@@ -1058,7 +1057,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
 {
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_LIT
     mLitIntentionalSleepDisconnect = true;
     TriggerPlatformWifiDisconnection();
 #endif

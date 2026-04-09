@@ -21,11 +21,6 @@ import("${chip_root}/src/platform/silabs/wifi/silabs_wifi_icd.gni")
 config("app-sleep-manager-config") {
   include_dirs = [ "." ]
   defines = [ "SL_MATTER_ENABLE_APP_SLEEP_MANAGER=1" ]
-  if (sl_matter_wifi_icd_lit_disconnect_sleep) {
-    defines += [ "SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP=1" ]
-  } else {
-    defines += [ "SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP=0" ]
-  }
 }
 
 source_set("app-sleep-manager") {

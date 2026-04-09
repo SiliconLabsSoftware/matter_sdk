@@ -18,10 +18,10 @@ import("${chip_root}/src/platform/silabs/wifi/silabs_wifi_icd.gni")
 
 config("silabs-wifi-lit-disconnect-define") {
   defines = []
-  if (sl_matter_wifi_icd_lit_disconnect_sleep) {
-    defines += [ "SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP=1" ]
+  if (CHIP_CONFIG_ENABLE_ICD_LIT) {
+    defines += [ "CHIP_CONFIG_ENABLE_ICD_LIT=1" ]
   } else {
-    defines += [ "SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP=0" ]
+    defines += [ "CHIP_CONFIG_ENABLE_ICD_LIT=0" ]
   }
 }
 

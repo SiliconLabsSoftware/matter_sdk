@@ -164,7 +164,7 @@ namespace DeviceLayer {
             bool mHasNotifiedWifiConnectivity = false;
             bool mUseQuickJoin = false;
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
             // Intentional LIT disconnect: suppress exponential reconnect until ConfigureLITConnect().
             bool mLitIntentionalSleepDisconnect = false;
 

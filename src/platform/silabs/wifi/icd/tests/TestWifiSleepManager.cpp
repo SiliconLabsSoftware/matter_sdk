@@ -20,8 +20,8 @@
 
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
-#if !defined(SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP)
-#error SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP must be set by the build (GN) to 0 or 1
+#if !defined(CHIP_CONFIG_ENABLE_ICD_LIT)
+#error CHIP_CONFIG_ENABLE_ICD_LIT must be set by the build (GN) to 0 or 1
 #endif
 
 using namespace chip::DeviceLayer::Silabs;
@@ -36,9 +36,9 @@ public:
         mConfigurePowerSaveCalled       = false;
         mConfigureBroadcastFilterCalled = false;
         mConfigureLITConnectCalled      = false;
-        mConfigureLITDisconnectCalled     = false;
-        mIsWifiProvisioned                = false;
-        mBroadcastFilterEnabled           = false;
+        mConfigureLITDisconnectCalled   = false;
+        mIsWifiProvisioned              = false;
+        mBroadcastFilterEnabled         = false;
     }
 
     // Getters to check if methods were called
@@ -117,10 +117,10 @@ public:
     bool HasAnIPv4Address() override { return false; }
 
 private:
-    bool mConfigurePowerSaveCalled        = false;
-    bool mConfigureBroadcastFilterCalled  = false;
-    bool mConfigureLITConnectCalled       = false;
-    bool mConfigureLITDisconnectCalled    = false;
+    bool mConfigurePowerSaveCalled       = false;
+    bool mConfigureBroadcastFilterCalled = false;
+    bool mConfigureLITConnectCalled      = false;
+    bool mConfigureLITDisconnectCalled   = false;
     bool mBroadcastFilterEnabled         = false;
     PowerSaveConfiguration mLastPowerSaveConfiguration;
     bool mIsWifiProvisioned = false;
@@ -247,7 +247,7 @@ TEST_F(TestWifiSleepManager, TestRequestHighPerformanceWithoutProvisioning)
     EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), config);
 }
 
-#if SL_MATTER_WIFI_ICD_LIT_DISCONNECT_SLEEP
+#if CHIP_CONFIG_ENABLE_ICD_LIT
 TEST_F(TestWifiSleepManager, TestActiveModeInvokesLITConnect)
 {
     (void) mMock.WasConfigurePowerSaveCalled(); // drain Init() transition
