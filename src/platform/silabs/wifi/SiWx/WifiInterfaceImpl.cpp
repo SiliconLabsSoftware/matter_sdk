@@ -113,7 +113,7 @@ wfx_wifi_scan_ext_t temp_reset;
 osSemaphoreId_t sScanCompleteSemaphore;
 osMutexId_t sScanInProgressSemaphore;
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER &&
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
 constexpr uint32_t kLitConnectWaitTimeoutTicks = 120000;
 osSemaphoreId_t sLitConnectCompleteSemaphore   = nullptr;
 #endif
@@ -963,7 +963,6 @@ void WifiInterfaceImpl::CompleteLitConnectWait(CHIP_ERROR err)
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
-#if CHIP_CONFIG_ENABLE_ICD_LIT
     mLitIntentionalSleepDisconnect = false;
     ResetConnectionRetryInterval();
 
@@ -1000,18 +999,13 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
     }
 
     return mLitConnectCompletionResult;
-#else
-    return CHIP_NO_ERROR;
-#endif
 }
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
 {
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
-#if CHIP_CONFIG_ENABLE_ICD_LIT
     mLitIntentionalSleepDisconnect = true;
     TriggerPlatformWifiDisconnection();
-#endif
     return CHIP_NO_ERROR;
 }
 #endif // CHIP_CONFIG_ENABLE_ICD_LIT
