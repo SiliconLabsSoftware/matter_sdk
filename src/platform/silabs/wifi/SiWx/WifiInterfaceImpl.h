@@ -25,23 +25,25 @@ namespace Silabs {
  * @brief WifiInterface implementation for the SiWx platform
  *
  */
-class WifiInterfaceImpl final : public WifiInterface {
+class WifiInterfaceImpl final : public WifiInterface
+{
 public:
-    enum class WifiPlatformEvent : uint8_t {
-        kStationConnect = 0,
-        kStationDisconnect = 1,
-        kAPStart = 2,
-        kAPStop = 3,
-        kStationStartScan = 5,
-        kStationStartJoin = 6,
+    enum class WifiPlatformEvent : uint8_t
+    {
+        kStationConnect     = 0,
+        kStationDisconnect  = 1,
+        kAPStart            = 2,
+        kAPStop             = 3,
+        kStationStartScan   = 5,
+        kStationStartJoin   = 6,
         kConnectionComplete = 7, /* This combines the DHCP and Notify */
-        kStationDhcpDone = 8,
-        kStationDhcpPoll = 9,
+        kStationDhcpDone    = 8,
+        kStationDhcpPoll    = 9,
     };
 
     static WifiInterfaceImpl & GetInstance() { return mInstance; }
 
-    WifiInterfaceImpl(const WifiInterfaceImpl &) = delete;
+    WifiInterfaceImpl(const WifiInterfaceImpl &)             = delete;
     WifiInterfaceImpl & operator=(const WifiInterfaceImpl &) = delete;
 
     /*
@@ -123,7 +125,7 @@ protected:
     void ResetConnectivityNotificationFlags();
 
 private:
-    WifiInterfaceImpl() = default;
+    WifiInterfaceImpl()  = default;
     ~WifiInterfaceImpl() = default;
 
     /**
@@ -160,13 +162,13 @@ private:
     void NotifySuccessfulConnection();
 
     bool mHasNotifiedWifiConnectivity = false;
-    bool mUseQuickJoin = false;
+    bool mUseQuickJoin                = false;
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
     // Intentional LIT disconnect: suppress exponential reconnect until ConfigureLITConnect().
     bool mLitIntentionalSleepDisconnect = false;
 
-    bool mLitConnectCompletionPending = false;
+    bool mLitConnectCompletionPending      = false;
     CHIP_ERROR mLitConnectCompletionResult = CHIP_NO_ERROR;
 
     void CompleteLitConnectWait(CHIP_ERROR err);

@@ -31,7 +31,8 @@ namespace Silabs {
 class ApplicationSleepManager : public chip::app::ReadHandler::ApplicationCallback,
                                 public chip::DeviceLayer::Silabs::WifiSleepManager::ApplicationCallback,
                                 public chip::FabricTable::Delegate,
-                                public chip::app::ICDStateObserver {
+                                public chip::app::ICDStateObserver
+{
 public:
     static ApplicationSleepManager & GetInstance() { return mInstance; }
 
@@ -139,10 +140,10 @@ public:
     void OnICDModeChange() override;
 
 private:
-    ApplicationSleepManager() = default;
+    ApplicationSleepManager()  = default;
     ~ApplicationSleepManager() = default;
 
-    ApplicationSleepManager(const ApplicationSleepManager &) = delete;
+    ApplicationSleepManager(const ApplicationSleepManager &)             = delete;
     ApplicationSleepManager & operator=(const ApplicationSleepManager &) = delete;
 
     /**
@@ -157,13 +158,13 @@ private:
     bool ProcessVendorIdExceptions(chip::VendorId vendorId);
 
     static ApplicationSleepManager mInstance;
-    chip::FabricTable * mFabricTable = nullptr;
+    chip::FabricTable * mFabricTable                                  = nullptr;
     chip::app::SubscriptionsInfoProvider * mSubscriptionsInfoProvider = nullptr;
-    chip::CommissioningWindowManager * mCommissioningWindowManager = nullptr;
-    chip::DeviceLayer::Silabs::WifiSleepManager * mWifiSleepManager = nullptr;
+    chip::CommissioningWindowManager * mCommissioningWindowManager    = nullptr;
+    chip::DeviceLayer::Silabs::WifiSleepManager * mWifiSleepManager   = nullptr;
 
     bool mIsCommissionningWindowOpen = false;
-    bool mIsInActiveMode = false;
+    bool mIsInActiveMode             = false;
 };
 
 } // namespace Silabs

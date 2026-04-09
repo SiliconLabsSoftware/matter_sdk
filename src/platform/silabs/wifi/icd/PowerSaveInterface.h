@@ -27,14 +27,16 @@ namespace Silabs {
  * @brief Power Save Platform Interface for Wi-Fi platforms
  *
  */
-class PowerSaveInterface {
+class PowerSaveInterface
+{
 public:
     virtual ~PowerSaveInterface() = default;
 
-    enum class PowerSaveConfiguration : uint8_t {
-        kHighPerformance = 0,
-        kDeepSleep = 1,
-        kConnectedSleep = 2,
+    enum class PowerSaveConfiguration : uint8_t
+    {
+        kHighPerformance  = 0,
+        kDeepSleep        = 1,
+        kConnectedSleep   = 2,
         kLIConnectedSleep = 3,
         // Optional LIT path: disconnect from AP then deep sleep (see CHIP_CONFIG_ENABLE_ICD_LIT).
         kLITDisconnectSleep = 4,

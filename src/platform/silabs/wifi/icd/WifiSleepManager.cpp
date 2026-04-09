@@ -238,7 +238,7 @@ void WifiSleepManager::DoStartLitPrecheckInReconnectTimer()
 {
     const uint32_t idleSec   = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
     const uint32_t activeSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
-    const uint32_t delaySec = (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeSec - kLitPrecheckInMarginSeconds) : 1u;
+    const uint32_t delaySec  = (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeSec - kLitPrecheckInMarginSeconds) : 1u;
     const System::Clock::Milliseconds32 delayMs(delaySec * 1000u);
 
     DeviceLayer::SystemLayer().CancelTimer(OnLitPrecheckInReconnectTimerFired, nullptr);

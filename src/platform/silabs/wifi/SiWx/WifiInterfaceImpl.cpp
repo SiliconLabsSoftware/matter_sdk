@@ -168,7 +168,7 @@ const sl_wifi_device_configuration_t config = {
 #endif                                                                         // RSI_BT_GATT_ON_CLASSIC
                                             ),
 #else
-                     .bt_feature_bit_map = 0,
+                     .bt_feature_bit_map         = 0,
 #endif
 #ifdef RSI_PROCESS_MAX_RX_DATA
                      .ext_tcp_ip_feature_bit_map =
@@ -209,8 +209,8 @@ const sl_wifi_device_configuration_t config = {
 #endif
                                                  ),
 #else
-                     .ble_feature_bit_map     = 0,
-                     .ble_ext_feature_bit_map = 0,
+                     .ble_feature_bit_map        = 0,
+                     .ble_ext_feature_bit_map    = 0,
 #endif
                      .config_feature_bit_map = (SL_SI91X_FEAT_SLEEP_GPIO_SEL_BITMAP | RSI_CONFIG_FEATURE_BITMAP) }
 };
