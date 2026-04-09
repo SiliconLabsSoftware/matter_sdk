@@ -109,3 +109,6 @@
 
 // Enable groupcast
 #define CHIP_CONFIG_ENABLE_GROUPCAST 1
+
+// Pigweed button RPC in examples/platform/silabs/Rpc.cpp must use CommonAppTask::ButtonEventHandler with AppTaskImpl (CRTP).
+#define CHIP_SILABS_APP_USE_COMMON_APP_TASK
