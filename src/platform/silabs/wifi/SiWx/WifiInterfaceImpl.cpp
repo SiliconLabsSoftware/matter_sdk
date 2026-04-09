@@ -102,7 +102,7 @@ constexpr osThreadAttr_t kWlanTaskAttr = { .name       = "wlan_rsi",
                                            .cb_size    = osThreadCbSize,
                                            .stack_mem  = wlanStack,
                                            .stack_size = kWlanTaskSize,
-                                           .priority   = osPriorityHigh1 };
+                                           .priority   = osPriorityAboveNormal7 };
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 constexpr uint32_t kTimeToFullBeaconReception = 5000; // 5 seconds
@@ -113,8 +113,9 @@ wfx_wifi_scan_ext_t temp_reset;
 osSemaphoreId_t sScanCompleteSemaphore;
 osMutexId_t sScanInProgressSemaphore;
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
-osSemaphoreId_t sLitConnectCompleteSemaphore = nullptr;
+#if CHIP_CONFIG_ENABLE_ICD_SERVER &&
+constexpr uint32_t kLitConnectWaitTimeoutTicks = 120000;
+osSemaphoreId_t sLitConnectCompleteSemaphore   = nullptr;
 #endif
 
 osMessageQueueId_t sWifiEventQueue = nullptr;
@@ -227,11 +228,6 @@ constexpr uint8_t kWfxQueueSize = 10;
 
 // TODO: Figure out why we actually need this, we are already handling failure and retries somewhere else.
 constexpr uint16_t kWifiScanTimeoutTicks = 10000;
-
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
-// Join + SLAAC/DHCP can exceed scan; timeout units match kWifiScanTimeoutTicks (CMSIS RTOS tick).
-constexpr uint32_t kLitConnectWaitTimeoutTicks = 120000;
-#endif
 
 // Convert sl_wifi_security_t to Matter WiFiSecurityBitmap flags
 static chip::BitFlags<WiFiSecurityBitmap> ConvertSlWifiSecurityToBitmap(const sl_wifi_security_t security)
@@ -533,8 +529,8 @@ sl_status_t SetWifiConfigurations()
     {
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
-        profile.config.channel.channel = wfx_rsi.ap_chan;
-        // profile.config.channel_bitmap.channel_bitmap_2_4 = BIT((wfx_rsi.ap_chan - 1));
+        profile.config.channel.channel                   = wfx_rsi.ap_chan;
+        profile.config.channel_bitmap.channel_bitmap_2_4 = (1UL << (wfx_rsi.ap_chan - 1));
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWiFiBSSIDLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWiFiBSSIDLength);
@@ -562,7 +558,7 @@ sl_status_t SetWifiConfigurations()
  * @return sl_wifi_system_performance_profile_t SiWx Power Save Configuration; Default value is High Performance
  *                                        kHighPerformance: HIGH_PERFORMANCE
  *                                        kConnectedSleep: ASSOCIATED_POWER_SAVE
- *                                        kDeepSleep / kLITDisconnectSleep: DEEP_SLEEP_WITH_RAM_RETENTION
+ *                                        kDeepSleep: DEEP_SLEEP_WITH_RAM_RETENTION
  */
 sl_wifi_system_performance_profile_t ConvertPowerSaveConfiguration(PowerSaveInterface::PowerSaveConfiguration configuration)
 {
@@ -949,7 +945,8 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
     NotifyIPv6Change(false);
 }
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+#if CHIP_CONFIG_ENABLE_ICD_LIT
 void WifiInterfaceImpl::CompleteLitConnectWait(CHIP_ERROR err)
 {
     if (!mLitConnectCompletionPending || sLitConnectCompleteSemaphore == nullptr)
@@ -962,52 +959,6 @@ void WifiInterfaceImpl::CompleteLitConnectWait(CHIP_ERROR err)
     {
         ChipLogError(DeviceLayer, "CompleteLitConnectWait: semaphore release failed");
     }
-}
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
-
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
-{
-    ChipLogProgress(DeviceLayer, "ConfigurePowerSave **************************");
-    ChipLogProgress(DeviceLayer, "Configuration: %d", static_cast<int>(configuration));
-    ChipLogProgress(DeviceLayer, "---------------------------------------------------------");
-    // Power save configuration is already set, nothing to do
-    VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
-
-    int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
-    if (error != RSI_SUCCESS)
-    {
-        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error);
-        return CHIP_ERROR_INTERNAL;
-    }
-
-    sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
-                                                      .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
-                                                      .listen_interval   = listenInterval };
-
-    sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
-    if (status != SL_STATUS_OK)
-    {
-        ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile_v2 failed: 0x%lx", static_cast<uint32_t>(status));
-        return CHIP_ERROR_INTERNAL;
-    }
-
-    mCurrentPowerSaveConfiguration = configuration;
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilter)
-{
-    sl_status_t status = SL_STATUS_OK;
-
-    uint16_t beaconDropThreshold = (enableBroadcastFilter) ? kTimeToFullBeaconReception : 0;
-    uint8_t filterBcastInTim     = (enableBroadcastFilter) ? 1 : 0;
-
-    status = sl_wifi_filter_broadcast(beaconDropThreshold, filterBcastInTim, 1 /* valid till next update*/);
-    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "sl_wifi_filter_broadcast failed: 0x%lx", static_cast<uint32_t>(status)));
-
-    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
@@ -1061,6 +1012,41 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
     mLitIntentionalSleepDisconnect = true;
     TriggerPlatformWifiDisconnection();
 #endif
+    return CHIP_NO_ERROR;
+}
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+
+CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
+{
+    // Power save configuration is already set, nothing to do
+    VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
+
+    VerifyOrReturnError(error == RSI_SUCCESS, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error));
+
+    sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
+                                                      .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
+                                                      .listen_interval   = listenInterval };
+
+    sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
+    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile_v2 failed: 0x%lx", status));
+
+    mCurrentPowerSaveConfiguration = configuration;
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilter)
+{
+    sl_status_t status = SL_STATUS_OK;
+
+    uint16_t beaconDropThreshold = (enableBroadcastFilter) ? kTimeToFullBeaconReception : 0;
+    uint8_t filterBcastInTim     = (enableBroadcastFilter) ? 1 : 0;
+
+    status = sl_wifi_filter_broadcast(beaconDropThreshold, filterBcastInTim, 1 /* valid till next update*/);
+    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "sl_wifi_filter_broadcast failed: 0x%lx", static_cast<uint32_t>(status)));
+
     return CHIP_NO_ERROR;
 }
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER

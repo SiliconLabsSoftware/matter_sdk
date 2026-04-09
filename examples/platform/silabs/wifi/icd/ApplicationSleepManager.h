@@ -26,146 +26,146 @@
 
 namespace chip {
 namespace app {
-    namespace Silabs {
+namespace Silabs {
 
-        class ApplicationSleepManager : public chip::app::ReadHandler::ApplicationCallback,
-                                        public chip::DeviceLayer::Silabs::WifiSleepManager::ApplicationCallback,
-                                        public chip::FabricTable::Delegate,
-                                        public chip::app::ICDStateObserver {
-        public:
-            static ApplicationSleepManager & GetInstance() { return mInstance; }
+class ApplicationSleepManager : public chip::app::ReadHandler::ApplicationCallback,
+                                public chip::DeviceLayer::Silabs::WifiSleepManager::ApplicationCallback,
+                                public chip::FabricTable::Delegate,
+                                public chip::app::ICDStateObserver {
+public:
+    static ApplicationSleepManager & GetInstance() { return mInstance; }
 
-            /**
-             * @brief Init function validates that the necessary pointers where correctly set
-             *        before registering the object with the FabricTable and the WifiSleepManager.
-             *
-             *        Init function does not register with the InteractionModelEngine since depending on the whole interation model engine
-             *        complexifies unit testing when we can use the SubscriptionInfoProvider which provides the necessary APIs.
-             *
-             *
-             * @return CHIP_ERROR CHIP_NO_ERROR if the init succeed
-             *         CHIP_ERROR_INVALID_ARGUMENT, if the fabricTable, subscriptionsInfoProvider or commissioningWindowManager,
-             *                                      wifiSleepManager were not set correctly
-             *         other, if the FabricTable::AddFabricDelegate failed
-             */
-            CHIP_ERROR Init();
+    /**
+     * @brief Init function validates that the necessary pointers where correctly set
+     *        before registering the object with the FabricTable and the WifiSleepManager.
+     *
+     *        Init function does not register with the InteractionModelEngine since depending on the whole interation model engine
+     *        complexifies unit testing when we can use the SubscriptionInfoProvider which provides the necessary APIs.
+     *
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the init succeed
+     *         CHIP_ERROR_INVALID_ARGUMENT, if the fabricTable, subscriptionsInfoProvider or commissioningWindowManager,
+     *                                      wifiSleepManager were not set correctly
+     *         other, if the FabricTable::AddFabricDelegate failed
+     */
+    CHIP_ERROR Init();
 
-            ApplicationSleepManager & SetFabricTable(chip::FabricTable * fabricTable)
-            {
-                mFabricTable = fabricTable;
-                return *this;
-            }
+    ApplicationSleepManager & SetFabricTable(chip::FabricTable * fabricTable)
+    {
+        mFabricTable = fabricTable;
+        return *this;
+    }
 
-            ApplicationSleepManager & SetSubscriptionInfoProvider(chip::app::SubscriptionsInfoProvider * subscriptionsInfoProvider)
-            {
-                mSubscriptionsInfoProvider = subscriptionsInfoProvider;
-                return *this;
-            }
+    ApplicationSleepManager & SetSubscriptionInfoProvider(chip::app::SubscriptionsInfoProvider * subscriptionsInfoProvider)
+    {
+        mSubscriptionsInfoProvider = subscriptionsInfoProvider;
+        return *this;
+    }
 
-            ApplicationSleepManager & SetWifiSleepManager(chip::DeviceLayer::Silabs::WifiSleepManager * wifiSleepManager)
-            {
-                mWifiSleepManager = wifiSleepManager;
-                return *this;
-            }
+    ApplicationSleepManager & SetWifiSleepManager(chip::DeviceLayer::Silabs::WifiSleepManager * wifiSleepManager)
+    {
+        mWifiSleepManager = wifiSleepManager;
+        return *this;
+    }
 
-            /**
-             * @brief Sets the commissioning window state to open and calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
-             *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
-             *        determine in which low power state the Wi-Fi device can transition to.
-             */
-            void OnCommissioningWindowOpened();
+    /**
+     * @brief Sets the commissioning window state to open and calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
+     *        determine in which low power state the Wi-Fi device can transition to.
+     */
+    void OnCommissioningWindowOpened();
 
-            /**
-             * @brief Sets the commissioning window state to open and calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
-             *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
-             *        determine in which low power state the Wi-Fi device can transition to.
-             */
-            void OnCommissioningWindowClosed();
+    /**
+     * @brief Sets the commissioning window state to open and calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
+     *        determine in which low power state the Wi-Fi device can transition to.
+     */
+    void OnCommissioningWindowClosed();
 
-            // ReadHandler::ApplicationCallback implementation
+    // ReadHandler::ApplicationCallback implementation
 
-            /**
-             * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
-             *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
-             *        determine in which low power state the Wi-Fi device can transition to.
-             */
-            void OnSubscriptionTerminated(chip::app::ReadHandler & aReadHandler);
+    /**
+     * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
+     *        determine in which low power state the Wi-Fi device can transition to.
+     */
+    void OnSubscriptionTerminated(chip::app::ReadHandler & aReadHandler);
 
-            /**
-             * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
-             *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
-             *        determine in which low power state the Wi-Fi device can transition to.
-             */
-            void OnSubscriptionEstablished(chip::app::ReadHandler & aReadHandler);
+    /**
+     * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of then queriyng the ApplicationSleepManager to
+     *        determine in which low power state the Wi-Fi device can transition to.
+     */
+    void OnSubscriptionEstablished(chip::app::ReadHandler & aReadHandler);
 
-            CHIP_ERROR OnSubscriptionRequested(chip::app::ReadHandler & aReadHandler, chip::Transport::SecureSession & aSecureSession);
+    CHIP_ERROR OnSubscriptionRequested(chip::app::ReadHandler & aReadHandler, chip::Transport::SecureSession & aSecureSession);
 
-            // WifiSleepManager::ApplicationCallback implementation
+    // WifiSleepManager::ApplicationCallback implementation
 
-            /**
-             * @brief Application logic for LI / optional LIT disconnect sleep (see CHIP_CONFIG_ENABLE_ICD_LIT in GN).
-             *
-             *        When the GN arg is false: true selects LI sleep (associated, ICD slow poll listen interval).
-             *        When the GN arg is true: true selects LIT disconnect sleep (disconnect + deep sleep) instead of LI.
-             *
-             *        Commissioning window open or active ICD mode blocks this path (DTIM). Subscriptions / vendor rules apply as before.
-             *
-             * @return true to allow the LI or LIT-disconnect path; false for DTIM sleep
-             */
-            bool CanGoToLIBasedSleep() override;
+    /**
+     * @brief Function encapsulates the application logic to determine if the Wi-Fi device can go into LI based sleep.
+     *
+     *        - 1. Check if the commissioning window is open. If it is open, the Wi-Fi device cannot go to LI based sleep.
+     *        - 2. Check if all Fabrics have at least 1 subscription. If there is at least one fabric without a subscription, the
+     *             Wi-Fi cannot go to LI based sleep.
+     *
+     * @return true if the device can go to LI sleep
+     *         false if the device cannot go to LI sleep
+     */
+    bool CanGoToLIBasedSleep() override;
 
-            // FabricTable::Delegate implementation
+    // FabricTable::Delegate implementation
 
-            /**
-             * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
-             *        The VerifyAndTransitionToLowPowerMode function is responsible of queriyng the ApplicationSleepManager to
-             *        determine in which low power state the Wi-Fi device can transition to.
-             */
-            void OnFabricRemoved(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
+    /**
+     * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of queriyng the ApplicationSleepManager to
+     *        determine in which low power state the Wi-Fi device can transition to.
+     */
+    void OnFabricRemoved(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
 
-            /**
-             * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
-             *        The VerifyAndTransitionToLowPowerMode function is responsible of queriyng the ApplicationSleepManager to
-             *        determine in which low power state the Wi-Fi device can transition to.
-             */
-            void OnFabricCommitted(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
+    /**
+     * @brief Calls the WifiSleepManager VerifyAndTransitionToLowPowerMode.
+     *        The VerifyAndTransitionToLowPowerMode function is responsible of queriyng the ApplicationSleepManager to
+     *        determine in which low power state the Wi-Fi device can transition to.
+     */
+    void OnFabricCommitted(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
 
-            void OnFabricUpdated(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override {}
+    void OnFabricUpdated(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override {}
 
-            // ICDStateObserver implementation
-            void OnEnterActiveMode() override;
-            void OnEnterIdleMode() override;
-            void OnTransitionToIdle() override;
-            void OnICDModeChange() override;
+    // ICDStateObserver implementation
+    void OnEnterActiveMode() override;
+    void OnEnterIdleMode() override;
+    void OnTransitionToIdle() override;
+    void OnICDModeChange() override;
 
-        private:
-            ApplicationSleepManager() = default;
-            ~ApplicationSleepManager() = default;
+private:
+    ApplicationSleepManager() = default;
+    ~ApplicationSleepManager() = default;
 
-            ApplicationSleepManager(const ApplicationSleepManager &) = delete;
-            ApplicationSleepManager & operator=(const ApplicationSleepManager &) = delete;
+    ApplicationSleepManager(const ApplicationSleepManager &) = delete;
+    ApplicationSleepManager & operator=(const ApplicationSleepManager &) = delete;
 
-            /**
-             * @brief Processes special cases based on the vendor ID.
-             *
-             * This method checks if the given vendor ID has any special cases that allow
-             * the device to go to LI based sleep when the fabric associated to the vendor ID does not have an active subscription.
-             *
-             * @param vendorId The vendor ID to check for special cases.
-             * @return true if the vendor ID has a special case that allows LI based sleep, false otherwise.
-             */
-            bool ProcessVendorIdExceptions(chip::VendorId vendorId);
+    /**
+     * @brief Processes special cases based on the vendor ID.
+     *
+     * This method checks if the given vendor ID has any special cases that allow
+     * the device to go to LI based sleep when the fabric associated to the vendor ID does not have an active subscription.
+     *
+     * @param vendorId The vendor ID to check for special cases.
+     * @return true if the vendor ID has a special case that allows LI based sleep, false otherwise.
+     */
+    bool ProcessVendorIdExceptions(chip::VendorId vendorId);
 
-            static ApplicationSleepManager mInstance;
-            chip::FabricTable * mFabricTable = nullptr;
-            chip::app::SubscriptionsInfoProvider * mSubscriptionsInfoProvider = nullptr;
-            chip::CommissioningWindowManager * mCommissioningWindowManager = nullptr;
-            chip::DeviceLayer::Silabs::WifiSleepManager * mWifiSleepManager = nullptr;
+    static ApplicationSleepManager mInstance;
+    chip::FabricTable * mFabricTable = nullptr;
+    chip::app::SubscriptionsInfoProvider * mSubscriptionsInfoProvider = nullptr;
+    chip::CommissioningWindowManager * mCommissioningWindowManager = nullptr;
+    chip::DeviceLayer::Silabs::WifiSleepManager * mWifiSleepManager = nullptr;
 
-            bool mIsCommissionningWindowOpen = false;
-            bool mIsInActiveMode = false;
-        };
+    bool mIsCommissionningWindowOpen = false;
+    bool mIsInActiveMode = false;
+};
 
-    } // namespace Silabs
+} // namespace Silabs
 } // namespace app
 } // namespace chip

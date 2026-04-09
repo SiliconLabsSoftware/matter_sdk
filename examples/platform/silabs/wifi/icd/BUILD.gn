@@ -16,7 +16,6 @@
 #*****************************************************************************/
 
 import("//build_overrides/chip.gni")
-import("${chip_root}/src/platform/silabs/wifi/silabs_wifi_icd.gni")
 
 config("app-sleep-manager-config") {
   include_dirs = [ "." ]

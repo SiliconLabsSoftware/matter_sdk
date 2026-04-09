@@ -90,14 +90,15 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
-#if CHIP_CONFIG_ENABLE_ICD_LIT
     case PowerEvent::kActiveMode:
+#if CHIP_CONFIG_ENABLE_ICD_LIT
         mActiveMode = true;
 #endif
-        // No additional processing needed for these events at the moment
         break;
     case PowerEvent::kIdleMode:
+#if CHIP_CONFIG_ENABLE_ICD_LIT
         mActiveMode = false;
+#endif
         break;
 
     default:
@@ -119,17 +120,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     if (event == PowerEvent::kActiveMode)
     {
         TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(CancelLitPrecheckInTimerWork, 0);
-
-        ChipLogProgress(DeviceLayer, "VerifyAndTransitionToLowPowerMode: Active Mode");
-        ChipLogProgress(DeviceLayer, "ConfigureLITConnect **************************");
-        ChipLogProgress(DeviceLayer, "IsWifiProvisioned: %d", mWifiStateProvider->IsWifiProvisioned());
-        ChipLogProgress(DeviceLayer, "IsStationConnected: %d", mWifiStateProvider->IsStationConnected());
-        ChipLogProgress(DeviceLayer, "---------------------------------------------------------");
-
-        if (mWifiStateProvider->IsWifiProvisioned() && !mWifiStateProvider->IsStationConnected())
-        {
-            return ConfigureLITConnect();
-        }
+        ReturnErrorOnFailure(ConfigureLITConnect());
     }
 #endif
 
@@ -245,12 +236,9 @@ void WifiSleepManager::DoCancelLitPrecheckInReconnectTimer()
 
 void WifiSleepManager::DoStartLitPrecheckInReconnectTimer()
 {
-    ChipLogProgress(DeviceLayer, "DoStartLitPrecheckInReconnectTimer ********************************");
     const uint32_t idleSec   = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
     const uint32_t activeSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
-    ChipLogProgress(DeviceLayer, "idleSec: %ld, activeSec: %ld", idleSec, activeSec);
     const uint32_t delaySec = (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeSec - kLitPrecheckInMarginSeconds) : 1u;
-    ChipLogProgress(DeviceLayer, "delaySec: %ld", delaySec);
     const System::Clock::Milliseconds32 delayMs(delaySec * 1000u);
 
     DeviceLayer::SystemLayer().CancelTimer(OnLitPrecheckInReconnectTimerFired, nullptr);

@@ -20,10 +20,6 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
 
-#if !defined(CHIP_CONFIG_ENABLE_ICD_LIT)
-#error CHIP_CONFIG_ENABLE_ICD_LIT must be set by the build (GN) to 0 or 1
-#endif
-
 namespace chip {
 namespace app {
 namespace Silabs {
@@ -137,18 +133,12 @@ bool ApplicationSleepManager::ProcessVendorIdExceptions(chip::VendorId vendorId)
 
 void ApplicationSleepManager::OnEnterActiveMode()
 {
-    ChipLogProgress(AppServer, "------------------OnEnterActiveMode---------------------------");
     mIsInActiveMode = true;
-#if CHIP_CONFIG_ENABLE_ICD_LIT
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kActiveMode);
-#else
-    TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
-#endif
 }
 
 void ApplicationSleepManager::OnEnterIdleMode()
 {
-    ChipLogProgress(AppServer, "------------------OnEnterIdleMode---------------------------");
     mIsInActiveMode = false;
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode);
 }

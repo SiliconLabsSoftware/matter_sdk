@@ -16,15 +16,6 @@
 import("//build_overrides/chip.gni")
 import("${chip_root}/src/platform/silabs/wifi/silabs_wifi_icd.gni")
 
-config("silabs-wifi-lit-disconnect-define") {
-  defines = []
-  if (CHIP_CONFIG_ENABLE_ICD_LIT) {
-    defines += [ "CHIP_CONFIG_ENABLE_ICD_LIT=1" ]
-  } else {
-    defines += [ "CHIP_CONFIG_ENABLE_ICD_LIT=0" ]
-  }
-}
-
 source_set("power-save-interface") {
   sources = [ "${chip_root}/src/platform/silabs/wifi/icd/PowerSaveInterface.h" ]
 
@@ -41,9 +32,6 @@ source_set("wifi-sleep-manager") {
     ":power-save-interface",
     "${chip_root}/src/app/icd/server:configuration-data",
     "${chip_root}/src/lib/core",
-    "${chip_root}/src/platform:platform_base",
     "${chip_root}/src/platform/silabs/wifi:state-provider",
   ]
-
-  public_configs = [ ":silabs-wifi-lit-disconnect-define" ]
 }
