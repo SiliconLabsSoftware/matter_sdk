@@ -344,3 +344,7 @@
 	url = https://github.com/bouffalolab/bouffalo_sdk.git
 	branch = main
 	platforms = bouffalolab
+[submodule "third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk"]
+	path = third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk
+	url = https://github.com/aws/ota-for-aws-iot-embedded-sdk.git
+	platforms = silabs
