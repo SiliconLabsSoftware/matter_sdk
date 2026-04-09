@@ -72,8 +72,11 @@ public:
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) override;
     CHIP_ERROR ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval) override;
-
-    #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+    CHIP_ERROR ConfigureLITConnect() override;
+    CHIP_ERROR ConfigureLITDisconnect() override;
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 public:
     /**
