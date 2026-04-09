@@ -106,3 +106,6 @@
  *
  */
 #define CHIP_CONFIG_MRP_LOCAL_ACTIVE_RETRY_INTERVAL (2000_ms32)
+
+// Pigweed button RPC in examples/platform/silabs/Rpc.cpp must use CommonAppTask::ButtonEventHandler with AppTaskImpl (CRTP).
+#define CHIP_SILABS_APP_USE_COMMON_APP_TASK
