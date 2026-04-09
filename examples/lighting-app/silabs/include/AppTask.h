@@ -30,7 +30,10 @@
 #endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 #include "AppEvent.h"
 #include "BaseApplication.h"
-#include "LightingManager.h"
+
+#include <app/ConcreteAttributePath.h>
+#include <app/clusters/on-off-server/on-off-server.h>
+#include <app/persistence/DeferredAttributePersistenceProvider.h>
 #include <ble/Ble.h>
 #include <cmsis_os2.h>
 #include <lib/core/CHIPError.h>
@@ -58,7 +61,27 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    enum Action_t
+    {
+        ON_ACTION = 0,
+        OFF_ACTION,
+        LEVEL_ACTION,
+        COLOR_ACTION_HSV,
+        COLOR_ACTION_CT,
+        COLOR_ACTION_XY,
+
+        INVALID_ACTION
+    };
+
+    enum State_t
+    {
+        kState_OffInitiated = 0,
+        kState_OffCompleted,
+        kState_OnInitiated,
+        kState_OnCompleted,
+    };
+
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -78,16 +101,35 @@ public:
      *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
-    void PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction);
+    void PostLightActionRequest(int32_t aActor, Action_t aAction);
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-    void PostLightControlActionRequest(int32_t aActor, LightingManager::Action_t aAction, RGBLEDWidget::ColorData_t * aValue);
+    void PostLightControlActionRequest(int32_t aActor, Action_t aAction, RGBLEDWidget::ColorData_t * aValue);
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
 
-private:
-    static AppTask sAppTask;
+    CHIP_ERROR InitLight();
+    bool IsLightOn() const;
+    void EnableAutoTurnOff(bool aOn);
+    void SetAutoTurnOffDuration(uint32_t aDurationInSecs);
+    bool IsActionInProgress() const;
+    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    bool InitiateLightCtrlAction(int32_t aActor, Action_t aAction, uint32_t aAttributeId, uint8_t * value);
+#endif
+    static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
-    static void ActionInitiated(LightingManager::Action_t aAction, int32_t aActor, uint8_t * value);
-    static void ActionCompleted(LightingManager::Action_t aAction);
+    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                             uint16_t size, uint8_t * value);
+
+protected:
+    virtual void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
+    virtual void OnLightActionCompleted(Action_t aAction);
+    virtual void StartLightTimer(uint32_t aTimeoutMs);
+    virtual void CancelLightTimer();
+    static void LightTimerEventHandler(void * timerCbArg);
+    static void AutoTurnOffTimerEventHandler(AppEvent * aEvent);
+    static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);
+    static void OffEffectTimerEventHandler(AppEvent * aEvent);
+
     static void LightActionEventHandler(AppEvent * aEvent);
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     static void LightControlEventHandler(AppEvent * aEvent);
@@ -95,27 +137,26 @@ private:
 
     static void UpdateClusterState(intptr_t context);
 
-    /**
-     * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
-     *
-     * @return CHIP_ERROR
-     */
     CHIP_ERROR AppInit() override;
 
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
-     *
-     * @param aEvent button event being processed
-     */
     static void ButtonHandler(AppEvent * aEvent);
-
-    /**
-     * @brief PB1 Button event processing function
-     *        Function triggers a switch action sent to the CHIP task
-     *
-     * @param aEvent button event being processed
-     */
     static void SwitchActionEventHandler(AppEvent * aEvent);
+
+private:
+    chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
+
+    State_t mLightState;
+    uint8_t mCurrentLevel = 254;
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    uint8_t mCurrentHue        = 0;
+    uint8_t mCurrentSaturation = 0;
+    uint16_t mCurrentX         = 0;
+    uint16_t mCurrentY         = 0;
+    uint16_t mCurrentCTMireds  = 250;
+#endif
+    bool mAutoTurnOff             = false;
+    uint32_t mAutoTurnOffDuration = 0;
+    bool mAutoTurnOffTimerArmed   = false;
+    bool mOffEffectArmed          = false;
+    osTimerId_t mLightTimer       = nullptr;
 };
