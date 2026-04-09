@@ -18,14 +18,7 @@
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
-#include <platform/PlatformManager.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
-#include <system/SystemClock.h>
-#include <system/SystemLayer.h>
-
-#if !defined(CHIP_CONFIG_ENABLE_ICD_LIT)
-#error CHIP_CONFIG_ENABLE_ICD_LIT must be set by the build (GN) to 0 or 1
-#endif
 
 using namespace chip::DeviceLayer::Silabs;
 

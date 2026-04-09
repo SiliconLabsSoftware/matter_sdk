@@ -233,20 +233,13 @@ private:
      */
     CHIP_ERROR ConfigureLIBasedSleep();
 
-    /**
-     * @brief LIT disconnect sleep: enable broadcast filter then request kLITDisconnectSleep (disconnect + deep profile).
-     *        When CHIP_CONFIG_ENABLE_ICD_LIT is 0, returns CHIP_NO_ERROR without configuring.
-     */
-    CHIP_ERROR ConfigureLITDisconnectSleep();
-
+#if CHIP_CONFIG_ENABLE_ICD_LIT
     /**
      * @brief LIT path: intentional STA disconnect only (see PowerSaveInterface::ConfigureLITDisconnect).
      */
     CHIP_ERROR ConfigureLITDisconnect();
 
     CHIP_ERROR ConfigureLITConnect();
-
-#if CHIP_CONFIG_ENABLE_ICD_LIT
     /**
      * Margin before end of mode-based idle interval to bring Wi-Fi up for ICD traffic (check-in / reports).
      */

@@ -14,7 +14,6 @@
 # TODO: Once the WifiInterface refactor is done and becomes a class, we will inject an interface instead of having them in same source_set
 
 import("//build_overrides/chip.gni")
-import("${chip_root}/src/platform/silabs/wifi/silabs_wifi_icd.gni")
 
 source_set("power-save-interface") {
   sources = [ "${chip_root}/src/platform/silabs/wifi/icd/PowerSaveInterface.h" ]
