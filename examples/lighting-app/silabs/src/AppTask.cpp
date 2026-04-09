@@ -99,7 +99,6 @@ using namespace ::chip::DeviceLayer;
 
 CHIP_ERROR AppTask::AppInit()
 {
-    SILABS_LOG("AppTask: default implementation (AppInit)");
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
 
@@ -315,7 +314,6 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
-    SILABS_LOG("AppTask: default implementation (ButtonEventHandler)");
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
@@ -334,7 +332,6 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
 void AppTask::OnLightActionInitiated(AppTask::Action_t aAction, int32_t aActor, uint8_t * aValue)
 {
-    SILABS_LOG("AppTask: default implementation (OnLightActionInitiated)");
     if (aAction == LEVEL_ACTION)
     {
         VerifyOrReturn(aValue != nullptr);
@@ -360,7 +357,6 @@ void AppTask::OnLightActionInitiated(AppTask::Action_t aAction, int32_t aActor, 
 
 void AppTask::OnLightActionCompleted(AppTask::Action_t aAction)
 {
-    SILABS_LOG("AppTask: default implementation (OnLightActionCompleted)");
     if (aAction == ON_ACTION)
     {
         SILABS_LOG("Light ON")
