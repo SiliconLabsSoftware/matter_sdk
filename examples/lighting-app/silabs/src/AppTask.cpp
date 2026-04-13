@@ -466,15 +466,15 @@ void AppTask::LightTimerEventHandler(void * timerCbArg)
     event.TimerEvent.Context = task;
     if (task->mAutoTurnOffTimerArmed)
     {
-        event.Handler = AutoTurnOffTimerEventHandler;
+        event.Handler = CommonAppTask::AutoTurnOffTimerEventHandler;
     }
     else if (task->mOffEffectArmed)
     {
-        event.Handler = OffEffectTimerEventHandler;
+        event.Handler = CommonAppTask::OffEffectTimerEventHandler;
     }
     else
     {
-        event.Handler = ActuatorMovementTimerEventHandler;
+        event.Handler = CommonAppTask::ActuatorMovementTimerEventHandler;
     }
     AppTask::GetAppTask().PostEvent(&event);
 }

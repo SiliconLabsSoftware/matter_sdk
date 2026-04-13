@@ -123,11 +123,12 @@ public:
     /** Public so AppTask.cpp can pass this pointer to ScheduleWork; dispatches to UpdateClusterStateImpl. */
     static void UpdateClusterState(intptr_t context) { CRTP_APP_TASK(Derived).UpdateClusterStateImpl(context); }
 
-protected:
-    /**
-     * Static callbacks: forward to Derived::*Impl() via CRTP_APP_TASK.
-     * Override the corresponding *Impl() in Derived to customize.
-     */
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    /** Public so AppTask.cpp can assign this handler; dispatches to LightControlEventHandlerImpl. */
+    static void LightControlEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightControlEventHandlerImpl(aEvent); }
+#endif
+
+    /** Public so AppTask.cpp can assign these handlers in LightTimerEventHandler; dispatch to *Impl. */
     static void AutoTurnOffTimerEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).AutoTurnOffTimerEventHandlerImpl(aEvent); }
 
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent)
@@ -137,10 +138,11 @@ protected:
 
     static void OffEffectTimerEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).OffEffectTimerEventHandlerImpl(aEvent); }
 
-#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-    static void LightControlEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightControlEventHandlerImpl(aEvent); }
-#endif
-
+protected:
+    /**
+     * Static callbacks: forward to Derived::*Impl() via CRTP_APP_TASK.
+     * Override the corresponding *Impl() in Derived to customize.
+     */
     static void ButtonHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).ButtonHandlerImpl(aEvent); }
 
     static void SwitchActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).SwitchActionEventHandlerImpl(aEvent); }
