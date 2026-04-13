@@ -37,6 +37,12 @@
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
 
+#ifdef ENABLE_CHIP_SHELL
+#if defined(CHIP_CONFIG_ENABLE_READ_CLIENT) && CHIP_CONFIG_ENABLE_READ_CLIENT
+#include <shell/im/IMShellCommands.h> // nogncheck
+#endif                                // CHIP_CONFIG_ENABLE_READ_CLIENT
+#endif                                // ENABLE_CHIP_SHELL
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #include <app/icd/server/ICDNotifier.h> // nogncheck
 #ifdef ENABLE_CHIP_SHELL
@@ -44,11 +50,9 @@
 #endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
-#if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
 #endif // ENABLE_CHIP_SHELL
-#endif // SL_USE_INTERNAL_BLE_SIDE_CHANNEL
 
 #include <assert.h>
 #include <headers/ProvisionManager.h>
@@ -404,15 +408,16 @@ CHIP_ERROR BaseApplication::BaseInit()
 #endif // ENABLE_WSTK_LEDS
 
 #ifdef ENABLE_CHIP_SHELL
+#if defined(CHIP_CONFIG_ENABLE_READ_CLIENT) && CHIP_CONFIG_ENABLE_READ_CLIENT
+    IMShellCommands::RegisterCommands();
+#endif // CHIP_CONFIG_ENABLE_READ_CLIENT
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     ICDCommands::RegisterCommands();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #if MATTER_TRACING_ENABLED
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
-#if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
     BLEShellCommands::RegisterCommands();
-#endif // SL_USE_INTERNAL_BLE_SIDE_CHANNEL
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED

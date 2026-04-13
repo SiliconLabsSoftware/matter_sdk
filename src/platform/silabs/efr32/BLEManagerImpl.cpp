@@ -176,7 +176,6 @@ CHIP_ERROR BLEManagerImpl::_Init()
 #if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
     ReturnErrorOnFailure(sBleSideChannel.Init());
     BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
-    BLEMgrImpl().SideChannelConfigureAdvertisingDefaultData();
 #endif
 
     RETURN_SAFELY_IGNORED PlatformMgr().ScheduleWork(DriveBLEState, 0);
@@ -195,6 +194,17 @@ uint16_t BLEManagerImpl::_NumConnections(void)
     }
 
     return numCons;
+}
+
+CHIP_ERROR BLEManagerImpl::PrintBLEInfo() const
+{
+    ChipLogProgress(DeviceLayer, "BLE Info:");
+    ChipLogProgress(DeviceLayer, "  Service Mode: %d", mServiceMode);
+    ChipLogProgress(DeviceLayer, "  Device Name: %s", mDeviceName);
+    ChipLogProgress(DeviceLayer, "  Random Static Address: %02X:%02X:%02X:%02X:%02X:%02X", randomizedAddr.addr[5],
+                    randomizedAddr.addr[4], randomizedAddr.addr[3], randomizedAddr.addr[2], randomizedAddr.addr[1],
+                    randomizedAddr.addr[0]);
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR BLEManagerImpl::_SetAdvertisingEnabled(bool val)
@@ -516,9 +526,9 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
             err = MapBLEError(ret);
             ChipLogError(DeviceLayer, "sl_bt_advertiser_set_random_address() failed: %" CHIP_ERROR_FORMAT, err.Format());
         });
-        ChipLogDetail(DeviceLayer, "BLE Static Device Address %02X:%02X:%02X:%02X:%02X:%02X", randomizedAddr.addr[5],
-                      randomizedAddr.addr[4], randomizedAddr.addr[3], randomizedAddr.addr[2], randomizedAddr.addr[1],
-                      randomizedAddr.addr[0]);
+        ChipLogProgress(DeviceLayer, "BLE Static Device Address %02X:%02X:%02X:%02X:%02X:%02X", randomizedAddr.addr[5],
+                        randomizedAddr.addr[4], randomizedAddr.addr[3], randomizedAddr.addr[2], randomizedAddr.addr[1],
+                        randomizedAddr.addr[0]);
     }
 
     ret = sl_bt_legacy_advertiser_set_data(mAdvertisingSetHandle, sl_bt_advertiser_advertising_data_packet, index,
@@ -719,12 +729,9 @@ CHIP_ERROR BLEManagerImpl::InjectSideChannel(BLEChannel * channel)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertising(ByteSpan advData, ByteSpan responseData, uint32_t intervalMin,
-                                                           uint32_t intervalMax, uint16_t duration, uint8_t maxEvents)
+CHIP_ERROR BLEManagerImpl::SideChannelConfigureAdvertising(const AdvConfigStruct & config)
 {
     VerifyOrReturnError(mBleSideChannel != nullptr, CHIP_ERROR_INCORRECT_STATE);
-    AdvConfigStruct config = { advData,  responseData, intervalMin, intervalMax, sl_bt_advertiser_connectable_scannable,
-                               duration, maxEvents };
     return mBleSideChannel->ConfigureAdvertising(config);
 }
 
