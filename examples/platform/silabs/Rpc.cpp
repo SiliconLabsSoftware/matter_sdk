@@ -17,10 +17,10 @@
  */
 
 #include "AppTask.h"
-#include <CHIPProjectConfig.h>
 #include "PigweedLoggerMutex.h"
 #include "pigweed/RpcService.h"
 #include "pw_sys_io_efr32/init.h"
+#include <CHIPProjectConfig.h>
 #include <cmsis_os2.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_cmsis_os2_common.h>
