@@ -117,14 +117,14 @@ public:
 #endif
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
-    virtual void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                             uint16_t size, uint8_t * value);
+    void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                     uint16_t size, uint8_t * value);
 
 protected:
-    virtual void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
-    virtual void OnLightActionCompleted(Action_t aAction);
-    virtual void StartLightTimer(uint32_t aTimeoutMs);
-    virtual void CancelLightTimer();
+    void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
+    void OnLightActionCompleted(Action_t aAction);
+    void StartLightTimer(uint32_t aTimeoutMs);
+    void CancelLightTimer();
     static void LightTimerEventHandler(void * timerCbArg);
     static void AutoTurnOffTimerEventHandler(AppEvent * aEvent);
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);

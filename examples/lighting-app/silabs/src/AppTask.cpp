@@ -405,7 +405,7 @@ bool AppTask::InitiateAction(int32_t aActor, AppTask::Action_t aAction, uint8_t 
         new_state        = kState_OnInitiated;
         if (mOffEffectArmed)
         {
-            CancelLightTimer();
+            CommonAppTask::GetAppTask().CancelLightTimer();
             mOffEffectArmed = false;
         }
     }
@@ -416,7 +416,7 @@ bool AppTask::InitiateAction(int32_t aActor, AppTask::Action_t aAction, uint8_t 
         if (mAutoTurnOffTimerArmed)
         {
             mAutoTurnOffTimerArmed = false;
-            CancelLightTimer();
+            CommonAppTask::GetAppTask().CancelLightTimer();
         }
     }
     else if (aAction == LEVEL_ACTION)
@@ -426,13 +426,13 @@ bool AppTask::InitiateAction(int32_t aActor, AppTask::Action_t aAction, uint8_t 
 
     if (action_initiated && (aAction == ON_ACTION || aAction == OFF_ACTION))
     {
-        StartLightTimer(ACTUATOR_MOVEMENT_PERIOD_MS);
+        CommonAppTask::GetAppTask().StartLightTimer(ACTUATOR_MOVEMENT_PERIOD_MS);
         mLightState = new_state;
     }
 
     if (action_initiated)
     {
-        OnLightActionInitiated(aAction, aActor, aValue);
+        CommonAppTask::GetAppTask().OnLightActionInitiated(aAction, aActor, aValue);
     }
 
     return action_initiated;
@@ -533,11 +533,11 @@ void AppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
 
     if (actionCompleted != INVALID_ACTION)
     {
-        task->OnLightActionCompleted(actionCompleted);
+        CommonAppTask::GetAppTask().OnLightActionCompleted(actionCompleted);
 
         if (task->mAutoTurnOff && actionCompleted == ON_ACTION)
         {
-            task->StartLightTimer(task->mAutoTurnOffDuration * 1000);
+            CommonAppTask::GetAppTask().StartLightTimer(task->mAutoTurnOffDuration * 1000);
             task->mAutoTurnOffTimerArmed = true;
             SILABS_LOG("Auto Turn off enabled. Will be triggered in %u seconds", task->mAutoTurnOffDuration);
         }
@@ -580,7 +580,7 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
     }
 
     AppTask::GetAppTask().mOffEffectArmed = true;
-    AppTask::GetAppTask().StartLightTimer(offEffectDuration);
+    CommonAppTask::GetAppTask().StartLightTimer(offEffectDuration);
 }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
