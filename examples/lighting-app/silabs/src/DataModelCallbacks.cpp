@@ -134,7 +134,8 @@ void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::Concr
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                     uint8_t * value)
 {
-    AppTask::GetAppTask().DmCallbackMatterPostAttributeChangeCallback(attributePath, type, size, value);
+    // CommonAppTask& so AppTaskImpl::DmCallbackMatterPostAttributeChangeCallback (CRTP) is used, not AppTask:: (static AppTask&).
+    CommonAppTask::GetAppTask().DmCallbackMatterPostAttributeChangeCallback(attributePath, type, size, value);
 }
 
 /** @brief OnOff Cluster Init
