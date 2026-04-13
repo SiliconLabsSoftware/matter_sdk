@@ -98,6 +98,23 @@ public:
         CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, ButtonEventHandler, button, btnAction);
     }
 
+    void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                     uint16_t size, uint8_t * value)
+    {
+        CRTP_THIS(Derived)->DmCallbackMatterPostAttributeChangeCallbackImpl(attributePath, type, size, value);
+    }
+
+    void OnLightActionInitiated(AppTask::Action_t aAction, int32_t aActor, uint8_t * aValue)
+    {
+        CRTP_THIS(Derived)->OnLightActionInitiatedImpl(aAction, aActor, aValue);
+    }
+
+    void OnLightActionCompleted(AppTask::Action_t aAction) { CRTP_THIS(Derived)->OnLightActionCompletedImpl(aAction); }
+
+    void StartLightTimer(uint32_t aTimeoutMs) { CRTP_THIS(Derived)->StartLightTimerImpl(aTimeoutMs); }
+
+    void CancelLightTimer() { CRTP_THIS(Derived)->CancelLightTimerImpl(); }
+
     static void AppTaskMain(void * pvParameter) { CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, AppTaskMain, pvParameter); }
 
     static void LightTimerEventHandler(void * timerCbArg) { CRTP_APP_TASK(Derived).LightTimerEventHandlerImpl(timerCbArg); }
@@ -106,20 +123,9 @@ public:
 
 protected:
     /**
-     * AppTask overrides and static callbacks: forward to Derived::*Impl() via CRTP_THIS / CRTP_APP_TASK.
+     * Static callbacks: forward to Derived::*Impl() via CRTP_APP_TASK.
      * Override the corresponding *Impl() in Derived to customize.
      */
-    void OnLightActionInitiated(AppTask::Action_t aAction, int32_t aActor, uint8_t * aValue) override
-    {
-        CRTP_THIS(Derived)->OnLightActionInitiatedImpl(aAction, aActor, aValue);
-    }
-
-    void OnLightActionCompleted(AppTask::Action_t aAction) override { CRTP_THIS(Derived)->OnLightActionCompletedImpl(aAction); }
-
-    void StartLightTimer(uint32_t aTimeoutMs) override { CRTP_THIS(Derived)->StartLightTimerImpl(aTimeoutMs); }
-
-    void CancelLightTimer() override { CRTP_THIS(Derived)->CancelLightTimerImpl(); }
-
     static void AutoTurnOffTimerEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).AutoTurnOffTimerEventHandlerImpl(aEvent); }
 
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent)
@@ -138,12 +144,6 @@ protected:
     static void ButtonHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).ButtonHandlerImpl(aEvent); }
 
     static void SwitchActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).SwitchActionEventHandlerImpl(aEvent); }
-
-    void DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                     uint16_t size, uint8_t * value) override
-    {
-        CRTP_THIS(Derived)->DmCallbackMatterPostAttributeChangeCallbackImpl(attributePath, type, size, value);
-    }
 
 private:
     friend Derived;
