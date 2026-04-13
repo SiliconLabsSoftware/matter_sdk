@@ -138,14 +138,7 @@ public:
 
     static void OffEffectTimerEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).OffEffectTimerEventHandlerImpl(aEvent); }
 
-protected:
-    /**
-     * Static callbacks: forward to Derived::*Impl() via CRTP_APP_TASK.
-     * Override the corresponding *Impl() in Derived to customize.
-     */
-    static void ButtonHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).ButtonHandlerImpl(aEvent); }
-
-    static void SwitchActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).SwitchActionEventHandlerImpl(aEvent); }
+    /* Button UI events use BaseApplication::ButtonHandler (see AppTask.cpp); not CRTP-wrapped here. */
 
 private:
     friend Derived;
@@ -218,10 +211,6 @@ private:
 #endif
 
     void UpdateClusterStateImpl(intptr_t context) { AppTask::UpdateClusterState(context); }
-
-    void ButtonHandlerImpl(AppEvent * aEvent) { AppTask::ButtonHandler(aEvent); }
-
-    void SwitchActionEventHandlerImpl(AppEvent * aEvent) { AppTask::SwitchActionEventHandler(aEvent); }
 
     void DmCallbackMatterPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
                                                          uint16_t size, uint8_t * value)

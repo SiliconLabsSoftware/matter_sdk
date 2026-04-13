@@ -46,7 +46,7 @@ using namespace ::chip;
 using namespace ::chip::app::Clusters;
 
 void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                        uint16_t size, uint8_t * value)
+                                                          uint16_t size, uint8_t * value)
 {
     [[maybe_unused]] EndpointId endpointId = attributePath.mEndpointId;
     ClusterId clusterId                    = attributePath.mClusterId;
@@ -60,7 +60,7 @@ void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::Concr
         MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
 #endif // SL_MATTER_ENABLE_AWS
         CommonAppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, *value ? AppTask::ON_ACTION : AppTask::OFF_ACTION,
-                                                    value);
+                                                   value);
     }
     // WIP Apply attribute change to Light
     else if (clusterId == LevelControl::Id)
@@ -132,27 +132,27 @@ void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::Concr
 }
 
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                    uint8_t * value)
+                                       uint8_t * value)
 {
     // CommonAppTask& so AppTaskImpl::DmCallbackMatterPostAttributeChangeCallback (CRTP) is used, not AppTask:: (static AppTask&).
     CommonAppTask::GetAppTask().DmCallbackMatterPostAttributeChangeCallback(attributePath, type, size, value);
 }
 
 /** @brief OnOff Cluster Init
-*
-* This function is called when a specific cluster is initialized. It gives the
-* application an opportunity to take care of cluster initialization procedures.
-* It is called exactly once for each endpoint where cluster is present.
-*
-* @param endpoint   Ver.: always
-*
-* TODO Issue #3841
-* emberAfOnOffClusterInitCallback happens before the stack initialize the cluster
-* attributes to the default value.
-* The logic here expects something similar to the deprecated Plugins callback
-* emberAfPluginOnOffClusterServerPostInitCallback.
-*
-*/
+ *
+ * This function is called when a specific cluster is initialized. It gives the
+ * application an opportunity to take care of cluster initialization procedures.
+ * It is called exactly once for each endpoint where cluster is present.
+ *
+ * @param endpoint   Ver.: always
+ *
+ * TODO Issue #3841
+ * emberAfOnOffClusterInitCallback happens before the stack initialize the cluster
+ * attributes to the default value.
+ * The logic here expects something similar to the deprecated Plugins callback
+ * emberAfPluginOnOffClusterServerPostInitCallback.
+ *
+ */
 void emberAfOnOffClusterInitCallback(EndpointId endpoint)
 {
     // TODO: implement any additional Cluster Server init actions

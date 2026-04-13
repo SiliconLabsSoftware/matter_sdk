@@ -139,9 +139,6 @@ protected:
 
     CHIP_ERROR AppInit() override;
 
-    static void ButtonHandler(AppEvent * aEvent);
-    static void SwitchActionEventHandler(AppEvent * aEvent);
-
 private:
     chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
 
