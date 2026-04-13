@@ -30,9 +30,10 @@
 #include <app/clusters/on-off-server/on-off-server.h>
 
 /**
- * @brief CRTP base for AppTask that allows overrides for all AppTask APIs (public and protected).
+ * @brief CRTP base for AppTask that allows overrides for most AppTask APIs (public and protected).
  *
- * Override only the *Impl methods you need; all have defaults that call through to AppTask.
+ * `StartAppTask()` is not a CRTP hook; it lives only on `AppTask`. Override only the *Impl methods you need;
+ * all have defaults that call through to AppTask.
  *
  * @tparam Derived The derived class type (CRTP pattern)
  */
@@ -48,8 +49,6 @@ public:
     using Action_t = AppTask::Action_t;
 
     CHIP_ERROR AppInit() override { CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, AppInit); }
-
-    CHIP_ERROR StartAppTask() { CRTP_RETURN_AND_VERIFY(AppTaskImpl, Derived, StartAppTask); }
 
     void PostLightActionRequest(int32_t aActor, Action_t aAction)
     {
@@ -152,8 +151,6 @@ private:
      * Default *Impl() implementations: call through to AppTask. Override in Derived for custom behavior.
      */
     CHIP_ERROR AppInitImpl() { return AppTask::AppInit(); }
-
-    CHIP_ERROR StartAppTaskImpl() { return AppTask::StartAppTask(); }
 
     void PostLightActionRequestImpl(int32_t aActor, Action_t aAction) { AppTask::PostLightActionRequest(aActor, aAction); }
 

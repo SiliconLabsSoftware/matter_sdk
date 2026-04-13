@@ -102,7 +102,7 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
 
-    err = InitLight();
+    err = CommonAppTask::GetAppTask().InitLight();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("InitLight() failed");
@@ -110,12 +110,12 @@ CHIP_ERROR AppTask::AppInit()
     }
 
     sLightLED.Init(LIGHT_LED);
-    sLightLED.Set(IsLightOn());
+    sLightLED.Set(CommonAppTask::GetAppTask().IsLightOn());
     SILABS_TRACE_NAMED_INSTANT("LightOn", "Reboot");
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
-    GetLCD().WriteDemoUI(IsLightOn());
+    GetLCD().WriteDemoUI(CommonAppTask::GetAppTask().IsLightOn());
 #ifdef QR_CODE_ENABLED
 #ifdef SL_WIFI
     if (!ConnectivityMgr().IsWiFiStationProvisioned())
@@ -637,7 +637,7 @@ bool AppTask::InitiateLightCtrlAction(int32_t aActor, AppTask::Action_t aAction,
     default:
         break;
     }
-    PostLightControlActionRequest(aActor, aAction, (RGBLEDWidget::ColorData_t *) &colorData);
+    CommonAppTask::GetAppTask().PostLightControlActionRequest(aActor, aAction, (RGBLEDWidget::ColorData_t *) &colorData);
     return action_initiated;
 }
 #endif
@@ -660,7 +660,7 @@ void AppTask::PostLightControlActionRequest(int32_t aActor, AppTask::Action_t aA
     light_event.LightControlEvent.Actor  = aActor;
     light_event.LightControlEvent.Action = aAction;
     light_event.LightControlEvent.Value  = *aValue;
-    light_event.Handler                  = LightControlEventHandler;
+    light_event.Handler                  = CommonAppTask::LightControlEventHandler;
     PostEvent(&light_event);
 }
 #endif

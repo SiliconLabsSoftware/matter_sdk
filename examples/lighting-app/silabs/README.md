@@ -180,6 +180,9 @@ void CommonAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
 
 ### Override API Reference
 
+`CHIP_ERROR StartAppTask()` is declared on `AppTask` only. It is not an `*Impl()`
+hook: platform code (for example `MatterConfig`) calls `AppTask::GetAppTask().StartAppTask()` with static type `AppTask &`, which runs the implementation in `AppTask.cpp` (creating the FreeRTOS app task via `BaseApplication::StartAppTask(...)`). To change startup behavior, edit `AppTask::StartAppTask()` or `BaseApplication::StartAppTask` in your product sources.
+
 The base API and default AppTask behavior for this example are maintained under
 [`include/`](include/AppTaskImpl.h) and [`src/`](src/AppTask.cpp). Use them as
 the reference for overridable methods and app configuration.
