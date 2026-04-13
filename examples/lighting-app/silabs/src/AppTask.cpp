@@ -18,9 +18,9 @@
  */
 
 #include "AppTask.h"
-#include "CommonAppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "CommonAppTask.h"
 
 #include "LEDWidget.h"
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
@@ -286,7 +286,7 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
     status = LevelControl::Attributes::CurrentLevel::Get(LIGHT_ENDPOINT, currentlevel);
     PlatformMgr().UnlockChipStack();
     VerifyOrReturn(Protocols::InteractionModel::Status::Success == status,
-                ChipLogError(NotSpecified, "Failed to get CurrentLevel attribute"));
+                   ChipLogError(NotSpecified, "Failed to get CurrentLevel attribute"));
     if (status == Protocols::InteractionModel::Status::Success && !currentlevel.IsNull())
     {
         sLightLED.SetLevel(currentlevel.Value());
@@ -370,7 +370,7 @@ void AppTask::OnLightActionCompleted(AppTask::Action_t aAction)
     {
         // Use CommonAppTask::UpdateClusterState so scheduled work runs UpdateClusterStateImpl (CRTP), not AppTask:: only.
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(CommonAppTask::UpdateClusterState,
-                                                                            reinterpret_cast<intptr_t>(nullptr));
+                                                                               reinterpret_cast<intptr_t>(nullptr));
         mSyncClusterToButtonAction = false;
     }
 }
