@@ -368,7 +368,8 @@ void AppTask::OnLightActionCompleted(AppTask::Action_t aAction)
 
     if (mSyncClusterToButtonAction)
     {
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState,
+        // Use CommonAppTask::UpdateClusterState so scheduled work runs UpdateClusterStateImpl (CRTP), not AppTask:: only.
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(CommonAppTask::UpdateClusterState,
                                                                             reinterpret_cast<intptr_t>(nullptr));
         mSyncClusterToButtonAction = false;
     }

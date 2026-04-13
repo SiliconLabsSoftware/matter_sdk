@@ -120,6 +120,9 @@ public:
 
     static void LightActionEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightActionEventHandlerImpl(aEvent); }
 
+    /** Public so AppTask.cpp can pass this pointer to ScheduleWork; dispatches to UpdateClusterStateImpl. */
+    static void UpdateClusterState(intptr_t context) { CRTP_APP_TASK(Derived).UpdateClusterStateImpl(context); }
+
 protected:
     /**
      * Static callbacks: forward to Derived::*Impl() via CRTP_APP_TASK.
@@ -137,8 +140,6 @@ protected:
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     static void LightControlEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightControlEventHandlerImpl(aEvent); }
 #endif
-
-    static void UpdateClusterState(intptr_t context) { CRTP_APP_TASK(Derived).UpdateClusterStateImpl(context); }
 
     static void ButtonHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).ButtonHandlerImpl(aEvent); }
 
