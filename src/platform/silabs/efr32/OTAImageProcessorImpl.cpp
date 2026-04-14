@@ -217,7 +217,8 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
             return;
         }
 #endif // SL_BTLCTRL_MUX
-        WRAP_BL_DFU_CALL(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
+        // MATTER-4496 debug
+        //        WRAP_BL_DFU_CALL(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
 
 #if SL_BTLCTRL_MUX
         err = sl_wfx_host_post_bootloader_spi_transfer();
@@ -230,7 +231,8 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
 #endif // SL_BTLCTRL_MUX
         if (err)
         {
-            ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %ld", err);
+            // MATTER-4496 debug
+            //            ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %ld", err);
             imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
             SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageUpload, CHIP_ERROR_WRITE_FAILED);
             return;
@@ -405,7 +407,8 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
                 return;
             }
 #endif // SL_BTLCTRL_MUX
-            WRAP_BL_DFU_CALL(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
+            // MATTER-4496 debug
+            // WRAP_BL_DFU_CALL(err = bootloader_eraseWriteStorage(mSlotId, mWriteOffset, writeBuffer, kAlignmentBytes))
 
 #if SL_BTLCTRL_MUX
             err = sl_wfx_host_post_bootloader_spi_transfer();
@@ -417,7 +420,8 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
 #endif // SL_BTLCTRL_MUX
             if (err)
             {
-                ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %ld", err);
+                // MATTER-4496 debug
+                //  ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %ld", err);
                 imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
                 return;
             }
