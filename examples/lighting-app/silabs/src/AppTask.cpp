@@ -1,21 +1,21 @@
 /*
- *
- *    Copyright (c) 2020 Project CHIP Authors
- *    Copyright (c) 2019 Google LLC.
- *    All rights reserved.
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
+*
+*    Copyright (c) 2020 Project CHIP Authors
+*    Copyright (c) 2019 Google LLC.
+*    All rights reserved.
+*
+*    Licensed under the Apache License, Version 2.0 (the "License");
+*    you may not use this file except in compliance with the License.
+*    You may obtain a copy of the License at
+*
+*        http://www.apache.org/licenses/LICENSE-2.0
+*
+*    Unless required by applicable law or agreed to in writing, software
+*    distributed under the License is distributed on an "AS IS" BASIS,
+*    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*    See the License for the specific language governing permissions and
+*    limitations under the License.
+*/
 
 #include "AppTask.h"
 #include "AppConfig.h"
@@ -86,7 +86,7 @@ DeferredAttribute gDeferredAttributeTable[] = {
 
 OnOffEffect gEffect = {
     chip::EndpointId(LIGHT_ENDPOINT),
-    CommonAppTask::OnTriggerOffWithEffect,
+    CommonAppTask::GetAppTask().OnTriggerOffWithEffect,
     EffectIdentifierEnum::kDelayedAllOff,
     to_underlying(DelayedAllOffEffectVariantEnum::kDelayedOffFastFade),
 };
@@ -100,7 +100,7 @@ using namespace ::chip::DeviceLayer;
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::GetAppTask().ButtonEventHandler);
 
     err = CommonAppTask::GetAppTask().InitLight();
     if (err != CHIP_NO_ERROR)
@@ -134,7 +134,7 @@ CHIP_ERROR AppTask::AppInit()
 
 CHIP_ERROR AppTask::InitLight()
 {
-    mLightTimer = osTimerNew(CommonAppTask::LightTimerEventHandler, osTimerOnce, (void *) this, NULL);
+    mLightTimer = osTimerNew(CommonAppTask::GetAppTask().LightTimerEventHandler, osTimerOnce, (void *) this, NULL);
 
     if (mLightTimer == NULL)
     {
@@ -199,7 +199,7 @@ CHIP_ERROR AppTask::InitLight()
 
 CHIP_ERROR AppTask::StartAppTask()
 {
-    return BaseApplication::StartAppTask(CommonAppTask::AppTaskMain);
+    return BaseApplication::StartAppTask(CommonAppTask::GetAppTask().AppTaskMain);
 }
 
 void AppTask::AppTaskMain(void * pvParameter)
@@ -286,7 +286,7 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
     status = LevelControl::Attributes::CurrentLevel::Get(LIGHT_ENDPOINT, currentlevel);
     PlatformMgr().UnlockChipStack();
     VerifyOrReturn(Protocols::InteractionModel::Status::Success == status,
-                   ChipLogError(NotSpecified, "Failed to get CurrentLevel attribute"));
+                ChipLogError(NotSpecified, "Failed to get CurrentLevel attribute"));
     if (status == Protocols::InteractionModel::Status::Success && !currentlevel.IsNull())
     {
         sLightLED.SetLevel(currentlevel.Value());
@@ -320,7 +320,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
     if (button == APP_LIGHT_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = CommonAppTask::LightActionEventHandler;
+        button_event.Handler = CommonAppTask::GetAppTask().LightActionEventHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
@@ -370,7 +370,7 @@ void AppTask::OnLightActionCompleted(AppTask::Action_t aAction)
     {
         // Use CommonAppTask::UpdateClusterState so scheduled work runs UpdateClusterStateImpl (CRTP), not AppTask:: only.
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(CommonAppTask::UpdateClusterState,
-                                                                               reinterpret_cast<intptr_t>(nullptr));
+                                                                            reinterpret_cast<intptr_t>(nullptr));
         mSyncClusterToButtonAction = false;
     }
 }
@@ -466,15 +466,15 @@ void AppTask::LightTimerEventHandler(void * timerCbArg)
     event.TimerEvent.Context = task;
     if (task->mAutoTurnOffTimerArmed)
     {
-        event.Handler = CommonAppTask::AutoTurnOffTimerEventHandler;
+        event.Handler = CommonAppTask::GetAppTask().AutoTurnOffTimerEventHandler;
     }
     else if (task->mOffEffectArmed)
     {
-        event.Handler = CommonAppTask::OffEffectTimerEventHandler;
+        event.Handler = CommonAppTask::GetAppTask().OffEffectTimerEventHandler;
     }
     else
     {
-        event.Handler = CommonAppTask::ActuatorMovementTimerEventHandler;
+        event.Handler = CommonAppTask::GetAppTask().ActuatorMovementTimerEventHandler;
     }
     AppTask::GetAppTask().PostEvent(&event);
 }
@@ -649,7 +649,7 @@ void AppTask::PostLightActionRequest(int32_t aActor, AppTask::Action_t aAction)
     event.Type              = AppEvent::kEventType_Light;
     event.LightEvent.Actor  = aActor;
     event.LightEvent.Action = aAction;
-    event.Handler           = CommonAppTask::LightActionEventHandler;
+    event.Handler           = CommonAppTask::GetAppTask().LightActionEventHandler;
     PostEvent(&event);
 }
 
@@ -661,7 +661,7 @@ void AppTask::PostLightControlActionRequest(int32_t aActor, AppTask::Action_t aA
     light_event.LightControlEvent.Actor  = aActor;
     light_event.LightControlEvent.Action = aAction;
     light_event.LightControlEvent.Value  = *aValue;
-    light_event.Handler                  = CommonAppTask::LightControlEventHandler;
+    light_event.Handler                  = CommonAppTask::GetAppTask().LightControlEventHandler;
     PostEvent(&light_event);
 }
 #endif
