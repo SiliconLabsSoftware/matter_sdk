@@ -31,6 +31,7 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
+#include <app/clusters/relative-humidity-measurement-server/CodegenIntegration.h>
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_cmsis_os2_common.h>
@@ -86,9 +87,8 @@ void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState)
 {
     VerifyOrDieWithMsg(isInitialised, AppServer, "Sensor Action was triggered before the Sensor Manager was initialised!");
 
-    int16_t temperature            = 0;
-    uint16_t humidity              = 0;
-    MarkAttributeDirty reportState = MarkAttributeDirty::kNo;
+    int16_t temperature = 0;
+    uint16_t humidity   = 0;
 
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
     // Read sensor values
@@ -113,7 +113,10 @@ void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState)
     }
 
     DataModel::Nullable<uint16_t> currentHumidityValue;
-    RelativeHumidityMeasurement::Attributes::MeasuredValue::Get(kHumiditySensorEndpoint, currentHumidityValue);
+    if (RelativeHumidityMeasurementCluster * rhCluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint))
+    {
+        currentHumidityValue = rhCluster->GetMeasuredValue();
+    }
     if (currentHumidityValue.IsNull())
     {
         // This configures the initial value for the simulated sensor values
@@ -141,7 +144,6 @@ void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState)
     if (abs(mLastReportedTemperatureValue - temperature) > kAttributeChangeReportThreshold)
     {
         mLastReportedTemperatureValue = temperature;
-        reportState                   = MarkAttributeDirty::kIfChanged;
     }
     {
         DataModel::Nullable<int16_t> tempVal;
@@ -152,13 +154,15 @@ void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState)
     // Check if humidity change requires a report - Checks if delta with last reported value is greater
     // than kAttributeChangeReportThreshold. If it is, the attribute is marked as dirty.
     // The goal is to only report when the difference as an impact on the application behavior.
-    reportState = MarkAttributeDirty::kNo;
     if (abs(mLastReportedHumidityValue - humidity) > kAttributeChangeReportThreshold)
     {
         mLastReportedHumidityValue = humidity;
-        reportState                = MarkAttributeDirty::kIfChanged;
     }
-    RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(kHumiditySensorEndpoint, humidity, reportState);
+    {
+        DataModel::Nullable<uint16_t> humVal;
+        humVal.SetNonNull(humidity);
+        VerifyOrReturn(RelativeHumidityMeasurement::SetMeasuredValue(kHumiditySensorEndpoint, humVal) == CHIP_NO_ERROR);
+    }
 
     VerifyOrDieWithMsg(aLayer->StartTimer(kSensorReadPeriod, SensorActionTriggered, nullptr) == CHIP_NO_ERROR, AppServer,
                        "Failed to start recurring timer!");
@@ -223,8 +227,13 @@ Status GetMinMeasuredTemperature(chip::app::DataModel::Nullable<int16_t> & value
 
 Status GetMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value)
 {
-    Status status = RelativeHumidityMeasurement::Attributes::MeasuredValue::Get(kHumiditySensorEndpoint, value);
-    return status;
+    RelativeHumidityMeasurementCluster * cluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
+    if (cluster == nullptr)
+    {
+        return Status::UnsupportedEndpoint;
+    }
+    value = cluster->GetMeasuredValue();
+    return Status::Success;
 }
 
 Status GetMaxMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value)
