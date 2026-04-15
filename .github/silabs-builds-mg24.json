@@ -33,5 +33,13 @@
                 ]
             }
         ]
+    },
+    "wake-on-matter": {
+        "default": [
+            {
+                "boards": ["BRD4186C", "BRD4187C"],
+                "arguments": ["--docker"]
+            }
+        ]
     }
 }

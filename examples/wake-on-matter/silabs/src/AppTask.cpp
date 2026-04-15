@@ -117,14 +117,18 @@ CHIP_ERROR RegisterRootNodeClusters(CodeDrivenDataModelProvider & provider, Cred
     ReturnErrorOnFailure(provider.AddCluster(sDescriptorCluster.Registration()));
 
     // BasicInformation
+    const BasicInformationOptionalAttributesSet optionalAttributeSet =
+        BasicInformationOptionalAttributesSet()
+            .template Set<BasicInformation::Attributes::ManufacturingDate::Id>()
+            .template Set<BasicInformation::Attributes::PartNumber::Id>()
+            .template Set<BasicInformation::Attributes::ProductURL::Id>()
+            .template Set<BasicInformation::Attributes::ProductLabel::Id>()
+            .template Set<BasicInformation::Attributes::SerialNumber::Id>()
+            .template Set<BasicInformation::Attributes::LocalConfigDisabled::Id>()
+            .template Set<BasicInformation::Attributes::Reachable::Id>();
+
     sBasicInformationCluster.Create(
-        BasicInformationCluster::OptionalAttributesSet(),
-        BasicInformationCluster::Context{
-            .deviceInstanceInfoProvider = *GetDeviceInstanceInfoProvider(),
-            .configurationManager       = ConfigurationMgr(),
-            .platformManager            = PlatformMgr(),
-            .subscriptionsPerFabric     = InteractionModelEngine::GetInstance()->GetMinGuaranteedSubscriptionsPerFabric(),
-        });
+        optionalAttributeSet, *GetDeviceInstanceInfoProvider(), ConfigurationMgr(), PlatformMgr(), InteractionModelEngine::GetInstance()->GetMinGuaranteedSubscriptionsPerFabric());
     ReturnErrorOnFailure(provider.AddCluster(sBasicInformationCluster.Registration()));
 
     // GeneralCommissioning
