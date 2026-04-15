@@ -92,17 +92,16 @@ base declares one `*Impl()` per overridable API. Steps:
 
 ### DataModelCallbacks and CommonAppTask
 
-`DataModelCallbacks.cpp` implements existing
-data model methods for this app and forwards attribute updates into `AppTask`
-through CRTP.
+`DataModelCallbacks.cpp` implements existing data model methods for this app and
+forwards attribute updates into `AppTask` through CRTP.
 
-- **Methods that already exist in `DataModelCallbacks.cpp`** — Customize them by
-  overriding the matching `*Impl()` method in `CommonAppTask`. Do not rely on
-  editing `DataModelCallbacks.cpp` directly.
+-   **Methods that already exist in `DataModelCallbacks.cpp`** — Customize them
+    by overriding the matching `*Impl()` method in `CommonAppTask`. Do not rely
+    on editing `DataModelCallbacks.cpp` directly.
 
-- **New custom data model methods** — Add method in `CommonAppTask` directly. Do
-  not add new application logic in `DataModelCallbacks.cpp`, edits to this file
-  will not survive project upgrades
+-   **New custom data model methods** — Add method in `CommonAppTask` directly.
+    Do not add new application logic in `DataModelCallbacks.cpp`, edits to this
+    file will not survive project upgrades
 
 ### Sample Implementation
 
