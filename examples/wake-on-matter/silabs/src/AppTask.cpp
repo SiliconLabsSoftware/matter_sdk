@@ -127,8 +127,8 @@ CHIP_ERROR RegisterRootNodeClusters(CodeDrivenDataModelProvider & provider, Cred
             .template Set<BasicInformation::Attributes::LocalConfigDisabled::Id>()
             .template Set<BasicInformation::Attributes::Reachable::Id>();
 
-    sBasicInformationCluster.Create(
-        optionalAttributeSet, *GetDeviceInstanceInfoProvider(), ConfigurationMgr(), PlatformMgr(), InteractionModelEngine::GetInstance()->GetMinGuaranteedSubscriptionsPerFabric());
+    sBasicInformationCluster.Create(optionalAttributeSet, *GetDeviceInstanceInfoProvider(), ConfigurationMgr(), PlatformMgr(),
+                                    InteractionModelEngine::GetInstance()->GetMinGuaranteedSubscriptionsPerFabric());
     ReturnErrorOnFailure(provider.AddCluster(sBasicInformationCluster.Registration()));
 
     // GeneralCommissioning

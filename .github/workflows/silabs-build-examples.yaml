@@ -159,4 +159,4 @@ jobs:
         with:
             example-app: "wake-on-matter"
             output-directory: "./out/wake-on-matter"
-            build-type: "wake-on-matter"
+            build-type: "standard"
