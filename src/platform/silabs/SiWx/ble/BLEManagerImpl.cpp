@@ -134,12 +134,11 @@ void rsi_ble_add_matter_service(void)
         new_serv_resp.serv_handler, new_serv_resp.start_handle + RSI_BLE_CHARACTERISTIC_RX_VALUE_HANDLE_LOCATION,
         custom_characteristic_RX,
         RSI_BLE_ATT_PROPERTY_WRITE | RSI_BLE_ATT_PROPERTY_READ, // Set read, write, write without response
-        data,
-        sizeof(data),
+        data, sizeof(data),
 #if (SL_MATTER_GN_BUILD == 0)
-            ATT_REC_MAINTAIN_IN_HOST
+        ATT_REC_MAINTAIN_IN_HOST
 #else
-            ATT_REC_IN_HOST
+        ATT_REC_IN_HOST
 #endif // (SL_MATTER_GN_BUILD == 0)
     );
 
@@ -937,8 +936,8 @@ void BLEManagerImpl::HandleTXCharCCCDWrite(const SilabsBleWrapper::sl_wfx_msg_t 
         {
             ChipLogError(DeviceLayer, "Failed to set local CCCD att value: 0x%lx", static_cast<unsigned long>(status));
         }
-#endif  // (SL_MATTER_GN_BUILD == 0)
-        // If indications are not already enabled for the connection...
+#endif // (SL_MATTER_GN_BUILD == 0)
+       // If indications are not already enabled for the connection...
         if (!bleConnState->subscribed)
         {
             bleConnState->subscribed = 1;
