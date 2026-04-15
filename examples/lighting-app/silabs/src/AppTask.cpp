@@ -321,12 +321,12 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_LIGHT_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
         button_event.Handler = CommonAppTask::GetAppTask().LightActionEventHandler;
-        AppTask::GetAppTask().PostEvent(&button_event);
+        CommonAppTask::GetAppTask().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        AppTask::GetAppTask().PostEvent(&button_event);
+        CommonAppTask::GetAppTask().PostEvent(&button_event);
     }
 }
 
@@ -476,7 +476,7 @@ void AppTask::LightTimerEventHandler(void * timerCbArg)
     {
         event.Handler = CommonAppTask::GetAppTask().ActuatorMovementTimerEventHandler;
     }
-    AppTask::GetAppTask().PostEvent(&event);
+    CommonAppTask::GetAppTask().PostEvent(&event);
 }
 
 void AppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
@@ -580,7 +580,7 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
         }
     }
 
-    AppTask::GetAppTask().mOffEffectArmed = true;
+    CommonAppTask::GetAppTask().mOffEffectArmed = true;
     CommonAppTask::GetAppTask().StartLightTimer(offEffectDuration);
 }
 
