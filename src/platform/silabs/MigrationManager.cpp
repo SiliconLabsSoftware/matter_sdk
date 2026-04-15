@@ -50,6 +50,7 @@ static migrationData_t migrationTable[] = {
     { .migrationGroup = 3, .migrationFunc = MigrateCounterConfigs },
     { .migrationGroup = 4, .migrationFunc = MigrateHardwareVersion },
     { .migrationGroup = 5, .migrationFunc = MigrateS3Certificates },
+    { .migrationGroup = 5, .migrationFunc = MigrateManufacturingDate },
     // add any additional migration neccesary. migrationGroup should stay equal if done in the same commit or increment by 1 for
     // each new entry.
 };
@@ -232,6 +233,23 @@ void MigrateS3Certificates()
         provision.GetStorage().SetCertificationDeclaration(cdBufferSpan);
     }
 #endif //_SILICON_LABS_32B_SERIES_3
+}
+
+void MigrateManufacturingDate()
+{
+    constexpr size_t kOldDateLen = 10; // yyyy-mm-dd
+    constexpr size_t kNewDateLen = 8;  // yyyymmdd
+    char temp[kOldDateLen + 1];
+    size_t outLen = 0;
+
+    CHIP_ERROR err = SilabsConfig::ReadConfigValueStr(SilabsConfig::kConfigKey_ManufacturingDate, temp, sizeof(temp), outLen);
+    if ((CHIP_NO_ERROR == err) && (kOldDateLen == outLen) && ('-' == temp[4]) && ('-' == temp[7]))
+    {
+        char compact[kNewDateLen + 1] = { 0 };
+        snprintf(compact, sizeof(compact), "%.4s%.2s%.2s", temp, temp + 5, temp + 8);
+        TEMPORARY_RETURN_IGNORED SilabsConfig::WriteConfigValueStr(SilabsConfig::kConfigKey_ManufacturingDate, compact,
+                                                                   kNewDateLen);
+    }
 }
 
 } // namespace Silabs
