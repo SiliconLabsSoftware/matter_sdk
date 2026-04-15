@@ -9,7 +9,7 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
     -   [Implementing Custom App Behavior](#implementing-custom-app-behavior)
         -   [CommonAppTask](#commonapptask)
         -   [How to Override APIs](#how-to-override-apis)
-        -   [Required Override](#required-override)
+        -   [DataModelCallbacks and CommonAppTask](#datamodelcallbacks-and-commonapptask)
         -   [Sample Implementation](#sample-implementation)
         -   [Override API Reference](#override-api-reference)
     -   [Building](#building)
@@ -90,10 +90,18 @@ base declares one `*Impl()` per overridable API. Steps:
    implement what you need, everything else falls back to the default
    automatically.
 
-### Required Override
+### DataModelCallbacks and CommonAppTask
 
--   **`CHIP_ERROR AppInitImpl()`** — Required to override default AppTask
-    implementation.
+`DataModelCallbacks.cpp` implements existing data model methods for this app and
+forwards attribute updates into `AppTask` through CRTP.
+
+-   **Methods that already exist in `DataModelCallbacks.cpp`** — Customize them
+    by overriding the matching `*Impl()` method in `CommonAppTask`. Do not rely
+    on editing `DataModelCallbacks.cpp` directly.
+
+-   **New custom data model methods** — Add method in `CommonAppTask` directly.
+    Do not add new application logic in `DataModelCallbacks.cpp`, edits to this
+    file will not survive project upgrades
 
 ### Sample Implementation
 
