@@ -86,7 +86,7 @@ DeferredAttribute gDeferredAttributeTable[] = {
 
 OnOffEffect gEffect = {
     chip::EndpointId(LIGHT_ENDPOINT),
-    CommonAppTask::GetAppTask().OnTriggerOffWithEffect,
+    &CommonAppTask::OnTriggerOffWithEffect,
     EffectIdentifierEnum::kDelayedAllOff,
     to_underlying(DelayedAllOffEffectVariantEnum::kDelayedOffFastFade),
 };
