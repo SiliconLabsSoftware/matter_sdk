@@ -152,3 +152,11 @@ jobs:
             example-app: "closure-app"
             output-directory: "./out/closure-app"
             build-type: "standard"
+
+    build-wake-on-matter:
+        name: Build Wake-On-Matter variations
+        uses: ./.github/workflows/silabs-custom-thread-build.yaml
+        with:
+            example-app: "wake-on-matter"
+            output-directory: "./out/wake-on-matter"
+            build-type: "standard"
