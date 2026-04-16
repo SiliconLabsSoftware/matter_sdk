@@ -32,6 +32,8 @@
 #include <app/persistence/DeferredAttributePersistenceProvider.h>
 
 #include <app-common/zap-generated/attributes/Accessors.h>
+#include <app-common/zap-generated/ids/Attributes.h>
+#include <app-common/zap-generated/ids/Clusters.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
@@ -40,6 +42,9 @@
 #include <clusters/ColorControl/AttributeIds.h>
 #include <clusters/LevelControl/AttributeIds.h>
 #include <lib/support/TypeTraits.h>
+#include <lib/support/logging/CHIPLogging.h>
+
+#include <app/ConcreteAttributePath.h>
 
 #include <assert.h>
 
@@ -53,6 +58,10 @@
 #include <lib/support/Span.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
+
+#ifdef SL_MATTER_ENABLE_AWS
+#include "MatterAws.h"
+#endif
 
 #ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
 #define LIGHT_LED 1
@@ -677,5 +686,88 @@ void LightingAppTask::UpdateClusterState(intptr_t context)
     if (status != Protocols::InteractionModel::Status::Success)
     {
         SILABS_LOG("ERR: updating on/off %x", to_underlying(status));
+    }
+}
+
+void LightingAppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                    uint16_t size, uint8_t * value)
+{
+    [[maybe_unused]] EndpointId endpointId = attributePath.mEndpointId;
+    ClusterId clusterId                    = attributePath.mClusterId;
+    AttributeId attributeId                = attributePath.mAttributeId;
+    ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
+
+    if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
+    {
+#ifdef SL_MATTER_ENABLE_AWS
+        ChipLogProgress(Zcl, "sending light state update");
+        MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
+#endif // SL_MATTER_ENABLE_AWS
+        CommonAppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light,
+                                                   *value ? LightingAppTask::ON_ACTION : LightingAppTask::OFF_ACTION, value);
+    }
+    // WIP Apply attribute change to Light
+    else if (clusterId == LevelControl::Id)
+    {
+        ChipLogProgress(Zcl, "Level Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                        ChipLogValueMEI(attributeId), type, *value, size);
+
+        if (attributeId == LevelControl::Attributes::CurrentLevel::Id && value != nullptr)
+        {
+            CommonAppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, LightingAppTask::LEVEL_ACTION, value);
+        }
+    }
+    // WIP Apply attribute change to Light
+    if (clusterId == ColorControl::Id)
+    {
+        ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                        ChipLogValueMEI(attributeId), type, *value, size);
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+
+        if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentX::Id)
+        {
+            ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                            ChipLogValueMEI(attributeId), type, *value, size);
+
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_XY,
+                                                                attributeId, value);
+        }
+        else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentY::Id)
+        {
+            ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                            ChipLogValueMEI(attributeId), type, *value, size);
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_XY,
+                                                                attributeId, value);
+        }
+        if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentHue::Id)
+        {
+            ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                            ChipLogValueMEI(attributeId), type, *value, size);
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_HSV,
+                                                                attributeId, value);
+        }
+        else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentSaturation::Id)
+        {
+            ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                            ChipLogValueMEI(attributeId), type, *value, size);
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_HSV,
+                                                                attributeId, value);
+        }
+        else if (attributeId == ColorControl::Attributes::ColorTemperatureMireds::Id)
+        {
+            if (size != sizeof(uint16_t))
+            {
+                ChipLogError(Zcl, "Wrong length for ColorControl value: %d", size);
+                return;
+            }
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_CT,
+                                                                attributeId, value);
+        }
+#endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    }
+    else if (clusterId == Identify::Id)
+    {
+        ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                        ChipLogValueMEI(attributeId), type, *value, size);
     }
 }
