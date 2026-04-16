@@ -88,8 +88,8 @@ public:
 #endif
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
-    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                     uint16_t size, uint8_t * value);
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
 
 protected:
     void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
@@ -195,8 +195,8 @@ public:
         CRTP_STATIC_VOID_AND_VERIFY(AppTaskImpl, Derived, ButtonEventHandler, button, btnAction);
     }
 
-    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                     uint16_t size, uint8_t * value)
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value)
     {
         CRTP_THIS(Derived)->DMPostAttributeChangeCallbackImpl(attributePath, type, size, value);
     }
@@ -310,8 +310,8 @@ private:
 
     void UpdateClusterStateImpl(intptr_t context) { LightingAppTask::UpdateClusterState(context); }
 
-    void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                         uint16_t size, uint8_t * value)
+    void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                           uint8_t * value)
     {
         LightingAppTask::DMPostAttributeChangeCallback(attributePath, type, size, value);
     }

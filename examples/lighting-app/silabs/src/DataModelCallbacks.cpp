@@ -45,8 +45,8 @@
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
 
-void LightingAppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath,
-                                                                  uint8_t type, uint16_t size, uint8_t * value)
+void LightingAppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
+                                                    uint16_t size, uint8_t * value)
 {
     [[maybe_unused]] EndpointId endpointId = attributePath.mEndpointId;
     ClusterId clusterId                    = attributePath.mClusterId;
@@ -60,8 +60,7 @@ void LightingAppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAtt
         MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
 #endif // SL_MATTER_ENABLE_AWS
         CommonAppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light,
-                                                   *value ? LightingAppTask::ON_ACTION : LightingAppTask::OFF_ACTION,
-                                                   value);
+                                                   *value ? LightingAppTask::ON_ACTION : LightingAppTask::OFF_ACTION, value);
     }
     // WIP Apply attribute change to Light
     else if (clusterId == LevelControl::Id)
@@ -87,32 +86,28 @@ void LightingAppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAtt
                             ChipLogValueMEI(attributeId), type, *value, size);
 
             CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_XY,
-                                                                attributeId,
-                                                                value);
+                                                                attributeId, value);
         }
         else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentY::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
             CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_XY,
-                                                                attributeId,
-                                                                value);
+                                                                attributeId, value);
         }
         if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentHue::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
             CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_HSV,
-                                                                attributeId,
-                                                                value);
+                                                                attributeId, value);
         }
         else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentSaturation::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
             CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_HSV,
-                                                                attributeId,
-                                                                value);
+                                                                attributeId, value);
         }
         else if (attributeId == ColorControl::Attributes::ColorTemperatureMireds::Id)
         {
@@ -122,8 +117,7 @@ void LightingAppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAtt
                 return;
             }
             CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_CT,
-                                                                 attributeId,
-                                                                value);
+                                                                attributeId, value);
         }
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     }

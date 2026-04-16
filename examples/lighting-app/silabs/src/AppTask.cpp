@@ -482,8 +482,8 @@ void LightingAppTask::LightTimerEventHandler(void * timerCbArg)
 void LightingAppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 {
     LightingAppTask * task = static_cast<LightingAppTask *>(aEvent->TimerEvent.Context);
-    int32_t actor  = AppEvent::kEventType_Timer;
-    uint8_t value  = 0;
+    int32_t actor          = AppEvent::kEventType_Timer;
+    uint8_t value          = 0;
 
     if (!task->mAutoTurnOffTimerArmed)
     {
@@ -500,8 +500,8 @@ void LightingAppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 void LightingAppTask::OffEffectTimerEventHandler(AppEvent * aEvent)
 {
     LightingAppTask * task = static_cast<LightingAppTask *>(aEvent->TimerEvent.Context);
-    int32_t actor  = AppEvent::kEventType_Timer;
-    uint8_t value  = 0;
+    int32_t actor          = AppEvent::kEventType_Timer;
+    uint8_t value          = 0;
 
     if (!task->mOffEffectArmed)
     {
@@ -585,7 +585,8 @@ void LightingAppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
 }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-bool LightingAppTask::InitiateLightCtrlAction(int32_t aActor, LightingAppTask::Action_t aAction, uint32_t aAttributeId, uint8_t * value)
+bool LightingAppTask::InitiateLightCtrlAction(int32_t aActor, LightingAppTask::Action_t aAction, uint32_t aAttributeId,
+                                              uint8_t * value)
 {
     bool action_initiated = false;
     VerifyOrReturnError(aAction == COLOR_ACTION_XY || aAction == COLOR_ACTION_HSV || aAction == COLOR_ACTION_CT, action_initiated);
@@ -654,7 +655,8 @@ void LightingAppTask::PostLightActionRequest(int32_t aActor, LightingAppTask::Ac
 }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-void LightingAppTask::PostLightControlActionRequest(int32_t aActor, LightingAppTask::Action_t aAction, RGBLEDWidget::ColorData_t * aValue)
+void LightingAppTask::PostLightControlActionRequest(int32_t aActor, LightingAppTask::Action_t aAction,
+                                                    RGBLEDWidget::ColorData_t * aValue)
 {
     AppEvent light_event;
     light_event.Type                     = AppEvent::kEventType_Light;
