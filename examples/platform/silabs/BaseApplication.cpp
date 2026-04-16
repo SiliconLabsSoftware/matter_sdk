@@ -24,6 +24,7 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "AppTask.h"
+#include "CommonAppTask.h"
 #include "OTAConfig.h"
 #include <app/server/Dnssd.h>
 #include <app/server/Server.h>
