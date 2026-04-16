@@ -24,7 +24,7 @@
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 #include "RGBLEDWidget.h"
 #endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-#include "AppTask.h"
+#include "AppTaskImpl.h"
 #include "CommonAppTask.h"
 
 #include <app-common/zap-generated/attributes/Accessors.h>
@@ -45,8 +45,8 @@
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
 
-void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type,
-                                                          uint16_t size, uint8_t * value)
+void LightingAppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath,
+                                                                  uint8_t type, uint16_t size, uint8_t * value)
 {
     [[maybe_unused]] EndpointId endpointId = attributePath.mEndpointId;
     ClusterId clusterId                    = attributePath.mClusterId;
@@ -59,7 +59,8 @@ void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::Concr
         ChipLogProgress(Zcl, "sending light state update");
         MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
 #endif // SL_MATTER_ENABLE_AWS
-        CommonAppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, *value ? AppTask::ON_ACTION : AppTask::OFF_ACTION,
+        CommonAppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light,
+                                                   *value ? LightingAppTask::ON_ACTION : LightingAppTask::OFF_ACTION,
                                                    value);
     }
     // WIP Apply attribute change to Light
@@ -70,7 +71,7 @@ void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::Concr
 
         if (attributeId == LevelControl::Attributes::CurrentLevel::Id && value != nullptr)
         {
-            CommonAppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, AppTask::LEVEL_ACTION, value);
+            CommonAppTask::GetAppTask().InitiateAction(AppEvent::kEventType_Light, LightingAppTask::LEVEL_ACTION, value);
         }
     }
     // WIP Apply attribute change to Light
@@ -85,28 +86,32 @@ void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::Concr
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
 
-            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_XY, attributeId,
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_XY,
+                                                                attributeId,
                                                                 value);
         }
         else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentY::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
-            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_XY, attributeId,
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_XY,
+                                                                attributeId,
                                                                 value);
         }
         if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentHue::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
-            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_HSV, attributeId,
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_HSV,
+                                                                attributeId,
                                                                 value);
         }
         else if (clusterId == ColorControl::Id && attributeId == ColorControl::Attributes::CurrentSaturation::Id)
         {
             ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                             ChipLogValueMEI(attributeId), type, *value, size);
-            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_HSV, attributeId,
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_HSV,
+                                                                attributeId,
                                                                 value);
         }
         else if (attributeId == ColorControl::Attributes::ColorTemperatureMireds::Id)
@@ -116,7 +121,8 @@ void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::Concr
                 ChipLogError(Zcl, "Wrong length for ColorControl value: %d", size);
                 return;
             }
-            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, AppTask::COLOR_ACTION_CT, attributeId,
+            CommonAppTask::GetAppTask().InitiateLightCtrlAction(AppEvent::kEventType_Light, LightingAppTask::COLOR_ACTION_CT,
+                                                                 attributeId,
                                                                 value);
         }
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
@@ -134,6 +140,6 @@ void AppTask::DmCallbackMatterPostAttributeChangeCallback(const chip::app::Concr
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
-    // CommonAppTask& so AppTaskImpl::DmCallbackMatterPostAttributeChangeCallback (CRTP) is used, not AppTask:: (static AppTask&).
-    CommonAppTask::GetAppTask().DmCallbackMatterPostAttributeChangeCallback(attributePath, type, size, value);
+    // Route through CommonAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
+    CommonAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 }

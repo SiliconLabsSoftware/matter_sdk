@@ -157,10 +157,10 @@ AppTask & AppTask::GetAppTask()
 CHIP_ERROR CommonAppTask::AppInitImpl()
 {
     SILABS_LOG("CommonAppTask: custom implementation (AppInitImpl)");
-    CHIP_ERROR err = this->AppTask::AppInit();
+    CHIP_ERROR err = this->LightingAppTask::AppInit();
     if (err == CHIP_NO_ERROR)
     {
-        // Override the SDK default button handler registered in AppTask::AppInit().
+        // Override the SDK default button handler registered in LightingAppTask::AppInit().
         chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
     }
     return err;

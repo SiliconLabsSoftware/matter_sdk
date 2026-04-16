@@ -97,7 +97,7 @@ using namespace ::chip::DeviceLayer;
 
 // Singleton provided by CommonAppTask.cpp (AppTask::GetAppTask() returns CommonAppTask::GetAppTask()).
 
-CHIP_ERROR AppTask::AppInit()
+CHIP_ERROR LightingAppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::GetAppTask().ButtonEventHandler);
@@ -132,7 +132,7 @@ CHIP_ERROR AppTask::AppInit()
     return err;
 }
 
-CHIP_ERROR AppTask::InitLight()
+CHIP_ERROR LightingAppTask::InitLight()
 {
     mLightTimer = osTimerNew(CommonAppTask::GetAppTask().LightTimerEventHandler, osTimerOnce, (void *) this, NULL);
 
@@ -241,17 +241,17 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 }
 
-void AppTask::LightActionEventHandler(AppEvent * aEvent)
+void LightingAppTask::LightActionEventHandler(AppEvent * aEvent)
 {
     bool initiated = false;
-    AppTask::Action_t action;
+    LightingAppTask::Action_t action;
     int32_t actor;
     uint8_t value  = aEvent->LightEvent.Value;
     CHIP_ERROR err = CHIP_NO_ERROR;
 
     if (aEvent->Type == AppEvent::kEventType_Light)
     {
-        action = static_cast<AppTask::Action_t>(aEvent->LightEvent.Action);
+        action = static_cast<LightingAppTask::Action_t>(aEvent->LightEvent.Action);
         actor  = aEvent->LightEvent.Actor;
     }
     else if (aEvent->Type == AppEvent::kEventType_Button)
@@ -276,7 +276,7 @@ void AppTask::LightActionEventHandler(AppEvent * aEvent)
 }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-void AppTask::LightControlEventHandler(AppEvent * aEvent)
+void LightingAppTask::LightControlEventHandler(AppEvent * aEvent)
 {
     uint8_t light_action                = aEvent->LightControlEvent.Action;
     RGBLEDWidget::ColorData_t colorData = aEvent->LightControlEvent.Value;
@@ -312,7 +312,7 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
 }
 #endif
 
-void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
+void LightingAppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
@@ -330,7 +330,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     }
 }
 
-void AppTask::OnLightActionInitiated(AppTask::Action_t aAction, int32_t aActor, uint8_t * aValue)
+void LightingAppTask::OnLightActionInitiated(LightingAppTask::Action_t aAction, int32_t aActor, uint8_t * aValue)
 {
     if (aAction == LEVEL_ACTION)
     {
@@ -355,7 +355,7 @@ void AppTask::OnLightActionInitiated(AppTask::Action_t aAction, int32_t aActor, 
     }
 }
 
-void AppTask::OnLightActionCompleted(AppTask::Action_t aAction)
+void LightingAppTask::OnLightActionCompleted(LightingAppTask::Action_t aAction)
 {
     if (aAction == ON_ACTION)
     {
@@ -375,30 +375,30 @@ void AppTask::OnLightActionCompleted(AppTask::Action_t aAction)
     }
 }
 
-bool AppTask::IsActionInProgress() const
+bool LightingAppTask::IsActionInProgress() const
 {
     return (mLightState == kState_OffInitiated || mLightState == kState_OnInitiated);
 }
 
-bool AppTask::IsLightOn() const
+bool LightingAppTask::IsLightOn() const
 {
     return (mLightState == kState_OnCompleted);
 }
 
-void AppTask::EnableAutoTurnOff(bool aOn)
+void LightingAppTask::EnableAutoTurnOff(bool aOn)
 {
     mAutoTurnOff = aOn;
 }
 
-void AppTask::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
+void LightingAppTask::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
 {
     mAutoTurnOffDuration = aDurationInSecs;
 }
 
-bool AppTask::InitiateAction(int32_t aActor, AppTask::Action_t aAction, uint8_t * aValue)
+bool LightingAppTask::InitiateAction(int32_t aActor, LightingAppTask::Action_t aAction, uint8_t * aValue)
 {
     bool action_initiated = false;
-    AppTask::State_t new_state;
+    LightingAppTask::State_t new_state;
 
     if (((mLightState == kState_OffCompleted) || mOffEffectArmed) && aAction == ON_ACTION)
     {
@@ -439,7 +439,7 @@ bool AppTask::InitiateAction(int32_t aActor, AppTask::Action_t aAction, uint8_t 
     return action_initiated;
 }
 
-void AppTask::StartLightTimer(uint32_t aTimeoutMs)
+void LightingAppTask::StartLightTimer(uint32_t aTimeoutMs)
 {
     if (osTimerStart(mLightTimer, pdMS_TO_TICKS(aTimeoutMs)) != osOK)
     {
@@ -448,7 +448,7 @@ void AppTask::StartLightTimer(uint32_t aTimeoutMs)
     }
 }
 
-void AppTask::CancelLightTimer()
+void LightingAppTask::CancelLightTimer()
 {
     if (osTimerStop(mLightTimer) == osError)
     {
@@ -457,9 +457,9 @@ void AppTask::CancelLightTimer()
     }
 }
 
-void AppTask::LightTimerEventHandler(void * timerCbArg)
+void LightingAppTask::LightTimerEventHandler(void * timerCbArg)
 {
-    AppTask * task = static_cast<AppTask *>(timerCbArg);
+    LightingAppTask * task = static_cast<LightingAppTask *>(timerCbArg);
 
     AppEvent event;
     event.Type               = AppEvent::kEventType_Timer;
@@ -479,9 +479,9 @@ void AppTask::LightTimerEventHandler(void * timerCbArg)
     CommonAppTask::GetAppTask().PostEvent(&event);
 }
 
-void AppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
+void LightingAppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
 {
-    AppTask * task = static_cast<AppTask *>(aEvent->TimerEvent.Context);
+    LightingAppTask * task = static_cast<LightingAppTask *>(aEvent->TimerEvent.Context);
     int32_t actor  = AppEvent::kEventType_Timer;
     uint8_t value  = 0;
 
@@ -497,9 +497,9 @@ void AppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
     CommonAppTask::GetAppTask().InitiateAction(actor, OFF_ACTION, &value);
 }
 
-void AppTask::OffEffectTimerEventHandler(AppEvent * aEvent)
+void LightingAppTask::OffEffectTimerEventHandler(AppEvent * aEvent)
 {
-    AppTask * task = static_cast<AppTask *>(aEvent->TimerEvent.Context);
+    LightingAppTask * task = static_cast<LightingAppTask *>(aEvent->TimerEvent.Context);
     int32_t actor  = AppEvent::kEventType_Timer;
     uint8_t value  = 0;
 
@@ -515,11 +515,11 @@ void AppTask::OffEffectTimerEventHandler(AppEvent * aEvent)
     CommonAppTask::GetAppTask().InitiateAction(actor, OFF_ACTION, &value);
 }
 
-void AppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
+void LightingAppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
 {
-    AppTask::Action_t actionCompleted = INVALID_ACTION;
+    LightingAppTask::Action_t actionCompleted = INVALID_ACTION;
 
-    AppTask * task = static_cast<AppTask *>(aEvent->TimerEvent.Context);
+    LightingAppTask * task = static_cast<LightingAppTask *>(aEvent->TimerEvent.Context);
 
     if (task->mLightState == kState_OffInitiated)
     {
@@ -545,7 +545,7 @@ void AppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
     }
 }
 
-void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
+void LightingAppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
 {
     auto effectId              = effect->mEffectIdentifier;
     auto effectVariant         = effect->mEffectVariant;
@@ -585,7 +585,7 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
 }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-bool AppTask::InitiateLightCtrlAction(int32_t aActor, AppTask::Action_t aAction, uint32_t aAttributeId, uint8_t * value)
+bool LightingAppTask::InitiateLightCtrlAction(int32_t aActor, LightingAppTask::Action_t aAction, uint32_t aAttributeId, uint8_t * value)
 {
     bool action_initiated = false;
     VerifyOrReturnError(aAction == COLOR_ACTION_XY || aAction == COLOR_ACTION_HSV || aAction == COLOR_ACTION_CT, action_initiated);
@@ -643,7 +643,7 @@ bool AppTask::InitiateLightCtrlAction(int32_t aActor, AppTask::Action_t aAction,
 }
 #endif
 
-void AppTask::PostLightActionRequest(int32_t aActor, AppTask::Action_t aAction)
+void LightingAppTask::PostLightActionRequest(int32_t aActor, LightingAppTask::Action_t aAction)
 {
     AppEvent event;
     event.Type              = AppEvent::kEventType_Light;
@@ -654,7 +654,7 @@ void AppTask::PostLightActionRequest(int32_t aActor, AppTask::Action_t aAction)
 }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
-void AppTask::PostLightControlActionRequest(int32_t aActor, AppTask::Action_t aAction, RGBLEDWidget::ColorData_t * aValue)
+void LightingAppTask::PostLightControlActionRequest(int32_t aActor, LightingAppTask::Action_t aAction, RGBLEDWidget::ColorData_t * aValue)
 {
     AppEvent light_event;
     light_event.Type                     = AppEvent::kEventType_Light;
@@ -666,7 +666,7 @@ void AppTask::PostLightControlActionRequest(int32_t aActor, AppTask::Action_t aA
 }
 #endif
 
-void AppTask::UpdateClusterState(intptr_t context)
+void LightingAppTask::UpdateClusterState(intptr_t context)
 {
     uint8_t newValue = CommonAppTask::GetAppTask().IsLightOn();
 
