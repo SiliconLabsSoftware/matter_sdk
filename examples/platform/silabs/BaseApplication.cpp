@@ -24,7 +24,6 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "AppTask.h"
-#include "CommonAppTask.h"
 #include "OTAConfig.h"
 #include <app/server/Dnssd.h>
 #include <app/server/Server.h>
@@ -106,6 +105,10 @@
 #include <MultiProtocolDataModelHelper.h>
 #endif // SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+
+#ifdef CHIP_SILABS_APP_USE_COMMON_APP_TASK
+#include "CommonAppTask.h"
+#endif // CHIP_SILABS_APP_USE_COMMON_APP_TASK
 
 // Tracing
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
