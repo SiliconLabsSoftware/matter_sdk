@@ -1125,6 +1125,9 @@ bool BaseApplication::GetProvisionStatus()
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
+    [[maybe_unused]] EndpointId endpointId = attributePath.mEndpointId;
+    [[maybe_unused]] ClusterId clusterId = attributePath.mClusterId;
+    [[maybe_unused]] AttributeId attributeId = attributePath.mAttributeId;
     // Route through CommonAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CommonAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
