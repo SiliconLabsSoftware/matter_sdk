@@ -37,6 +37,10 @@
 extern "C" {
 #endif
 
+#include <lwip/opt.h>
+
+#include <mbedtls/debug.h>
+
 #include "MQTT_transport.h"
 #include "mqtt.h"
 
@@ -144,6 +148,9 @@ static void MatterAwsTaskFn(void * args)
 {
     /* Local flag to control the task loop - reset each time the task starts */
     bool endLoop = false;
+#if ALTCP_MBEDTLS_LIB_DEBUG
+    mbedtls_debug_set_threshold(ALTCP_MBEDTLS_LIB_DEBUG_LEVEL_MIN);
+#endif
 
     /* get MQTT client handle */
     err_t ret;
@@ -163,7 +170,7 @@ static void MatterAwsTaskFn(void * args)
     /* Get transport handle*/
     memset(&trans, 0x00, sizeof(mqtt_transport_intf_t));
     transport = MQTT_Transport_Init(&trans, mqtt_client, matterAwsEvents);
-    VerifyOrExit(transport != NULL, ChipLogError(AppServer, "[MATTER_AWS] failed to configure mqtt client"));
+    VerifyOrExit(transport != NULL, ChipLogError(AppServer, "[MATTER_AWS] MQTT_Transport_Init failed"));
 
     VerifyOrExit(MatterAwsGetHostname(hostname, MATTER_AWS_HOSTNAME_LENGTH, &hostname_length) == CHIP_NO_ERROR,
                  ChipLogError(AppServer, "[MATTER_AWS] failed to fetch hostname"));
@@ -201,11 +208,20 @@ static void MatterAwsTaskFn(void * args)
         else
         {
             if (event & SIGNAL_TRANSINTF_RX)
+            {
+                ChipLogProgress(AppServer, "[MATTER_AWS] SIGNAL_TRANSINTF_TX");
                 mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX);
-            else if (event & SIGNAL_TRANSINTF_TX_ACK)
+            }
+            if (event & SIGNAL_TRANSINTF_TX_ACK)
+            {
+                ChipLogProgress(AppServer, "[MATTER_AWS] SIGNAL_TRANSINTF_TX_ACK");
                 mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX_ACK);
+            }
             if (event & SIGNAL_TRANSINTF_MBEDTLS_RX)
+            {
+                ChipLogProgress(AppServer, "[MATTER_AWS] SIGNAL_TRANSINTF_MBEDTLS_RX");
                 transport_process_mbedtls_rx(transport);
+            }
         }
     }
     init_complete = false;

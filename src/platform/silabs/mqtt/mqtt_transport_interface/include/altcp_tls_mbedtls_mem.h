@@ -43,13 +43,13 @@
 #ifndef LWIP_HDR_ALTCP_MBEDTLS_MEM_H
 #define LWIP_HDR_ALTCP_MBEDTLS_MEM_H
 
-#include "altcp_opt.h"
+#include "lwip/opt.h"
 
-#if TRANSPORT_ALTCP /* don't build if not configured for use in lwipopts.h */
+#if LWIP_ALTCP /* don't build if not configured for use in lwipopts.h */
 
 #include "altcp_tls_mbedtls_opts.h"
 
-#if TRANSPORT_ALTCP_TLS && TRANSPORT_ALTCP_TLS_MBEDTLS
+#if LWIP_ALTCP_TLS && LWIP_ALTCP_TLS_MBEDTLS
 
 #include "altcp_tls_mbedtls_structs.h"
 
@@ -67,6 +67,6 @@ void altcp_mbedtls_free_config(void * item);
 }
 #endif
 
-#endif /* TRANSPORT_ALTCP_TLS && LWIP_ALTCP_TLS_MBEDTLS */
-#endif /* TRANSPORT_ALTCP */
-#endif /* TRANSPORT_HDR_ALTCP_MBEDTLS_MEM_H */
+#endif /* LWIP_ALTCP_TLS && LWIP_ALTCP_TLS_MBEDTLS */
+#endif /* LWIP_ALTCP */
+#endif /* LWIP_HDR_ALTCP_MBEDTLS_MEM_H */

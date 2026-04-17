@@ -36,23 +36,23 @@
  * Author: Simon Goldschmidt <goldsimon@gmx.de>
  *
  */
-#ifndef TRANSPORT_HDR_ALTCP_TLS_OPTS_H
-#define TRANSPORT_HDR_ALTCP_TLS_OPTS_H
+#ifndef LWIP_HDR_ALTCP_TLS_OPTS_H
+#define LWIP_HDR_ALTCP_TLS_OPTS_H
 
-#include "altcp_opt.h"
+#include "lwip/opt.h"
 
-#if TRANSPORT_ALTCP /* don't build if not configured for use in lwipopts.h */
+#if LWIP_ALTCP /* don't build if not configured for use in lwipopts.h */
 
 /** LWIP_ALTCP_TLS_MBEDTLS==1: use mbedTLS for TLS support for altcp API
  * mbedtls include directory must be reachable via include search path
  */
-#ifndef TRANSPORT_ALTCP_TLS_MBEDTLS
-#define TRANSPORT_ALTCP_TLS_MBEDTLS 0
+#ifndef LWIP_ALTCP_TLS_MBEDTLS
+#define LWIP_ALTCP_TLS_MBEDTLS 0
 #endif
 
 /** Configure debug level of this file */
 #ifndef ALTCP_MBEDTLS_DEBUG
-#define ALTCP_MBEDTLS_DEBUG 0
+#define ALTCP_MBEDTLS_DEBUG LWIP_DBG_OFF
 #endif
 
 /** Set a session timeout in seconds for the basic session cache
@@ -62,6 +62,6 @@
 #define ALTCP_MBEDTLS_SESSION_CACHE_TIMEOUT_SECONDS 0
 #endif
 
-#endif /* TRANSPORT_ALTCP */
+#endif /* LWIP_ALTCP */
 
-#endif /* TRANSPORT_HDR_ALTCP_TLS_OPTS_H */
+#endif /* LWIP_HDR_ALTCP_TLS_OPTS_H */

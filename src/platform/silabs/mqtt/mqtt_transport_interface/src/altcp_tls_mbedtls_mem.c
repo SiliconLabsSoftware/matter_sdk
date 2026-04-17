@@ -48,16 +48,17 @@
  *   after enqueueing for transmission, not when actually ACKed be the remote host.
  */
 
-#include "altcp_opt.h"
+#include "lwip/opt.h"
 
-#if TRANSPORT_ALTCP /* don't build if not configured for use in lwipopts.h */
+#if LWIP_ALTCP /* don't build if not configured for use in lwipopts.h */
 
 #include "altcp_tls_mbedtls_opts.h"
 
-#if TRANSPORT_ALTCP_TLS && TRANSPORT_ALTCP_TLS_MBEDTLS
+#if LWIP_ALTCP_TLS && LWIP_ALTCP_TLS_MBEDTLS
 
 #include "altcp_tls_mbedtls_mem.h"
 #include "altcp_tls_mbedtls_structs.h"
+// #include "lwip/mem.h"
 
 #include "mbedtls/platform.h"
 
@@ -111,18 +112,17 @@ static void * tls_malloc(size_t c, size_t len)
     }
 #endif
     alloc_size = sizeof(altcp_mbedtls_malloc_helper_t) + (c * len);
-/* check for maximum allocation size, mainly to prevent mem_size_t overflow */
-#if 0
-  if (alloc_size > MEM_SIZE) {
-    TRANSPORT_DEBUGF( ("mbedtls allocation too big: %c * %d bytes vs MEM_SIZE=%d",
-                                          (int)c, (int)len, (int)MEM_SIZE));
-    return NULL;
-  }
-#endif
+    /* check for maximum allocation size, mainly to prevent mem_size_t overflow */
+    if (alloc_size > MEM_SIZE)
+    {
+        LWIP_DEBUGF(ALTCP_MBEDTLS_MEM_DEBUG,
+                    ("mbedtls allocation too big: %c * %d bytes vs MEM_SIZE=%d", (int) c, (int) len, (int) MEM_SIZE));
+        return NULL;
+    }
     hlpr = (altcp_mbedtls_malloc_helper_t *) pvPortMalloc((mem_size_t) alloc_size);
     if (hlpr == NULL)
     {
-        TRANSPORT_DEBUGF(("mbedtls alloc callback failed for %c * %d bytes", (int) c, (int) len));
+        LWIP_DEBUGF(ALTCP_MBEDTLS_MEM_DEBUG, ("mbedtls alloc callback failed for %c * %d bytes", (int) c, (int) len));
         return NULL;
     }
 #if ALTCP_MBEDTLS_PLATFORM_ALLOC_STATS
@@ -184,8 +184,8 @@ altcp_mbedtls_state_t * altcp_mbedtls_alloc(void * conf)
 
 void altcp_mbedtls_free(void * conf, altcp_mbedtls_state_t * state)
 {
-    TRANSPORT_UNUSED_ARG(conf);
-    TRANSPORT_ASSERT("state != NULL", state != NULL);
+    LWIP_UNUSED_ARG(conf);
+    LWIP_ASSERT("state != NULL", state != NULL);
     vPortFree(state);
 }
 
@@ -208,9 +208,9 @@ void * altcp_mbedtls_alloc_config(size_t size)
 
 void altcp_mbedtls_free_config(void * item)
 {
-    TRANSPORT_ASSERT("item != NULL", item != NULL);
+    LWIP_ASSERT("item != NULL", item != NULL);
     vPortFree(item);
 }
 
-#endif /* TRANSPORT_ALTCP_TLS && TRANSPORT_ALTCP_TLS_MBEDTLS */
-#endif /* TRANSPORT_ALTCP */
+#endif /* LWIP_ALTCP_TLS && LWIP_ALTCP_TLS_MBEDTLS */
+#endif /* LWIP_ALTCP */

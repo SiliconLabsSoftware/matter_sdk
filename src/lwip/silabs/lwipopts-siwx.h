@@ -72,13 +72,21 @@
 // Setting the priority of the lwip thread to osPriorityAboveNormal
 #define TCPIP_THREAD_PRIO (32)
 
+#define TCP_MSS (1460)
+
 #ifdef SL_MATTER_ENABLE_AWS
 #define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())
-#define TCP_MSS (4 * 1152)
+#define TCP_WND (8 * TCP_MSS)
+// /* With MEM_LIBC_MALLOC, lwIP heap uses FreeRTOS; keep MEM_SIZE for stats/limits. */
+#define MEM_SIZE (8 * 1024)
+
+#define LWIP_ALTCP 1
+#define LWIP_ALTCP_TLS 1
+#define LWIP_ALTCP_TLS_MBEDTLS 1
+#define ALTCP_MBEDTLS_AUTHMODE MBEDTLS_SSL_VERIFY_REQUIRED
 #else
 #define LWIP_DNS 0
-#define TCP_MSS (1152)
 #endif /* SL_MATTER_ENABLE_AWS */
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1
@@ -144,7 +152,7 @@
 #define LWIP_PBUF_FROM_CUSTOM_POOLS (0)
 #define MEMP_USE_CUSTOM_POOLS (0)
 #define PBUF_POOL_SIZE (32)
-#define PBUF_POOL_BUFSIZE (1280) // IPv6 path MTU
+#define PBUF_POOL_BUFSIZE (1520) // TCP_MSS + 40 + PBUF_LINK_ENCAPSULATION_HLEN + PBUF_LINK_HLEN
 #define PBUF_CUSTOM_POOL_IDX_START (MEMP_PBUF_POOL_SMALL)
 #define PBUF_CUSTOM_POOL_IDX_END (MEMP_PBUF_POOL_LARGE)
 
@@ -155,7 +163,7 @@
 #define SUB_ETHERNET_HEADER_SPACE (0)
 #define PBUF_LINK_HLEN (14)
 
-#define TCPIP_THREAD_STACKSIZE (2048)
+#define TCPIP_THREAD_STACKSIZE (4 * 1024)
 
 #define NETIF_MAX_HWADDR_LEN 8U
 
@@ -176,6 +184,9 @@
 #define SL_LWIP_MLD6_ONDEMAND_TIMER 1
 #define SL_LWIP_ADAPTIVE_TIMERS 1
 #endif // SL_ICD_ENABLED
+
+// TODO: Remove this once we have a proper debug system
+#define LWIP_DEBUG 1
 
 #ifdef LWIP_DEBUG
 
@@ -210,6 +221,9 @@
 #define TCP_QLEN_DEBUG (LWIP_DBG_OFF)
 #define TCP_RST_DEBUG (LWIP_DBG_OFF)
 #define PPP_DEBUG (LWIP_DBG_OFF)
+#define ALTCP_MBEDTLS_DEBUG (LWIP_DBG_ON)
+#define ALTCP_MBEDTLS_LIB_DEBUG (LWIP_DBG_ON)
+#define ALTCP_MBEDTLS_LIB_DEBUG_LEVEL_MIN (3)
 #endif /* LWIP_DEBUG */
 
 #define LWIP_DBG_TYPES_ON                                                                                                          \

@@ -36,18 +36,18 @@
  * Author: Simon Goldschmidt <goldsimon@gmx.de>
  *
  */
-#ifndef TRANSPORT_HDR_ALTCP_MBEDTLS_STRUCTS_H
-#define TRANSPORT_HDR_ALTCP_MBEDTLS_STRUCTS_H
+#ifndef LWIP_HDR_ALTCP_MBEDTLS_STRUCTS_H
+#define LWIP_HDR_ALTCP_MBEDTLS_STRUCTS_H
 
-#include "altcp_opt.h"
+#include "lwip/opt.h"
 
-#if TRANSPORT_ALTCP /* don't build if not configured for use in lwipopts.h */
+#if LWIP_ALTCP /* don't build if not configured for use in lwipopts.h */
 
 #include "altcp_tls_mbedtls_opts.h"
 
-#if TRANSPORT_ALTCP_TLS && TRANSPORT_ALTCP_TLS_MBEDTLS
+#if LWIP_ALTCP_TLS && LWIP_ALTCP_TLS_MBEDTLS
 
-#include "altcp.h"
+#include "lwip/altcp.h"
 #include "lwip/pbuf.h"
 
 #include "mbedtls/ssl.h"
@@ -79,6 +79,6 @@ typedef struct altcp_mbedtls_state_s
 }
 #endif
 
-#endif /* TRANSPORT_ALTCP_TLS && TRANSPORT_ALTCP_TLS_MBEDTLS */
-#endif /* TRANSPORT_ALTCP */
-#endif /* TRANSPORT_HDR_ALTCP_MBEDTLS_STRUCTS_H */
+#endif /* LWIP_ALTCP_TLS && LWIP_ALTCP_TLS_MBEDTLS */
+#endif /* LWIP_ALTCP */
+#endif /* LWIP_HDR_ALTCP_MBEDTLS_STRUCTS_H */
