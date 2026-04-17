@@ -9,7 +9,7 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
   - [Extending Base App Implementation](#extending-base-app-implementation)
     - [CommonAppTask](#commonapptask)
     - [How to Override APIs](#how-to-override-apis)
-    - [Data model hooks and CommonAppTask](#data-model-hooks-and-commonapptask)
+    - [DataModelCallbacks and CommonAppTask](#datamodelcallbacks-and-commonapptask)
     - [Sample Implementation](#sample-implementation)
     - [Override API Reference](#override-api-reference)
   - [Building](#building)
@@ -90,7 +90,7 @@ base declares one `*Impl()` per overridable API. Steps:
    implement what you need, everything else falls back to the default
    automatically.
 
-### Data model hooks and CommonAppTask
+### DataModelCallbacks and CommonAppTask
 
 What used to live in `DataModelCallbacks.cpp` is now under the `AppTask.cpp`
 
