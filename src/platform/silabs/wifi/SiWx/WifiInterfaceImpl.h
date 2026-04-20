@@ -167,11 +167,6 @@ private:
 #if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
     // Intentional LIT disconnect: suppress exponential reconnect until ConfigureLITConnect().
     bool mLitIntentionalSleepDisconnect = false;
-
-    bool mLitConnectCompletionPending      = false;
-    CHIP_ERROR mLitConnectCompletionResult = CHIP_NO_ERROR;
-
-    void CompleteLitConnectWait(CHIP_ERROR err);
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
 
     static WifiInterfaceImpl mInstance;
