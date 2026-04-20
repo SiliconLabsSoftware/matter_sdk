@@ -28,6 +28,13 @@
 
 #include <lib/core/CHIPError.h>
 
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+#include "RGBLEDWidget.h"
+#endif
+
+#include <app/ConcreteAttributePath.h>
+#include <app/clusters/on-off-server/on-off-server.h>
+
 namespace chip {
 namespace app {
 class DeferredAttributePersistenceProvider;
@@ -37,8 +44,14 @@ class DeferredAttributePersistenceProvider;
 /**********************************************************
  * AppTask Declaration
  *
- * Platform entry: task loop, singleton accessor, and startup. Example-specific
- * lighting logic and state live in LightingAppTask (see AppTaskImpl.h).
+ * Lighting example application: platform entry, lighting state machine, and
+ * data-model integration. Override hooks for the must-override APIs are
+ * exposed through AppTaskImpl.h (CRTP).
+ *
+ * Lighting state (timers, level/color attribute caches, auto-turn-off flags)
+ * lives as TU-local statics in AppTask.cpp, alongside the LED/effect objects.
+ * AppTask is a singleton (CommonAppTask::sAppTask), so the one-instance
+ * constraint is the same as the prior design.
  *********************************************************/
 
 class AppTask : public BaseApplication
@@ -58,6 +71,60 @@ public:
 
     CHIP_ERROR StartAppTask();
 
+    enum Action_t
+    {
+        ON_ACTION = 0,
+        OFF_ACTION,
+        LEVEL_ACTION,
+        COLOR_ACTION_HSV,
+        COLOR_ACTION_CT,
+        COLOR_ACTION_XY,
+
+        INVALID_ACTION
+    };
+
+    enum State_t
+    {
+        kState_OffInitiated = 0,
+        kState_OffCompleted,
+        kState_OnInitiated,
+        kState_OnCompleted,
+    };
+
+    /**
+     * @brief Event handler when a button is pressed.
+     *
+     * @param button      APP_LIGHT_SWITCH or APP_FUNCTION_BUTTON
+     * @param btnAction   SL_SIMPLE_BUTTON_PRESSED, SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
+     */
+    static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
+
+    CHIP_ERROR InitLight();
+
+    bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);
+
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    bool InitiateLightCtrlAction(int32_t aActor, Action_t aAction, uint32_t aAttributeId, uint8_t * value);
+#endif
+
+    static void OnTriggerOffWithEffect(OnOffEffect * effect);
+
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
+
 protected:
+    CHIP_ERROR AppInit() override;
+
+    void OnLightActionInitiated(Action_t aAction, int32_t aActor, uint8_t * aValue);
+    void OnLightActionCompleted(Action_t aAction);
+
+    static void LightTimerEventHandler(void * timerCbArg);
+
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+    static void LightControlEventHandler(AppEvent * aEvent);
+#endif
+
+    static void UpdateClusterState(intptr_t context);
+
     chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
 };
