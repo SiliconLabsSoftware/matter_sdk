@@ -130,17 +130,17 @@ bool IsLightOn()
     return (sLightState == AppTask::kState_OnCompleted);
 }
 
-bool IsActionInProgress()
+[[maybe_unused]] bool IsActionInProgress()
 {
     return (sLightState == AppTask::kState_OffInitiated || sLightState == AppTask::kState_OnInitiated);
 }
 
-void EnableAutoTurnOff(bool aOn)
+[[maybe_unused]] void EnableAutoTurnOff(bool aOn)
 {
     sAutoTurnOff = aOn;
 }
 
-void SetAutoTurnOffDuration(uint32_t aDurationInSecs)
+[[maybe_unused]] void SetAutoTurnOffDuration(uint32_t aDurationInSecs)
 {
     sAutoTurnOffDuration = aDurationInSecs;
 }
@@ -197,7 +197,7 @@ void LightActionEventHandler(AppEvent * aEvent)
     }
 }
 
-void PostLightActionRequest(int32_t aActor, AppTask::Action_t aAction)
+[[maybe_unused]] void PostLightActionRequest(int32_t aActor, AppTask::Action_t aAction)
 {
     AppEvent event;
     event.Type              = AppEvent::kEventType_Light;
