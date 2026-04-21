@@ -28,7 +28,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "mqtt.h"
+#include "lwip/apps/mqtt.h"
 typedef enum
 {
     MATTER_AWS_OK = 0,

@@ -19,6 +19,7 @@
  ******************************************************************************/
 
 #include "silabs_utils.h"
+#include <lib/support/CHIPMemString.h>
 #include <platform/CHIPDeviceLayer.h>
 
 #include "MatterAws.h"
@@ -184,10 +185,19 @@ void aws_ota_init_task(void * parameters)
 }
 #endif
 
-void MatterAwsIncomingDataCb(void * arg, const char * topic, uint16_t topic_len, const uint8_t * data, uint16_t len, uint8_t flags)
+static char sMatterAwsControlTopic[128];
+
+static void MatterAwsControlIncomingPublishCb(void * arg, const char * topic, uint32_t tot_len)
 {
-    const struct mqtt_connect_client_info_t * client_info = (const struct mqtt_connect_client_info_t *) arg;
-    (void) client_info;
+    (void) arg;
+    (void) tot_len;
+    chip::Platform::CopyString(sMatterAwsControlTopic, topic);
+}
+
+void MatterAwsIncomingDataCb(void * arg, const uint8_t * data, uint16_t len, uint8_t flags)
+{
+    (void) arg;
+    (void) flags;
 
     if (data == nullptr)
     {
@@ -286,7 +296,9 @@ void MatterAwsIncomingDataCb(void * arg, const char * topic, uint16_t topic_len,
 
 void SubscribeMQTT(intptr_t context)
 {
-    MatterAwsMqttSubscribe(NULL, NULL, MatterAwsIncomingDataCb, MQTT_SUBSCRIBE_TOPIC, MQTT_QOS_0);
+    (void) context;
+    MatterAwsMqttSubscribe(nullptr, MatterAwsControlIncomingPublishCb, MatterAwsIncomingDataCb, MQTT_SUBSCRIBE_TOPIC,
+                           MQTT_QOS_0);
 }
 
 void subscribeCB(void)
