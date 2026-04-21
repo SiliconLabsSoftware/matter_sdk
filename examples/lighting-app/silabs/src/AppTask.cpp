@@ -103,9 +103,6 @@ DeferredAttribute gDeferredAttributeTable[] = {
 // ---------------------------------------------------------------------------
 AppTask::State_t sLightState           = AppTask::kState_OffCompleted;
 osTimerId_t sLightTimer                = nullptr;
-bool sAutoTurnOff                      = false;
-bool sAutoTurnOffTimerArmed            = false;
-uint32_t sAutoTurnOffDuration          = 0;
 bool sOffEffectArmed                   = false;
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 uint8_t sCurrentLevel                  = 254;
@@ -128,21 +125,6 @@ void LightActionEventHandler(AppEvent * aEvent);
 bool IsLightOn()
 {
     return (sLightState == AppTask::kState_OnCompleted);
-}
-
-[[maybe_unused]] bool IsActionInProgress()
-{
-    return (sLightState == AppTask::kState_OffInitiated || sLightState == AppTask::kState_OnInitiated);
-}
-
-[[maybe_unused]] void EnableAutoTurnOff(bool aOn)
-{
-    sAutoTurnOff = aOn;
-}
-
-[[maybe_unused]] void SetAutoTurnOffDuration(uint32_t aDurationInSecs)
-{
-    sAutoTurnOffDuration = aDurationInSecs;
 }
 
 void StartLightTimer(uint32_t aTimeoutMs)
@@ -197,16 +179,6 @@ void LightActionEventHandler(AppEvent * aEvent)
     }
 }
 
-[[maybe_unused]] void PostLightActionRequest(int32_t aActor, AppTask::Action_t aAction)
-{
-    AppEvent event;
-    event.Type              = AppEvent::kEventType_Light;
-    event.LightEvent.Actor  = aActor;
-    event.LightEvent.Action = aAction;
-    event.Handler           = &LightActionEventHandler;
-    CommonAppTask::GetAppTask().PostEvent(&event);
-}
-
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 void PostLightControlActionRequest(int32_t aActor, AppTask::Action_t aAction, RGBLEDWidget::ColorData_t * aValue)
 {
@@ -219,22 +191,6 @@ void PostLightControlActionRequest(int32_t aActor, AppTask::Action_t aAction, RG
     CommonAppTask::GetAppTask().PostEvent(&light_event);
 }
 #endif
-
-void AutoTurnOffTimerEventHandler(AppEvent * /* aEvent */)
-{
-    if (!sAutoTurnOffTimerArmed)
-    {
-        return;
-    }
-
-    sAutoTurnOffTimerArmed = false;
-
-    SILABS_LOG("Auto Turn Off has been triggered!");
-
-    int32_t actor = AppEvent::kEventType_Timer;
-    uint8_t value = 0;
-    CommonAppTask::GetAppTask().InitiateAction(actor, AppTask::OFF_ACTION, &value);
-}
 
 void OffEffectTimerEventHandler(AppEvent * /* aEvent */)
 {
@@ -270,13 +226,6 @@ void ActuatorMovementTimerEventHandler(AppEvent * /* aEvent */)
     if (actionCompleted != AppTask::INVALID_ACTION)
     {
         CommonAppTask::GetAppTask().OnLightActionCompleted(actionCompleted);
-
-        if (sAutoTurnOff && actionCompleted == AppTask::ON_ACTION)
-        {
-            StartLightTimer(sAutoTurnOffDuration * 1000);
-            sAutoTurnOffTimerArmed = true;
-            SILABS_LOG("Auto Turn off enabled. Will be triggered in %u seconds", sAutoTurnOffDuration);
-        }
     }
 }
 
@@ -386,9 +335,6 @@ CHIP_ERROR AppTask::InitLight()
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     sLightState            = currentLedState ? kState_OnCompleted : kState_OffCompleted;
-    sAutoTurnOffTimerArmed = false;
-    sAutoTurnOff           = false;
-    sAutoTurnOffDuration   = 0;
     sOffEffectArmed        = false;
 
     return CHIP_NO_ERROR;
@@ -557,11 +503,6 @@ bool AppTask::InitiateAction(int32_t aActor, AppTask::Action_t aAction, uint8_t 
     {
         action_initiated = true;
         new_state        = kState_OffInitiated;
-        if (sAutoTurnOffTimerArmed)
-        {
-            sAutoTurnOffTimerArmed = false;
-            CancelLightTimer();
-        }
     }
     else if (aAction == LEVEL_ACTION)
     {
@@ -588,11 +529,7 @@ void AppTask::LightTimerEventHandler(void * /* timerCbArg */)
     event.Type               = AppEvent::kEventType_Timer;
     event.TimerEvent.Context = nullptr;
 
-    if (sAutoTurnOffTimerArmed)
-    {
-        event.Handler = &AutoTurnOffTimerEventHandler;
-    }
-    else if (sOffEffectArmed)
+    if (sOffEffectArmed)
     {
         event.Handler = &OffEffectTimerEventHandler;
     }

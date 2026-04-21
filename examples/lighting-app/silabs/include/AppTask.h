@@ -48,7 +48,7 @@ class DeferredAttributePersistenceProvider;
  * data-model integration. Override hooks for the must-override APIs are
  * exposed through AppTaskImpl.h (CRTP).
  *
- * Lighting state (timers, level/color attribute caches, auto-turn-off flags)
+ * Lighting state (timers, level/color attribute caches)
  * lives as TU-local statics in AppTask.cpp, alongside the LED/effect objects.
  * AppTask is a singleton (CommonAppTask::sAppTask), so the one-instance
  * constraint is the same as the prior design.
