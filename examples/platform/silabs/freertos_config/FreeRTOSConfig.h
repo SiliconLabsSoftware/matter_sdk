@@ -278,27 +278,41 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 
 #ifdef PW_RPC_ENABLED
 #define EXTRA_HEAP_k 10
-#else
-#define EXTRA_HEAP_k 0
-#endif
+#endif // PW_RPC_ENABLED
 
-#ifdef SL_MATTER_ENABLE_AWS
-#define SL_MATTER_AWS_HEAP_k 16
-#endif // SL_MATTER_ENABLE_AWS
-
-#ifdef SL_WIFI
+#if SL_WIFI == 1
 #define SL_MATTER_WIFI_HEAP_k 4
 #endif // SL_WIFI
 
 #if SL_CONFIG_OPENTHREAD_LIB == 1
-#define SL_MATTER_OT_LIB_HEAP_REQUIRED_k 2
+#define SL_MATTER_OT_LIB_HEAP_k 2
 #endif // SL_CONFIG_OPENTHREAD_LIB
+
+#if SL_MATTER_ENABLE_AWS == 1
+#define SL_MATTER_AWS_HEAP_k 16
+#endif // SL_MATTER_ENABLE_AWS
+
+#ifndef SL_MATTER_WIFI_HEAP_k
+#define SL_MATTER_WIFI_HEAP_k 0
+#endif // SL_MATTER_WIFI_HEAP_k
+
+#ifndef SL_MATTER_OT_LIB_HEAP_k
+#define SL_MATTER_OT_LIB_HEAP_k 0
+#endif // SL_MATTER_OT_LIB_HEAP_k
+
+#ifndef SL_MATTER_AWS_HEAP_k
+#define SL_MATTER_AWS_HEAP_k 0
+#endif // SL_MATTER_AWS_HEAP_k
+
+#ifndef EXTRA_HEAP_k
+#define EXTRA_HEAP_k 0
+#endif // EXTRA_HEAP_k
 
 #define SL_MATTER_FREERTOS_HEAP_REQUIRED_k 38
 
 #ifndef configTOTAL_HEAP_SIZE
 #define configTOTAL_HEAP_SIZE                                                                                                      \
-    ((size_t) ((EXTRA_HEAP_k + SL_MATTER_AWS_HEAP_k + SL_MATTER_WIFI_HEAP_k + SL_MATTER_OT_LIB_HEAP_REQUIRED_k +                   \
+    ((size_t) ((EXTRA_HEAP_k + SL_MATTER_AWS_HEAP_k + SL_MATTER_WIFI_HEAP_k + SL_MATTER_OT_LIB_HEAP_k +                            \
                 SL_MATTER_FREERTOS_HEAP_REQUIRED_k) *                                                                              \
                1024))
 #endif // configTOTAL_HEAP_SIZE
