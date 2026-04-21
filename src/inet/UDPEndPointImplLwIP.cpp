@@ -161,9 +161,32 @@ CHIP_ERROR EnqueueDeferredUdpSend(UDPEndPointImplLwIP * self, const IPPacketInfo
 {
     if (gDeferredUdpCount >= INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE)
     {
-        ChipLogError(Inet, "Deferred UDP send queue full (%u)",
-                     static_cast<unsigned>(INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE));
-        return CHIP_ERROR_NO_MEMORY;
+        size_t head = INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE;
+        for (size_t i = 0; i < INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE; ++i)
+        {
+            if (gDeferredUdpSlots[i].inUse)
+            {
+                head = i;
+                break;
+            }
+        }
+        if (head >= INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE)
+        {
+            ChipLogError(Inet, "Deferred UDP send queue inconsistent (count %u)",
+                         static_cast<unsigned>(gDeferredUdpCount));
+            return CHIP_ERROR_NO_MEMORY;
+        }
+
+        char dropDest[IPAddress::kMaxStringLength];
+        gDeferredUdpSlots[head].pktInfo.DestAddress.ToString(dropDest);
+        ChipLogProgress(Inet, "Deferred UDP queue full: dropping head dest %s port %u len %u", dropDest,
+                        gDeferredUdpSlots[head].pktInfo.DestPort,
+                        static_cast<unsigned>(gDeferredUdpSlots[head].msg->TotalLength()));
+
+        gDeferredUdpSlots[head].inUse = false;
+        gDeferredUdpSlots[head].ep    = UDPEndPointHandle();
+        gDeferredUdpSlots[head].msg   = nullptr;
+        --gDeferredUdpCount;
     }
 
     for (size_t i = 0; i < INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE; ++i)
