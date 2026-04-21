@@ -282,24 +282,25 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define EXTRA_HEAP_k 0
 #endif
 
-#ifndef configTOTAL_HEAP_SIZE
-#ifdef SL_WIFI
 #ifdef SL_MATTER_ENABLE_AWS
-#ifdef SLI_SI91X_MCU_INTERFACE
-#define configTOTAL_HEAP_SIZE ((size_t) ((65 + EXTRA_HEAP_k) * 1024))
-#else
-#define configTOTAL_HEAP_SIZE ((size_t) ((68 + EXTRA_HEAP_k) * 1024))
-#endif // SLI_SI91X_MCU_INTERFACE
-#else
-#define configTOTAL_HEAP_SIZE ((size_t) ((42 + EXTRA_HEAP_k) * 1024))
+#define SL_MATTER_AWS_HEAP_k 16
 #endif // SL_MATTER_ENABLE_AWS
-#else  // SL_WIFI
+
+#ifdef SL_WIFI
+#define SL_MATTER_WIFI_HEAP_k 4
+#endif // SL_WIFI
+
 #if SL_CONFIG_OPENTHREAD_LIB == 1
-#define configTOTAL_HEAP_SIZE ((size_t) ((40 + EXTRA_HEAP_k) * 1024))
-#else
-#define configTOTAL_HEAP_SIZE ((size_t) ((38 + EXTRA_HEAP_k) * 1024))
+#define SL_MATTER_OT_LIB_HEAP_REQUIRED_k 2
 #endif // SL_CONFIG_OPENTHREAD_LIB
-#endif // configTOTAL_HEAP_SIZE
+
+#define SL_MATTER_FREERTOS_HEAP_REQUIRED_k 38
+
+#ifndef configTOTAL_HEAP_SIZE
+#define configTOTAL_HEAP_SIZE                                                                                                      \
+    ((size_t) ((EXTRA_HEAP_k + SL_MATTER_AWS_HEAP_k + SL_MATTER_WIFI_HEAP_k + SL_MATTER_OT_LIB_HEAP_REQUIRED_k +                   \
+                SL_MATTER_FREERTOS_HEAP_REQUIRED_k) *                                                                              \
+               1024))
 #endif // configTOTAL_HEAP_SIZE
 
 /* Optional functions - most linkers will remove unused functions anyway. */
