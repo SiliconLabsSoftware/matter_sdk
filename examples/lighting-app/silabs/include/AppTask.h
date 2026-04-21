@@ -101,6 +101,11 @@ public:
 
     CHIP_ERROR InitLight();
 
+    /**
+     * @brief Returns true when the light is currently in the On-completed state.
+     */
+    bool IsLightOn() const;
+
     bool InitiateAction(int32_t aActor, Action_t aAction, uint8_t * aValue);
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
@@ -123,8 +128,6 @@ protected:
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     static void LightControlEventHandler(AppEvent * aEvent);
 #endif
-
-    static void UpdateClusterState(intptr_t context);
 
     chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
 };

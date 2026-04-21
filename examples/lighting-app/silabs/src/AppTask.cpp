@@ -122,10 +122,9 @@ uint16_t sCurrentCTMireds              = 250;
 // Forward-declare the event handler so PostLightActionRequest can take its address.
 void LightActionEventHandler(AppEvent * aEvent);
 
-bool IsLightOn()
-{
-    return (sLightState == AppTask::kState_OnCompleted);
-}
+// Forward-declare so OnLightActionCompleted (defined further below) can pass
+// this pointer to PlatformMgr().ScheduleWork.
+void UpdateClusterState(intptr_t context);
 
 void StartLightTimer(uint32_t aTimeoutMs)
 {
@@ -145,6 +144,18 @@ void CancelLightTimer()
     }
 }
 
+void UpdateClusterState(intptr_t /* context */)
+{
+    uint8_t newValue = AppTask::GetAppTask().IsLightOn();
+
+    Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(LIGHT_ENDPOINT, newValue, false);
+
+    if (status != Protocols::InteractionModel::Status::Success)
+    {
+        SILABS_LOG("ERR: updating on/off %x", to_underlying(status));
+    }
+}
+
 void LightActionEventHandler(AppEvent * aEvent)
 {
     bool initiated = false;
@@ -160,7 +171,7 @@ void LightActionEventHandler(AppEvent * aEvent)
     }
     else if (aEvent->Type == AppEvent::kEventType_Button)
     {
-        action = (IsLightOn()) ? AppTask::OFF_ACTION : AppTask::ON_ACTION;
+        action = (CommonAppTask::GetAppTask().IsLightOn()) ? AppTask::OFF_ACTION : AppTask::ON_ACTION;
         actor  = AppEvent::kEventType_Button;
     }
     else
@@ -421,6 +432,11 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
 }
 #endif
 
+bool AppTask::IsLightOn() const
+{
+    return (sLightState == AppTask::kState_OnCompleted);
+}
+
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
     AppEvent button_event           = {};
@@ -477,8 +493,8 @@ void AppTask::OnLightActionCompleted(AppTask::Action_t aAction)
 
     if (mSyncClusterToButtonAction)
     {
-        // Use CommonAppTask::UpdateClusterState so scheduled work runs UpdateClusterStateImpl (CRTP), not AppTask:: only.
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(CommonAppTask::UpdateClusterState,
+        // UpdateClusterState is a TU-local helper (no CRTP override); pass it directly to ScheduleWork.
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState,
                                                                                reinterpret_cast<intptr_t>(nullptr));
         mSyncClusterToButtonAction = false;
     }
@@ -637,18 +653,6 @@ bool AppTask::InitiateLightCtrlAction(int32_t aActor, AppTask::Action_t aAction,
     return action_initiated;
 }
 #endif
-
-void AppTask::UpdateClusterState(intptr_t /* context */)
-{
-    uint8_t newValue = IsLightOn();
-
-    Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(LIGHT_ENDPOINT, newValue, false);
-
-    if (status != Protocols::InteractionModel::Status::Success)
-    {
-        SILABS_LOG("ERR: updating on/off %x", to_underlying(status));
-    }
-}
 
 void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                             uint8_t * value)

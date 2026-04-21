@@ -92,9 +92,6 @@ public:
     /** Public so AppTask.cpp can pass this pointer to osTimerNew; dispatches to LightTimerEventHandlerImpl. */
     static void LightTimerEventHandler(void * timerCbArg) { CRTP_APP_TASK(Derived).LightTimerEventHandlerImpl(timerCbArg); }
 
-    /** Public so AppTask.cpp can pass this pointer to ScheduleWork; dispatches to UpdateClusterStateImpl. */
-    static void UpdateClusterState(intptr_t context) { CRTP_APP_TASK(Derived).UpdateClusterStateImpl(context); }
-
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     /** Public so AppTask.cpp can assign this handler; dispatches to LightControlEventHandlerImpl. */
     static void LightControlEventHandler(AppEvent * aEvent) { CRTP_APP_TASK(Derived).LightControlEventHandlerImpl(aEvent); }
@@ -140,8 +137,6 @@ private:
     void OnLightActionCompletedImpl(Action_t aAction) { AppTask::OnLightActionCompleted(aAction); }
 
     void LightTimerEventHandlerImpl(void * timerCbArg) { AppTask::LightTimerEventHandler(timerCbArg); }
-
-    void UpdateClusterStateImpl(intptr_t context) { AppTask::UpdateClusterState(context); }
 
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     void LightControlEventHandlerImpl(AppEvent * aEvent) { AppTask::LightControlEventHandler(aEvent); }
