@@ -27,6 +27,11 @@
 #include <app/icd/server/ICDServerConfig.h>
 #include <cmsis_os2.h>
 #include <inet/IPAddress.h>
+#include <inet/InetConfig.h>
+#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#include <inet/UDPEndPointImplLwIP.h>
+#include <platform/CHIPDeviceLayer.h>
+#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -570,6 +575,7 @@ sl_wifi_system_performance_profile_t ConvertPowerSaveConfiguration(PowerSaveInte
         profile = ASSOCIATED_POWER_SAVE;
         break;
     case PowerSaveInterface::PowerSaveConfiguration::kDeepSleep:
+    case PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep:
         profile = DEEP_SLEEP_WITH_RAM_RETENTION;
         break;
     default:
@@ -647,6 +653,7 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     // Create the message queue
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiPlatformEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, CHIP_ERROR_NO_MEMORY);
+
 #ifndef SL_MBEDTLS_USE_TINYCRYPT
     // PSA Crypto initialization
     VerifyOrReturnError(psa_crypto_init() == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
@@ -669,17 +676,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
     case WifiPlatformEvent::kStationDisconnect: {
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationDisconnect");
         TriggerPlatformWifiDisconnection();
-
-        wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
-            .Clear(WifiInterface::WifiState::kStationConnecting)
-            .Clear(WifiInterface::WifiState::kStationConnected);
-
-        // TODO: Implement disconnect notify
-        ResetConnectivityNotificationFlags();
-#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
-        NotifyIPv4Change(false);
-#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
-        NotifyIPv6Change(false);
+        ClearWifiDisconnectedState();
     }
     break;
 
@@ -694,6 +691,10 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        // Remove High performance request that might have been added during the connect/retry process
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         PostWifiPlatformEvent(WifiPlatformEvent::kStationStartJoin);
         break;
 
@@ -725,6 +726,18 @@ void WifiInterfaceImpl::NotifySuccessfulConnection(void)
     ChipLogProgress(DeviceLayer, "SLAAC OK: linklocal addr: %s", addrStr);
     NotifyIPv6Change(true);
     NotifyConnectivity();
+
+#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+    {
+        CHIP_ERROR flushErr = chip::DeviceLayer::SystemLayer().ScheduleLambda([]() {
+            chip::Inet::UDPEndPointImplLwIP::FlushDeferredSendQueue();
+        });
+        if (flushErr != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "ScheduleLambda(FlushDeferredSendQueue) failed: %" CHIP_ERROR_FORMAT, flushErr.Format());
+        }
+    }
+#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 }
 
 sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
@@ -760,11 +773,6 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK)
     {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-        // Remove High performance request that might have been added during the connect/retry process
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
         WifiPlatformEvent event = WifiPlatformEvent::kStationConnect;
         PostWifiPlatformEvent(event);
         return status;
@@ -775,7 +783,12 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-    ScheduleConnectionAttempt();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
+    if (!mLitIntentionalSleepDisconnect)
+#endif
+    {
+        ScheduleConnectionAttempt();
+    }
 
     return status;
 }
@@ -804,7 +817,12 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
         mInstance.mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-        mInstance.ScheduleConnectionAttempt();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
+        if (!mInstance.mLitIntentionalSleepDisconnect)
+#endif
+        {
+            mInstance.ScheduleConnectionAttempt();
+        }
     }
 
     return status;
@@ -907,13 +925,57 @@ void WifiInterfaceImpl::PostWifiPlatformEvent(WifiPlatformEvent event)
 
 sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
 {
+    ChipLogProgress(DeviceLayer, "TriggerPlatformWifiDisconnection **************************");
     sl_status_t status = sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_down failed: 0x%lx", status));
 
     return SL_STATUS_OK;
 }
 
+void WifiInterfaceImpl::ClearWifiDisconnectedState()
+{
+    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
+        .Clear(WifiInterface::WifiState::kStationConnecting)
+        .Clear(WifiInterface::WifiState::kStationConnected);
+
+    ResetConnectivityNotificationFlags();
+#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
+    NotifyIPv4Change(false);
+#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
+    NotifyIPv6Change(false);
+}
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
+{
+    mLitIntentionalSleepDisconnect = false;
+    ResetConnectionRetryInterval();
+
+    VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
+
+    if (IsStationConnected())
+    {
+        return CHIP_NO_ERROR;
+    }
+
+    if (!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
+    {
+        return ConnectToAccessPoint();
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
+{
+    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
+    mLitIntentionalSleepDisconnect = true;
+    TriggerPlatformWifiDisconnection();
+    return CHIP_NO_ERROR;
+}
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
     // Power save configuration is already set, nothing to do
