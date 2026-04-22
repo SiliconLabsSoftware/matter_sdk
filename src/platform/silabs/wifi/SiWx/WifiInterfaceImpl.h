@@ -74,8 +74,13 @@ public:
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) override;
     CHIP_ERROR ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval) override;
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+    CHIP_ERROR ConfigureLITConnect() override;
+    CHIP_ERROR ConfigureLITDisconnect() override;
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
+public:
     /**
      * @brief Processes the wifi platform events for the SiWx platform
      *
@@ -91,6 +96,9 @@ protected:
      *                     SL_STATUS_FAILURE, otherwise
      */
     sl_status_t TriggerPlatformWifiDisconnection();
+
+    /** Software state after link down (used by kStationDisconnect and by synchronous disconnect paths). */
+    void ClearWifiDisconnectedState();
     /**
      * @brief Posts an event to the Wi-Fi task
      *
@@ -155,6 +163,11 @@ private:
 
     bool mHasNotifiedWifiConnectivity = false;
     bool mUseQuickJoin                = false;
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
+    // Intentional LIT disconnect: suppress exponential reconnect until ConfigureLITConnect().
+    bool mLitIntentionalSleepDisconnect = false;
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
 
     static WifiInterfaceImpl mInstance;
 };
