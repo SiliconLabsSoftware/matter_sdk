@@ -4,33 +4,33 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
 
 <hr>
 
--   [Matter EFR32 Lighting Example](#matter-efr32-lighting-example)
-    -   [Introduction](#introduction)
-    -   [Extending Base App Implementation](#extending-base-app-implementation)
-        -   [CommonAppTask](#commonapptask)
-        -   [How to Override APIs](#how-to-override-apis)
-        -   [DataModelCallbacks and CommonAppTask](#datamodelcallbacks-and-commonapptask)
-        -   [Sample Implementation](#sample-implementation)
-        -   [Override API Reference](#override-api-reference)
-    -   [Building](#building)
-    -   [Flashing the Application](#flashing-the-application)
-    -   [Viewing Logging Output](#viewing-logging-output)
-        -   [SEGGER RTT (recommended)](#segger-rtt-recommended)
-        -   [Console Log](#console-log)
-            -   [Configuring the VCOM](#configuring-the-vcom)
-        -   [Using the console](#using-the-console)
-    -   [Running the Complete Example](#running-the-complete-example)
-        -   [Notes](#notes)
-    -   [Running RPC console](#running-rpc-console)
-    -   [Device Tracing](#device-tracing)
-    -   [Memory settings](#memory-settings)
-    -   [OTA Software Update](#ota-software-update)
-    -   [Group Communication (Multicast)](#group-communication-multicast)
-    -   [Building options](#building-options)
-        -   [Disabling logging](#disabling-logging)
-        -   [Debug build / release build](#debug-build--release-build)
-        -   [Disabling LCD](#disabling-lcd)
-        -   [KVS maximum entry count](#kvs-maximum-entry-count)
+- [Matter EFR32 Lighting Example](#matter-efr32-lighting-example)
+  - [Introduction](#introduction)
+  - [Extending Base App Implementation](#extending-base-app-implementation)
+    - [CustomerAppTask](#customerapptask)
+    - [How to Override APIs](#how-to-override-apis)
+    - [DataModelCallbacks and CustomerAppTask](#datamodelcallbacks-and-customerapptask)
+    - [Sample Implementation](#sample-implementation)
+    - [Override API Reference](#override-api-reference)
+  - [Building](#building)
+  - [Flashing the Application](#flashing-the-application)
+  - [Viewing Logging Output](#viewing-logging-output)
+    - [SEGGER RTT (recommended)](#segger-rtt-recommended)
+    - [Console Log](#console-log)
+      - [Configuring the VCOM](#configuring-the-vcom)
+    - [Using the console](#using-the-console)
+  - [Running the Complete Example](#running-the-complete-example)
+    - [Notes](#notes)
+  - [Running RPC console](#running-rpc-console)
+  - [Device Tracing](#device-tracing)
+  - [Memory settings](#memory-settings)
+  - [OTA Software Update](#ota-software-update)
+  - [Group Communication (Multicast)](#group-communication-multicast)
+  - [Building options](#building-options)
+    - [Disabling logging](#disabling-logging)
+    - [Debug build / release build](#debug-build--release-build)
+    - [Disabling LCD](#disabling-lcd)
+    - [KVS maximum entry count](#kvs-maximum-entry-count)
 
 <hr>
 
@@ -61,36 +61,40 @@ Silicon Labs platform.
 
 ## Extending Base App Implementation
 
-### CommonAppTask
+### CustomerAppTask
 
 To implement custom app behavior you can override any Silicon Labs implemented
-API in the CommonAppTask file. This example provides
-[`CommonAppTask.h`](../../platform/silabs/CommonAppTask.h) and
-[`CommonAppTask.cpp`](../../platform/silabs/CommonAppTask.cpp) for that purpose.
+API in the CustomerAppTask file. This example provides
+[`CustomerAppTask.h`](../../platform/silabs/customer/CustomerAppTask.h) and
+[`CustomerAppTask.cpp`](../../platform/silabs/customer/CustomerAppTask.cpp) for that purpose.
 The base implementation and the full set of overridable `*Impl()` APIs live in
 this example's source tree under
 [`include/AppTaskImpl.h`](include/AppTaskImpl.h) and
 [`src/AppTask.cpp`](src/AppTask.cpp). Any `*Impl()` you do not override keeps
 the Silicon Labs default behavior.
+To customize behavior, copy [`CustomerAppTask.h`](../../platform/silabs/customer/CustomerAppTask.h)
+and [`CustomerAppTask.cpp`](../../platform/silabs/customer/CustomerAppTask.cpp)
+from `examples/platform/silabs/customer/` into this app's `include/` and `src/`
+folders, then update the corresponding paths in `BUILD.gn`.
 
 ### How to Override APIs
 
-`CommonAppTask` extends the base AppTask through the Curiously Recurring
+`CustomerAppTask` extends the base AppTask through the Curiously Recurring
 Template Pattern (CRTP). You override only the `*Impl()` methods you need, the
 base declares one `*Impl()` per overridable API. Steps:
 
 1. Find the method to override in the base API (see
    [Override API reference](#override-api-reference) below).
-2. Declare the same method signature in `CommonAppTask` in your
-   `CommonAppTask.h` under `private:`
-3. Implement the method in `CommonAppTask.cpp`.
+2. Declare the same method signature in `CustomerAppTask` in your
+   `CustomerAppTask.h` under `private:`
+3. Implement the method in `CustomerAppTask.cpp`.
 4. Build the project. Each overridable API is resolved as follows: **if you
-   implemented that `*Impl()` in CommonAppTask, your implementation is used,
+   implemented that `*Impl()` in CustomerAppTask, your implementation is used,
    otherwise the Silicon Labs default implementation is used.** You only
    implement what you need, everything else falls back to the default
    automatically.
 
-### DataModelCallbacks and CommonAppTask
+### DataModelCallbacks and CustomerAppTask
 
 What used to live in `DataModelCallbacks.cpp` is now under the `AppTask.cpp`
 
@@ -102,19 +106,19 @@ Forwarding into `AppTask` still goes through CRTP as in
 [How to Override APIs](#how-to-override-apis).
 
 -   **Methods that already exist in the AppTask** — Customize them by overriding
-    the matching `*Impl()` method in `CommonAppTask`. Do not edit the
+    the matching `*Impl()` method in `CustomerAppTask`. Do not edit the
     `AppTask.cpp` for app-specific behavior.
 
--   **New custom data model methods** — Add them in `CommonAppTask` directly. Do
+-   **New custom data model methods** — Add them in `CustomerAppTask` directly. Do
     not add new application logic in autogenerated sources; those edits will not
     survive regeneration or project upgrades.
 
 ### Sample Implementation
 
-The following shows a minimal example `CommonAppTask` that overrides
+The following shows a minimal example `CustomerAppTask` that overrides
 `AppInitImpl()` (required) and `ButtonEventHandlerImpl()`.
 
-**CommonAppTask.h**
+**CustomerAppTask.h**
 
 ```cpp
 #pragma once
@@ -124,23 +128,23 @@ The following shows a minimal example `CommonAppTask` that overrides
  * Minimal AppTaskImpl-derived class. Override only the *Impl() methods you need;
  * add AppInitImpl(), GetAppTask(), and sAppTask as required by the CRTP base.
  */
-class CommonAppTask : public AppTaskImpl<CommonAppTask>
+class CustomerAppTask : public AppTaskImpl<CustomerAppTask>
 {
 public:
-    static CommonAppTask & GetAppTask() { return sAppTask; }
+    static CustomerAppTask & GetAppTask() { return sAppTask; }
 
 private:
-    friend class AppTaskImpl<CommonAppTask>;
+    friend class AppTaskImpl<CustomerAppTask>;
     CHIP_ERROR AppInitImpl();
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction);
-    static CommonAppTask sAppTask;
+    static CustomerAppTask sAppTask;
 };
 ```
 
-**CommonAppTask.cpp**
+**CustomerAppTask.cpp**
 
 ```cpp
-#include "CommonAppTask.h"
+#include "CustomerAppTask.h"
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
@@ -153,29 +157,29 @@ using namespace ::chip::DeviceLayer::Silabs;
 #define APP_FUNCTION_BUTTON 0
 #define APP_LIGHT_SWITCH     1
 
-CommonAppTask CommonAppTask::sAppTask;
+CustomerAppTask CustomerAppTask::sAppTask;
 
 AppTask & AppTask::GetAppTask()
 {
-    return CommonAppTask::GetAppTask();
+    return CustomerAppTask::GetAppTask();
 }
 
-CHIP_ERROR CommonAppTask::AppInitImpl()
+CHIP_ERROR CustomerAppTask::AppInitImpl()
 {
-    SILABS_LOG("CommonAppTask: custom implementation (AppInitImpl)");
+    SILABS_LOG("CustomerAppTask: custom implementation (AppInitImpl)");
     CHIP_ERROR err = this->LightingAppTask::AppInit();
     if (err == CHIP_NO_ERROR)
     {
         // Override the SDK default button handler registered in LightingAppTask::AppInit().
-        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CommonAppTask::ButtonEventHandler);
+        chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CustomerAppTask::ButtonEventHandler);
     }
     return err;
 }
 
 // override code goes here
-void CommonAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
+void CustomerAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
 {
-    SILABS_LOG("CommonAppTask: custom implementation (ButtonEventHandlerImpl)");
+    SILABS_LOG("CustomerAppTask: custom implementation (ButtonEventHandlerImpl)");
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
@@ -208,7 +212,7 @@ the reference for overridable methods and app configuration.
 
 | File                                             | Purpose                                                                                                                                              |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`include/AppTaskImpl.h`](include/AppTaskImpl.h) | Declarations of every overridable `*Impl()` method. Copy the signatures you need from here into `CommonAppTask.h`.                                   |
+| [`include/AppTaskImpl.h`](include/AppTaskImpl.h) | Declarations of every overridable `*Impl()` method. Copy the signatures you need from here into `CustomerAppTask.h`.                                   |
 | [`src/AppTask.cpp`](src/AppTask.cpp)             | Silicon Labs default implementation of AppTask. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior. |
 
 ## Building
