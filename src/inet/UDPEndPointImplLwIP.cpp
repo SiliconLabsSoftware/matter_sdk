@@ -23,6 +23,8 @@
 
 #include <inet/UDPEndPointImplLwIP.h>
 
+#include <deque>
+
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 
@@ -67,14 +69,14 @@ namespace {
 
 struct DeferredUdpSlot
 {
-    bool inUse = false;
     UDPEndPointHandle ep;
     IPPacketInfo pktInfo;
     System::PacketBufferHandle msg;
 };
 
-DeferredUdpSlot gDeferredUdpSlots[INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE];
-size_t gDeferredUdpCount = 0;
+// FIFO of deferred UDP sends, bounded to INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE.
+// Enqueue drops the oldest entry on overflow; purge/flush erase matching entries in place.
+std::deque<DeferredUdpSlot> gDeferredUdpQueue;
 
 bool IsNetifUsable(struct netif * netif)
 {
@@ -159,73 +161,42 @@ bool IsOutboundNetifReadyForUdp(const IPPacketInfo & pktInfo)
 
 CHIP_ERROR EnqueueDeferredUdpSend(UDPEndPointImplLwIP * self, const IPPacketInfo * pktInfo, System::PacketBufferHandle && msg)
 {
-    if (gDeferredUdpCount >= INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE)
+    if (gDeferredUdpQueue.size() >= INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE)
     {
-        size_t head = INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE;
-        for (size_t i = 0; i < INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE; ++i)
-        {
-            if (gDeferredUdpSlots[i].inUse)
-            {
-                head = i;
-                break;
-            }
-        }
-        if (head >= INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE)
-        {
-            ChipLogError(Inet, "Deferred UDP send queue inconsistent (count %u)",
-                         static_cast<unsigned>(gDeferredUdpCount));
-            return CHIP_ERROR_NO_MEMORY;
-        }
-
+        const DeferredUdpSlot & head = gDeferredUdpQueue.front();
         char dropDest[IPAddress::kMaxStringLength];
-        gDeferredUdpSlots[head].pktInfo.DestAddress.ToString(dropDest);
+        head.pktInfo.DestAddress.ToString(dropDest);
         ChipLogProgress(Inet, "Deferred UDP queue full: dropping head dest %s port %u len %u", dropDest,
-                        gDeferredUdpSlots[head].pktInfo.DestPort,
-                        static_cast<unsigned>(gDeferredUdpSlots[head].msg->TotalLength()));
-
-        gDeferredUdpSlots[head].inUse = false;
-        gDeferredUdpSlots[head].ep    = UDPEndPointHandle();
-        gDeferredUdpSlots[head].msg   = nullptr;
-        --gDeferredUdpCount;
+                        head.pktInfo.DestPort, static_cast<unsigned>(head.msg->TotalLength()));
+        gDeferredUdpQueue.pop_front();
     }
 
-    for (size_t i = 0; i < INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE; ++i)
-    {
-        if (!gDeferredUdpSlots[i].inUse)
-        {
-            gDeferredUdpSlots[i].inUse   = true;
-            gDeferredUdpSlots[i].ep      = UDPEndPointHandle(static_cast<UDPEndPoint *>(self));
-            gDeferredUdpSlots[i].pktInfo = *pktInfo;
-            gDeferredUdpSlots[i].msg     = std::move(msg);
-            ++gDeferredUdpCount;
-            {
-                char destStr[IPAddress::kMaxStringLength];
-                pktInfo->DestAddress.ToString(destStr);
-                ChipLogProgress(Inet, "UDP send deferred (waiting for netif): dest %s port %u len %u", destStr, pktInfo->DestPort,
-                              static_cast<unsigned>(gDeferredUdpSlots[i].msg->TotalLength()));
-            }
-            return CHIP_NO_ERROR;
-        }
-    }
+    DeferredUdpSlot slot;
+    slot.ep      = UDPEndPointHandle(static_cast<UDPEndPoint *>(self));
+    slot.pktInfo = *pktInfo;
+    slot.msg     = std::move(msg);
 
-    return CHIP_ERROR_NO_MEMORY;
+    char destStr[IPAddress::kMaxStringLength];
+    pktInfo->DestAddress.ToString(destStr);
+    ChipLogProgress(Inet, "UDP send deferred (waiting for netif): dest %s port %u len %u", destStr, pktInfo->DestPort,
+                    static_cast<unsigned>(slot.msg->TotalLength()));
+
+    gDeferredUdpQueue.push_back(std::move(slot));
+    return CHIP_NO_ERROR;
 }
 
 void PurgeDeferredUdpSendsForEndpoint(UDPEndPointImplLwIP * self)
 {
     UDPEndPoint * asBase = static_cast<UDPEndPoint *>(self);
-    for (size_t i = 0; i < INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE; ++i)
+    for (auto it = gDeferredUdpQueue.begin(); it != gDeferredUdpQueue.end();)
     {
-        if (!gDeferredUdpSlots[i].inUse)
+        if (!it->ep.IsNull() && it->ep == *asBase)
         {
-            continue;
+            it = gDeferredUdpQueue.erase(it);
         }
-        if (!gDeferredUdpSlots[i].ep.IsNull() && gDeferredUdpSlots[i].ep == *asBase)
+        else
         {
-            gDeferredUdpSlots[i].inUse = false;
-            gDeferredUdpSlots[i].ep    = UDPEndPointHandle();
-            gDeferredUdpSlots[i].msg   = nullptr;
-            --gDeferredUdpCount;
+            ++it;
         }
     }
 }
@@ -420,49 +391,48 @@ void UDPEndPointImplLwIP::FlushDeferredSendQueue()
 {
     assertChipStackLockedByCurrentThread();
 
-    bool madeProgress = true;
-    while (madeProgress)
+    // Take ownership of the current queue locally. This guarantees each entry is visited
+    // exactly once per flush call, and is safe if PerformLwIPUdpSend re-enqueues on ERR_RTE
+    // (those go into the now-empty gDeferredUdpQueue without affecting our iteration).
+    std::deque<DeferredUdpSlot> pending;
+    pending.swap(gDeferredUdpQueue);
+
+    while (!pending.empty())
     {
-        madeProgress = false;
-        for (size_t i = 0; i < INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE; ++i)
+        DeferredUdpSlot slot = std::move(pending.front());
+        pending.pop_front();
+
+        bool ready         = false;
+        err_t probeErr = RunOnTCPIPRet([&]() -> err_t {
+            ready = IsOutboundNetifReadyForUdp(slot.pktInfo);
+            return ERR_OK;
+        });
+        if (probeErr != ERR_OK)
         {
-            if (!gDeferredUdpSlots[i].inUse)
+            ChipLogError(Inet, "FlushDeferredSendQueue: RunOnTCPIPRet failed: %d", static_cast<int>(probeErr));
+            // Restore remaining entries to the global queue preserving order, then bail.
+            gDeferredUdpQueue.push_back(std::move(slot));
+            while (!pending.empty())
             {
-                continue;
+                gDeferredUdpQueue.push_back(std::move(pending.front()));
+                pending.pop_front();
             }
+            return;
+        }
 
-            bool ready = false;
-            err_t deferProbeErr = RunOnTCPIPRet([&]() -> err_t {
-                ready = IsOutboundNetifReadyForUdp(gDeferredUdpSlots[i].pktInfo);
-                return ERR_OK;
-            });
-            if (deferProbeErr != ERR_OK)
+        if (!ready)
+        {
+            gDeferredUdpQueue.push_back(std::move(slot)); // try again on the next flush
+            continue;
+        }
+
+        if (!slot.ep.IsNull())
+        {
+            auto * impl = static_cast<UDPEndPointImplLwIP *>(slot.ep.operator->());
+            if (impl->mState != State::kClosed && impl->mUDP != nullptr)
             {
-                ChipLogError(Inet, "FlushDeferredSendQueue: RunOnTCPIPRet failed: %d", static_cast<int>(deferProbeErr));
-                return;
+                (void) impl->PerformLwIPUdpSend(&slot.pktInfo, std::move(slot.msg));
             }
-            if (!ready)
-            {
-                continue;
-            }
-
-            UDPEndPointHandle ep = std::move(gDeferredUdpSlots[i].ep);
-            IPPacketInfo pktCopy = gDeferredUdpSlots[i].pktInfo;
-            System::PacketBufferHandle buf = std::move(gDeferredUdpSlots[i].msg);
-            gDeferredUdpSlots[i].inUse = false;
-            --gDeferredUdpCount;
-
-            if (!ep.IsNull())
-            {
-                auto * impl = static_cast<UDPEndPointImplLwIP *>(ep.operator->());
-                if (impl->mState != State::kClosed && impl->mUDP != nullptr)
-                {
-                    (void) impl->PerformLwIPUdpSend(&pktCopy, std::move(buf));
-                }
-            }
-
-            madeProgress = true;
-            break;
         }
     }
 }
