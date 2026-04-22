@@ -30,8 +30,3 @@ CustomerAppTask CustomerAppTask::sAppTask;
  * For full list of overridable methods, including required overrides for custom
  * behavior, and further documentation see app README file.
  */
-
-CustomerAppTask & CustomerAppTask::GetAppTask()
-{
-    return CustomerAppTask::GetAppTask();
-}
