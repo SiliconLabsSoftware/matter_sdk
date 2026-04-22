@@ -53,7 +53,7 @@ extern "C" {
 static TaskHandle_t matterAwsTask         = nullptr;
 static EventGroupHandle_t matterAwsEvents = nullptr;
 
-mqtt_client_t * mqtt_client              = nullptr;
+mqtt_client_t * mqtt_client             = nullptr;
 matterAws_subscribe_cb gSubsCB          = NULL;
 static struct altcp_tls_config * tlsCfg = nullptr;
 
@@ -181,7 +181,7 @@ static void MatterAwsTaskFn(void * args)
     char ca_cert_buf[MATTER_AWS_CA_CERT_LENGTH] = { 0 };
     char cert_buf[MATTER_AWS_DEV_CERT_LENGTH]   = { 0 };
     char key_buf[MATTER_AWS_DEV_KEY_LENGTH]     = { 0 };
-    char hostname[MATTER_AWS_HOSTNAME_LENGTH]    = { 0 };
+    char hostname[MATTER_AWS_HOSTNAME_LENGTH]   = { 0 };
     static char clientIdBuf[MATTER_AWS_CLIENTID_LENGTH];
     size_t ca_cert_length  = 0;
     size_t cert_length     = 0;
@@ -204,8 +204,8 @@ static void MatterAwsTaskFn(void * args)
                  ChipLogError(AppServer, "[MATTER_AWS] failed to fetch client ID"));
     clientIdBuf[sizeof(clientIdBuf) - 1] = '\0';
 
-    VerifyOrExit(ERR_OK == MatterAwsResolveHostname(hostname, &brokerAddr),
-                 ChipLogError(AppServer, "[MATTER_AWS] DNS resolution failed"));
+    VerifyOrExit(err_t err = MatterAwsResolveHostname(hostname, &brokerAddr) && err == ERR_OK,
+                 ChipLogError(AppServer, "[MATTER_AWS] DNS resolution failed: %d", err));
 
     LOCK_TCPIP_CORE();
     mqtt_client = mqtt_client_new();
@@ -249,8 +249,7 @@ static void MatterAwsTaskFn(void * args)
 
     while (!endLoop)
     {
-        EventBits_t event =
-            xEventGroupWaitBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE, pdTRUE, pdFALSE, portMAX_DELAY);
+        EventBits_t event = xEventGroupWaitBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE, pdTRUE, pdFALSE, portMAX_DELAY);
         if (event & SIGNAL_TRANSINTF_CONN_CLOSE)
         {
             LOCK_TCPIP_CORE();
