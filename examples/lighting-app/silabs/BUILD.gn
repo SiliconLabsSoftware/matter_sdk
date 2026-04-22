@@ -78,6 +78,7 @@ if (wifi_soc) {
       "${examples_plat_dir}",
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
+      "${examples_common_plat_dir}/customer",
       "${examples_common_plat_dir}/freertos_config",
     ]
 
