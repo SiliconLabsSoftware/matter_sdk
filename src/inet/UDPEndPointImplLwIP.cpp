@@ -67,9 +67,15 @@ namespace Inet {
 
 namespace {
 
+// Fallback for LwIP versions that do not provide NETIF_FOREACH (pre-2.1 or with LWIP_SINGLE_NETIF).
+// Matches the upstream signature: the caller declares the loop variable.
+#ifndef NETIF_FOREACH
+#define NETIF_FOREACH(netif) for ((netif) = netif_list; (netif) != nullptr; (netif) = (netif)->next)
+#endif
+
 struct DeferredUdpSlot
 {
-    UDPEndPointHandle ep;
+    UDPEndPointHandle epHandle;
     IPPacketInfo pktInfo;
     System::PacketBufferHandle msg;
 };
@@ -83,7 +89,6 @@ bool IsNetifUsable(struct netif * netif)
     return netif != nullptr && netif_is_up(netif) && netif_is_link_up(netif);
 }
 
-#if LWIP_IPV6
 bool NetifHasValidIpv6Address(struct netif * netif)
 {
     if (netif == nullptr)
@@ -99,7 +104,6 @@ bool NetifHasValidIpv6Address(struct netif * netif)
     }
     return false;
 }
-#endif // LWIP_IPV6
 
 bool IsNetifReadyForOutboundUdp(struct netif * netif, const IPAddress & dest)
 {
@@ -107,12 +111,10 @@ bool IsNetifReadyForOutboundUdp(struct netif * netif, const IPAddress & dest)
     {
         return false;
     }
-#if LWIP_IPV6
     if (dest.IsIPv6())
     {
         return NetifHasValidIpv6Address(netif);
     }
-#endif // LWIP_IPV6
 #if INET_CONFIG_ENABLE_IPV4 && LWIP_IPV4
     if (dest.IsIPv4())
     {
@@ -137,7 +139,6 @@ bool IsOutboundNetifReadyForUdp(const IPPacketInfo & pktInfo)
         return true;
     }
 
-#if defined(NETIF_FOREACH)
     struct netif * netif = nullptr;
     NETIF_FOREACH(netif)
     {
@@ -146,15 +147,6 @@ bool IsOutboundNetifReadyForUdp(const IPPacketInfo & pktInfo)
             return true;
         }
     }
-#else
-    for (struct netif * netif = netif_list; netif != nullptr; netif = netif->next)
-    {
-        if (IsNetifReadyForOutboundUdp(netif, dest))
-        {
-            return true;
-        }
-    }
-#endif
 
     return false;
 }
@@ -172,7 +164,7 @@ CHIP_ERROR EnqueueDeferredUdpSend(UDPEndPointImplLwIP * self, const IPPacketInfo
     }
 
     DeferredUdpSlot slot;
-    slot.ep      = UDPEndPointHandle(static_cast<UDPEndPoint *>(self));
+    slot.epHandle      = UDPEndPointHandle(static_cast<UDPEndPoint *>(self));
     slot.pktInfo = *pktInfo;
     slot.msg     = std::move(msg);
 
@@ -190,7 +182,7 @@ void PurgeDeferredUdpSendsForEndpoint(UDPEndPointImplLwIP * self)
     UDPEndPoint * asBase = static_cast<UDPEndPoint *>(self);
     for (auto it = gDeferredUdpQueue.begin(); it != gDeferredUdpQueue.end();)
     {
-        if (!it->ep.IsNull() && it->ep == *asBase)
+        if (!it->epHandle.IsNull() && it->epHandle == *asBase)
         {
             it = gDeferredUdpQueue.erase(it);
         }
@@ -426,9 +418,9 @@ void UDPEndPointImplLwIP::FlushDeferredSendQueue()
             continue;
         }
 
-        if (!slot.ep.IsNull())
+        if (!slot.epHandle.IsNull())
         {
-            auto * impl = static_cast<UDPEndPointImplLwIP *>(slot.ep.operator->());
+            auto * impl = static_cast<UDPEndPointImplLwIP *>(slot.epHandle.operator->());
             if (impl->mState != State::kClosed && impl->mUDP != nullptr)
             {
                 (void) impl->PerformLwIPUdpSend(&slot.pktInfo, std::move(slot.msg));
@@ -569,8 +561,8 @@ CHIP_ERROR UDPEndPointImplLwIP::GetPCB(IPAddressType addrType)
 void UDPEndPointImplLwIP::LwIPReceiveUDPMessage(void * arg, struct udp_pcb * pcb, struct pbuf * p, const ip_addr_t * addr,
                                                 u16_t port)
 {
-    UDPEndPointImplLwIP * ep = static_cast<UDPEndPointImplLwIP *>(arg);
-    if (ep->mState == State::kClosed)
+    UDPEndPointImplLwIP * epHandle = static_cast<UDPEndPointImplLwIP *>(arg);
+    if (epHandle->mState == State::kClosed)
     {
         return;
     }
@@ -609,7 +601,7 @@ void UDPEndPointImplLwIP::LwIPReceiveUDPMessage(void * arg, struct udp_pcb * pcb
     auto filterOutcome = EndpointQueueFilter::FilterOutcome::kAllowPacket;
     if (sQueueFilter != nullptr)
     {
-        filterOutcome = sQueueFilter->FilterBeforeEnqueue(ep, *(pktInfo.get()), buf);
+        filterOutcome = sQueueFilter->FilterBeforeEnqueue(epHandle, *(pktInfo.get()), buf);
     }
 
     if (filterOutcome != EndpointQueueFilter::FilterOutcome::kAllowPacket)
@@ -620,14 +612,14 @@ void UDPEndPointImplLwIP::LwIPReceiveUDPMessage(void * arg, struct udp_pcb * pcb
 
     // Increase mDelayReleaseCount to delay release of this UDP EndPoint while the HandleDataReceived call is
     // pending on it.
-    ep->mDelayReleaseCount++;
+    epHandle->mDelayReleaseCount++;
 
-    CHIP_ERROR err = ep->GetSystemLayer().ScheduleLambda(
-        [ep, p = System::LwIPPacketBufferView::UnsafeGetLwIPpbuf(buf), pktInfo = pktInfo.get()] {
-            ep->mDelayReleaseCount--;
+    CHIP_ERROR err = epHandle->GetSystemLayer().ScheduleLambda(
+        [epHandle, p = System::LwIPPacketBufferView::UnsafeGetLwIPpbuf(buf), pktInfo = pktInfo.get()] {
+            epHandle->mDelayReleaseCount--;
 
             auto handle = System::PacketBufferHandle::Adopt(p);
-            ep->HandleDataReceived(std::move(handle), pktInfo);
+            epHandle->HandleDataReceived(std::move(handle), pktInfo);
         });
 
     if (err == CHIP_NO_ERROR)
@@ -643,11 +635,11 @@ void UDPEndPointImplLwIP::LwIPReceiveUDPMessage(void * arg, struct udp_pcb * pcb
         // the packet is basically dequeued, if it tries to keep track of the lifecycle.
         if (sQueueFilter != nullptr)
         {
-            (void) sQueueFilter->FilterAfterDequeue(ep, *(pktInfo.get()), buf);
+            (void) sQueueFilter->FilterAfterDequeue(epHandle, *(pktInfo.get()), buf);
             ChipLogError(Inet, "Dequeue ERROR err = %" CHIP_ERROR_FORMAT, err.Format());
         }
 
-        ep->mDelayReleaseCount--;
+        epHandle->mDelayReleaseCount--;
     }
 }
 
