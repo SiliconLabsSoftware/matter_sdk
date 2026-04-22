@@ -21,13 +21,17 @@
 #define MQTT_TRANSPORT_H
 
 #include "FreeRTOS.h"
-#include "altcp_tls.h"
 #include "event_groups.h"
-#include "lwip/err.h"
-#include "lwip/ip_addr.h"
+#include "semphr.h"
+
+#include <lwip/opt.h>
+
+#include <lwip/altcp_tls.h>
+#include <lwip/err.h>
+#include <lwip/ip_addr.h>
+
 #include "mqtt.h"
 #include "mqtt_opts.h"
-#include "semphr.h"
 
 #define SIGNAL_TRANSINTF_MBEDTLS_RX 0x80
 #define SIGNAL_TRANSINTF_RX 0x01

@@ -27,12 +27,14 @@
 
 #include "MatterAwsConfig.h"
 
+#include <cstdint>
+
 using namespace chip;
 using namespace ::chip::DeviceLayer;
 
 namespace matterAws {
 namespace control {
-void MatterAwsIncomingDataCb(void * arg, const char * topic, const uint8_t * data, uint16_t len, uint8_t flags);
+void MatterAwsIncomingDataCb(void * arg, const uint8_t * data, uint16_t len, uint8_t flags);
 
 void SubscribeMQTT(intptr_t context);
 

@@ -17,17 +17,26 @@
  *    limitations under the License.
  */
 
-#include "MQTT_transport.h"
-#include "altcp.h"
-#include "altcp_tcp.h"
-#include "lwip/dns.h"
-#include "lwip/timeouts.h"
-#include "silabs_utils.h"
 #include <string.h>
-#if TRANSPORT_ALTCP && TRANSPORT_ALTCP_TLS
-#include "altcp_tls.h"
-#include "mbedtls/ssl.h"
-#endif
+
+#include "MQTT_transport.h"
+
+#include <lwip/opt.h>
+
+#include <lwip/altcp.h>
+#include <lwip/altcp_tcp.h>
+#include <lwip/dns.h>
+#include <lwip/timeouts.h>
+#include <lwip/tcpip.h>
+
+#if LWIP_ALTCP && LWIP_ALTCP_TLS
+#include <lwip/altcp_tls.h>
+#include <mbedtls/ssl.h>
+#endif // LWIP_ALTCP && LWIP_ALTCP_TLS
+
+#include "altcp_tls_mbedtls_structs.h"
+
+#include "silabs_utils.h"
 
 struct MQTT_Transport_t
 {
@@ -122,13 +131,13 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t * transP, const char * host, size_
     ip_addr_t ipaddr;
     if (transP == NULL && host == NULL)
     {
-        SILABS_LOG("MQTT transport connect failed");
+        SILABS_LOG("MQTT_Transport_Connect: NULL arguments");
         return ERR_ARG;
     }
     /* Validate hostname length to prevent excessive allocation */
     if (hostLen > MQTT_TRANSPORT_MAX_HOSTNAME_LEN)
     {
-        TRANSPORT_DEBUGF(("MQTT transport connect failed: hostname too long"));
+        SILABS_LOG("MQTT_Transport_Connect: hostname too long");
         return ERR_ARG;
     }
     transP->sync_sem = xSemaphoreCreateCounting(1, 0);
@@ -149,19 +158,19 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t * transP, const char * host, size_
     }
     else
     {
-        TRANSPORT_DEBUGF(("MQTT transport connect failed: hostname allocation failed"));
+        SILABS_LOG("MQTT_Transport_Connect: hostname allocation failed");
         return ERR_MEM;
     }
     if ((dns_ret = dns_gethostbyname(host, &ipaddr, dns_callback, transP)) != ERR_OK)
     {
         if (dns_ret == ERR_INPROGRESS)
         {
-            SILABS_LOG("in progress");
+            SILABS_LOG("MQTT_Transport_Connect: dns resolving in progress");
             xSemaphoreTake(transP->sync_sem, portMAX_DELAY);
         }
         else
         {
-            SILABS_LOG("dns resolving failed %d", dns_ret);
+            SILABS_LOG("MQTT_Transport_Connect: dns resolving failed %d", dns_ret);
             return dns_ret;
         }
     }
@@ -243,7 +252,7 @@ static void transport_close_cb(void * arg)
         if (res != ERR_OK)
         {
             altcp_abort(conn);
-            TRANSPORT_DEBUGF(("transport_close_cb: Close err=%s\n", lwip_strerr(res)));
+            SILABS_LOG("transport_close_cb: Close err=%s\n", lwip_strerr(res));
         }
         client->conn = NULL;
     }
@@ -268,9 +277,9 @@ static void transport_timerStop(timer_callback handler, void * arg)
 static void transport_err_cb(void * arg, err_t err)
 {
     MQTT_Transport_t * client = (MQTT_Transport_t *) arg;
-    TRANSPORT_UNUSED_ARG(err); /* only used for debug output */
-    TRANSPORT_DEBUGF(("transport_err_cb: TCP error callback: error %d, arg: %p\n", err, arg));
-    TRANSPORT_ASSERT("transport_err_cb: client != NULL", client != NULL);
+    LWIP_UNUSED_ARG(err); /* only used for debug output */
+    SILABS_LOG("transport_err_cb: TCP error callback: error %d, arg: %p\n", err, arg);
+    LWIP_ASSERT("transport_err_cb: client != NULL", client != NULL);
 
     /* Set conn to null before calling close as pcb is already deallocated*/
     if (client->conn_state && client->events != NULL)
@@ -289,19 +298,19 @@ static void transport_err_cb(void * arg, err_t err)
 static err_t transport_recv_cb(void * arg, struct altcp_pcb * pcb, struct pbuf * p, err_t err)
 {
     MQTT_Transport_t * client = (MQTT_Transport_t *) arg;
-    TRANSPORT_ASSERT("transport_recv_cb: client != NULL", client != NULL);
-    TRANSPORT_ASSERT("transport_recv_cb: client->conn == pcb", client->conn == pcb);
+    LWIP_ASSERT("transport_recv_cb: client != NULL", client != NULL);
+    LWIP_ASSERT("transport_recv_cb: client->conn == pcb", client->conn == pcb);
 
     if (p == NULL)
     {
-        TRANSPORT_DEBUGF(("transport_recv_cb: Recv pbuf=NULL, remote has closed connection\n"));
+        SILABS_LOG("transport_recv_cb: Recv pbuf=NULL, remote has closed connection\n");
         xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_CONN_CLOSE);
     }
     else
     {
         if (err != ERR_OK)
         {
-            TRANSPORT_DEBUGF(("transport_recv_cb: Recv err=%d\n", err));
+            SILABS_LOG("transport_recv_cb: Recv err=%d\n", err);
             pbuf_free(p);
             return err;
         }
@@ -351,10 +360,10 @@ static err_t transport_recv_cb(void * arg, struct altcp_pcb * pcb, struct pbuf *
 static err_t transport_sent_cb(void * arg, struct altcp_pcb * tpcb, u16_t len)
 {
     MQTT_Transport_t * client = (MQTT_Transport_t *) arg;
-    TRANSPORT_ASSERT("transport_recv_cb: client != NULL", client != NULL);
-    TRANSPORT_UNUSED_ARG(tpcb);
-    TRANSPORT_UNUSED_ARG(len);
-    if (client->conn_state == TRANSPORT_CONNECTED)
+    LWIP_ASSERT("transport_recv_cb: client != NULL", client != NULL);
+    LWIP_UNUSED_ARG(tpcb);
+    LWIP_UNUSED_ARG(len);
+    if (client->conn_state == TRANSPORT_CONNECTED && client->events != NULL)
     {
         xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_TX_ACK);
     }
@@ -395,8 +404,7 @@ static err_t transport_connect_cb(void * arg, struct altcp_pcb * tpcb, err_t err
     MQTT_Transport_t * client = (MQTT_Transport_t *) arg;
     if (err != ERR_OK)
     {
-        TRANSPORT_DEBUGF(("transport_connect_cb: TCP connect error %d\n", err));
-        SILABS_LOG("TCP connect error");
+        SILABS_LOG("transport_connect_cb: TCP connect error %d\n", err);
         client->conn_state = TRANSPORT_NOT_CONNECTED;
         client->matter_aws_conn_cb(err);
         return err;
@@ -405,8 +413,7 @@ static err_t transport_connect_cb(void * arg, struct altcp_pcb * tpcb, err_t err
     altcp_recv(tpcb, transport_recv_cb);
     altcp_sent(tpcb, transport_sent_cb);
     // tcp_poll(tpcb, tcp_poll_cb, 2);
-    TRANSPORT_DEBUGF(("transport_connect_cb: TCP connection established to server\n"));
-    SILABS_LOG("tcp_cb: TCP connection established to server\n");
+    SILABS_LOG("transport_connect_cb: TCP connection established to server\n");
     client->conn_state = TRANSPORT_CONNECTED;
     if (client->matter_aws_conn_cb != NULL)
     {
@@ -441,7 +448,7 @@ static err_t connection_new(MQTT_Transport_t * client, const ip_addr_t * ipaddr,
         return ERR_ISCONN;
     }
 
-#if TRANSPORT_ALTCP && TRANSPORT_ALTCP_TLS
+#if LWIP_ALTCP && LWIP_ALTCP_TLS
     if (client->tls_config)
     {
         SILABS_LOG("executing tls new");
@@ -455,18 +462,18 @@ static err_t connection_new(MQTT_Transport_t * client, const ip_addr_t * ipaddr,
                 int ret = mbedtls_ssl_set_hostname(ssl, client->hostname);
                 if (ret != 0)
                 {
-                    TRANSPORT_DEBUGF(("mbedtls_ssl_set_hostname failed: %d\n", ret));
+                    SILABS_LOG("mbedtls_ssl_set_hostname failed: %d\n", ret);
                     goto transport_fail;
                 }
                 else
                 {
-                    TRANSPORT_DEBUGF(("Set TLS hostname: %s\n", client->hostname));
+                    SILABS_LOG("Set TLS hostname: %s\n", client->hostname);
                 }
             }
         }
     }
     else
-#endif
+#endif // LWIP_ALTCP && LWIP_ALTCP_TLS
     {
         SILABS_LOG("not executing");
         client->conn = altcp_tcp_new_ip_type(IP_GET_TYPE(ipaddr));
@@ -481,7 +488,7 @@ static err_t connection_new(MQTT_Transport_t * client, const ip_addr_t * ipaddr,
     err = altcp_bind(client->conn, IP_ADDR_ANY, 0);
     if (err != ERR_OK)
     {
-        TRANSPORT_DEBUGF(("client_connect: Error binding to local ip/port, %d\n", err));
+        SILABS_LOG("client_connect: Error binding to local ip/port, %d\n", err);
         goto transport_fail;
     }
 
@@ -489,7 +496,7 @@ static err_t connection_new(MQTT_Transport_t * client, const ip_addr_t * ipaddr,
     err = altcp_connect(client->conn, ipaddr, port, transport_connect_cb);
     if (err != ERR_OK)
     {
-        TRANSPORT_DEBUGF(("client_connect: Error connecting to remote ip/port, %d\n", err));
+        SILABS_LOG("client_connect: Error connecting to remote ip/port, %d\n", err);
         goto transport_fail;
     }
     /* Set error callback */

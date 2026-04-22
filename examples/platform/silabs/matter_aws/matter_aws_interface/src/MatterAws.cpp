@@ -23,10 +23,12 @@
 
 #include "FreeRTOS.h"
 #include "event_groups.h"
+#include "semphr.h"
 #include "task.h"
 
 #include "silabs_utils.h"
 #include <lib/core/CHIPError.h>
+#include <lib/support/CHIPMemString.h>
 #include <lib/support/logging/CHIPLogging.h>
 
 #include "MatterAws.h"
@@ -37,8 +39,12 @@
 extern "C" {
 #endif
 
-#include "MQTT_transport.h"
-#include "mqtt.h"
+#include <lwip/altcp_tls.h>
+#include <lwip/dns.h>
+#include <lwip/opt.h>
+#include <lwip/tcpip.h>
+
+#include <mbedtls/debug.h>
 
 #ifdef __cplusplus
 }
@@ -47,14 +53,57 @@ extern "C" {
 static TaskHandle_t matterAwsTask         = nullptr;
 static EventGroupHandle_t matterAwsEvents = nullptr;
 
-mqtt_client_t * mqtt_client    = nullptr;
-MQTT_Transport_t * transport   = nullptr;
-matterAws_subscribe_cb gSubsCB = NULL;
-static mqtt_transport_intf_t trans;
+mqtt_client_t * mqtt_client             = nullptr;
+matterAws_subscribe_cb gSubsCB          = NULL;
+static struct altcp_tls_config * tlsCfg = nullptr;
 
 static bool init_complete;
 
-static void MatterAwsMqttSubscribeCb(void * arg, mqtt_err_t err)
+#define SIGNAL_TRANSINTF_CONN_CLOSE 0x04
+
+struct MatterAwsDnsCtx
+{
+    SemaphoreHandle_t sem;
+    ip_addr_t * outAddr;
+};
+
+static void MatterAwsDnsCallback(const char * name, const ip_addr_t * ipaddr, void * arg)
+{
+    (void) name;
+    auto * ctx = static_cast<MatterAwsDnsCtx *>(arg);
+    if (ipaddr != nullptr)
+    {
+        *ctx->outAddr = *ipaddr;
+    }
+    else
+    {
+        ip_addr_set_zero(ctx->outAddr);
+    }
+    xSemaphoreGive(ctx->sem);
+}
+
+static err_t MatterAwsResolveHostname(const char * hostname, ip_addr_t * addr)
+{
+    SemaphoreHandle_t sem = xSemaphoreCreateBinary();
+    VerifyOrReturnValue(sem != nullptr, ERR_MEM);
+
+    MatterAwsDnsCtx ctx = { sem, addr };
+
+    LOCK_TCPIP_CORE();
+    err_t derr = dns_gethostbyname(hostname, addr, MatterAwsDnsCallback, &ctx);
+    UNLOCK_TCPIP_CORE();
+
+    if (derr == ERR_INPROGRESS)
+    {
+        xSemaphoreTake(sem, portMAX_DELAY);
+        derr = ip_addr_isany(addr) ? ERR_VAL : ERR_OK;
+    }
+
+    vSemaphoreDelete(sem);
+    return derr;
+}
+
+static void MatterAwsMqttSubscribeCb(void * arg, err_t err)
 {
     const struct mqtt_connect_client_info_t * client_info = (const struct mqtt_connect_client_info_t *) arg;
     (void) client_info;
@@ -64,8 +113,14 @@ static void MatterAwsMqttSubscribeCb(void * arg, mqtt_err_t err)
 matterAws_err_t MatterAwsMqttSubscribe(mqtt_client_t * client, mqtt_incoming_publish_cb_t publish_cb,
                                        mqtt_incoming_data_cb_t data_cb, const char * topic, uint8_t qos)
 {
+    (void) client;
+    VerifyOrReturnValue(mqtt_client != nullptr, MATTER_AWS_ERR_FAIL);
+
+    LOCK_TCPIP_CORE();
     mqtt_set_inpub_callback(mqtt_client, publish_cb, data_cb, NULL);
-    int mret = mqtt_subscribe(mqtt_client, topic, qos, MatterAwsMqttSubscribeCb, NULL);
+    err_t mret = mqtt_subscribe(mqtt_client, topic, qos, MatterAwsMqttSubscribeCb, NULL);
+    UNLOCK_TCPIP_CORE();
+
     if (mret != ERR_OK)
     {
         ChipLogError(AppServer, "[MATTER_AWS] MQTT subscribe failed: %d", mret);
@@ -82,160 +137,151 @@ static void MatterAwsMqttConnCb(mqtt_client_t * client, void * arg, mqtt_connect
     ChipLogProgress(AppServer, "[MATTER_AWS] MQTT connection status: %u", status);
     if (status != MQTT_CONNECT_ACCEPTED)
     {
-        /* Signal the task to exit cleanly - the task will handle the event and set its local endLoop flag */
+        init_complete = false;
         VerifyOrReturn(matterAwsTask != nullptr && matterAwsEvents != nullptr,
                        ChipLogError(AppServer, "[MATTER_AWS] Task or events not initialized in MQTT callback"));
         xEventGroupSetBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE);
         return;
     }
+    init_complete = true;
     if (gSubsCB != NULL)
-        gSubsCB(); // Subscribe callback
+    {
+        gSubsCB();
+    }
 }
 
-void MatterAwsTcpConnectCb(err_t err)
+static void MatterAwsCleanupClient()
 {
-    ChipLogProgress(AppServer, "[MATTER_AWS] connection callback started");
-    if (err == ERR_OK)
+    if (mqtt_client != nullptr)
     {
-        struct mqtt_connect_client_info_t connect_info;
-        mqtt_err_t mret;
-        /* Connect to MQTT broker/cloud */
-        memset(&connect_info, 0, sizeof(connect_info));
-
-        char clientID[MATTER_AWS_CLIENTID_LENGTH] = { 0 };
-        size_t length                             = 0;
-
-        VerifyOrExit(MatterAwsGetClientId(clientID, MATTER_AWS_CLIENTID_LENGTH, &length) == CHIP_NO_ERROR,
-                     ChipLogError(AppServer, "[MATTER_AWS] failed to fetch client ID"));
-
-        connect_info.client_id = clientID;
-#if MATTER_AWS_CLIENT_USER
-        connect_info.client_user = MATTER_AWS_CLIENT_USER;
-#endif // MATTER_AWS_CLIENT_USER
-#if MATTER_AWS_CLIENT_PASS
-        connect_info.client_pass = MATTER_AWS_CLIENT_PASS;
-#endif // MATTER_AWS_CLIENT_PASS
-        connect_info.keep_alive = MATTER_AWS_KEEP_ALIVE;
-
-        mret = mqtt_client_connect(mqtt_client, (void *) &trans, MatterAwsMqttConnCb, NULL, &connect_info);
-        if (mret != ERR_OK)
-        {
-            ChipLogError(AppServer, "[MATTER_AWS] MQTT connection failed: %d", mret);
-            init_complete = false;
-            goto exit;
-        }
-        init_complete = true;
-        return;
+        LOCK_TCPIP_CORE();
+        mqtt_disconnect(mqtt_client);
+        mqtt_client_free(mqtt_client);
+        UNLOCK_TCPIP_CORE();
+        mqtt_client = nullptr;
     }
-    init_complete = false;
-exit:
-    /* Instead of deleting the task from callback context (which causes hardfault),
-     * signal the task to exit and let it clean up itself. The callback is called
-     * from TCP/IP thread context, and deleting a task from another task's context
-     * can corrupt FreeRTOS internal structures. */
-    VerifyOrReturn(matterAwsTask != nullptr && matterAwsEvents != nullptr,
-                   ChipLogError(AppServer, "[MATTER_AWS] Task or events not initialized in TCP callback"));
-    /* Signal the task to wake up and exit cleanly - task will set its local endLoop flag */
-    xEventGroupSetBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE);
-    return;
+    if (tlsCfg != nullptr)
+    {
+        LOCK_TCPIP_CORE();
+        altcp_tls_free_config(tlsCfg);
+        UNLOCK_TCPIP_CORE();
+        tlsCfg = nullptr;
+    }
 }
 
 static void MatterAwsTaskFn(void * args)
 {
-    /* Local flag to control the task loop - reset each time the task starts */
     bool endLoop = false;
+#if ALTCP_MBEDTLS_LIB_DEBUG
+    mbedtls_debug_set_threshold(ALTCP_MBEDTLS_LIB_DEBUG_LEVEL_MIN);
+#endif
 
-    /* get MQTT client handle */
-    err_t ret;
-    gSubsCB                                     = reinterpret_cast<void (*)()>(args);
-    mqtt_client                                 = mqtt_client_new();
+    gSubsCB = reinterpret_cast<void (*)()>(args);
+
     char ca_cert_buf[MATTER_AWS_CA_CERT_LENGTH] = { 0 };
     char cert_buf[MATTER_AWS_DEV_CERT_LENGTH]   = { 0 };
     char key_buf[MATTER_AWS_DEV_KEY_LENGTH]     = { 0 };
     char hostname[MATTER_AWS_HOSTNAME_LENGTH]   = { 0 };
-    size_t ca_cert_length                       = 0;
-    size_t cert_length                          = 0;
-    size_t key_length                           = 0;
-    size_t hostname_length                      = 0;
+    static char clientIdBuf[MATTER_AWS_CLIENTID_LENGTH];
+    size_t ca_cert_length  = 0;
+    size_t cert_length     = 0;
+    size_t key_length      = 0;
+    size_t hostname_length = 0;
+    size_t clientIdLen     = 0;
+    ip_addr_t brokerAddr;
 
-    VerifyOrExit(mqtt_client != NULL, ChipLogError(AppServer, "[MATTER_AWS] failed to create mqtt client"));
-
-    /* Get transport handle*/
-    memset(&trans, 0x00, sizeof(mqtt_transport_intf_t));
-    transport = MQTT_Transport_Init(&trans, mqtt_client, matterAwsEvents);
-    VerifyOrExit(transport != NULL, ChipLogError(AppServer, "[MATTER_AWS] failed to configure mqtt client"));
-
-    VerifyOrExit(MatterAwsGetHostname(hostname, MATTER_AWS_HOSTNAME_LENGTH, &hostname_length) == CHIP_NO_ERROR,
+    VerifyOrExit(MatterAwsGetHostname(hostname, sizeof(hostname), &hostname_length) == CHIP_NO_ERROR,
                  ChipLogError(AppServer, "[MATTER_AWS] failed to fetch hostname"));
-    VerifyOrExit(MatterAwsGetCACertificate(ca_cert_buf, MATTER_AWS_CA_CERT_LENGTH, &ca_cert_length) == CHIP_NO_ERROR,
-                 ChipLogError(AppServer, "[MATTER_AWS] failed to fetch CA certificate"));
-    VerifyOrExit(MatterAwsGetDeviceCertificate(cert_buf, MATTER_AWS_DEV_CERT_LENGTH, &cert_length) == CHIP_NO_ERROR,
-                 ChipLogError(AppServer, "[MATTER_AWS] failed to fetch device certificate"));
-    VerifyOrExit(MatterAwsGetDevicePrivKey(key_buf, MATTER_AWS_DEV_KEY_LENGTH, &key_length) == CHIP_NO_ERROR,
-                 ChipLogError(AppServer, "[MATTER_AWS] failed to fetch device key"));
+    hostname[sizeof(hostname) - 1] = '\0';
 
-    /* set SSL configuration for TLS transport connection */
+    VerifyOrExit(MatterAwsGetCACertificate(ca_cert_buf, sizeof(ca_cert_buf), &ca_cert_length) == CHIP_NO_ERROR,
+                 ChipLogError(AppServer, "[MATTER_AWS] failed to fetch CA certificate"));
+    VerifyOrExit(MatterAwsGetDeviceCertificate(cert_buf, sizeof(cert_buf), &cert_length) == CHIP_NO_ERROR,
+                 ChipLogError(AppServer, "[MATTER_AWS] failed to fetch device certificate"));
+    VerifyOrExit(MatterAwsGetDevicePrivKey(key_buf, sizeof(key_buf), &key_length) == CHIP_NO_ERROR,
+                 ChipLogError(AppServer, "[MATTER_AWS] failed to fetch device key"));
+    VerifyOrExit(MatterAwsGetClientId(clientIdBuf, sizeof(clientIdBuf), &clientIdLen) == CHIP_NO_ERROR,
+                 ChipLogError(AppServer, "[MATTER_AWS] failed to fetch client ID"));
+    clientIdBuf[sizeof(clientIdBuf) - 1] = '\0';
+
+    VerifyOrExit(err_t err = MatterAwsResolveHostname(hostname, &brokerAddr) && err == ERR_OK,
+                 ChipLogError(AppServer, "[MATTER_AWS] DNS resolution failed: %d", err));
+
+    LOCK_TCPIP_CORE();
+    mqtt_client = mqtt_client_new();
+    UNLOCK_TCPIP_CORE();
+    VerifyOrExit(mqtt_client != nullptr, ChipLogError(AppServer, "[MATTER_AWS] failed to create mqtt client"));
+
+#if LWIP_ALTCP && LWIP_ALTCP_TLS
     if (ca_cert_length > 1 && cert_length > 1 && key_length > 1)
     {
-        ret = MQTT_Transport_SSLConfigure(transport, (const u8_t *) ca_cert_buf, ca_cert_length, (const u8_t *) key_buf, key_length,
-                                          NULL, 0, (const u8_t *) cert_buf, cert_length);
-
-        VerifyOrExit(ERR_OK == ret, ChipLogError(AppServer, "[MATTER_AWS] failed to configure SSL to mqtt transport"));
+        LOCK_TCPIP_CORE();
+        tlsCfg = altcp_tls_create_config_client_2wayauth(reinterpret_cast<const u8_t *>(ca_cert_buf), ca_cert_length,
+                                                         reinterpret_cast<const u8_t *>(key_buf), key_length, NULL, 0,
+                                                         reinterpret_cast<const u8_t *>(cert_buf), cert_length);
+        UNLOCK_TCPIP_CORE();
+        VerifyOrExit(tlsCfg != nullptr, ChipLogError(AppServer, "[MATTER_AWS] failed to configure TLS"));
     }
+#endif
 
-    ret = MQTT_Transport_Connect(transport, hostname, hostname_length, MATTER_AWS_SERVER_PORT, MatterAwsTcpConnectCb);
-    VerifyOrExit(ERR_OK == ret, ChipLogError(AppServer, "[MATTER_AWS] transport connection failed: %d", ret));
+    {
+        struct mqtt_connect_client_info_t connect_info;
+        memset(&connect_info, 0, sizeof(connect_info));
+        connect_info.client_id  = clientIdBuf;
+        connect_info.keep_alive = MATTER_AWS_KEEP_ALIVE;
+#if MATTER_AWS_CLIENT_USER
+        connect_info.client_user = MATTER_AWS_CLIENT_USER;
+#endif
+#if MATTER_AWS_CLIENT_PASS
+        connect_info.client_pass = MATTER_AWS_CLIENT_PASS;
+#endif
+#if LWIP_ALTCP && LWIP_ALTCP_TLS
+        connect_info.tls_config = tlsCfg;
+#endif
+
+        LOCK_TCPIP_CORE();
+        err_t mret =
+            mqtt_client_connect(mqtt_client, &brokerAddr, MATTER_AWS_SERVER_PORT, MatterAwsMqttConnCb, NULL, &connect_info);
+        UNLOCK_TCPIP_CORE();
+
+        VerifyOrExit(mret == ERR_OK, ChipLogError(AppServer, "[MATTER_AWS] MQTT connect failed: %d", mret));
+    }
 
     while (!endLoop)
     {
-        EventBits_t event;
-        event = xEventGroupWaitBits(matterAwsEvents,
-                                    SIGNAL_TRANSINTF_RX | SIGNAL_TRANSINTF_TX_ACK | SIGNAL_TRANSINTF_CONN_CLOSE |
-                                        SIGNAL_TRANSINTF_MBEDTLS_RX,
-                                    1, 0, portMAX_DELAY);
+        EventBits_t event = xEventGroupWaitBits(matterAwsEvents, SIGNAL_TRANSINTF_CONN_CLOSE, pdTRUE, pdFALSE, portMAX_DELAY);
         if (event & SIGNAL_TRANSINTF_CONN_CLOSE)
         {
-            mqtt_close(mqtt_client, MQTT_CONNECT_DISCONNECTED);
+            LOCK_TCPIP_CORE();
+            mqtt_disconnect(mqtt_client);
+            UNLOCK_TCPIP_CORE();
             endLoop = true;
-        }
-        else
-        {
-            if (event & SIGNAL_TRANSINTF_RX)
-                mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX);
-            else if (event & SIGNAL_TRANSINTF_TX_ACK)
-                mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX_ACK);
-            if (event & SIGNAL_TRANSINTF_MBEDTLS_RX)
-                transport_process_mbedtls_rx(transport);
         }
     }
     init_complete = false;
 
 exit:
-    /* Clean up resources before task deletion.
-     * Save handle and nullify pointers atomically to prevent race with callbacks. */
-    if (matterAwsTask != nullptr)
+    MatterAwsCleanupClient();
+
+    if (matterAwsEvents != nullptr)
     {
         vEventGroupDelete(matterAwsEvents);
         matterAwsEvents = nullptr;
-        matterAwsTask   = nullptr;
     }
-    /* Delete the current task - use NULL to delete self */
+    matterAwsTask = nullptr;
     vTaskDelete(NULL);
-    /* This line should never be reached */
-    return;
 }
 
-void MatterAwsPubRespCb(void * arg, mqtt_err_t err)
+void MatterAwsPubRespCb(void * arg, err_t err)
 {
     (void) arg;
-    ChipLogProgress(AppServer, "[MATTER_AWS] publish data %s", err != MQTT_ERR_OK ? "failed!" : "successful!");
+    ChipLogProgress(AppServer, "[MATTER_AWS] publish data %s", err != ERR_OK ? "failed!" : "successful!");
 }
 
 matterAws_err_t MatterAwsInit(matterAws_subscribe_cb subs_cb)
 {
     VerifyOrReturnError(matterAwsTask == nullptr, MATTER_AWS_OK);
 
-    /* Create events group used to receive events from transport layer*/
     matterAwsEvents = xEventGroupCreate();
     if (!matterAwsEvents)
     {
@@ -250,10 +296,10 @@ matterAws_err_t MatterAwsInit(matterAws_subscribe_cb subs_cb)
     {
         ChipLogError(AppServer, "[MATTER_AWS] failed to create task");
         vEventGroupDelete(matterAwsEvents);
+        matterAwsEvents = nullptr;
         return MATTER_AWS_ERR_MEM;
     }
 
-    /* TODO: Register data and pub callback and subscribe if cloud to app messages are expected*/
     return MATTER_AWS_OK;
 }
 
@@ -269,11 +315,19 @@ matterAws_err_t MatterAwsSendMsg(const char * subject, const char * content)
         ChipLogError(AppServer, "[MATTER_AWS] invalid state");
         return MATTER_AWS_ERR_CONN;
     }
-    matterAws_buff_t buffValue;
-    buffValue.dataP   = (uint8_t *) content;
-    buffValue.dataLen = strlen(content);
-    if (MQTT_ERR_OK !=
-        mqtt_publish(mqtt_client, subject, buffValue.dataP, buffValue.dataLen, MQTT_QOS_0, 0, MatterAwsPubRespCb, NULL))
+    size_t len = strlen(content);
+    if (len > UINT16_MAX)
+    {
+        ChipLogError(AppServer, "[MATTER_AWS] payload too large");
+        return MATTER_AWS_ERR_INVAL;
+    }
+    auto payloadLen = static_cast<u16_t>(len);
+
+    LOCK_TCPIP_CORE();
+    err_t pr = mqtt_publish(mqtt_client, subject, content, payloadLen, MQTT_QOS_0, 0, MatterAwsPubRespCb, NULL);
+    UNLOCK_TCPIP_CORE();
+
+    if (pr != ERR_OK)
     {
         ChipLogError(AppServer, "[MATTER_AWS] failed to publish");
         return MATTER_AWS_ERR_PUBLISH;
@@ -285,32 +339,30 @@ matterAws_err_t MatterAwsSendMsg(const char * subject, const char * content)
 
 struct sub_cb_info sub_info;
 
+static char sMatterAwsOtaIncomingTopic[192];
+
 int MatterAwsInitStatus()
 {
-    if (init_complete)
-    {
-        return 1;
-    }
-    else
-        return 0;
+    return init_complete ? 1 : 0;
 }
 
-static void MatterAwsOtaMqttIncomingDataCb(void * arg, const char * topic, u16_t topic_len, const u8_t * data, u16_t len,
-                                           u8_t flags)
+static void MatterAwsOtaMqttIncomingDataCb(void * arg, const u8_t * data, u16_t len, u8_t flags)
 {
-    const struct mqtt_connect_client_info_t * client_info = (const struct mqtt_connect_client_info_t *) arg;
-    (void) client_info;
+    (void) arg;
+    (void) flags;
     u8_t buff[1500] = { 0 };
     memcpy(buff, data, LWIP_MIN(len, sizeof(buff)));
-    ChipLogProgress(AppServer, "[MATTER_AWS] incoming_data_callback: len(%u), flags(%u), topic_len(%d)", len, flags, topic_len);
-    sub_info.cb(topic, topic_len, (char *) buff, len);
+    uint16_t tlen = static_cast<uint16_t>(strnlen(sMatterAwsOtaIncomingTopic, sizeof(sMatterAwsOtaIncomingTopic)));
+    ChipLogProgress(AppServer, "[MATTER_AWS] incoming_data_callback: len(%u), flags(%u)", len, flags);
+    sub_info.cb(sMatterAwsOtaIncomingTopic, tlen, reinterpret_cast<char *>(buff), len);
 }
+
 static void MatterAwsOtaMqttIncomingPublishCb(void * arg, const char * topic, u32_t tot_len)
 {
-    const struct mqtt_connect_client_info_t * client_info = (const struct mqtt_connect_client_info_t *) arg;
-    (void) client_info;
-
-    ChipLogProgress(AppServer, "[MATTER_AWS] incoming_publish_cb: topic (%s), len (%d)", topic, (int) tot_len);
+    (void) arg;
+    (void) tot_len;
+    chip::Platform::CopyString(sMatterAwsOtaIncomingTopic, topic);
+    ChipLogProgress(AppServer, "[MATTER_AWS] incoming_publish_cb: topic (%s), len (%d)", topic, static_cast<int>(tot_len));
 }
 
 matterAws_err_t MatterAwsOtaPublish(const char * const topic, const char * message, uint32_t message_len, uint8_t qos)
@@ -320,15 +372,23 @@ matterAws_err_t MatterAwsOtaPublish(const char * const topic, const char * messa
         ChipLogError(AppServer, "[MATTER_AWS] invalid state");
         return MATTER_AWS_ERR_FAIL;
     }
-    if (MQTT_ERR_OK != mqtt_publish(mqtt_client, topic, message, message_len, qos, 0, MatterAwsPubRespCb, NULL))
+    if (message_len > UINT16_MAX)
+    {
+        ChipLogError(AppServer, "[MATTER_AWS] OTA publish length overflow");
+        return MATTER_AWS_ERR_FAIL;
+    }
+    auto plen = static_cast<u16_t>(message_len);
+
+    LOCK_TCPIP_CORE();
+    err_t pr = mqtt_publish(mqtt_client, topic, message, plen, qos, 0, MatterAwsPubRespCb, NULL);
+    UNLOCK_TCPIP_CORE();
+
+    if (pr != ERR_OK)
     {
         ChipLogError(AppServer, "[MATTER_AWS] failed to publish");
         return MATTER_AWS_ERR_FAIL;
     }
-    else
-    {
-        ChipLogError(AppServer, "[MATTER_AWS] mqtt_publish->message: %s, topic: %s", message, topic);
-    }
+    ChipLogError(AppServer, "[MATTER_AWS] mqtt_publish->message: %s, topic: %s", message, topic);
     return MATTER_AWS_OK;
 }
 
@@ -340,7 +400,11 @@ matterAws_err_t MatterAwsOtaUnsubscribe(const char * topic)
         return MATTER_AWS_ERR_FAIL;
     }
 
-    if (MQTT_ERR_OK != mqtt_unsubscribe(mqtt_client, topic, MatterAwsMqttSubscribeCb, NULL))
+    LOCK_TCPIP_CORE();
+    err_t ur = mqtt_unsubscribe(mqtt_client, topic, MatterAwsMqttSubscribeCb, NULL);
+    UNLOCK_TCPIP_CORE();
+
+    if (ur != ERR_OK)
     {
         ChipLogError(AppServer, "[MATTER_AWS] failed to unsubscribe");
         return MATTER_AWS_ERR_FAIL;
@@ -356,15 +420,9 @@ matterAws_err_t MatterAwsOtaSubscribe(const char * topic, uint8_t qos, callback_
         return MATTER_AWS_ERR_FAIL;
     }
 
-    sub_info.sub_topic = (char *) topic;
+    sub_info.sub_topic = const_cast<char *>(topic);
     sub_info.cb        = subscribe_cb;
-    if (MATTER_AWS_OK !=
-        MatterAwsMqttSubscribe(mqtt_client, MatterAwsOtaMqttIncomingPublishCb, MatterAwsOtaMqttIncomingDataCb, topic, qos))
-    {
-        ChipLogError(AppServer, "[MATTER_AWS] failed to subscribe");
-        return MATTER_AWS_ERR_FAIL;
-    }
-    return MATTER_AWS_OK;
+    return MatterAwsMqttSubscribe(mqtt_client, MatterAwsOtaMqttIncomingPublishCb, MatterAwsOtaMqttIncomingDataCb, topic, qos);
 }
 
 matterAws_err_t MatterAwsOtaProcess()
@@ -374,8 +432,6 @@ matterAws_err_t MatterAwsOtaProcess()
         ChipLogError(AppServer, "[MATTER_AWS] invalid state");
         return MATTER_AWS_ERR_FAIL;
     }
-    mqtt_process(mqtt_client, 0);
-
     return MATTER_AWS_OK;
 }
 
@@ -387,7 +443,9 @@ matterAws_err_t MatterAwsOtaClose()
         return MATTER_AWS_ERR_FAIL;
     }
 
-    mqtt_close(mqtt_client, MQTT_CONNECT_DISCONNECTED);
+    LOCK_TCPIP_CORE();
+    mqtt_disconnect(mqtt_client);
+    UNLOCK_TCPIP_CORE();
 
     return MATTER_AWS_OK;
 }
