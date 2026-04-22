@@ -295,4 +295,29 @@
 #define INET_CONFIG_UDP_SOCKET_MREQN 0
 #endif
 
+/**
+ *  @def INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+ *
+ *  @brief
+ *    When set (1), the LwIP UDP endpoint defers outbound sends until at least one
+ *    LwIP netif is up with link up (operational IP interface). Queued sends are flushed
+ *    when a new send runs while the interface is ready, or when FlushDeferredSendQueue()
+ *    is called (for example after Thread attach or Wi-Fi association with IP).
+ *
+ */
+#ifndef INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#define INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY 1
+#endif
+
+/**
+ *  @def INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE
+ *
+ *  @brief
+ *    Maximum number of outbound UDP datagrams held when INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY is enabled.
+ *
+ */
+#ifndef INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE
+#define INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE 32
+#endif
+
 // clang-format on
