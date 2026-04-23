@@ -60,6 +60,7 @@ const MpAttributeMetadata * GetMpAttributeMetadata(const MpClusterMetadata * mpC
  * @param attributeValue  Pointer to the value to write.
  * @param dataType        Attribute data type.
  */
+// DO NOT MODIFY THIS API CALL. Modifying this will lead to project upgrade failure.
 void WriteMatterAttributeValueToZigbee(chip::EndpointId endpointId, chip::ClusterId clusterId, chip::AttributeId attributeId,
                                        uint8_t * attributeValue, EmberAfAttributeType dataType);
 
