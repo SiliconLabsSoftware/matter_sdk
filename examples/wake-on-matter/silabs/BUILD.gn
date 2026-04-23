@@ -94,7 +94,6 @@ silabs_executable("wake-on-matter") {
   }
 
   sources = [
-    "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
   ]
 
