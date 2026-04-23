@@ -32,7 +32,7 @@
 #if defined(PW_RPC_BUTTON_SERVICE) && PW_RPC_BUTTON_SERVICE
 #include "pigweed/rpc_services/Button.h"
 #if defined(CHIP_SILABS_APP_USE_COMMON_APP_TASK)
-#include "CommonAppTask.h"
+#include "CustomerAppTask.h"
 #endif // defined(CHIP_SILABS_APP_USE_COMMON_APP_TASK)
 #endif // defined(PW_RPC_BUTTON_SERVICE) && PW_RPC_BUTTON_SERVICE
 
@@ -90,8 +90,8 @@ public:
     pw::Status Event(const chip_rpc_ButtonEvent & request, pw_protobuf_Empty & response) override
     {
 #if defined(CHIP_SILABS_APP_USE_COMMON_APP_TASK)
-        // Same entry point as SetButtonsCb (CRTP CommonAppTask static); not AppTask::ButtonEventHandler (base static).
-        CommonAppTask::ButtonEventHandler(request.idx /* PB 0 or PB 1 */, request.pushed);
+        // Same entry point as SetButtonsCb (CRTP CustomerAppTask static); not AppTask::ButtonEventHandler (base static).
+        CustomerAppTask::ButtonEventHandler(request.idx /* PB 0 or PB 1 */, request.pushed);
 #else
         AppTask::GetAppTask().ButtonEventHandler(request.idx /* PB 0 or PB 1 */, request.pushed);
 #endif

@@ -17,9 +17,9 @@
  *    limitations under the License.
  */
 
-#include "CommonAppTask.h"
+#pragma once
 
-CommonAppTask CommonAppTask::sAppTask;
+#include "AppTaskImpl.h"
 
 /**
  * @brief Minimal AppTaskImpl-derived class.
@@ -30,8 +30,13 @@ CommonAppTask CommonAppTask::sAppTask;
  * For full list of overridable methods, including required overrides for custom
  * behavior, and further documentation see app README file.
  */
-
-AppTask & AppTask::GetAppTask()
+class CustomerAppTask : public AppTaskImpl<CustomerAppTask>
 {
-    return CommonAppTask::GetAppTask();
-}
+public:
+    static CustomerAppTask & GetAppTask() { return sAppTask; }
+
+private:
+    friend class AppTaskImpl<CustomerAppTask>;
+
+    static CustomerAppTask sAppTask;
+};

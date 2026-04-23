@@ -107,5 +107,5 @@
  */
 #define CHIP_CONFIG_MRP_LOCAL_ACTIVE_RETRY_INTERVAL (2000_ms32)
 
-// This is a temporary setting to use the CommonAppTask for the apps which are not upgraded to the new architecture.
+// This is a temporary setting to use the CustomerAppTask for the apps which are not upgraded to the new architecture.
 #define CHIP_SILABS_APP_USE_COMMON_APP_TASK

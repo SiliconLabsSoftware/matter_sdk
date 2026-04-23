@@ -50,7 +50,7 @@ class DeferredAttributePersistenceProvider;
  *
  * Lighting state (timers, level/color attribute caches)
  * lives as TU-local statics in AppTask.cpp, alongside the LED/effect objects.
- * AppTask is a singleton (CommonAppTask::sAppTask), so the one-instance
+ * AppTask is a singleton (CustomerAppTask::sAppTask), so the one-instance
  * constraint is the same as the prior design.
  *********************************************************/
 
