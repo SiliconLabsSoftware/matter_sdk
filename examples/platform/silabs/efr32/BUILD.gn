@@ -19,6 +19,7 @@ import("${chip_root}/src/app/common_flags.gni")
 import("${chip_root}/src/app/icd/icd.gni")
 import("${chip_root}/src/lib/lib.gni")
 import("${chip_root}/src/platform/device.gni")
+import("${chip_root}/src/tracing/tracing_args.gni")
 import("${silabs_sdk_build_root}/efr32_sdk.gni")
 import("${silabs_sdk_build_root}/silabs_board.gni")
 
@@ -87,6 +88,9 @@ source_set("matter-shell") {
     "${chip_root}/src/lib/shell:shell",
     "${chip_root}/src/lib/shell:shell_core",
   ]
+  if (matter_enable_tracing_support) {
+    public_deps += [ "${chip_root}/src/platform/silabs/tracing:SilabsTracing" ]
+  }
 }
 
 config("efr32-common-config") {
@@ -158,6 +162,11 @@ source_set("efr32-common") {
     "${silabs_common_plat_dir}/syscalls_stubs.cpp",
   ]
 
+  # FreeRTOS runtime statistics support
+  if (matter_enable_tracing_support) {
+    sources += [ "${silabs_common_plat_dir}/FreeRTOSRuntimeStats.c" ]
+  }
+
   if (chip_enable_pw_rpc || chip_build_libshell || enable_openthread_cli ||
       sl_uart_log_output) {
     sources += [ "${silabs_common_plat_dir}/uart.cpp" ]
@@ -203,6 +212,10 @@ source_set("efr32-common") {
     if (chip_enable_read_client) {
       deps += [ "${silabs_common_plat_dir}/shell:im" ]
     }
+    if (matter_enable_tracing_support) {
+      public_deps += [ "${silabs_common_plat_dir}/shell:tracing" ]
+    }
+    deps += [ "${silabs_common_plat_dir}/shell:ble" ]
   }
 
   public_deps += [
@@ -226,5 +239,9 @@ source_set("efr32-common") {
 
   if (app_data_model != "") {
     public_deps += [ app_data_model ]
+  }
+
+  if (matter_enable_tracing_support) {
+    public_deps += [ "${chip_root}/src/platform/silabs/tracing:SilabsTracing" ]
   }
 }
