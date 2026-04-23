@@ -97,7 +97,7 @@ bool NetifHasValidIpv6Address(struct netif * netif)
     }
     for (u8_t idx = 0; idx < LWIP_IPV6_NUM_ADDRESSES; ++idx)
     {
-        if (ip6_addr_isvalid(netif_ip6_addr_state(netif, idx)))
+        if (ip6_addr_ispreferred(netif_ip6_addr_state(netif, idx)))
         {
             return true;
         }
