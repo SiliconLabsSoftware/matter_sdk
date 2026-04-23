@@ -340,3 +340,16 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     button_event.Handler            = BaseApplication::ButtonHandler;
     AppTask::GetAppTask().PostEvent(&button_event);
 }
+
+// To prevent linkage failure
+extern "C" void otAppNcpInit(otInstance * aInstance);
+
+static otInstance * sInstance = NULL;
+
+extern "C" void sl_ot_ncp_init(void)
+{
+#if SL_OPENTHREAD_MULTI_PAN_ENABLE
+    sInstance = otInstanceInitMultiple(1); // 1 NCP instance
+    otAppNcpInit(sInstance);
+#endif
+}
