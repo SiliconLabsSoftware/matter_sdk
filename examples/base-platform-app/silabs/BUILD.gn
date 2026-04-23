@@ -102,7 +102,6 @@ silabs_executable("platform_app") {
   }
 
   sources = [
-    "${examples_common_plat_dir}/main.cpp",
     "src/AppTask.cpp",
   ]
 
