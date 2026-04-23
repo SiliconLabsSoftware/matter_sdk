@@ -35,4 +35,3 @@ AppTask & AppTask::GetAppTask()
 {
     return CustomerAppTask::GetAppTask();
 }
-

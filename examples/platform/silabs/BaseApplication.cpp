@@ -1125,8 +1125,8 @@ bool BaseApplication::GetProvisionStatus()
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
-    [[maybe_unused]] EndpointId endpointId = attributePath.mEndpointId;
-    [[maybe_unused]] ClusterId clusterId = attributePath.mClusterId;
+    [[maybe_unused]] EndpointId endpointId   = attributePath.mEndpointId;
+    [[maybe_unused]] ClusterId clusterId     = attributePath.mClusterId;
     [[maybe_unused]] AttributeId attributeId = attributePath.mAttributeId;
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
