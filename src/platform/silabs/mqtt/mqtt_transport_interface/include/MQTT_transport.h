@@ -21,7 +21,9 @@
 #define MQTT_TRANSPORT_H
 
 #include "FreeRTOS.h"
+#if !defined(SLI_SI91X_NETWORK_DUAL_STACK) && !defined(sl_si91x_network_dual_stack)
 #include "altcp_tls.h"
+#endif
 #include "event_groups.h"
 #include "lwip/err.h"
 #include "lwip/ip_addr.h"

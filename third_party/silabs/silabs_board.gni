@@ -56,6 +56,10 @@ declare_args() {
   # STA IPv4+IPv6 (sl_net dual-stack profile). Requires chip_enable_wifi_ipv4=true when enabled.
   enable_matter_dual_stack = false
 
+  # Use SiWx91x NWP (sl_net + sl_si91x_socket) for Matter AWS MQTT transport instead of lwIP altcp.
+  # When true, build with SL_MATTER_AWS_TRANSPORT_SI91X_NWP=1 (Si917 Wi-Fi SoC / WiseConnect).
+  enable_matter_aws_transport_nwp = false
+
   # Disable AWS SDK OTA by default
   aws_sdk_ota = false
 
@@ -118,6 +122,11 @@ foreach(board, si917_wifi_boards) {
   if (silabs_board == board) {
     is_si917_board = true
   }
+}
+
+# Matter+AWS on Si917 Wi-Fi SoC: NWP MQTT transport (sl_net + sl_si91x_socket), not lwIP altcp.
+if (is_si917_board && enable_matter_aws) {
+  enable_matter_aws_transport_nwp = true
 }
 
 if (is_si917_board) {

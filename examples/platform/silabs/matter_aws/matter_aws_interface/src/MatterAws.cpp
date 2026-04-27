@@ -31,6 +31,7 @@
 
 #include "MatterAws.h"
 #include "MatterAwsConfig.h"
+#include "MatterAwsControl.h"
 #include "MatterAwsNvmCert.h"
 
 #ifdef __cplusplus
@@ -201,9 +202,16 @@ static void MatterAwsTaskFn(void * args)
         else
         {
             if (event & SIGNAL_TRANSINTF_RX)
+            {
+                SILABS_LOG("MATTER_AWS RX received, processing");
+                ChipLogProgress(AppServer, "[MATTER_AWS] RX received, processing");
                 mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX);
+            }
             else if (event & SIGNAL_TRANSINTF_TX_ACK)
+            {
+                ChipLogProgress(AppServer, "[MATTER_AWS] TX_ACK received, processing");
                 mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX_ACK);
+            }
             if (event & SIGNAL_TRANSINTF_MBEDTLS_RX)
                 transport_process_mbedtls_rx(transport);
         }
@@ -228,7 +236,7 @@ exit:
 void MatterAwsPubRespCb(void * arg, mqtt_err_t err)
 {
     (void) arg;
-    ChipLogProgress(AppServer, "[MATTER_AWS] publish data %s", err != MQTT_ERR_OK ? "failed!" : "successful!");
+    ChipLogError(AppServer, "[MATTER_AWS] publish data %s", err != MQTT_ERR_OK ? "failed!" : "successful!");
 }
 
 matterAws_err_t MatterAwsInit(matterAws_subscribe_cb subs_cb)
