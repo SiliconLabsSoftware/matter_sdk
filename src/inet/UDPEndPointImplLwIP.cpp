@@ -127,7 +127,7 @@ bool IsNetifReadyForOutboundUdp(struct netif * netif, const IPAddress & dest)
 bool IsOutboundNetifReadyForUdp(const IPPacketInfo & pktInfo)
 {
     const InterfaceId & intfId = pktInfo.Interface;
-    const IPAddress & dest    = pktInfo.DestAddress;
+    const IPAddress & dest     = pktInfo.DestAddress;
 
     if (intfId.IsPresent())
     {
@@ -158,15 +158,15 @@ CHIP_ERROR EnqueueDeferredUdpSend(UDPEndPointImplLwIP * self, const IPPacketInfo
         const DeferredUdpSlot & head = gDeferredUdpQueue.front();
         char dropDest[IPAddress::kMaxStringLength];
         head.pktInfo.DestAddress.ToString(dropDest);
-        ChipLogProgress(Inet, "Deferred UDP queue full: dropping head dest %s port %u len %u", dropDest,
-                        head.pktInfo.DestPort, static_cast<unsigned>(head.msg->TotalLength()));
+        ChipLogProgress(Inet, "Deferred UDP queue full: dropping head dest %s port %u len %u", dropDest, head.pktInfo.DestPort,
+                        static_cast<unsigned>(head.msg->TotalLength()));
         gDeferredUdpQueue.pop_front();
     }
 
     DeferredUdpSlot slot;
-    slot.epHandle      = UDPEndPointHandle(static_cast<UDPEndPoint *>(self));
-    slot.pktInfo = *pktInfo;
-    slot.msg     = std::move(msg);
+    slot.epHandle = UDPEndPointHandle(static_cast<UDPEndPoint *>(self));
+    slot.pktInfo  = *pktInfo;
+    slot.msg      = std::move(msg);
 
     char destStr[IPAddress::kMaxStringLength];
     pktInfo->DestAddress.ToString(destStr);
@@ -299,7 +299,7 @@ CHIP_ERROR UDPEndPointImplLwIP::SendMsgImpl(const IPPacketInfo * pktInfo, System
 #if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     FlushDeferredSendQueue();
 
-    bool defer = false;
+    bool defer          = false;
     err_t deferProbeErr = RunOnTCPIPRet([&]() -> err_t {
         defer = !IsOutboundNetifReadyForUdp(*pktInfo);
         return ERR_OK;
@@ -329,12 +329,12 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
     // If a source address has been specified, temporarily override the local_ip of the PCB.
     // This results in LwIP using the given address being as the source address for the generated
     // packet, as if the PCB had been bound to that address.
-    const IPAddress & srcAddr   = pktInfo->SrcAddress;
-    const uint16_t & destPort    = pktInfo->DestPort;
+    const IPAddress & srcAddr  = pktInfo->SrcAddress;
+    const uint16_t & destPort  = pktInfo->DestPort;
     const InterfaceId & intfId = pktInfo->Interface;
 
-    ip_addr_t lwipSrcAddr   = srcAddr.ToLwIPAddr();
-    ip_addr_t lwipDestAddr  = destAddr.ToLwIPAddr();
+    ip_addr_t lwipSrcAddr  = srcAddr.ToLwIPAddr();
+    ip_addr_t lwipDestAddr = destAddr.ToLwIPAddr();
     ip_addr_t boundAddr;
 
     ip_addr_copy(boundAddr, mUDP->local_ip);
@@ -394,7 +394,7 @@ void UDPEndPointImplLwIP::FlushDeferredSendQueue()
         DeferredUdpSlot slot = std::move(pending.front());
         pending.pop_front();
 
-        bool ready         = false;
+        bool ready     = false;
         err_t probeErr = RunOnTCPIPRet([&]() -> err_t {
             ready = IsOutboundNetifReadyForUdp(slot.pktInfo);
             return ERR_OK;

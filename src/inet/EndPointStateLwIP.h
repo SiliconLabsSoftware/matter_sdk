@@ -33,25 +33,26 @@ struct tcp_pcb;
 namespace chip {
 namespace Inet {
 
-/**
- * Definitions shared by all LwIP EndPoint classes.
- */
-class DLL_EXPORT EndPointStateLwIP
-{
-protected:
-    EndPointStateLwIP() : mLwIPEndPointType(LwIPEndPointType::Unknown) {}
+    /**
+     * Definitions shared by all LwIP EndPoint classes.
+     */
+    class DLL_EXPORT EndPointStateLwIP {
+    protected:
+        EndPointStateLwIP()
+            : mLwIPEndPointType(LwIPEndPointType::Unknown)
+        {
+        }
 
-    enum class LwIPEndPointType : uint8_t
-    {
-        Unknown = 0,
-        UDP     = 1,
-        TCP     = 2
-    } mLwIPEndPointType;
+        enum class LwIPEndPointType : uint8_t {
+            Unknown = 0,
+            UDP = 1,
+            TCP = 2
+        } mLwIPEndPointType;
 
-    // Synchronously runs a function within the TCPIP task's context.
-    static void RunOnTCPIP(std::function<void()>);
-    static err_t RunOnTCPIPRet(std::function<err_t()>);
-};
+        // Synchronously runs a function within the TCPIP task's context.
+        static void RunOnTCPIP(std::function<void()>);
+        static err_t RunOnTCPIPRet(std::function<err_t()>);
+    };
 
 } // namespace Inet
 } // namespace chip
