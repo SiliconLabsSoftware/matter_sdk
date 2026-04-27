@@ -23,7 +23,9 @@
 
 #include <inet/UDPEndPointImplLwIP.h>
 
-#include <deque>
+#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#include <inet/DeferredUdpSendQueueLwIP.h>
+#endif
 
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -62,140 +64,6 @@ static_assert(LWIP_VERSION_MAJOR > 1, "CHIP requires LwIP 2.0 or later");
 
 namespace chip {
 namespace Inet {
-
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
-
-namespace {
-
-// Fallback for LwIP versions that do not provide NETIF_FOREACH (pre-2.1 or with LWIP_SINGLE_NETIF).
-// Matches the upstream signature: the caller declares the loop variable.
-#ifndef NETIF_FOREACH
-#define NETIF_FOREACH(netif) for ((netif) = netif_list; (netif) != nullptr; (netif) = (netif)->next)
-#endif
-
-struct DeferredUdpSlot
-{
-    UDPEndPointHandle epHandle;
-    IPPacketInfo pktInfo;
-    System::PacketBufferHandle msg;
-};
-
-// FIFO of deferred UDP sends, bounded to INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE.
-// Enqueue drops the oldest entry on overflow; purge/flush erase matching entries in place.
-std::deque<DeferredUdpSlot> gDeferredUdpQueue;
-
-bool IsNetifUsable(struct netif * netif)
-{
-    return netif != nullptr && netif_is_up(netif) && netif_is_link_up(netif);
-}
-
-bool NetifHasValidIpv6Address(struct netif * netif)
-{
-    if (netif == nullptr)
-    {
-        return false;
-    }
-    for (u8_t idx = 0; idx < LWIP_IPV6_NUM_ADDRESSES; ++idx)
-    {
-        if (ip6_addr_ispreferred(netif_ip6_addr_state(netif, idx)))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool IsNetifReadyForOutboundUdp(struct netif * netif, const IPAddress & dest)
-{
-    if (!IsNetifUsable(netif))
-    {
-        return false;
-    }
-    if (dest.IsIPv6())
-    {
-        return NetifHasValidIpv6Address(netif);
-    }
-#if INET_CONFIG_ENABLE_IPV4 && LWIP_IPV4
-    if (dest.IsIPv4())
-    {
-        return !ip4_addr_isany(netif_ip4_addr(netif));
-    }
-#endif // INET_CONFIG_ENABLE_IPV4 && LWIP_IPV4
-    return true;
-}
-
-bool IsOutboundNetifReadyForUdp(const IPPacketInfo & pktInfo)
-{
-    const InterfaceId & intfId = pktInfo.Interface;
-    const IPAddress & dest     = pktInfo.DestAddress;
-
-    if (intfId.IsPresent())
-    {
-        return IsNetifReadyForOutboundUdp(intfId.GetPlatformInterface(), dest);
-    }
-
-    if (IsNetifReadyForOutboundUdp(netif_default, dest))
-    {
-        return true;
-    }
-
-    struct netif * netif = nullptr;
-    NETIF_FOREACH(netif)
-    {
-        if (IsNetifReadyForOutboundUdp(netif, dest))
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-CHIP_ERROR EnqueueDeferredUdpSend(UDPEndPointImplLwIP * self, const IPPacketInfo * pktInfo, System::PacketBufferHandle && msg)
-{
-    if (gDeferredUdpQueue.size() >= INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE)
-    {
-        const DeferredUdpSlot & head = gDeferredUdpQueue.front();
-        char dropDest[IPAddress::kMaxStringLength];
-        head.pktInfo.DestAddress.ToString(dropDest);
-        ChipLogProgress(Inet, "Deferred UDP queue full: dropping head dest %s port %u len %u", dropDest, head.pktInfo.DestPort,
-                        static_cast<unsigned>(head.msg->TotalLength()));
-        gDeferredUdpQueue.pop_front();
-    }
-
-    DeferredUdpSlot slot;
-    slot.epHandle = UDPEndPointHandle(static_cast<UDPEndPoint *>(self));
-    slot.pktInfo  = *pktInfo;
-    slot.msg      = std::move(msg);
-
-    char destStr[IPAddress::kMaxStringLength];
-    pktInfo->DestAddress.ToString(destStr);
-    ChipLogProgress(Inet, "UDP send deferred (waiting for netif): dest %s port %u len %u", destStr, pktInfo->DestPort,
-                    static_cast<unsigned>(slot.msg->TotalLength()));
-
-    gDeferredUdpQueue.push_back(std::move(slot));
-    return CHIP_NO_ERROR;
-}
-
-void PurgeDeferredUdpSendsForEndpoint(UDPEndPointImplLwIP * self)
-{
-    UDPEndPoint * asBase = static_cast<UDPEndPoint *>(self);
-    for (auto it = gDeferredUdpQueue.begin(); it != gDeferredUdpQueue.end();)
-    {
-        if (!it->epHandle.IsNull() && it->epHandle == *asBase)
-        {
-            it = gDeferredUdpQueue.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
-}
-
-} // namespace
-
-#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
 EndpointQueueFilter * UDPEndPointImplLwIP::sQueueFilter = nullptr;
 
@@ -297,21 +165,15 @@ CHIP_ERROR UDPEndPointImplLwIP::SendMsgImpl(const IPPacketInfo * pktInfo, System
     }
 
 #if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
-    FlushDeferredSendQueue();
-
-    bool defer          = false;
-    err_t deferProbeErr = RunOnTCPIPRet([&]() -> err_t {
-        defer = !IsOutboundNetifReadyForUdp(*pktInfo);
-        return ERR_OK;
-    });
-    if (deferProbeErr != ERR_OK)
+    // Defer if the netif is not ready for this destination; otherwise drain earlier deferrals first.
+    bool shouldDefer = false;
+    CHIP_ERROR deferProbeErr = DeferredUdpSendQueueLwIP::ProbeDefer(*pktInfo, shouldDefer);
+    VerifyOrReturnError(deferProbeErr == CHIP_NO_ERROR, deferProbeErr);
+    if (shouldDefer)
     {
-        return chip::System::MapErrorLwIP(deferProbeErr);
+        return DeferredUdpSendQueueLwIP::Enqueue(this, pktInfo, std::move(msg));
     }
-    if (defer)
-    {
-        return EnqueueDeferredUdpSend(this, pktInfo, std::move(msg));
-    }
+    DeferredUdpSendQueueLwIP::Flush();
 #endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
     return PerformLwIPUdpSend(pktInfo, std::move(msg));
@@ -329,9 +191,9 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
     // If a source address has been specified, temporarily override the local_ip of the PCB.
     // This results in LwIP using the given address being as the source address for the generated
     // packet, as if the PCB had been bound to that address.
-    const IPAddress & srcAddr  = pktInfo->SrcAddress;
-    const uint16_t & destPort  = pktInfo->DestPort;
-    const InterfaceId & intfId = pktInfo->Interface;
+    const IPAddress &     srcAddr  = pktInfo->SrcAddress;
+    const uint16_t &      destPort = pktInfo->DestPort;
+    const InterfaceId &   intfId   = pktInfo->Interface;
 
     ip_addr_t lwipSrcAddr  = srcAddr.ToLwIPAddr();
     ip_addr_t lwipDestAddr = destAddr.ToLwIPAddr();
@@ -363,7 +225,7 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
     if (lwipErr == ERR_RTE)
     {
         ChipLogProgress(Inet, "UDP send deferred (no route yet, ERR_RTE): dest %s port %u len %u", destStr, destPort, payloadLen);
-        return EnqueueDeferredUdpSend(this, pktInfo, std::move(msg));
+        return DeferredUdpSendQueueLwIP::Enqueue(this, pktInfo, std::move(msg));
     }
 #endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
@@ -379,54 +241,18 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
 }
 
 #if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+CHIP_ERROR UDPEndPointImplLwIP::FlushOneDeferred(const IPPacketInfo * pktInfo, System::PacketBufferHandle && msg)
+{
+    if (mState == State::kClosed || mUDP == nullptr)
+    {
+        return CHIP_NO_ERROR;
+    }
+    return PerformLwIPUdpSend(pktInfo, std::move(msg));
+}
+
 void UDPEndPointImplLwIP::FlushDeferredSendQueue()
 {
-    assertChipStackLockedByCurrentThread();
-
-    // Take ownership of the current queue locally. This guarantees each entry is visited
-    // exactly once per flush call, and is safe if PerformLwIPUdpSend re-enqueues on ERR_RTE
-    // (those go into the now-empty gDeferredUdpQueue without affecting our iteration).
-    std::deque<DeferredUdpSlot> pending;
-    pending.swap(gDeferredUdpQueue);
-
-    while (!pending.empty())
-    {
-        DeferredUdpSlot slot = std::move(pending.front());
-        pending.pop_front();
-
-        bool ready     = false;
-        err_t probeErr = RunOnTCPIPRet([&]() -> err_t {
-            ready = IsOutboundNetifReadyForUdp(slot.pktInfo);
-            return ERR_OK;
-        });
-        if (probeErr != ERR_OK)
-        {
-            ChipLogError(Inet, "FlushDeferredSendQueue: RunOnTCPIPRet failed: %d", static_cast<int>(probeErr));
-            // Restore remaining entries to the global queue preserving order, then bail.
-            gDeferredUdpQueue.push_back(std::move(slot));
-            while (!pending.empty())
-            {
-                gDeferredUdpQueue.push_back(std::move(pending.front()));
-                pending.pop_front();
-            }
-            return;
-        }
-
-        if (!ready)
-        {
-            gDeferredUdpQueue.push_back(std::move(slot)); // try again on the next flush
-            continue;
-        }
-
-        if (!slot.epHandle.IsNull())
-        {
-            auto * impl = static_cast<UDPEndPointImplLwIP *>(slot.epHandle.operator->());
-            if (impl->mState != State::kClosed && impl->mUDP != nullptr)
-            {
-                (void) impl->PerformLwIPUdpSend(&slot.pktInfo, std::move(slot.msg));
-            }
-        }
-    }
+    DeferredUdpSendQueueLwIP::Flush();
 }
 #else
 void UDPEndPointImplLwIP::FlushDeferredSendQueue() {}
@@ -437,7 +263,7 @@ void UDPEndPointImplLwIP::CloseImpl()
     assertChipStackLockedByCurrentThread();
 
 #if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
-    PurgeDeferredUdpSendsForEndpoint(this);
+    DeferredUdpSendQueueLwIP::PurgeForEndpoint(this);
 #endif
 
     // Since UDP PCB is released synchronously here, but UDP endpoint itself might have to wait

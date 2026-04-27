@@ -33,26 +33,32 @@ struct tcp_pcb;
 namespace chip {
 namespace Inet {
 
-    /**
-     * Definitions shared by all LwIP EndPoint classes.
-     */
-    class DLL_EXPORT EndPointStateLwIP {
-    protected:
-        EndPointStateLwIP()
-            : mLwIPEndPointType(LwIPEndPointType::Unknown)
-        {
-        }
+#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+class DeferredUdpSendQueueLwIP;
+#endif
 
-        enum class LwIPEndPointType : uint8_t {
-            Unknown = 0,
-            UDP = 1,
-            TCP = 2
-        } mLwIPEndPointType;
+/**
+ * Definitions shared by all LwIP EndPoint classes.
+ */
+class DLL_EXPORT EndPointStateLwIP
+{
+#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+    friend class DeferredUdpSendQueueLwIP;
+#endif
+protected:
+    EndPointStateLwIP() : mLwIPEndPointType(LwIPEndPointType::Unknown) {}
 
-        // Synchronously runs a function within the TCPIP task's context.
-        static void RunOnTCPIP(std::function<void()>);
-        static err_t RunOnTCPIPRet(std::function<err_t()>);
-    };
+    enum class LwIPEndPointType : uint8_t
+    {
+        Unknown = 0,
+        UDP     = 1,
+        TCP     = 2
+    } mLwIPEndPointType;
+
+    // Synchronously runs a function within the TCPIP task's context.
+    static void RunOnTCPIP(std::function<void()>);
+    static err_t RunOnTCPIPRet(std::function<err_t()>);
+};
 
 } // namespace Inet
 } // namespace chip

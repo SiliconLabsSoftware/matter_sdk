@@ -84,6 +84,9 @@ namespace Inet {
         void CloseImpl() override;
 
         CHIP_ERROR PerformLwIPUdpSend(const IPPacketInfo * pktInfo, chip::System::PacketBufferHandle && msg);
+#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+        CHIP_ERROR FlushOneDeferred(const IPPacketInfo * pktInfo, chip::System::PacketBufferHandle && msg);
+#endif
 
         static struct netif * FindNetifFromInterfaceId(InterfaceId aInterfaceId);
         static CHIP_ERROR LwIPBindInterface(struct udp_pcb * aUDP, InterfaceId intfId);
