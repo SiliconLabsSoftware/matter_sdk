@@ -291,7 +291,7 @@ void SubscribeMQTT(intptr_t context)
 
 void subscribeCB(void)
 {
-    chip::DeviceLayer::PlatformMgr().ScheduleWork(SubscribeMQTT, reinterpret_cast<intptr_t>(nullptr));
+    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(SubscribeMQTT, reinterpret_cast<intptr_t>(nullptr));
 }
 
 #ifdef ZCL_USING_THERMOSTAT_CLUSTER_SERVER

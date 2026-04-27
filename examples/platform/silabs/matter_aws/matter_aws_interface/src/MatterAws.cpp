@@ -39,6 +39,11 @@ extern "C" {
 
 #include "MQTT_transport.h"
 #include "mqtt.h"
+#if defined(SL_MATTER_AWS_USE_EXAMPLE_CERTS) && SL_MATTER_AWS_USE_EXAMPLE_CERTS
+#include "aws_starfield_ca.pem.h"
+#include "aws_client_certificate.pem.crt.h"
+#include "aws_client_private_key.pem.key.h"
+#endif
 
 #ifdef __cplusplus
 }
@@ -79,6 +84,7 @@ static void MatterAwsMqttConnCb(mqtt_client_t * client, void * arg, mqtt_connect
     (void) client;
     (void) arg;
 
+    SILABS_LOG("MATTER_AWS: MQTT broker conn status=%u", (unsigned) status);
     ChipLogProgress(AppServer, "[MATTER_AWS] MQTT connection status: %u", status);
     if (status != MQTT_CONNECT_ACCEPTED)
     {
@@ -94,6 +100,8 @@ static void MatterAwsMqttConnCb(mqtt_client_t * client, void * arg, mqtt_connect
 
 void MatterAwsTcpConnectCb(err_t err)
 {
+    SILABS_LOG("MATTER_AWS: TCP layer cb err_t=%d (ERR_OK=%d); on failure check prior 'MQTT NWP: nwp_tcp_connect abort reason='",
+               (int) err, (int) ERR_OK);
     ChipLogProgress(AppServer, "[MATTER_AWS] connection callback started");
     if (err == ERR_OK)
     {
@@ -120,13 +128,16 @@ void MatterAwsTcpConnectCb(err_t err)
         mret = mqtt_client_connect(mqtt_client, (void *) &trans, MatterAwsMqttConnCb, NULL, &connect_info);
         if (mret != ERR_OK)
         {
+            SILABS_LOG("MATTER_AWS: mqtt_client_connect failed mret=%d", (int) mret);
             ChipLogError(AppServer, "[MATTER_AWS] MQTT connection failed: %d", mret);
             init_complete = false;
             goto exit;
         }
+        SILABS_LOG("MATTER_AWS: mqtt_client_connect ok");
         init_complete = true;
         return;
     }
+    SILABS_LOG("MATTER_AWS: TCP layer failed before MQTT handshake, signaling close");
     init_complete = false;
 exit:
     /* Instead of deleting the task from callback context (which causes hardfault),
@@ -145,18 +156,25 @@ static void MatterAwsTaskFn(void * args)
     /* Local flag to control the task loop - reset each time the task starts */
     bool endLoop = false;
 
+#if MATTER_AWS_TASK_START_DELAY_MS > 0
+    ChipLogProgress(AppServer, "[MATTER_AWS] delaying task start by %u ms", static_cast<unsigned>(MATTER_AWS_TASK_START_DELAY_MS));
+    vTaskDelay(pdMS_TO_TICKS(MATTER_AWS_TASK_START_DELAY_MS));
+#endif
+
     /* get MQTT client handle */
     err_t ret;
-    gSubsCB                                     = reinterpret_cast<void (*)()>(args);
-    mqtt_client                                 = mqtt_client_new();
+    gSubsCB                                   = reinterpret_cast<void (*)()>(args);
+    mqtt_client                               = mqtt_client_new();
+    char hostname[MATTER_AWS_HOSTNAME_LENGTH] = { 0 };
+    size_t hostname_length                    = 0;
+#if !MATTER_AWS_TCP_ONLY_DEBUG && !(defined(SL_MATTER_AWS_USE_EXAMPLE_CERTS) && SL_MATTER_AWS_USE_EXAMPLE_CERTS)
     char ca_cert_buf[MATTER_AWS_CA_CERT_LENGTH] = { 0 };
     char cert_buf[MATTER_AWS_DEV_CERT_LENGTH]   = { 0 };
     char key_buf[MATTER_AWS_DEV_KEY_LENGTH]     = { 0 };
-    char hostname[MATTER_AWS_HOSTNAME_LENGTH]   = { 0 };
     size_t ca_cert_length                       = 0;
     size_t cert_length                          = 0;
     size_t key_length                           = 0;
-    size_t hostname_length                      = 0;
+#endif
 
     VerifyOrExit(mqtt_client != NULL, ChipLogError(AppServer, "[MATTER_AWS] failed to create mqtt client"));
 
@@ -167,6 +185,18 @@ static void MatterAwsTaskFn(void * args)
 
     VerifyOrExit(MatterAwsGetHostname(hostname, MATTER_AWS_HOSTNAME_LENGTH, &hostname_length) == CHIP_NO_ERROR,
                  ChipLogError(AppServer, "[MATTER_AWS] failed to fetch hostname"));
+
+#if MATTER_AWS_TCP_ONLY_DEBUG
+    ChipLogProgress(
+        AppServer,
+        "[MATTER_AWS] MATTER_AWS_TCP_ONLY_DEBUG: plain TCP (NWP TLS off); host/port from MatterAwsConfig unless overridden by -D");
+#elif defined(SL_MATTER_AWS_USE_EXAMPLE_CERTS) && SL_MATTER_AWS_USE_EXAMPLE_CERTS
+    ret = MQTT_Transport_SSLConfigure(transport, (const u8_t *) aws_starfield_ca, sizeof(aws_starfield_ca) - 1,
+                                      (const u8_t *) aws_client_private_key, sizeof(aws_client_private_key) - 1, NULL, 0,
+                                      (const u8_t *) aws_client_certificate, sizeof(aws_client_certificate) - 1);
+    SILABS_LOG("MATTER_AWS: MQTT_Transport_SSLConfigure (Wi-SDK resources/certificates) ret=%d", (int) ret);
+    VerifyOrExit(ERR_OK == ret, ChipLogError(AppServer, "[MATTER_AWS] failed to configure SSL to mqtt transport"));
+#else
     VerifyOrExit(MatterAwsGetCACertificate(ca_cert_buf, MATTER_AWS_CA_CERT_LENGTH, &ca_cert_length) == CHIP_NO_ERROR,
                  ChipLogError(AppServer, "[MATTER_AWS] failed to fetch CA certificate"));
     VerifyOrExit(MatterAwsGetDeviceCertificate(cert_buf, MATTER_AWS_DEV_CERT_LENGTH, &cert_length) == CHIP_NO_ERROR,
@@ -174,24 +204,36 @@ static void MatterAwsTaskFn(void * args)
     VerifyOrExit(MatterAwsGetDevicePrivKey(key_buf, MATTER_AWS_DEV_KEY_LENGTH, &key_length) == CHIP_NO_ERROR,
                  ChipLogError(AppServer, "[MATTER_AWS] failed to fetch device key"));
 
-    /* set SSL configuration for TLS transport connection */
     if (ca_cert_length > 1 && cert_length > 1 && key_length > 1)
     {
         ret = MQTT_Transport_SSLConfigure(transport, (const u8_t *) ca_cert_buf, ca_cert_length, (const u8_t *) key_buf, key_length,
                                           NULL, 0, (const u8_t *) cert_buf, cert_length);
 
+        SILABS_LOG("MATTER_AWS: MQTT_Transport_SSLConfigure ret=%d", (int) ret);
         VerifyOrExit(ERR_OK == ret, ChipLogError(AppServer, "[MATTER_AWS] failed to configure SSL to mqtt transport"));
     }
+    else
+    {
+        SILABS_LOG("MATTER_AWS: skipping NWP cred load (ca/cert/key len %u/%u/%u)", (unsigned) ca_cert_length,
+                   (unsigned) cert_length, (unsigned) key_length);
+    }
+#endif
 
+    SILABS_LOG("MATTER_AWS: MQTT_Transport_Connect host_len=%u port=%u", (unsigned) hostname_length,
+               (unsigned) MATTER_AWS_SERVER_PORT);
     ret = MQTT_Transport_Connect(transport, hostname, hostname_length, MATTER_AWS_SERVER_PORT, MatterAwsTcpConnectCb);
+    SILABS_LOG("MATTER_AWS: MQTT_Transport_Connect returned err_t=%d", (int) ret);
     VerifyOrExit(ERR_OK == ret, ChipLogError(AppServer, "[MATTER_AWS] transport connection failed: %d", ret));
 
     while (!endLoop)
     {
         EventBits_t event;
         event = xEventGroupWaitBits(matterAwsEvents,
-                                    SIGNAL_TRANSINTF_RX | SIGNAL_TRANSINTF_TX_ACK | SIGNAL_TRANSINTF_CONN_CLOSE |
-                                        SIGNAL_TRANSINTF_MBEDTLS_RX,
+                                    SIGNAL_TRANSINTF_RX | SIGNAL_TRANSINTF_TX_ACK | SIGNAL_TRANSINTF_CONN_CLOSE
+#if !defined(SL_MATTER_AWS_TRANSPORT_SI91X_NWP) || (SL_MATTER_AWS_TRANSPORT_SI91X_NWP == 0)
+                                        | SIGNAL_TRANSINTF_MBEDTLS_RX
+#endif
+                                    ,
                                     1, 0, portMAX_DELAY);
         if (event & SIGNAL_TRANSINTF_CONN_CLOSE)
         {
@@ -204,8 +246,10 @@ static void MatterAwsTaskFn(void * args)
                 mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX);
             else if (event & SIGNAL_TRANSINTF_TX_ACK)
                 mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX_ACK);
+#if !defined(SL_MATTER_AWS_TRANSPORT_SI91X_NWP) || (SL_MATTER_AWS_TRANSPORT_SI91X_NWP == 0)
             if (event & SIGNAL_TRANSINTF_MBEDTLS_RX)
                 transport_process_mbedtls_rx(transport);
+#endif
         }
     }
     init_complete = false;
