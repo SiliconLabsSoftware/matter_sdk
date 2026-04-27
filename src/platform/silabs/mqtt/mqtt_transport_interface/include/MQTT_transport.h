@@ -21,13 +21,18 @@
 #define MQTT_TRANSPORT_H
 
 #include "FreeRTOS.h"
-#include "altcp_tls.h"
 #include "event_groups.h"
+#include "lwip/arch.h"
 #include "lwip/err.h"
-#include "lwip/ip_addr.h"
 #include "mqtt.h"
 #include "mqtt_opts.h"
 #include "semphr.h"
+
+/* Altcp/TLS-in-lwIP is not used when Matter AWS MQTT runs on Si91x NWP (sl_net + sl_si91x_socket). */
+#if !SL_MATTER_AWS_TRANSPORT_SI91X_NWP
+#include "altcp_tls.h"
+#include "lwip/ip_addr.h"
+#endif
 
 #define SIGNAL_TRANSINTF_MBEDTLS_RX 0x80
 #define SIGNAL_TRANSINTF_RX 0x01

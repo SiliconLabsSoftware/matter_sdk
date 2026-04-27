@@ -190,8 +190,11 @@ static void MatterAwsTaskFn(void * args)
     {
         EventBits_t event;
         event = xEventGroupWaitBits(matterAwsEvents,
-                                    SIGNAL_TRANSINTF_RX | SIGNAL_TRANSINTF_TX_ACK | SIGNAL_TRANSINTF_CONN_CLOSE |
-                                        SIGNAL_TRANSINTF_MBEDTLS_RX,
+                                    SIGNAL_TRANSINTF_RX | SIGNAL_TRANSINTF_TX_ACK | SIGNAL_TRANSINTF_CONN_CLOSE
+#if !defined(SL_MATTER_AWS_TRANSPORT_SI91X_NWP) || (SL_MATTER_AWS_TRANSPORT_SI91X_NWP == 0)
+                                        | SIGNAL_TRANSINTF_MBEDTLS_RX
+#endif
+                                    ,
                                     1, 0, portMAX_DELAY);
         if (event & SIGNAL_TRANSINTF_CONN_CLOSE)
         {
@@ -204,8 +207,10 @@ static void MatterAwsTaskFn(void * args)
                 mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX);
             else if (event & SIGNAL_TRANSINTF_TX_ACK)
                 mqtt_process(mqtt_client, SIGNAL_TRANSINTF_TX_ACK);
+#if !defined(SL_MATTER_AWS_TRANSPORT_SI91X_NWP) || (SL_MATTER_AWS_TRANSPORT_SI91X_NWP == 0)
             if (event & SIGNAL_TRANSINTF_MBEDTLS_RX)
                 transport_process_mbedtls_rx(transport);
+#endif
         }
     }
     init_complete = false;
