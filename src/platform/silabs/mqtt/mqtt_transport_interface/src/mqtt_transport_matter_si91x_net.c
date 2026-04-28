@@ -33,7 +33,6 @@
 #include "FreeRTOS.h"
 #include "event_groups.h"
 #include "semphr.h"
-#include "task.h"
 #include "timers.h"
 
 #include "errno.h"
@@ -58,16 +57,26 @@
 #define MATTER_AWS_NWP_CERT_INDEX 0
 #endif
 
-#ifndef MQTT_MATTER_SI91X_RX_FIFO_SIZE
-#define MQTT_MATTER_SI91X_RX_FIFO_SIZE 8192
+/* Ring + recv staging size (power of 2). Same layout as MQTT_transport_dual_stack.c (MQTT_DUAL_STACK_RX_BUF_SIZE). */
+#ifndef MQTT_MATTER_SI91X_RX_BUF_SIZE
+#define MQTT_MATTER_SI91X_RX_BUF_SIZE 4096u
+#endif
+
+#ifndef MQTT_MATTER_SI91X_RX_RING_SIZE
+#define MQTT_MATTER_SI91X_RX_RING_SIZE MQTT_MATTER_SI91X_RX_BUF_SIZE
 #endif
 
 #ifndef MQTT_MATTER_SI91X_TX_BUDGET
-#define MQTT_MATTER_SI91X_TX_BUDGET (8 * 1152)
+#define MQTT_MATTER_SI91X_TX_BUDGET (2 * 1152)
 #endif
 
+/* Stack in words: must fit rx_task tmp[RX_BUF_SIZE] + frame; matches MQTT_transport_dual_stack MQTT_RX_TASK_STACK. */
 #ifndef MQTT_MATTER_SI91X_RX_TASK_STACK
-#define MQTT_MATTER_SI91X_RX_TASK_STACK (2048u)
+#define MQTT_MATTER_SI91X_RX_TASK_STACK 1536u
+#endif
+
+#ifndef MQTT_MATTER_SI91X_RX_TASK_PRIORITY
+#define MQTT_MATTER_SI91X_RX_TASK_PRIORITY (configMAX_PRIORITIES - 2)
 #endif
 
 #ifndef MQTT_MATTER_SI91X_DNS_TIMEOUT_SEC
@@ -102,12 +111,13 @@ struct MQTT_Transport_t
     bool tls_enabled;
     uint8_t cert_index;
 
-    uint8_t rx_fifo[MQTT_MATTER_SI91X_RX_FIFO_SIZE];
-    uint16_t rx_avail;
+    uint8_t * rx_buf;
+    volatile uint16_t rx_put;
+    uint16_t rx_get;
     SemaphoreHandle_t rx_mutex;
 
-    volatile bool rx_run;
     TaskHandle_t rx_task_handle;
+    volatile uint8_t rx_task_run;
 
     TimerHandle_t cyclic_timer;
     void (*timer_handler)(void *);
@@ -123,6 +133,11 @@ enum
 extern void mqtt_cyclic_timer(void * arg);
 
 static void setup_transport_callbacks(MQTT_Transport_t * client, mqtt_transport_intf_t * trans);
+
+static uint16_t rx_ring_len(MQTT_Transport_t * client)
+{
+    return (uint16_t) (client->rx_put - client->rx_get);
+}
 
 static void mqtt_freertos_timer_cb(TimerHandle_t xTimer)
 {
@@ -222,70 +237,59 @@ static int8_t transport_write_cb(void * conn, void * buff, uint16_t len, uint8_t
 static uint16_t transport_get_recvlen_cb(void * conn)
 {
     MQTT_Transport_t * client = (MQTT_Transport_t *) conn;
-    uint16_t n                = 0;
-
-    if (!client || client->rx_mutex == NULL)
+    if (!client)
     {
         return 0;
     }
-    if (xSemaphoreTake(client->rx_mutex, portMAX_DELAY) == pdTRUE)
-    {
-        n = client->rx_avail;
-        xSemaphoreGive(client->rx_mutex);
-    }
+    xSemaphoreTake(client->rx_mutex, portMAX_DELAY);
+    uint16_t n = rx_ring_len(client);
+    xSemaphoreGive(client->rx_mutex);
     return n;
 }
 
 static int8_t transport_recv_from_nw(void * conn, void * buf, uint16_t len, uint16_t offset)
 {
     MQTT_Transport_t * client = (MQTT_Transport_t *) conn;
-    int8_t ret                = 0;
-
-    if (!client || client->rx_mutex == NULL)
+    (void) offset;
+    if (!client || !buf)
     {
         return 0;
     }
-    if (xSemaphoreTake(client->rx_mutex, portMAX_DELAY) != pdTRUE)
-    {
-        return 0;
-    }
-
-    if ((uint32_t) offset + (uint32_t) len > client->rx_avail)
+    xSemaphoreTake(client->rx_mutex, portMAX_DELAY);
+    uint16_t avail = rx_ring_len(client);
+    if (len > avail)
     {
         xSemaphoreGive(client->rx_mutex);
         return 0;
     }
-
-    memcpy(buf, client->rx_fifo + offset, len);
-
-    if ((uint32_t) offset + (uint32_t) len == (uint32_t) client->rx_avail)
+    uint16_t mask = MQTT_MATTER_SI91X_RX_BUF_SIZE - 1u;
+    for (uint16_t i = 0; i < len; i++)
     {
-        client->rx_avail = 0;
+        ((uint8_t *) buf)[i] = client->rx_buf[(client->rx_get + i) & mask];
     }
-
-    ret = (int8_t) len;
+    client->rx_get += len;
     xSemaphoreGive(client->rx_mutex);
-    return ret;
+    return (int8_t) len;
 }
 
 static void transport_close_cb(void * arg)
 {
     MQTT_Transport_t * client = (MQTT_Transport_t *) arg;
 
-    client->rx_run = false;
+    client->rx_task_run = 0;
+    while (client->rx_task_handle != NULL)
+    {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
     if (client->sock >= 0)
     {
         sl_si91x_shutdown(client->sock, 0);
         client->sock = -1;
     }
-    if (client->rx_task_handle != NULL)
+    client->conn_state = TRANSPORT_NOT_CONNECTED;
+    if (client->events != NULL)
     {
-        eTaskState st = eTaskGetState(client->rx_task_handle);
-        if (st != eDeleted && st != eInvalid)
-        {
-            vTaskDelay(pdMS_TO_TICKS(10));
-        }
-        client->rx_task_handle = NULL;
+        xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_CONN_CLOSE);
     }
     if (client->cyclic_timer != NULL)
     {
@@ -293,69 +297,44 @@ static void transport_close_cb(void * arg)
     }
 }
 
-static void mqtt_matter_si91x_rx_task(void * arg)
+static void mqtt_matter_si91x_rx_task(void * pvParameters)
 {
-    MQTT_Transport_t * t = (MQTT_Transport_t *) arg;
-    uint8_t tmp[512];
+    MQTT_Transport_t * client = (MQTT_Transport_t *) pvParameters;
+    uint8_t tmp[MQTT_MATTER_SI91X_RX_BUF_SIZE];
     sl_si91x_time_value timeout;
+    timeout.tv_sec  = 0;
+    timeout.tv_usec = 100000; /* 100 ms — same as MQTT_transport_dual_stack rx_task */
 
-    timeout.tv_sec  = 1;
-    timeout.tv_usec = 0;
-
-    for (;;)
+    while (client->rx_task_run && client->sock >= 0)
     {
-        if (!t->rx_run || t->sock < 0)
+        sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_RCVTIME, &timeout, sizeof(timeout));
+        int rc = sl_si91x_recv(client->sock, tmp, sizeof(tmp), 0);
+        if (rc > 0)
         {
-            break;
-        }
-
-        (void) sl_si91x_setsockopt(t->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_RCVTIME, &timeout, sizeof(timeout));
-
-        int n = sl_si91x_recv(t->sock, tmp, (int) sizeof(tmp), 0);
-        if (n < 0)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            SILABS_LOG("MQTT matter si91x: RX recv %d bytes (socket->ring)", rc);
+            xSemaphoreTake(client->rx_mutex, portMAX_DELAY);
+            for (int i = 0; i < rc && (uint16_t) (client->rx_put - client->rx_get) < MQTT_MATTER_SI91X_RX_BUF_SIZE; i++)
             {
-                continue;
+                client->rx_buf[client->rx_put & (MQTT_MATTER_SI91X_RX_BUF_SIZE - 1u)] = tmp[i];
+                client->rx_put++;
             }
-            if (t->events != NULL)
+            xSemaphoreGive(client->rx_mutex);
+            if (client->events)
             {
-                xEventGroupSetBits(t->events, SIGNAL_TRANSINTF_CONN_CLOSE);
+                xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_RX);
             }
-            break;
         }
-        if (n == 0)
+        else if (rc == 0 || (rc == -1 && (errno == ECONNRESET || errno == ENOTCONN)))
         {
-            if (t->events != NULL)
+            if (client->conn_state == TRANSPORT_CONNECTED && client->events)
             {
-                xEventGroupSetBits(t->events, SIGNAL_TRANSINTF_CONN_CLOSE);
+                SILABS_LOG("MQTT matter si91x: CONN_CLOSE (recv rc=%d errno=%d - peer closed or socket error)", rc, errno);
+                xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_CONN_CLOSE);
             }
             break;
-        }
-
-        if (xSemaphoreTake(t->rx_mutex, portMAX_DELAY) == pdTRUE)
-        {
-            if ((uint32_t) t->rx_avail + (uint32_t) n > MQTT_MATTER_SI91X_RX_FIFO_SIZE)
-            {
-                xSemaphoreGive(t->rx_mutex);
-                if (t->events != NULL)
-                {
-                    xEventGroupSetBits(t->events, SIGNAL_TRANSINTF_CONN_CLOSE);
-                }
-                break;
-            }
-            memcpy(t->rx_fifo + t->rx_avail, tmp, (size_t) n);
-            t->rx_avail = (uint16_t)(t->rx_avail + (uint16_t) n);
-            xSemaphoreGive(t->rx_mutex);
-        }
-
-        if (t->events != NULL)
-        {
-            xEventGroupSetBits(t->events, SIGNAL_TRANSINTF_RX);
         }
     }
-
-    t->rx_task_handle = NULL;
+    client->rx_task_handle = NULL;
     vTaskDelete(NULL);
 }
 
@@ -383,9 +362,18 @@ MQTT_Transport_t * MQTT_Transport_Init(mqtt_transport_intf_t * trans, mqtt_clien
     memset(client, 0, sizeof(MQTT_Transport_t));
     client->sock  = -1;
     client->events = matterAwsEvents;
+    client->rx_buf = (uint8_t *) pvPortMalloc(MQTT_MATTER_SI91X_RX_BUF_SIZE);
     client->rx_mutex = xSemaphoreCreateMutex();
-    if (client->rx_mutex == NULL)
+    if (client->rx_buf == NULL || client->rx_mutex == NULL)
     {
+        if (client->rx_buf != NULL)
+        {
+            vPortFree(client->rx_buf);
+        }
+        if (client->rx_mutex != NULL)
+        {
+            vSemaphoreDelete(client->rx_mutex);
+        }
         vPortFree(client);
         return NULL;
     }
@@ -585,13 +573,15 @@ static err_t nwp_tcp_connect(MQTT_Transport_t * client, const sl_ip_address_t * 
     SILABS_LOG("Matter si91x net: [tcp] sl_si91x_connect returned ok");
 
     client->conn_state = TRANSPORT_CONNECTED;
-    client->rx_run     = true;
-    client->rx_avail   = 0;
+    client->rx_task_run = 1;
+    client->rx_put      = 0;
+    client->rx_get      = 0;
 
-    if (xTaskCreate(mqtt_matter_si91x_rx_task, "mqtt_m_si91x", MQTT_MATTER_SI91X_RX_TASK_STACK, client, (configMAX_PRIORITIES - 3),
-                    &client->rx_task_handle)
+    if (xTaskCreate(mqtt_matter_si91x_rx_task, "mqtt_m_si91x", MQTT_MATTER_SI91X_RX_TASK_STACK, client,
+                    MQTT_MATTER_SI91X_RX_TASK_PRIORITY, &client->rx_task_handle)
         != pdPASS)
     {
+        client->rx_task_run = 0;
         SILABS_LOG("Matter si91x net: [tcp] FAIL at xTaskCreate(mqtt_matter_si91x_rx)");
         goto fail;
     }
