@@ -27,14 +27,10 @@
 #include <inet/DeferredUdpSendQueueLwIP.h>
 #endif
 
-#include <lib/support/CodeUtils.h>
-#include <lib/support/logging/CHIPLogging.h>
-
 #if INET_CONFIG_ENABLE_IPV4
 #include <lwip/igmp.h>
 #endif // INET_CONFIG_ENABLE_IPV4
 
-#include <lwip/err.h>
 #include <lwip/init.h>
 #include <lwip/ip.h>
 #include <lwip/mld6.h>
@@ -227,7 +223,6 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
 
     if (lwipErr != ERR_OK)
     {
-        ChipLogError(Inet, "UDP send failed: %" CHIP_ERROR_FORMAT, chip::System::MapErrorLwIP(lwipErr).Format());
         return chip::System::MapErrorLwIP(lwipErr);
     }
     return CHIP_NO_ERROR;
