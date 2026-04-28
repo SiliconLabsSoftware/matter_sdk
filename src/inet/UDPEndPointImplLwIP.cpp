@@ -182,7 +182,7 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
 {
     assertChipStackLockedByCurrentThread();
 
-    err_t lwipErr = ERR_OK;
+    err_t lwipErr              = ERR_OK;
     const IPAddress & destAddr = pktInfo->DestAddress;
 
     // Send the message to the specified address/port.
