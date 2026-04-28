@@ -71,7 +71,7 @@ public:
 
     // Reboot
     void SoftwareReset(void) override;
-    inline uint32_t GetRebootCause() { return mRebootCause; }
+    inline uint32_t GetRebootCause() override { return mRebootCause; }
 
     /** VerifyIfUpdated
      * @brief Verify if the device has been updated by OTA.
