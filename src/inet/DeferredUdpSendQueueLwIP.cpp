@@ -111,7 +111,6 @@ bool IsNetifUsable(struct netif * netif)
     return netif != nullptr && netif_is_up(netif) && netif_is_link_up(netif);
 }
 
-#if LWIP_IPV6
 bool NetifHasValidIpv6Address(struct netif * netif)
 {
     VerifyOrReturnValue(netif != nullptr, false);
@@ -124,22 +123,14 @@ bool NetifHasValidIpv6Address(struct netif * netif)
     }
     return false;
 }
-#endif
 
 bool IsNetifReadyForOutboundUdp(struct netif * netif, const IPAddress & dest)
 {
     VerifyOrReturnValue(IsNetifUsable(netif), false);
-#if LWIP_IPV6
     if (dest.IsIPv6())
     {
         return NetifHasValidIpv6Address(netif);
     }
-#else
-    if (dest.IsIPv6())
-    {
-        return false;
-    }
-#endif
 #if INET_CONFIG_ENABLE_IPV4 && LWIP_IPV4
     if (dest.IsIPv4())
     {

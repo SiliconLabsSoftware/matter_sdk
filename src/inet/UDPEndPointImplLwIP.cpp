@@ -197,8 +197,8 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
 
     ip_addr_t lwipSrcAddr  = srcAddr.ToLwIPAddr();
     ip_addr_t lwipDestAddr = destAddr.ToLwIPAddr();
-    ip_addr_t boundAddr;
 
+    ip_addr_t boundAddr;
     ip_addr_copy(boundAddr, mUDP->local_ip);
 
     if (!ip_addr_isany(&lwipSrcAddr))
@@ -217,26 +217,19 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
 
     ip_addr_copy(mUDP->local_ip, boundAddr);
 
-    const unsigned payloadLen = static_cast<unsigned>(msg->TotalLength());
-    char destStr[IPAddress::kMaxStringLength];
-    destAddr.ToString(destStr);
-
 #if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     if (lwipErr == ERR_RTE)
     {
-        ChipLogProgress(Inet, "UDP send deferred (no route yet, ERR_RTE): dest %s port %u len %u", destStr, destPort, payloadLen);
+        ChipLogDetail(Inet, "UDP send deferred (no route yet, ERR_RTE)");
         return DeferredUdpSendQueueLwIP::Enqueue(this, pktInfo, std::move(msg));
     }
 #endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
     if (lwipErr != ERR_OK)
     {
-        ChipLogError(Inet, "UDP send failed: dest %s port %u len %u lwip err %d", destStr, destPort, payloadLen,
-                     static_cast<int>(lwipErr));
+        ChipLogError(Inet, "UDP send failed: %" CHIP_ERROR_FORMAT, chip::System::MapErrorLwIP(lwipErr).Format());
         return chip::System::MapErrorLwIP(lwipErr);
     }
-
-    ChipLogProgress(Inet, "UDP send: dest %s port %u len %u", destStr, destPort, payloadLen);
     return CHIP_NO_ERROR;
 }
 
