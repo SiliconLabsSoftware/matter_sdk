@@ -68,11 +68,7 @@ struct DeferredUdpRing
     {
         if (count == kDeferredQueueCapacity)
         {
-            const DeferredUdpSlot & dropped = slots[head];
-            char dropDest[IPAddress::kMaxStringLength];
-            dropped.pktInfo.DestAddress.ToString(dropDest);
-            ChipLogProgress(Inet, "Deferred UDP queue full: dropping head dest %s port %u len %u", dropDest,
-                            dropped.pktInfo.DestPort, static_cast<unsigned>(dropped.msg->TotalLength()));
+            ChipLogDetail(Inet, "Deferred UDP queue full: dropping head");
             slots[head] = DeferredUdpSlot{};
             head        = (head + 1) % kDeferredQueueCapacity;
             --count;
@@ -111,7 +107,7 @@ bool IsNetifUsable(struct netif * netif)
     return netif != nullptr && netif_is_up(netif) && netif_is_link_up(netif);
 }
 
-bool NetifHasValidIpv6Address(struct netif * netif)
+bool NetifHasPreferredIpv6Address(struct netif * netif)
 {
     VerifyOrReturnValue(netif != nullptr, false);
     for (u8_t idx = 0; idx < LWIP_IPV6_NUM_ADDRESSES; ++idx)
@@ -129,7 +125,7 @@ bool IsNetifReadyForOutboundUdp(struct netif * netif, const IPAddress & dest)
     VerifyOrReturnValue(IsNetifUsable(netif), false);
     if (dest.IsIPv6())
     {
-        return NetifHasValidIpv6Address(netif);
+        return NetifHasPreferredIpv6Address(netif);
     }
 #if INET_CONFIG_ENABLE_IPV4 && LWIP_IPV4
     if (dest.IsIPv4())
@@ -188,10 +184,7 @@ CHIP_ERROR DeferredUdpSendQueueLwIP::Enqueue(UDPEndPointImplLwIP * self, const I
     slot.pktInfo  = *pktInfo;
     slot.msg      = std::move(msg);
 
-    char destStr[IPAddress::kMaxStringLength];
-    pktInfo->DestAddress.ToString(destStr);
-    ChipLogProgress(Inet, "UDP send deferred (waiting for netif): dest %s port %u len %u", destStr, pktInfo->DestPort,
-                    static_cast<unsigned>(slot.msg->TotalLength()));
+    ChipLogDetail(Inet, "UDP send deferred (waiting for netif)");
 
     gDeferredRing.PushBack(std::move(slot));
     return CHIP_NO_ERROR;
