@@ -50,6 +50,10 @@ buildconfig_header("inet_buildconfig") {
     "INET_CONFIG_ENABLE_TCP_ENDPOINT=${chip_inet_config_enable_tcp_endpoint}",
     "INET_CONFIG_ENABLE_UDP_ENDPOINT=${chip_inet_config_enable_udp_endpoint}",
     "HAVE_LWIP_RAW_BIND_NETIF=true",
+
+    # [SL-ONLY] Queuing the UDP packets for till the netif is not up
+    "SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY=${silabs_inet_config_udp_lwip_queue_until_netif_ready}",
+    "SILABS_INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE=${silabs_inet_config_udp_lwip_deferred_send_queue_size}",
   ]
 
   if (chip_inet_project_config_include != "") {

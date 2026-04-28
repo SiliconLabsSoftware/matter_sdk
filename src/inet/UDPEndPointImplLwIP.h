@@ -30,13 +30,13 @@
 namespace chip {
 namespace Inet {
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 class DeferredUdpSendQueueLwIP;
 #endif
 
 class UDPEndPointImplLwIP : public UDPEndPoint, public EndPointStateLwIP
 {
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     friend class DeferredUdpSendQueueLwIP;
 #endif
 
@@ -81,7 +81,7 @@ private:
     void CloseImpl() override;
 
     CHIP_ERROR PerformLwIPUdpSend(const IPPacketInfo * pktInfo, chip::System::PacketBufferHandle && msg);
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     CHIP_ERROR FlushOneDeferred(const IPPacketInfo * pktInfo, chip::System::PacketBufferHandle && msg);
 #endif
 

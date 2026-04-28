@@ -23,7 +23,7 @@
 
 #include <inet/UDPEndPointImplLwIP.h>
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <inet/DeferredUdpSendQueueLwIP.h>
 #endif
 
@@ -163,7 +163,7 @@ CHIP_ERROR UDPEndPointImplLwIP::SendMsgImpl(const IPPacketInfo * pktInfo, System
         return res;
     }
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     // Defer if the netif is not ready for this destination; otherwise drain earlier deferrals first.
     bool shouldDefer         = false;
     CHIP_ERROR deferProbeErr = DeferredUdpSendQueueLwIP::ProbeDefer(*pktInfo, shouldDefer);
@@ -173,7 +173,7 @@ CHIP_ERROR UDPEndPointImplLwIP::SendMsgImpl(const IPPacketInfo * pktInfo, System
         return DeferredUdpSendQueueLwIP::Enqueue(this, pktInfo, std::move(msg));
     }
     DeferredUdpSendQueueLwIP::Flush();
-#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif // SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
     return PerformLwIPUdpSend(pktInfo, std::move(msg));
 }
@@ -217,13 +217,13 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
 
     ip_addr_copy(mUDP->local_ip, boundAddr);
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     if (lwipErr == ERR_RTE)
     {
         ChipLogDetail(Inet, "UDP send deferred (no route yet, ERR_RTE)");
         return DeferredUdpSendQueueLwIP::Enqueue(this, pktInfo, std::move(msg));
     }
-#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif // SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
     if (lwipErr != ERR_OK)
     {
@@ -232,7 +232,7 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
     return CHIP_NO_ERROR;
 }
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 CHIP_ERROR UDPEndPointImplLwIP::FlushOneDeferred(const IPPacketInfo * pktInfo, System::PacketBufferHandle && msg)
 {
     if (mState == State::kClosed || mUDP == nullptr)
@@ -248,13 +248,13 @@ void UDPEndPointImplLwIP::FlushDeferredSendQueue()
 }
 #else
 void UDPEndPointImplLwIP::FlushDeferredSendQueue() {}
-#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif // SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
 void UDPEndPointImplLwIP::CloseImpl()
 {
     assertChipStackLockedByCurrentThread();
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     DeferredUdpSendQueueLwIP::PurgeForEndpoint(this);
 #endif
 

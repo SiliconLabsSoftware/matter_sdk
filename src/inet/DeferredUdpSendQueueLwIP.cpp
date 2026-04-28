@@ -17,7 +17,7 @@
 
 #include <inet/DeferredUdpSendQueueLwIP.h>
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
 #include <inet/EndPointStateLwIP.h>
 #include <inet/IPAddress.h>
@@ -46,8 +46,8 @@ namespace {
 #define NETIF_FOREACH(netif) for ((netif) = netif_list; (netif) != nullptr; (netif) = (netif)->next)
 #endif
 
-constexpr size_t kDeferredQueueCapacity = INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE;
-static_assert(kDeferredQueueCapacity > 0, "INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE must be > 0");
+constexpr size_t kDeferredQueueCapacity = SILABS_INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE;
+static_assert(kDeferredQueueCapacity > 0, "SILABS_INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE must be > 0");
 
 struct DeferredUdpSlot
 {
@@ -249,4 +249,4 @@ void DeferredUdpSendQueueLwIP::Flush()
 } // namespace Inet
 } // namespace chip
 
-#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif // SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY

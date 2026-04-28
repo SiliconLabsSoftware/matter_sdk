@@ -24,7 +24,7 @@
 
 #include <inet/InetConfig.h>
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
 #include <lib/core/CHIPError.h>
 #include <system/SystemPacketBuffer.h>
@@ -54,4 +54,4 @@ public:
 } // namespace Inet
 } // namespace chip
 
-#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif // SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
