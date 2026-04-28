@@ -71,8 +71,8 @@ struct DeferredUdpRing
             const DeferredUdpSlot & dropped = slots[head];
             char dropDest[IPAddress::kMaxStringLength];
             dropped.pktInfo.DestAddress.ToString(dropDest);
-            ChipLogProgress(Inet, "Deferred UDP queue full: dropping head dest %s port %u len %u", dropDest, dropped.pktInfo.DestPort,
-                            static_cast<unsigned>(dropped.msg->TotalLength()));
+            ChipLogProgress(Inet, "Deferred UDP queue full: dropping head dest %s port %u len %u", dropDest,
+                            dropped.pktInfo.DestPort, static_cast<unsigned>(dropped.msg->TotalLength()));
             slots[head] = DeferredUdpSlot{};
             head        = (head + 1) % kDeferredQueueCapacity;
             --count;
@@ -151,7 +151,7 @@ bool IsNetifReadyForOutboundUdp(struct netif * netif, const IPAddress & dest)
 
 bool IsOutboundNetifReadyForUdp(const IPPacketInfo & pktInfo)
 {
-    const InterfaceId & intfId  = pktInfo.Interface;
+    const InterfaceId & intfId = pktInfo.Interface;
     const IPAddress & dest     = pktInfo.DestAddress;
 
     if (intfId.IsPresent())
@@ -180,7 +180,7 @@ bool IsOutboundNetifReadyForUdp(const IPPacketInfo & pktInfo)
 
 CHIP_ERROR DeferredUdpSendQueueLwIP::ProbeDefer(const IPPacketInfo & pktInfo, bool & outShouldDefer)
 {
-    outShouldDefer  = false;
+    outShouldDefer = false;
     err_t probeErr = EndPointStateLwIP::RunOnTCPIPRet([&]() -> err_t {
         outShouldDefer = !IsOutboundNetifReadyForUdp(pktInfo);
         return ERR_OK;
@@ -189,7 +189,8 @@ CHIP_ERROR DeferredUdpSendQueueLwIP::ProbeDefer(const IPPacketInfo & pktInfo, bo
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR DeferredUdpSendQueueLwIP::Enqueue(UDPEndPointImplLwIP * self, const IPPacketInfo * pktInfo, System::PacketBufferHandle && msg)
+CHIP_ERROR DeferredUdpSendQueueLwIP::Enqueue(UDPEndPointImplLwIP * self, const IPPacketInfo * pktInfo,
+                                             System::PacketBufferHandle && msg)
 {
     DeferredUdpSlot slot;
     slot.epHandle = UDPEndPointHandle(static_cast<UDPEndPoint *>(self));

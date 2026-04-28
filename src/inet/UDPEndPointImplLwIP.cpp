@@ -166,7 +166,7 @@ CHIP_ERROR UDPEndPointImplLwIP::SendMsgImpl(const IPPacketInfo * pktInfo, System
 
 #if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     // Defer if the netif is not ready for this destination; otherwise drain earlier deferrals first.
-    bool shouldDefer = false;
+    bool shouldDefer         = false;
     CHIP_ERROR deferProbeErr = DeferredUdpSendQueueLwIP::ProbeDefer(*pktInfo, shouldDefer);
     VerifyOrReturnError(deferProbeErr == CHIP_NO_ERROR, deferProbeErr);
     if (shouldDefer)
@@ -191,9 +191,9 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
     // If a source address has been specified, temporarily override the local_ip of the PCB.
     // This results in LwIP using the given address being as the source address for the generated
     // packet, as if the PCB had been bound to that address.
-    const IPAddress &     srcAddr  = pktInfo->SrcAddress;
-    const uint16_t &      destPort = pktInfo->DestPort;
-    const InterfaceId &   intfId   = pktInfo->Interface;
+    const IPAddress & srcAddr  = pktInfo->SrcAddress;
+    const uint16_t & destPort  = pktInfo->DestPort;
+    const InterfaceId & intfId = pktInfo->Interface;
 
     ip_addr_t lwipSrcAddr  = srcAddr.ToLwIPAddr();
     ip_addr_t lwipDestAddr = destAddr.ToLwIPAddr();
