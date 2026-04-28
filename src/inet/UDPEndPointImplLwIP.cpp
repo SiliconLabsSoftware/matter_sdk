@@ -154,7 +154,10 @@ CHIP_ERROR UDPEndPointImplLwIP::SendMsgImpl(const IPPacketInfo * pktInfo, System
         VerifyOrReturnError(!msg.IsNull(), CHIP_ERROR_NO_MEMORY);
     }
 
-    CHIP_ERROR res = GetPCB(destAddr.Type());
+    CHIP_ERROR res = CHIP_NO_ERROR;
+
+    // Make sure we have the appropriate type of PCB based on the destination address.
+    res = GetPCB(destAddr.Type());
     if (res != CHIP_NO_ERROR)
     {
         return res;
@@ -179,6 +182,7 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
 {
     assertChipStackLockedByCurrentThread();
 
+    err_t lwipErr = ERR_OK;
     const IPAddress & destAddr = pktInfo->DestAddress;
 
     // Send the message to the specified address/port.
@@ -202,7 +206,7 @@ CHIP_ERROR UDPEndPointImplLwIP::PerformLwIPUdpSend(const IPPacketInfo * pktInfo,
         ip_addr_copy(mUDP->local_ip, lwipSrcAddr);
     }
 
-    err_t lwipErr = RunOnTCPIPRet([this, &intfId, &msg, &lwipDestAddr, destPort]() {
+    lwipErr = RunOnTCPIPRet([this, &intfId, &msg, &lwipDestAddr, destPort]() {
         if (intfId.IsPresent())
         {
             return udp_sendto_if(mUDP, System::LwIPPacketBufferView::UnsafeGetLwIPpbuf(msg), &lwipDestAddr, destPort,

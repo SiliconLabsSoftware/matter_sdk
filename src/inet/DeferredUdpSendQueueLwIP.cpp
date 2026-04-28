@@ -127,12 +127,12 @@ bool IsNetifReadyForOutboundUdp(struct netif * netif, const IPAddress & dest)
     {
         return NetifHasPreferredIpv6Address(netif);
     }
-#if INET_CONFIG_ENABLE_IPV4 && LWIP_IPV4
+#if INET_CONFIG_ENABLE_IPV4
     if (dest.IsIPv4())
     {
         return !ip4_addr_isany(netif_ip4_addr(netif));
     }
-#endif
+#endif // INET_CONFIG_ENABLE_IPV4
     return false;
 }
 
