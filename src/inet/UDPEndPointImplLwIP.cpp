@@ -380,8 +380,8 @@ CHIP_ERROR UDPEndPointImplLwIP::GetPCB(IPAddressType addrType)
 void UDPEndPointImplLwIP::LwIPReceiveUDPMessage(void * arg, struct udp_pcb * pcb, struct pbuf * p, const ip_addr_t * addr,
                                                 u16_t port)
 {
-    UDPEndPointImplLwIP * epHandle = static_cast<UDPEndPointImplLwIP *>(arg);
-    if (epHandle->mState == State::kClosed)
+    UDPEndPointImplLwIP * ep = static_cast<UDPEndPointImplLwIP *>(arg);
+    if (ep->mState == State::kClosed)
     {
         return;
     }
@@ -420,7 +420,7 @@ void UDPEndPointImplLwIP::LwIPReceiveUDPMessage(void * arg, struct udp_pcb * pcb
     auto filterOutcome = EndpointQueueFilter::FilterOutcome::kAllowPacket;
     if (sQueueFilter != nullptr)
     {
-        filterOutcome = sQueueFilter->FilterBeforeEnqueue(epHandle, *(pktInfo.get()), buf);
+        filterOutcome = sQueueFilter->FilterBeforeEnqueue(ep, *(pktInfo.get()), buf);
     }
 
     if (filterOutcome != EndpointQueueFilter::FilterOutcome::kAllowPacket)
@@ -431,14 +431,14 @@ void UDPEndPointImplLwIP::LwIPReceiveUDPMessage(void * arg, struct udp_pcb * pcb
 
     // Increase mDelayReleaseCount to delay release of this UDP EndPoint while the HandleDataReceived call is
     // pending on it.
-    epHandle->mDelayReleaseCount++;
+    ep->mDelayReleaseCount++;
 
-    CHIP_ERROR err = epHandle->GetSystemLayer().ScheduleLambda(
-        [epHandle, p = System::LwIPPacketBufferView::UnsafeGetLwIPpbuf(buf), pktInfo = pktInfo.get()] {
-            epHandle->mDelayReleaseCount--;
+    CHIP_ERROR err = ep->GetSystemLayer().ScheduleLambda(
+        [ep, p = System::LwIPPacketBufferView::UnsafeGetLwIPpbuf(buf), pktInfo = pktInfo.get()] {
+            ep->mDelayReleaseCount--;
 
             auto handle = System::PacketBufferHandle::Adopt(p);
-            epHandle->HandleDataReceived(std::move(handle), pktInfo);
+            ep->HandleDataReceived(std::move(handle), pktInfo);
         });
 
     if (err == CHIP_NO_ERROR)
@@ -454,11 +454,11 @@ void UDPEndPointImplLwIP::LwIPReceiveUDPMessage(void * arg, struct udp_pcb * pcb
         // the packet is basically dequeued, if it tries to keep track of the lifecycle.
         if (sQueueFilter != nullptr)
         {
-            (void) sQueueFilter->FilterAfterDequeue(epHandle, *(pktInfo.get()), buf);
+            (void) sQueueFilter->FilterAfterDequeue(ep, *(pktInfo.get()), buf);
             ChipLogError(Inet, "Dequeue ERROR err = %" CHIP_ERROR_FORMAT, err.Format());
         }
 
-        epHandle->mDelayReleaseCount--;
+        ep->mDelayReleaseCount--;
     }
 }
 
