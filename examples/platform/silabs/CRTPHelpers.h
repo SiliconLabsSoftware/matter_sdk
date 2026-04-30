@@ -22,12 +22,20 @@
 #include <type_traits>
 
 /**
- * CRTP macros for compile-time override dispatch with optional signature validation.
- * Base = CRTP base class, Derived = concrete class, func = method name (Impl suffix added for dispatch).
+ * CRTP dispatch macros.
  *
- * For optional overrides (methods with a base default), CRTP_CHECK_OPTIONAL_IMPL fires only when
- * Derived provides an override with a mismatched signature. When Derived does not override at all,
- * the check is skipped (the first is_same condition is true, short-circuiting the OR).
+ * Two categories:
+ *   CRTP_OPTIONAL_* — Derived may override func. A base default exists; if Derived
+ *                     does override, the signature is checked at compile time.
+ *   CRTP_REQUIRED_* — Derived must provide func. No base default; a missing override
+ *                     produces a compiler error.
+ *
+ * Suffix legend:
+ *   _DISPATCH        instance method, returns a value, no extra args
+ *   _DISPATCH_ARGS   instance method, returns a value, forwarded args
+ *   _VOID_DISPATCH   instance method, void, forwarded args
+ *   _STATIC_DISPATCH static method, void, forwarded args
+ *   _CONST_DISPATCH_ARGS const instance method, returns a value, forwarded args
  */
 
 /** Strip class type from a member function pointer, keeping return type, args, and const qualifier. */
@@ -45,55 +53,68 @@ struct mfp_sig<Ret (C::*)(Args...) const>
 };
 
 /**
- * Asserts that if Derived overrides func##Impl, its signature matches the base default.
- * Requires Base to have a default func##Impl (i.e., only for optional overrides).
+ * Asserts that if Derived overrides func, its signature matches the base default.
+ * Only for optional overrides (Base must have a default func).
  */
 #define CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func)                                                                              \
-    static_assert(std::is_same<decltype(&Derived::func##Impl), decltype(&Base::func##Impl)>::value ||                              \
-                      std::is_same<typename mfp_sig<decltype(&Derived::func##Impl)>::type,                                         \
-                                   typename mfp_sig<decltype(&Base::func##Impl)>::type>::value,                                    \
-                  #Derived "::" #func "Impl() signature does not match " #Base "::" #func "Impl()")
+    static_assert(std::is_same<decltype(&Derived::func), decltype(&Base::func)>::value ||                                          \
+                      std::is_same<typename mfp_sig<decltype(&Derived::func)>::type,                                               \
+                                   typename mfp_sig<decltype(&Base::func)>::type>::value,                                          \
+                  #Derived "::" #func "() signature does not match " #Base "::" #func "()")
 
 /** Cast this to Derived* (use in instance methods). */
 #define CRTP_THIS(Derived) static_cast<Derived *>(this)
 
-/** Get the app task singleton as Derived& (use in static methods that dispatch to Impl). */
+/** Get the app task singleton as Derived& (use in static methods). */
 #define CRTP_APP_TASK(Derived) static_cast<Derived &>(Derived::GetAppTask())
 
-/** For required overrides only (no base default). Missing Impl produces a raw compiler error. */
-#define CRTP_RETURN_DERIVED_ONLY(Base, Derived, func) return static_cast<Derived *>(this)->func##Impl()
+// ---------------------------------------------------------------------------
+// Optional dispatch — Derived may override func; base default exists.
+// ---------------------------------------------------------------------------
 
-#define CRTP_RETURN_AND_VERIFY(Base, Derived, func)                                                                                \
+/** Instance method, returns a value, no extra args. */
+#define CRTP_OPTIONAL_DISPATCH(Base, Derived, func)                                                                                \
     do                                                                                                                             \
     {                                                                                                                              \
         CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
-        return static_cast<Derived *>(this)->func##Impl();                                                                         \
+        return static_cast<Derived *>(this)->func();                                                                               \
     } while (0)
 
-#define CRTP_RETURN_AND_VERIFY_ARGS(Base, Derived, func, ...)                                                                      \
+/** Instance method, returns a value, forwarded args. */
+#define CRTP_OPTIONAL_DISPATCH_ARGS(Base, Derived, func, ...)                                                                      \
     do                                                                                                                             \
     {                                                                                                                              \
         CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
-        return static_cast<Derived *>(this)->func##Impl(__VA_ARGS__);                                                              \
+        return static_cast<Derived *>(this)->func(__VA_ARGS__);                                                                    \
     } while (0)
 
-#define CRTP_RETURN_CONST_AND_VERIFY_ARGS(Base, Derived, func, ...)                                                                \
+/** Const instance method, returns a value, forwarded args. */
+#define CRTP_OPTIONAL_CONST_DISPATCH_ARGS(Base, Derived, func, ...)                                                                \
     do                                                                                                                             \
     {                                                                                                                              \
         CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
-        return static_cast<const Derived *>(this)->func##Impl(__VA_ARGS__);                                                        \
+        return static_cast<const Derived *>(this)->func(__VA_ARGS__);                                                              \
     } while (0)
 
-#define CRTP_VOID_AND_VERIFY(Base, Derived, func, ...)                                                                             \
+/** Instance method, void, forwarded args. */
+#define CRTP_OPTIONAL_VOID_DISPATCH(Base, Derived, func, ...)                                                                      \
     do                                                                                                                             \
     {                                                                                                                              \
         CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
-        static_cast<Derived *>(this)->func##Impl(__VA_ARGS__);                                                                     \
+        static_cast<Derived *>(this)->func(__VA_ARGS__);                                                                           \
     } while (0)
 
-#define CRTP_STATIC_VOID_AND_VERIFY(Base, Derived, func, ...)                                                                      \
+/** Static method, void, forwarded args. */
+#define CRTP_OPTIONAL_STATIC_DISPATCH(Base, Derived, func, ...)                                                                    \
     do                                                                                                                             \
     {                                                                                                                              \
         CRTP_CHECK_OPTIONAL_IMPL(Base, Derived, func);                                                                             \
-        static_cast<Derived &>(Derived::GetAppTask()).func##Impl(__VA_ARGS__);                                                     \
+        static_cast<Derived &>(Derived::GetAppTask()).func(__VA_ARGS__);                                                           \
     } while (0)
+
+// ---------------------------------------------------------------------------
+// Required dispatch — Derived must provide func; no base default.
+// ---------------------------------------------------------------------------
+
+/** Instance method, returns a value, no extra args. Missing func in Derived is a compiler error. */
+#define CRTP_REQUIRED_DISPATCH(Base, Derived, func) return static_cast<Derived *>(this)->func()
