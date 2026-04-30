@@ -32,7 +32,6 @@
 #endif // SL_MATTER_ZIGBEE_CMP
 #else
 #define APP_TASK_NAME "Light"
-
 #define BLE_DEV_NAME "SL-" APP_TASK_NAME
 
 // Time it takes in ms for the simulated actuator to move from one
