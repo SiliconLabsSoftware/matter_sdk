@@ -97,11 +97,30 @@ _DevicePairingDelegate_OnOpenWindowCompleteFunct = CFUNCTYPE(
     None, c_uint64, c_uint32, c_char_p, c_char_p, PyChipError)
 
 DevicePairingDelegate_OnCommissioningStatusUpdateFunct: typing.TypeAlias = typing.Callable[
-    [int, int, PyChipError],
+    [int, int, int, PyChipError],
     None,
 ]
+# Mapping of C++ DevicePairingDelegate_OnCommissioningStatusUpdateFunct to Python:
+#
+# C++ signature:
+#   (PeerId peerId, CommissioningStage stageCompleted, CHIP_ERROR err)
+#
+# PeerId (src/lib/core/PeerId.h) contains:
+#   - NodeId
+#   - CompressedFabricId
+#
+# In the Python binding, PeerId is flattened into two uint64 values:
+#   - first c_uint64  -> NodeId
+#   - second c_uint64 -> CompressedFabricId
+#
+# The remaining parameters are mapped as:
+#   - c_uint8     -> CommissioningStage (enum)
+#   - PyChipError -> CHIP_ERROR
+#
+# So the signature below corresponds to:
+#   (nodeId, compressedFabricId, stageCompleted, err)
 _DevicePairingDelegate_OnCommissioningStatusUpdateFunct = CFUNCTYPE(
-    None, c_uint64, c_uint8, PyChipError)
+    None, c_uint64, c_uint64, c_uint8, PyChipError)
 
 DevicePairingDelegate_OnCommissioningStageStartFunct: typing.TypeAlias = typing.Callable[
     [int, bytes],
