@@ -588,19 +588,15 @@ Status GetMotionLockStatus(chip::EndpointId endpoint)
     BitMask<ConfigStatus> configStatus = ConfigStatusGet(endpoint);
 
     // Is the device locked?
-    if (!configStatus.Has(ConfigStatus::kOperational))
+    if (mode.Has(Mode::kMaintenanceMode))
     {
-        if (mode.Has(Mode::kMaintenanceMode))
-        {
-            // Mainterance Mode
-            return Status::Busy;
-        }
-
-        if (mode.Has(Mode::kCalibrationMode))
-        {
-            // Calibration Mode
-            return Status::Failure;
-        }
+        // Mainterance Mode
+        return Status::Busy;
+    }
+    if (mode.Has(Mode::kCalibrationMode))
+    {
+        // Calibration Mode
+        return Status::Failure;
     }
 
     return Status::Success;
