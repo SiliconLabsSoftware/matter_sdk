@@ -137,7 +137,7 @@ const sl_wifi_device_configuration_t config = {
                      .coex_mode = SL_SI91X_WLAN_BLE_MODE,
 #else
                      .coex_mode = SL_SI91X_WLAN_ONLY_MODE,
-#endif
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .feature_bit_map =
 #ifdef SLI_SI91X_MCU_INTERFACE
                          (SL_SI91X_FEAT_SECURITY_OPEN | SL_SI91X_FEAT_WPS_DISABLE),
@@ -145,21 +145,24 @@ const sl_wifi_device_configuration_t config = {
                          (SL_SI91X_FEAT_SECURITY_OPEN | SL_SI91X_FEAT_AGGREGATION | SL_SI91X_FEAT_ULP_GPIO_BASED_HANDSHAKE |
                           SL_SI91X_FEAT_DEV_TO_HOST_ULP_GPIO_1),
 #endif
-                     .tcp_ip_feature_bit_map =
-                         (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_DNS_CLIENT | SL_SI91X_TCP_IP_FEAT_SSL
+                     .tcp_ip_feature_bit_map = 
+                        (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_DNS_CLIENT | SL_SI91X_TCP_IP_FEAT_SSL
+#if !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
+                        | SL_SI91X_TCP_IP_FEAT_BYPASS
+#endif // !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
 #ifdef SLI_SI91X_ENABLE_IPV6
                           | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6
-#endif
-                          | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
+#endif // defined(SLI_SI91X_ENABLE_IPV6)
+                           | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
                      .custom_feature_bit_map = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                                                 | RSI_CUSTOM_FEATURE_BIT_MAP
-#endif
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                                                 ),
                      .ext_custom_feature_bit_map = (0
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                                                     | RSI_EXT_CUSTOM_FEATURE_BIT_MAP | SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE
-#endif
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #if defined(A2DP_POWER_SAVE_ENABLE)
                                                     | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2)
 #endif
@@ -172,11 +175,14 @@ const sl_wifi_device_configuration_t config = {
                                             ),
 #else
                      .bt_feature_bit_map = 0,
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
+                     .ext_tcp_ip_feature_bit_map = (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+                                                    | SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE
 #endif
-                     .ext_tcp_ip_feature_bit_map = (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID | SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                                                     | RSI_EXT_TCPIP_FEATURE_BITMAP
-#endif
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #ifdef RSI_PROCESS_MAX_RX_DATA
 
                                                     | SL_SI91X_EXT_TCP_MAX_RECV_LENGTH
@@ -217,11 +223,11 @@ const sl_wifi_device_configuration_t config = {
 #else
                      .ble_feature_bit_map     = 0,
                      .ble_ext_feature_bit_map = 0,
-#endif
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .config_feature_bit_map = (SL_SI91X_FEAT_SLEEP_GPIO_SEL_BITMAP
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                                                 | RSI_CONFIG_FEATURE_BITMAP
-#endif
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                                                 ) }
 };
 constexpr int8_t kAdvScanThreshold           = -40;
@@ -523,8 +529,13 @@ sl_status_t SetWifiConfigurations()
             },
         },
         .ip = {
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
             .mode = SL_IP_MANAGEMENT_DHCPV4_LINKLOCAL_IPV6,
             .type = static_cast<sl_ip_address_type_t>(SL_IPV4 | SL_IPV6),
+#else
+            .mode     = SL_IP_MANAGEMENT_DHCP,
+            .type     = SL_IPV6,
+#endif // defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
             .host_name = NULL,
             .ip = {{{0}}},
         }

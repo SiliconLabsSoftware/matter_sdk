@@ -368,6 +368,11 @@ template("siwx917_sdk") {
       defines += [ "SL_MATTER_ENABLE_AWS=1" ]
     }
 
+    if (enable_matter_dual_stack) {
+      assert(chip_enable_wifi_ipv4, "enable chip_enable_wifi_ipv4")
+      defines += [ "SL_MATTER_ENABLE_DUAL_STACK=1" ]
+    }
+
     if (aws_sdk_ota) {
       defines += [ "SL_MATTER_ENABLE_AWS_OTA_FEAT=1" ]
     }
