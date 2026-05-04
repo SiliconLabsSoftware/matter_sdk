@@ -19,10 +19,6 @@
 
 #pragma once
 
-/**********************************************************
- * Includes
- *********************************************************/
-
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -41,10 +37,6 @@
 #include <lib/support/TypeTraits.h>
 #include <platform/CHIPDeviceLayer.h>
 
-/**********************************************************
- * Defines
- *********************************************************/
-
 // Application-defined error codes in the CHIP_ERROR space.
 #define APP_ERROR_EVENT_QUEUE_FAILED CHIP_APPLICATION_ERROR(0x01)
 #define APP_ERROR_CREATE_TASK_FAILED CHIP_APPLICATION_ERROR(0x02)
@@ -57,28 +49,114 @@
 #define APP_ERROR_TOO_MANY_SHELL_ARGUMENTS CHIP_APPLICATION_ERROR(0x08)
 #endif // ENABLE_CHIP_SHELL
 
-/**********************************************************
- * AppTask Declaration
- *********************************************************/
-
+/**
+ * @brief Door-lock application task.
+ *
+ * Customer code overrides AppTask behavior via `AppTaskImpl<>` `*Impl()` hooks;
+ * see `AppTaskImpl.h` for the full override contract. This header exposes only
+ * the entry points that the AppTask main loop, `BaseApplication`, and the
+ * DoorLock cluster plugin layer need.
+ */
 class AppTask : public BaseApplication
 {
-
 public:
     AppTask() = default;
 
     static AppTask & GetAppTask();
 
-    /**
-     * @brief AppTask task main loop function
-     *
-     * @param pvParameter FreeRTOS task parameter
-     */
+    // ---------------------------------------------------------------------
+    // Customer-facing entry points.
+    // Overridable in `CustomerAppTask` via `AppTaskImpl<>::*Impl()` hooks.
+    // ---------------------------------------------------------------------
+
+    /** @brief AppTask task main loop function. */
     static void AppTaskMain(void * pvParameter);
 
     CHIP_ERROR StartAppTask();
 
-    /** Door lock actuator / cluster actions (numeric values match legacy LockManager::Action_t for AppEvent storage). */
+    /**
+     * @brief Button ISR callback: `APP_LOCK_SWITCH` or `APP_FUNCTION_BUTTON`.
+     *
+     * @param button    APP_LOCK_SWITCH or APP_FUNCTION_BUTTON.
+     * @param btnAction SL_SIMPLE_BUTTON_PRESSED / RELEASED / DISABLED.
+     */
+    static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
+
+    /**
+     * @brief AppTask-thread handler for a queued button-driven lock toggle
+     *        (`kEventType_Button`, posted by `ButtonEventHandler` when
+     *        `APP_LOCK_SWITCH` is pressed). Resolves direction via
+     *        `NextState()` and drives `InitiateLockAction`.
+     */
+    static void LockButtonActionHandler(AppEvent * aEvent);
+
+    /**
+     * @brief DoorLock-cluster post-attribute-change callback.
+     *        Routes e.g. `LockState` updates to telemetry / UI side-effects.
+     */
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
+
+    // ---------------------------------------------------------------------
+    // DoorLock cluster data-model entry points.
+    //
+    // Each `DM*` mirrors the corresponding `emberAfPluginDoorLock*` weak
+    // callback. The free callbacks in `AppTask.cpp` are 1-line forwarders
+    // into these hooks, so customers can intercept data-model behavior by
+    // overriding `AppTaskImpl<>::DM*Impl()` in `CustomerAppTask`.
+    // ---------------------------------------------------------------------
+
+    bool DMDoorLockOnDoorLockCommand(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
+                                     const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
+                                     const chip::Optional<chip::ByteSpan> & pinCode,
+                                     chip::app::Clusters::DoorLock::OperationErrorEnum & err);
+    bool DMDoorLockOnDoorUnlockCommand(chip::EndpointId endpointId,
+                                       const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
+                                       const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
+                                       const chip::Optional<chip::ByteSpan> & pinCode,
+                                       chip::app::Clusters::DoorLock::OperationErrorEnum & err);
+    bool DMDoorLockOnDoorUnboltCommand(chip::EndpointId endpointId,
+                                       const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
+                                       const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
+                                       const chip::Optional<chip::ByteSpan> & pinCode,
+                                       chip::app::Clusters::DoorLock::OperationErrorEnum & err);
+
+    bool DMDoorLockGetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum credentialType,
+                                 EmberAfPluginDoorLockCredentialInfo & credential);
+    bool DMDoorLockSetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, chip::FabricIndex creator,
+                                 chip::FabricIndex modifier, DlCredentialStatus credentialStatus,
+                                 CredentialTypeEnum credentialType, const chip::ByteSpan & credentialData);
+
+    bool DMDoorLockGetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPluginDoorLockUserInfo & user);
+    bool DMDoorLockSetUser(chip::EndpointId endpointId, uint16_t userIndex, chip::FabricIndex creator, chip::FabricIndex modifier,
+                           const chip::CharSpan & userName, uint32_t uniqueId, UserStatusEnum userStatus, UserTypeEnum usertype,
+                           CredentialRuleEnum credentialRule, const CredentialStruct * credentials, size_t totalCredentials);
+
+    DlStatus DMDoorLockGetWeekDaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
+                                          EmberAfPluginDoorLockWeekDaySchedule & schedule);
+    DlStatus DMDoorLockSetWeekDaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
+                                          DlScheduleStatus status, DaysMaskMap daysMask, uint8_t startHour, uint8_t startMinute,
+                                          uint8_t endHour, uint8_t endMinute);
+
+    DlStatus DMDoorLockGetYearDaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
+                                          EmberAfPluginDoorLockYearDaySchedule & schedule);
+    DlStatus DMDoorLockSetYearDaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
+                                          DlScheduleStatus status, uint32_t localStartTime, uint32_t localEndTime);
+
+    DlStatus DMDoorLockGetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex,
+                                          EmberAfPluginDoorLockHolidaySchedule & holidaySchedule);
+    DlStatus DMDoorLockSetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus status,
+                                          uint32_t localStartTime, uint32_t localEndTime, OperatingModeEnum operatingMode);
+
+    void DMDoorLockOnAutoRelock(chip::EndpointId endpointId);
+
+    // ---------------------------------------------------------------------
+    // Lock-domain actuator API. `InitiateLockAction` is invoked from the
+    // `DM*` defaults above and from `LockMigration.cpp` when seeding state
+    // from the legacy NVM3 layout.
+    // ---------------------------------------------------------------------
+
+    /** Door-lock actuator / cluster actions. */
     enum class LockAction : uint8_t
     {
         kLock = 0,
@@ -87,93 +165,23 @@ public:
         kInvalid,
     };
 
-    void ActionRequest(int32_t aActor, LockAction aAction);
-    static void ActionInitiated(LockAction aAction, int32_t aActor);
-    static void ActionCompleted(LockAction aAction);
-
     bool InitiateLockAction(int32_t aActor, LockAction aAction);
 
-    void SetCallbacks(void (*onInitiated)(LockAction, int32_t), void (*onCompleted)(LockAction));
-
-    bool NextState();
-    bool IsActionInProgress();
-
-    bool Lock(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
-              const chip::app::DataModel::Nullable<chip::NodeId> & nodeId, const chip::Optional<chip::ByteSpan> & pin,
-              chip::app::Clusters::DoorLock::OperationErrorEnum & err);
-    bool Unlock(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
-                const chip::app::DataModel::Nullable<chip::NodeId> & nodeId, const chip::Optional<chip::ByteSpan> & pin,
-                chip::app::Clusters::DoorLock::OperationErrorEnum & err);
-    bool Unbolt(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
-                const chip::app::DataModel::Nullable<chip::NodeId> & nodeId, const chip::Optional<chip::ByteSpan> & pin,
-                chip::app::Clusters::DoorLock::OperationErrorEnum & err);
-
-    bool GetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPluginDoorLockUserInfo & user);
-    bool SetUser(chip::EndpointId endpointId, uint16_t userIndex, chip::FabricIndex creator, chip::FabricIndex modifier,
-                 const chip::CharSpan & userName, uint32_t uniqueId, UserStatusEnum userStatus, UserTypeEnum usertype,
-                 CredentialRuleEnum credentialRule, const CredentialStruct * credentials, size_t totalCredentials);
-
-    bool GetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum credentialType,
-                       EmberAfPluginDoorLockCredentialInfo & credential);
-
-    bool SetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, chip::FabricIndex creator, chip::FabricIndex modifier,
-                       DlCredentialStatus credentialStatus, CredentialTypeEnum credentialType, const chip::ByteSpan & credentialData);
-
-    DlStatus GetWeekdaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
-                                EmberAfPluginDoorLockWeekDaySchedule & schedule);
-
-    DlStatus SetWeekdaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex, DlScheduleStatus status,
-                                DaysMaskMap daysMask, uint8_t startHour, uint8_t startMinute, uint8_t endHour, uint8_t endMinute);
-
-    DlStatus GetYeardaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
-                                EmberAfPluginDoorLockYearDaySchedule & schedule);
-
-    DlStatus SetYeardaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex, DlScheduleStatus status,
-                                uint32_t localStartTime, uint32_t localEndTime);
-
-    DlStatus GetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, EmberAfPluginDoorLockHolidaySchedule & schedule);
-
-    DlStatus SetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus status, uint32_t localStartTime,
-                                uint32_t localEndTime, OperatingModeEnum operatingMode);
-
-    bool IsValidUserIndex(uint16_t userIndex);
-    bool IsValidCredentialIndex(uint16_t credentialIndex, CredentialTypeEnum type);
-    bool IsValidCredentialType(CredentialTypeEnum type);
-    bool IsValidWeekdayScheduleIndex(uint8_t scheduleIndex);
-    bool IsValidYeardayScheduleIndex(uint8_t scheduleIndex);
-    bool IsValidHolidayScheduleIndex(uint8_t scheduleIndex);
-
-    void UnlockAfterUnlatch();
-
-    static void UpdateClusterStateAfterUnlatch(intptr_t context);
-
     /**
-     * @brief Event handler when a button is pressed
-     * Function posts an event for button processing
-     *
-     * @param buttonHandle APP_LIGHT_SWITCH or APP_FUNCTION_BUTTON
-     * @param btnAction button action - SL_SIMPLE_BUTTON_PRESSED,
-     *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
+     * @brief Finalize the unlatch sequence: push `kUnlocked` to the cluster
+     *        using `mUnlatchContext`, then initiate the `kUnlock` actuator
+     *        action. Static + addressable so it can be scheduled directly by
+     *        the unlatch FreeRTOS timer helper (anonymous namespace, no
+     *        private-member access).
      */
-    static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
-
-    /**
-     * @brief Handle lock update event
-     *
-     * @param aEvent event received
-     */
-    static void LockActionEventHandler(AppEvent * aEvent);
-
-    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value);
+    static void UnlockAfterUnlatch(intptr_t context = 0);
 
 protected:
-    /**
-     * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
-     *
-     * @return CHIP_ERROR
-     */
+    /** Override of `BaseApplication::AppInit()`. */
     CHIP_ERROR AppInit() override;
+
+    /** Bring up the lock domain: cluster limits, storage, timers, LED. */
+    CHIP_ERROR InitLock();
 
 private:
     enum class LockActuatorState : uint8_t
@@ -190,7 +198,7 @@ private:
     {
         static constexpr uint8_t kMaxPinLength = UINT8_MAX;
         uint8_t mPinBuffer[kMaxPinLength];
-        uint8_t mPinLength = 0;
+        uint8_t mPinLength           = 0;
         chip::EndpointId mEndpointId = chip::kInvalidEndpointId;
         chip::app::DataModel::Nullable<chip::FabricIndex> mFabricIdx;
         chip::app::DataModel::Nullable<chip::NodeId> mNodeId;
@@ -218,66 +226,38 @@ private:
         }
     };
 
+    // ---- Lock-domain bring-up / state machine ----
     CHIP_ERROR InitLockDomain(chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state,
                               SilabsDoorLock::LockInitParams::LockParam lockParam, chip::PersistentStorageDelegate * storage);
 
     bool MigrateLockConfig(const SilabsDoorLock::LockInitParams::LockParam & params);
 
-    bool SetLockState(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
-                      const chip::app::DataModel::Nullable<chip::NodeId> & nodeId, chip::app::Clusters::DoorLock::DlLockState lockState,
-                      const chip::Optional<chip::ByteSpan> & pin, chip::app::Clusters::DoorLock::OperationErrorEnum & err);
-    const char * LockStateToString(chip::app::Clusters::DoorLock::DlLockState lockState) const;
-
-    void CancelTimer();
     void StartTimer(uint32_t aTimeoutMs);
+    void CancelTimer();
+    bool NextState();
 
     static void TimerEventHandler(void * timerCbArg);
     static void ActuatorMovementTimerEventHandler(AppEvent * aEvent);
+    static void UpdateClusterState(intptr_t context);
 
-    static chip::StorageKeyName LockUserEndpoint(chip::EndpointId endpoint, uint16_t userIndex)
-    {
-        return chip::StorageKeyName::Formatted("g/e/%x/lu/%x", endpoint, userIndex);
-    }
-    static chip::StorageKeyName LockCredentialEndpoint(chip::EndpointId endpoint, CredentialTypeEnum credentialType,
-                                                       uint16_t credentialIndex)
-    {
-        return chip::StorageKeyName::Formatted("g/e/%x/ct/%x/lc/%x", endpoint, chip::to_underlying(credentialType), credentialIndex);
-    }
-    static chip::StorageKeyName LockUserCredentialMap(uint16_t userIndex)
-    {
-        return chip::StorageKeyName::Formatted("g/lu/%x/lc", userIndex);
-    }
-    static chip::StorageKeyName LockUserWeekDayScheduleEndpoint(chip::EndpointId endpoint, uint16_t userIndex,
-                                                                uint16_t scheduleIndex)
-    {
-        return chip::StorageKeyName::Formatted("g/e/%x/lu/%x/lw/%x", endpoint, userIndex, scheduleIndex);
-    }
-    static chip::StorageKeyName LockUserYearDayScheduleEndpoint(chip::EndpointId endpoint, uint16_t userIndex,
-                                                                uint16_t scheduleIndex)
-    {
-        return chip::StorageKeyName::Formatted("g/e/%x/lu/%x/ly/%x", endpoint, userIndex, scheduleIndex);
-    }
-    static chip::StorageKeyName LockHolidayScheduleEndpoint(chip::EndpointId endpoint, uint16_t scheduleIndex)
-    {
-        return chip::StorageKeyName::Formatted("g/e/%x/lh/%x", endpoint, scheduleIndex);
-    }
+    // ---- PIN validation / cluster state push ----
+    bool Lock(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
+              const chip::app::DataModel::Nullable<chip::NodeId> & nodeId, const chip::Optional<chip::ByteSpan> & pin,
+              chip::app::Clusters::DoorLock::OperationErrorEnum & err);
+    bool Unlock(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
+                const chip::app::DataModel::Nullable<chip::NodeId> & nodeId, const chip::Optional<chip::ByteSpan> & pin,
+                chip::app::Clusters::DoorLock::OperationErrorEnum & err);
+    bool SetLockState(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
+                      const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
+                      chip::app::Clusters::DoorLock::DlLockState lockState, const chip::Optional<chip::ByteSpan> & pin,
+                      chip::app::Clusters::DoorLock::OperationErrorEnum & err);
 
+    // ---- State ----
     UnlatchContext mUnlatchContext;
-    chip::EndpointId mCurrentEndpointId = chip::kInvalidEndpointId;
+    chip::EndpointId mCurrentEndpointId  = chip::kInvalidEndpointId;
     LockActuatorState mLockActuatorState = LockActuatorState::kLockCompleted;
-
-    void (*mActionInitiated_CB)(LockAction, int32_t aActor) = nullptr;
-    void (*mActionCompleted_CB)(LockAction)               = nullptr;
-
-    osTimerId_t mLockTimer = nullptr;
+    osTimerId_t mLockTimer               = nullptr;
 
     SilabsDoorLock::LockInitParams::LockParam mLockParams;
-
     chip::PersistentStorageDelegate * mStorage = nullptr;
-    /**
-     * @brief Update Cluster State
-     *
-     * @param context current context
-     */
-    static void UpdateClusterState(intptr_t context);
 };

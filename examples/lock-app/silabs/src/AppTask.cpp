@@ -94,10 +94,101 @@ static constexpr uint16_t HolidayScheduleInfoSize = sizeof(HolidayScheduleInfo);
 LEDWidget sLockLED;
 TimerHandle_t sUnlatchTimer;
 
+// ---- Index / type validators ------------------------------------------------
+
+bool IsValidUserIndex(uint16_t userIndex)
+{
+    return (userIndex < kMaxUsers);
+}
+
+bool IsValidCredentialIndex(uint16_t credentialIndex, CredentialTypeEnum type)
+{
+    if (CredentialTypeEnum::kProgrammingPIN == type)
+    {
+        return (0 == credentialIndex); // 0 is required index for Programming PIN
+    }
+    // Other credential types are valid at all uint16_t indices; the real limit
+    // is enforced by available persistent storage.
+    return (credentialIndex < UINT16_MAX);
+}
+
+bool IsValidCredentialType(CredentialTypeEnum type)
+{
+    return (to_underlying(type) < kNumCredentialTypes);
+}
+
+bool IsValidWeekdayScheduleIndex(uint8_t scheduleIndex)
+{
+    return (scheduleIndex < kMaxWeekdaySchedulesPerUser);
+}
+
+bool IsValidYeardayScheduleIndex(uint8_t scheduleIndex)
+{
+    return (scheduleIndex < kMaxYeardaySchedulesPerUser);
+}
+
+bool IsValidHolidayScheduleIndex(uint8_t scheduleIndex)
+{
+    return (scheduleIndex < kMaxHolidaySchedules);
+}
+
+// ---- Persistent-storage key builders ---------------------------------------
+
+chip::StorageKeyName LockUserEndpoint(chip::EndpointId endpoint, uint16_t userIndex)
+{
+    return chip::StorageKeyName::Formatted("g/e/%x/lu/%x", endpoint, userIndex);
+}
+
+chip::StorageKeyName LockCredentialEndpoint(chip::EndpointId endpoint, CredentialTypeEnum credentialType, uint16_t credentialIndex)
+{
+    return chip::StorageKeyName::Formatted("g/e/%x/ct/%x/lc/%x", endpoint, chip::to_underlying(credentialType), credentialIndex);
+}
+
+chip::StorageKeyName LockUserCredentialMap(uint16_t userIndex)
+{
+    return chip::StorageKeyName::Formatted("g/lu/%x/lc", userIndex);
+}
+
+chip::StorageKeyName LockUserWeekDayScheduleEndpoint(chip::EndpointId endpoint, uint16_t userIndex, uint16_t scheduleIndex)
+{
+    return chip::StorageKeyName::Formatted("g/e/%x/lu/%x/lw/%x", endpoint, userIndex, scheduleIndex);
+}
+
+chip::StorageKeyName LockUserYearDayScheduleEndpoint(chip::EndpointId endpoint, uint16_t userIndex, uint16_t scheduleIndex)
+{
+    return chip::StorageKeyName::Formatted("g/e/%x/lu/%x/ly/%x", endpoint, userIndex, scheduleIndex);
+}
+
+chip::StorageKeyName LockHolidayScheduleEndpoint(chip::EndpointId endpoint, uint16_t scheduleIndex)
+{
+    return chip::StorageKeyName::Formatted("g/e/%x/lh/%x", endpoint, scheduleIndex);
+}
+
+// ---- Misc helpers ----------------------------------------------------------
+
+const char * LockStateToString(chip::app::Clusters::DoorLock::DlLockState lockState)
+{
+    using chip::app::Clusters::DoorLock::DlLockState;
+    switch (lockState)
+    {
+    case DlLockState::kNotFullyLocked:
+        return "Not Fully Locked";
+    case DlLockState::kLocked:
+        return "Locked";
+    case DlLockState::kUnlocked:
+        return "Unlocked";
+    case DlLockState::kUnlatched:
+        return "Unlatched";
+    case DlLockState::kUnknownEnumValue:
+        break;
+    }
+    return "Unknown";
+}
+
 void UnlatchTimerCallback(TimerHandle_t xTimer)
 {
     (void) xTimer;
-    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(AppTask::UpdateClusterStateAfterUnlatch,
+    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(AppTask::UnlockAfterUnlatch,
                                                                            reinterpret_cast<intptr_t>(nullptr));
 }
 
@@ -148,7 +239,24 @@ CHIP_ERROR AppTask::AppInit()
     }
 #endif // ENABLE_CHIP_SHELL
 
-    // Initial lock state
+    // Bring up the lock domain via the CRTP hook so derived AppTaskImpl<>
+    // classes can override lock-app initialization.
+    err = CustomerAppTask::GetAppTask().InitLock();
+    if (err != CHIP_NO_ERROR)
+    {
+        SILABS_LOG("InitLock() failed");
+        appError(err);
+    }
+
+    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
+
+    ConfigurationMgr().LogDeviceConfig();
+
+    return err;
+}
+
+CHIP_ERROR AppTask::InitLock()
+{
     chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state;
     chip::EndpointId endpointId{ 1 };
     chip::DeviceLayer::PlatformMgr().LockChipStack();
@@ -205,23 +313,16 @@ CHIP_ERROR AppTask::AppInit()
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    err = InitLockDomain(state,
-                         ParamBuilder()
-                             .SetNumberOfUsers(numberOfUsers)
-                             .SetNumberOfCredentialsPerUser(numberOfCredentialsPerUser)
-                             .SetNumberOfWeekdaySchedulesPerUser(numberOfWeekdaySchedulesPerUser)
-                             .SetNumberOfYeardaySchedulesPerUser(numberOfYeardaySchedulesPerUser)
-                             .SetNumberOfHolidaySchedules(numberOfHolidaySchedules)
-                             .GetLockParam(),
-                         &Server::GetInstance().GetPersistentStorage());
-
-    if (err != CHIP_NO_ERROR)
-    {
-        SILABS_LOG("InitLockDomain() failed");
-        appError(err);
-    }
-
-    AppTask::GetAppTask().SetCallbacks(ActionInitiated, ActionCompleted);
+    CHIP_ERROR err = InitLockDomain(state,
+                                    ParamBuilder()
+                                        .SetNumberOfUsers(numberOfUsers)
+                                        .SetNumberOfCredentialsPerUser(numberOfCredentialsPerUser)
+                                        .SetNumberOfWeekdaySchedulesPerUser(numberOfWeekdaySchedulesPerUser)
+                                        .SetNumberOfYeardaySchedulesPerUser(numberOfYeardaySchedulesPerUser)
+                                        .SetNumberOfHolidaySchedules(numberOfHolidaySchedules)
+                                        .GetLockParam(),
+                                    &Server::GetInstance().GetPersistentStorage());
+    ReturnErrorOnFailure(err);
 
     sLockLED.Init(LOCK_STATE_LED);
     sLockLED.Set(state.Value() == DlLockState::kUnlocked);
@@ -243,11 +344,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
 
-    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
-
-    ConfigurationMgr().LogDeviceConfig();
-
-    return err;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
@@ -284,43 +381,18 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 }
 
-void AppTask::LockActionEventHandler(AppEvent * aEvent)
+void AppTask::LockButtonActionHandler(AppEvent * aEvent)
 {
-    bool initiated = false;
-    LockAction action;
-    int32_t actor;
-    CHIP_ERROR err = CHIP_NO_ERROR;
-
-    if (aEvent->Type == AppEvent::kEventType_Lock)
+    if (aEvent->Type != AppEvent::kEventType_Button)
     {
-        action = static_cast<LockAction>(aEvent->LockEvent.Action);
-        actor  = aEvent->LockEvent.Actor;
-    }
-    else if (aEvent->Type == AppEvent::kEventType_Button)
-    {
-        if (AppTask::GetAppTask().NextState() == true)
-        {
-            action = LockAction::kLock;
-        }
-        else
-        {
-            action = LockAction::kUnlock;
-        }
-        actor = AppEvent::kEventType_Button;
-    }
-    else
-    {
-        err = APP_ERROR_UNHANDLED_EVENT;
+        ChipLogError(NotSpecified, "LockButtonActionHandler: unexpected event type %u", aEvent->Type);
+        return;
     }
 
-    if (err == CHIP_NO_ERROR)
+    LockAction action = AppTask::GetAppTask().NextState() ? LockAction::kLock : LockAction::kUnlock;
+    if (!AppTask::GetAppTask().InitiateLockAction(AppEvent::kEventType_Button, action))
     {
-        initiated = AppTask::GetAppTask().InitiateLockAction(actor, action);
-
-        if (!initiated)
-        {
-            SILABS_LOG("Action is already in progress or active.");
-        }
+        SILABS_LOG("Action is already in progress or active.");
     }
 }
 
@@ -332,7 +404,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
     if (button == APP_LOCK_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = &CustomerAppTask::LockActionEventHandler;
+        button_event.Handler = &CustomerAppTask::LockButtonActionHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
@@ -340,66 +412,6 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
         button_event.Handler = BaseApplication::ButtonHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
     }
-}
-
-void AppTask::ActionInitiated(LockAction aAction, int32_t aActor)
-{
-    if (aAction == LockAction::kUnlock || aAction == LockAction::kLock)
-    {
-        bool locked = (aAction == LockAction::kLock);
-        SILABS_LOG("%s Action has been initiated", (locked) ? "Lock" : "Unlock");
-        sLockLED.Set(!locked);
-
-#ifdef DISPLAY_ENABLED
-        AppTask::GetAppTask().GetLCD().WriteDemoUI(locked);
-#endif // DISPLAY_ENABLED
-    }
-    else if (aAction == LockAction::kUnlatch)
-    {
-        SILABS_LOG("Unlatch Action has been initiated");
-    }
-
-    if (aActor == AppEvent::kEventType_Button)
-    {
-        AppTask::GetAppTask().mSyncClusterToButtonAction = true;
-    }
-}
-
-void AppTask::ActionCompleted(LockAction aAction)
-{
-    // if the action has been completed by the lock, update the lock trait.
-    // Turn off the lock LED if in a LOCKED state OR
-    // Turn on the lock LED if in an UNLOCKED state.
-    if (aAction == LockAction::kLock)
-    {
-        SILABS_LOG("Lock Action has been completed");
-    }
-    else if (aAction == LockAction::kUnlatch)
-    {
-        SILABS_LOG("Unlatch Action has been completed");
-        StartUnlatchTimer(UNLATCH_TIME_MS);
-    }
-    else if (aAction == LockAction::kUnlock)
-    {
-        SILABS_LOG("Unlock Action has been completed");
-    }
-
-    if (AppTask::GetAppTask().mSyncClusterToButtonAction)
-    {
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState,
-                                                                               reinterpret_cast<intptr_t>(nullptr));
-        AppTask::GetAppTask().mSyncClusterToButtonAction = false;
-    }
-}
-
-void AppTask::ActionRequest(int32_t aActor, LockAction aAction)
-{
-    AppEvent event;
-    event.Type              = AppEvent::kEventType_Lock;
-    event.LockEvent.Actor   = aActor;
-    event.LockEvent.Action  = static_cast<uint8_t>(aAction);
-    event.Handler           = LockActionEventHandler;
-    PostEvent(&event);
 }
 
 void AppTask::UpdateClusterState(intptr_t context)
@@ -416,11 +428,6 @@ void AppTask::UpdateClusterState(intptr_t context)
     {
         SILABS_LOG("ERR: updating lock state %x", to_underlying(status));
     }
-}
-
-void AppTask::UpdateClusterStateAfterUnlatch(intptr_t context)
-{
-    AppTask::GetAppTask().UnlockAfterUnlatch();
 }
 
 void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
@@ -443,73 +450,102 @@ void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePa
     }
 }
 
-// ----- Door lock cluster plugin callbacks (moved from DataModelCallbacks.cpp) -----
+// AppTask::DM* — default DoorLock cluster data-model behavior. Customers
+// override per-callback behavior via `AppTaskImpl<>::DM*Impl()` hooks.
+
+bool AppTask::DMDoorLockOnDoorLockCommand(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
+                                          const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
+                                          OperationErrorEnum & err)
+{
+    ChipLogProgress(Zcl, "Door Lock App: Lock Command endpoint=%d", endpointId);
+    bool status = Lock(endpointId, fabricIdx, nodeId, pinCode, err);
+    if (status == true)
+    {
+        InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kLock);
+    }
+    return status;
+}
+
+bool AppTask::DMDoorLockOnDoorUnlockCommand(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
+                                            const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
+                                            OperationErrorEnum & err)
+{
+    ChipLogProgress(Zcl, "Door Lock App: Unlock Command endpoint=%d", endpointId);
+    bool status = Unlock(endpointId, fabricIdx, nodeId, pinCode, err);
+    if (status == true)
+    {
+        if (DoorLockServer::Instance().SupportsUnbolt(endpointId))
+        {
+            InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kUnlatch);
+        }
+        else
+        {
+            InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kUnlock);
+        }
+    }
+    return status;
+}
+
+bool AppTask::DMDoorLockOnDoorUnboltCommand(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
+                                            const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
+                                            OperationErrorEnum & err)
+{
+    ChipLogProgress(Zcl, "Door Lock App: Unbolt Command endpoint=%d", endpointId);
+    bool status = Unlock(endpointId, fabricIdx, nodeId, pinCode, err);
+    if (status == true)
+    {
+        InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kUnlock);
+    }
+    return status;
+}
+
+void AppTask::DMDoorLockOnAutoRelock(chip::EndpointId /*endpointId*/)
+{
+    InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kLock);
+}
+
+// emberAfPluginDoorLock* — weak DoorLock plugin callbacks. CRTP forwarders
+// into `CustomerAppTask::GetAppTask().DM*` so customers can intercept via
+// `AppTaskImpl<>::DM*Impl()`.
 
 bool emberAfPluginDoorLockOnDoorLockCommand(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
                                             const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
                                             OperationErrorEnum & err)
 {
-    ChipLogProgress(Zcl, "Door Lock App: Lock Command endpoint=%d", endpointId);
-    bool status = AppTask::GetAppTask().Lock(endpointId, fabricIdx, nodeId, pinCode, err);
-    if (status == true)
-    {
-        AppTask::GetAppTask().InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kLock);
-    }
-    return status;
+    return CustomerAppTask::GetAppTask().DMDoorLockOnDoorLockCommand(endpointId, fabricIdx, nodeId, pinCode, err);
 }
 
 bool emberAfPluginDoorLockOnDoorUnlockCommand(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
                                               const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
                                               OperationErrorEnum & err)
 {
-    ChipLogProgress(Zcl, "Door Lock App: Unlock Command endpoint=%d", endpointId);
-    bool status = AppTask::GetAppTask().Unlock(endpointId, fabricIdx, nodeId, pinCode, err);
-    if (status == true)
-    {
-        if (DoorLockServer::Instance().SupportsUnbolt(endpointId))
-        {
-            AppTask::GetAppTask().InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kUnlatch);
-        }
-        else
-        {
-            AppTask::GetAppTask().InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kUnlock);
-        }
-    }
-
-    return status;
+    return CustomerAppTask::GetAppTask().DMDoorLockOnDoorUnlockCommand(endpointId, fabricIdx, nodeId, pinCode, err);
 }
 
 bool emberAfPluginDoorLockOnDoorUnboltCommand(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
                                               const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
                                               OperationErrorEnum & err)
 {
-    ChipLogProgress(Zcl, "Door Lock App: Unbolt Command endpoint=%d", endpointId);
-    bool status = AppTask::GetAppTask().Unlock(endpointId, fabricIdx, nodeId, pinCode, err);
-    if (status == true)
-    {
-        AppTask::GetAppTask().InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kUnlock);
-    }
-
-    return status;
+    return CustomerAppTask::GetAppTask().DMDoorLockOnDoorUnboltCommand(endpointId, fabricIdx, nodeId, pinCode, err);
 }
 
 bool emberAfPluginDoorLockGetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum credentialType,
-                                       EmberAfPluginDoorLockCredentialInfo & credential)
+                                        EmberAfPluginDoorLockCredentialInfo & credential)
 {
-    return AppTask::GetAppTask().GetCredential(endpointId, credentialIndex, credentialType, credential);
+    return CustomerAppTask::GetAppTask().DMDoorLockGetCredential(endpointId, credentialIndex, credentialType, credential);
 }
 
 bool emberAfPluginDoorLockSetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, chip::FabricIndex creator,
                                         chip::FabricIndex modifier, DlCredentialStatus credentialStatus,
                                         CredentialTypeEnum credentialType, const chip::ByteSpan & credentialData)
 {
-    return AppTask::GetAppTask().SetCredential(endpointId, credentialIndex, creator, modifier, credentialStatus, credentialType,
-                                   credentialData);
+    return CustomerAppTask::GetAppTask().DMDoorLockSetCredential(endpointId, credentialIndex, creator, modifier, credentialStatus,
+                                                                 credentialType, credentialData);
 }
 
 bool emberAfPluginDoorLockGetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPluginDoorLockUserInfo & user)
 {
-    return AppTask::GetAppTask().GetUser(endpointId, userIndex, user);
+    return CustomerAppTask::GetAppTask().DMDoorLockGetUser(endpointId, userIndex, user);
 }
 
 bool emberAfPluginDoorLockSetUser(chip::EndpointId endpointId, uint16_t userIndex, chip::FabricIndex creator,
@@ -517,57 +553,54 @@ bool emberAfPluginDoorLockSetUser(chip::EndpointId endpointId, uint16_t userInde
                                   UserStatusEnum userStatus, UserTypeEnum usertype, CredentialRuleEnum credentialRule,
                                   const CredentialStruct * credentials, size_t totalCredentials)
 {
-
-    return AppTask::GetAppTask().SetUser(endpointId, userIndex, creator, modifier, userName, uniqueId, userStatus, usertype, credentialRule,
-                             credentials, totalCredentials);
+    return CustomerAppTask::GetAppTask().DMDoorLockSetUser(endpointId, userIndex, creator, modifier, userName, uniqueId,
+                                                           userStatus, usertype, credentialRule, credentials, totalCredentials);
 }
 
 DlStatus emberAfPluginDoorLockGetSchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
-                                        EmberAfPluginDoorLockWeekDaySchedule & schedule)
+                                          EmberAfPluginDoorLockWeekDaySchedule & schedule)
 {
-    return AppTask::GetAppTask().GetWeekdaySchedule(endpointId, weekdayIndex, userIndex, schedule);
+    return CustomerAppTask::GetAppTask().DMDoorLockGetWeekDaySchedule(endpointId, weekdayIndex, userIndex, schedule);
 }
 
 DlStatus emberAfPluginDoorLockGetSchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                           EmberAfPluginDoorLockYearDaySchedule & schedule)
 {
-    return AppTask::GetAppTask().GetYeardaySchedule(endpointId, yearDayIndex, userIndex, schedule);
+    return CustomerAppTask::GetAppTask().DMDoorLockGetYearDaySchedule(endpointId, yearDayIndex, userIndex, schedule);
 }
 
 DlStatus emberAfPluginDoorLockGetSchedule(chip::EndpointId endpointId, uint8_t holidayIndex,
                                           EmberAfPluginDoorLockHolidaySchedule & holidaySchedule)
 {
-    return AppTask::GetAppTask().GetHolidaySchedule(endpointId, holidayIndex, holidaySchedule);
+    return CustomerAppTask::GetAppTask().DMDoorLockGetHolidaySchedule(endpointId, holidayIndex, holidaySchedule);
 }
 
 DlStatus emberAfPluginDoorLockSetSchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
                                           DlScheduleStatus status, DaysMaskMap daysMask, uint8_t startHour, uint8_t startMinute,
                                           uint8_t endHour, uint8_t endMinute)
 {
-    return AppTask::GetAppTask().SetWeekdaySchedule(endpointId, weekdayIndex, userIndex, status, daysMask, startHour, startMinute, endHour,
-                                        endMinute);
+    return CustomerAppTask::GetAppTask().DMDoorLockSetWeekDaySchedule(endpointId, weekdayIndex, userIndex, status, daysMask,
+                                                                      startHour, startMinute, endHour, endMinute);
 }
 
 DlStatus emberAfPluginDoorLockSetSchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                           DlScheduleStatus status, uint32_t localStartTime, uint32_t localEndTime)
 {
-    return AppTask::GetAppTask().SetYeardaySchedule(endpointId, yearDayIndex, userIndex, status, localStartTime, localEndTime);
+    return CustomerAppTask::GetAppTask().DMDoorLockSetYearDaySchedule(endpointId, yearDayIndex, userIndex, status, localStartTime,
+                                                                      localEndTime);
 }
 
 DlStatus emberAfPluginDoorLockSetSchedule(chip::EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus status,
-                                         uint32_t localStartTime, uint32_t localEndTime, OperatingModeEnum operatingMode)
+                                          uint32_t localStartTime, uint32_t localEndTime, OperatingModeEnum operatingMode)
 {
-    return AppTask::GetAppTask().SetHolidaySchedule(endpointId, holidayIndex, status, localStartTime, localEndTime, operatingMode);
+    return CustomerAppTask::GetAppTask().DMDoorLockSetHolidaySchedule(endpointId, holidayIndex, status, localStartTime,
+                                                                      localEndTime, operatingMode);
 }
 
 void emberAfPluginDoorLockOnAutoRelock(chip::EndpointId endpointId)
 {
-    AppTask::GetAppTask().InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kLock);
+    CustomerAppTask::GetAppTask().DMDoorLockOnAutoRelock(endpointId);
 }
-
-void emberAfDoorLockClusterInitCallback(chip::EndpointId endpoint) {}
-
-// ----- Door lock domain (merged from LockManager.cpp) -----
 
 CHIP_ERROR AppTask::InitLockDomain(chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state, LockParam lockParam,
                              chip::PersistentStorageDelegate * storage)
@@ -640,53 +673,6 @@ CHIP_ERROR AppTask::InitLockDomain(chip::app::DataModel::Nullable<chip::app::Clu
     return CHIP_NO_ERROR;
 }
 
-bool AppTask::IsValidUserIndex(uint16_t userIndex)
-{
-    return (userIndex < kMaxUsers);
-}
-
-bool AppTask::IsValidCredentialIndex(uint16_t credentialIndex, CredentialTypeEnum type)
-{
-    if (CredentialTypeEnum::kProgrammingPIN == type)
-    {
-        return (0 == credentialIndex); // 0 is required index for Programming PIN
-    }
-
-    // Other credential types are valid at all uint16_t indices, credential limit is based on available storage
-    return (credentialIndex < UINT16_MAX);
-}
-
-bool AppTask::IsValidCredentialType(CredentialTypeEnum type)
-{
-    return (to_underlying(type) < kNumCredentialTypes);
-}
-
-bool AppTask::IsValidWeekdayScheduleIndex(uint8_t scheduleIndex)
-{
-    return (scheduleIndex < kMaxWeekdaySchedulesPerUser);
-}
-
-bool AppTask::IsValidYeardayScheduleIndex(uint8_t scheduleIndex)
-{
-    return (scheduleIndex < kMaxYeardaySchedulesPerUser);
-}
-
-bool AppTask::IsValidHolidayScheduleIndex(uint8_t scheduleIndex)
-{
-    return (scheduleIndex < kMaxHolidaySchedules);
-}
-
-void AppTask::SetCallbacks(void (*aActionInitiated_CB)(LockAction, int32_t), void (*aActionCompleted_CB)(LockAction))
-{
-    mActionInitiated_CB = aActionInitiated_CB;
-    mActionCompleted_CB = aActionCompleted_CB;
-}
-
-bool AppTask::IsActionInProgress()
-{
-    return (mLockActuatorState == LockActuatorState::kLockInitiated || mLockActuatorState == LockActuatorState::kUnlockInitiated);
-}
-
 bool AppTask::NextState()
 {
     return (mLockActuatorState == LockActuatorState::kUnlockCompleted);
@@ -720,12 +706,28 @@ bool AppTask::InitiateLockAction(int32_t aActor, LockAction aAction)
     {
         StartTimer(ACTUATOR_MOVEMENT_PERIOS_MS);
 
-        // Since the timer started successfully, update the state and trigger callback
         mLockActuatorState = new_state;
 
-        if (mActionInitiated_CB)
+        // Inlined legacy ActionInitiated callback body: update LED/LCD and flag
+        // button-driven actions for later cluster-state sync.
+        if (aAction == LockAction::kUnlock || aAction == LockAction::kLock)
         {
-            mActionInitiated_CB(aAction, aActor);
+            bool locked = (aAction == LockAction::kLock);
+            SILABS_LOG("%s Action has been initiated", locked ? "Lock" : "Unlock");
+            sLockLED.Set(!locked);
+
+#ifdef DISPLAY_ENABLED
+            AppTask::GetAppTask().GetLCD().WriteDemoUI(locked);
+#endif // DISPLAY_ENABLED
+        }
+        else if (aAction == LockAction::kUnlatch)
+        {
+            SILABS_LOG("Unlatch Action has been initiated");
+        }
+
+        if (aActor == AppEvent::kEventType_Button)
+        {
+            mSyncClusterToButtonAction = true;
         }
     }
 
@@ -765,17 +767,19 @@ void AppTask::TimerEventHandler(void * timerCbArg)
     event.Handler            = &AppTask::ActuatorMovementTimerEventHandler;
     AppTask::GetAppTask().PostEvent(&event);
 }
-void AppTask::UnlockAfterUnlatch()
+void AppTask::UnlockAfterUnlatch(intptr_t /* context */)
 {
+    AppTask & self = AppTask::GetAppTask();
+
     // write the new lock value
     bool succes = false;
-    if (mUnlatchContext.mEndpointId != kInvalidEndpointId)
+    if (self.mUnlatchContext.mEndpointId != kInvalidEndpointId)
     {
-        Optional<chip::ByteSpan> pin = (mUnlatchContext.mPinLength)
-            ? MakeOptional(chip::ByteSpan(mUnlatchContext.mPinBuffer, mUnlatchContext.mPinLength))
+        Optional<chip::ByteSpan> pin = (self.mUnlatchContext.mPinLength)
+            ? MakeOptional(chip::ByteSpan(self.mUnlatchContext.mPinBuffer, self.mUnlatchContext.mPinLength))
             : Optional<chip::ByteSpan>::Missing();
-        succes = SetLockState(mUnlatchContext.mEndpointId, mUnlatchContext.mFabricIdx, mUnlatchContext.mNodeId,
-                              DlLockState::kUnlocked, pin, mUnlatchContext.mErr);
+        succes = self.SetLockState(self.mUnlatchContext.mEndpointId, self.mUnlatchContext.mFabricIdx,
+                                   self.mUnlatchContext.mNodeId, DlLockState::kUnlocked, pin, self.mUnlatchContext.mErr);
     }
 
     if (!succes)
@@ -783,7 +787,7 @@ void AppTask::UnlockAfterUnlatch()
         SILABS_LOG("Failed to update the lock state after Unlatch");
     }
 
-    InitiateLockAction(AppEvent::kEventType_Lock, LockAction::kUnlock);
+    self.InitiateLockAction(AppEvent::kEventType_Lock, LockAction::kUnlock);
 }
 
 void AppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
@@ -810,9 +814,26 @@ void AppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
 
     if (actionCompleted != LockAction::kInvalid)
     {
-        if (lock->mActionCompleted_CB)
+        // Inlined legacy ActionCompleted callback body.
+        if (actionCompleted == LockAction::kLock)
         {
-            lock->mActionCompleted_CB(actionCompleted);
+            SILABS_LOG("Lock Action has been completed");
+        }
+        else if (actionCompleted == LockAction::kUnlatch)
+        {
+            SILABS_LOG("Unlatch Action has been completed");
+            StartUnlatchTimer(UNLATCH_TIME_MS);
+        }
+        else if (actionCompleted == LockAction::kUnlock)
+        {
+            SILABS_LOG("Unlock Action has been completed");
+        }
+
+        if (lock->mSyncClusterToButtonAction)
+        {
+            TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState,
+                                                                                   reinterpret_cast<intptr_t>(nullptr));
+            lock->mSyncClusterToButtonAction = false;
         }
     }
 }
@@ -852,13 +873,7 @@ bool AppTask::Unlock(chip::EndpointId endpointId, const Nullable<chip::FabricInd
     return SetLockState(endpointId, fabricIdx, nodeId, DlLockState::kUnlocked, pin, err);
 }
 
-bool AppTask::Unbolt(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
-                         const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pin, OperationErrorEnum & err)
-{
-    return SetLockState(endpointId, fabricIdx, nodeId, DlLockState::kUnlocked, pin, err);
-}
-
-bool AppTask::GetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPluginDoorLockUserInfo & user)
+bool AppTask::DMDoorLockGetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPluginDoorLockUserInfo & user)
 {
     CHIP_ERROR error;
 
@@ -870,7 +885,7 @@ bool AppTask::GetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPl
 
     VerifyOrReturnValue(kInvalidEndpointId != endpointId, false);
 
-    ChipLogProgress(Zcl, "Door Lock App: AppTask::GetUser [endpoint=%d,userIndex=%hu]", endpointId, userIndex);
+    ChipLogProgress(Zcl, "Door Lock App: AppTask::DMDoorLockGetUser [endpoint=%d,userIndex=%hu]", endpointId, userIndex);
 
     // Get User struct from nvm3
     chip::StorageKeyName userKey = LockUserEndpoint(endpointId, userIndex);
@@ -968,7 +983,7 @@ bool AppTask::GetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPl
     return true;
 }
 
-bool AppTask::SetUser(chip::EndpointId endpointId, uint16_t userIndex, chip::FabricIndex creator, chip::FabricIndex modifier,
+bool AppTask::DMDoorLockSetUser(chip::EndpointId endpointId, uint16_t userIndex, chip::FabricIndex creator, chip::FabricIndex modifier,
                           const chip::CharSpan & userName, uint32_t uniqueId, UserStatusEnum userStatus, UserTypeEnum usertype,
                           CredentialRuleEnum credentialRule, const CredentialStruct * credentials, size_t totalCredentials)
 {
@@ -1023,7 +1038,7 @@ bool AppTask::SetUser(chip::EndpointId endpointId, uint16_t userIndex, chip::Fab
     return true;
 }
 
-bool AppTask::GetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum credentialType,
+bool AppTask::DMDoorLockGetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum credentialType,
                                 EmberAfPluginDoorLockCredentialInfo & credential)
 {
     CHIP_ERROR error;
@@ -1034,7 +1049,7 @@ bool AppTask::GetCredential(chip::EndpointId endpointId, uint16_t credentialInde
 
     VerifyOrReturnValue(IsValidCredentialIndex(credentialIndex, credentialType), false);
 
-    ChipLogProgress(Zcl, "Lock App: AppTask::GetCredential [credentialType=%u], credentialIndex=%d",
+    ChipLogProgress(Zcl, "Lock App: AppTask::DMDoorLockGetCredential [credentialType=%u], credentialIndex=%d",
                     to_underlying(credentialType), credentialIndex);
 
     chip::StorageKeyName key = LockCredentialEndpoint(endpointId, credentialType, credentialIndex);
@@ -1094,7 +1109,7 @@ bool AppTask::GetCredential(chip::EndpointId endpointId, uint16_t credentialInde
     return true;
 }
 
-bool AppTask::SetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, chip::FabricIndex creator,
+bool AppTask::DMDoorLockSetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, chip::FabricIndex creator,
                                 chip::FabricIndex modifier, DlCredentialStatus credentialStatus, CredentialTypeEnum credentialType,
                                 const chip::ByteSpan & credentialData)
 {
@@ -1109,7 +1124,7 @@ bool AppTask::SetCredential(chip::EndpointId endpointId, uint16_t credentialInde
     VerifyOrReturnValue(credentialData.size() <= kMaxCredentialSize, false);
 
     ChipLogProgress(Zcl,
-                    "Door Lock App: AppTask::SetCredential "
+                    "Door Lock App: AppTask::DMDoorLockSetCredential "
                     "[credentialStatus=%u,credentialType=%u,credentialDataSize=%u,creator=%d,modifier=%d]",
                     to_underlying(credentialStatus), to_underlying(credentialType), credentialData.size(), creator, modifier);
 
@@ -1139,7 +1154,7 @@ bool AppTask::SetCredential(chip::EndpointId endpointId, uint16_t credentialInde
     return true;
 }
 
-DlStatus AppTask::GetWeekdaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
+DlStatus AppTask::DMDoorLockGetWeekDaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
                                          EmberAfPluginDoorLockWeekDaySchedule & schedule)
 {
     CHIP_ERROR error;
@@ -1192,7 +1207,7 @@ DlStatus AppTask::GetWeekdaySchedule(chip::EndpointId endpointId, uint8_t weekda
     return DlStatus::kSuccess;
 }
 
-DlStatus AppTask::SetWeekdaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
+DlStatus AppTask::DMDoorLockSetWeekDaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
                                          DlScheduleStatus status, DaysMaskMap daysMask, uint8_t startHour, uint8_t startMinute,
                                          uint8_t endHour, uint8_t endMinute)
 {
@@ -1227,7 +1242,7 @@ DlStatus AppTask::SetWeekdaySchedule(chip::EndpointId endpointId, uint8_t weekda
     return DlStatus::kSuccess;
 }
 
-DlStatus AppTask::GetYeardaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
+DlStatus AppTask::DMDoorLockGetYearDaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                          EmberAfPluginDoorLockYearDaySchedule & schedule)
 {
     CHIP_ERROR error;
@@ -1281,7 +1296,7 @@ DlStatus AppTask::GetYeardaySchedule(chip::EndpointId endpointId, uint8_t yearDa
     return DlStatus::kSuccess;
 }
 
-DlStatus AppTask::SetYeardaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
+DlStatus AppTask::DMDoorLockSetYearDaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                          DlScheduleStatus status, uint32_t localStartTime, uint32_t localEndTime)
 {
 
@@ -1312,7 +1327,7 @@ DlStatus AppTask::SetYeardaySchedule(chip::EndpointId endpointId, uint8_t yearDa
     return DlStatus::kSuccess;
 }
 
-DlStatus AppTask::GetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex,
+DlStatus AppTask::DMDoorLockGetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex,
                                          EmberAfPluginDoorLockHolidaySchedule & schedule)
 {
     CHIP_ERROR error;
@@ -1363,7 +1378,7 @@ DlStatus AppTask::GetHolidaySchedule(chip::EndpointId endpointId, uint8_t holida
     return DlStatus::kSuccess;
 }
 
-DlStatus AppTask::SetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus status,
+DlStatus AppTask::DMDoorLockSetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus status,
                                          uint32_t localStartTime, uint32_t localEndTime, OperatingModeEnum operatingMode)
 {
 
@@ -1390,25 +1405,6 @@ DlStatus AppTask::SetHolidaySchedule(chip::EndpointId endpointId, uint8_t holida
                         DlStatus::kFailure);
 
     return DlStatus::kSuccess;
-}
-
-const char * AppTask::LockStateToString(DlLockState lockState) const
-{
-    switch (lockState)
-    {
-    case DlLockState::kNotFullyLocked:
-        return "Not Fully Locked";
-    case DlLockState::kLocked:
-        return "Locked";
-    case DlLockState::kUnlocked:
-        return "Unlocked";
-    case DlLockState::kUnlatched:
-        return "Unlatched";
-    case DlLockState::kUnknownEnumValue:
-        break;
-    }
-
-    return "Unknown";
 }
 
 bool AppTask::SetLockState(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
@@ -1449,7 +1445,7 @@ bool AppTask::SetLockState(chip::EndpointId endpointId, const Nullable<chip::Fab
     {
         EmberAfPluginDoorLockUserInfo user;
 
-        if (!GetUser(endpointId, userIndex, user))
+        if (!DMDoorLockGetUser(endpointId, userIndex, user))
         {
             ChipLogError(Zcl, "Unable to get the user - internal error [endpointId=%d,userIndex=%lu]", endpointId, userIndex);
             return false;
@@ -1465,7 +1461,7 @@ bool AppTask::SetLockState(chip::EndpointId endpointId, const Nullable<chip::Fab
                 {
                     EmberAfPluginDoorLockCredentialInfo credential;
 
-                    if (!GetCredential(endpointId, userCredential.credentialIndex, userCredential.credentialType, credential))
+                    if (!DMDoorLockGetCredential(endpointId, userCredential.credentialIndex, userCredential.credentialType, credential))
                     {
                         ChipLogError(Zcl,
                                      "Unable to get credential: app error [endpointId=%d,credentialType=%u,credentialIndex=%d]",

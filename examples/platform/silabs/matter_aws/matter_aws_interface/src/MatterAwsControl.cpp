@@ -35,7 +35,7 @@ extern void aws_ota_init(void);
 #endif // ZCL_USING_ON_OFF_CLUSTER_SERVER
 
 #ifdef ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
-#include <LockManager.h>
+#include "AppTask.h"
 #include <app/clusters/door-lock-server/door-lock-server.h>
 #endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
 
@@ -243,10 +243,10 @@ void MatterAwsIncomingDataCb(void * arg, const char * topic, uint16_t topic_len,
     if (cmdIndex != kStringNotFound)
     {
         chip::DeviceLayer::PlatformMgr().LockChipStack();
-        LockMgr().InitiateAction(AppEvent::kEventType_Lock,
+        AppTask::GetAppTask().InitiateLockAction(AppEvent::kEventType_Lock,
                                  (DlMqttControlCmd[cmdIndex].action.lockState == DlLockState::kLocked)
-                                     ? LockManager::LOCK_ACTION
-                                     : LockManager::UNLOCK_ACTION);
+                                     ? AppTask::LockAction::kLock
+                                     : AppTask::LockAction::kUnlock);
         DoorLockServer::Instance().SetLockState(kEndpointId, DlMqttControlCmd[cmdIndex].action.lockState,
                                                 OperationSourceEnum::kProprietaryRemote);
         chip::DeviceLayer::PlatformMgr().UnlockChipStack();
