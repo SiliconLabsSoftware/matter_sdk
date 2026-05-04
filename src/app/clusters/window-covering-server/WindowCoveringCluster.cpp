@@ -585,7 +585,6 @@ void PostAttributeChange(chip::EndpointId endpoint, chip::AttributeId attributeI
 Status GetMotionLockStatus(chip::EndpointId endpoint)
 {
     BitMask<Mode> mode                 = ModeGet(endpoint);
-    BitMask<ConfigStatus> configStatus = ConfigStatusGet(endpoint);
 
     // Is the device locked?
     if (mode.Has(Mode::kMaintenanceMode))
