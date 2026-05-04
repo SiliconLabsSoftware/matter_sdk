@@ -310,6 +310,7 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
         break;
     case AppEvent::kEventType_TriggerLevelControlAction:
         sAppTask.SwitchActionEventHandler(aEvent->Type);
+        break;
     default:
         break;
     }
