@@ -17,7 +17,7 @@
 
 #include <inet/DeferredUdpSendQueueLwIP.h>
 
-#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
 #include <inet/EndPointStateLwIP.h>
 #include <inet/IPAddress.h>
@@ -46,8 +46,8 @@ namespace {
 #define NETIF_FOREACH(netif) for ((netif) = netif_list; (netif) != nullptr; (netif) = (netif)->next)
 #endif
 
-constexpr size_t kDeferredQueueCapacity = SILABS_INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE;
-static_assert(kDeferredQueueCapacity > 0, "SILABS_INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE must be > 0");
+constexpr size_t kDeferredQueueCapacity = SL_INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE;
+static_assert(kDeferredQueueCapacity > 0, "SL_INET_CONFIG_UDP_LWIP_DEFERRED_SEND_QUEUE_SIZE must be > 0");
 
 struct DeferredUdpSlot
 {
@@ -91,12 +91,11 @@ struct DeferredUdpRing
 /** Swap ring state (head, count) and per-slot storage without copying whole FixedBuffer (avoids copy-only path). */
 void SwapDeferredRings(DeferredUdpRing & a, DeferredUdpRing & b)
 {
-    using std::swap;
-    swap(a.head, b.head);
-    swap(a.count, b.count);
+    std::swap(a.head, b.head);
+    std::swap(a.count, b.count);
     for (size_t i = 0; i < kDeferredQueueCapacity; ++i)
     {
-        swap(a.slots[i], b.slots[i]);
+        std::swap(a.slots[i], b.slots[i]);
     }
 }
 
@@ -249,4 +248,4 @@ void DeferredUdpSendQueueLwIP::Flush()
 } // namespace Inet
 } // namespace chip
 
-#endif // SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif // SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY

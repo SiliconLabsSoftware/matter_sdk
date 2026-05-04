@@ -33,7 +33,7 @@ struct tcp_pcb;
 namespace chip {
 namespace Inet {
 
-#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 class DeferredUdpSendQueueLwIP;
 #endif
 
@@ -42,7 +42,7 @@ class DeferredUdpSendQueueLwIP;
  */
 class DLL_EXPORT EndPointStateLwIP
 {
-#if SILABS_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     friend class DeferredUdpSendQueueLwIP;
 #endif
 protected:
