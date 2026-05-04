@@ -184,14 +184,6 @@ private:
      */
     CHIP_ERROR AppInit() override;
 
-    /**
-     * @brief PB1 Button event processing function
-     *        Function triggers a switch action sent to the CHIP task
-     *
-     * @param aEvent button event being processed
-     */
-    static void SwitchActionEventHandler(AppEvent * aEvent);
-
     static void OnLongPressTimeout(Timer & timer);
 
     /**
