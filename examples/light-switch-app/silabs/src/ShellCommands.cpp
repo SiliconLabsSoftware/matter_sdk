@@ -19,7 +19,7 @@
 #include <optional>
 #if defined(ENABLE_CHIP_SHELL)
 
-#include "BindingHandler.h"
+#include "AppTask.h"
 #include "ShellCommands.h"
 
 #include <app/clusters/bindings/BindingManager.h>
