@@ -28,15 +28,6 @@
 
 #pragma once
 
-/**
- * SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
- *
- * Enable code-driven data model instead of ZAP/codegen-based approach.
- * When enabled, the application manually registers clusters using
- * CodeDrivenDataModelProvider instead of using ember/codegen APIs.
- */
-#define SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL 1
-
 // Use a default pairing code if one hasn't been provisioned in flash.
 #ifndef CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE
 #define CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE 20202021

@@ -11,7 +11,14 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <system/SystemClock.h>
 
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
+// Quick fix for SLCP projects in which
+// we combine generic OT components with Matter
+// Set this define to 0 in your .slcp to prevent double definition of otPlatLog
+#ifndef SL_MATTER_FORWARD_OT_LOGS
+#define SL_MATTER_FORWARD_OT_LOGS 1
+#endif
+
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && SL_MATTER_FORWARD_OT_LOGS
 #include <openthread/platform/logging.h>
 #endif
 
@@ -310,7 +317,7 @@ extern "C" void LwIPLog(const char * aFormat, ...)
 /**
  * Platform logging function for OpenThread
  */
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && SL_MATTER_FORWARD_OT_LOGS
 extern "C" void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char * aFormat, ...)
 {
     (void) aLogRegion;
@@ -346,4 +353,4 @@ extern "C" void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const ch
 #endif // SILABS_LOG_ENABLED
     va_end(v);
 }
-#endif // CHIP_ENABLE_OPENTHREAD
+#endif // CHIP_DEVICE_CONFIG_ENABLE_THREAD && SL_MATTER_FORWARD_OT_LOGS
