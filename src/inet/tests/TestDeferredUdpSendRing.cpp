@@ -58,6 +58,19 @@ TEST(DeferredUdpSendRingTest, PushPopSingle)
     EXPECT_TRUE(r.Empty());
 }
 
+// PopFront returns a by-value Slot owned by the caller, not a view into ring
+// storage; it must remain valid after later ring operations.
+TEST(DeferredUdpSendRingTest, PopFrontReturnSurvivesLaterRingUse)
+{
+    Ring3 r;
+    r.PushBack(IntSlot{ 5 });
+    IntSlot first = r.PopFront();
+    r.PushBack(IntSlot{ 6 });
+    EXPECT_EQ(first.value, 5);
+    EXPECT_EQ(r.PopFront().value, 6);
+    EXPECT_TRUE(r.Empty());
+}
+
 TEST(DeferredUdpSendRingTest, FifoOrderUpToCapacity)
 {
     Ring3 r;

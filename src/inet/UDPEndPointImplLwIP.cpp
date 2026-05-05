@@ -165,6 +165,8 @@ CHIP_ERROR UDPEndPointImplLwIP::SendMsgImpl(const IPPacketInfo * pktInfo, System
 
 #if SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     // Defer if the netif is not ready for this destination; otherwise drain earlier deferrals first.
+    // Flush still re-evaluates readiness per deferred entry because the queue may contain packets for
+    // different interfaces/destinations than pktInfo, and netif state can change between probes.
     bool shouldDefer         = false;
     CHIP_ERROR deferProbeErr = DeferredUdpSendQueueLwIP::ProbeDefer(*pktInfo, shouldDefer);
     VerifyOrReturnError(deferProbeErr == CHIP_NO_ERROR, deferProbeErr);

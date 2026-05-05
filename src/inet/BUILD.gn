@@ -187,8 +187,8 @@ static_library("inet") {
     #  - UDPEndPointImplSockets.cpp
     #  - UDPEndPointImplSockets.h
     sources += [
-      "DeferredUdpSendRing.h",
       "BasicPacketFilters.h",
+      "DeferredUdpSendRing.h",
       "EndpointQueueFilter.h",
       "UDPEndPoint.cpp",
       "UDPEndPoint.h",

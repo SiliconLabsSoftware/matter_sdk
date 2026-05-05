@@ -177,6 +177,9 @@ void DeferredUdpSendQueueLwIP::Flush()
     {
         DeferredUdpSlot slot = pending.PopFront();
 
+        // Probe each deferred slot independently. A prior ProbeDefer in SendMsgImpl only covered
+        // the current outgoing pktInfo, while pending entries may target other interfaces/routes.
+        // Also, link/address state can legitimately change between calls.
         bool ready     = false;
         err_t probeErr = EndPointStateLwIP::RunOnTCPIPRet([&]() -> err_t {
             ready = IsOutboundNetifReadyForUdp(slot.pktInfo);

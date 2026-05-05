@@ -16,8 +16,28 @@
  */
 
 /**
- * Fixed-capacity FIFO ring used by DeferredUdpSendQueueLwIP. Header-only so
- * queue mechanics can be covered by host unit tests without LwIP.
+ * Bounded FIFO queue with fixed-capacity storage indexed in a circle.
+ *
+ * This is one data structure, not two: logical behavior is a queue (enqueue at
+ * the back, dequeue from the front). `head` and `count` map that queue onto a
+ * fixed `FixedBuffer` by wrapping indices modulo `Capacity`, which is the
+ * usual ring-buffer indexing trick for a fixed array.
+ *
+ * `PushBack` / `PopFront` are the standard names for enqueue/dequeue at the
+ * two ends of that FIFO. A low-level ring API might expose only head/tail
+ * indices; here we expose the queue operations callers need.
+ *
+ * After `PopFront`, the vacated cell is assigned `Slot{}` so the slot in the
+ * array is empty until reused. That is optional for some `Slot` types once
+ * moved-from, but it keeps array cells in a known state and matches types whose
+ * moved-from state still holds resources until reassigned or destroyed.
+ *
+ * `PopFront` returns `Slot` by value: the returned object is constructed from
+ * the slot contents (move), then returned to the caller (NRVO or move). It is
+ * not a reference into ring storage; the caller owns the returned `Slot`.
+ *
+ * Storage mechanics are in this header so host unit tests can cover them
+ * without LwIP.
  */
 
 #pragma once
@@ -43,6 +63,7 @@ struct DeferredUdpSendRing
     bool IsFull() const { return count == Capacity; }
     size_t ActiveCount() const { return count; }
 
+    // Enqueue at the logical tail (may drop oldest entry when full).
     void PushBack(Slot && slot)
     {
         if (count == Capacity)
@@ -56,9 +77,10 @@ struct DeferredUdpSendRing
         ++count;
     }
 
+    // Dequeue from the logical head; returned value is owned by the caller.
     Slot PopFront()
     {
-        Slot out = std::move(slots[head]);
+        Slot out    = std::move(slots[head]);
         slots[head] = Slot{};
         head        = (head + 1) % Capacity;
         --count;
