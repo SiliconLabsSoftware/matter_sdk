@@ -342,9 +342,11 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 }
 
 // To prevent linkage failure
+#if SL_OPENTHREAD_MULTI_PAN_ENABLE
 extern "C" void otAppNcpInit(otInstance * aInstance);
 
 static otInstance * sInstance = NULL;
+#endif
 
 extern "C" void sl_ot_ncp_init(void)
 {
