@@ -17,7 +17,6 @@
  *    limitations under the License.
  */
 #include <optional>
-#if defined(ENABLE_CHIP_SHELL)
 
 #include "AppTask.h"
 #include "ShellCommands.h"
@@ -951,5 +950,3 @@ void RegisterSwitchCommands()
 }
 
 } // namespace LightSwitchCommands
-
-#endif // ENABLE_CHIP_SHELL
