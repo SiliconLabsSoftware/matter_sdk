@@ -145,15 +145,15 @@ const sl_wifi_device_configuration_t config = {
                          (SL_SI91X_FEAT_SECURITY_OPEN | SL_SI91X_FEAT_AGGREGATION | SL_SI91X_FEAT_ULP_GPIO_BASED_HANDSHAKE |
                           SL_SI91X_FEAT_DEV_TO_HOST_ULP_GPIO_1),
 #endif
-                     .tcp_ip_feature_bit_map = 
-                        (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_DNS_CLIENT | SL_SI91X_TCP_IP_FEAT_SSL
+                     .tcp_ip_feature_bit_map =
+                         (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_DNS_CLIENT | SL_SI91X_TCP_IP_FEAT_SSL
 #if !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
-                        | SL_SI91X_TCP_IP_FEAT_BYPASS
+                          | SL_SI91X_TCP_IP_FEAT_BYPASS
 #endif // !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
 #ifdef SLI_SI91X_ENABLE_IPV6
                           | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6
 #endif // defined(SLI_SI91X_ENABLE_IPV6)
-                           | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
+                          | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
                      .custom_feature_bit_map = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                                                 | RSI_CUSTOM_FEATURE_BIT_MAP
@@ -174,7 +174,7 @@ const sl_wifi_device_configuration_t config = {
 #endif                                                                         // RSI_BT_GATT_ON_CLASSIC
                                             ),
 #else
-                     .bt_feature_bit_map = 0,
+                     .bt_feature_bit_map      = 0,
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .ext_tcp_ip_feature_bit_map = (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
