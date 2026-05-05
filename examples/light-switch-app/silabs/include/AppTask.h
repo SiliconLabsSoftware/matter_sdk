@@ -220,7 +220,3 @@ private:
     static void ProcessLevelControlGroupBindingCommand(BindingCommandData * data,
                                                        const chip::app::Clusters::Binding::TableEntry & binding);
 };
-
-static constexpr chip::app::Clusters::LevelControl::Commands::Step::Type kStepCommand = {
-    .stepSize = 1, .transitionTime = 0, .optionsMask = 0, .optionsOverride = 0
-};
