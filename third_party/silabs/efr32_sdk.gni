@@ -99,6 +99,7 @@ declare_args() {
 
   # Enable a Watchdog with debug features to catch software hangs
   sl_matter_debug_watchdog_enable = false
+
   # Enables Silabs BLE Side Channel implementation for internal testing
   # Setting this to true automatically enables sl_enable_ble_side_channel
   sl_use_internal_ble_side_channel = false
