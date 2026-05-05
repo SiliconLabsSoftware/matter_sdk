@@ -200,21 +200,25 @@ private:
 
     static void InitBindingHandlerInternal(intptr_t arg);
 
-    static void LightSwitchChangedHandler(const chip::Binding::TableEntry & binding, chip::OperationalDeviceProxy * peer_device,
-                                          void * context);
+    static void LightSwitchChangedHandler(const chip::app::Clusters::Binding::TableEntry & binding,
+                                          chip::OperationalDeviceProxy * peer_device, void * context);
 
     static void LightSwitchContextReleaseHandler(void * context);
 
-    static void ProcessOnOffUnicastBindingCommand(chip::CommandId commandId, const chip::Binding::TableEntry & binding,
+    static void ProcessOnOffUnicastBindingCommand(chip::CommandId commandId,
+                                                  const chip::app::Clusters::Binding::TableEntry & binding,
                                                   chip::Messaging::ExchangeManager * exchangeMgr,
                                                   const chip::SessionHandle & sessionHandle);
 
-    static void ProcessOnOffGroupBindingCommand(chip::CommandId commandId, const chip::Binding::TableEntry & binding);
+    static void ProcessOnOffGroupBindingCommand(chip::CommandId commandId,
+                                                const chip::app::Clusters::Binding::TableEntry & binding);
 
-    static void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data, const chip::Binding::TableEntry & binding,
+    static void ProcessLevelControlUnicastBindingCommand(BindingCommandData * data,
+                                                         const chip::app::Clusters::Binding::TableEntry & binding,
                                                          chip::OperationalDeviceProxy * peer_device);
 
-    static void ProcessLevelControlGroupBindingCommand(BindingCommandData * data, const chip::Binding::TableEntry & binding);
+    static void ProcessLevelControlGroupBindingCommand(BindingCommandData * data,
+                                                       const chip::app::Clusters::Binding::TableEntry & binding);
 };
 
 static constexpr chip::app::Clusters::LevelControl::Commands::Step::Type kStepCommand = {
