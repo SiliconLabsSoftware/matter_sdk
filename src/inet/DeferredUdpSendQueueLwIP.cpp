@@ -19,6 +19,7 @@
 
 #if SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 
+#include <inet/DeferredUdpSendRing.h>
 #include <inet/EndPointStateLwIP.h>
 #include <inet/IPAddress.h>
 #include <inet/IPPacketInfo.h>
@@ -26,7 +27,6 @@
 #include <inet/UDPEndPointImplLwIP.h>
 
 #include <lib/support/CodeUtils.h>
-#include <lib/support/FixedBuffer.h>
 #include <lib/support/logging/CHIPLogging.h>
 
 #include <lwip/err.h>
@@ -56,48 +56,7 @@ struct DeferredUdpSlot
     System::PacketBufferHandle msg;
 };
 
-struct DeferredUdpRing
-{
-    chip::FixedBuffer<DeferredUdpSlot, kDeferredQueueCapacity> slots{};
-    size_t head  = 0;
-    size_t count = 0;
-
-    bool Empty() const { return count == 0; }
-
-    void PushBack(DeferredUdpSlot && slot)
-    {
-        if (count == kDeferredQueueCapacity)
-        {
-            ChipLogDetail(Inet, "Deferred UDP queue full: dropping head");
-            slots[head] = DeferredUdpSlot{};
-            head        = (head + 1) % kDeferredQueueCapacity;
-            --count;
-        }
-        const size_t idx = (head + count) % kDeferredQueueCapacity;
-        slots[idx]       = std::move(slot);
-        ++count;
-    }
-
-    DeferredUdpSlot PopFront()
-    {
-        DeferredUdpSlot out = std::move(slots[head]);
-        slots[head]         = DeferredUdpSlot{};
-        head                = (head + 1) % kDeferredQueueCapacity;
-        --count;
-        return out;
-    }
-};
-
-/** Swap ring state (head, count) and per-slot storage without copying whole FixedBuffer (avoids copy-only path). */
-void SwapDeferredRings(DeferredUdpRing & a, DeferredUdpRing & b)
-{
-    std::swap(a.head, b.head);
-    std::swap(a.count, b.count);
-    for (size_t i = 0; i < kDeferredQueueCapacity; ++i)
-    {
-        std::swap(a.slots[i], b.slots[i]);
-    }
-}
+using DeferredUdpRing = DeferredUdpSendRing<DeferredUdpSlot, kDeferredQueueCapacity>;
 
 DeferredUdpRing gDeferredRing;
 
@@ -184,7 +143,10 @@ CHIP_ERROR DeferredUdpSendQueueLwIP::Enqueue(UDPEndPointImplLwIP * self, const I
     slot.msg      = std::move(msg);
 
     ChipLogDetail(Inet, "UDP send deferred (waiting for netif)");
-
+    if (gDeferredRing.IsFull())
+    {
+        ChipLogDetail(Inet, "Deferred UDP queue full: dropping head");
+    }
     gDeferredRing.PushBack(std::move(slot));
     return CHIP_NO_ERROR;
 }
@@ -192,7 +154,7 @@ CHIP_ERROR DeferredUdpSendQueueLwIP::Enqueue(UDPEndPointImplLwIP * self, const I
 void DeferredUdpSendQueueLwIP::PurgeForEndpoint(UDPEndPointImplLwIP * self)
 {
     UDPEndPoint * asBase = static_cast<UDPEndPoint *>(self);
-    const size_t n       = gDeferredRing.count;
+    const size_t n       = gDeferredRing.ActiveCount();
     for (size_t i = 0; i < n; ++i)
     {
         DeferredUdpSlot slot = gDeferredRing.PopFront();
@@ -209,7 +171,7 @@ void DeferredUdpSendQueueLwIP::Flush()
     assertChipStackLockedByCurrentThread();
 
     DeferredUdpRing pending{};
-    SwapDeferredRings(gDeferredRing, pending);
+    SwapDeferredUdpSendRings(gDeferredRing, pending);
 
     while (!pending.Empty())
     {
