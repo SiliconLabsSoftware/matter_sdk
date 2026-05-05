@@ -99,6 +99,7 @@ declare_args() {
 
   # Enable a Watchdog with debug features to catch software hangs
   sl_matter_debug_watchdog_enable = false
+
   # Enables Silabs BLE Side Channel implementation for internal testing
   # Setting this to true automatically enables sl_enable_ble_side_channel
   sl_use_internal_ble_side_channel = false
@@ -567,6 +568,10 @@ template("efr32_sdk") {
       if (enable_matter_aws) {
         assert(chip_enable_wifi_ipv4, "enable chip_enable_wifi_ipv4")
         defines += [ "SL_MATTER_ENABLE_AWS=1" ]
+      }
+      if (enable_matter_dual_stack) {
+        assert(chip_enable_wifi_ipv4, "enable chip_enable_wifi_ipv4")
+        defines += [ "SL_MATTER_ENABLE_DUAL_STACK=1" ]
       }
       if (aws_sdk_ota) {
         defines += [ "SL_MATTER_ENABLE_AWS_OTA_FEAT=1" ]

@@ -53,6 +53,9 @@ declare_args() {
   #Disable MQTT by default
   enable_matter_aws = false
 
+  # STA IPv4+IPv6 (sl_net dual-stack profile). Requires chip_enable_wifi_ipv4=true when enabled.
+  enable_matter_dual_stack = false
+
   # Disable AWS SDK OTA by default
   aws_sdk_ota = false
 
