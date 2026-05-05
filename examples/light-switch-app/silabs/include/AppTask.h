@@ -192,8 +192,8 @@ private:
      */
     void HandleLongPress();
 
-    chip::EndpointId mLightSwitchEndpoint   = chip::kInvalidEndpointId;
-    chip::EndpointId mGenericSwitchEndpoint = chip::kInvalidEndpointId;
+    chip::EndpointId mLightSwitchEndpoint                          = chip::kInvalidEndpointId;
+    chip::EndpointId mGenericSwitchEndpoint                        = chip::kInvalidEndpointId;
     chip::app::Clusters::LevelControl::StepModeEnum mStepDirection = chip::app::Clusters::LevelControl::StepModeEnum::kUp;
 
     static void GenericSwitchWorkerFunction(intptr_t context);

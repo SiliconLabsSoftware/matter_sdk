@@ -407,11 +407,9 @@ void AppTask::TriggerLevelControlAction(StepModeEnum stepMode, bool isGroupComma
     data->isGroup   = isGroupCommand;
     data->commandId = LevelControl::Commands::StepWithOnOff::Id;
 
-    BindingCommandData::Step stepData{
-        .stepMode       = stepMode,
-        .stepSize       = kStepCommand.stepSize,
-        .transitionTime = kStepCommand.transitionTime
-    };
+    BindingCommandData::Step stepData{ .stepMode       = stepMode,
+                                       .stepSize       = kStepCommand.stepSize,
+                                       .transitionTime = kStepCommand.transitionTime };
     stepData.optionsMask.Set(kStepCommand.optionsMask);
     stepData.optionsOverride.Set(kStepCommand.optionsOverride);
     data->commandData = stepData;
