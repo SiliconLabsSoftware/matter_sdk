@@ -21,13 +21,13 @@
 
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "ble_config.h"
-#endif
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
+
 #include "sl_status.h"
 #include "sl_wifi_device.h"
 #include <algorithm>
 #include <app/icd/server/ICDServerConfig.h>
 #include <cmsis_os2.h>
-#include <cstring>
 #include <inet/IPAddress.h>
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPMemString.h>
@@ -64,7 +64,7 @@ extern "C" {
 #if (EXP_BOARD)
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "rsi_bt_common_apis.h"
-#endif
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "sl_board_configuration.h"
 #endif
 
