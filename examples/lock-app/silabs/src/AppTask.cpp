@@ -458,7 +458,7 @@ bool AppTask::DMDoorLockOnDoorLockCommand(chip::EndpointId endpointId, const Nul
                                           OperationErrorEnum & err)
 {
     ChipLogProgress(Zcl, "Door Lock App: Lock Command endpoint=%d", endpointId);
-    bool status = Lock(endpointId, fabricIdx, nodeId, pinCode, err);
+    bool status = SetLockState(endpointId, fabricIdx, nodeId, DlLockState::kLocked, pinCode, err);
     if (status == true)
     {
         InitiateLockAction(AppEvent::kEventType_Lock, AppTask::LockAction::kLock);
@@ -704,7 +704,11 @@ bool AppTask::InitiateLockAction(int32_t aActor, LockAction aAction)
 
     if (action_initiated)
     {
-        StartTimer(ACTUATOR_MOVEMENT_PERIOS_MS);
+        if (osTimerStart(mLockTimer, pdMS_TO_TICKS(ACTUATOR_MOVEMENT_PERIOS_MS)) != osOK)
+        {
+            SILABS_LOG("mLockTimer timer start() failed");
+            appError(APP_ERROR_START_TIMER_FAILED);
+        }
 
         mLockActuatorState = new_state;
 
@@ -732,25 +736,6 @@ bool AppTask::InitiateLockAction(int32_t aActor, LockAction aAction)
     }
 
     return action_initiated;
-}
-
-void AppTask::StartTimer(uint32_t aTimeoutMs)
-{
-    // Starts or restarts the function timer
-    if (osTimerStart(mLockTimer, pdMS_TO_TICKS(aTimeoutMs)) != osOK)
-    {
-        SILABS_LOG("mLockTimer timer start() failed");
-        appError(APP_ERROR_START_TIMER_FAILED);
-    }
-}
-
-void AppTask::CancelTimer()
-{
-    if (osTimerStop(mLockTimer) == osError)
-    {
-        SILABS_LOG("mLockTimer stop() failed");
-        appError(APP_ERROR_STOP_TIMER_FAILED);
-    }
 }
 
 void AppTask::TimerEventHandler(void * timerCbArg)
@@ -838,12 +823,6 @@ void AppTask::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
     }
 }
 
-bool AppTask::Lock(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
-                       const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pin, OperationErrorEnum & err)
-{
-    return SetLockState(endpointId, fabricIdx, nodeId, DlLockState::kLocked, pin, err);
-}
-
 bool AppTask::Unlock(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
                          const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pin, OperationErrorEnum & err)
 {
@@ -856,7 +835,7 @@ bool AppTask::Unlock(chip::EndpointId endpointId, const Nullable<chip::FabricInd
             // we return false for now. This needs to be fixed in the future.
             if (mLockActuatorState != LockActuatorState::kUnlockCompleted && mLockActuatorState != LockActuatorState::kLockCompleted)
             {
-                ChipLogError(Zcl, "Cannot unlock while unlatch on another endpoint is in progress on  anotther endpoint");
+                ChipLogError(Zcl, "Cannot unlock while unlatch on another endpoint is in progress on another endpoint");
                 return false;
             }
             else

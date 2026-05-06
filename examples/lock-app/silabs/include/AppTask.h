@@ -232,8 +232,6 @@ private:
 
     bool MigrateLockConfig(const SilabsDoorLock::LockInitParams::LockParam & params);
 
-    void StartTimer(uint32_t aTimeoutMs);
-    void CancelTimer();
     bool NextState();
 
     static void TimerEventHandler(void * timerCbArg);
@@ -241,9 +239,6 @@ private:
     static void UpdateClusterState(intptr_t context);
 
     // ---- PIN validation / cluster state push ----
-    bool Lock(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
-              const chip::app::DataModel::Nullable<chip::NodeId> & nodeId, const chip::Optional<chip::ByteSpan> & pin,
-              chip::app::Clusters::DoorLock::OperationErrorEnum & err);
     bool Unlock(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
                 const chip::app::DataModel::Nullable<chip::NodeId> & nodeId, const chip::Optional<chip::ByteSpan> & pin,
                 chip::app::Clusters::DoorLock::OperationErrorEnum & err);
