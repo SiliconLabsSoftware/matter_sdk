@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "sl_component_catalog.h"
 #include <platform/silabs/platformAbstraction/SilabsPlatformBase.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -52,9 +53,9 @@ public:
     inline void SetButtonsCb(SilabsButtonCb callback) override { mButtonCallback = callback; }
     static SilabsButtonCb mButtonCallback;
     uint8_t GetButtonState(uint8_t button) override;
-#ifdef SL_ICD_ENABLED
+#if defined(SL_ICD_ENABLED) && SL_ICD_ENABLED == 1 && defined(SL_CATALOG_SIMPLE_BUTTON_PRESENT)
     void SleepButtonActionHandler(void) override;
-#endif // SL_ICD_ENABLED
+#endif // defined(SL_ICD_ENABLED) && SL_ICD_ENABLED == 1 && defined(SL_ICD_SLEEP_BUTTON_ENABLE)
 
 #if defined(SL_CATALOG_CUSTOM_MAIN_PRESENT)
     void StartScheduler(void) override;
