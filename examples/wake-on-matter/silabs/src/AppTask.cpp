@@ -340,3 +340,20 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     button_event.Handler            = BaseApplication::ButtonHandler;
     AppTask::GetAppTask().PostEvent(&button_event);
 }
+
+// To prevent linkage failure
+#if SL_OPENTHREAD_MULTI_PAN_ENABLE
+extern "C" void otAppNcpInit(otInstance * aInstance);
+
+static otInstance * sInstance = NULL;
+#endif
+
+extern "C" void sl_ot_ncp_init(void)
+{
+#if SL_OPENTHREAD_MULTI_PAN_ENABLE
+    // Matter Stack uses instances at index 0
+    // NCP instance will be at index 1
+    sInstance = otInstanceInitMultiple(1);
+    otAppNcpInit(sInstance);
+#endif
+}
