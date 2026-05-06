@@ -351,7 +351,9 @@ static otInstance * sInstance = NULL;
 extern "C" void sl_ot_ncp_init(void)
 {
 #if SL_OPENTHREAD_MULTI_PAN_ENABLE
-    sInstance = otInstanceInitMultiple(1); // 1 NCP instance
+    // Matter Stack uses instances at index 0
+    // NCP instance will be at index 1
+    sInstance = otInstanceInitMultiple(1);
     otAppNcpInit(sInstance);
 #endif
 }
