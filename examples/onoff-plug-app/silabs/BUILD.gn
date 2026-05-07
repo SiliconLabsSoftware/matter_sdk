@@ -115,8 +115,6 @@ silabs_executable("onoff-plug-app") {
 
   sources = [
     "src/AppTask.cpp",
-    "src/DataModelCallbacks.cpp",
-    "src/OnOffPlugManager.cpp",
   ]
 
   deps = [

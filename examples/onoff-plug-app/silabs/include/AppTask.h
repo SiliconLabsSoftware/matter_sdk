@@ -25,10 +25,12 @@
 #include "AppEvent.h"
 #include "BaseApplication.h"
 #include "FreeRTOS.h"
-#include "OnOffPlugManager.h"
 #include "timers.h" // provides FreeRTOS timer support
 #include <ble/BLEEndPoint.h>
 #include <platform/CHIPDeviceLayer.h>
+
+#include <app/ConcreteAttributePath.h>
+#include <app/clusters/on-off-server/on-off-server.h>
 
 /**********************************************************
  * Defines
@@ -51,6 +53,13 @@ class AppTask : public BaseApplication
 {
 
 public:
+    enum Action_t
+    {
+        OFF_ACTION = 0,
+        ON_ACTION,
+        INVALID_ACTION
+    };
+
     AppTask() = default;
 
     static AppTask & GetAppTask() { return sAppTask; }
@@ -74,10 +83,20 @@ public:
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
+    bool IsPlugOn() const;
+
+    void EnableAutoTurnOff(bool aOn);
+
+    void SetAutoTurnOffDuration(uint32_t aDurationInSecs);
+
+    bool InitiateAction(int32_t aActor, Action_t aAction);
+
+    static void OnTriggerOffWithEffect(OnOffEffect * effect);
+
 private:
     static AppTask sAppTask;
 
-    static void ActionCallback(OnOffPlugManager::Action_t aAction, int32_t aActor);
+    static void ActionCallback(Action_t aAction, int32_t aActor);
     static void OnOffActionEventHandler(AppEvent * aEvent);
 
     static void UpdateClusterState(intptr_t context);
@@ -90,4 +109,17 @@ private:
     CHIP_ERROR AppInit() override;
 
     static void TimerEventHandler(TimerHandle_t xTimer);
+
+    static void AutoTurnOffTimerEventHandler(AppEvent * aEvent);
+
+    static void OffEffectTimerEventHandler(AppEvent * aEvent);
+
+    bool mIsOn;
+    bool mAutoTurnOff;
+    bool mAutoTurnOffTimerArmed;
+    bool mOffEffectArmed;
+    uint32_t mAutoTurnOffDuration;
+
+    void CancelTimer(void);
+    void StartTimer(uint32_t aTimeoutMs);
 };
