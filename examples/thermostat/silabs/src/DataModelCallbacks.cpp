@@ -32,6 +32,11 @@
 #include "MatterAwsControl.h"
 #endif // SL_MATTER_ENABLE_AWS
 
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include <MultiProtocolDataModelHelper.h>
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
 
@@ -54,4 +59,8 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
 #endif // SL_MATTER_ENABLE_AWS
     }
+
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(attributePath.mEndpointId, clusterId, attributeId, value, type);
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }

@@ -172,8 +172,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$ref" ]]; then
-    ref="master"
-    git remote | grep -qxF upstream && ref="upstream/master"
+    # Check if origin points to the main repo
+    origin_url=$(git remote get-url origin 2>/dev/null || echo "")
+    if [[ "$origin_url" == "https://github.com/SiliconLabsSoftware/matter_sdk.git" ]]; then
+        ref="origin/main"
+    else
+        # Assume fork setup - use upstream/main if available, otherwise local main
+        ref="main"
+        git remote | grep -qxF upstream && ref="upstream/main"
+    fi
 fi
 
 paths=$(git diff --ignore-submodules --name-only --merge-base "$ref")
