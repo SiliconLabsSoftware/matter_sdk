@@ -91,7 +91,6 @@ public:
 
     bool InitiateAction(int32_t aActor, Action_t aAction);
 
-
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
 private:

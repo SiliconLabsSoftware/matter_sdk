@@ -82,11 +82,7 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
-    sPlugTimer = xTimerCreate("plugTmr",
-                              pdMS_TO_TICKS(1),
-                              false,
-                              (void *) this,
-                              TimerEventHandler);
+    sPlugTimer = xTimerCreate("plugTmr", pdMS_TO_TICKS(1), false, (void *) this, TimerEventHandler);
 
     if (sPlugTimer == NULL)
     {
@@ -99,10 +95,10 @@ CHIP_ERROR AppTask::AppInit()
     OnOffServer::Instance().getOnOffValue(1, &currentLedState);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    mIsOn                = currentLedState;
-    mAutoTurnOff         = false;
-    mAutoTurnOffDuration = 0;
-    mOffEffectArmed      = false;
+    mIsOn                  = currentLedState;
+    mAutoTurnOff           = false;
+    mAutoTurnOffDuration   = 0;
+    mOffEffectArmed        = false;
     mAutoTurnOffTimerArmed = false;
 
     sOnOffLED.Init(ONOFF_LED);
