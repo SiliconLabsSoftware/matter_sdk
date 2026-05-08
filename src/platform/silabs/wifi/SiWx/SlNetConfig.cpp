@@ -37,7 +37,7 @@ sl_wifi_device_configuration_t GetDefaultDeviceConfiguration(void)
                               .coex_mode = SL_WIFI_SYSTEM_WLAN_ONLY_MODE,
                               .feature_bit_map =
                                   SL_SI91X_FEAT_SECURITY_OPEN | SL_SI91X_FEAT_AGGREGATION | SL_SI91X_FEAT_WPS_DISABLE,
-                              .tcp_ip_feature_bit_map     = (SL_SI91X_TCP_IP_FEAT_BYPASS | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
+                              .tcp_ip_feature_bit_map     = SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID,
                               .custom_feature_bit_map     = SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID,
                               .ext_custom_feature_bit_map = SL_SI91X_EXT_FEAT_LOW_POWER_MODE | SL_SI91X_CLK |
                                   SL_SI91X_RAM_LEVEL_NWP_BASIC_MCU_ADV | FRONT_END_SWITCH_CTRL | SL_SI91X_EXT_FEAT_IEEE_80211W,
@@ -63,6 +63,14 @@ void SLApplyWiFiDeviceConfiguration(sl_wifi_device_configuration_t * configurati
 #ifdef RSI_PROCESS_MAX_RX_DATA
     configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_MAX_RECV_LENGTH;
 #endif // RSI_PROCESS_MAX_RX_DATA
+
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+    configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE;
+#endif
+
+#if !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
+    configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_TCP_IP_FEAT_BYPASS;
+#endif
 }
 
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
