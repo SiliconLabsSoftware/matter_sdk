@@ -17,90 +17,241 @@
  *    limitations under the License.
  */
 
-/**********************************************************
- * Includes
- *********************************************************/
-
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
-
-#include "LEDWidget.h"
+#include "CustomerAppTask.h"
 
 #ifdef DISPLAY_ENABLED
 #include "ThermostatUI.h"
 #include "lcd.h"
-#ifdef QR_CODE_ENABLED
-#include "qrcodegen.h"
-#endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
 
+#include "thermostat-delegate-impl.h"
+
 #include <app-common/zap-generated/attributes/Accessors.h>
-#include <app-common/zap-generated/callback.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/ids/Attributes.h>
+#include <app-common/zap-generated/ids/Clusters.h>
+#include <app/clusters/thermostat-server/thermostat-server.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
-#include <assert.h>
+#include <cmsis_os2.h>
 #include <lib/support/CodeUtils.h>
+#include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/PlatformError.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-#include <setup_payload/OnboardingCodesUtil.h>
-#include <setup_payload/QRCodeSetupPayloadGenerator.h>
-#include <setup_payload/SetupPayload.h>
 
-/**********************************************************
- * Defines and Constants
- *********************************************************/
+#if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+#include "Si70xxSensor.h"
+#endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+
+#ifdef SL_MATTER_ENABLE_AWS
+#include "MatterAwsControl.h"
+#endif // SL_MATTER_ENABLE_AWS
 
 #define APP_FUNCTION_BUTTON 0
-#define APP_THERMOSTAT 1
-
-#define MODE_TIMER 1000 // 1s timer period
 
 using namespace chip;
 using namespace chip::app;
-using namespace chip::TLV;
+using namespace chip::app::Clusters;
 using namespace ::chip::DeviceLayer;
 
-/**********************************************************
- * Variable declarations
- *********************************************************/
+namespace ThermAttr = chip::app::Clusters::Thermostat::Attributes;
 
-/**********************************************************
- * AppTask Definitions
- *********************************************************/
+namespace {
 
-AppTask AppTask::sAppTask;
+CustomerAppTask & appInstance()
+{
+    return CustomerAppTask::GetAppTask();
+}
+
+constexpr EndpointId kThermostatEndpoint = 1;
+constexpr uint16_t kSensorTimerPeriodMs  = 30000; // 30s timer period
+constexpr uint16_t kMinTemperatureDelta  = 50;    // 0.5 degree Celcius
+
+#if !(defined(SL_MATTER_USE_SI70XX_SENSOR) && (SL_MATTER_USE_SI70XX_SENSOR))
+constexpr uint16_t kSimulatedReadingFrequency = (60000 / kSensorTimerPeriodMs); // Change Simulated number at each minutes
+int16_t sSimulatedTemp[]                      = { 2300, 2400, 2800, 2550, 2200, 2125, 2100, 2600, 1800, 2700 };
+uint8_t sNbOfRepetition = 0;
+uint8_t sSimulatedIndex = 0;
+#endif // !(defined(SL_MATTER_USE_SI70XX_SENSOR) && (SL_MATTER_USE_SI70XX_SENSOR))
+
+int8_t sCurrentTempCelsius     = 0;
+int8_t sCoolingCelsiusSetPoint = 0;
+int8_t sHeatingCelsiusSetPoint = 0;
+uint8_t sThermMode             = 0;
+
+osTimerId_t sSensorTimer = nullptr;
+int16_t sLastTemperature = 0;
+
+int8_t ConvertToPrintableTemp(int16_t temperature)
+{
+    constexpr uint8_t kRoundUpValue = 50;
+
+    // Round up the temperature as we won't print decimals on LCD.
+    if (temperature < 0)
+    {
+        temperature -= kRoundUpValue;
+    }
+    else
+    {
+        temperature += kRoundUpValue;
+    }
+
+    return static_cast<int8_t>(temperature / 100);
+}
+
+void AttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
+{
+    switch (attributeId)
+    {
+    case ThermAttr::LocalTemperature::Id: {
+        int8_t temp = ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value));
+        SILABS_LOG("Local temp %d", temp);
+        sCurrentTempCelsius = temp;
+    }
+    break;
+
+    case ThermAttr::OccupiedCoolingSetpoint::Id: {
+        int8_t coolingTemp = ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value));
+        SILABS_LOG("CoolingSetpoint %d", coolingTemp);
+        sCoolingCelsiusSetPoint = coolingTemp;
+    }
+    break;
+
+    case ThermAttr::OccupiedHeatingSetpoint::Id: {
+        int8_t heatingTemp = ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value));
+        SILABS_LOG("HeatingSetpoint %d", heatingTemp);
+        sHeatingCelsiusSetPoint = heatingTemp;
+    }
+    break;
+
+    case ThermAttr::SystemMode::Id: {
+        SILABS_LOG("SystemMode %d", static_cast<uint8_t>(*value));
+        uint8_t mode = static_cast<uint8_t>(*value);
+        if (sThermMode != mode)
+        {
+            sThermMode = mode;
+        }
+    }
+    break;
+
+    default:
+        SILABS_LOG("Unhandled thermostat attribute %x", attributeId);
+        return;
+    }
+
+    appInstance().UpdateThermoStatUI();
+}
+
+} // namespace
+
+void emberAfThermostatClusterInitCallback(EndpointId endpoint)
+{
+    auto & delegate = ThermostatDelegate::GetInstance();
+    SetDefaultDelegate(endpoint, &delegate);
+}
 
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
 #ifdef DISPLAY_ENABLED
     GetLCD().SetCustomUI(ThermostatUI::DrawUI);
 #endif
 
-    err = SensorMgr().Init();
+    err = appInstance().InitThermostat();
     if (err != CHIP_NO_ERROR)
     {
-        SILABS_LOG("SensorMgr::Init() failed");
-        appError(err);
-    }
-    err = TempMgr().Init();
-    if (err != CHIP_NO_ERROR)
-    {
-        SILABS_LOG("TempMgr::Init() failed");
+        SILABS_LOG("InitThermostat() failed");
         appError(err);
     }
 
     return err;
 }
 
+CHIP_ERROR AppTask::InitThermostat()
+{
+    sSensorTimer = osTimerNew(&CustomerAppTask::SensorTimerEventHandler, osTimerPeriodic, nullptr, nullptr);
+    if (sSensorTimer == nullptr)
+    {
+        SILABS_LOG("sSensorTimer timer create failed");
+        return APP_ERROR_CREATE_TIMER_FAILED;
+    }
+
+#if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+    sl_status_t status = Si70xxSensor::Init();
+    if (status != SL_STATUS_OK)
+    {
+        SILABS_LOG("Failed to Init Sensor with error code: %lx", status);
+        return MATTER_PLATFORM_ERROR(status);
+    }
+#endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+
+    DataModel::Nullable<int16_t> temp;
+    int16_t heatingSetpoint = 0;
+    int16_t coolingSetpoint = 0;
+    Thermostat::SystemModeEnum systemMode;
+
+    PlatformMgr().LockChipStack();
+    ThermAttr::LocalTemperature::Get(kThermostatEndpoint, temp);
+    ThermAttr::OccupiedCoolingSetpoint::Get(kThermostatEndpoint, &coolingSetpoint);
+    ThermAttr::OccupiedHeatingSetpoint::Get(kThermostatEndpoint, &heatingSetpoint);
+    ThermAttr::SystemMode::Get(kThermostatEndpoint, &systemMode);
+    PlatformMgr().UnlockChipStack();
+
+    sCurrentTempCelsius     = ConvertToPrintableTemp(temp.IsNull() ? static_cast<int16_t>(0) : temp.Value());
+    sHeatingCelsiusSetPoint = ConvertToPrintableTemp(coolingSetpoint);
+    sCoolingCelsiusSetPoint = ConvertToPrintableTemp(heatingSetpoint);
+
+    switch (systemMode)
+    {
+    case Thermostat::SystemModeEnum::kOff:
+        sThermMode = 0;
+        break;
+    case Thermostat::SystemModeEnum::kAuto:
+        sThermMode = 1;
+        break;
+    case Thermostat::SystemModeEnum::kCool:
+        sThermMode = 3;
+        break;
+    case Thermostat::SystemModeEnum::kHeat:
+        sThermMode = 4;
+        break;
+    case Thermostat::SystemModeEnum::kEmergencyHeat:
+        sThermMode = 5;
+        break;
+    case Thermostat::SystemModeEnum::kPrecooling:
+        sThermMode = 6;
+        break;
+    case Thermostat::SystemModeEnum::kFanOnly:
+        sThermMode = 7;
+        break;
+    case Thermostat::SystemModeEnum::kDry:
+        sThermMode = 8;
+        break;
+    case Thermostat::SystemModeEnum::kSleep:
+        sThermMode = 9;
+        break;
+    default:
+        sThermMode = 2;
+        break;
+    }
+
+    appInstance().UpdateThermoStatUI();
+
+    AppTask::SensorTimerEventHandler(nullptr);
+    osTimerStart(sSensorTimer, pdMS_TO_TICKS(kSensorTimerPeriodMs));
+
+    return CHIP_NO_ERROR;
+}
+
 CHIP_ERROR AppTask::StartAppTask()
 {
-    return BaseApplication::StartAppTask(AppTaskMain);
+    return BaseApplication::StartAppTask(&AppTask::AppTaskMain);
 }
 
 void AppTask::AppTaskMain(void * pvParameter)
@@ -108,7 +259,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = GetAppTask().Init();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("AppTask.Init() failed");
@@ -116,17 +267,17 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    sAppTask.StartStatusLEDTimer();
+    GetAppTask().StartStatusLEDTimer();
 #endif
 
     SILABS_LOG("App Task started");
     while (true)
     {
-        osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
+        osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
-            eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
+            GetAppTask().DispatchEvent(&event);
+            eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
 }
@@ -134,22 +285,22 @@ void AppTask::AppTaskMain(void * pvParameter)
 void AppTask::UpdateThermoStatUI()
 {
 #ifdef DISPLAY_ENABLED
-    ThermostatUI::SetMode(TempMgr().GetMode());
-    ThermostatUI::SetHeatingSetPoint(TempMgr().GetHeatingSetPoint());
-    ThermostatUI::SetCoolingSetPoint(TempMgr().GetCoolingSetPoint());
-    ThermostatUI::SetCurrentTemp(TempMgr().GetCurrentTemp());
+    ThermostatUI::SetMode(sThermMode);
+    ThermostatUI::SetHeatingSetPoint(sHeatingCelsiusSetPoint);
+    ThermostatUI::SetCoolingSetPoint(sCoolingCelsiusSetPoint);
+    ThermostatUI::SetCurrentTemp(sCurrentTempCelsius);
 
 #ifdef SL_WIFI
     if (ConnectivityMgr().IsWiFiStationProvisioned())
 #else
     if (ConnectivityMgr().IsThreadProvisioned())
-#endif /* !SL_WIFI */
+#endif // !SL_WIFI
     {
-        AppTask::GetAppTask().GetLCD().WriteDemoUI(false); // State doesn't Matter
+        GetLCD().WriteDemoUI(false); // State doesn't matter
     }
 #else
-    SILABS_LOG("Thermostat Status - M:%d T:%d'C H:%d'C C:%d'C", TempMgr().GetMode(), TempMgr().GetCurrentTemp(),
-               TempMgr().GetHeatingSetPoint(), TempMgr().GetCoolingSetPoint());
+    SILABS_LOG("Thermostat Status - M:%d T:%d'C H:%d'C C:%d'C", sThermMode, sCurrentTempCelsius, sHeatingCelsiusSetPoint,
+               sCoolingCelsiusSetPoint);
 #endif // DISPLAY_ENABLED
 }
 
@@ -162,6 +313,81 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_FUNCTION_BUTTON)
     {
         aEvent.Handler = BaseApplication::ButtonHandler;
-        sAppTask.PostEvent(&aEvent);
+        appInstance().PostEvent(&aEvent);
+    }
+}
+
+void AppTask::SensorTimerEventHandler(void * /* arg */)
+{
+    AppEvent event;
+    event.Type    = AppEvent::kEventType_Timer;
+    event.Handler = &CustomerAppTask::TemperatureUpdateEventHandler;
+    appInstance().PostEvent(&event);
+}
+
+void AppTask::TemperatureUpdateEventHandler(AppEvent * /* aEvent */)
+{
+    int16_t temperature = 0;
+
+#if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+    int32_t tempSum   = 0;
+    uint16_t humidity = 0;
+
+    for (uint8_t i = 0; i < 100; i++)
+    {
+        if (SL_STATUS_OK != Si70xxSensor::GetSensorData(humidity, temperature))
+        {
+            SILABS_LOG("Failed to read Temperature !!!");
+        }
+        tempSum += temperature;
+    }
+    temperature = static_cast<int16_t>(tempSum / 100);
+#else
+    if (sSimulatedIndex >= MATTER_ARRAY_SIZE(sSimulatedTemp))
+    {
+        sSimulatedIndex = 0;
+    }
+    temperature = sSimulatedTemp[sSimulatedIndex];
+
+    sNbOfRepetition++;
+    if (sNbOfRepetition >= kSimulatedReadingFrequency)
+    {
+        sSimulatedIndex++;
+        sNbOfRepetition = 0;
+    }
+#endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+
+    SILABS_LOG("Sensor Temp is : %d", temperature);
+
+    MarkAttributeDirty reportState = MarkAttributeDirty::kNo;
+    if ((temperature >= (sLastTemperature + kMinTemperatureDelta)) || temperature <= (sLastTemperature - kMinTemperatureDelta))
+    {
+        reportState = MarkAttributeDirty::kIfChanged;
+    }
+
+    sLastTemperature = temperature;
+    PlatformMgr().LockChipStack();
+    Thermostat::Attributes::LocalTemperature::Set(kThermostatEndpoint, temperature, reportState);
+    PlatformMgr().UnlockChipStack();
+}
+
+void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                            uint8_t * value)
+{
+    ClusterId clusterId     = attributePath.mClusterId;
+    AttributeId attributeId = attributePath.mAttributeId;
+    ChipLogDetail(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
+
+    if (clusterId == Identify::Id)
+    {
+        ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                        ChipLogValueMEI(attributeId), type, *value, size);
+    }
+    else if (clusterId == Thermostat::Id)
+    {
+        AttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+#ifdef SL_MATTER_ENABLE_AWS
+        matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
+#endif // SL_MATTER_ENABLE_AWS
     }
 }
