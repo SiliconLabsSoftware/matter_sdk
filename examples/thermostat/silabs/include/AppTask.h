@@ -46,9 +46,11 @@ public:
     CHIP_ERROR StartAppTask();
 
     /**
-     * @brief Request an update of the Thermostat LCD UI.
+     * @brief Push the cached thermostat state (mode, setpoints, current temperature) to the
+     *        LCD UI. Helper invoked from `InitThermostat` and from the data-model attribute
+     *        handler; not exposed as a CRTP override hook.
      */
-    void UpdateThermoStatUI();
+    static void UpdateThermoStatUI();
 
     /**
      * @brief Event handler when a button is pressed.

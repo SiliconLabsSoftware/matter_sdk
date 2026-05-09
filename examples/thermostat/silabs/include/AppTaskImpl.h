@@ -56,8 +56,6 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, TemperatureUpdateEventHandlerImpl, aEvent);
     }
 
-    void UpdateThermoStatUI() { CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, UpdateThermoStatUIImpl); }
-
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
     {
@@ -78,8 +76,6 @@ private:
     void SensorTimerEventHandlerImpl(void * arg) { AppTask::SensorTimerEventHandler(arg); }
 
     void TemperatureUpdateEventHandlerImpl(AppEvent * aEvent) { AppTask::TemperatureUpdateEventHandler(aEvent); }
-
-    void UpdateThermoStatUIImpl() { AppTask::UpdateThermoStatUI(); }
 
     void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                            uint8_t * value)

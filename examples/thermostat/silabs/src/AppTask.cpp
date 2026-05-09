@@ -27,8 +27,6 @@
 #include "lcd.h"
 #endif // DISPLAY_ENABLED
 
-#include "thermostat-delegate-impl.h"
-
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/ids/Attributes.h>
@@ -143,16 +141,10 @@ void AttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint
         return;
     }
 
-    appInstance().UpdateThermoStatUI();
+    AppTask::UpdateThermoStatUI();
 }
 
 } // namespace
-
-void emberAfThermostatClusterInitCallback(EndpointId endpoint)
-{
-    auto & delegate = ThermostatDelegate::GetInstance();
-    SetDefaultDelegate(endpoint, &delegate);
-}
 
 CHIP_ERROR AppTask::AppInit()
 {
@@ -241,7 +233,7 @@ CHIP_ERROR AppTask::InitThermostat()
         break;
     }
 
-    appInstance().UpdateThermoStatUI();
+    AppTask::UpdateThermoStatUI();
 
     AppTask::SensorTimerEventHandler(nullptr);
     osTimerStart(sSensorTimer, pdMS_TO_TICKS(kSensorTimerPeriodMs));
