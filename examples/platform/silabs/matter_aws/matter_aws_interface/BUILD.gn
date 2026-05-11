@@ -52,15 +52,15 @@ source_set("silabs-matter-aws") {
   ]
 
   if (enable_matter_aws_transport_nwp) {
-    sources += [ "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/src/mqtt_transport_matter_si91x_net.c" ]
+    sources += [ "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/Si91X/mqtt_transport_si91x_nwp.c" ]
   } else {
     sources += [
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/src/MQTT_transport.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/src/altcp.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/src/altcp_alloc.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/src/altcp_tcp.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/src/altcp_tls_mbedtls.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/src/altcp_tls_mbedtls_mem.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/mqtt_transport_altcp.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_alloc.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tcp.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tls_mbedtls.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tls_mbedtls_mem.c",
     ]
   }
 

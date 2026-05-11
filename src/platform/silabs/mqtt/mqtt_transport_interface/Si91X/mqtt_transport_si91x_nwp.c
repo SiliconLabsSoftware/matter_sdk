@@ -18,7 +18,7 @@
  */
 
 /**
- * @file mqtt_transport_matter_si91x_net.c
+ * @file mqtt_transport_si91x_nwp.c
  * @brief Matter AWS MQTT transport: sl_net DNS + credential store, TLS on Si91x NWP (sl_si91x_socket).
  *        Feeds the common mqtt.c stack via mqtt_transport_intf_t (no lwIP altcp).
  *
