@@ -162,7 +162,7 @@ const sl_wifi_device_configuration_t config = {
                      .ext_custom_feature_bit_map =
                          (SL_SI91X_EXT_FEAT_SSL_VERSIONS_SUPPORT | SL_SI91X_EXT_FEAT_UART_SEL_FOR_DEBUG_PRINTS
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
-                                                    | RSI_EXT_CUSTOM_FEATURE_BIT_MAP | SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE
+                          | RSI_EXT_CUSTOM_FEATURE_BIT_MAP | SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #if defined(A2DP_POWER_SAVE_ENABLE)
                           | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2)
@@ -177,18 +177,19 @@ const sl_wifi_device_configuration_t config = {
 #else
                      .bt_feature_bit_map      = 0,
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
-                     .ext_tcp_ip_feature_bit_map = (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
+                     .ext_tcp_ip_feature_bit_map =
+                         (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-                                                    | SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE | SL_SI91X_EXT_TCP_IP_FEAT_SSL_MEMORY_CLOUD
-#endif             
+                          | SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE | SL_SI91X_EXT_TCP_IP_FEAT_SSL_MEMORY_CLOUD
+#endif
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
-                                                    | RSI_EXT_TCPIP_FEATURE_BITMAP
+                          | RSI_EXT_TCPIP_FEATURE_BITMAP
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #ifdef RSI_PROCESS_MAX_RX_DATA
 
-                                                    | SL_SI91X_EXT_TCP_MAX_RECV_LENGTH
+                          | SL_SI91X_EXT_TCP_MAX_RECV_LENGTH
 #endif
-                                                    ),
+                          ),
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      //! ENABLE_BLE_PROTOCOL in bt_feature_bit_map
                      .ble_feature_bit_map =

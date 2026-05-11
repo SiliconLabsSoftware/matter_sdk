@@ -38,10 +38,7 @@ config("silabs_matterAws_config") {
       "${wifi_sdk_root}/components/common/inc",
       "${wifi_sdk_root}/resources/certificates",
     ]
-    defines = [
-      "SL_MATTER_AWS_TRANSPORT_SI91X_NWP=1",
-
-    ]
+    defines = [ "SL_MATTER_AWS_TRANSPORT_SI91X_NWP=1" ]
   }
 }
 
@@ -56,12 +53,12 @@ source_set("silabs-matter-aws") {
     sources += [ "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/SiWx917/mqtt_transport_si91x_nwp.c" ]
   } else {
     sources += [
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/mqtt_transport_altcp.c",
       "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp.c",
       "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_alloc.c",
       "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tcp.c",
       "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tls_mbedtls.c",
       "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tls_mbedtls_mem.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/mqtt_transport_altcp.c",
     ]
   }
 

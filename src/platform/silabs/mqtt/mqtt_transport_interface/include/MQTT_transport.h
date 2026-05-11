@@ -48,9 +48,9 @@ typedef struct MQTT_Transport_t MQTT_Transport_t;
 void transport_process_mbedtls_rx(MQTT_Transport_t * client);
 MQTT_Transport_t * MQTT_Transport_Init(mqtt_transport_intf_t * trans, mqtt_client_t * mqtt_client, EventGroupHandle_t dicEvents);
 err_t MQTT_Transport_SSLConfigure(MQTT_Transport_t * transP, const u8_t * ca, size_t ca_len, const u8_t * privkey,
-    size_t privkey_len, const u8_t * privkey_pass, size_t privkey_pass_len, const u8_t * cert,
-    size_t cert_len);
+                                  size_t privkey_len, const u8_t * privkey_pass, size_t privkey_pass_len, const u8_t * cert,
+                                  size_t cert_len);
 err_t MQTT_Transport_Connect(MQTT_Transport_t * client, const char * host, size_t hostLen, u16_t port,
-    matter_aws_connect_cb matterAws_con_cb);
+                             matter_aws_connect_cb matterAws_con_cb);
 
 #endif // MQTT_TRANSPORT_H

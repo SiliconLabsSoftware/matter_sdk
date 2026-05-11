@@ -49,7 +49,8 @@
 #define MQTT_SUBSCRIBE_TOPIC "command"
 
 /* MQTT Client Certification Configuration */
-/* Max PEM staging size when SL_MATTER_AWS_NVM_EMBED_CERT reads credentials from NVM (SilabsConfig). Unused for embedded literals (zero-copy). */
+/* Max PEM staging size when SL_MATTER_AWS_NVM_EMBED_CERT reads credentials from NVM (SilabsConfig). Unused for embedded literals
+ * (zero-copy). */
 #define MATTER_AWS_CA_CERT_LENGTH (1210)
 #define MATTER_AWS_DEV_CERT_LENGTH (1245)
 #define MATTER_AWS_DEV_KEY_LENGTH (1800)
