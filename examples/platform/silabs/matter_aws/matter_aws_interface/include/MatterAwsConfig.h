@@ -35,7 +35,7 @@
 #define MATTER_AWS_TASK_PRIORITY (osPriorityAboveNormal)
 
 /* Network Configuration */
-#define MATTER_AWS_SERVER_HOST ""
+#define MATTER_AWS_SERVER_HOST "a2m21kovu9tcsh-ats.iot.ap-southeast-1.amazonaws.com"
 #define MATTER_AWS_SERVER_PORT (8883)
 
 #define MATTER_AWS_KEEP_ALIVE (0)
@@ -49,9 +49,10 @@
 #define MQTT_SUBSCRIBE_TOPIC "command"
 
 /* MQTT Client Certification Configuration */
-#define MATTER_AWS_CA_CERT_LENGTH (800)
-#define MATTER_AWS_DEV_CERT_LENGTH (1400)
-#define MATTER_AWS_DEV_KEY_LENGTH (500)
+/* Max PEM staging size when SL_MATTER_AWS_NVM_EMBED_CERT reads credentials from NVM (SilabsConfig). Unused for embedded literals (zero-copy). */
+#define MATTER_AWS_CA_CERT_LENGTH (1210)
+#define MATTER_AWS_DEV_CERT_LENGTH (1245)
+#define MATTER_AWS_DEV_KEY_LENGTH (1800)
 #define MATTER_AWS_HOSTNAME_LENGTH (55)
 #define MATTER_AWS_CLIENTID_LENGTH (30)
 
@@ -60,6 +61,6 @@
 #define AWS_OTA_TASK_PRIORITY (1)
 #endif // SL_MATTER_ENABLE_AWS_OTA_FEAT
 
-#define ZCL_USING_ON_OFF_CLUSTER_SERVER
+#define ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
 
 #endif // __MATTER_AWS_CONFIG_H

@@ -91,16 +91,6 @@
 #define SL_SI91X_SOL_SOCKET 1
 #endif
 
-/* Baseline when 1 (from SLC/GN): matches Wi-SDK dual_stack_paho MQTTSi91x_dual_stack IPv4 — SO_SSL_ENABLE only,
- * bind MQTT_MATTER_EXAMPLE_LOCAL_PORT, server sin_port = host port (no htons). Set 0 to restore TLS1.2/SNI/cert index + htons + no bind. */
-#ifndef SL_MATTER_AWS_NWP_EXAMPLE_SOCKET
-#define SL_MATTER_AWS_NWP_EXAMPLE_SOCKET 0
-#endif
-
-#ifndef MQTT_MATTER_EXAMPLE_LOCAL_PORT
-#define MQTT_MATTER_EXAMPLE_LOCAL_PORT 5001
-#endif
-
 struct MQTT_Transport_t
 {
     uint8_t conn_state;
@@ -462,13 +452,14 @@ static err_t nwp_tcp_connect(MQTT_Transport_t * client, const sl_ip_address_t * 
 
     if (client->tls_enabled)
     {
-        if (sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_SSL_ENABLE, &ssl_enable, sizeof(ssl_enable)) < 0)
-        {
-            SILABS_LOG("Matter si91x net: [tcp] FAIL at SO_SSL_ENABLE errno=%d", errno);
-            goto fail;
-        }
-        SILABS_LOG("Matter si91x net: [tcp] SO_SSL_ENABLE ok");
-#if !(defined(SL_MATTER_AWS_NWP_EXAMPLE_SOCKET) && SL_MATTER_AWS_NWP_EXAMPLE_SOCKET)
+        // SATYA- NOT NEEDED as below sslv12 sets same
+        // if (sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_SSL_ENABLE, &ssl_enable, sizeof(ssl_enable)) < 0)
+        // {
+        //     SILABS_LOG("Matter si91x net: [tcp] FAIL at SO_SSL_ENABLE errno=%d", errno);
+        //     goto fail;
+        // }
+        // SILABS_LOG("Matter si91x net: [tcp] SO_SSL_ENABLE ok");
+
         {
             uint32_t ssl_v12 = SL_SI91X_ENABLE_TLS | SL_SI91X_TLS_V_1_2;
             if (sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_SSL_V_1_2_ENABLE, &ssl_v12, sizeof(ssl_v12)) < 0)
@@ -484,83 +475,75 @@ static err_t nwp_tcp_connect(MQTT_Transport_t * client, const sl_ip_address_t * 
             goto fail;
         }
         SILABS_LOG("Matter si91x net: [tcp] SO_CERT_INDEX ok idx=%u", (unsigned) cert_idx);
-        if (client->hostname != NULL)
-        {
-            size_t hlen = strlen(client->hostname);
-            if (hlen > 0 && hlen <= MQTT_TRANSPORT_MAX_HOSTNAME_LEN)
-            {
-                size_t blob_sz = sizeof(sl_si91x_socket_type_length_value_t) + hlen;
-                sl_si91x_socket_type_length_value_t * sni =
-                    (sl_si91x_socket_type_length_value_t *) pvPortMalloc(blob_sz);
-                if (sni != NULL)
-                {
-                    sni->type   = SL_SI91X_TLS_EXTENSION_SNI_TYPE;
-                    sni->length = (uint16_t) hlen;
-                    memcpy(sni->value, client->hostname, hlen);
-                    if (sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_TLS_SNI, sni, (socklen_t) blob_sz) < 0)
-                    {
-                        SILABS_LOG("Matter si91x net: [tcp] SNI setsockopt FAILED errno=%d (connect will run without SNI)", errno);
-                    }
-                    else
-                    {
-                        SILABS_LOG("Matter si91x net: [tcp] SNI set len=%u", (unsigned) hlen);
-                    }
-                    vPortFree(sni);
-                }
-                else
-                {
-                    SILABS_LOG("Matter si91x net: [tcp] SNI skipped (malloc failed len=%u)", (unsigned) hlen);
-                }
-            }
-            else
-            {
-                SILABS_LOG("Matter si91x net: [tcp] SNI skipped (bad hostname len=%u max=%u)", (unsigned) hlen,
-                           (unsigned) MQTT_TRANSPORT_MAX_HOSTNAME_LEN);
-            }
-        }
-        else
-        {
-            SILABS_LOG("Matter si91x net: [tcp] SNI skipped (hostname NULL)");
-        }
-#endif /* !SL_MATTER_AWS_NWP_EXAMPLE_SOCKET */
+        // SATYA - SNI is NOT working as expected, so commented out for now
+        // if (client->hostname != NULL)
+        // {
+        //     size_t hlen = strlen(client->hostname);
+        //     if (hlen > 0 && hlen <= MQTT_TRANSPORT_MAX_HOSTNAME_LEN)
+        //     {
+        //         size_t blob_sz = sizeof(sl_si91x_socket_type_length_value_t) + hlen;
+        //         sl_si91x_socket_type_length_value_t * sni =
+        //             (sl_si91x_socket_type_length_value_t *) pvPortMalloc(blob_sz);
+        //         if (sni != NULL)
+        //         {
+        //             sni->type   = SL_SI91X_TLS_EXTENSION_SNI_TYPE;
+        //             sni->length = (uint16_t) hlen;
+        //             memcpy(sni->value, client->hostname, hlen);
+        //             if (sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_TLS_SNI, sni, (socklen_t) blob_sz) < 0)
+        //             {
+        //                 SILABS_LOG("Matter si91x net: [tcp] SNI setsockopt FAILED errno=%d (connect will run without SNI)", errno);
+        //             }
+        //             else
+        //             {
+        //                 SILABS_LOG("Matter si91x net: [tcp] SNI set len=%u", (unsigned) hlen);
+        //             }
+        //             vPortFree(sni);
+        //         }
+        //         else
+        //         {
+        //             SILABS_LOG("Matter si91x net: [tcp] SNI skipped (malloc failed len=%u)", (unsigned) hlen);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         SILABS_LOG("Matter si91x net: [tcp] SNI skipped (bad hostname len=%u max=%u)", (unsigned) hlen,
+        //                    (unsigned) MQTT_TRANSPORT_MAX_HOSTNAME_LEN);
+        //     }
+        // }
+        // else
+        // {
+        //     SILABS_LOG("Matter si91x net: [tcp] SNI skipped (hostname NULL)");
+        // }
     }
     else
     {
         SILABS_LOG("Matter si91x net: [tcp] TLS sockopts skipped (tls_enabled=0)");
     }
 
-#if defined(SL_MATTER_AWS_NWP_EXAMPLE_SOCKET) && SL_MATTER_AWS_NWP_EXAMPLE_SOCKET
-    /* Match MQTTSi91x_dual_stack.c: bind ephemeral local port before connect. */
-    client_addr.sin_family = AF_INET;
-    client_addr.sin_port   = (in_port_t) MQTT_MATTER_EXAMPLE_LOCAL_PORT;
-    client_addr.sin_addr.s_addr = INADDR_ANY;
-    rc                       = sl_si91x_bind(client->sock, (struct sockaddr *) &client_addr, slen);
-    if (rc != 0)
-    {
-        SILABS_LOG("Matter si91x net: [tcp] FAIL at sl_si91x_bind rc=%d errno=%d local_port=%u", rc, errno,
-                   (unsigned) MQTT_MATTER_EXAMPLE_LOCAL_PORT);
-        goto fail;
-    }
-    SILABS_LOG("Matter si91x net: [tcp] sl_si91x_bind ok local_port=%u", (unsigned) MQTT_MATTER_EXAMPLE_LOCAL_PORT);
-#else
-    /* Omit bind: dual-stack NWP can treat local port 0 as conflict; NWP may assign source port. */
-#endif
+    // SATYA - using a specifci port cause  connect failure after
+    // /* Match MQTTSi91x_dual_stack.c: bind ephemeral local port before connect. */
+    // client_addr.sin_family = AF_INET;
+    // client_addr.sin_port   = (in_port_t) MQTT_MATTER_EXAMPLE_LOCAL_PORT;
+    // client_addr.sin_addr.s_addr = INADDR_ANY;
+    // rc                       = sl_si91x_bind(client->sock, (struct sockaddr *) &client_addr, slen);
+    // if (rc != 0)
+    // {
+    //     SILABS_LOG("Matter si91x net: [tcp] FAIL at sl_si91x_bind rc=%d errno=%d local_port=%u", rc, errno,
+    //                (unsigned) MQTT_MATTER_EXAMPLE_LOCAL_PORT);
+    //     goto fail;
+    // }
+    // SILABS_LOG("Matter si91x net: [tcp] sl_si91x_bind ok local_port=%u", (unsigned) MQTT_MATTER_EXAMPLE_LOCAL_PORT);
+
+
 
     server.sin_family = AF_INET;
-#if defined(SL_MATTER_AWS_NWP_EXAMPLE_SOCKET) && SL_MATTER_AWS_NWP_EXAMPLE_SOCKET
-    server.sin_port = (in_port_t) port; /* same as MQTTSi91x_dual_stack (host-order port value in field) */
-#else
-    server.sin_port = htons(port);
-#endif
+    server.sin_port = (in_port_t) port; /* (host-order port value in field) */
+    // SATYA - using htons(port) cause connect failure 
+    // server.sin_port = htons(port);
     memcpy(&server.sin_addr.s_addr, ip->ip.v4.bytes, sizeof(server.sin_addr.s_addr));
 
-    SILABS_LOG("Matter si91x net: [tcp] sl_si91x_connect sock=%d tls=%u cert_idx=%u example_sock=%d -> %u.%u.%u.%u:%u", client->sock,
+    SILABS_LOG("Matter si91x net: [tcp] sl_si91x_connect sock=%d tls=%u cert_idx=%u ip -> %u.%u.%u.%u:%u", client->sock,
                (unsigned) client->tls_enabled, (unsigned) cert_idx,
-#if defined(SL_MATTER_AWS_NWP_EXAMPLE_SOCKET) && SL_MATTER_AWS_NWP_EXAMPLE_SOCKET
-               1,
-#else
-               0,
-#endif
                (unsigned) ip->ip.v4.bytes[0], (unsigned) ip->ip.v4.bytes[1], (unsigned) ip->ip.v4.bytes[2],
                (unsigned) ip->ip.v4.bytes[3], (unsigned) port);
 
