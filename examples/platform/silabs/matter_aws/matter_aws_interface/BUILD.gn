@@ -50,7 +50,7 @@ source_set("silabs-matter-aws") {
   ]
 
   if (enable_matter_aws_transport_nwp) {
-    sources += [ "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/SiWx917/mqtt_transport_si91x_nwp.c" ]
+    sources += [ "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/SiWx917/MqttTransportSi91xNwp.cpp" ]
   } else {
     sources += [
       "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp.c",

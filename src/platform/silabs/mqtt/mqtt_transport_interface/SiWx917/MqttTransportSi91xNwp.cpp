@@ -18,32 +18,36 @@
  */
 
 /**
- * @file mqtt_transport_si91x_nwp.c
+ * @file MqttTransportSi91xNwp.cpp
  * @brief Matter AWS MQTT transport: sl_net DNS + credential store, TLS on Si91x NWP (sl_si91x_socket).
- *        Feeds the common mqtt.c stack via mqtt_transport_intf_t (no lwIP altcp). Logs use @c SILABS_LOG
- *        with prefix @c "[MQTT Si91X INTERFACE ] ".
- *        IPv4 only: DNS uses @ref SL_NET_DNS_TYPE_IPV4, TCP is @c AF_INET. There is no AAAA / IPv6 path;
- *        Matter+AWS to AWS IoT Core is intentionally not built on IPv6 here. The broker hostname is always
- *        resolved via @ref sl_net_dns_resolve_hostname (no in-stack IPv4 literal parsing).
+ *        Feeds the common mqtt.c stack via mqtt_transport_intf_t.
+ *        IPv4 only: DNS uses @ref SL_NET_DNS_TYPE_IPV4, TCP is @c AF_INET. There is no IPv6 path;
+ *        The broker hostname is always resolved via @ref sl_net_dns_resolve_hostname.
  *
- *        Si91x socket headers are included before @c MQTT_transport.h so @c fd_set comes from the NWP shim
- *        before newlib @c sys/select.h (see @c sli_si91x_socket_defs.h). Do not include @c lwip/sockets.h here.
  */
 
 #include "sl_constants.h"
 #include "sl_ip_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "sl_net.h"
 #include "sl_net_constants.h"
 #include "sl_net_dns.h"
+#ifdef __cplusplus
+}
+#endif
+
 #include "sl_si91x_constants.h"
 #include "sl_si91x_socket.h"
 #include "sl_si91x_socket_constants.h"
 #include "sl_si91x_socket_utility.h"
 #include "sl_status.h"
 
+#include <lib/support/logging/CHIPLogging.h>
+
 #include "MQTT_transport.h"
-#include "mqtt_opts.h"
-#include "silabs_utils.h"
 
 #include "FreeRTOS.h"
 #include "event_groups.h"
@@ -303,7 +307,7 @@ static void mqtt_matter_si91x_rx_task(void * pvParameters)
         int rc = sl_si91x_recv(client->sock, tmp, sizeof(tmp), 0);
         if (rc > 0)
         {
-            SILABS_LOG("[MQTT Si91X INTERFACE ] "
+            ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                        "MQTT matter si91x: RX recv %d bytes (socket->ring)",
                        rc);
             xSemaphoreTake(client->rx_mutex, portMAX_DELAY);
@@ -322,7 +326,7 @@ static void mqtt_matter_si91x_rx_task(void * pvParameters)
         {
             if (client->conn_state == TRANSPORT_CONNECTED && client->events)
             {
-                SILABS_LOG("[MQTT Si91X INTERFACE ] "
+                ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                            "MQTT matter si91x: CONN_CLOSE (recv rc=%d errno=%d - peer closed or socket error)",
                            rc, errno);
                 xEventGroupSetBits(client->events, SIGNAL_TRANSINTF_CONN_CLOSE);
@@ -346,7 +350,7 @@ MQTT_Transport_t * MQTT_Transport_Init(mqtt_transport_intf_t * trans, mqtt_clien
 
     if (trans == NULL || matterAwsEvents == NULL)
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net transport init failed");
         return NULL;
     }
@@ -402,7 +406,7 @@ err_t MQTT_Transport_SSLConfigure(MQTT_Transport_t * transP, const u8_t * ca, si
                                    SL_NET_SIGNING_CERTIFICATE, ca, (uint32_t) ca_len);
         if (st != SL_STATUS_OK)
         {
-            SILABS_LOG("[MQTT Si91X INTERFACE ] "
+            ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                        "Matter si91x net: CA credential failed 0x%lx",
                        (unsigned long) st);
             return ERR_FAIL;
@@ -412,7 +416,7 @@ err_t MQTT_Transport_SSLConfigure(MQTT_Transport_t * transP, const u8_t * ca, si
                                    cert, (uint32_t) cert_len);
         if (st != SL_STATUS_OK)
         {
-            SILABS_LOG("[MQTT Si91X INTERFACE ] "
+            ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                        "Matter si91x net: device cert failed 0x%lx",
                        (unsigned long) st);
             return ERR_FAIL;
@@ -422,20 +426,20 @@ err_t MQTT_Transport_SSLConfigure(MQTT_Transport_t * transP, const u8_t * ca, si
                                    privkey, (uint32_t) privkey_len);
         if (st != SL_STATUS_OK)
         {
-            SILABS_LOG("[MQTT Si91X INTERFACE ] "
+            ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                        "Matter si91x net: private key failed 0x%lx",
                        (unsigned long) st);
             return ERR_FAIL;
         }
 
         transP->tls_enabled = true;
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: SSL credentials loaded cert_idx=%u (CA + cert + key)",
                    (unsigned) transP->cert_index);
     }
     else
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: SSL configure skipped (incomplete PEM args), tls stays off");
     }
 
@@ -452,7 +456,7 @@ static err_t nwp_tcp_connect(MQTT_Transport_t * client, const sl_ip_address_t * 
     /* Matter AWS: IPv4 only; do not add AF_INET6 / AAAA handling here. */
     if (ip->type != SL_IPV4)
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: peer not IPv4 (type=0x%lx)",
                    (unsigned long) ip->type);
         return ERR_VAL;
@@ -461,12 +465,12 @@ static err_t nwp_tcp_connect(MQTT_Transport_t * client, const sl_ip_address_t * 
     client->sock = sl_si91x_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (client->sock < 0)
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [tcp] FAIL at sl_si91x_socket errno=%d",
                    errno);
         return ERR_MEM;
     }
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: [tcp] sl_si91x_socket ok sock=%d",
                client->sock);
 
@@ -476,81 +480,36 @@ static err_t nwp_tcp_connect(MQTT_Transport_t * client, const sl_ip_address_t * 
             uint32_t ssl_v12 = SL_SI91X_ENABLE_TLS | SL_SI91X_TLS_V_1_2;
             if (sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_SSL_V_1_2_ENABLE, &ssl_v12, sizeof(ssl_v12)) < 0)
             {
-                SILABS_LOG("[MQTT Si91X INTERFACE ] "
+                ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                            "Matter si91x net: [tcp] FAIL at SO_SSL_V_1_2 errno=%d",
                            errno);
                 goto fail;
             }
         }
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [tcp] SO_SSL_V_1_2 ok");
         if (sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_CERT_INDEX, &cert_idx, sizeof(cert_idx)) < 0)
         {
-            SILABS_LOG("[MQTT Si91X INTERFACE ] "
+            ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                        "Matter si91x net: [tcp] FAIL at SO_CERT_INDEX errno=%d",
                        errno);
             goto fail;
         }
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [tcp] SO_CERT_INDEX ok idx=%u",
                    (unsigned) cert_idx);
-        // SATYA - SNI is NOT working as expected, so commented out for now
-        // if (client->hostname != NULL)
-        // {
-        //     size_t hlen = strlen(client->hostname);
-        //     if (hlen > 0 && hlen <= MQTT_TRANSPORT_MAX_HOSTNAME_LEN)
-        //     {
-        //         size_t blob_sz = sizeof(sl_si91x_socket_type_length_value_t) + hlen;
-        //         sl_si91x_socket_type_length_value_t * sni =
-        //             (sl_si91x_socket_type_length_value_t *) pvPortMalloc(blob_sz);
-        //         if (sni != NULL)
-        //         {
-        //             sni->type   = SL_SI91X_TLS_EXTENSION_SNI_TYPE;
-        //             sni->length = (uint16_t) hlen;
-        //             memcpy(sni->value, client->hostname, hlen);
-        //             if (sl_si91x_setsockopt(client->sock, SL_SI91X_SOL_SOCKET, SL_SI91X_SO_TLS_SNI, sni, (socklen_t) blob_sz) <
-        //             0)
-        //             {
-        //                 SILABS_LOG("[MQTT Si91X INTERFACE ] ""Matter si91x net: [tcp] SNI setsockopt FAILED errno=%d (connect
-        //                 will run without SNI)", errno);
-        //             }
-        //             else
-        //             {
-        //                 SILABS_LOG("[MQTT Si91X INTERFACE ] ""Matter si91x net: [tcp] SNI set len=%u", (unsigned) hlen);
-        //             }
-        //             vPortFree(sni);
-        //         }
-        //         else
-        //         {
-        //             SILABS_LOG("[MQTT Si91X INTERFACE ] ""Matter si91x net: [tcp] SNI skipped (malloc failed len=%u)", (unsigned)
-        //             hlen);
-        //         }
-        //     }
-        //     else
-        //     {
-        //         SILABS_LOG("[MQTT Si91X INTERFACE ] ""Matter si91x net: [tcp] SNI skipped (bad hostname len=%u max=%u)",
-        //         (unsigned) hlen,
-        //                    (unsigned) MQTT_TRANSPORT_MAX_HOSTNAME_LEN);
-        //     }
-        // }
-        // else
-        // {
-        //     SILABS_LOG("[MQTT Si91X INTERFACE ] ""Matter si91x net: [tcp] SNI skipped (hostname NULL)");
-        // }
     }
     else
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [tcp] TLS sockopts skipped (tls_enabled=0)");
     }
 
     server.sin_family = AF_INET;
-    server.sin_port   = (in_port_t) port; /* (host-order port value in field) */
-    // SATYA - using htons(port) cause connect failure
-    // server.sin_port = htons(port);
+    server.sin_port   = (in_port_t) port;
     memcpy(&server.sin_addr.s_addr, ip->ip.v4.bytes, sizeof(server.sin_addr.s_addr));
 
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: [tcp] sl_si91x_connect sock=%d tls=%u cert_idx=%u ip -> %u.%u.%u.%u:%u",
                client->sock, (unsigned) client->tls_enabled, (unsigned) cert_idx, (unsigned) ip->ip.v4.bytes[0],
                (unsigned) ip->ip.v4.bytes[1], (unsigned) ip->ip.v4.bytes[2], (unsigned) ip->ip.v4.bytes[3], (unsigned) port);
@@ -558,12 +517,12 @@ static err_t nwp_tcp_connect(MQTT_Transport_t * client, const sl_ip_address_t * 
     rc = sl_si91x_connect(client->sock, (struct sockaddr *) &server, slen);
     if (rc < 0)
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [tcp] FAIL at sl_si91x_connect rc=%d errno=%d sock=%d",
                    rc, errno, client->sock);
         goto fail;
     }
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: [tcp] sl_si91x_connect returned ok");
 
     client->conn_state  = TRANSPORT_CONNECTED;
@@ -575,18 +534,18 @@ static err_t nwp_tcp_connect(MQTT_Transport_t * client, const sl_ip_address_t * 
                     MQTT_MATTER_SI91X_RX_TASK_PRIORITY, &client->rx_task_handle) != pdPASS)
     {
         client->rx_task_run = 0;
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [tcp] FAIL at xTaskCreate(mqtt_matter_si91x_rx)");
         goto fail;
     }
 
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: [tcp] complete sock=%d tls=%u rx task started",
                client->sock, (unsigned) client->tls_enabled);
     return ERR_OK;
 
 fail:
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: [tcp] nwp_tcp_connect abort cleanup");
     if (client->sock >= 0)
     {
@@ -628,7 +587,7 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t * transP, const char * host, size_
 
     memcpy(host_dbg, host, dbg_len);
     host_dbg[dbg_len] = '\0';
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: connect start host='%s' len=%u port=%u tls=%u",
                host_dbg, (unsigned) hostLen, (unsigned) port, (unsigned) transP->tls_enabled);
 
@@ -636,7 +595,7 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t * transP, const char * host, size_
     unsigned attempt;
     for (attempt = 0; attempt <= MQTT_MATTER_SI91X_DNS_RETRY_COUNT; attempt++)
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [dns] resolve attempt %u/%u timeout_ms=%lu",
                    attempt + 1u, (unsigned) (MQTT_MATTER_SI91X_DNS_RETRY_COUNT + 1u), (unsigned long) dns_timeout_ms);
         dns_status = sl_net_dns_resolve_hostname(transP->hostname, dns_timeout_ms, SL_NET_DNS_TYPE_IPV4, &ip);
@@ -644,14 +603,14 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t * transP, const char * host, size_
         {
             break;
         }
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [dns] attempt %u status=0x%lx",
                    attempt + 1u, (unsigned long) dns_status);
     }
 
     if (dns_status != SL_STATUS_OK)
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [dns] FAIL final status=0x%lx",
                    (unsigned long) dns_status);
         vPortFree(transP->hostname);
@@ -659,19 +618,19 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t * transP, const char * host, size_
         return ERR_ABRT;
     }
 
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: [dns] ok -> %u.%u.%u.%u",
                (unsigned) ip.ip.v4.bytes[0], (unsigned) ip.ip.v4.bytes[1], (unsigned) ip.ip.v4.bytes[2],
                (unsigned) ip.ip.v4.bytes[3]);
 
     transP->matter_aws_conn_cb = matter_aws_conn_cb;
 
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: [flow] entering nwp_tcp_connect");
     err_t cr = nwp_tcp_connect(transP, &ip, port);
     if (cr != ERR_OK)
     {
-        SILABS_LOG("[MQTT Si91X INTERFACE ] "
+        ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                    "Matter si91x net: [flow] nwp_tcp_connect failed err_t=%d (ERR_ABRT=%d)",
                    (int) cr, (int) ERR_ABRT);
         if (matter_aws_conn_cb != NULL)
@@ -681,7 +640,7 @@ err_t MQTT_Transport_Connect(MQTT_Transport_t * transP, const char * host, size_
         return cr;
     }
 
-    SILABS_LOG("[MQTT Si91X INTERFACE ] "
+    ChipLogDetail(DeviceLayer, "[MQTT Si91X INTERFACE ] "
                "Matter si91x net: stack up, invoking app TCP ok cb");
     if (matter_aws_conn_cb != NULL)
     {
