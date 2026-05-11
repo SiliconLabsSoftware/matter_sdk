@@ -23,6 +23,7 @@ config("silabs_matterAws_config") {
     "${chip_root}/src/platform/silabs/mqtt/stack",
     "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/include",
     "${chip_root}/examples/platform/silabs/matter_aws/matter_aws_interface/include",
+    "${chip_root}/examples/platform/silabs",
     "${chip_root}/examples/platform/silabs/display",
   ]
 
@@ -52,7 +53,7 @@ source_set("silabs-matter-aws") {
   ]
 
   if (enable_matter_aws_transport_nwp) {
-    sources += [ "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/Si91X/mqtt_transport_si91x_nwp.c" ]
+    sources += [ "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/SiWx917/mqtt_transport_si91x_nwp.c" ]
   } else {
     sources += [
       "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/mqtt_transport_altcp.c",
