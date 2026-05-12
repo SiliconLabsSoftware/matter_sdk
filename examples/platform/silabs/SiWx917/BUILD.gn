@@ -173,7 +173,7 @@ source_set("siwx917-common") {
 
   # MATTER_AWS
   if (enable_matter_aws) {
-    public_deps += [ "${silabs_common_plat_dir}/matter_aws/matter_aws_interface:silabs-matter-aws" ]
+    public_deps += [ "${silabs_common_plat_dir}/matter_aws/matter_aws_interface:silabs_matter_aws" ]
   }
 
   # AWS SDK OTA

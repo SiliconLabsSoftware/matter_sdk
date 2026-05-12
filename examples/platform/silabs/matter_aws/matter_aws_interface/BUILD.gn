@@ -14,11 +14,10 @@
 
 import("//build_overrides/chip.gni")
 import("${chip_root}/src/platform/silabs/wifi/args.gni")
-import("${chip_root}/third_party/silabs/silabs_board.gni")
+import("${chip_root}/third_party/silabs/efr32_sdk.gni")
 
-wifi_sdk_root = "${chip_root}/../wifi_sdk"
 
-config("silabs_matterAws_config") {
+config("silabs_matter_aws_config") {
   include_dirs = [
     "${chip_root}/src/platform/silabs/mqtt/stack",
     "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/include",
@@ -27,7 +26,6 @@ config("silabs_matterAws_config") {
     "${chip_root}/examples/platform/silabs/display",
   ]
 
-  # NWP Matter+AWS: example socket; TLS from Wi-SDK resources/certificates (PEMs match MatterAwsNvmCert.cpp).
   if (enable_matter_aws_transport_nwp) {
     include_dirs += [
       "${wifi_sdk_root}/components/service/network_manager/inc",
@@ -42,7 +40,7 @@ config("silabs_matterAws_config") {
   }
 }
 
-source_set("silabs-matter-aws") {
+source_set("silabs_matter_aws") {
   sources = [
     "${chip_root}/examples/platform/silabs/matter_aws/matter_aws_interface/src/MatterAws.cpp",
     "${chip_root}/examples/platform/silabs/matter_aws/matter_aws_interface/src/MatterAwsControl.cpp",
@@ -53,12 +51,12 @@ source_set("silabs-matter-aws") {
     sources += [ "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/SiWx917/MqttTransportSi91xNwp.cpp" ]
   } else {
     sources += [
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_alloc.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tcp.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tls_mbedtls.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/altcp_tls_mbedtls_mem.c",
-      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/LWIP/mqtt_transport_altcp.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/lwip/altcp.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/lwip/altcp_alloc.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/lwip/altcp_tcp.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/lwip/altcp_tls_mbedtls.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/lwip/altcp_tls_mbedtls_mem.c",
+      "${chip_root}/src/platform/silabs/mqtt/mqtt_transport_interface/lwip/mqtt_transport_altcp.c",
     ]
   }
 
@@ -68,7 +66,7 @@ source_set("silabs-matter-aws") {
     app_data_model,
   ]
 
-  public_configs = [ ":silabs_matterAws_config" ]
+  public_configs = [ ":silabs_matter_aws_config" ]
 }
 
 config("silabs_aws_sdk_ota_config") {
@@ -83,10 +81,6 @@ config("silabs_aws_sdk_ota_config") {
     "${chip_root}/third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk/source/dependency/3rdparty/tinycbor/src",
     "${chip_root}/third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk/source/dependency/coreJSON/source/include",
   ]
-
-  if (enable_matter_aws_transport_nwp) {
-    defines = [ "SL_MATTER_AWS_TRANSPORT_SI91X_NWP=1" ]
-  }
 }
 
 source_set("silabs-matter-aws-sdk-ota") {

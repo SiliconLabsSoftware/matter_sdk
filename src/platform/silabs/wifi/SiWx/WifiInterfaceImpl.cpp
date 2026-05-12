@@ -159,15 +159,14 @@ const sl_wifi_device_configuration_t config = {
                                                 | RSI_CUSTOM_FEATURE_BIT_MAP
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                                                 ),
-                     .ext_custom_feature_bit_map =
-                         (SL_SI91X_EXT_FEAT_SSL_VERSIONS_SUPPORT | SL_SI91X_EXT_FEAT_UART_SEL_FOR_DEBUG_PRINTS
+                     .ext_custom_feature_bit_map = (SL_SI91X_EXT_FEAT_SSL_VERSIONS_SUPPORT
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
-                          | RSI_EXT_CUSTOM_FEATURE_BIT_MAP | SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE
+                                                    | RSI_EXT_CUSTOM_FEATURE_BIT_MAP | SL_SI91X_EXT_FEAT_BT_CUSTOM_FEAT_ENABLE
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #if defined(A2DP_POWER_SAVE_ENABLE)
-                          | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2)
+                                                    | SL_SI91X_EXT_FEAT_XTAL_CLK_ENABLE(2)
 #endif
-                              ),
+                                                        ),
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .bt_feature_bit_map = (RSI_BT_FEATURE_BITMAP
 #if (RSI_BT_GATT_ON_CLASSIC)
@@ -175,7 +174,7 @@ const sl_wifi_device_configuration_t config = {
 #endif                                                                         // RSI_BT_GATT_ON_CLASSIC
                                             ),
 #else
-                     .bt_feature_bit_map      = 0,
+                     .bt_feature_bit_map = 0,
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .ext_tcp_ip_feature_bit_map =
                          (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
