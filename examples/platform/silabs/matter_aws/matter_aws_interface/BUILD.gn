@@ -16,7 +16,6 @@ import("//build_overrides/chip.gni")
 import("${chip_root}/src/platform/silabs/wifi/args.gni")
 import("${chip_root}/third_party/silabs/efr32_sdk.gni")
 
-
 config("silabs_matter_aws_config") {
   include_dirs = [
     "${chip_root}/src/platform/silabs/mqtt/stack",

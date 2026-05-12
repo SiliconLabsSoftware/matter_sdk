@@ -174,7 +174,7 @@ const sl_wifi_device_configuration_t config = {
 #endif                                                                         // RSI_BT_GATT_ON_CLASSIC
                                             ),
 #else
-                     .bt_feature_bit_map = 0,
+                     .bt_feature_bit_map      = 0,
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .ext_tcp_ip_feature_bit_map =
                          (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
