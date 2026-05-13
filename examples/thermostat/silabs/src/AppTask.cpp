@@ -69,20 +69,7 @@ constexpr EndpointId kThermostatEndpoint = 1;
 constexpr uint16_t kSensorTimerPeriodMs  = 30000; // 30s timer period
 constexpr uint16_t kMinTemperatureDelta  = 50;    // 0.5 degree Celcius
 
-#if !(defined(SL_MATTER_USE_SI70XX_SENSOR) && (SL_MATTER_USE_SI70XX_SENSOR))
-constexpr uint16_t kSimulatedReadingFrequency = (60000 / kSensorTimerPeriodMs); // Change Simulated number at each minutes
-int16_t sSimulatedTemp[]                      = { 2300, 2400, 2800, 2550, 2200, 2125, 2100, 2600, 1800, 2700 };
-uint8_t sNbOfRepetition = 0;
-uint8_t sSimulatedIndex = 0;
-#endif // !(defined(SL_MATTER_USE_SI70XX_SENSOR) && (SL_MATTER_USE_SI70XX_SENSOR))
-
-int8_t sCurrentTempCelsius     = 0;
-int8_t sCoolingCelsiusSetPoint = 0;
-int8_t sHeatingCelsiusSetPoint = 0;
-uint8_t sThermMode             = 0;
-
 osTimerId_t sSensorTimer = nullptr;
-int16_t sLastTemperature = 0;
 
 int8_t ConvertToPrintableTemp(int16_t temperature)
 {
@@ -101,47 +88,25 @@ int8_t ConvertToPrintableTemp(int16_t temperature)
     return static_cast<int8_t>(temperature / 100);
 }
 
-void AttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
+// Map the Matter SystemMode enum to the small numeric code expected by ThermostatUI::HVACMode.
+// Common values (Off/Auto/Cool/Heat) coincidentally line up, but spelling the mapping out keeps
+// the contract explicit and survives future churn in either enum.
+uint8_t SystemModeToHvacMode(Thermostat::SystemModeEnum mode)
 {
-    switch (attributeId)
+    using M = Thermostat::SystemModeEnum;
+    switch (mode)
     {
-    case ThermAttr::LocalTemperature::Id: {
-        int8_t temp = ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value));
-        SILABS_LOG("Local temp %d", temp);
-        sCurrentTempCelsius = temp;
+    case M::kOff:           return 0; // MODE_OFF
+    case M::kAuto:          return 1; // HEATING_COOLING
+    case M::kCool:          return 3; // COOLING
+    case M::kHeat:          return 4; // HEATING
+    case M::kEmergencyHeat: return 5;
+    case M::kPrecooling:    return 6;
+    case M::kFanOnly:       return 7;
+    case M::kDry:           return 8;
+    case M::kSleep:         return 9;
+    default:                return 2; // NOT_USED
     }
-    break;
-
-    case ThermAttr::OccupiedCoolingSetpoint::Id: {
-        int8_t coolingTemp = ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value));
-        SILABS_LOG("CoolingSetpoint %d", coolingTemp);
-        sCoolingCelsiusSetPoint = coolingTemp;
-    }
-    break;
-
-    case ThermAttr::OccupiedHeatingSetpoint::Id: {
-        int8_t heatingTemp = ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value));
-        SILABS_LOG("HeatingSetpoint %d", heatingTemp);
-        sHeatingCelsiusSetPoint = heatingTemp;
-    }
-    break;
-
-    case ThermAttr::SystemMode::Id: {
-        SILABS_LOG("SystemMode %d", static_cast<uint8_t>(*value));
-        uint8_t mode = static_cast<uint8_t>(*value);
-        if (sThermMode != mode)
-        {
-            sThermMode = mode;
-        }
-    }
-    break;
-
-    default:
-        SILABS_LOG("Unhandled thermostat attribute %x", attributeId);
-        return;
-    }
-
-    AppTask::UpdateThermoStatUI();
 }
 
 } // namespace
@@ -183,59 +148,11 @@ CHIP_ERROR AppTask::InitThermostat()
     }
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 
-    DataModel::Nullable<int16_t> temp;
-    int16_t heatingSetpoint = 0;
-    int16_t coolingSetpoint = 0;
-    Thermostat::SystemModeEnum systemMode;
-
     PlatformMgr().LockChipStack();
-    ThermAttr::LocalTemperature::Get(kThermostatEndpoint, temp);
-    ThermAttr::OccupiedCoolingSetpoint::Get(kThermostatEndpoint, &coolingSetpoint);
-    ThermAttr::OccupiedHeatingSetpoint::Get(kThermostatEndpoint, &heatingSetpoint);
-    ThermAttr::SystemMode::Get(kThermostatEndpoint, &systemMode);
+    AppTask::UpdateThermoStatUI();
     PlatformMgr().UnlockChipStack();
 
-    sCurrentTempCelsius     = ConvertToPrintableTemp(temp.IsNull() ? static_cast<int16_t>(0) : temp.Value());
-    sHeatingCelsiusSetPoint = ConvertToPrintableTemp(coolingSetpoint);
-    sCoolingCelsiusSetPoint = ConvertToPrintableTemp(heatingSetpoint);
-
-    switch (systemMode)
-    {
-    case Thermostat::SystemModeEnum::kOff:
-        sThermMode = 0;
-        break;
-    case Thermostat::SystemModeEnum::kAuto:
-        sThermMode = 1;
-        break;
-    case Thermostat::SystemModeEnum::kCool:
-        sThermMode = 3;
-        break;
-    case Thermostat::SystemModeEnum::kHeat:
-        sThermMode = 4;
-        break;
-    case Thermostat::SystemModeEnum::kEmergencyHeat:
-        sThermMode = 5;
-        break;
-    case Thermostat::SystemModeEnum::kPrecooling:
-        sThermMode = 6;
-        break;
-    case Thermostat::SystemModeEnum::kFanOnly:
-        sThermMode = 7;
-        break;
-    case Thermostat::SystemModeEnum::kDry:
-        sThermMode = 8;
-        break;
-    case Thermostat::SystemModeEnum::kSleep:
-        sThermMode = 9;
-        break;
-    default:
-        sThermMode = 2;
-        break;
-    }
-
-    AppTask::UpdateThermoStatUI();
-
-    AppTask::SensorTimerEventHandler(nullptr);
+    AppTask::SensorTimerEventHandler(nullptr); // prime one sensor read so we don't wait 30s
     osTimerStart(sSensorTimer, pdMS_TO_TICKS(kSensorTimerPeriodMs));
 
     return CHIP_NO_ERROR;
@@ -276,11 +193,27 @@ void AppTask::AppTaskMain(void * pvParameter)
 
 void AppTask::UpdateThermoStatUI()
 {
+    DataModel::Nullable<int16_t> currentTempRaw;
+    int16_t coolingSetpointRaw            = 0;
+    int16_t heatingSetpointRaw            = 0;
+    Thermostat::SystemModeEnum systemMode = Thermostat::SystemModeEnum::kOff;
+
+    // Caller is responsible for holding PlatformMgr().LockChipStack().
+    ThermAttr::LocalTemperature::Get(kThermostatEndpoint, currentTempRaw);
+    ThermAttr::OccupiedCoolingSetpoint::Get(kThermostatEndpoint, &coolingSetpointRaw);
+    ThermAttr::OccupiedHeatingSetpoint::Get(kThermostatEndpoint, &heatingSetpointRaw);
+    ThermAttr::SystemMode::Get(kThermostatEndpoint, &systemMode);
+
+    const int8_t currentTempC = ConvertToPrintableTemp(currentTempRaw.IsNull() ? static_cast<int16_t>(0) : currentTempRaw.Value());
+    const int8_t coolingC     = ConvertToPrintableTemp(coolingSetpointRaw);
+    const int8_t heatingC     = ConvertToPrintableTemp(heatingSetpointRaw);
+    const uint8_t modeForUi   = SystemModeToHvacMode(systemMode);
+
 #ifdef DISPLAY_ENABLED
-    ThermostatUI::SetMode(sThermMode);
-    ThermostatUI::SetHeatingSetPoint(sHeatingCelsiusSetPoint);
-    ThermostatUI::SetCoolingSetPoint(sCoolingCelsiusSetPoint);
-    ThermostatUI::SetCurrentTemp(sCurrentTempCelsius);
+    ThermostatUI::SetMode(modeForUi);
+    ThermostatUI::SetHeatingSetPoint(heatingC);
+    ThermostatUI::SetCoolingSetPoint(coolingC);
+    ThermostatUI::SetCurrentTemp(currentTempC);
 
 #ifdef SL_WIFI
     if (ConnectivityMgr().IsWiFiStationProvisioned())
@@ -291,8 +224,7 @@ void AppTask::UpdateThermoStatUI()
         GetLCD().WriteDemoUI(false); // State doesn't matter
     }
 #else
-    SILABS_LOG("Thermostat Status - M:%d T:%d'C H:%d'C C:%d'C", sThermMode, sCurrentTempCelsius, sHeatingCelsiusSetPoint,
-               sCoolingCelsiusSetPoint);
+    SILABS_LOG("Thermostat Status - M:%d T:%d'C H:%d'C C:%d'C", modeForUi, currentTempC, heatingC, coolingC);
 #endif // DISPLAY_ENABLED
 }
 
@@ -319,7 +251,8 @@ void AppTask::SensorTimerEventHandler(void * /* arg */)
 
 void AppTask::TemperatureUpdateEventHandler(AppEvent * /* aEvent */)
 {
-    int16_t temperature = 0;
+    static int16_t sLastTemperature = 0;
+    int16_t temperature             = 0;
 
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
     int32_t tempSum   = 0;
@@ -335,11 +268,18 @@ void AppTask::TemperatureUpdateEventHandler(AppEvent * /* aEvent */)
     }
     temperature = static_cast<int16_t>(tempSum / 100);
 #else
-    if (sSimulatedIndex >= MATTER_ARRAY_SIZE(sSimulatedTemp))
+    // Cycle through a canned set of readings, repeating each one for a fixed window to emulate
+    // a stable sensor on hardware that doesn't have an Si70xx.
+    static constexpr int16_t kSimulatedTemp[] = { 2300, 2400, 2800, 2550, 2200, 2125, 2100, 2600, 1800, 2700 };
+    static constexpr uint16_t kSimulatedReadingFrequency = (60000 / kSensorTimerPeriodMs);
+    static uint8_t sSimulatedIndex                       = 0;
+    static uint8_t sNbOfRepetition                       = 0;
+
+    if (sSimulatedIndex >= MATTER_ARRAY_SIZE(kSimulatedTemp))
     {
         sSimulatedIndex = 0;
     }
-    temperature = sSimulatedTemp[sSimulatedIndex];
+    temperature = kSimulatedTemp[sSimulatedIndex];
 
     sNbOfRepetition++;
     if (sNbOfRepetition >= kSimulatedReadingFrequency)
@@ -374,12 +314,40 @@ void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePa
     {
         ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                         ChipLogValueMEI(attributeId), type, *value, size);
+        return;
     }
-    else if (clusterId == Thermostat::Id)
+
+    if (clusterId != Thermostat::Id)
     {
-        AttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
-#ifdef SL_MATTER_ENABLE_AWS
-        matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
-#endif // SL_MATTER_ENABLE_AWS
+        return;
     }
+
+    switch (attributeId)
+    {
+    case ThermAttr::LocalTemperature::Id:
+        SILABS_LOG("Local temp %d", ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value)));
+        break;
+
+    case ThermAttr::OccupiedCoolingSetpoint::Id:
+        SILABS_LOG("CoolingSetpoint %d", ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value)));
+        break;
+
+    case ThermAttr::OccupiedHeatingSetpoint::Id:
+        SILABS_LOG("HeatingSetpoint %d", ConvertToPrintableTemp(*reinterpret_cast<int16_t *>(value)));
+        break;
+
+    case ThermAttr::SystemMode::Id:
+        SILABS_LOG("SystemMode %d", static_cast<uint8_t>(*value));
+        break;
+
+    default:
+        SILABS_LOG("Unhandled thermostat attribute %x", attributeId);
+        return;
+    }
+
+    AppTask::UpdateThermoStatUI();
+
+#ifdef SL_MATTER_ENABLE_AWS
+    matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
+#endif // SL_MATTER_ENABLE_AWS
 }

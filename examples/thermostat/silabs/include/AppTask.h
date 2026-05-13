@@ -45,11 +45,6 @@ public:
 
     CHIP_ERROR StartAppTask();
 
-    /**
-     * @brief Push the cached thermostat state (mode, setpoints, current temperature) to the
-     *        LCD UI. Helper invoked from `InitThermostat` and from the data-model attribute
-     *        handler; not exposed as a CRTP override hook.
-     */
     static void UpdateThermoStatUI();
 
     /**
@@ -72,8 +67,8 @@ public:
     static void TemperatureUpdateEventHandler(AppEvent * aEvent);
 
     /**
-     * @brief Thermostat-cluster post-attribute-change callback. Routes mode and setpoint changes
-     *        into the local temperature cache and forwards to UI / AWS hooks.
+     * @brief Thermostat-cluster post-attribute-change callback. Logs per-attribute info and
+     *        triggers a UI refresh. Also fans out to the AWS hook when SL_MATTER_ENABLE_AWS is set.
      */
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
@@ -82,6 +77,6 @@ protected:
     /** Override of `BaseApplication::AppInit()`. */
     CHIP_ERROR AppInit() override;
 
-    /** Bring up the thermostat domain: cluster cache, sensor timer, sensor driver. */
+    /** Bring up the thermostat domain: sensor timer, sensor driver, first UI paint. */
     CHIP_ERROR InitThermostat();
 };
