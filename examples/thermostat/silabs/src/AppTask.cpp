@@ -36,6 +36,7 @@
 #include <app/util/attribute-storage.h>
 #include <cmsis_os2.h>
 #include <lib/support/CodeUtils.h>
+#include <lib/support/TypeTraits.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/PlatformError.h>
@@ -86,27 +87,6 @@ int8_t ConvertToPrintableTemp(int16_t temperature)
     }
 
     return static_cast<int8_t>(temperature / 100);
-}
-
-// Map the Matter SystemMode enum to the small numeric code expected by ThermostatUI::HVACMode.
-// Common values (Off/Auto/Cool/Heat) coincidentally line up, but spelling the mapping out keeps
-// the contract explicit and survives future churn in either enum.
-uint8_t SystemModeToHvacMode(Thermostat::SystemModeEnum mode)
-{
-    using M = Thermostat::SystemModeEnum;
-    switch (mode)
-    {
-    case M::kOff:           return 0; // MODE_OFF
-    case M::kAuto:          return 1; // HEATING_COOLING
-    case M::kCool:          return 3; // COOLING
-    case M::kHeat:          return 4; // HEATING
-    case M::kEmergencyHeat: return 5;
-    case M::kPrecooling:    return 6;
-    case M::kFanOnly:       return 7;
-    case M::kDry:           return 8;
-    case M::kSleep:         return 9;
-    default:                return 2; // NOT_USED
-    }
 }
 
 } // namespace
@@ -198,7 +178,6 @@ void AppTask::UpdateThermoStatUI()
     int16_t heatingSetpointRaw            = 0;
     Thermostat::SystemModeEnum systemMode = Thermostat::SystemModeEnum::kOff;
 
-    // Caller is responsible for holding PlatformMgr().LockChipStack().
     ThermAttr::LocalTemperature::Get(kThermostatEndpoint, currentTempRaw);
     ThermAttr::OccupiedCoolingSetpoint::Get(kThermostatEndpoint, &coolingSetpointRaw);
     ThermAttr::OccupiedHeatingSetpoint::Get(kThermostatEndpoint, &heatingSetpointRaw);
@@ -207,7 +186,7 @@ void AppTask::UpdateThermoStatUI()
     const int8_t currentTempC = ConvertToPrintableTemp(currentTempRaw.IsNull() ? static_cast<int16_t>(0) : currentTempRaw.Value());
     const int8_t coolingC     = ConvertToPrintableTemp(coolingSetpointRaw);
     const int8_t heatingC     = ConvertToPrintableTemp(heatingSetpointRaw);
-    const uint8_t modeForUi   = SystemModeToHvacMode(systemMode);
+    const uint8_t modeForUi   = chip::to_underlying(systemMode);
 
 #ifdef DISPLAY_ENABLED
     ThermostatUI::SetMode(modeForUi);
@@ -215,11 +194,7 @@ void AppTask::UpdateThermoStatUI()
     ThermostatUI::SetCoolingSetPoint(coolingC);
     ThermostatUI::SetCurrentTemp(currentTempC);
 
-#ifdef SL_WIFI
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
-#else
-    if (ConnectivityMgr().IsThreadProvisioned())
-#endif // !SL_WIFI
+    if (BaseApplication::GetProvisionStatus())
     {
         GetLCD().WriteDemoUI(false); // State doesn't matter
     }

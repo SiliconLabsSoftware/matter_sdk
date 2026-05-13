@@ -77,6 +77,6 @@ protected:
     /** Override of `BaseApplication::AppInit()`. */
     CHIP_ERROR AppInit() override;
 
-    /** Bring up the thermostat domain: sensor timer, sensor driver, first UI paint. */
+    /** Bring up the thermostat app: sensor timer, sensor driver, first UI paint. */
     CHIP_ERROR InitThermostat();
 };
