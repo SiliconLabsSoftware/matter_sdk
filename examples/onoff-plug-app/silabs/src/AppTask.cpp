@@ -28,8 +28,6 @@
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
 
-#include <assert.h>
-
 #include <setup_payload/OnboardingCodesUtil.h>
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
@@ -40,6 +38,7 @@
 #include <platform/CHIPDeviceLayer.h>
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 
 #ifdef DIC_ENABLE
 #include "dic.h"
@@ -55,20 +54,30 @@
 #define APP_ONOFF_BUTTON 1
 
 using namespace chip;
-using namespace chip::TLV;
 using namespace chip::app::Clusters;
 using namespace chip::app::Clusters::OnOff;
-using namespace ::chip::DeviceLayer;
-using namespace ::chip::DeviceLayer::Silabs;
+using namespace chip::DeviceLayer;
+using namespace chip::DeviceLayer::Silabs;
 
 namespace {
 
 LEDWidget sOnOffLED;
-TimerHandle_t sPlugTimer;
+osTimerId_t sPlugTimer = nullptr;
+
+bool sPlugOn = false;
+
+void OffEffectTimerEventHandler(AppEvent * /* aEvent */)
+{
+    sPlugOn = false;
+    sOnOffLED.Set(false);
+#ifdef DISPLAY_ENABLED
+    BaseApplication::GetLCD().WriteDemoUI(false);
+#endif
+}
 
 OnOffEffect gEffect = {
-    chip::EndpointId{ 1 },
-    AppTask::OnTriggerOffWithEffect,
+    chip::EndpointId(ONOFF_PLUG_ENDPOINT),
+    &AppTask::OnTriggerOffWithEffect,
     EffectIdentifierEnum::kDelayedAllOff,
     to_underlying(DelayedAllOffEffectVariantEnum::kDelayedOffFastFade),
 };
@@ -77,14 +86,38 @@ OnOffEffect gEffect = {
 
 AppTask AppTask::sAppTask;
 
+AppTask & AppTask::GetAppTask()
+{
+    return sAppTask;
+}
+
+void AppTask::UpdateClusterState(intptr_t context)
+{
+    Protocols::InteractionModel::Status status =
+        OnOffServer::Instance().setOnOffValue(ONOFF_PLUG_ENDPOINT, static_cast<uint8_t>(context), false);
+
+    if (status != Protocols::InteractionModel::Status::Success)
+    {
+        SILABS_LOG("ERR: updating on/off %x", to_underlying(status));
+    }
+}
+
+void AppTask::TimerEventHandler(void * /* timerCbArg */)
+{
+    AppEvent event{};
+    event.Type               = AppEvent::kEventType_Timer;
+    event.TimerEvent.Context = nullptr;
+    event.Handler            = &OffEffectTimerEventHandler;
+    GetAppTask().PostEvent(&event);
+}
+
 CHIP_ERROR AppTask::AppInit()
 {
-    CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&AppTask::ButtonEventHandler);
 
-    sPlugTimer = xTimerCreate("plugTmr", pdMS_TO_TICKS(1), false, (void *) this, TimerEventHandler);
+    sPlugTimer = osTimerNew(&AppTask::TimerEventHandler, osTimerOnce, nullptr, nullptr);
 
-    if (sPlugTimer == NULL)
+    if (sPlugTimer == nullptr)
     {
         SILABS_LOG("sPlugTimer timer create failed");
         return APP_ERROR_CREATE_TIMER_FAILED;
@@ -92,21 +125,17 @@ CHIP_ERROR AppTask::AppInit()
 
     bool currentLedState;
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    OnOffServer::Instance().getOnOffValue(1, &currentLedState);
+    OnOffServer::Instance().getOnOffValue(ONOFF_PLUG_ENDPOINT, &currentLedState);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    mIsOn                  = currentLedState;
-    mAutoTurnOff           = false;
-    mAutoTurnOffDuration   = 0;
-    mOffEffectArmed        = false;
-    mAutoTurnOffTimerArmed = false;
+    sPlugOn = currentLedState;
 
     sOnOffLED.Init(ONOFF_LED);
-    sOnOffLED.Set(IsPlugOn());
+    sOnOffLED.Set(sPlugOn);
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
-#ifdef DISPLAY_ENABLED
-    GetLCD().WriteDemoUI(IsPlugOn());
+    #ifdef DISPLAY_ENABLED
+    GetLCD().WriteDemoUI(sPlugOn);
 #ifdef QR_CODE_ENABLED
 #ifdef SL_WIFI
     if (!ConnectivityMgr().IsWiFiStationProvisioned())
@@ -119,12 +148,12 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
 
-    return err;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
 {
-    return BaseApplication::StartAppTask(AppTaskMain);
+    return BaseApplication::StartAppTask(&AppTask::AppTaskMain);
 }
 
 void AppTask::AppTaskMain(void * pvParameter)
@@ -132,7 +161,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = GetAppTask().Init();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("AppTask.Init() failed");
@@ -140,46 +169,47 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    sAppTask.StartStatusLEDTimer();
+    GetAppTask().StartStatusLEDTimer();
 #endif
 
     SILABS_LOG("App Task started");
 
     while (true)
     {
-        osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
+        osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
-            eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
+            GetAppTask().DispatchEvent(&event);
+            eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
 }
 
 void AppTask::OnOffActionEventHandler(AppEvent * aEvent)
 {
-    bool initiated = false;
-    Action_t action;
-    CHIP_ERROR err = CHIP_NO_ERROR;
-
-    if (aEvent->Type == AppEvent::kEventType_Button)
+    if (aEvent->Type != AppEvent::kEventType_Button)
     {
-        action = (sAppTask.IsPlugOn()) ? OFF_ACTION : ON_ACTION;
-    }
-    else
-    {
-        err = APP_ERROR_UNHANDLED_EVENT;
+        return;
     }
 
-    if (err == CHIP_NO_ERROR)
-    {
-        initiated = sAppTask.InitiateAction(aEvent->Type, action);
+    sPlugOn = !sPlugOn;
+    sOnOffLED.Set(sPlugOn);
 
-        if (!initiated)
+    if (osTimerIsRunning(sPlugTimer))
+    {
+        if (osTimerStop(sPlugTimer) == osError)
         {
-            SILABS_LOG("Action is already in progress or active.");
+            SILABS_LOG("sPlugTimer stop() failed");
+            appError(APP_ERROR_STOP_TIMER_FAILED);
         }
     }
+
+#ifdef DISPLAY_ENABLED
+    BaseApplication::GetLCD().WriteDemoUI(sPlugOn);
+#endif
+
+    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState,
+                                                                           static_cast<intptr_t>(sPlugOn));
 }
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
@@ -190,183 +220,14 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
     if (button == APP_ONOFF_BUTTON && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = OnOffActionEventHandler;
-        sAppTask.PostEvent(&button_event);
+        button_event.Handler = &AppTask::OnOffActionEventHandler;
+        GetAppTask().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        sAppTask.PostEvent(&button_event);
+        GetAppTask().PostEvent(&button_event);
     }
-}
-
-void AppTask::ActionCallback(Action_t aAction, int32_t aActor)
-{
-    bool lightOn = aAction == ON_ACTION;
-    SILABS_LOG("Turning light %s", (lightOn) ? "On" : "Off")
-
-    sOnOffLED.Set(lightOn);
-
-#ifdef DISPLAY_ENABLED
-    sAppTask.GetLCD().WriteDemoUI(lightOn);
-#endif
-
-    if (aAction == ON_ACTION)
-    {
-        SILABS_LOG("Outlet ON")
-    }
-    else if (aAction == OFF_ACTION)
-    {
-        SILABS_LOG("Outlet OFF")
-    }
-
-    if (aActor == AppEvent::kEventType_Button)
-    {
-        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
-    }
-}
-
-void AppTask::UpdateClusterState(intptr_t context)
-{
-    uint8_t newValue = sAppTask.IsPlugOn();
-
-    Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(1, newValue, false);
-
-    if (status != Protocols::InteractionModel::Status::Success)
-    {
-        SILABS_LOG("ERR: updating on/off %x", to_underlying(status));
-    }
-}
-
-bool AppTask::IsPlugOn() const
-{
-    return mIsOn;
-}
-
-void AppTask::EnableAutoTurnOff(bool aOn)
-{
-    mAutoTurnOff = aOn;
-}
-
-void AppTask::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
-{
-    mAutoTurnOffDuration = aDurationInSecs;
-}
-
-bool AppTask::InitiateAction(int32_t aActor, Action_t aAction)
-{
-    bool action_initiated = false;
-
-    if (((mIsOn == false) || mOffEffectArmed) && aAction == ON_ACTION)
-    {
-        action_initiated = true;
-        if (mOffEffectArmed)
-        {
-            CancelTimer();
-            mOffEffectArmed = false;
-        }
-    }
-    else if (mIsOn && aAction == OFF_ACTION && mOffEffectArmed == false)
-    {
-        action_initiated = true;
-        if (mAutoTurnOffTimerArmed)
-        {
-            mAutoTurnOffTimerArmed = false;
-            CancelTimer();
-        }
-    }
-
-    if (action_initiated)
-    {
-        mIsOn = (aAction == ON_ACTION);
-
-        ActionCallback(aAction, aActor);
-
-        if (mAutoTurnOff && mIsOn)
-        {
-            StartTimer(mAutoTurnOffDuration * 1000);
-            mAutoTurnOffTimerArmed = true;
-            SILABS_LOG("Auto Turn off enabled. Will be triggered in %u seconds", mAutoTurnOffDuration);
-        }
-    }
-
-    return action_initiated;
-}
-
-void AppTask::StartTimer(uint32_t aTimeoutMs)
-{
-    if (xTimerIsTimerActive(sPlugTimer))
-    {
-        SILABS_LOG("app timer already started!");
-        CancelTimer();
-    }
-
-    if (xTimerChangePeriod(sPlugTimer, pdMS_TO_TICKS(aTimeoutMs), 100) != pdPASS)
-    {
-        SILABS_LOG("sPlugTimer timer start() failed");
-        appError(APP_ERROR_START_TIMER_FAILED);
-    }
-}
-
-void AppTask::CancelTimer(void)
-{
-    if (xTimerStop(sPlugTimer, pdMS_TO_TICKS(0)) == pdFAIL)
-    {
-        SILABS_LOG("sPlugTimer stop() failed");
-        appError(APP_ERROR_STOP_TIMER_FAILED);
-    }
-}
-
-void AppTask::TimerEventHandler(TimerHandle_t xTimer)
-{
-    AppTask * app = static_cast<AppTask *>(pvTimerGetTimerID(xTimer));
-
-    AppEvent event;
-    event.Type               = AppEvent::kEventType_Timer;
-    event.TimerEvent.Context = app;
-    if (app->mAutoTurnOffTimerArmed)
-    {
-        event.Handler = AutoTurnOffTimerEventHandler;
-    }
-    else if (app->mOffEffectArmed)
-    {
-        event.Handler = OffEffectTimerEventHandler;
-    }
-    AppTask::GetAppTask().PostEvent(&event);
-}
-
-void AppTask::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
-{
-    AppTask * app = static_cast<AppTask *>(aEvent->TimerEvent.Context);
-    int32_t actor = AppEvent::kEventType_Timer;
-
-    if (!app->mAutoTurnOffTimerArmed)
-    {
-        return;
-    }
-
-    app->mAutoTurnOffTimerArmed = false;
-
-    SILABS_LOG("Auto Turn Off has been triggered!");
-
-    app->InitiateAction(actor, OFF_ACTION);
-}
-
-void AppTask::OffEffectTimerEventHandler(AppEvent * aEvent)
-{
-    AppTask * app = static_cast<AppTask *>(aEvent->TimerEvent.Context);
-    int32_t actor = AppEvent::kEventType_Timer;
-
-    if (!app->mOffEffectArmed)
-    {
-        return;
-    }
-
-    app->mOffEffectArmed = false;
-
-    SILABS_LOG("OffEffect completed");
-
-    app->InitiateAction(actor, OFF_ACTION);
 }
 
 void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
@@ -404,33 +265,73 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
         }
     }
 
-    sAppTask.mOffEffectArmed = true;
-    sAppTask.StartTimer(offEffectDuration);
+    if (osTimerIsRunning(sPlugTimer))
+    {
+        if (osTimerStop(sPlugTimer) == osError)
+        {
+            SILABS_LOG("sPlugTimer stop() failed");
+            appError(APP_ERROR_STOP_TIMER_FAILED);
+        }
+    }
+
+    if (osTimerStart(sPlugTimer, pdMS_TO_TICKS(offEffectDuration)) != osOK)
+    {
+        SILABS_LOG("sPlugTimer timer start() failed");
+        appError(APP_ERROR_START_TIMER_FAILED);
+    }
 }
 
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value)
+void AppTask::MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                                uint8_t * value)
 {
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
     ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
 
-    if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
+    switch (clusterId)
     {
+    case OnOff::Id:
+        if (attributeId == OnOff::Attributes::OnOff::Id && value != nullptr && size == sizeof(uint8_t))
+        {
 #ifdef DIC_ENABLE
-        dic_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
+            dic_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
 #endif // DIC_ENABLE
+            sPlugOn = (*value != 0);
+            sOnOffLED.Set(sPlugOn);
+#ifdef DISPLAY_ENABLED
+            BaseApplication::GetLCD().WriteDemoUI(sPlugOn);
+#endif
+            if (sPlugOn && osTimerIsRunning(sPlugTimer))
+            {
+                if (osTimerStop(sPlugTimer) == osError)
+                {
+                    SILABS_LOG("sPlugTimer stop() failed");
+                    appError(APP_ERROR_STOP_TIMER_FAILED);
+                }
+            }
+        }
+        break;
 
-        sAppTask.InitiateAction(AppEvent::kEventType_Plug, *value ? AppTask::ON_ACTION : AppTask::OFF_ACTION);
-    }
-    else if (clusterId == LevelControl::Id)
-    {
+    case LevelControl::Id:
         ChipLogProgress(Zcl, "Level Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
+                        ChipLogValueMEI(attributeId), type, value != nullptr ? static_cast<unsigned>(*value) : 0u, size);
+        break;
+
+    case Identify::Id:
+        if (value != nullptr && size == sizeof(uint8_t))
+        {
+            ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                            ChipLogValueMEI(attributeId), type, *value, size);
+        }
+        break;
+
+    default:
+        break;
     }
-    else if (clusterId == Identify::Id)
-    {
-        ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributeId), type, *value, size);
-    }
+}
+
+void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value)
+{
+    AppTask::GetAppTask().MatterPostAttributeChangeCallback(attributePath, type, size, value);
 }

@@ -19,50 +19,24 @@
 
 #pragma once
 
-#include <stdbool.h>
-#include <stdint.h>
-
-#include "AppEvent.h"
 #include "BaseApplication.h"
-#include "FreeRTOS.h"
-#include "timers.h" // provides FreeRTOS timer support
-#include <ble/BLEEndPoint.h>
-#include <platform/CHIPDeviceLayer.h>
-
 #include <app/ConcreteAttributePath.h>
 #include <app/clusters/on-off-server/on-off-server.h>
+#include <cstdint>
 
-/**********************************************************
- * Defines
- *********************************************************/
+#include <ble/Ble.h>
+#include <cmsis_os2.h>
+#include <lib/core/CHIPError.h>
 
-// Application-defined error codes in the CHIP_ERROR space.
+struct AppEvent;
 
-// Application-defined error codes in the CHIP_ERROR space.
-#define APP_ERROR_EVENT_QUEUE_FAILED CHIP_APPLICATION_ERROR(0x01)
-#define APP_ERROR_CREATE_TASK_FAILED CHIP_APPLICATION_ERROR(0x02)
-#define APP_ERROR_UNHANDLED_EVENT CHIP_APPLICATION_ERROR(0x03)
-#define APP_ERROR_CREATE_TIMER_FAILED CHIP_APPLICATION_ERROR(0x04)
-#define APP_ERROR_START_TIMER_FAILED CHIP_APPLICATION_ERROR(0x05)
-#define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
-
-/**********************************************************
- * AppTask Declaration
- *********************************************************/
 class AppTask : public BaseApplication
 {
 
 public:
-    enum Action_t
-    {
-        OFF_ACTION = 0,
-        ON_ACTION,
-        INVALID_ACTION
-    };
-
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -74,52 +48,27 @@ public:
     CHIP_ERROR StartAppTask();
 
     /**
-     * @brief Event handler when a button is pressed
-     * Function posts an event for button processing
+     * @brief Event handler when a button is pressed.
      *
-     * @param buttonHandle APP_LIGHT_SWITCH or APP_FUNCTION_BUTTON
-     * @param btnAction button action - SL_SIMPLE_BUTTON_PRESSED,
-     *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
+     * @param button    APP_ONOFF_BUTTON or APP_FUNCTION_BUTTON
+     * @param btnAction SL_SIMPLE_BUTTON_PRESSED, SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
-    bool IsPlugOn() const;
-
-    void EnableAutoTurnOff(bool aOn);
-
-    void SetAutoTurnOffDuration(uint32_t aDurationInSecs);
-
-    bool InitiateAction(int32_t aActor, Action_t aAction);
-
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
-private:
-    static AppTask sAppTask;
+    void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                           uint8_t * value);
 
-    static void ActionCallback(Action_t aAction, int32_t aActor);
     static void OnOffActionEventHandler(AppEvent * aEvent);
+
+    static void TimerEventHandler(void * timerCbArg);
+
+protected:
+    CHIP_ERROR AppInit() override;
 
     static void UpdateClusterState(intptr_t context);
 
-    /**
-     * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
-     *
-     * @return CHIP_ERROR
-     */
-    CHIP_ERROR AppInit() override;
-
-    static void TimerEventHandler(TimerHandle_t xTimer);
-
-    static void AutoTurnOffTimerEventHandler(AppEvent * aEvent);
-
-    static void OffEffectTimerEventHandler(AppEvent * aEvent);
-
-    bool mIsOn;
-    bool mAutoTurnOff;
-    bool mAutoTurnOffTimerArmed;
-    bool mOffEffectArmed;
-    uint32_t mAutoTurnOffDuration;
-
-    void CancelTimer(void);
-    void StartTimer(uint32_t aTimeoutMs);
+private:
+    static AppTask sAppTask;
 };
