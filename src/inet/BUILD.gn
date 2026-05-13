@@ -198,7 +198,7 @@ static_library("inet") {
 
     if (!chip_system_config_use_network_framework) {
       sources += [ "UDPEndPointImpl${chip_system_config_inet}.cpp" ]
-      if (chip_system_config_inet == "LwIP") {
+      if (sl_inet_config_udp_lwip_queue_until_netif_ready) {
         sources += [
           "DeferredUdpSendQueueLwIP.cpp",
           "DeferredUdpSendQueueLwIP.h",
