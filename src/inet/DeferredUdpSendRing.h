@@ -66,7 +66,7 @@ struct DeferredUdpSendRing
     // Enqueue at the logical tail (may drop oldest entry when full).
     void PushBack(Slot && slot)
     {
-        if (count == Capacity)
+        if (IsFull())
         {
             slots[head] = Slot{};
             head        = (head + 1) % Capacity;
