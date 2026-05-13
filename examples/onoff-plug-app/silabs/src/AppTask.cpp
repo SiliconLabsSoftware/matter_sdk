@@ -34,15 +34,16 @@
 
 #include <lib/support/CodeUtils.h>
 #include <lib/support/TypeTraits.h>
+#include <lib/support/logging/CHIPLogging.h>
 
 #include <platform/CHIPDeviceLayer.h>
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 
-#ifdef DIC_ENABLE
-#include "dic.h"
-#endif // DIC_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
+#include "MatterAws.h"
+#endif // SL_MATTER_ENABLE_AWS
 
 #ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
 #define ONOFF_LED 1
@@ -293,9 +294,10 @@ void AppTask::MatterPostAttributeChangeCallback(const chip::app::ConcreteAttribu
     case OnOff::Id:
         if (attributeId == OnOff::Attributes::OnOff::Id && value != nullptr && size == sizeof(uint8_t))
         {
-#ifdef DIC_ENABLE
-            dic_sendmsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
-#endif // DIC_ENABLE
+#ifdef SL_MATTER_ENABLE_AWS
+            ChipLogProgress(Zcl, "sending light state update");
+            MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
+#endif // SL_MATTER_ENABLE_AWS
             sPlugOn = (*value != 0);
             sOnOffLED.Set(sPlugOn);
 #ifdef DISPLAY_ENABLED
