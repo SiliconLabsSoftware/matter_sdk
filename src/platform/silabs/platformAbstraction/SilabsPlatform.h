@@ -77,7 +77,7 @@ public:
 
     // Reboot
     void SoftwareReset(void) override;
-    inline uint32_t GetRebootCause() { return mRebootCause; }
+    inline uint32_t GetRebootCause() override { return mRebootCause; }
 
     /** VerifyIfUpdated
      * @brief Verify if the device has been updated by OTA.
@@ -92,13 +92,6 @@ public:
      * @return CHIP_ERROR : CHIP_NO_ERROR when successful, a relevant CHIP_ERROR otherwise.
      */
     CHIP_ERROR NvmInit();
-
-#if SL_MATTER_DEBUG_WATCHDOG_ENABLE
-    void WatchdogInit();
-    void WatchdogFeed();
-    void WatchdogEnable();
-    void WatchdogDisable();
-#endif
 
 private:
     friend SilabsPlatform & GetPlatform(void);

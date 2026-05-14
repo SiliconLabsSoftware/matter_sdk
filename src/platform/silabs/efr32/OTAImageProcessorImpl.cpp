@@ -18,6 +18,7 @@
 
 #include <app/clusters/ota-requestor/OTADownloader.h>
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
+#include <cinttypes>
 #include <platform/silabs/OTAImageProcessorImpl.h>
 #include <platform/silabs/SilabsConfig.h>
 
@@ -171,7 +172,7 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
     WRAP_BL_DFU_CALL(err = bootloader_init())
     if (err != SL_BOOTLOADER_OK)
     {
-        ChipLogError(SoftwareUpdate, "bootloader_init Failed error: %ld", err);
+        ChipLogError(SoftwareUpdate, "bootloader_init Failed error: %" PRId32, err);
         SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageUpload, CHIP_ERROR_INTERNAL);
     }
 
@@ -213,7 +214,7 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
         err = sl_wfx_host_pre_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
         {
-            ChipLogError(SoftwareUpdate, "sl_wfx_host_pre_bootloader_spi_transfer() error: %ld", err);
+            ChipLogError(SoftwareUpdate, "sl_wfx_host_pre_bootloader_spi_transfer() error: %" PRIu32, err);
             SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageUpload, CHIP_ERROR_INTERNAL);
             return;
         }
@@ -224,14 +225,14 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
         err = sl_wfx_host_post_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
         {
-            ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
+            ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %" PRIu32, err);
             SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageUpload, CHIP_ERROR_INTERNAL);
             return;
         }
 #endif // SL_BTLCTRL_MUX
         if (err)
         {
-            ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %ld", err);
+            ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %" PRIu32, err);
             imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
             SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageUpload, CHIP_ERROR_WRITE_FAILED);
             return;
@@ -273,7 +274,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     err = sl_wfx_host_pre_bootloader_spi_transfer();
     if (err != SL_STATUS_OK)
     {
-        ChipLogError(SoftwareUpdate, "sl_wfx_host_pre_bootloader_spi_transfer() error: %ld", err);
+        ChipLogError(SoftwareUpdate, "sl_wfx_host_pre_bootloader_spi_transfer() error: %" PRIu32, err);
         SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageVerification, CHIP_ERROR_INTERNAL);
         return;
     }
@@ -292,14 +293,14 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
 
     if (err != SL_BOOTLOADER_OK)
     {
-        ChipLogError(SoftwareUpdate, "bootloader_verifyImage() error: %ld", err);
+        ChipLogError(SoftwareUpdate, "bootloader_verifyImage() error: %" PRIu32, err);
         // Call the OTARequestor API to reset the state
         GetRequestorInstance()->CancelImageUpdate();
 #if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
         err = sl_wfx_host_post_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
         {
-            ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
+            ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %" PRIu32, err);
         }
 #endif // SL_BTLCTRL_MUX
         SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageVerification, err);
@@ -311,14 +312,14 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     UnlockRadioProcessing();
     if (err != SL_BOOTLOADER_OK)
     {
-        ChipLogError(SoftwareUpdate, "bootloader_setImageToBootload() error: %ld", err);
+        ChipLogError(SoftwareUpdate, "bootloader_setImageToBootload() error: %" PRIu32, err);
         // Call the OTARequestor API to reset the state
         GetRequestorInstance()->CancelImageUpdate();
 #if defined(SL_BTLCTRL_MUX) && SL_BTLCTRL_MUX
         err = sl_wfx_host_post_bootloader_spi_transfer();
         if (err != SL_STATUS_OK)
         {
-            ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
+            ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %" PRIu32, err);
         }
 #endif // SL_BTLCTRL_MUX
         SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageVerification, err);
@@ -329,7 +330,7 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     err = sl_wfx_host_post_bootloader_spi_transfer();
     if (err != SL_STATUS_OK)
     {
-        ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
+        ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %" PRIu32, err);
         SILABS_TRACE_END_ERROR(TimeTraceOperation::kImageVerification, err);
         return;
     }
@@ -402,7 +403,7 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
             err = sl_wfx_host_pre_bootloader_spi_transfer();
             if (err != SL_STATUS_OK)
             {
-                ChipLogError(SoftwareUpdate, "sl_wfx_host_pre_bootloader_spi_transfer() error: %ld", err);
+                ChipLogError(SoftwareUpdate, "sl_wfx_host_pre_bootloader_spi_transfer() error: %" PRIu32, err);
                 return;
             }
 #endif // SL_BTLCTRL_MUX
@@ -412,13 +413,13 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
             err = sl_wfx_host_post_bootloader_spi_transfer();
             if (err != SL_STATUS_OK)
             {
-                ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %ld", err);
+                ChipLogError(SoftwareUpdate, "sl_wfx_host_post_bootloader_spi_transfer() error: %" PRIu32, err);
                 return;
             }
 #endif // SL_BTLCTRL_MUX
             if (err)
             {
-                ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %ld", err);
+                ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %" PRIu32, err);
                 imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
                 return;
             }
@@ -442,7 +443,7 @@ CHIP_ERROR OTAImageProcessorImpl::ProcessHeader(ByteSpan & block)
         ReturnErrorOnFailure(error);
 
         // SL TODO -- store version somewhere
-        ChipLogProgress(SoftwareUpdate, "Image Header software version: %ld payload size: %lu", header.mSoftwareVersion,
+        ChipLogProgress(SoftwareUpdate, "Image Header software version: %" PRIu32 " payload size: %lu", header.mSoftwareVersion,
                         (long unsigned int) header.mPayloadSize);
         mParams.totalFileBytes = header.mPayloadSize;
         mHeaderParser.Clear();
