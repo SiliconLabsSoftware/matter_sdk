@@ -277,13 +277,15 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
         }
     }
 
-    if (osTimerIsRunning(sPlugTimer))
+    if (offEffectDuration == 0)
     {
-        if (osTimerStop(sPlugTimer) == osError)
-        {
-            SILABS_LOG("sPlugTimer stop() failed");
-            appError(APP_ERROR_STOP_TIMER_FAILED);
-        }
+        ChipLogProgress(Zcl, "OffWithEffect: unsupported effect, completing immediately");
+        AppEvent event{};
+        event.Type               = AppEvent::kEventType_Timer;
+        event.TimerEvent.Context = nullptr;
+        event.Handler            = &OffEffectTimerEventHandler;
+        appInstance().PostEvent(&event);
+        return;
     }
 
     if (osTimerStart(sPlugTimer, pdMS_TO_TICKS(offEffectDuration)) != osOK)
