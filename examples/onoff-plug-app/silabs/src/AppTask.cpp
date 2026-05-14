@@ -72,9 +72,16 @@ LEDWidget sOnOffLED;
 osTimerId_t sPlugTimer = nullptr;
 
 bool sPlugOn = false;
+bool sOffEffectArmed = false;
 
 void OffEffectTimerEventHandler(AppEvent * /* aEvent */)
 {
+    if (!sOffEffectArmed)
+    {
+        return;
+    }
+    sOffEffectArmed = false;
+
     sPlugOn = false;
     sOnOffLED.Set(false);
 #ifdef DISPLAY_ENABLED
@@ -207,6 +214,7 @@ void AppTask::OnOffActionEventHandler(AppEvent * aEvent)
     sPlugOn = !sPlugOn;
     sOnOffLED.Set(sPlugOn);
 
+    sOffEffectArmed = false;
     if (osTimerIsRunning(sPlugTimer))
     {
         if (osTimerStop(sPlugTimer) == osError)
@@ -280,6 +288,7 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
     if (offEffectDuration == 0)
     {
         ChipLogProgress(Zcl, "OffWithEffect: unsupported effect, completing immediately");
+        sOffEffectArmed = true;
         AppEvent event{};
         event.Type               = AppEvent::kEventType_Timer;
         event.TimerEvent.Context = nullptr;
@@ -293,6 +302,7 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
         SILABS_LOG("sPlugTimer timer start() failed");
         appError(APP_ERROR_START_TIMER_FAILED);
     }
+    sOffEffectArmed = true;
 }
 
 void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
@@ -311,12 +321,24 @@ void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePa
             ChipLogProgress(Zcl, "sending light state update");
             MatterAwsSendMsg("light/state", (const char *) (value ? (*value ? "on" : "off") : "invalid"));
 #endif // SL_MATTER_ENABLE_AWS
-            sPlugOn = (*value != 0);
+
+            const bool plugOn = (*value != 0);
+            if (!plugOn && sOffEffectArmed)
+            {
+                break;
+            }
+
+            if (plugOn)
+            {
+                sOffEffectArmed = false;
+            }
+
+            sPlugOn = plugOn;
             sOnOffLED.Set(sPlugOn);
 #ifdef DISPLAY_ENABLED
             BaseApplication::GetLCD().WriteDemoUI(sPlugOn);
 #endif
-            if (sPlugOn && osTimerIsRunning(sPlugTimer))
+            if (plugOn && osTimerIsRunning(sPlugTimer))
             {
                 if (osTimerStop(sPlugTimer) == osError)
                 {
