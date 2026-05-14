@@ -297,12 +297,13 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
         return;
     }
 
+    sOffEffectArmed = true;
     if (osTimerStart(sPlugTimer, pdMS_TO_TICKS(offEffectDuration)) != osOK)
     {
+        sOffEffectArmed = false;
         SILABS_LOG("sPlugTimer timer start() failed");
         appError(APP_ERROR_START_TIMER_FAILED);
     }
-    sOffEffectArmed = true;
 }
 
 void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
