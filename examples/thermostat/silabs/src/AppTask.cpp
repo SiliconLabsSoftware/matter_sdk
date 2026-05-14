@@ -72,11 +72,6 @@ constexpr EndpointId kThermostatEndpoint = THERMOSTAT_ENDPOINT;
 constexpr uint16_t kSensorTimerPeriodMs  = SENSOR_TIMER_PERIOD_MS;
 constexpr uint16_t kMinTemperatureDelta  = MIN_TEMPERATURE_DELTA;
 
-int8_t sCurrentTempCelsius     = 0;
-int8_t sCoolingCelsiusSetPoint = 0;
-int8_t sHeatingCelsiusSetPoint = 0;
-uint8_t sThermMode             = 0;
-
 osTimerId_t sSensorTimer = nullptr;
 
 int8_t ConvertToPrintableTemp(int16_t temperature)
@@ -241,6 +236,10 @@ void AppTask::SensorTimerEventHandler(void * /* arg */)
 
 void AppTask::TemperatureUpdateEventHandler(AppEvent * /* aEvent */)
 {
+    // Remembers the last value pushed to `LocalTemperature` so we can mark the attribute
+    // dirty only when the new reading differs by at least `kMinTemperatureDelta`.
+    static int16_t sLastTemperature = 0;
+
     int16_t temperature = 0;
     CHIP_ERROR err      = appInstance().GetTemperature(temperature);
     VerifyOrReturn(err == CHIP_NO_ERROR,
