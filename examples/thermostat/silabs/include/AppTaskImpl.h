@@ -40,6 +40,12 @@ public:
 
     CHIP_ERROR InitThermostat() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, InitThermostatImpl); }
 
+    CHIP_ERROR InitSensor() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, InitSensorImpl); }
+    CHIP_ERROR GetTemperature(int16_t & temperature)
+    {
+        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, GetTemperatureImpl, temperature);
+    }
+
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
@@ -70,6 +76,10 @@ private:
     CHIP_ERROR AppInitImpl() { return AppTask::AppInit(); }
 
     CHIP_ERROR InitThermostatImpl() { return AppTask::InitThermostat(); }
+
+    CHIP_ERROR InitSensorImpl() { return AppTask::InitSensor(); }
+
+    CHIP_ERROR GetTemperatureImpl(int16_t & temperature) { return AppTask::GetTemperature(temperature); }
 
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 

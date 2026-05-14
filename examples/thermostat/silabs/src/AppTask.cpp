@@ -21,6 +21,7 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "CustomerAppTask.h"
+#include "ThermostatConfig.h"
 
 #ifdef DISPLAY_ENABLED
 #include "ThermostatUI.h"
@@ -66,9 +67,15 @@ CustomerAppTask & appInstance()
     return CustomerAppTask::GetAppTask();
 }
 
-constexpr EndpointId kThermostatEndpoint = 1;
-constexpr uint16_t kSensorTimerPeriodMs  = 30000; // 30s timer period
-constexpr uint16_t kMinTemperatureDelta  = 50;    // 0.5 degree Celcius
+// Defaults live in ThermostatConfig.h; consumers tune via the Configuration Wizard.
+constexpr EndpointId kThermostatEndpoint = THERMOSTAT_ENDPOINT;
+constexpr uint16_t kSensorTimerPeriodMs  = SENSOR_TIMER_PERIOD_MS;
+constexpr uint16_t kMinTemperatureDelta  = MIN_TEMPERATURE_DELTA;
+
+int8_t sCurrentTempCelsius     = 0;
+int8_t sCoolingCelsiusSetPoint = 0;
+int8_t sHeatingCelsiusSetPoint = 0;
+uint8_t sThermMode             = 0;
 
 osTimerId_t sSensorTimer = nullptr;
 
@@ -119,14 +126,9 @@ CHIP_ERROR AppTask::InitThermostat()
         return APP_ERROR_CREATE_TIMER_FAILED;
     }
 
-#if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
-    sl_status_t status = Si70xxSensor::Init();
-    if (status != SL_STATUS_OK)
-    {
-        SILABS_LOG("Failed to Init Sensor with error code: %lx", status);
-        return MATTER_PLATFORM_ERROR(status);
-    }
-#endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+    CHIP_ERROR err = appInstance().InitSensor();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err,
+                        SILABS_LOG("InitSensor() failed: %" CHIP_ERROR_FORMAT, err.Format()));
 
     PlatformMgr().LockChipStack();
     AppTask::UpdateThermoStatUI();
@@ -135,6 +137,19 @@ CHIP_ERROR AppTask::InitThermostat()
     AppTask::SensorTimerEventHandler(nullptr); // prime one sensor read so we don't wait 30s
     osTimerStart(sSensorTimer, pdMS_TO_TICKS(kSensorTimerPeriodMs));
 
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR AppTask::InitSensor()
+{
+#if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+    sl_status_t status = Si70xxSensor::Init();
+    if (status != SL_STATUS_OK)
+    {
+        SILABS_LOG("Failed to Init Sensor with error code: %lx", status);
+        return MATTER_PLATFORM_ERROR(status);
+    }
+#endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
     return CHIP_NO_ERROR;
 }
 
@@ -226,25 +241,43 @@ void AppTask::SensorTimerEventHandler(void * /* arg */)
 
 void AppTask::TemperatureUpdateEventHandler(AppEvent * /* aEvent */)
 {
-    static int16_t sLastTemperature = 0;
-    int16_t temperature             = 0;
+    int16_t temperature = 0;
+    CHIP_ERROR err      = appInstance().GetTemperature(temperature);
+    VerifyOrReturn(err == CHIP_NO_ERROR,
+                   SILABS_LOG("GetTemperature() failed: %" CHIP_ERROR_FORMAT ", skipping LocalTemperature::Set", err.Format()));
 
+    SILABS_LOG("Sensor Temp is : %d", temperature);
+
+    MarkAttributeDirty reportState = MarkAttributeDirty::kNo;
+    if ((temperature >= (sLastTemperature + kMinTemperatureDelta)) || temperature <= (sLastTemperature - kMinTemperatureDelta))
+    {
+        reportState = MarkAttributeDirty::kIfChanged;
+    }
+
+    sLastTemperature = temperature;
+    PlatformMgr().LockChipStack();
+    Thermostat::Attributes::LocalTemperature::Set(kThermostatEndpoint, temperature, reportState);
+    PlatformMgr().UnlockChipStack();
+}
+
+CHIP_ERROR AppTask::GetTemperature(int16_t & temperature)
+{
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
     int32_t tempSum   = 0;
     uint16_t humidity = 0;
+    int16_t sample    = 0;
 
     for (uint8_t i = 0; i < 100; i++)
     {
-        if (SL_STATUS_OK != Si70xxSensor::GetSensorData(humidity, temperature))
+        if (SL_STATUS_OK != Si70xxSensor::GetSensorData(humidity, sample))
         {
-            SILABS_LOG("Failed to read Temperature !!!");
+            SILABS_LOG("Failed to read Temperature sample");
         }
-        tempSum += temperature;
+        tempSum += sample;
     }
     temperature = static_cast<int16_t>(tempSum / 100);
 #else
-    // Cycle through a canned set of readings, repeating each one for a fixed window to emulate
-    // a stable sensor on hardware that doesn't have an Si70xx.
+    // Simulated readings for boards without an Si70xx.
     static constexpr int16_t kSimulatedTemp[] = { 2300, 2400, 2800, 2550, 2200, 2125, 2100, 2600, 1800, 2700 };
     static constexpr uint16_t kSimulatedReadingFrequency = (60000 / kSensorTimerPeriodMs);
     static uint8_t sSimulatedIndex                       = 0;
@@ -264,18 +297,7 @@ void AppTask::TemperatureUpdateEventHandler(AppEvent * /* aEvent */)
     }
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 
-    SILABS_LOG("Sensor Temp is : %d", temperature);
-
-    MarkAttributeDirty reportState = MarkAttributeDirty::kNo;
-    if ((temperature >= (sLastTemperature + kMinTemperatureDelta)) || temperature <= (sLastTemperature - kMinTemperatureDelta))
-    {
-        reportState = MarkAttributeDirty::kIfChanged;
-    }
-
-    sLastTemperature = temperature;
-    PlatformMgr().LockChipStack();
-    Thermostat::Attributes::LocalTemperature::Set(kThermostatEndpoint, temperature, reportState);
-    PlatformMgr().UnlockChipStack();
+    return CHIP_NO_ERROR;
 }
 
 void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,

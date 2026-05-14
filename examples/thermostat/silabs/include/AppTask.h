@@ -73,6 +73,25 @@ public:
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
 
+    /**
+     * @brief Initialize the temperature sensor backing this thermostat.
+     *
+     * Default behavior: when `SL_MATTER_USE_SI70XX_SENSOR` is set, initializes the
+     * Si70xx driver; otherwise this is a no-op (simulated reads do not need init).
+     */
+    CHIP_ERROR InitSensor();
+
+    /**
+     * @brief Read the current temperature into @p temperature, in units of 0.01 deg C
+     *        (matches the `Thermostat::LocalTemperature` cluster schema).
+     *
+     * Default behavior: averages 100 Si70xx samples when `SL_MATTER_USE_SI70XX_SENSOR`
+     * is set, otherwise steps through a canned simulated table. On error @p temperature
+     * is left untouched and the caller (`TemperatureUpdateEventHandler`) skips the
+     * `LocalTemperature::Set` for that tick.
+     */
+    CHIP_ERROR GetTemperature(int16_t & temperature);
+
 protected:
     /** Override of `BaseApplication::AppInit()`. */
     CHIP_ERROR AppInit() override;
