@@ -173,7 +173,7 @@ CHIP_ERROR BLEManagerImpl::_Init()
 
 #if SL_USE_INTERNAL_BLE_SIDE_CHANNEL
     ReturnErrorOnFailure(sBleSideChannel.Init());
-    BLEMgrImpl().InjectSideChannel(&sBleSideChannel);
+    ReturnErrorOnFailure(BLEMgrImpl().InjectSideChannel(&sBleSideChannel));
 #endif
 
     RETURN_SAFELY_IGNORED PlatformMgr().ScheduleWork(DriveBLEState, 0);
