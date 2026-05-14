@@ -20,6 +20,7 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "CustomerAppTask.h"
 #include "LEDWidget.h"
 
 #include <app-common/zap-generated/ids/Attributes.h>
@@ -62,6 +63,11 @@ using namespace chip::DeviceLayer::Silabs;
 
 namespace {
 
+CustomerAppTask & appInstance()
+{
+    return CustomerAppTask::GetAppTask();
+}
+
 LEDWidget sOnOffLED;
 osTimerId_t sPlugTimer = nullptr;
 
@@ -78,19 +84,12 @@ void OffEffectTimerEventHandler(AppEvent * /* aEvent */)
 
 OnOffEffect gEffect = {
     chip::EndpointId(ONOFF_PLUG_ENDPOINT),
-    &AppTask::OnTriggerOffWithEffect,
+    &CustomerAppTask::OnTriggerOffWithEffect,
     EffectIdentifierEnum::kDelayedAllOff,
     to_underlying(DelayedAllOffEffectVariantEnum::kDelayedOffFastFade),
 };
 
 } // namespace
-
-AppTask AppTask::sAppTask;
-
-AppTask & AppTask::GetAppTask()
-{
-    return sAppTask;
-}
 
 void AppTask::UpdateClusterState(intptr_t context)
 {
@@ -109,14 +108,12 @@ void AppTask::TimerEventHandler(void * /* timerCbArg */)
     event.Type               = AppEvent::kEventType_Timer;
     event.TimerEvent.Context = nullptr;
     event.Handler            = &OffEffectTimerEventHandler;
-    GetAppTask().PostEvent(&event);
+    appInstance().PostEvent(&event);
 }
 
-CHIP_ERROR AppTask::AppInit()
+CHIP_ERROR AppTask::InitPlug()
 {
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&AppTask::ButtonEventHandler);
-
-    sPlugTimer = osTimerNew(&AppTask::TimerEventHandler, osTimerOnce, nullptr, nullptr);
+    sPlugTimer = osTimerNew(&CustomerAppTask::TimerEventHandler, osTimerOnce, nullptr, nullptr);
 
     if (sPlugTimer == nullptr)
     {
@@ -130,6 +127,20 @@ CHIP_ERROR AppTask::AppInit()
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     sPlugOn = currentLedState;
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR AppTask::AppInit()
+{
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
+    CHIP_ERROR err = appInstance().InitPlug();
+
+    if (err != CHIP_NO_ERROR)
+    {
+        SILABS_LOG("InitPlug() failed");
+        appError(err);
+    }
 
     sOnOffLED.Init(ONOFF_LED);
     sOnOffLED.Set(sPlugOn);
@@ -149,7 +160,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
 
-    return CHIP_NO_ERROR;
+    return err;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
@@ -162,7 +173,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = GetAppTask().Init();
+    CHIP_ERROR err = appInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("AppTask.Init() failed");
@@ -170,7 +181,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    GetAppTask().StartStatusLEDTimer();
+    appInstance().StartStatusLEDTimer();
 #endif
 
     SILABS_LOG("App Task started");
@@ -180,7 +191,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            GetAppTask().DispatchEvent(&event);
+            appInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
@@ -221,13 +232,13 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
     if (button == APP_ONOFF_BUTTON && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = &AppTask::OnOffActionEventHandler;
-        GetAppTask().PostEvent(&button_event);
+        button_event.Handler = &CustomerAppTask::OnOffActionEventHandler;
+        appInstance().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        GetAppTask().PostEvent(&button_event);
+        appInstance().PostEvent(&button_event);
     }
 }
 
@@ -282,8 +293,8 @@ void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
     }
 }
 
-void AppTask::MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                                uint8_t * value)
+void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                            uint8_t * value)
 {
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
@@ -330,10 +341,4 @@ void AppTask::MatterPostAttributeChangeCallback(const chip::app::ConcreteAttribu
     default:
         break;
     }
-}
-
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value)
-{
-    AppTask::GetAppTask().MatterPostAttributeChangeCallback(attributePath, type, size, value);
 }

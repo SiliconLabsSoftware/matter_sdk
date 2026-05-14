@@ -57,8 +57,8 @@ public:
 
     static void OnTriggerOffWithEffect(OnOffEffect * effect);
 
-    void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                           uint8_t * value);
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
 
     static void OnOffActionEventHandler(AppEvent * aEvent);
 
@@ -66,9 +66,7 @@ public:
 
 protected:
     CHIP_ERROR AppInit() override;
+    CHIP_ERROR InitPlug();
 
     static void UpdateClusterState(intptr_t context);
-
-private:
-    static AppTask sAppTask;
 };
