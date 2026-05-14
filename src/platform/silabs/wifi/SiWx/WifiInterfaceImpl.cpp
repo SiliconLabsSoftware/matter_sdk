@@ -32,7 +32,6 @@
 #include <inet/InetConfig.h>
 #if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <inet/UDPEndPointImplLwIP.h>
-#include <platform/CHIPDeviceLayer.h>
 #endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPMemString.h>
@@ -790,12 +789,7 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
-    if (!mLitIntentionalSleepDisconnect)
-#endif
-    {
-        ScheduleConnectionAttempt();
-    }
+    ScheduleConnectionAttempt();
 
     return status;
 }
@@ -824,12 +818,7 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
         mInstance.mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
-        if (!mInstance.mLitIntentionalSleepDisconnect)
-#endif
-        {
-            mInstance.ScheduleConnectionAttempt();
-        }
+        mInstance.ScheduleConnectionAttempt();
     }
 
     return status;
@@ -956,7 +945,6 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
 #if CHIP_CONFIG_ENABLE_ICD_LIT
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
-    mLitIntentionalSleepDisconnect = false;
     ResetConnectionRetryInterval();
 
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
@@ -976,8 +964,8 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
 {
+    CancelConnectionAttempt();
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
-    mLitIntentionalSleepDisconnect = true;
     TriggerPlatformWifiDisconnection();
     return CHIP_NO_ERROR;
 }

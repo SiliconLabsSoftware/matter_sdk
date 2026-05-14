@@ -17,7 +17,7 @@
 
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include <platform/CHIPDeviceLayer.h>
+#include <platform/CHIPDeviceLayer.h> // nogncheck
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
 using namespace chip::DeviceLayer::Silabs;

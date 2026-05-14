@@ -172,6 +172,15 @@ void WifiInterface::ScheduleConnectionAttempt()
     retryInterval += retryInterval;
 }
 
+void WifiInterface::CancelConnectionAttempt()
+{
+    if (osTimerIsRunning(mRetryTimer))
+    {
+        osTimerStop(mRetryTimer);
+        mRetryTimer = NULL;
+    }
+}
+
 void WifiInterface::ResetConnectionRetryInterval()
 {
     ChipLogDetail(DeviceLayer, "ResetConnectionRetryInterval: Resetting state to default");
