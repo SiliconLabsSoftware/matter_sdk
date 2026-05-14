@@ -68,5 +68,5 @@ protected:
     CHIP_ERROR AppInit() override;
     CHIP_ERROR InitPlug();
 
-    static void UpdateClusterState(intptr_t context);
+    static void UpdateOnOffClusterState(intptr_t context);
 };

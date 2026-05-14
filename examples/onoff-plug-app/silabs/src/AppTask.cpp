@@ -98,7 +98,7 @@ OnOffEffect gEffect = {
 
 } // namespace
 
-void AppTask::UpdateClusterState(intptr_t context)
+void AppTask::UpdateOnOffClusterState(intptr_t context)
 {
     Protocols::InteractionModel::Status status =
         OnOffServer::Instance().setOnOffValue(ONOFF_PLUG_ENDPOINT, static_cast<uint8_t>(context), false);
@@ -228,7 +228,7 @@ void AppTask::OnOffActionEventHandler(AppEvent * aEvent)
     BaseApplication::GetLCD().WriteDemoUI(sPlugOn);
 #endif
 
-    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState,
+    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateOnOffClusterState,
                                                                            static_cast<intptr_t>(sPlugOn));
 }
 
