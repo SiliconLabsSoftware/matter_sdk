@@ -114,10 +114,7 @@ The following shows a minimal example `CustomerAppTask` that overrides
 #pragma once
 #include "AppTaskImpl.h"
 
-/**
- * Minimal AppTaskImpl-derived class. Override only the *Impl() methods you need;
- * add AppInitImpl(), GetAppTask(), and sAppTask as required by the CRTP base.
- */
+/** Minimal AppTaskImpl-derived class. Override only the *Impl() methods you need **/
 class CustomerAppTask : public AppTaskImpl<CustomerAppTask>
 {
 public:
@@ -144,7 +141,7 @@ private:
 using namespace ::chip::DeviceLayer::Silabs;
 
 #define APP_FUNCTION_BUTTON 0
-#define APP_LIGHT_SWITCH     1
+#define APP_ONOFF_BUTTON     1
 
 CustomerAppTask CustomerAppTask::sAppTask;
 
@@ -171,9 +168,9 @@ void CustomerAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
-    if (button == APP_LIGHT_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
+    if (button == APP_ONOFF_BUTTON && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = LightActionEventHandler;
+        button_event.Handler = OnOffActionEventHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
