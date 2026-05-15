@@ -71,6 +71,19 @@ public:
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
 
     /**
+     * @brief Force CookTop and CookSurface OnOff attributes to Off at startup.
+     *
+     * Matter's OnOff cluster honors StartUpOnOff only when the Lighting (LT)
+     * feature is enabled. The Cooktop endpoint uses the OFFONLY feature
+     * (FeatureMap = 0x4) and has no LT, so the SDK does not enforce a safe
+     * boot state. This helper provides that guarantee at the application
+     * level, which is required for cooking-appliance safety. Bound peers
+     * (OnOff Light, FanControl Extractor Hood) are notified via the existing
+     * OnOffAttributeChangeHandler path once binding manager init completes.
+     */
+    void EnforceCookTopOffAtStartup();
+
+    /**
      * @brief Handles on/off attribute changes.
      *
      * @param endpointId The ID of the endpoint.
