@@ -246,10 +246,7 @@ private:
     static constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
 
     static void OnLitPrecheckInReconnectTimerFired(chip::System::Layer * layer, void * context);
-    static void RunLitPrecheckInReconnect(intptr_t arg);
-    static void ArmLitPrecheckInTimerWork(intptr_t arg);
     static void CancelLitPrecheckInTimerWork(intptr_t arg);
-    void DoCancelLitPrecheckInReconnectTimer();
     void DoStartLitPrecheckInReconnectTimer();
 #endif // CHIP_CONFIG_ENABLE_ICD_LIT
 

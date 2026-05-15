@@ -212,17 +212,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
     return CHIP_NO_ERROR;
 }
 
-void WifiSleepManager::ArmLitPrecheckInTimerWork(intptr_t)
-{
-    GetInstance().DoStartLitPrecheckInReconnectTimer();
-}
-
 void WifiSleepManager::CancelLitPrecheckInTimerWork(intptr_t)
-{
-    GetInstance().DoCancelLitPrecheckInReconnectTimer();
-}
-
-void WifiSleepManager::DoCancelLitPrecheckInReconnectTimer()
 {
     DeviceLayer::SystemLayer().CancelTimer(OnLitPrecheckInReconnectTimerFired, nullptr);
 }
@@ -242,11 +232,6 @@ void WifiSleepManager::DoStartLitPrecheckInReconnectTimer()
 }
 
 void WifiSleepManager::OnLitPrecheckInReconnectTimerFired(System::Layer *, void *)
-{
-    RunLitPrecheckInReconnect(0);
-}
-
-void WifiSleepManager::RunLitPrecheckInReconnect(intptr_t)
 {
     WifiSleepManager & self = GetInstance();
     VerifyOrReturn(self.mWifiStateProvider != nullptr);
