@@ -48,19 +48,9 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
-    static void OnTriggerOffWithEffect(OnOffEffect * effect)
-    {
-        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, OnTriggerOffWithEffectImpl, effect);
-    }
-
     static void OnOffActionEventHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, OnOffActionEventHandlerImpl, aEvent);
-    }
-
-    static void TimerEventHandler(void * timerCbArg)
-    {
-        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, TimerEventHandlerImpl, timerCbArg);
     }
 
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
@@ -80,11 +70,7 @@ private:
 
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 
-    void OnTriggerOffWithEffectImpl(OnOffEffect * effect) { AppTask::OnTriggerOffWithEffect(effect); }
-
     void OnOffActionEventHandlerImpl(AppEvent * aEvent) { AppTask::OnOffActionEventHandler(aEvent); }
-
-    void TimerEventHandlerImpl(void * timerCbArg) { AppTask::TimerEventHandler(timerCbArg); }
 
     void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                            uint8_t * value)

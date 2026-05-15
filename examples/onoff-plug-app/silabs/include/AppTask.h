@@ -21,7 +21,6 @@
 
 #include "BaseApplication.h"
 #include <app/ConcreteAttributePath.h>
-#include <app/clusters/on-off-server/on-off-server.h>
 #include <cstdint>
 
 #include <ble/Ble.h>
@@ -55,14 +54,10 @@ public:
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
-    static void OnTriggerOffWithEffect(OnOffEffect * effect);
-
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
 
     static void OnOffActionEventHandler(AppEvent * aEvent);
-
-    static void TimerEventHandler(void * timerCbArg);
 
 protected:
     CHIP_ERROR AppInit() override;

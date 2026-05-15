@@ -57,7 +57,6 @@
 
 using namespace chip;
 using namespace chip::app::Clusters;
-using namespace chip::app::Clusters::OnOff;
 using namespace chip::DeviceLayer;
 using namespace chip::DeviceLayer::Silabs;
 
@@ -69,32 +68,8 @@ CustomerAppTask & appInstance()
 }
 
 LEDWidget sOnOffLED;
-osTimerId_t sPlugTimer = nullptr;
 
 bool sPlugOn = false;
-bool sOffEffectArmed = false;
-
-void OffEffectTimerEventHandler(AppEvent * /* aEvent */)
-{
-    if (!sOffEffectArmed)
-    {
-        return;
-    }
-    sOffEffectArmed = false;
-
-    sPlugOn = false;
-    sOnOffLED.Set(false);
-#ifdef DISPLAY_ENABLED
-    BaseApplication::GetLCD().WriteDemoUI(false);
-#endif
-}
-
-OnOffEffect gEffect = {
-    chip::EndpointId(ONOFF_PLUG_ENDPOINT),
-    &CustomerAppTask::OnTriggerOffWithEffect,
-    EffectIdentifierEnum::kDelayedAllOff,
-    to_underlying(DelayedAllOffEffectVariantEnum::kDelayedOffFastFade),
-};
 
 } // namespace
 
@@ -109,25 +84,8 @@ void AppTask::UpdateOnOffClusterState(intptr_t context)
     }
 }
 
-void AppTask::TimerEventHandler(void * /* timerCbArg */)
-{
-    AppEvent event{};
-    event.Type               = AppEvent::kEventType_Timer;
-    event.TimerEvent.Context = nullptr;
-    event.Handler            = &OffEffectTimerEventHandler;
-    appInstance().PostEvent(&event);
-}
-
 CHIP_ERROR AppTask::InitPlug()
 {
-    sPlugTimer = osTimerNew(&CustomerAppTask::TimerEventHandler, osTimerOnce, nullptr, nullptr);
-
-    if (sPlugTimer == nullptr)
-    {
-        SILABS_LOG("sPlugTimer timer create failed");
-        return APP_ERROR_CREATE_TIMER_FAILED;
-    }
-
     bool currentLedState;
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     OnOffServer::Instance().getOnOffValue(ONOFF_PLUG_ENDPOINT, &currentLedState);
@@ -214,16 +172,6 @@ void AppTask::OnOffActionEventHandler(AppEvent * aEvent)
     sPlugOn = !sPlugOn;
     sOnOffLED.Set(sPlugOn);
 
-    sOffEffectArmed = false;
-    if (osTimerIsRunning(sPlugTimer))
-    {
-        if (osTimerStop(sPlugTimer) == osError)
-        {
-            SILABS_LOG("sPlugTimer stop() failed");
-            appError(APP_ERROR_STOP_TIMER_FAILED);
-        }
-    }
-
 #ifdef DISPLAY_ENABLED
     BaseApplication::GetLCD().WriteDemoUI(sPlugOn);
 #endif
@@ -250,61 +198,6 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     }
 }
 
-void AppTask::OnTriggerOffWithEffect(OnOffEffect * effect)
-{
-    auto effectId              = effect->mEffectIdentifier;
-    auto effectVariant         = effect->mEffectVariant;
-    uint32_t offEffectDuration = 0;
-
-    if (effectId == EffectIdentifierEnum::kDelayedAllOff)
-    {
-        auto typedEffectVariant = static_cast<DelayedAllOffEffectVariantEnum>(effectVariant);
-        if (typedEffectVariant == DelayedAllOffEffectVariantEnum::kDelayedOffFastFade)
-        {
-            offEffectDuration = 800;
-            ChipLogProgress(Zcl, "DelayedAllOffEffectVariantEnum::kDelayedOffFastFade");
-        }
-        else if (typedEffectVariant == DelayedAllOffEffectVariantEnum::kNoFade)
-        {
-            offEffectDuration = 800;
-            ChipLogProgress(Zcl, "DelayedAllOffEffectVariantEnum::kNoFade");
-        }
-        else if (typedEffectVariant == DelayedAllOffEffectVariantEnum::kDelayedOffSlowFade)
-        {
-            offEffectDuration = 12800;
-            ChipLogProgress(Zcl, "DelayedAllOffEffectVariantEnum::kDelayedOffSlowFade");
-        }
-    }
-    else if (effectId == EffectIdentifierEnum::kDyingLight)
-    {
-        auto typedEffectVariant = static_cast<DyingLightEffectVariantEnum>(effectVariant);
-        if (typedEffectVariant == DyingLightEffectVariantEnum::kDyingLightFadeOff)
-        {
-            offEffectDuration = 1500;
-            ChipLogProgress(Zcl, "DyingLightEffectVariantEnum::kDyingLightFadeOff");
-        }
-    }
-
-    if (offEffectDuration == 0)
-    {
-        ChipLogProgress(Zcl, "OffWithEffect: unsupported effect, completing immediately");
-        sOffEffectArmed = false;
-        if (osTimerIsRunning(sPlugTimer))
-        {
-            osTimerStop(sPlugTimer);
-        }
-        return;
-    }
-
-    sOffEffectArmed = true;
-    if (osTimerStart(sPlugTimer, pdMS_TO_TICKS(offEffectDuration)) != osOK)
-    {
-        sOffEffectArmed = false;
-        SILABS_LOG("sPlugTimer timer start() failed");
-        appError(APP_ERROR_START_TIMER_FAILED);
-    }
-}
-
 void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                             uint8_t * value)
 {
@@ -323,29 +216,12 @@ void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePa
 #endif // SL_MATTER_ENABLE_AWS
 
             const bool plugOn = (*value != 0);
-            if (!plugOn && sOffEffectArmed)
-            {
-                break;
-            }
-
-            if (plugOn)
-            {
-                sOffEffectArmed = false;
-            }
 
             sPlugOn = plugOn;
             sOnOffLED.Set(sPlugOn);
 #ifdef DISPLAY_ENABLED
             BaseApplication::GetLCD().WriteDemoUI(sPlugOn);
 #endif
-            if (plugOn && osTimerIsRunning(sPlugTimer))
-            {
-                if (osTimerStop(sPlugTimer) == osError)
-                {
-                    SILABS_LOG("sPlugTimer stop() failed");
-                    appError(APP_ERROR_STOP_TIMER_FAILED);
-                }
-            }
         }
         break;
 
