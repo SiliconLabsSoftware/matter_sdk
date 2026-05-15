@@ -394,7 +394,7 @@ sl_status_t SetWifiConfigurations()
         },
         .ip = {
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-            .mode = SL_IP_MANAGEMENT_DHCPV4_LINKLOCAL_IPV6,
+            .mode = SL_IP_MANAGEMENT_DHCP_IPV4_LINK_LOCAL_IPV6,
             .type = static_cast<sl_ip_address_type_t>(SL_IPV4 | SL_IPV6),
 #else
             .mode     = SL_IP_MANAGEMENT_DHCP,
