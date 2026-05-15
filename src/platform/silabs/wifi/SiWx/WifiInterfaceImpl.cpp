@@ -941,7 +941,7 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
 }
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
     ResetConnectionRetryInterval();
@@ -968,7 +968,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
     TriggerPlatformWifiDisconnection();
     return CHIP_NO_ERROR;
 }
-#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {

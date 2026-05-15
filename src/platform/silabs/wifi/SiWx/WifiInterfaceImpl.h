@@ -74,10 +74,10 @@ public:
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) override;
     CHIP_ERROR ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval) override;
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     CHIP_ERROR ConfigureLITConnect() override;
     CHIP_ERROR ConfigureLITDisconnect() override;
-#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 public:
@@ -163,12 +163,6 @@ private:
 
     bool mHasNotifiedWifiConnectivity = false;
     bool mUseQuickJoin                = false;
-
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
-    // Intentional LIT disconnect: suppress exponential reconnect until ConfigureLITConnect().
-    bool mLitIntentionalSleepDisconnect = false;
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && CHIP_CONFIG_ENABLE_ICD_LIT
-
     static WifiInterfaceImpl mInstance;
 };
 

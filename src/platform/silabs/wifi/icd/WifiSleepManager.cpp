@@ -17,7 +17,9 @@
 
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 #include <platform/CHIPDeviceLayer.h> // nogncheck
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
 using namespace chip::DeviceLayer::Silabs;
@@ -84,14 +86,14 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
     case PowerEvent::kActiveMode:
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         mActiveMode = true;
-#endif
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         break;
     case PowerEvent::kIdleMode:
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         mActiveMode = false;
-#endif
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         break;
 
     default:
@@ -109,13 +111,13 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 
     ReturnErrorOnFailure(HandlePowerEvent(event));
 
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     if (event == PowerEvent::kActiveMode)
     {
         ReturnErrorOnFailure(DeviceLayer::PlatformMgr().ScheduleWork(CancelLitPrecheckInTimerWork, 0));
         ReturnErrorOnFailure(ConfigureLITConnect());
     }
-#endif
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
     if (mHighPerformanceRequestCounter > 0)
     {
@@ -136,14 +138,14 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         if (!mActiveMode)
         {
             return ConfigureLITDisconnect();
         }
-#else
+#else // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         return ConfigureLIBasedSleep();
-#endif
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
 
     return ConfigureDTIMBasedSleep();
@@ -191,7 +193,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
     return CHIP_NO_ERROR;
 }
 
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
 {
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());

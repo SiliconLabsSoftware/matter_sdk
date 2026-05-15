@@ -70,7 +70,8 @@ public:
      */
     virtual CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
 
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
     /**
      * @brief Reconnect after Long Idle Time (LIT) sleep disconnect (ICD active mode / reporting window).
      *        Platform implementations start join without periodic backoff used for unintended disconnects.
@@ -82,7 +83,7 @@ public:
      *        Suppresses automatic reconnect until ConfigureLITConnect(); disconnect is processed on the Wi-Fi task.
      */
     virtual CHIP_ERROR ConfigureLITDisconnect() { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
-#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 protected:
     // Default power save configuration is High Performance as the device starts in high power mode and low power modes need to be
     // explicitly configured

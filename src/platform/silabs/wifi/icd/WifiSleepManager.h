@@ -233,7 +233,7 @@ private:
      */
     CHIP_ERROR ConfigureLIBasedSleep();
 
-#if CHIP_CONFIG_ENABLE_ICD_LIT
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     /**
      * @brief LIT path: intentional STA disconnect only (see PowerSaveInterface::ConfigureLITDisconnect).
      */
@@ -248,6 +248,8 @@ private:
     static void OnLitPrecheckInReconnectTimerFired(chip::System::Layer * layer, void * context);
     static void CancelLitPrecheckInTimerWork(intptr_t arg);
     void DoStartLitPrecheckInReconnectTimer();
+
+    bool mActiveMode                         = false;
 #endif // CHIP_CONFIG_ENABLE_ICD_LIT
 
     /**
@@ -267,7 +269,6 @@ private:
     WifiStateProvider * mWifiStateProvider   = nullptr;
     bool mIsCommissioningInProgress          = false;
     uint8_t mHighPerformanceRequestCounter   = 0;
-    bool mActiveMode                         = false;
 
     ApplicationCallback * mCallback = nullptr;
 };
