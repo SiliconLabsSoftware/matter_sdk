@@ -153,7 +153,7 @@ CHIP_ERROR AppTask::AppInit()
     sOnOffLED.Set(sPlugOn);
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
-    #ifdef DISPLAY_ENABLED
+#ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(sPlugOn);
 #ifdef QR_CODE_ENABLED
 #ifdef SL_WIFI
