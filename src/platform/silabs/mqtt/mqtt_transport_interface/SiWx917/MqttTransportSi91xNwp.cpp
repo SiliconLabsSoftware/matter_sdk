@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2023 Project CHIP Authors
+ *    Copyright (c) 2026 Project CHIP Authors
  *    Copyright (c) 2022 Google LLC.
  *    All rights reserved.
  *
