@@ -112,7 +112,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 #if CHIP_CONFIG_ENABLE_ICD_LIT
     if (event == PowerEvent::kActiveMode)
     {
-        TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(CancelLitPrecheckInTimerWork, 0);
+        ReturnErrorOnFailure(DeviceLayer::PlatformMgr().ScheduleWork(CancelLitPrecheckInTimerWork, 0));
         ReturnErrorOnFailure(ConfigureLITConnect());
     }
 #endif
@@ -194,7 +194,6 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 #if CHIP_CONFIG_ENABLE_ICD_LIT
 CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
 {
-    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
     ReturnLogErrorOnFailure(
@@ -207,7 +206,6 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
 
 CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
 {
-    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
     ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
     return CHIP_NO_ERROR;
 }
@@ -243,7 +241,11 @@ void WifiSleepManager::OnLitPrecheckInReconnectTimerFired(System::Layer *, void 
     }
 
     ChipLogProgress(DeviceLayer, "LIT precheck-in: reconnecting Wi-Fi before ICD traffic");
-    TEMPORARY_RETURN_IGNORED self.ConfigureLITConnect();
+    CHIP_ERROR err = self.ConfigureLITConnect();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "LIT precheck-in reconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+    }
 }
 #endif
 
