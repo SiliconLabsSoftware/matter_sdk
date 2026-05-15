@@ -65,12 +65,12 @@ void SLApplyWiFiDeviceConfiguration(sl_wifi_device_configuration_t * configurati
 #endif // RSI_PROCESS_MAX_RX_DATA
 
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-    configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE;
-#endif
+    configuration->boot_config.ext_tcp_ip_feature_bit_map |= (SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE | SL_SI91X_EXT_TCP_IP_FEAT_SSL_MEMORY_CLOUD);
+#endif // defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
 
 #if !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
     configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_TCP_IP_FEAT_BYPASS;
-#endif
+#endif // !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
 }
 
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
