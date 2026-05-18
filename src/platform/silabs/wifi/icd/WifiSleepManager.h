@@ -240,14 +240,6 @@ private:
     CHIP_ERROR ConfigureLITDisconnect();
 
     CHIP_ERROR ConfigureLITConnect();
-    /**
-     * Margin before end of mode-based idle interval to bring Wi-Fi up for ICD traffic (check-in / reports).
-     */
-    static constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
-
-    static void OnLitPrecheckInReconnectOsTimer(void * argument);
-    static void CancelLitPrecheckInTimerWork(intptr_t arg);
-    void DoStartLitPrecheckInReconnectTimer();
 
     bool mActiveMode                         = false;
 #endif // CHIP_CONFIG_ENABLE_ICD_LIT

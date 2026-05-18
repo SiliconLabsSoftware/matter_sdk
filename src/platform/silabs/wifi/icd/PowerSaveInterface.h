@@ -83,6 +83,23 @@ public:
      *        Suppresses automatic reconnect until ConfigureLITConnect(); disconnect is processed on the Wi-Fi task.
      */
     virtual CHIP_ERROR ConfigureLITDisconnect() { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
+
+    /**
+     * @brief Stops the LIT precheck-in reconnect timer (e.g. when entering active mode before LIT connect).
+     */
+    virtual void CancelLitPrecheckInReconnectTimer() {}
+
+    /**
+     * @brief Schedules Wi-Fi reconnect before the ICD traffic window after LIT disconnect sleep is configured.
+     */
+    virtual void StartLitPrecheckInReconnectTimer() {}
+
+    /**
+     * @brief Creates OS resources for LIT precheck-in reconnect scheduling. Called during WifiSleepManager::Init.
+     *
+     * @return CHIP_NO_ERROR on success, CHIP_ERROR_INTERNAL if timer creation fails.
+     */
+    virtual CHIP_ERROR InitLitPrecheckInReconnectTimer() { return CHIP_NO_ERROR; }
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 protected:
     // Default power save configuration is High Performance as the device starts in high power mode and low power modes need to be

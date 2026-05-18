@@ -77,6 +77,9 @@ public:
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     CHIP_ERROR ConfigureLITConnect() override;
     CHIP_ERROR ConfigureLITDisconnect() override;
+    void CancelLitPrecheckInReconnectTimer() override;
+    void StartLitPrecheckInReconnectTimer() override;
+    CHIP_ERROR InitLitPrecheckInReconnectTimer() override;
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 

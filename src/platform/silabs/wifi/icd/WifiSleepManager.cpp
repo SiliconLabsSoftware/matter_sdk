@@ -17,18 +17,9 @@
 
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
-#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-#include <cmsis_os2.h>
-#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
 using namespace chip::DeviceLayer::Silabs;
-
-#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-namespace {
-osTimerId_t sLitPrecheckInReconnectTimer = nullptr;
-} // namespace
-#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
 namespace chip {
 namespace DeviceLayer {
@@ -46,12 +37,7 @@ CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiSt
     mWifiStateProvider  = wifiStateProvider;
 
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-    sLitPrecheckInReconnectTimer = osTimerNew(OnLitPrecheckInReconnectOsTimer, osTimerOnce, nullptr, nullptr);
-    if (sLitPrecheckInReconnectTimer == nullptr)
-    {
-        ChipLogDetail(DeviceLayer, "LIT precheck-in osTimerNew failed");
-        return CHIP_ERROR_INTERNAL;
-    }
+    ReturnErrorOnFailure(mPowerSaveInterface->InitLitPrecheckInReconnectTimer());
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
     return VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent);
@@ -129,7 +115,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     if (event == PowerEvent::kActiveMode)
     {
-        CancelLitPrecheckInTimerWork(0);
+        mPowerSaveInterface->CancelLitPrecheckInReconnectTimer();
         ReturnErrorOnFailure(ConfigureLITConnect());
     }
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
@@ -217,7 +203,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
         mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep,
                                                 chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
 
-    DoStartLitPrecheckInReconnectTimer();
+    mPowerSaveInterface->StartLitPrecheckInReconnectTimer();
     return CHIP_NO_ERROR;
 }
 
@@ -225,44 +211,6 @@ CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
 {
     ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
     return CHIP_NO_ERROR;
-}
-
-void WifiSleepManager::CancelLitPrecheckInTimerWork(intptr_t)
-{
-    VerifyOrReturn(sLitPrecheckInReconnectTimer != nullptr);
-    (void) osTimerStop(sLitPrecheckInReconnectTimer);
-}
-
-void WifiSleepManager::DoStartLitPrecheckInReconnectTimer()
-{
-    const uint32_t idleSec   = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
-    const uint32_t activeSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
-    const uint32_t delaySec  = (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeSec - kLitPrecheckInMarginSeconds) : 1u;
-    const uint32_t delayMs   = delaySec * 1000u;
-    (void) osTimerStop(sLitPrecheckInReconnectTimer);
-    if (osTimerStart(sLitPrecheckInReconnectTimer, pdMS_TO_TICKS(delayMs)) != osOK)
-    {
-        ChipLogDetail(DeviceLayer, "LIT precheck-in osTimerStart failed (delay ms=%u)", static_cast<unsigned>(delayMs));
-    }
-}
-
-void WifiSleepManager::OnLitPrecheckInReconnectOsTimer(void *)
-{
-    WifiSleepManager & self = GetInstance();
-    VerifyOrReturn(self.mWifiStateProvider != nullptr);
-    VerifyOrReturn(self.mPowerSaveInterface != nullptr);
-
-    if (!self.mWifiStateProvider->IsWifiProvisioned() || self.mWifiStateProvider->IsStationConnected())
-    {
-        return;
-    }
-
-    ChipLogProgress(DeviceLayer, "LIT precheck-in: reconnecting Wi-Fi before ICD traffic");
-    CHIP_ERROR err = self.ConfigureLITConnect();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "LIT precheck-in reconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
-    }
 }
 #endif
 

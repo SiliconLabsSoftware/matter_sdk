@@ -942,6 +942,44 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+namespace {
+osTimerId_t sLitPrecheckInReconnectTimer        = nullptr;
+constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
+
+void OnLitPrecheckInReconnectOsTimer(void *)
+{
+    WifiInterfaceImpl & self = WifiInterfaceImpl::GetInstance();
+    if (!self.IsWifiProvisioned() || self.IsStationConnected())
+    {
+        return;
+    }
+
+    ChipLogProgress(DeviceLayer, "LIT precheck-in: reconnecting Wi-Fi before ICD traffic");
+    CHIP_ERROR err = self.ConfigureLITConnect();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "LIT precheck-in reconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+}
+} // namespace
+
+CHIP_ERROR WifiInterfaceImpl::InitLitPrecheckInReconnectTimer()
+{
+    if (sLitPrecheckInReconnectTimer != nullptr)
+    {
+        return CHIP_NO_ERROR;
+    }
+
+    sLitPrecheckInReconnectTimer = osTimerNew(OnLitPrecheckInReconnectOsTimer, osTimerOnce, nullptr, nullptr);
+    if (sLitPrecheckInReconnectTimer == nullptr)
+    {
+        ChipLogDetail(DeviceLayer, "LIT precheck-in osTimerNew failed");
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    return CHIP_NO_ERROR;
+}
+
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
     ResetConnectionRetryInterval();
@@ -967,6 +1005,26 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
     TriggerPlatformWifiDisconnection();
     return CHIP_NO_ERROR;
+}
+
+void WifiInterfaceImpl::CancelLitPrecheckInReconnectTimer()
+{
+    VerifyOrReturn(sLitPrecheckInReconnectTimer != nullptr);
+    (void) osTimerStop(sLitPrecheckInReconnectTimer);
+}
+
+void WifiInterfaceImpl::StartLitPrecheckInReconnectTimer()
+{
+    const uint32_t idleSec   = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
+    const uint32_t activeSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
+    const uint32_t delaySec  = (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeSec - kLitPrecheckInMarginSeconds) : 1u;
+    const uint32_t delayMs   = delaySec * 1000u;
+
+    (void) osTimerStop(sLitPrecheckInReconnectTimer);
+    if (osTimerStart(sLitPrecheckInReconnectTimer, pdMS_TO_TICKS(delayMs)) != osOK)
+    {
+        ChipLogDetail(DeviceLayer, "LIT precheck-in osTimerStart failed (delay ms=%u)", static_cast<unsigned>(delayMs));
+    }
 }
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
