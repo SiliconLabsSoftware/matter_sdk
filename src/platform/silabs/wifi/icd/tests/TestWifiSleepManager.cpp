@@ -29,16 +29,16 @@ class TestMock : public PowerSaveInterface, public WifiStateProvider
 public:
     void Reset()
     {
-        mConfigurePowerSaveCalled         = false;
-        mConfigureBroadcastFilterCalled   = false;
-        mIsWifiProvisioned                = false;
-        mBroadcastFilterEnabled           = false;
+        mConfigurePowerSaveCalled       = false;
+        mConfigureBroadcastFilterCalled = false;
+        mIsWifiProvisioned              = false;
+        mBroadcastFilterEnabled         = false;
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-        mConfigureLITConnectCalled        = false;
-        mConfigureLITDisconnectCalled     = false;
-        mCancelLitPrecheckTimerCalled     = false;
-        mStartLitPrecheckTimerCalled      = false;
-        mInitLitPrecheckInTimerCalled     = false;
+        mConfigureLITConnectCalled    = false;
+        mConfigureLITDisconnectCalled = false;
+        mCancelLitPrecheckTimerCalled = false;
+        mStartLitPrecheckTimerCalled  = false;
+        mInitLitPrecheckInTimerCalled = false;
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
 
@@ -67,15 +67,15 @@ public:
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     bool WasConfigureLITConnectCalled()
     {
-        bool wasCalled               = mConfigureLITConnectCalled;
-        mConfigureLITConnectCalled   = false;
+        bool wasCalled             = mConfigureLITConnectCalled;
+        mConfigureLITConnectCalled = false;
         return wasCalled;
     }
 
     bool WasConfigureLITDisconnectCalled()
     {
-        bool wasCalled                 = mConfigureLITDisconnectCalled;
-        mConfigureLITDisconnectCalled  = false;
+        bool wasCalled                = mConfigureLITDisconnectCalled;
+        mConfigureLITDisconnectCalled = false;
         return wasCalled;
     }
 
@@ -95,7 +95,7 @@ public:
 
     bool WasInitLitPrecheckInTimerCalled()
     {
-        bool wasCalled              = mInitLitPrecheckInTimerCalled;
+        bool wasCalled                = mInitLitPrecheckInTimerCalled;
         mInitLitPrecheckInTimerCalled = false;
         return wasCalled;
     }
@@ -320,7 +320,7 @@ TEST_F(TestWifiSleepManager, TestLitIdleModeSelectsLITDisconnectWhenCallbackAllo
     EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
     EXPECT_TRUE(mMock.WasConfigureBroadcastFilterCalled());
     EXPECT_TRUE(mMock.WasBroadcastFilterEnabled());
-    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep);
+    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kDisconnectedSleep);
     EXPECT_TRUE(mMock.WasConfigurePowerSaveCalled());
     EXPECT_TRUE(mMock.WasStartLitPrecheckTimerCalled());
 }

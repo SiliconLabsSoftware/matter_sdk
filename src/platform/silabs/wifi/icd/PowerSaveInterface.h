@@ -39,7 +39,7 @@ public:
         kConnectedSleep   = 2,
         kLIConnectedSleep = 3,
         // Optional LIT path: disconnect from AP then deep sleep (see CHIP_CONFIG_ENABLE_ICD_LIT).
-        kLITDisconnectSleep = 4,
+        kDisconnectedSleep = 4,
     };
 
     /**

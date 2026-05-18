@@ -224,7 +224,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
     ReturnLogErrorOnFailure(
-        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep,
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDisconnectedSleep,
                                                 chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
 
     mPowerSaveInterface->StartLitPrecheckInReconnectTimer();

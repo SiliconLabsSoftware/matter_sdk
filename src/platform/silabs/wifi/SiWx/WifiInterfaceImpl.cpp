@@ -581,7 +581,7 @@ sl_wifi_system_performance_profile_t ConvertPowerSaveConfiguration(PowerSaveInte
         profile = ASSOCIATED_POWER_SAVE;
         break;
     case PowerSaveInterface::PowerSaveConfiguration::kDeepSleep:
-    case PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep:
+    case PowerSaveInterface::PowerSaveConfiguration::kDisconnectedSleep:
         profile = DEEP_SLEEP_WITH_RAM_RETENTION;
         break;
     default:
@@ -735,9 +735,8 @@ void WifiInterfaceImpl::NotifySuccessfulConnection(void)
 
 #if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     {
-        CHIP_ERROR flushErr = chip::DeviceLayer::SystemLayer().ScheduleLambda([]() {
-            chip::Inet::UDPEndPointImplLwIP::FlushDeferredSendQueue();
-        });
+        CHIP_ERROR flushErr =
+            chip::DeviceLayer::SystemLayer().ScheduleLambda([]() { chip::Inet::UDPEndPointImplLwIP::FlushDeferredSendQueue(); });
         if (flushErr != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "ScheduleLambda(FlushDeferredSendQueue) failed: %" CHIP_ERROR_FORMAT, flushErr.Format());
@@ -943,7 +942,7 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 namespace {
-osTimerId_t sLitPrecheckInReconnectTimer        = nullptr;
+osTimerId_t sLitPrecheckInReconnectTimer       = nullptr;
 constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
 
 void OnLitPrecheckInReconnectOsTimer(void *)
