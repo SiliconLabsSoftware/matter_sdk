@@ -358,7 +358,7 @@ CHIP_ERROR AppTask::InitLightSwitch(EndpointId lightSwitchEndpoint, EndpointId g
 
 void AppTask::GenericSwitchWorkerFunction(intptr_t context)
 {
-    VerifyOrReturn(context != nullptr, ChipLogError(NotSpecified, "GenericSwitchWorkerFunction - Invalid work"));
+    VerifyOrReturn(context != 0, ChipLogError(NotSpecified, "GenericSwitchWorkerFunction - Invalid work"));
 
     GenericSwitchEventData * data = reinterpret_cast<GenericSwitchEventData *>(context);
 
