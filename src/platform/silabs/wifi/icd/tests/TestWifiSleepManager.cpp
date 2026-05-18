@@ -29,10 +29,17 @@ class TestMock : public PowerSaveInterface, public WifiStateProvider
 public:
     void Reset()
     {
-        mConfigurePowerSaveCalled       = false;
-        mConfigureBroadcastFilterCalled = false;
-        mIsWifiProvisioned              = false;
-        mBroadcastFilterEnabled         = false;
+        mConfigurePowerSaveCalled         = false;
+        mConfigureBroadcastFilterCalled   = false;
+        mIsWifiProvisioned                = false;
+        mBroadcastFilterEnabled           = false;
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+        mConfigureLITConnectCalled        = false;
+        mConfigureLITDisconnectCalled     = false;
+        mCancelLitPrecheckTimerCalled     = false;
+        mStartLitPrecheckTimerCalled      = false;
+        mInitLitPrecheckInTimerCalled     = false;
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
 
     // Getters to check if methods were called
@@ -57,6 +64,43 @@ public:
         return wasEnabled;
     }
 
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    bool WasConfigureLITConnectCalled()
+    {
+        bool wasCalled               = mConfigureLITConnectCalled;
+        mConfigureLITConnectCalled   = false;
+        return wasCalled;
+    }
+
+    bool WasConfigureLITDisconnectCalled()
+    {
+        bool wasCalled                 = mConfigureLITDisconnectCalled;
+        mConfigureLITDisconnectCalled  = false;
+        return wasCalled;
+    }
+
+    bool WasCancelLitPrecheckTimerCalled()
+    {
+        bool wasCalled                = mCancelLitPrecheckTimerCalled;
+        mCancelLitPrecheckTimerCalled = false;
+        return wasCalled;
+    }
+
+    bool WasStartLitPrecheckTimerCalled()
+    {
+        bool wasCalled               = mStartLitPrecheckTimerCalled;
+        mStartLitPrecheckTimerCalled = false;
+        return wasCalled;
+    }
+
+    bool WasInitLitPrecheckInTimerCalled()
+    {
+        bool wasCalled              = mInitLitPrecheckInTimerCalled;
+        mInitLitPrecheckInTimerCalled = false;
+        return wasCalled;
+    }
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
     PowerSaveConfiguration GetLastPowerSaveConfiguration() const { return mLastPowerSaveConfiguration; }
 
     // Setter for IsWifiProvisioned
@@ -76,6 +120,30 @@ public:
         return CHIP_NO_ERROR;
     }
 
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    CHIP_ERROR ConfigureLITConnect() override
+    {
+        mConfigureLITConnectCalled = true;
+        return CHIP_NO_ERROR;
+    }
+
+    CHIP_ERROR ConfigureLITDisconnect() override
+    {
+        mConfigureLITDisconnectCalled = true;
+        return CHIP_NO_ERROR;
+    }
+
+    void CancelLitPrecheckInReconnectTimer() override { mCancelLitPrecheckTimerCalled = true; }
+
+    void StartLitPrecheckInReconnectTimer() override { mStartLitPrecheckTimerCalled = true; }
+
+    CHIP_ERROR InitLitPrecheckInReconnectTimer() override
+    {
+        mInitLitPrecheckInTimerCalled = true;
+        return CHIP_NO_ERROR;
+    }
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
     bool IsWifiProvisioned() override { return mIsWifiProvisioned; }
 
     bool IsStationConnected() override { return false; }
@@ -90,6 +158,19 @@ private:
     bool mBroadcastFilterEnabled         = false;
     PowerSaveConfiguration mLastPowerSaveConfiguration;
     bool mIsWifiProvisioned = false;
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    bool mConfigureLITConnectCalled    = false;
+    bool mConfigureLITDisconnectCalled = false;
+    bool mCancelLitPrecheckTimerCalled = false;
+    bool mStartLitPrecheckTimerCalled  = false;
+    bool mInitLitPrecheckInTimerCalled = false;
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+};
+
+class AlwaysLiSleepCallback : public WifiSleepManager::ApplicationCallback
+{
+public:
+    bool CanGoToLIBasedSleep() override { return true; }
 };
 
 } // namespace
@@ -102,10 +183,21 @@ protected:
         EXPECT_EQ(WifiSleepManager::GetInstance().Init(&mMock, &mMock), CHIP_NO_ERROR);
         EXPECT_TRUE(mMock.WasConfigurePowerSaveCalled());
         EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kDeepSleep);
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+        EXPECT_TRUE(mMock.WasInitLitPrecheckInTimerCalled());
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
-    void TearDown() { mMock.Reset(); }
+    void TearDown()
+    {
+        WifiSleepManager::GetInstance().SetApplicationCallback(nullptr);
+        mMock.Reset();
+    }
 
     static TestMock mMock;
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    AlwaysLiSleepCallback mLiSleepCallback;
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 };
 
 TestMock TestWifiSleepManager::mMock;
@@ -114,14 +206,16 @@ TEST_F(TestWifiSleepManager, TestInitFailureNullPowerSaveInterface)
 {
     TestMock mock;
     EXPECT_EQ(WifiSleepManager::GetInstance().Init(nullptr, &mock), CHIP_ERROR_INVALID_ARGUMENT);
-    EXPECT_FALSE(mMock.WasConfigurePowerSaveCalled());
+    EXPECT_FALSE(mock.WasConfigurePowerSaveCalled());
+    ASSERT_EQ(WifiSleepManager::GetInstance().Init(&mMock, &mMock), CHIP_NO_ERROR);
 }
 
 TEST_F(TestWifiSleepManager, TestInitFailureNullWifiStateProvider)
 {
     TestMock mock;
     EXPECT_EQ(WifiSleepManager::GetInstance().Init(&mock, nullptr), CHIP_ERROR_INVALID_ARGUMENT);
-    EXPECT_FALSE(mMock.WasConfigurePowerSaveCalled());
+    EXPECT_FALSE(mock.WasConfigurePowerSaveCalled());
+    ASSERT_EQ(WifiSleepManager::GetInstance().Init(&mMock, &mMock), CHIP_NO_ERROR);
 }
 
 TEST_F(TestWifiSleepManager, TestRequestHighPerformanceMaxCounter)
@@ -212,3 +306,38 @@ TEST_F(TestWifiSleepManager, TestRequestHighPerformanceWithoutProvisioning)
     EXPECT_EQ(WifiSleepManager::GetInstance().RequestHighPerformanceWithoutTransition(), CHIP_NO_ERROR);
     EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), config);
 }
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
+TEST_F(TestWifiSleepManager, TestLitIdleModeSelectsLITDisconnectWhenCallbackAllowsLiSleep)
+{
+    mMock.SetIsWifiProvisioned(true);
+    WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
+
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode),
+              CHIP_NO_ERROR);
+
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_TRUE(mMock.WasConfigureBroadcastFilterCalled());
+    EXPECT_TRUE(mMock.WasBroadcastFilterEnabled());
+    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep);
+    EXPECT_TRUE(mMock.WasConfigurePowerSaveCalled());
+    EXPECT_TRUE(mMock.WasStartLitPrecheckTimerCalled());
+}
+
+TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnectThenDTIMWhenProvisioned)
+{
+    mMock.SetIsWifiProvisioned(true);
+    WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
+
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kActiveMode),
+              CHIP_NO_ERROR);
+
+    EXPECT_TRUE(mMock.WasCancelLitPrecheckTimerCalled());
+    EXPECT_TRUE(mMock.WasConfigureLITConnectCalled());
+    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kConnectedSleep);
+    EXPECT_TRUE(mMock.WasConfigureBroadcastFilterCalled());
+    EXPECT_FALSE(mMock.WasBroadcastFilterEnabled());
+}
+
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)

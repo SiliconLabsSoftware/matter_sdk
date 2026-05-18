@@ -43,6 +43,30 @@ CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiSt
     return VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent);
 }
 
+void WifiSleepManager::HandleCommissioningSessionStarted()
+{
+    bool wasCommissioningInProgress = mIsCommissioningInProgress;
+    mIsCommissioningInProgress      = true;
+
+    if (!wasCommissioningInProgress)
+    {
+        // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
+        TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
+    }
+}
+
+void WifiSleepManager::HandleCommissioningSessionStopped()
+{
+    bool wasCommissioningInProgress = mIsCommissioningInProgress;
+    mIsCommissioningInProgress      = false;
+
+    if (wasCommissioningInProgress)
+    {
+        // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
+        TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+    }
+}
+
 CHIP_ERROR WifiSleepManager::RequestHighPerformance(bool triggerTransition)
 {
     VerifyOrReturnError(mHighPerformanceRequestCounter < std::numeric_limits<uint8_t>::max(), CHIP_ERROR_INTERNAL,
@@ -78,10 +102,10 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     {
     case PowerEvent::kCommissioningComplete:
         ChipLogProgress(AppServer, "WifiSleepManager: Handling Commissioning Complete Event");
-        mIsCommissioningInProgress = false;
 
         // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
         TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+        mIsCommissioningInProgress = false;
         break;
 
     case PowerEvent::kConnectivityChange:
@@ -144,7 +168,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
         {
             return ConfigureLITDisconnect();
         }
-#else // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+#else  // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         return ConfigureLIBasedSleep();
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
