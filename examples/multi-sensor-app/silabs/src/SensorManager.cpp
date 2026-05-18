@@ -28,7 +28,6 @@
 #include <AppConfig.h>
 #include <AppTask.h>
 #include <SensorManager.h>
-#include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/clusters/relative-humidity-measurement-server/CodegenIntegration.h>
@@ -95,16 +94,18 @@ void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState)
     VerifyOrReturn(SL_STATUS_OK == Si70xxSensor::GetSensorData(humidity, temperature));
 #else
 
-    DataModel::Nullable<int16_t> maxTempMeasuredValue;
-    TemperatureMeasurement::Attributes::MaxMeasuredValue::Get(kTemperatureSensorEndpoint, maxTempMeasuredValue);
+    TemperatureMeasurementCluster * tempCluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
+    DataModel::Nullable<int16_t> maxTempMeasuredValue =
+        (tempCluster != nullptr) ? tempCluster->GetMaxMeasuredValue() : DataModel::Nullable<int16_t>{};
 
-    DataModel::Nullable<uint16_t> maxMeasuredHumidityValue;
-    RelativeHumidityMeasurement::Attributes::MaxMeasuredValue::Get(kHumiditySensorEndpoint, maxMeasuredHumidityValue);
+    RelativeHumidityMeasurementCluster * rhCluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
+    DataModel::Nullable<uint16_t> maxMeasuredHumidityValue =
+        (rhCluster != nullptr) ? rhCluster->GetMaxMeasuredValue() : DataModel::Nullable<uint16_t>{};
 
     DataModel::Nullable<int16_t> currentTempValue;
-    if (TemperatureMeasurementCluster * cluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint))
+    if (tempCluster != nullptr)
     {
-        currentTempValue = cluster->GetMeasuredValue();
+        currentTempValue = tempCluster->GetMeasuredValue();
     }
     if (currentTempValue.IsNull())
     {
@@ -113,7 +114,7 @@ void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState)
     }
 
     DataModel::Nullable<uint16_t> currentHumidityValue;
-    if (RelativeHumidityMeasurementCluster * rhCluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint))
+    if (rhCluster != nullptr)
     {
         currentHumidityValue = rhCluster->GetMeasuredValue();
     }
@@ -215,14 +216,24 @@ Status GetMeasuredTemperature(chip::app::DataModel::Nullable<int16_t> & value)
 
 Status GetMaxMeasuredTemperature(chip::app::DataModel::Nullable<int16_t> & value)
 {
-    Status status = TemperatureMeasurement::Attributes::MaxMeasuredValue::Get(kTemperatureSensorEndpoint, value);
-    return status;
+    TemperatureMeasurementCluster * cluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
+    if (cluster == nullptr)
+    {
+        return Status::UnsupportedEndpoint;
+    }
+    value = cluster->GetMaxMeasuredValue();
+    return Status::Success;
 }
 
 Status GetMinMeasuredTemperature(chip::app::DataModel::Nullable<int16_t> & value)
 {
-    Status status = TemperatureMeasurement::Attributes::MinMeasuredValue::Get(kTemperatureSensorEndpoint, value);
-    return status;
+    TemperatureMeasurementCluster * cluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
+    if (cluster == nullptr)
+    {
+        return Status::UnsupportedEndpoint;
+    }
+    value = cluster->GetMinMeasuredValue();
+    return Status::Success;
 }
 
 Status GetMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value)
@@ -238,14 +249,24 @@ Status GetMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value)
 
 Status GetMaxMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value)
 {
-    Status status = RelativeHumidityMeasurement::Attributes::MaxMeasuredValue::Get(kHumiditySensorEndpoint, value);
-    return status;
+    RelativeHumidityMeasurementCluster * cluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
+    if (cluster == nullptr)
+    {
+        return Status::UnsupportedEndpoint;
+    }
+    value = cluster->GetMaxMeasuredValue();
+    return Status::Success;
 }
 
 Status GetMinMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value)
 {
-    Status status = RelativeHumidityMeasurement::Attributes::MinMeasuredValue::Get(kHumiditySensorEndpoint, value);
-    return status;
+    RelativeHumidityMeasurementCluster * cluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
+    if (cluster == nullptr)
+    {
+        return Status::UnsupportedEndpoint;
+    }
+    value = cluster->GetMinMeasuredValue();
+    return Status::Success;
 }
 
 bool IsOccupancyDetected()
