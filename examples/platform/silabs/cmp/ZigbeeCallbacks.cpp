@@ -207,7 +207,7 @@ extern "C" void start_zigbee_event_handler(sl_zigbee_af_event_t * event)
         SILABS_LOG(" [ZB] Open network with key status: 0x%X", open_network_with_key());
 #else
         SILABS_LOG(" [ZB] Start_evt_handler: Permitting Join");
-        sl_zigbee_af_permit_join(254, NULL);
+        sl_zigbee_af_permit_join(254, false);
 #endif
     }
     else
@@ -280,7 +280,7 @@ extern "C" void sl_zigbee_af_network_creator_complete_cb(const sl_zigbee_network
     SILABS_LOG(" [ZB] Open network with key status: 0x%X", open_network_with_key());
 #else
     SILABS_LOG(" [ZB] Permitting Join");
-    sl_zigbee_af_permit_join(254, NULL);
+    sl_zigbee_af_permit_join(254, false);
 #endif // SL_MATTER_CMP_SECURE_ZIGBEE
 }
 
