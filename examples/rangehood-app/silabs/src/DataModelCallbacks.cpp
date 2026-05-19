@@ -61,7 +61,7 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         RangeHoodManager::GetInstance().OnOffAttributeChangeHandler(endpointId, attributeId, value, size);
         break;
 
-    case Identify::Id:
+    case Clusters::Identify::Id:
         ChipLogDetail(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u on endpoint %u",
                       ChipLogValueMEI(attributeId), type, *value, size, endpointId);
         break;
