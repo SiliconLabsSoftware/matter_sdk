@@ -30,9 +30,10 @@
 #include <lib/support/logging/CHIPLogging.h>
 
 using namespace ::chip;
+using namespace ::chip::app;
 using namespace ::chip::app::Clusters;
 
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+void MatterPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
     ClusterId clusterId     = attributePath.mClusterId;
