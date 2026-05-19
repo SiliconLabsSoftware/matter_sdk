@@ -448,14 +448,14 @@ void AppTask::ProcessOnOffBindingCommand(CommandId commandId, const Binding::Tab
         }
         case Clusters::OnOff::Commands::On::Id: {
             Clusters::OnOff::Commands::On::Type onCommand;
-            RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, onCommand,
-                                                                      onSuccess, onFailure);
+            RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, onCommand, onSuccess,
+                                                                   onFailure);
             break;
         }
         case Clusters::OnOff::Commands::Off::Id: {
             Clusters::OnOff::Commands::Off::Type offCommand;
             RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, offCommand,
-                                                                      onSuccess, onFailure);
+                                                                   onSuccess, onFailure);
             break;
         }
         default:
@@ -471,19 +471,19 @@ void AppTask::ProcessOnOffBindingCommand(CommandId commandId, const Binding::Tab
         case Clusters::OnOff::Commands::Toggle::Id: {
             Clusters::OnOff::Commands::Toggle::Type toggleCommand;
             RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           toggleCommand);
+                                                                        toggleCommand);
             break;
         }
         case Clusters::OnOff::Commands::On::Id: {
             Clusters::OnOff::Commands::On::Type onCommand;
             RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           onCommand);
+                                                                        onCommand);
             break;
         }
         case Clusters::OnOff::Commands::Off::Id: {
             Clusters::OnOff::Commands::Off::Type offCommand;
             RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           offCommand);
+                                                                        offCommand);
             break;
         }
         default:
@@ -518,8 +518,8 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 moveToLevelCommand.optionsMask     = moveToLevel->optionsMask;
                 moveToLevelCommand.optionsOverride = moveToLevel->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                          peer_device->GetSecureSession().Value(), binding.remote,
-                                                                          moveToLevelCommand, onSuccess, onFailure);
+                                                                       peer_device->GetSecureSession().Value(), binding.remote,
+                                                                       moveToLevelCommand, onSuccess, onFailure);
             }
             break;
         }
@@ -532,8 +532,8 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 moveCommand.optionsMask     = move->optionsMask;
                 moveCommand.optionsOverride = move->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                          peer_device->GetSecureSession().Value(), binding.remote,
-                                                                          moveCommand, onSuccess, onFailure);
+                                                                       peer_device->GetSecureSession().Value(), binding.remote,
+                                                                       moveCommand, onSuccess, onFailure);
             }
             break;
         }
@@ -547,8 +547,8 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 stepCommand.optionsMask     = step->optionsMask;
                 stepCommand.optionsOverride = step->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                          peer_device->GetSecureSession().Value(), binding.remote,
-                                                                          stepCommand, onSuccess, onFailure);
+                                                                       peer_device->GetSecureSession().Value(), binding.remote,
+                                                                       stepCommand, onSuccess, onFailure);
             }
             break;
         }
@@ -559,8 +559,8 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 stopCommand.optionsMask     = stop->optionsMask;
                 stopCommand.optionsOverride = stop->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                          peer_device->GetSecureSession().Value(), binding.remote,
-                                                                          stopCommand, onSuccess, onFailure);
+                                                                       peer_device->GetSecureSession().Value(), binding.remote,
+                                                                       stopCommand, onSuccess, onFailure);
             }
             break;
         }
@@ -573,8 +573,8 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 moveToLevelWithOnOffCommand.optionsMask     = moveToLevel->optionsMask;
                 moveToLevelWithOnOffCommand.optionsOverride = moveToLevel->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                          peer_device->GetSecureSession().Value(), binding.remote,
-                                                                          moveToLevelWithOnOffCommand, onSuccess, onFailure);
+                                                                       peer_device->GetSecureSession().Value(), binding.remote,
+                                                                       moveToLevelWithOnOffCommand, onSuccess, onFailure);
             }
             break;
         }
@@ -587,8 +587,8 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 moveWithOnOffCommand.optionsMask     = move->optionsMask;
                 moveWithOnOffCommand.optionsOverride = move->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                          peer_device->GetSecureSession().Value(), binding.remote,
-                                                                          moveWithOnOffCommand, onSuccess, onFailure);
+                                                                       peer_device->GetSecureSession().Value(), binding.remote,
+                                                                       moveWithOnOffCommand, onSuccess, onFailure);
             }
             break;
         }
@@ -602,8 +602,8 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 stepWithOnOffCommand.optionsMask     = step->optionsMask;
                 stepWithOnOffCommand.optionsOverride = step->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                          peer_device->GetSecureSession().Value(), binding.remote,
-                                                                          stepWithOnOffCommand, onSuccess, onFailure);
+                                                                       peer_device->GetSecureSession().Value(), binding.remote,
+                                                                       stepWithOnOffCommand, onSuccess, onFailure);
             }
             break;
         }
@@ -614,8 +614,8 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 stopWithOnOffCommand.optionsMask     = stop->optionsMask;
                 stopWithOnOffCommand.optionsOverride = stop->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                          peer_device->GetSecureSession().Value(), binding.remote,
-                                                                          stopWithOnOffCommand, onSuccess, onFailure);
+                                                                       peer_device->GetSecureSession().Value(), binding.remote,
+                                                                       stopWithOnOffCommand, onSuccess, onFailure);
             }
             break;
         }
@@ -638,7 +638,7 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 moveToLevelCommand.optionsMask     = moveToLevel->optionsMask;
                 moveToLevelCommand.optionsOverride = moveToLevel->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                               moveToLevelCommand);
+                                                                            moveToLevelCommand);
             }
             break;
         }
@@ -651,7 +651,7 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 moveCommand.optionsMask     = move->optionsMask;
                 moveCommand.optionsOverride = move->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                               moveCommand);
+                                                                            moveCommand);
             }
             break;
         }
@@ -665,7 +665,7 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 stepCommand.optionsMask     = step->optionsMask;
                 stepCommand.optionsOverride = step->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                               stepCommand);
+                                                                            stepCommand);
             }
             break;
         }
@@ -676,7 +676,7 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 stopCommand.optionsMask     = stop->optionsMask;
                 stopCommand.optionsOverride = stop->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                               stopCommand);
+                                                                            stopCommand);
             }
             break;
         }
@@ -689,7 +689,7 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 moveToLevelWithOnOffCommand.optionsMask     = moveToLevel->optionsMask;
                 moveToLevelWithOnOffCommand.optionsOverride = moveToLevel->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                               moveToLevelWithOnOffCommand);
+                                                                            moveToLevelWithOnOffCommand);
             }
             break;
         }
@@ -702,7 +702,7 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 moveWithOnOffCommand.optionsMask     = move->optionsMask;
                 moveWithOnOffCommand.optionsOverride = move->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                               moveWithOnOffCommand);
+                                                                            moveWithOnOffCommand);
             }
             break;
         }
@@ -716,7 +716,7 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 stepWithOnOffCommand.optionsMask     = step->optionsMask;
                 stepWithOnOffCommand.optionsOverride = step->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                               stepWithOnOffCommand);
+                                                                            stepWithOnOffCommand);
             }
             break;
         }
@@ -727,7 +727,7 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
                 stopWithOnOffCommand.optionsMask     = stop->optionsMask;
                 stopWithOnOffCommand.optionsOverride = stop->optionsOverride;
                 RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                               stopWithOnOffCommand);
+                                                                            stopWithOnOffCommand);
             }
             break;
         }
@@ -743,7 +743,7 @@ void AppTask::LightSwitchChangedHandler(const Binding::TableEntry & binding, Ope
     BindingCommandData * data = static_cast<BindingCommandData *>(context);
 
     const bool isMulticast = binding.type == Binding::MATTER_MULTICAST_BINDING && data->isGroup;
-    const bool isUnicast = binding.type == Binding::MATTER_UNICAST_BINDING && !data->isGroup;
+    const bool isUnicast   = binding.type == Binding::MATTER_UNICAST_BINDING && !data->isGroup;
 
     VerifyOrReturn(isMulticast || isUnicast);
 
