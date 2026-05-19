@@ -69,6 +69,7 @@ common_include_dirs = [
   "${examples_plat_dir}",
   "${chip_root}/src/lib",
   "${examples_common_plat_dir}",
+  "${examples_common_plat_dir}/customer",
   "${examples_common_plat_dir}/freertos_config",
 ]
 
@@ -101,7 +102,14 @@ silabs_executable("platform_app") {
     defines += [ "SL_STATUS_LED=0" ]
   }
 
+<<<<<<< HEAD
   sources = [ "src/AppTask.cpp" ]
+=======
+  sources = [
+    "${examples_common_plat_dir}/customer/CustomerAppTask.cpp",
+    "src/AppTask.cpp",
+  ]
+>>>>>>> 382561e890 (initial commit CRTP platform app)
 
   deps = [
     ":sdk",
