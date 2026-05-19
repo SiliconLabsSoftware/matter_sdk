@@ -436,14 +436,14 @@ void AppTask::ProcessOnOffBindingCommand(CommandId commandId, const Binding::Tab
         }
         case Clusters::OnOff::Commands::On::Id: {
             Clusters::OnOff::Commands::On::Type onCommand;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, onCommand, onSuccess,
-                                                                      onFailure);
+            RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, onCommand,
+                                                                      onSuccess, onFailure);
             break;
         }
         case Clusters::OnOff::Commands::Off::Id: {
             Clusters::OnOff::Commands::Off::Type offCommand;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, offCommand, onSuccess,
-                                                                      onFailure);
+            RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, offCommand,
+                                                                      onSuccess, onFailure);
             break;
         }
         default:
@@ -458,19 +458,19 @@ void AppTask::ProcessOnOffBindingCommand(CommandId commandId, const Binding::Tab
         {
         case Clusters::OnOff::Commands::Toggle::Id: {
             Clusters::OnOff::Commands::Toggle::Type toggleCommand;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+            RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
                                                                            toggleCommand);
             break;
         }
         case Clusters::OnOff::Commands::On::Id: {
             Clusters::OnOff::Commands::On::Type onCommand;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+            RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
                                                                            onCommand);
             break;
         }
         case Clusters::OnOff::Commands::Off::Id: {
             Clusters::OnOff::Commands::Off::Type offCommand;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+            RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
                                                                            offCommand);
             break;
         }
@@ -496,232 +496,232 @@ void AppTask::ProcessLevelControlBindingCommand(BindingCommandData * data, const
         VerifyOrDie(peer_device->ConnectionReady());
 
         switch (data->commandId)
-    {
-    case Clusters::LevelControl::Commands::MoveToLevel::Id: {
-        Clusters::LevelControl::Commands::MoveToLevel::Type moveToLevelCommand;
-        if (auto moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
         {
-            moveToLevelCommand.level           = moveToLevel->level;
-            moveToLevelCommand.transitionTime  = moveToLevel->transitionTime;
-            moveToLevelCommand.optionsMask     = moveToLevel->optionsMask;
-            moveToLevelCommand.optionsOverride = moveToLevel->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                      peer_device->GetSecureSession().Value(), binding.remote,
-                                                                      moveToLevelCommand, onSuccess, onFailure);
+        case Clusters::LevelControl::Commands::MoveToLevel::Id: {
+            Clusters::LevelControl::Commands::MoveToLevel::Type moveToLevelCommand;
+            if (auto moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
+            {
+                moveToLevelCommand.level           = moveToLevel->level;
+                moveToLevelCommand.transitionTime  = moveToLevel->transitionTime;
+                moveToLevelCommand.optionsMask     = moveToLevel->optionsMask;
+                moveToLevelCommand.optionsOverride = moveToLevel->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
+                                                                          peer_device->GetSecureSession().Value(), binding.remote,
+                                                                          moveToLevelCommand, onSuccess, onFailure);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::Move::Id: {
-        Clusters::LevelControl::Commands::Move::Type moveCommand;
-        if (auto move = std::get_if<BindingCommandData::Move>(&data->commandData))
-        {
-            moveCommand.moveMode        = move->moveMode;
-            moveCommand.rate            = move->rate;
-            moveCommand.optionsMask     = move->optionsMask;
-            moveCommand.optionsOverride = move->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                      peer_device->GetSecureSession().Value(), binding.remote,
-                                                                      moveCommand, onSuccess, onFailure);
+        case Clusters::LevelControl::Commands::Move::Id: {
+            Clusters::LevelControl::Commands::Move::Type moveCommand;
+            if (auto move = std::get_if<BindingCommandData::Move>(&data->commandData))
+            {
+                moveCommand.moveMode        = move->moveMode;
+                moveCommand.rate            = move->rate;
+                moveCommand.optionsMask     = move->optionsMask;
+                moveCommand.optionsOverride = move->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
+                                                                          peer_device->GetSecureSession().Value(), binding.remote,
+                                                                          moveCommand, onSuccess, onFailure);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::Step::Id: {
-        Clusters::LevelControl::Commands::Step::Type stepCommand;
-        if (auto step = std::get_if<BindingCommandData::Step>(&data->commandData))
-        {
-            stepCommand.stepMode        = step->stepMode;
-            stepCommand.stepSize        = step->stepSize;
-            stepCommand.transitionTime  = step->transitionTime;
-            stepCommand.optionsMask     = step->optionsMask;
-            stepCommand.optionsOverride = step->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                      peer_device->GetSecureSession().Value(), binding.remote,
-                                                                      stepCommand, onSuccess, onFailure);
+        case Clusters::LevelControl::Commands::Step::Id: {
+            Clusters::LevelControl::Commands::Step::Type stepCommand;
+            if (auto step = std::get_if<BindingCommandData::Step>(&data->commandData))
+            {
+                stepCommand.stepMode        = step->stepMode;
+                stepCommand.stepSize        = step->stepSize;
+                stepCommand.transitionTime  = step->transitionTime;
+                stepCommand.optionsMask     = step->optionsMask;
+                stepCommand.optionsOverride = step->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
+                                                                          peer_device->GetSecureSession().Value(), binding.remote,
+                                                                          stepCommand, onSuccess, onFailure);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::Stop::Id: {
-        Clusters::LevelControl::Commands::Stop::Type stopCommand;
-        if (auto stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
-        {
-            stopCommand.optionsMask     = stop->optionsMask;
-            stopCommand.optionsOverride = stop->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                      peer_device->GetSecureSession().Value(), binding.remote,
-                                                                      stopCommand, onSuccess, onFailure);
+        case Clusters::LevelControl::Commands::Stop::Id: {
+            Clusters::LevelControl::Commands::Stop::Type stopCommand;
+            if (auto stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
+            {
+                stopCommand.optionsMask     = stop->optionsMask;
+                stopCommand.optionsOverride = stop->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
+                                                                          peer_device->GetSecureSession().Value(), binding.remote,
+                                                                          stopCommand, onSuccess, onFailure);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id: {
-        Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveToLevelWithOnOffCommand;
-        if (auto moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
-        {
-            moveToLevelWithOnOffCommand.level           = moveToLevel->level;
-            moveToLevelWithOnOffCommand.transitionTime  = moveToLevel->transitionTime;
-            moveToLevelWithOnOffCommand.optionsMask     = moveToLevel->optionsMask;
-            moveToLevelWithOnOffCommand.optionsOverride = moveToLevel->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                      peer_device->GetSecureSession().Value(), binding.remote,
-                                                                      moveToLevelWithOnOffCommand, onSuccess, onFailure);
+        case Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id: {
+            Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveToLevelWithOnOffCommand;
+            if (auto moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
+            {
+                moveToLevelWithOnOffCommand.level           = moveToLevel->level;
+                moveToLevelWithOnOffCommand.transitionTime  = moveToLevel->transitionTime;
+                moveToLevelWithOnOffCommand.optionsMask     = moveToLevel->optionsMask;
+                moveToLevelWithOnOffCommand.optionsOverride = moveToLevel->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
+                                                                          peer_device->GetSecureSession().Value(), binding.remote,
+                                                                          moveToLevelWithOnOffCommand, onSuccess, onFailure);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::MoveWithOnOff::Id: {
-        Clusters::LevelControl::Commands::MoveWithOnOff::Type moveWithOnOffCommand;
-        if (auto move = std::get_if<BindingCommandData::Move>(&data->commandData))
-        {
-            moveWithOnOffCommand.moveMode        = move->moveMode;
-            moveWithOnOffCommand.rate            = move->rate;
-            moveWithOnOffCommand.optionsMask     = move->optionsMask;
-            moveWithOnOffCommand.optionsOverride = move->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                      peer_device->GetSecureSession().Value(), binding.remote,
-                                                                      moveWithOnOffCommand, onSuccess, onFailure);
+        case Clusters::LevelControl::Commands::MoveWithOnOff::Id: {
+            Clusters::LevelControl::Commands::MoveWithOnOff::Type moveWithOnOffCommand;
+            if (auto move = std::get_if<BindingCommandData::Move>(&data->commandData))
+            {
+                moveWithOnOffCommand.moveMode        = move->moveMode;
+                moveWithOnOffCommand.rate            = move->rate;
+                moveWithOnOffCommand.optionsMask     = move->optionsMask;
+                moveWithOnOffCommand.optionsOverride = move->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
+                                                                          peer_device->GetSecureSession().Value(), binding.remote,
+                                                                          moveWithOnOffCommand, onSuccess, onFailure);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::StepWithOnOff::Id: {
-        Clusters::LevelControl::Commands::StepWithOnOff::Type stepWithOnOffCommand;
-        if (auto step = std::get_if<BindingCommandData::Step>(&data->commandData))
-        {
-            stepWithOnOffCommand.stepMode        = step->stepMode;
-            stepWithOnOffCommand.stepSize        = step->stepSize;
-            stepWithOnOffCommand.transitionTime  = step->transitionTime;
-            stepWithOnOffCommand.optionsMask     = step->optionsMask;
-            stepWithOnOffCommand.optionsOverride = step->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                      peer_device->GetSecureSession().Value(), binding.remote,
-                                                                      stepWithOnOffCommand, onSuccess, onFailure);
+        case Clusters::LevelControl::Commands::StepWithOnOff::Id: {
+            Clusters::LevelControl::Commands::StepWithOnOff::Type stepWithOnOffCommand;
+            if (auto step = std::get_if<BindingCommandData::Step>(&data->commandData))
+            {
+                stepWithOnOffCommand.stepMode        = step->stepMode;
+                stepWithOnOffCommand.stepSize        = step->stepSize;
+                stepWithOnOffCommand.transitionTime  = step->transitionTime;
+                stepWithOnOffCommand.optionsMask     = step->optionsMask;
+                stepWithOnOffCommand.optionsOverride = step->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
+                                                                          peer_device->GetSecureSession().Value(), binding.remote,
+                                                                          stepWithOnOffCommand, onSuccess, onFailure);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::StopWithOnOff::Id: {
-        Clusters::LevelControl::Commands::StopWithOnOff::Type stopWithOnOffCommand;
-        if (auto stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
-        {
-            stopWithOnOffCommand.optionsMask     = stop->optionsMask;
-            stopWithOnOffCommand.optionsOverride = stop->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
-                                                                      peer_device->GetSecureSession().Value(), binding.remote,
-                                                                      stopWithOnOffCommand, onSuccess, onFailure);
+        case Clusters::LevelControl::Commands::StopWithOnOff::Id: {
+            Clusters::LevelControl::Commands::StopWithOnOff::Type stopWithOnOffCommand;
+            if (auto stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
+            {
+                stopWithOnOffCommand.optionsMask     = stop->optionsMask;
+                stopWithOnOffCommand.optionsOverride = stop->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeCommandRequest(peer_device->GetExchangeManager(),
+                                                                          peer_device->GetSecureSession().Value(), binding.remote,
+                                                                          stopWithOnOffCommand, onSuccess, onFailure);
+            }
+            break;
         }
-        break;
-    }
-    default:
-        break;
-    }
+        default:
+            break;
+        }
     }
     else
     {
         Messaging::ExchangeManager & exchangeMgr = Server::GetInstance().GetExchangeManager();
 
         switch (data->commandId)
-    {
-    case Clusters::LevelControl::Commands::MoveToLevel::Id: {
-        Clusters::LevelControl::Commands::MoveToLevel::Type moveToLevelCommand;
-        if (auto moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
         {
-            moveToLevelCommand.level           = moveToLevel->level;
-            moveToLevelCommand.transitionTime  = moveToLevel->transitionTime;
-            moveToLevelCommand.optionsMask     = moveToLevel->optionsMask;
-            moveToLevelCommand.optionsOverride = moveToLevel->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           moveToLevelCommand);
+        case Clusters::LevelControl::Commands::MoveToLevel::Id: {
+            Clusters::LevelControl::Commands::MoveToLevel::Type moveToLevelCommand;
+            if (auto moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
+            {
+                moveToLevelCommand.level           = moveToLevel->level;
+                moveToLevelCommand.transitionTime  = moveToLevel->transitionTime;
+                moveToLevelCommand.optionsMask     = moveToLevel->optionsMask;
+                moveToLevelCommand.optionsOverride = moveToLevel->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+                                                                               moveToLevelCommand);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::Move::Id: {
-        Clusters::LevelControl::Commands::Move::Type moveCommand;
-        if (auto move = std::get_if<BindingCommandData::Move>(&data->commandData))
-        {
-            moveCommand.moveMode        = move->moveMode;
-            moveCommand.rate            = move->rate;
-            moveCommand.optionsMask     = move->optionsMask;
-            moveCommand.optionsOverride = move->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           moveCommand);
+        case Clusters::LevelControl::Commands::Move::Id: {
+            Clusters::LevelControl::Commands::Move::Type moveCommand;
+            if (auto move = std::get_if<BindingCommandData::Move>(&data->commandData))
+            {
+                moveCommand.moveMode        = move->moveMode;
+                moveCommand.rate            = move->rate;
+                moveCommand.optionsMask     = move->optionsMask;
+                moveCommand.optionsOverride = move->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+                                                                               moveCommand);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::Step::Id: {
-        Clusters::LevelControl::Commands::Step::Type stepCommand;
-        if (auto step = std::get_if<BindingCommandData::Step>(&data->commandData))
-        {
-            stepCommand.stepMode        = step->stepMode;
-            stepCommand.stepSize        = step->stepSize;
-            stepCommand.transitionTime  = step->transitionTime;
-            stepCommand.optionsMask     = step->optionsMask;
-            stepCommand.optionsOverride = step->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           stepCommand);
+        case Clusters::LevelControl::Commands::Step::Id: {
+            Clusters::LevelControl::Commands::Step::Type stepCommand;
+            if (auto step = std::get_if<BindingCommandData::Step>(&data->commandData))
+            {
+                stepCommand.stepMode        = step->stepMode;
+                stepCommand.stepSize        = step->stepSize;
+                stepCommand.transitionTime  = step->transitionTime;
+                stepCommand.optionsMask     = step->optionsMask;
+                stepCommand.optionsOverride = step->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+                                                                               stepCommand);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::Stop::Id: {
-        Clusters::LevelControl::Commands::Stop::Type stopCommand;
-        if (auto stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
-        {
-            stopCommand.optionsMask     = stop->optionsMask;
-            stopCommand.optionsOverride = stop->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           stopCommand);
+        case Clusters::LevelControl::Commands::Stop::Id: {
+            Clusters::LevelControl::Commands::Stop::Type stopCommand;
+            if (auto stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
+            {
+                stopCommand.optionsMask     = stop->optionsMask;
+                stopCommand.optionsOverride = stop->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+                                                                               stopCommand);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id: {
-        Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveToLevelWithOnOffCommand;
-        if (auto moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
-        {
-            moveToLevelWithOnOffCommand.level           = moveToLevel->level;
-            moveToLevelWithOnOffCommand.transitionTime  = moveToLevel->transitionTime;
-            moveToLevelWithOnOffCommand.optionsMask     = moveToLevel->optionsMask;
-            moveToLevelWithOnOffCommand.optionsOverride = moveToLevel->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           moveToLevelWithOnOffCommand);
+        case Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Id: {
+            Clusters::LevelControl::Commands::MoveToLevelWithOnOff::Type moveToLevelWithOnOffCommand;
+            if (auto moveToLevel = std::get_if<BindingCommandData::MoveToLevel>(&data->commandData))
+            {
+                moveToLevelWithOnOffCommand.level           = moveToLevel->level;
+                moveToLevelWithOnOffCommand.transitionTime  = moveToLevel->transitionTime;
+                moveToLevelWithOnOffCommand.optionsMask     = moveToLevel->optionsMask;
+                moveToLevelWithOnOffCommand.optionsOverride = moveToLevel->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+                                                                               moveToLevelWithOnOffCommand);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::MoveWithOnOff::Id: {
-        Clusters::LevelControl::Commands::MoveWithOnOff::Type moveWithOnOffCommand;
-        if (auto move = std::get_if<BindingCommandData::Move>(&data->commandData))
-        {
-            moveWithOnOffCommand.moveMode        = move->moveMode;
-            moveWithOnOffCommand.rate            = move->rate;
-            moveWithOnOffCommand.optionsMask     = move->optionsMask;
-            moveWithOnOffCommand.optionsOverride = move->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           moveWithOnOffCommand);
+        case Clusters::LevelControl::Commands::MoveWithOnOff::Id: {
+            Clusters::LevelControl::Commands::MoveWithOnOff::Type moveWithOnOffCommand;
+            if (auto move = std::get_if<BindingCommandData::Move>(&data->commandData))
+            {
+                moveWithOnOffCommand.moveMode        = move->moveMode;
+                moveWithOnOffCommand.rate            = move->rate;
+                moveWithOnOffCommand.optionsMask     = move->optionsMask;
+                moveWithOnOffCommand.optionsOverride = move->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+                                                                               moveWithOnOffCommand);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::StepWithOnOff::Id: {
-        Clusters::LevelControl::Commands::StepWithOnOff::Type stepWithOnOffCommand;
-        if (auto step = std::get_if<BindingCommandData::Step>(&data->commandData))
-        {
-            stepWithOnOffCommand.stepMode        = step->stepMode;
-            stepWithOnOffCommand.stepSize        = step->stepSize;
-            stepWithOnOffCommand.transitionTime  = step->transitionTime;
-            stepWithOnOffCommand.optionsMask     = step->optionsMask;
-            stepWithOnOffCommand.optionsOverride = step->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           stepWithOnOffCommand);
+        case Clusters::LevelControl::Commands::StepWithOnOff::Id: {
+            Clusters::LevelControl::Commands::StepWithOnOff::Type stepWithOnOffCommand;
+            if (auto step = std::get_if<BindingCommandData::Step>(&data->commandData))
+            {
+                stepWithOnOffCommand.stepMode        = step->stepMode;
+                stepWithOnOffCommand.stepSize        = step->stepSize;
+                stepWithOnOffCommand.transitionTime  = step->transitionTime;
+                stepWithOnOffCommand.optionsMask     = step->optionsMask;
+                stepWithOnOffCommand.optionsOverride = step->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+                                                                               stepWithOnOffCommand);
+            }
+            break;
         }
-        break;
-    }
-    case Clusters::LevelControl::Commands::StopWithOnOff::Id: {
-        Clusters::LevelControl::Commands::StopWithOnOff::Type stopWithOnOffCommand;
-        if (auto stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
-        {
-            stopWithOnOffCommand.optionsMask     = stop->optionsMask;
-            stopWithOnOffCommand.optionsOverride = stop->optionsOverride;
-            TEMPORARY_RETURN_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
-                                                                           stopWithOnOffCommand);
+        case Clusters::LevelControl::Commands::StopWithOnOff::Id: {
+            Clusters::LevelControl::Commands::StopWithOnOff::Type stopWithOnOffCommand;
+            if (auto stop = std::get_if<BindingCommandData::Stop>(&data->commandData))
+            {
+                stopWithOnOffCommand.optionsMask     = stop->optionsMask;
+                stopWithOnOffCommand.optionsOverride = stop->optionsOverride;
+                RETURN_SAFELY_IGNORED Controller::InvokeGroupCommandRequest(&exchangeMgr, binding.fabricIndex, binding.groupId,
+                                                                               stopWithOnOffCommand);
+            }
+            break;
         }
-        break;
-    }
-    default:
-        break;
-    }
+        default:
+            break;
+        }
     }
 }
 
