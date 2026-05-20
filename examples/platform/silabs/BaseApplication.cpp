@@ -97,6 +97,10 @@
 #include <app-common/zap-generated/callback.h>
 #endif
 
+#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#include "CustomerAppTask.h"
+#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+
 // SL-Only
 #include "sl_component_catalog.h"
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
@@ -107,10 +111,6 @@
 #include <MultiProtocolDataModelHelper.h>
 #endif // SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
-
-#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
-#include "CustomerAppTask.h"
-#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
 
 // Tracing
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
