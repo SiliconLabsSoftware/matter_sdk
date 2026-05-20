@@ -129,7 +129,7 @@ void WifiInterface::NotifyWifiTaskInitialized(void)
     // TODO: We should move this to the init function and not the notification function
     // Creating a timer which will be used to retry connection with AP
     mRetryTimer = osTimerNew(RetryConnectionTimerHandler, osTimerOnce, NULL, NULL);
-    VerifyOrReturn(mRetryTimer != NULL);
+    VerifyOrReturn(mRetryTimer != nullptr);
 
     evt.header.id     = to_underlying(WifiEvent::kStartUp);
     evt.header.length = sizeof evt;
@@ -165,19 +165,20 @@ void WifiInterface::ScheduleConnectionAttempt()
             ChipLogError(DeviceLayer, "ConnectToAccessPoint() failed.");
         }
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-        //  Remove High performance request before giving up due to a timer start error to save battery life
-        TEMPORARY_RETURN_IGNORED Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         return;
     }
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-    TEMPORARY_RETURN_IGNORED Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
     ChipLogProgress(DeviceLayer, "ScheduleConnectionAttempt : Next attempt after %d Seconds", retryInterval);
     retryInterval += retryInterval;
+}
+
+void WifiInterface::CancelConnectionAttempt()
+{
+    if (osTimerIsRunning(mRetryTimer))
+    {
+        osTimerStop(mRetryTimer);
+        mRetryTimer = nullptr;
+    }
 }
 
 void WifiInterface::ResetConnectionRetryInterval()

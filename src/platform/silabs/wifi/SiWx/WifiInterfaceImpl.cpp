@@ -29,6 +29,10 @@
 #include <app/icd/server/ICDServerConfig.h>
 #include <cmsis_os2.h>
 #include <inet/IPAddress.h>
+#include <inet/InetConfig.h>
+#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#include <inet/UDPEndPointImplLwIP.h>
+#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -654,6 +658,7 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     // Create the message queue
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiPlatformEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, CHIP_ERROR_NO_MEMORY);
+
 #ifndef SL_MBEDTLS_USE_TINYCRYPT
     // PSA Crypto initialization
     VerifyOrReturnError(psa_crypto_init() == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
@@ -676,17 +681,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
     case WifiPlatformEvent::kStationDisconnect: {
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationDisconnect");
         TriggerPlatformWifiDisconnection();
-
-        wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
-            .Clear(WifiInterface::WifiState::kStationConnecting)
-            .Clear(WifiInterface::WifiState::kStationConnected);
-
-        // TODO: Implement disconnect notify
-        ResetConnectivityNotificationFlags();
-#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
-        NotifyIPv4Change(false);
-#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
-        NotifyIPv6Change(false);
+        ClearWifiDisconnectedState();
     }
     break;
 
@@ -701,6 +696,10 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        // Remove High performance request that might have been added during the connect/retry process
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         PostWifiPlatformEvent(WifiPlatformEvent::kStationStartJoin);
         break;
 
@@ -732,6 +731,17 @@ void WifiInterfaceImpl::NotifySuccessfulConnection(void)
     ChipLogProgress(DeviceLayer, "SLAAC OK: linklocal addr: %s", addrStr);
     NotifyIPv6Change(true);
     NotifyConnectivity();
+
+#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+    {
+        CHIP_ERROR flushErr =
+            chip::DeviceLayer::SystemLayer().ScheduleLambda([]() { chip::Inet::UDPEndPointImplLwIP::FlushDeferredSendQueue(); });
+        if (flushErr != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "ScheduleLambda(FlushDeferredSendQueue) failed: %" CHIP_ERROR_FORMAT, flushErr.Format());
+        }
+    }
+#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 }
 
 sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
@@ -767,11 +777,6 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
     if (status == SL_STATUS_OK)
     {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-        // Remove High performance request that might have been added during the connect/retry process
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
         WifiPlatformEvent event = WifiPlatformEvent::kStationConnect;
         PostWifiPlatformEvent(event);
         return status;
@@ -920,7 +925,93 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
     return SL_STATUS_OK;
 }
 
+void WifiInterfaceImpl::ClearWifiDisconnectedState()
+{
+    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
+        .Clear(WifiInterface::WifiState::kStationConnecting)
+        .Clear(WifiInterface::WifiState::kStationConnected);
+
+    ResetConnectivityNotificationFlags();
+#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
+    NotifyIPv4Change(false);
+#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
+    NotifyIPv6Change(false);
+}
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+namespace {
+osTimerId_t sLitPrecheckInReconnectTimer       = nullptr;
+constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
+
+void OnLitPrecheckInReconnectOsTimer(void *)
+{
+    WifiInterfaceImpl & self = WifiInterfaceImpl::GetInstance();
+    VerifyOrReturn(self.IsWifiProvisioned() && !self.IsStationConnected());
+
+    ChipLogProgress(DeviceLayer, "LIT precheck-in: reconnecting Wi-Fi before ICD traffic");
+    VerifyOrReturn(self.ConfigureLITConnect() == CHIP_NO_ERROR, ChipLogError(DeviceLayer, "LIT precheck-in reconnect failed"));
+}
+} // namespace
+
+CHIP_ERROR WifiInterfaceImpl::InitLitPrecheckInReconnectTimer()
+{
+    VerifyOrReturnError(sLitPrecheckInReconnectTimer == nullptr, CHIP_NO_ERROR);
+
+    sLitPrecheckInReconnectTimer = osTimerNew(OnLitPrecheckInReconnectOsTimer, osTimerOnce, nullptr, nullptr);
+    VerifyOrReturnError(sLitPrecheckInReconnectTimer != nullptr, CHIP_ERROR_INTERNAL,
+                        ChipLogDetail(DeviceLayer, "LIT precheck-in osTimerNew failed"));
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
+{
+    ResetConnectionRetryInterval();
+
+    VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
+
+    VerifyOrReturnError(!IsStationConnected(), CHIP_NO_ERROR);
+
+    if (!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
+    {
+        return ConnectToAccessPoint();
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
+{
+    CancelConnectionAttempt();
+    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
+    TriggerPlatformWifiDisconnection();
+    return CHIP_NO_ERROR;
+}
+
+void WifiInterfaceImpl::CancelLitPrecheckInReconnectTimer()
+{
+    VerifyOrReturn(sLitPrecheckInReconnectTimer != nullptr);
+    (void) osTimerStop(sLitPrecheckInReconnectTimer);
+}
+
+void WifiInterfaceImpl::StartLitPrecheckInReconnectTimer()
+{
+    VerifyOrReturn(sLitPrecheckInReconnectTimer != nullptr);
+    const uint32_t idleSec            = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
+    const uint32_t activeThresholdSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
+    const uint32_t delaySec =
+        (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeThresholdSec - kLitPrecheckInMarginSeconds) : 1u;
+    const uint32_t delayMs = delaySec * 1000u;
+
+    (void) osTimerStop(sLitPrecheckInReconnectTimer);
+    if (osTimerStart(sLitPrecheckInReconnectTimer, pdMS_TO_TICKS(delayMs)) != osOK)
+    {
+        ChipLogDetail(DeviceLayer, "LIT precheck-in osTimerStart failed (delay ms=%u)", static_cast<unsigned>(delayMs));
+    }
+}
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
     // Power save configuration is already set, nothing to do
