@@ -15,6 +15,7 @@
  *
  ******************************************************************************/
 #include "SilabsTracing.h"
+#include <algorithm>
 #include <cstdio> // for snprintf
 #include <cstring>
 #include <lib/support/CodeUtils.h>
@@ -758,14 +759,22 @@ CHIP_ERROR SilabsTracer::FindOrCreateTrace(const CharSpan label, const CharSpan 
 
 CHIP_ERROR SilabsTracer::FindExistingTrace(const CharSpan label, const CharSpan group, size_t & outIdx) const
 {
+    const size_t labelCap =
+        (NamedTrace::kMaxLabelLength > 0) ? static_cast<size_t>(NamedTrace::kMaxLabelLength - 1) : 0;
+    const size_t groupCap =
+        (NamedTrace::kMaxGroupLength > 0) ? static_cast<size_t>(NamedTrace::kMaxGroupLength - 1) : 0;
+
     for (size_t i = 0; i < kMaxNamedTraces; ++i)
     {
         const auto & t = mNamedTraces[i];
         if (t.labelLen == 0)
             return CHIP_ERROR_NOT_FOUND; // empty slot
 
-        // Prefix match: only compare up to stored length; incoming must span at least that many bytes.
-        if (group.size() < t.groupLen || label.size() < t.labelLen)
+        // Same truncation as FindOrCreateTrace: stored len is min(span size, cap - 1).
+        const size_t incomingLabelLen = std::min(label.size(), labelCap);
+        const size_t incomingGroupLen = std::min(group.size(), groupCap);
+
+        if (incomingLabelLen != static_cast<size_t>(t.labelLen) || incomingGroupLen != static_cast<size_t>(t.groupLen))
         {
             continue;
         }
