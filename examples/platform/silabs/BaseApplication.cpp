@@ -332,7 +332,6 @@ CHIP_ERROR BaseApplication::Init()
         return err;
     }
 
-    GetPlatform().WatchdogInit();
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 #ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
     if (PlatformMgr().ScheduleWork([](intptr_t) { MultiProtocolDataModel::Initialize(); }) != CHIP_NO_ERROR)
@@ -1022,7 +1021,11 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
 #ifdef SL_MATTER_ENABLE_AWS
-        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
+    if (event->ThreadConnectivityChange.Result == kConnectivity_Established
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+        || (event->InternetConnectivityChange.IPv6 == kConnectivity_Established)
+#endif
+        )
         {
             if (MATTER_AWS_OK != MatterAwsInit(matterAws::control::subscribeCB))
             {
