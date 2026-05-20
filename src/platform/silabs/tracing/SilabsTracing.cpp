@@ -764,7 +764,12 @@ CHIP_ERROR SilabsTracer::FindExistingTrace(const CharSpan label, const CharSpan 
         if (t.labelLen == 0)
             return CHIP_ERROR_NOT_FOUND; // empty slot
 
-        // prefix semantics: stored must fit within incoming, then bytes must match
+        // Prefix match: only compare up to stored length; incoming must span at least that many bytes.
+        if (group.size() < t.groupLen || label.size() < t.labelLen)
+        {
+            continue;
+        }
+
         if (std::memcmp(t.group, group.data(), t.groupLen) == 0 && std::memcmp(t.label, label.data(), t.labelLen) == 0)
         {
             outIdx = i;
