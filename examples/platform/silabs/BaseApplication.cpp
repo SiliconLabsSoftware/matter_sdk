@@ -100,7 +100,6 @@
 #ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
 #include "CustomerAppTask.h"
 #endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
-
 // SL-Only
 #include "sl_component_catalog.h"
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
