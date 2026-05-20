@@ -45,26 +45,22 @@ CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiSt
 
 void WifiSleepManager::HandleCommissioningSessionStarted()
 {
-    bool wasCommissioningInProgress = mIsCommissioningInProgress;
-    mIsCommissioningInProgress      = true;
-
-    if (!wasCommissioningInProgress)
+    if (!mIsCommissioningInProgress)
     {
         // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
         TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
     }
+    mIsCommissioningInProgress      = true;
 }
 
 void WifiSleepManager::HandleCommissioningSessionStopped()
 {
-    bool wasCommissioningInProgress = mIsCommissioningInProgress;
-    mIsCommissioningInProgress      = false;
-
-    if (wasCommissioningInProgress)
+    if (mIsCommissioningInProgress)
     {
         // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
         TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
     }
+    mIsCommissioningInProgress      = false;
 }
 
 CHIP_ERROR WifiSleepManager::RequestHighPerformance(bool triggerTransition)
@@ -104,21 +100,16 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
         ChipLogProgress(AppServer, "WifiSleepManager: Handling Commissioning Complete Event");
 
         // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-        TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-        mIsCommissioningInProgress = false;
+        HandleCommissioningSessionStopped();
         break;
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
     case PowerEvent::kActiveMode:
-#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         mActiveMode = true;
-#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         break;
     case PowerEvent::kIdleMode:
-#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         mActiveMode = false;
-#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         break;
 
     default:

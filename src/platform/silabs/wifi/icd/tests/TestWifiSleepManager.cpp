@@ -36,8 +36,8 @@ public:
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         mConfigureLITConnectCalled    = false;
         mConfigureLITDisconnectCalled = false;
-        mCancelLitPrecheckTimerCalled = false;
-        mStartLitPrecheckTimerCalled  = false;
+        mCancelLitPrecheckInTimerCalled = false;
+        mStartLitPrecheckInTimerCalled  = false;
         mInitLitPrecheckInTimerCalled = false;
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
@@ -81,15 +81,15 @@ public:
 
     bool WasCancelLitPrecheckTimerCalled()
     {
-        bool wasCalled                = mCancelLitPrecheckTimerCalled;
-        mCancelLitPrecheckTimerCalled = false;
+        bool wasCalled                  = mCancelLitPrecheckInTimerCalled;
+        mCancelLitPrecheckInTimerCalled = false;
         return wasCalled;
     }
 
     bool WasStartLitPrecheckTimerCalled()
     {
-        bool wasCalled               = mStartLitPrecheckTimerCalled;
-        mStartLitPrecheckTimerCalled = false;
+        bool wasCalled                 = mStartLitPrecheckInTimerCalled;
+        mStartLitPrecheckInTimerCalled = false;
         return wasCalled;
     }
 
@@ -133,9 +133,9 @@ public:
         return CHIP_NO_ERROR;
     }
 
-    void CancelLitPrecheckInReconnectTimer() override { mCancelLitPrecheckTimerCalled = true; }
+    void CancelLitPrecheckInReconnectTimer() override { mCancelLitPrecheckInTimerCalled = true; }
 
-    void StartLitPrecheckInReconnectTimer() override { mStartLitPrecheckTimerCalled = true; }
+    void StartLitPrecheckInReconnectTimer() override { mStartLitPrecheckInTimerCalled = true; }
 
     CHIP_ERROR InitLitPrecheckInReconnectTimer() override
     {
@@ -161,8 +161,8 @@ private:
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     bool mConfigureLITConnectCalled    = false;
     bool mConfigureLITDisconnectCalled = false;
-    bool mCancelLitPrecheckTimerCalled = false;
-    bool mStartLitPrecheckTimerCalled  = false;
+    bool mCancelLitPrecheckInTimerCalled = false;
+    bool mStartLitPrecheckInTimerCalled  = false;
     bool mInitLitPrecheckInTimerCalled = false;
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 };

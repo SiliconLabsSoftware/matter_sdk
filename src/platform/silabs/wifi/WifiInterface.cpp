@@ -129,7 +129,7 @@ void WifiInterface::NotifyWifiTaskInitialized(void)
     // TODO: We should move this to the init function and not the notification function
     // Creating a timer which will be used to retry connection with AP
     mRetryTimer = osTimerNew(RetryConnectionTimerHandler, osTimerOnce, NULL, NULL);
-    VerifyOrReturn(mRetryTimer != NULL);
+    VerifyOrReturn(mRetryTimer != nullptr);
 
     evt.header.id     = to_underlying(WifiEvent::kStartUp);
     evt.header.length = sizeof evt;
@@ -177,7 +177,7 @@ void WifiInterface::CancelConnectionAttempt()
     if (osTimerIsRunning(mRetryTimer))
     {
         osTimerStop(mRetryTimer);
-        mRetryTimer = NULL;
+        mRetryTimer = nullptr;
     }
 }
 

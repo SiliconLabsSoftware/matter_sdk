@@ -219,9 +219,7 @@ private:
     CHIP_ERROR ConfigureLITDisconnect();
 
     CHIP_ERROR ConfigureLITConnect();
-
-    bool mActiveMode                         = false;
-#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+    #endif // CHIP_CONFIG_ENABLE_ICD_LIT
 
     /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
@@ -240,6 +238,7 @@ private:
     WifiStateProvider * mWifiStateProvider   = nullptr;
     bool mIsCommissioningInProgress          = false;
     uint8_t mHighPerformanceRequestCounter   = 0;
+    bool mActiveMode                         = false;
 
     ApplicationCallback * mCallback = nullptr;
 };
