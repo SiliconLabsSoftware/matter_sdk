@@ -97,9 +97,6 @@
 #include <app-common/zap-generated/callback.h>
 #endif
 
-#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
-#include "CustomerAppTask.h"
-#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
 // SL-Only
 #include "sl_component_catalog.h"
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
@@ -111,11 +108,19 @@
 #endif // SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 
+#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#include "CustomerAppTask.h"
+#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+
 // Tracing
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 #if MATTER_TRACING_ENABLED && defined(ENABLE_CHIP_SHELL)
 #include <TracingShellCommands.h>
 #endif // MATTER_TRACING_ENABLED
+
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include <MultiProtocolDataModelHelper.h>
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 
 // sl-only
 #if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
@@ -326,6 +331,8 @@ CHIP_ERROR BaseApplication::Init()
         appError(err);
         return err;
     }
+
+    GetPlatform().WatchdogInit();
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 #ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
     if (PlatformMgr().ScheduleWork([](intptr_t) { MultiProtocolDataModel::Initialize(); }) != CHIP_NO_ERROR)
@@ -1015,11 +1022,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
 #ifdef SL_MATTER_ENABLE_AWS
-        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
-#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-            || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
-#endif
-        )
+        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
         {
             if (MATTER_AWS_OK != MatterAwsInit(matterAws::control::subscribeCB))
             {
@@ -1124,7 +1127,13 @@ bool BaseApplication::GetProvisionStatus()
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
+    [[maybe_unused]] EndpointId endpointId   = attributePath.mEndpointId;
+    [[maybe_unused]] ClusterId clusterId     = attributePath.mClusterId;
+    [[maybe_unused]] AttributeId attributeId = attributePath.mAttributeId;
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
 #endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
