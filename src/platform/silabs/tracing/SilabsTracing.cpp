@@ -1,19 +1,19 @@
 /***************************************************************************
-* @file SilabsTracing.cpp
-* @brief Instrumenting for matter operation tracing for the Silicon Labs platform.
-*******************************************************************************
-* # License
-* <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
-*******************************************************************************
-*
-* The licensor of this software is Silicon Laboratories Inc. Your use of this
-* software is governed by the terms of Silicon Labs Master Software License
-* Agreement (MSLA) available at
-* www.silabs.com/about-us/legal/master-software-license-agreement. This
-* software is distributed to you in Source Code format and is governed by the
-* sections of the MSLA applicable to Source Code.
-*
-******************************************************************************/
+ * @file SilabsTracing.cpp
+ * @brief Instrumenting for matter operation tracing for the Silicon Labs platform.
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2024 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
 #include "SilabsTracing.h"
 #include <cstdio> // for snprintf
 #include <cstring>
@@ -186,8 +186,8 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     {
     case OperationType::kBegin: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                            "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
-                            opSpan.data(), mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
+                              opSpan.data(), mError.AsInteger());
 
         MutableCharSpan subSpan;
         if (offset < static_cast<int>(buffer.size()))
@@ -198,8 +198,8 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     }
     case OperationType::kEnd: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                            "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
-                            opSpan.data(), mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Start: ", OperationTypeToString(mType),
+                              opSpan.data(), mError.AsInteger());
 
         MutableCharSpan subSpan;
 
@@ -232,8 +232,8 @@ int TimeTracker::ToCharArray(MutableCharSpan & buffer) const
     }
     case OperationType::kInstant: {
         int offset = snprintf(buffer.data(), buffer.size(),
-                            "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Time: ", OperationTypeToString(mType),
-                            opSpan.data(), mError.AsInteger());
+                              "TimeTracker - %-8s | %-32s | Status: %" PRIx32 " | Time: ", OperationTypeToString(mType),
+                              opSpan.data(), mError.AsInteger());
 
         MutableCharSpan subSpan;
         if (offset < static_cast<int>(buffer.size()))
@@ -769,7 +769,6 @@ CHIP_ERROR SilabsTracer::FindExistingTrace(const CharSpan label, const CharSpan 
         {
             continue;
         }
-
         if (std::memcmp(t.group, group.data(), t.groupLen) == 0 && std::memcmp(t.label, label.data(), t.labelLen) == 0)
         {
             outIdx = i;
@@ -923,7 +922,7 @@ void SilabsTracer::PowerManagerTransitionCallback(sl_power_manager_em_t from, sl
     else
     {
         ChipLogError(DeviceLayer, "Unexpected power manager transition from EM%d to EM%d (expected EM%d to EM%d)", from, to,
-                    mCurrentEnergyMode, to);
+                     mCurrentEnergyMode, to);
     }
 
     // Update time spent in previous energy mode
