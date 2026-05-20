@@ -1021,9 +1021,9 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
 #ifdef SL_MATTER_ENABLE_AWS
-    if (event->ThreadConnectivityChange.Result == kConnectivity_Established
+        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-        || (event->InternetConnectivityChange.IPv6 == kConnectivity_Established)
+            || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
 #endif
         )
         {
