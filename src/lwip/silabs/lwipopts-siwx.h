@@ -71,7 +71,7 @@
 #define ARP_QUEUEING (0)
 #define TCPIP_THREAD_NAME "LWIP"
 
-#define LWIP_SOCKET (SL_MATTER_ENABLE_DUAL_STACK)
+#define LWIP_SOCKET 0
 
 // Setting the priority of the lwip thread to osPriorityAboveNormal
 #define TCPIP_THREAD_PRIO (32)
