@@ -15,7 +15,6 @@
  *
  ******************************************************************************/
 #include "SilabsTracing.h"
-#include <algorithm>
 #include <cstdio> // for snprintf
 #include <cstring>
 #include <lib/support/CodeUtils.h>
