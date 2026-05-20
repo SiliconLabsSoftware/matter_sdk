@@ -390,6 +390,11 @@ protected:
      */
     void ScheduleConnectionAttempt();
 
+    /**
+     * @brief Function cancels the on-going reconnection attempts
+     */
+    void CancelConnectionAttempt();
+
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
     bool mHasNotifiedIPv4 = false;

@@ -36,7 +36,25 @@ CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiSt
     mPowerSaveInterface = platformInterface;
     mWifiStateProvider  = wifiStateProvider;
 
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    ReturnErrorOnFailure(mPowerSaveInterface->InitLitPrecheckInReconnectTimer());
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
     return VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent);
+}
+
+void WifiSleepManager::HandleCommissioningSessionStarted()
+{
+    VerifyOrReturn(!mIsCommissioningInProgress);
+    mIsCommissioningInProgress = true;
+    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
+}
+
+void WifiSleepManager::HandleCommissioningSessionStopped()
+{
+    VerifyOrReturn(mIsCommissioningInProgress);
+    mIsCommissioningInProgress = false;
+    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 }
 
 CHIP_ERROR WifiSleepManager::RequestHighPerformance(bool triggerTransition)
@@ -74,15 +92,18 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     {
     case PowerEvent::kCommissioningComplete:
         ChipLogProgress(AppServer, "WifiSleepManager: Handling Commissioning Complete Event");
-        mIsCommissioningInProgress = false;
 
         // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-        TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
+        HandleCommissioningSessionStopped();
         break;
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
-        // No additional processing needed for these events at the moment
+    case PowerEvent::kActiveMode:
+        mActiveMode = true;
+        break;
+    case PowerEvent::kIdleMode:
+        mActiveMode = false;
         break;
 
     default:
@@ -99,6 +120,14 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
 
     ReturnErrorOnFailure(HandlePowerEvent(event));
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    if (event == PowerEvent::kActiveMode)
+    {
+        mPowerSaveInterface->CancelLitPrecheckInReconnectTimer();
+        ReturnErrorOnFailure(ConfigureLITConnect());
+    }
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
     if (mHighPerformanceRequestCounter > 0)
     {
@@ -119,7 +148,14 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+        if (!mActiveMode)
+        {
+            return ConfigureLITDisconnect();
+        }
+#else  // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         return ConfigureLIBasedSleep();
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
 
     return ConfigureDTIMBasedSleep();
@@ -166,6 +202,26 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 
     return CHIP_NO_ERROR;
 }
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
+{
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
+    ReturnLogErrorOnFailure(
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep,
+                                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+
+    mPowerSaveInterface->StartLitPrecheckInReconnectTimer();
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
+{
+    ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
+    return CHIP_NO_ERROR;
+}
+#endif
 
 } // namespace Silabs
 } // namespace DeviceLayer
