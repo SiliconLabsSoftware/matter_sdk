@@ -581,7 +581,6 @@ sl_wifi_system_performance_profile_t ConvertPowerSaveConfiguration(PowerSaveInte
         profile = ASSOCIATED_POWER_SAVE;
         break;
     case PowerSaveInterface::PowerSaveConfiguration::kDeepSleep:
-    case PowerSaveInterface::PowerSaveConfiguration::kDisconnectedSleep:
         profile = DEEP_SLEEP_WITH_RAM_RETENTION;
         break;
     default:
@@ -999,10 +998,11 @@ void WifiInterfaceImpl::CancelLitPrecheckInReconnectTimer()
 void WifiInterfaceImpl::StartLitPrecheckInReconnectTimer()
 {
     VerifyOrReturn(sLitPrecheckInReconnectTimer != nullptr);
-    const uint32_t idleSec   = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
-    const uint32_t activeSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
-    const uint32_t delaySec  = (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeSec - kLitPrecheckInMarginSeconds) : 1u;
-    const uint32_t delayMs   = delaySec * 1000u;
+    const uint32_t idleSec            = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
+    const uint32_t activeThresholdSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
+    const uint32_t delaySec =
+        (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeThresholdSec - kLitPrecheckInMarginSeconds) : 1u;
+    const uint32_t delayMs = delaySec * 1000u;
 
     (void) osTimerStop(sLitPrecheckInReconnectTimer);
     if (osTimerStart(sLitPrecheckInReconnectTimer, pdMS_TO_TICKS(delayMs)) != osOK)

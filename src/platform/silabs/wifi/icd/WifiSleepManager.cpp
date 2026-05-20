@@ -45,22 +45,16 @@ CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiSt
 
 void WifiSleepManager::HandleCommissioningSessionStarted()
 {
-    if (!mIsCommissioningInProgress)
-    {
-        // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-        TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
-    }
-    mIsCommissioningInProgress      = true;
+    VerifyOrReturn(!mIsCommissioningInProgress);
+    mIsCommissioningInProgress = true;
+    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
 }
 
 void WifiSleepManager::HandleCommissioningSessionStopped()
 {
-    if (mIsCommissioningInProgress)
-    {
-        // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-        TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-    }
-    mIsCommissioningInProgress      = false;
+    VerifyOrReturn(mIsCommissioningInProgress);
+    mIsCommissioningInProgress = false;
+    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 }
 
 CHIP_ERROR WifiSleepManager::RequestHighPerformance(bool triggerTransition)
@@ -215,7 +209,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
     ReturnLogErrorOnFailure(
-        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDisconnectedSleep,
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep,
                                                 chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
 
     mPowerSaveInterface->StartLitPrecheckInReconnectTimer();

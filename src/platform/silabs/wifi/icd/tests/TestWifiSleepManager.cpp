@@ -320,7 +320,7 @@ TEST_F(TestWifiSleepManager, TestLitIdleModeSelectsLITDisconnectWhenCallbackAllo
     EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
     EXPECT_TRUE(mMock.WasConfigureBroadcastFilterCalled());
     EXPECT_TRUE(mMock.WasBroadcastFilterEnabled());
-    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kDisconnectedSleep);
+    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kDeepSleep);
     EXPECT_TRUE(mMock.WasConfigurePowerSaveCalled());
     EXPECT_TRUE(mMock.WasStartLitPrecheckTimerCalled());
 }
