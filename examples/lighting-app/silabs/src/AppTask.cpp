@@ -577,3 +577,9 @@ void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePa
         break;
     }
 }
+
+void AppTask::DummyEventHandler(AppEvent * aEvent)
+{
+    ChipLogProgress(Zcl, "Dummy event handler");
+    // Add dummy code so this function is not optimized away by the compiler
+}

@@ -80,6 +80,11 @@ public:
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMPostAttributeChangeCallbackImpl, attributePath, type, size, value);
     }
 
+    static void DummyEventHandler(AppEvent * aEvent)
+    {
+        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, DummyEventHandlerImpl, aEvent);
+    }
+
 private:
     friend Derived;
 
@@ -109,4 +114,6 @@ private:
     {
         AppTask::DMPostAttributeChangeCallback(attributePath, type, size, value);
     }
+
+    void DummyEventHandlerImpl(AppEvent * aEvent) { AppTask::DummyEventHandler(aEvent); }
 };

@@ -74,6 +74,8 @@ public:
 
     static void LightTimerEventHandler(void * timerCbArg);
 
+    static void DummyEventHandler(AppEvent * aEvent);
+
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
     static void LightControlEventHandler(AppEvent * aEvent);
 #endif
