@@ -116,3 +116,19 @@
 
 // Setting to prevent required DM implementation in AppTask
 #define CHIP_SILABS_APP_NO_DM_IMPLEMENTATION
+
+/**
+ * @brief CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE
+ *
+ * Platform app registers CustomerAppTask as an additional observer
+ */
+#if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
+#ifdef CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE
+#undef CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE
+#endif
+#ifdef SL_WIFI
+#define CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE 5
+#else
+#define CHIP_CONFIG_ICD_OBSERVERS_POOL_SIZE 4
+#endif
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
