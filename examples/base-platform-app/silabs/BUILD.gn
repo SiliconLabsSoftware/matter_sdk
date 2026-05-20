@@ -102,14 +102,10 @@ silabs_executable("platform_app") {
     defines += [ "SL_STATUS_LED=0" ]
   }
 
-<<<<<<< HEAD
-  sources = [ "src/AppTask.cpp" ]
-=======
   sources = [
     "${examples_common_plat_dir}/customer/CustomerAppTask.cpp",
     "src/AppTask.cpp",
   ]
->>>>>>> 382561e890 (initial commit CRTP platform app)
 
   deps = [
     ":sdk",
