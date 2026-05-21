@@ -241,7 +241,7 @@ CHIP_ERROR AppTask::AppInit()
     GetLCD().SetCustomUI(AirQualitySensorUI::DrawUI);
 #endif
 
-    err = InitAirQualitySensor();
+    err = appInstance().InitAirQualitySensor();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogDetail(AppServer, "InitAirQualitySensor() failed");
