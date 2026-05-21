@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2024 Project CHIP Authors\
+ *    Copyright (c) 2024 Project CHIP Authors
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "CustomerAppTask.h"
 
 #include "LEDWidget.h"
 
@@ -43,6 +44,7 @@
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/server/Server.h>
+#include <cmsis_os2.h>
 #include <app/util/attribute-storage.h>
 #include <assert.h>
 #include <lib/support/CodeUtils.h>
@@ -75,11 +77,19 @@ using namespace chip::app::Clusters::AirQuality;
 using namespace chip::app::Clusters;
 
 namespace {
-constexpr uint16_t kSensorTImerPeriodMs = 30000; // 30s timer period
+
+CustomerAppTask & appInstance()
+{
+    return CustomerAppTask::GetAppTask();
+}
+
+constexpr uint16_t kSensorTimerPeriodMs = SENSOR_TIMER_PERIOD_MS; // 30s timer period
+
+osTimerId_t sSensorTimer = nullptr;
 
 #ifndef USE_AIR_QUALITY_SENSOR
 constexpr uint16_t kSimulatedReadingFrequency =
-    (60000 / kSensorTImerPeriodMs); // for every two timer cycles, a simulated sensor update is triggered.
+    (60000 / kSensorTimerPeriodMs); // for every two timer cycles, a simulated sensor update is triggered.
 int32_t mSimulatedAirQuality[] = { 5, 55, 105, 155, 205, 255, 305, 355, 400 };
 #endif
 
@@ -139,20 +149,18 @@ void writeAirQualityToAttribute(intptr_t context)
     AirQualitySensorManager::GetInstance()->OnAirQualityChangeHandler(classifyAirQuality(*air_quality_ptr));
     ChipLogDetail(AppServer, "RAW AirQuality value: %ld and corresponding Enum value : %d", *air_quality_ptr,
                   chip::to_underlying(AirQualitySensorManager::GetInstance()->GetAirQuality()));
-    AppTask::GetAppTask().UpdateAirQualitySensorUI();
+    appInstance().UpdateAirQualitySensorUI();
     delete air_quality_ptr;
 }
-
-AppTask AppTask::sAppTask;
 
 CHIP_ERROR AppTask::InitAirQualitySensor()
 {
     TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(InitAirQualitySensorManager);
     // Create cmsisos sw timer for air quality sensor timer.
-    mSensorTimer = osTimerNew(SensorTimerEventHandler, osTimerPeriodic, nullptr, nullptr);
-    if (mSensorTimer == NULL)
+    sSensorTimer = osTimerNew(&CustomerAppTask::SensorTimerEventHandler, osTimerPeriodic, nullptr, nullptr);
+    if (sSensorTimer == nullptr)
     {
-        ChipLogDetail(AppServer, "mSensorTimer timer create failed");
+        ChipLogError(AppServer, "sSensorTimer timer create failed");
         return APP_ERROR_CREATE_TIMER_FAILED;
     }
 
@@ -165,14 +173,14 @@ CHIP_ERROR AppTask::InitAirQualitySensor()
     }
 #endif
     // Update Air Quality immediatly at bootup
-    SensorTimerEventHandler(nullptr);
+    CustomerAppTask::SensorTimerEventHandler(nullptr);
     // Trigger periodic update
-    uint32_t delayTicks = ((uint64_t) osKernelGetTickFreq() * kSensorTImerPeriodMs) / 1000;
+    uint32_t delayTicks = ((uint64_t) osKernelGetTickFreq() * kSensorTimerPeriodMs) / 1000;
 
     // Starts or restarts the function timer
-    if (osTimerStart(mSensorTimer, delayTicks))
+    if (osTimerStart(sSensorTimer, delayTicks))
     {
-        ChipLogDetail(AppServer, "mSensor Timer start() failed");
+        ChipLogError(AppServer, "sSensorTimer start() failed");
         appError(APP_ERROR_START_TIMER_FAILED);
     }
     return CHIP_NO_ERROR;
@@ -215,10 +223,10 @@ CHIP_ERROR AppTask::GetAirQuality(int32_t & air_quality)
 void AppTask::SensorTimerEventHandler(void * arg)
 {
     int32_t air_quality = 0;
-    CHIP_ERROR err      = sAppTask.GetAirQuality(air_quality);
+    CHIP_ERROR err      = appInstance().GetAirQuality(air_quality);
     VerifyOrReturn(err == CHIP_NO_ERROR,
-                   ChipLogDetail(AppServer, "GetAirQuality() failed: %" CHIP_ERROR_FORMAT ", skipping cluster update",
-                                 err.Format()));
+                   ChipLogError(AppServer, "GetAirQuality() failed: %" CHIP_ERROR_FORMAT ", skipping cluster update",
+                                err.Format()));
 
     int32_t * air_quality_ptr = new int32_t(air_quality);
     TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(writeAirQualityToAttribute,
@@ -228,7 +236,7 @@ void AppTask::SensorTimerEventHandler(void * arg)
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 #ifdef DISPLAY_ENABLED
     GetLCD().SetCustomUI(AirQualitySensorUI::DrawUI);
 #endif
@@ -253,7 +261,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = appInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogDetail(AppServer, "AppTask.Init() failed");
@@ -261,7 +269,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    sAppTask.StartStatusLEDTimer();
+    appInstance().StartStatusLEDTimer();
 #endif
 
     ChipLogDetail(AppServer, "App Task started");
@@ -270,7 +278,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
+            appInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -299,7 +307,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_FUNCTION_BUTTON)
     {
         aEvent.Handler = BaseApplication::ButtonHandler;
-        sAppTask.PostEvent(&aEvent);
+        appInstance().PostEvent(&aEvent);
     }
 }
 
@@ -315,10 +323,4 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
         ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                         ChipLogValueMEI(attributeId), type, *value, size);
     }
-}
-
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value)
-{
-    AppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 }

@@ -35,7 +35,6 @@
 #include "BaseApplication.h"
 #include <app/ConcreteAttributePath.h>
 #include <ble/BLEEndPoint.h>
-#include <cmsis_os2.h>
 #include <lib/core/CHIPError.h>
 #include <platform/CHIPDeviceLayer.h>
 
@@ -60,7 +59,7 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -84,12 +83,10 @@ public:
      * @param btnAction button action - SL_SIMPLE_BUTTON_PRESSED,
      *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
-     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
+    static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
-
-    CHIP_ERROR InitAirQualitySensor();
 
     /**
      * @brief Read the current air quality raw value into @p air_quality.
@@ -100,18 +97,13 @@ public:
      */
     CHIP_ERROR GetAirQuality(int32_t & air_quality);
 
-private:
-    static AppTask sAppTask;
-
-    /**
-     * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
-     *
-     * @return CHIP_ERROR
-     */
-    CHIP_ERROR AppInit() override;
-
-    osTimerId_t mSensorTimer;
-
     // Reads new generated sensor value, stores it, and updates local Air Quality attribute
     static void SensorTimerEventHandler(void * arg);
+
+protected:
+    /** Override of `BaseApplication::AppInit()`. */
+    CHIP_ERROR AppInit() override;
+
+    /** Bring up the air quality sensor app: Matter manager, sensor timer, sensor driver, first reading. */
+    CHIP_ERROR InitAirQualitySensor();
 };
