@@ -186,7 +186,7 @@ CHIP_ERROR AppTask::InitAirQualitySensor()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR AppTask::GetAirQuality(int32_t & air_quality)
+CHIP_ERROR AppTask::GetAirQualityValue(int32_t & air_quality)
 {
 #ifdef USE_AIR_QUALITY_SENSOR
     sl_status_t status = AirQualitySensor::GetAirQuality(air_quality);
@@ -223,9 +223,9 @@ CHIP_ERROR AppTask::GetAirQuality(int32_t & air_quality)
 void AppTask::SensorTimerEventHandler(void * arg)
 {
     int32_t air_quality = 0;
-    CHIP_ERROR err      = appInstance().GetAirQuality(air_quality);
+    CHIP_ERROR err      = appInstance().GetAirQualityValue(air_quality);
     VerifyOrReturn(err == CHIP_NO_ERROR,
-                   ChipLogError(AppServer, "GetAirQuality() failed: %" CHIP_ERROR_FORMAT ", skipping cluster update",
+                   ChipLogError(AppServer, "GetAirQualityValue() failed: %" CHIP_ERROR_FORMAT ", skipping cluster update",
                                 err.Format()));
 
     int32_t * air_quality_ptr = new int32_t(air_quality);

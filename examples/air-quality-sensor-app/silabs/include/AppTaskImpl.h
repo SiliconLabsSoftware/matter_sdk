@@ -39,9 +39,9 @@ public:
 
     CHIP_ERROR InitAirQualitySensor() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, InitAirQualitySensorImpl); }
 
-    CHIP_ERROR GetAirQuality(int32_t & air_quality)
+    CHIP_ERROR GetAirQualityValue(int32_t & air_quality)
     {
-        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, GetAirQualityImpl, air_quality);
+        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, GetAirQualityValueImpl, air_quality);
     }
 
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
@@ -67,7 +67,7 @@ private:
 
     CHIP_ERROR InitAirQualitySensorImpl() { return AppTask::InitAirQualitySensor(); }
 
-    CHIP_ERROR GetAirQualityImpl(int32_t & air_quality) { return AppTask::GetAirQuality(air_quality); }
+    CHIP_ERROR GetAirQualityValueImpl(int32_t & air_quality) { return AppTask::GetAirQualityValue(air_quality); }
 
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 

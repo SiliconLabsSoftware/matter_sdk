@@ -89,13 +89,13 @@ public:
                                        uint8_t * value);
 
     /**
-     * @brief Read the current air quality raw value into @p air_quality.
+     * @brief Read the current raw air quality sensor value into @p air_quality.
      *
      * Calls `AirQualitySensor::GetAirQuality` when `USE_AIR_QUALITY_SENSOR` is set,
      * otherwise steps through a simulated table. On error @p air_quality is left untouched and
      * the caller skips scheduling a cluster update for that tick.
      */
-    CHIP_ERROR GetAirQuality(int32_t & air_quality);
+    CHIP_ERROR GetAirQualityValue(int32_t & air_quality);
 
     // Reads new generated sensor value, stores it, and updates local Air Quality attribute
     static void SensorTimerEventHandler(void * arg);
