@@ -1134,10 +1134,6 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     EndpointId endpointId   = attributePath.mEndpointId;
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
-    if (clusterId == app::Clusters::ClosureControl::Id && attributeId == app::Clusters::ClosureControl::Attributes::CurrentPosition::Id)
-    {
-        CustomerClosureManager::GetInstance().OnCurrentPositionChange(endpointId, value);
-    }
     MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
