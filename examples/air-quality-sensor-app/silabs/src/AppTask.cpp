@@ -130,7 +130,6 @@ AirQualityEnum classifyAirQuality(int32_t value)
 
 void InitAirQualitySensorManager(intptr_t arg)
 {
-    (void) arg;
     AirQualitySensorManager::InitInstance();
 }
 
@@ -143,10 +142,6 @@ void writeAirQualityToAttribute(intptr_t context)
     AppTask::GetAppTask().UpdateAirQualitySensorUI();
     delete air_quality_ptr;
 }
-
-/**********************************************************
- * AppTask Definitions
- *********************************************************/
 
 AppTask AppTask::sAppTask;
 
