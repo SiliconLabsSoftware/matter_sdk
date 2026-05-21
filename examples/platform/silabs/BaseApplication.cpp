@@ -1128,12 +1128,16 @@ bool BaseApplication::GetProvisionStatus()
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
-    [[maybe_unused]] EndpointId endpointId   = attributePath.mEndpointId;
-    [[maybe_unused]] ClusterId clusterId     = attributePath.mClusterId;
-    [[maybe_unused]] AttributeId attributeId = attributePath.mAttributeId;
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    EndpointId endpointId   = attributePath.mEndpointId;
+    ClusterId clusterId     = attributePath.mClusterId;
+    AttributeId attributeId = attributePath.mAttributeId;
+    if (clusterId == app::Clusters::ClosureControl::Id && attributeId == app::Clusters::ClosureControl::Attributes::CurrentPosition::Id)
+    {
+        CustomerClosureManager::GetInstance().OnCurrentPositionChange(endpointId, value);
+    }
     MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
