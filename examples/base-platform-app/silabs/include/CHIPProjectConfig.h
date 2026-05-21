@@ -114,5 +114,5 @@
 // Temporary setting to use CustomerAppTask for apps which are not upgraded to new architecture
 #define CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
 
-// Setting to prevent required DM implementation in AppTask
+// Setting to prevent required Data Model implementation in AppTask
 #define CHIP_SILABS_APP_NO_DM_IMPLEMENTATION
