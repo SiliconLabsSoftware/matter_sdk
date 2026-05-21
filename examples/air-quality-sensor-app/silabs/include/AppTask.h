@@ -75,16 +75,6 @@ public:
      */
     void UpdateAirQualitySensorUI();
 
-    /**
-     * @brief Event handler when a button is pressed
-     * Function posts an event for button processing
-     *
-     * @param buttonHandle APP_CONTROL_BUTTON or APP_FUNCTION_BUTTON
-     * @param btnAction button action - SL_SIMPLE_BUTTON_PRESSED,
-     *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
-     */
-    static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
-
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
 
@@ -108,8 +98,6 @@ private:
      * @param aEvent button event being processed
      */
     static void ButtonHandler(AppEvent * aEvent);
-
-    static void AirQualitySensorActionEventHandler(AppEvent * aEvent);
 
     osTimerId_t mSensorTimer;
 
