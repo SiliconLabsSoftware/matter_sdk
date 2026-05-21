@@ -134,7 +134,7 @@ bool IsValidHolidayScheduleIndex(uint8_t scheduleIndex)
     return (scheduleIndex < kMaxHolidaySchedules);
 }
 
-const char * LockStateToString(DlLockState lockState)
+[[maybe_unused]] const char * LockStateToString(DlLockState lockState)
 {
     switch (lockState)
     {
