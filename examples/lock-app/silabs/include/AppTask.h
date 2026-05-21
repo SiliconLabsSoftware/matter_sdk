@@ -59,19 +59,12 @@
 class AppTask : public BaseApplication
 {
 public:
-    /** @brief Default-constructed application task; use `GetAppTask()` for the live instance. */
     AppTask() = default;
 
     /** @brief Singleton accessor; returns the active `CustomerAppTask` instance. */
     static AppTask & GetAppTask();
 
-    // ---------------------------------------------------------------------
-    // Lock-init parameters (cluster resource limits read at AppInit).
-    // Customers can use these from `InitLockImpl()` overrides to customize
-    // resource limits without reaching into the door-lock cluster directly.
-    // ---------------------------------------------------------------------
-
-    /** @brief Cluster resource limits captured from ZAP attributes at AppInit time. */
+    /** @brief Door Lock cluster resource limits read at init. */
     struct LockParam
     {
         uint16_t numberOfUsers                  = 0;
@@ -81,35 +74,35 @@ public:
         uint8_t numberOfHolidaySchedules        = 0;
     };
 
-    /** @brief Fluent builder for `LockParam`. */
+    /** @brief Fluent builder for `LockParam` (used from `InitLockImpl()` overrides). */
     class ParamBuilder
     {
     public:
-        /** @brief Sets `numberOfUsers`; returns `*this` for chaining. */
+        /** @brief Sets `numberOfUsers`. */
         ParamBuilder & SetNumberOfUsers(uint16_t numberOfUsers)
         {
             mLockParam.numberOfUsers = numberOfUsers;
             return *this;
         }
-        /** @brief Sets `numberOfCredentialsPerUser`; returns `*this` for chaining. */
+        /** @brief Sets `numberOfCredentialsPerUser`. */
         ParamBuilder & SetNumberOfCredentialsPerUser(uint8_t numberOfCredentialsPerUser)
         {
             mLockParam.numberOfCredentialsPerUser = numberOfCredentialsPerUser;
             return *this;
         }
-        /** @brief Sets `numberOfWeekdaySchedulesPerUser`; returns `*this` for chaining. */
+        /** @brief Sets `numberOfWeekdaySchedulesPerUser`. */
         ParamBuilder & SetNumberOfWeekdaySchedulesPerUser(uint8_t numberOfWeekdaySchedulesPerUser)
         {
             mLockParam.numberOfWeekdaySchedulesPerUser = numberOfWeekdaySchedulesPerUser;
             return *this;
         }
-        /** @brief Sets `numberOfYeardaySchedulesPerUser`; returns `*this` for chaining. */
+        /** @brief Sets `numberOfYeardaySchedulesPerUser`. */
         ParamBuilder & SetNumberOfYeardaySchedulesPerUser(uint8_t numberOfYeardaySchedulesPerUser)
         {
             mLockParam.numberOfYeardaySchedulesPerUser = numberOfYeardaySchedulesPerUser;
             return *this;
         }
-        /** @brief Sets `numberOfHolidaySchedules`; returns `*this` for chaining. */
+        /** @brief Sets `numberOfHolidaySchedules`. */
         ParamBuilder & SetNumberOfHolidaySchedules(uint8_t numberOfHolidaySchedules)
         {
             mLockParam.numberOfHolidaySchedules = numberOfHolidaySchedules;
@@ -122,11 +115,7 @@ public:
         LockParam mLockParam;
     };
 
-    // ---------------------------------------------------------------------
-    // Lock-action types (referenced by member functions below).
-    // ---------------------------------------------------------------------
-
-    /** @brief Door-lock actuator / cluster actions. */
+    /** @brief Actuator / cluster action for a lock operation. */
     enum class LockAction : uint8_t
     {
         kLock = 0,
@@ -135,7 +124,7 @@ public:
         kInvalid,
     };
 
-    /** @brief Work item for a lock/unlock/unlatch operation and its cluster attribution. */
+    /** @brief Work item for a lock, unlock, or unlatch request and its cluster attribution. */
     struct LockRequest
     {
         chip::EndpointId endpointId                                   = chip::kInvalidEndpointId;
@@ -150,154 +139,162 @@ public:
         bool isButtonAction  = false;
     };
 
-    // ---------------------------------------------------------------------
-    // Customer-facing entry points.
-    // Overridable in `CustomerAppTask` via `AppTaskImpl<>::*Impl()` hooks.
-    // ---------------------------------------------------------------------
-
-    /** @brief AppTask task main loop function. */
+    /**
+     * @brief AppTask task main loop function.
+     *
+     * @param pvParameter FreeRTOS task parameter.
+     */
     static void AppTaskMain(void * pvParameter);
 
-    /** @brief Start the AppTask FreeRTOS thread; runs `AppTaskMain` as entry. */
+    /** @brief Start the AppTask FreeRTOS thread. */
     CHIP_ERROR StartAppTask();
 
-    /** @brief Platform button callback; posts an `AppEvent` to the AppTask queue. */
+    /**
+     * @brief Event handler when a button is pressed.
+     *
+     * @param button    APP_LOCK_SWITCH or APP_FUNCTION_BUTTON.
+     * @param btnAction SL_SIMPLE_BUTTON_PRESSED, SL_SIMPLE_BUTTON_RELEASED, or SL_SIMPLE_BUTTON_DISABLED.
+     */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
-    /** @brief AppTask handler for lock-button presses; dispatches via `HandleLockRequestOnAppTask`. */
+    /** @brief `MatterPostAttributeChangeCallback` hook for Door Lock attribute changes. */
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
+
+    /** @brief AppTask handler for lock-button presses. */
     static void LockButtonActionHandler(AppEvent * aEvent);
 
     /** @brief Unlatch timer callback; schedules `UnlockAfterUnlatch` on the chip thread. */
     static void UnlatchCallback(void * argument);
 
-    /** @brief AppTask handler for actuator-movement completion; advances state and drains pending/staged requests. */
+    /** @brief AppTask handler for actuator-movement timer completion. */
     static void ActuatorMovementEventHandler(AppEvent * aEvent);
 
-    /** @brief AppTask handler for `kEventType_Lock`; invokes `InitiateLockAction`. */
+    /** @brief AppTask handler for `kEventType_Lock`; runs `InitiateLockAction`. */
     static void LockActionEventHandler(AppEvent * aEvent);
 
-    /** @brief AppTask handler for `kEventType_LockRequest`; drains the staged `LockRequest` and routes it. */
+    /** @brief AppTask handler for `kEventType_LockRequest`; drains the staged request. */
     static void LockRequestEventHandler(AppEvent * aEvent);
 
-    /** @brief AppTask router for `LockRequest`s; coalesces while busy, drives the actuator and cluster state. */
+    /** @brief Routes a `LockRequest` through the actuator and cluster state machine. */
     void HandleLockRequestOnAppTask(const LockRequest & request);
 
-    /** @brief Ember `MatterPostAttributeChangeCallback` hook; forwards DoorLock `LockState` changes to integrations. */
-    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value);
-
-    // ---------------------------------------------------------------------
-    // DoorLock cluster data-model entry points.
-    // ---------------------------------------------------------------------
-
-    /** @brief DoorLock cluster Lock command (chip thread); validates input and stages a `LockRequest`. */
+    /** @brief Door Lock Lock command handler; validates PIN and stages a `LockRequest`. */
     bool DMDoorLockOnDoorLockCommand(chip::EndpointId endpointId,
                                      const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
                                      const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
                                      const chip::Optional<chip::ByteSpan> & pinCode,
                                      chip::app::Clusters::DoorLock::OperationErrorEnum & err);
 
-    /** @brief DoorLock cluster Unlock command; stages `kUnlatch` when `SupportsUnbolt`, else `kUnlock`. */
+    /** @brief Door Lock Unlock command handler; may stage unlatch when `SupportsUnbolt`. */
     bool DMDoorLockOnDoorUnlockCommand(chip::EndpointId endpointId,
                                        const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
                                        const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
                                        const chip::Optional<chip::ByteSpan> & pinCode,
                                        chip::app::Clusters::DoorLock::OperationErrorEnum & err);
 
-    /** @brief DoorLock cluster Unbolt command; stages a `kUnlock` `LockRequest`. */
+    /** @brief Door Lock Unbolt command handler; stages an unlock `LockRequest`. */
     bool DMDoorLockOnDoorUnboltCommand(chip::EndpointId endpointId,
                                        const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
                                        const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
                                        const chip::Optional<chip::ByteSpan> & pinCode,
                                        chip::app::Clusters::DoorLock::OperationErrorEnum & err);
 
-    /** @brief Read a credential record from persistent storage. */
+    /** @brief Reads a credential from persistent storage. */
     bool DMDoorLockGetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum credentialType,
                                  EmberAfPluginDoorLockCredentialInfo & credential);
 
-    /** @brief Persist a credential record. */
+    /** @brief Writes a credential to persistent storage. */
     bool DMDoorLockSetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, chip::FabricIndex creator,
                                  chip::FabricIndex modifier, DlCredentialStatus credentialStatus, CredentialTypeEnum credentialType,
                                  const chip::ByteSpan & credentialData);
 
-    /** @brief Read a user record (and its credential map) from persistent storage. */
+    /** @brief Reads a user (and credential map) from persistent storage. */
     bool DMDoorLockGetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPluginDoorLockUserInfo & user);
 
-    /** @brief Persist a user record (and its credential map). */
+    /** @brief Writes a user (and credential map) to persistent storage. */
     bool DMDoorLockSetUser(chip::EndpointId endpointId, uint16_t userIndex, chip::FabricIndex creator, chip::FabricIndex modifier,
                            const chip::CharSpan & userName, uint32_t uniqueId, UserStatusEnum userStatus, UserTypeEnum usertype,
                            CredentialRuleEnum credentialRule, const CredentialStruct * credentials, size_t totalCredentials);
 
-    /** @brief Read a weekday schedule entry. */
+    /** @brief Reads a weekday schedule entry from persistent storage. */
     DlStatus DMDoorLockGetWeekDaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
                                           EmberAfPluginDoorLockWeekDaySchedule & schedule);
-    /** @brief Persist a weekday schedule entry. */
+
+    /** @brief Writes a weekday schedule entry to persistent storage. */
     DlStatus DMDoorLockSetWeekDaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
                                           DlScheduleStatus status, DaysMaskMap daysMask, uint8_t startHour, uint8_t startMinute,
                                           uint8_t endHour, uint8_t endMinute);
 
-    /** @brief Read a year-day schedule entry. */
+    /** @brief Reads a year-day schedule entry from persistent storage. */
     DlStatus DMDoorLockGetYearDaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                           EmberAfPluginDoorLockYearDaySchedule & schedule);
-    /** @brief Persist a year-day schedule entry. */
+
+    /** @brief Writes a year-day schedule entry to persistent storage. */
     DlStatus DMDoorLockSetYearDaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                           DlScheduleStatus status, uint32_t localStartTime, uint32_t localEndTime);
 
-    /** @brief Read a holiday schedule entry. */
+    /** @brief Reads a holiday schedule entry from persistent storage. */
     DlStatus DMDoorLockGetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex,
                                           EmberAfPluginDoorLockHolidaySchedule & holidaySchedule);
-    /** @brief Persist a holiday schedule entry. */
+
+    /** @brief Writes a holiday schedule entry to persistent storage. */
     DlStatus DMDoorLockSetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus status,
                                           uint32_t localStartTime, uint32_t localEndTime, OperatingModeEnum operatingMode);
 
-    /** @brief Cluster auto-relock trigger; posts `kEventType_Lock` to re-lock the actuator. */
+    /** @brief Auto-relock callback; posts a lock action to the AppTask queue. */
     void DMDoorLockOnAutoRelock(chip::EndpointId endpointId);
 
-    /** @brief Validate a PIN against stored credentials; outputs match info or sets `err` on reject. */
+    /** @brief Validates a PIN against stored credentials. */
     bool ValidatePin(chip::EndpointId endpointId, const chip::Optional<chip::ByteSpan> & pin,
                      chip::app::DataModel::Nullable<uint16_t> & outUserIndex, LockOpCredentials & outCred, bool & outHasCred,
                      chip::app::Clusters::DoorLock::OperationErrorEnum & err);
 
-    /** @brief Push a remote-sourced `LockState` to the cluster. Caller must hold the chip stack lock. */
+    /** @brief Pushes `LockState` with remote attribution; caller must hold the chip stack lock. */
     void PushClusterLockState(chip::EndpointId endpointId, chip::app::Clusters::DoorLock::DlLockState lockState,
                               const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
                               const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
                               const chip::app::DataModel::Nullable<uint16_t> & userIndex, const LockOpCredentials * cred,
                               bool hasCred);
 
-    /** @brief Start an actuator transition; returns false if busy or invalid for current state. */
+    /** @brief Starts an actuator transition; returns false if busy or invalid. */
     bool InitiateLockAction(LockAction aAction, bool fromButton = false);
 
-    /** @brief Chip-thread continuation after unlatch hold expires; transitions and posts the unlock leg. */
+    /** @brief Chip-thread continuation after unlatch hold; posts the unlock leg. */
     static void UnlockAfterUnlatch(intptr_t context);
 
 protected:
-    // ---------------------------------------------------------------------
-    // Persistent-storage record layouts.
-    // ---------------------------------------------------------------------
+    /** @brief Override of `BaseApplication::AppInit()`. */
+    CHIP_ERROR AppInit() override;
 
-    /** @brief Serialized weekday schedule record layout for persistent storage. */
+    /** @brief Brings up the lock domain (limits, storage, timers, LED). */
+    CHIP_ERROR InitLock();
+
+    /** @brief Chip-thread work item: push `LockState` with `kManual` (schedule via `PlatformMgr().ScheduleWork`). */
+    static void UpdateClusterState(intptr_t context);
+
+    /** @brief Serialized weekday schedule record for KVS. */
     struct WeekDayScheduleInfo
     {
         DlScheduleStatus status;
         EmberAfPluginDoorLockWeekDaySchedule schedule;
     };
 
-    /** @brief Serialized year-day schedule record layout for persistent storage. */
+    /** @brief Serialized year-day schedule record for KVS. */
     struct YearDayScheduleInfo
     {
         DlScheduleStatus status;
         EmberAfPluginDoorLockYearDaySchedule schedule;
     };
 
-    /** @brief Serialized holiday schedule record layout for persistent storage. */
+    /** @brief Serialized holiday schedule record for KVS. */
     struct HolidayScheduleInfo
     {
         DlScheduleStatus status;
         EmberAfPluginDoorLockHolidaySchedule schedule;
     };
 
-    /** @brief Serialized door-lock user record layout for persistent storage. */
+    /** @brief Serialized user record for KVS. */
     struct LockUserInfo
     {
         char userName[DOOR_LOCK_MAX_USER_NAME_SIZE];
@@ -312,7 +309,7 @@ protected:
         uint16_t currentCredentialCount;
     };
 
-    /** @brief Serialized credential record layout for persistent storage. */
+    /** @brief Serialized credential record for KVS. */
     struct LockCredentialInfo
     {
         DlCredentialStatus status;
@@ -330,13 +327,7 @@ protected:
     static constexpr uint16_t kYearDayScheduleInfoSize = sizeof(YearDayScheduleInfo);
     static constexpr uint16_t kHolidayScheduleInfoSize = sizeof(HolidayScheduleInfo);
 
-    /** @brief Override of `BaseApplication::AppInit()`. */
-    CHIP_ERROR AppInit() override;
-
-    /** @brief Bring up the lock domain: cluster limits, storage, timers, LED. */
-    CHIP_ERROR InitLock();
-
-    /** @brief Actuator transition phase inside the lock state machine. */
+    /** @brief Actuator state-machine phase. */
     enum class LockActuatorState : uint8_t
     {
         kLockInitiated = 0,
@@ -347,19 +338,19 @@ protected:
         kUnlatchCompleted,
     };
 
-    /** @brief Current actuator state. */
+    /** @brief Returns the current actuator phase. */
     LockActuatorState GetActuatorState() const { return mLockActuatorState; }
 
-    /** @brief True while a transition is in flight (any `*Initiated` plus `kUnlatchCompleted`). */
+    /** @brief True while a lock transition is in flight. */
     bool IsActuatorBusy() const;
 
-    /** @brief Chip-thread producer: stage `request` under mutex (newest-wins) and wake the AppTask consumer. */
+    /** @brief Chip-thread producer: stage a `LockRequest` and wake AppTask (newest-wins). */
     static void EnqueueLockRequest(const LockRequest & request);
 
-    /** @brief Snapshot the staged `LockRequest` into `out` and clear it; returns true iff drained. */
+    /** @brief Consumer: copy the staged `LockRequest` into `out` and clear the slot. */
     static bool TryDrainStagedLockRequest(LockRequest & out);
 
-    /** @brief Attribution carried across unlatch hold timing into the unlock leg. */
+    /** @brief IM attribution carried from unlatch through the auto-unlock leg. */
     struct UnlatchContext
     {
         chip::EndpointId mEndpointId = chip::kInvalidEndpointId;
@@ -369,7 +360,7 @@ protected:
         LockOpCredentials mCredential{};
         bool mHasCredential = false;
 
-        /** @brief Copies attribution fields into this context. */
+        /** @brief Copies controller attribution into this context. */
         void Update(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
                     const chip::app::DataModel::Nullable<chip::NodeId> & nodeId,
                     const chip::app::DataModel::Nullable<uint16_t> & userIndex, const LockOpCredentials & cred, bool hasCred)
@@ -383,42 +374,30 @@ protected:
         }
     };
 
-    /** @brief Attribution used when scheduling `UnlockAfterUnlatch` after unlatch. */
     UnlatchContext mUnlatchContext;
-    /** @brief Lock request queued while the actuator is busy. */
     LockRequest mPendingRequest;
-    /** @brief True when `mPendingRequest` contains a valid staged request. */
     bool mHasPendingRequest = false;
-    /** @brief Context for the in-flight remote lock operation driving cluster updates. */
     LockRequest mActiveRemoteAction;
-    /** @brief True when `mActiveRemoteAction` is valid for cluster attribution. */
     bool mHasActiveRemoteAction = false;
-    /** @brief Current actuator phase for the lock hardware state machine. */
     LockActuatorState mLockActuatorState = LockActuatorState::kLockCompleted;
 
 private:
-    // ---- Lock-domain bring-up / state machine ----
+    /** @brief Lock-domain init: cluster limits, migration, timers, and initial state. */
     CHIP_ERROR InitLockDomain(chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state, LockParam lockParam,
                               chip::PersistentStorageDelegate * storage);
 
+    /** @brief Migrates legacy lock KVS layout when resource limits change. */
     bool MigrateLockConfig(const LockParam & params);
 
+    /** @brief `mLockTimer` callback; posts actuator-movement completion to AppTask. */
     static void TimerEventHandler(void * timerCbArg);
 
-    static void UpdateClusterState(intptr_t context);
-
+    /** @brief Posts a `kEventType_Lock` event to the AppTask queue. */
     static void PostLockActionEvent(int32_t actor, LockAction action);
 
     static LockRequest sStagedLockRequest;
     static bool sStagedLockRequestValid;
 
-    // Guards cross-thread shared state for the lock app:
-    //   - `sStagedLockRequest` / `sStagedLockRequestValid` (chip-thread producer,
-    //     AppTask-thread consumer; newest-wins coalescing).
-    //   - `mActiveRemoteAction` / `mHasActiveRemoteAction` (written by both
-    //     `UnlockAfterUnlatch` on the chip thread and
-    //     `HandleLockRequestOnAppTask` / `ActuatorMovementEventHandler` on the AppTask thread).
-    // Non-recursive; never held across the chip stack lock from the AppTask thread.
     static osMutexId_t sLockSharedStateMutex;
 
     osTimerId_t mLockTimer = nullptr;
