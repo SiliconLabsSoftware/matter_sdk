@@ -23,6 +23,7 @@
  * Includes
  *********************************************************/
 
+#include <cstdint>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -89,6 +90,15 @@ public:
                                        uint8_t * value);
 
     CHIP_ERROR InitAirQualitySensor();
+
+    /**
+     * @brief Read the current air quality raw value into @p air_quality.
+     *
+     * Calls `AirQualitySensor::GetAirQuality` when `USE_AIR_QUALITY_SENSOR` is set,
+     * otherwise steps through a simulated table. On error @p air_quality is left untouched and
+     * the caller skips scheduling a cluster update for that tick.
+     */
+    CHIP_ERROR GetAirQuality(int32_t & air_quality);
 
 private:
     static AppTask sAppTask;

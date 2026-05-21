@@ -178,14 +178,14 @@ CHIP_ERROR AppTask::InitAirQualitySensor()
     return CHIP_NO_ERROR;
 }
 
-void AppTask::SensorTimerEventHandler(void * arg)
+CHIP_ERROR AppTask::GetAirQuality(int32_t & air_quality)
 {
-    int32_t air_quality;
 #ifdef USE_AIR_QUALITY_SENSOR
-    if (SL_STATUS_OK != AirQualitySensor::GetAirQuality(air_quality))
+    sl_status_t status = AirQualitySensor::GetAirQuality(air_quality);
+    if (status != SL_STATUS_OK)
     {
-        ChipLogDetail(AppServer, "Failed to read Air Quality !!!");
-        return;
+        ChipLogError(AppServer, "Failed to read Air Quality: %lx", status);
+        return MATTER_PLATFORM_ERROR(status);
     }
 #else
     // Initialize static variables to keep track of the current index and repetition count
@@ -208,7 +208,18 @@ void AppTask::SensorTimerEventHandler(void * arg)
         nbOfRepetition = 0;
     }
 #endif // USE_AIR_QUALITY_SENSOR
-    // create pointer for the int32_t air_quality
+
+    return CHIP_NO_ERROR;
+}
+
+void AppTask::SensorTimerEventHandler(void * arg)
+{
+    int32_t air_quality = 0;
+    CHIP_ERROR err      = sAppTask.GetAirQuality(air_quality);
+    VerifyOrReturn(err == CHIP_NO_ERROR,
+                   ChipLogDetail(AppServer, "GetAirQuality() failed: %" CHIP_ERROR_FORMAT ", skipping cluster update",
+                                 err.Format()));
+
     int32_t * air_quality_ptr = new int32_t(air_quality);
     TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(writeAirQualityToAttribute,
                                                                      reinterpret_cast<intptr_t>(air_quality_ptr));
