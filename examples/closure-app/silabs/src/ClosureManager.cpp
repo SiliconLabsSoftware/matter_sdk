@@ -17,6 +17,7 @@
  */
 
 #include "ClosureManager.h"
+#include "CustomerClosureManager.h"
 #include "AppConfig.h"
 #include "AppTask.h"
 #include "ClosureControlEndpoint.h"
@@ -79,7 +80,12 @@ const Clusters::Descriptor::Structs::SemanticTagStruct::Type kEndpoint3TagList[]
 
 } // namespace
 
-ClosureManager ClosureManager::sClosureMgr;
+CustomerClosureManager CustomerClosureManager::sInstance;
+
+CustomerClosureManager & ClosureManager::GetInstance()
+{
+    return CustomerClosureManager::GetInstance();
+}
 
 void ClosureManager::Init()
 {
@@ -318,7 +324,7 @@ void ClosureManager::HandleClosureActionCompleteEvent(AppEvent * event)
     // This is a safety check to ensure that we do not initiate a new action while another action is in progress.
     // If this happens, we log an error and do not proceed with initiating the action.
     VerifyOrReturn(currentAction == instance.GetCurrentAction(),
-                   ChipLogError(AppServer, "Got Event for %d in InitiateAction while current ongoing action is %d",
+                   ChipLogError(AppServer, "Got Event for %d in HandleClosureActionCompleteEvent while current ongoing action is %d",
                                 to_underlying(currentAction), to_underlying(instance.GetCurrentAction())));
 
     switch (currentAction)
@@ -501,9 +507,9 @@ chip::Protocols::InteractionModel::Status ClosureManager::OnStopCommand()
     return Status::Success;
 }
 
-chip::Protocols::InteractionModel::Status ClosureManager::OnMoveToCommand(const Optional<TargetPositionEnum> position,
-                                                                          const Optional<bool> latch,
-                                                                          const Optional<Globals::ThreeLevelAutoEnum> speed)
+chip::Protocols::InteractionModel::Status ClosureManager::OnMoveToCommand(const Optional<TargetPositionEnum> & position,
+                                                                                const Optional<bool> & latch,
+                                                                                const Optional<Globals::ThreeLevelAutoEnum> & speed)
 {
 
     // Update the target state for the closure panels based on the MoveTo command.

@@ -29,6 +29,8 @@
 #include "AppEvent.h"
 #include "BaseApplication.h"
 
+#include <app/ConcreteAttributePath.h>
+
 #include "FreeRTOS.h"
 #include "timers.h" // provides FreeRTOS timer support
 #include <ble/BLEEndPoint.h>
@@ -57,7 +59,7 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -77,6 +79,13 @@ public:
      *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
+
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
+
+    void DMClosureControlClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath);
+
+    void DMClosureDimensionClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath);
 
 #ifdef DISPLAY_ENABLED
     /**
@@ -102,8 +111,6 @@ public:
     static void ClosureButtonActionEventHandler(AppEvent * aEvent);
 
 private:
-    static AppTask sAppTask;
-
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
      *
@@ -120,3 +127,4 @@ private:
      */
     static void ButtonHandler(AppEvent * aEvent);
 };
+
