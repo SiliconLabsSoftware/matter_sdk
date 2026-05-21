@@ -56,6 +56,7 @@
 #define APP_ONOFF_BUTTON 1
 
 using namespace chip;
+using namespace chip::app;
 using namespace chip::app::Clusters;
 using namespace chip::DeviceLayer;
 using namespace chip::DeviceLayer::Silabs;
@@ -198,7 +199,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     }
 }
 
-void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                             uint8_t * value)
 {
     ClusterId clusterId     = attributePath.mClusterId;
@@ -230,7 +231,7 @@ void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePa
                         ChipLogValueMEI(attributeId), type, value != nullptr ? static_cast<unsigned>(*value) : 0u, size);
         break;
 
-    case Identify::Id:
+    case Clusters::Identify::Id:
         if (value != nullptr && size == sizeof(uint8_t))
         {
             ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
