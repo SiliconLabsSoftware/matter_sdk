@@ -19,6 +19,7 @@
 
 #include "AppTask.h"
 #include "AppConfig.h"
+#include "LockConfig.h"
 #include "AppEvent.h"
 #include "CHIPProjectConfig.h"
 #include "CustomerAppTask.h"
@@ -86,6 +87,11 @@ CustomerAppTask & appInstance()
 {
     return CustomerAppTask::GetAppTask();
 }
+
+// Defaults live in LockConfig.h; consumers tune via the Configuration Wizard.
+constexpr EndpointId kLockEndpoint              = EndpointId(LOCK_ENDPOINT);
+constexpr uint32_t kActuatorMovementPeriodMs = ACTUATOR_MOVEMENT_PERIOD_MS;
+constexpr uint32_t kUnlatchTimeMs            = UNLATCH_TIME_MS;
 
 LEDWidget sLockLED;
 osTimerId_t sUnlatchTimer;
@@ -229,7 +235,7 @@ CHIP_ERROR AppTask::AppInit()
 CHIP_ERROR AppTask::InitLock()
 {
     app::DataModel::Nullable<DlLockState> state;
-    EndpointId endpointId = EndpointId(LOCK_ENDPOINT);
+    EndpointId endpointId = EndpointId(kLockEndpoint);
     DeviceLayer::PlatformMgr().LockChipStack();
     app::Clusters::DoorLock::Attributes::LockState::Get(endpointId, state);
 
@@ -359,7 +365,7 @@ void AppTask::LockButtonActionHandler(AppEvent * aEvent)
                    ChipLogError(NotSpecified, "LockButtonActionHandler: unexpected event type %u", aEvent->Type));
 
     LockRequest req;
-    req.endpointId = LOCK_ENDPOINT;
+    req.endpointId = kLockEndpoint;
     req.action =
         (appInstance().GetActuatorState() == LockActuatorState::kUnlockCompleted) ? LockAction::kLock : LockAction::kUnlock;
     req.isButtonAction = true;
@@ -411,7 +417,7 @@ void AppTask::UpdateClusterState(intptr_t context)
     using DlLockStateUnderlying = std::underlying_type_t<DlLockState>;
     DlLockState newState        = static_cast<DlLockState>(static_cast<DlLockStateUnderlying>(context));
 
-    Status status = DoorLockServer::Instance().SetLockState(LOCK_ENDPOINT, newState, OperationSourceEnum::kManual)
+    Status status = DoorLockServer::Instance().SetLockState(kLockEndpoint, newState, OperationSourceEnum::kManual)
         ? Status::Success
         : Status::Failure;
     if (status != Status::Success)
@@ -444,9 +450,9 @@ bool AppTask::DMDoorLockOnDoorLockCommand(EndpointId endpointId, const Nullable<
                                           OperationErrorEnum & err)
 {
     ChipLogDetail(Zcl, "Door Lock App: Lock Command endpoint=%d", endpointId);
-    VerifyOrReturnValue(endpointId == LOCK_ENDPOINT, false,
+    VerifyOrReturnValue(endpointId == kLockEndpoint, false,
                         ChipLogError(Zcl, "Door Lock App: rejecting command on unsupported endpoint %d (only %d supported)",
-                                     endpointId, LOCK_ENDPOINT);
+                                     endpointId, kLockEndpoint);
                         err = OperationErrorEnum::kUnspecified);
 
     Nullable<uint16_t> userIndex;
@@ -474,9 +480,9 @@ bool AppTask::DMDoorLockOnDoorUnlockCommand(EndpointId endpointId, const Nullabl
                                             OperationErrorEnum & err)
 {
     ChipLogDetail(Zcl, "Door Lock App: Unlock Command endpoint=%d", endpointId);
-    VerifyOrReturnValue(endpointId == LOCK_ENDPOINT, false,
+    VerifyOrReturnValue(endpointId == kLockEndpoint, false,
                         ChipLogError(Zcl, "Door Lock App: rejecting command on unsupported endpoint %d (only %d supported)",
-                                     endpointId, LOCK_ENDPOINT);
+                                     endpointId, kLockEndpoint);
                         err = OperationErrorEnum::kUnspecified);
     const bool supportsUnbolt = DoorLockServer::Instance().SupportsUnbolt(endpointId);
     Nullable<uint16_t> userIndex;
@@ -504,9 +510,9 @@ bool AppTask::DMDoorLockOnDoorUnboltCommand(EndpointId endpointId, const Nullabl
                                             OperationErrorEnum & err)
 {
     ChipLogDetail(Zcl, "Door Lock App: Unbolt Command endpoint=%d", endpointId);
-    VerifyOrReturnValue(endpointId == LOCK_ENDPOINT, false,
+    VerifyOrReturnValue(endpointId == kLockEndpoint, false,
                         ChipLogError(Zcl, "Door Lock App: rejecting command on unsupported endpoint %d (only %d supported)",
-                                     endpointId, LOCK_ENDPOINT);
+                                     endpointId, kLockEndpoint);
                         err = OperationErrorEnum::kUnspecified);
 
     Nullable<uint16_t> userIndex;
@@ -729,7 +735,7 @@ bool AppTask::InitiateLockAction(LockAction aAction, bool fromButton)
     }
     if (action_initiated)
     {
-        if (osTimerStart(mLockTimer, pdMS_TO_TICKS(ACTUATOR_MOVEMENT_PERIOS_MS)) != osOK)
+        if (osTimerStart(mLockTimer, pdMS_TO_TICKS(kActuatorMovementPeriodMs)) != osOK)
         {
             ChipLogError(NotSpecified, "mLockTimer timer start() failed");
             appError(APP_ERROR_START_TIMER_FAILED);
@@ -854,7 +860,7 @@ void AppTask::ActuatorMovementEventHandler(AppEvent * aEvent)
             break;
         case LockAction::kUnlatch:
             ChipLogDetail(Zcl, "Unlatch Action has been completed");
-            StartUnlatchTimer(UNLATCH_TIME_MS);
+            StartUnlatchTimer(kUnlatchTimeMs);
             stateToReport = DlLockState::kUnlatched;
             break;
         case LockAction::kUnlock:
