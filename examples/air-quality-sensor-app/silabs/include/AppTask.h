@@ -32,7 +32,7 @@
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
-#include "SensorManager.h"
+#include <app/ConcreteAttributePath.h>
 #include <ble/BLEEndPoint.h>
 #include <cmsis_os2.h>
 #include <lib/core/CHIPError.h>
@@ -85,6 +85,11 @@ public:
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
+
+    CHIP_ERROR InitAirQualitySensor();
+
 private:
     static AppTask sAppTask;
 
@@ -105,4 +110,9 @@ private:
     static void ButtonHandler(AppEvent * aEvent);
 
     static void AirQualitySensorActionEventHandler(AppEvent * aEvent);
+
+    osTimerId_t mSensorTimer;
+
+    // Reads new generated sensor value, stores it, and updates local Air Quality attribute
+    static void SensorTimerEventHandler(void * arg);
 };
