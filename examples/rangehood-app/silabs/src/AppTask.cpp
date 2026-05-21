@@ -21,6 +21,7 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "CustomerAppTask.h"
+#include "RangeHoodConfig.h"
 
 #include "LEDWidget.h"
 
@@ -63,10 +64,12 @@ CustomerAppTask & appInstance()
     return CustomerAppTask::GetAppTask();
 }
 
-constexpr chip::EndpointId kExtractorHoodEndpoint = 1;
-constexpr chip::EndpointId kLightEndpoint         = 2;
+// Defaults live in RangeHoodConfig.h; consumers tune via the Configuration Wizard.
+constexpr chip::EndpointId kExtractorHoodEndpoint = EXTRACTOR_HOOD_ENDPOINT;
+constexpr chip::EndpointId kLightEndpoint         = LIGHT_ENDPOINT;
 
-ExtractorHoodEndpoint sExtractorHoodEndpoint{ kExtractorHoodEndpoint, 30, 60, 100 };
+ExtractorHoodEndpoint sExtractorHoodEndpoint{ kExtractorHoodEndpoint, FAN_MODE_LOW_PERCENT, FAN_MODE_MEDIUM_PERCENT,
+                                            FAN_MODE_HIGH_PERCENT };
 LightEndpoint sLightEndpoint{ kLightEndpoint };
 
 LEDWidget sLightLED;

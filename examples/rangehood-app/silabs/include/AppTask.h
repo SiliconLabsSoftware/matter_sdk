@@ -56,16 +56,22 @@ public:
 
     CHIP_ERROR StartAppTask();
 
+    /** @brief Platform button callback; posts fan-control or base application events. */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
+    /** @brief Applies range-hood actions (light/fan) to LED and display after attribute changes. */
     static void ActionTriggerHandler(AppEvent * aEvent);
 
+    /** @brief Action-button handler; toggles extractor-hood fan mode. */
     static void FanControlButtonHandler(AppEvent * aEvent);
 
+    /** @brief Data-model attribute-change hook; forwards FanControl and OnOff updates. */
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
 
+    /** @brief Returns the extractor-hood endpoint (EP1) helper. */
     static ExtractorHoodEndpoint & GetExtractorHoodEndpoint();
+    /** @brief Returns the light endpoint (EP2) helper. */
     static LightEndpoint & GetLightEndpoint();
 
 protected:
