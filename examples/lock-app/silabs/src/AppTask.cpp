@@ -67,17 +67,14 @@
 #define APP_FUNCTION_BUTTON 0
 #define APP_LOCK_SWITCH 1
 
-using chip::app::Clusters::DoorLock::DlLockState;
-using chip::app::Clusters::DoorLock::OperationErrorEnum;
-using chip::app::Clusters::DoorLock::OperationSourceEnum;
 using namespace chip;
 using namespace chip::app;
-using namespace ::chip::DeviceLayer;
-using namespace ::chip::DeviceLayer::Silabs;
-using namespace ::chip::DeviceLayer::Internal;
-using chip::app::DataModel::MakeNullable;
-using chip::Protocols::InteractionModel::Status;
-using namespace chip::TLV;
+using namespace Clusters;
+using namespace Clusters::DoorLock;
+using namespace chip::DeviceLayer;
+using namespace chip::DeviceLayer::Silabs;
+using DataModel::MakeNullable;
+using Protocols::InteractionModel::Status;
 
 namespace {
 
@@ -190,7 +187,7 @@ void CancelUnlatchTimer(void)
 {
     if (osTimerStop(sUnlatchTimer) != osOK)
     {
-        ChipLogError(NotSpecified, "sUnlatchTimer stop() failed");
+        ChipLogError(AppServer, "sUnlatchTimer stop() failed");
         appError(APP_ERROR_STOP_TIMER_FAILED);
     }
 }
@@ -199,13 +196,13 @@ void StartUnlatchTimer(uint32_t timeoutMs)
 {
     if (osTimerIsRunning(sUnlatchTimer))
     {
-        ChipLogDetail(NotSpecified, "app timer already started!");
+        ChipLogDetail(AppServer, "app timer already started!");
         CancelUnlatchTimer();
     }
 
     if (osTimerStart(sUnlatchTimer, pdMS_TO_TICKS(timeoutMs)) != osOK)
     {
-        ChipLogError(NotSpecified, "sUnlatchTimer timer start() failed");
+        ChipLogError(AppServer, "sUnlatchTimer timer start() failed");
         appError(APP_ERROR_START_TIMER_FAILED);
     }
 }
@@ -220,13 +217,13 @@ CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
 
-    DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
+    GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
 #if defined(ENABLE_CHIP_SHELL)
     err = RegisterLockEvents();
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(NotSpecified, "RegisterLockEvents() failed");
+        ChipLogError(AppServer, "RegisterLockEvents() failed");
         appError(err);
     }
 #endif // ENABLE_CHIP_SHELL
@@ -236,7 +233,7 @@ CHIP_ERROR AppTask::AppInit()
     err = appInstance().InitLock();
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(NotSpecified, "InitLock() failed");
+        ChipLogError(AppServer, "InitLock() failed");
         appError(err);
     }
 
@@ -252,10 +249,10 @@ CHIP_ERROR AppTask::AppInit()
 
 CHIP_ERROR AppTask::InitLock()
 {
-    app::DataModel::Nullable<DlLockState> state;
+    DataModel::Nullable<DlLockState> state;
     EndpointId endpointId = EndpointId(kLockEndpoint);
-    DeviceLayer::PlatformMgr().LockChipStack();
-    app::Clusters::DoorLock::Attributes::LockState::Get(endpointId, state);
+    PlatformMgr().LockChipStack();
+    DoorLock::Attributes::LockState::Get(endpointId, state);
 
     uint8_t numberOfCredentialsPerUser = 0;
     if (!DoorLockServer::Instance().GetNumberOfCredentialsSupportedPerUser(endpointId, numberOfCredentialsPerUser))
@@ -306,10 +303,10 @@ CHIP_ERROR AppTask::InitLock()
         numberOfHolidaySchedules = 10;
     }
 
-    DeviceLayer::PlatformMgr().UnlockChipStack();
+    PlatformMgr().UnlockChipStack();
 
     CHIP_ERROR err = InitLockDomain(state,
-                                    ParamBuilder()
+                                    LockParamBuilder()
                                         .SetNumberOfUsers(numberOfUsers)
                                         .SetNumberOfCredentialsPerUser(numberOfCredentialsPerUser)
                                         .SetNumberOfWeekdaySchedulesPerUser(numberOfWeekdaySchedulesPerUser)
@@ -356,7 +353,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     CHIP_ERROR err = appInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(NotSpecified, "AppTask.Init() failed");
+        ChipLogError(AppServer, "AppTask.Init() failed");
         appError(err);
     }
 
@@ -364,7 +361,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     appInstance().StartStatusLEDTimer();
 #endif
 
-    ChipLogProgress(NotSpecified, "App Task started");
+    ChipLogProgress(AppServer, "App Task started");
 
     while (true)
     {
@@ -380,7 +377,7 @@ void AppTask::AppTaskMain(void * pvParameter)
 void AppTask::LockButtonActionHandler(AppEvent * aEvent)
 {
     VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Button,
-                   ChipLogError(NotSpecified, "LockButtonActionHandler: unexpected event type %u", aEvent->Type));
+                   ChipLogError(AppServer, "LockButtonActionHandler: unexpected event type %u", aEvent->Type));
 
     LockRequest req;
     req.endpointId = kLockEndpoint;
@@ -404,12 +401,12 @@ void AppTask::PostLockActionEvent(int32_t actor, LockAction action)
 void AppTask::LockActionEventHandler(AppEvent * aEvent)
 {
     VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Lock,
-                   ChipLogError(NotSpecified, "LockActionEventHandler: unexpected event type %u", aEvent->Type));
+                   ChipLogError(AppServer, "LockActionEventHandler: unexpected event type %u", aEvent->Type));
 
     const LockAction action = static_cast<LockAction>(aEvent->LockEvent.Action);
     if (!appInstance().InitiateLockAction(action, aEvent->LockEvent.Actor == AppEvent::kEventType_Button))
     {
-        ChipLogDetail(NotSpecified, "Action is already in progress or active.");
+        ChipLogDetail(AppServer, "Action is already in progress or active.");
     }
 }
 
@@ -444,11 +441,9 @@ void AppTask::UpdateClusterState(intptr_t context)
     }
 }
 
-void AppTask::DMPostAttributeChangeCallback(const app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                             uint8_t * value)
 {
-    using namespace ::chip::app::Clusters;
-
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
     ChipLogDetail(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
@@ -555,7 +550,7 @@ bool AppTask::DMDoorLockOnDoorUnboltCommand(EndpointId endpointId, const Nullabl
 
 void AppTask::DMDoorLockOnAutoRelock(EndpointId /*endpointId*/)
 {
-    PostLockActionEvent(AppEvent::kEventType_Lock, AppTask::LockAction::kLock);
+    PostLockActionEvent(AppEvent::kEventType_Lock, LockAction::kLock);
 }
 
 // emberAfPluginDoorLock* — weak DoorLock plugin callbacks. CRTP forwarders
@@ -654,7 +649,7 @@ void emberAfPluginDoorLockOnAutoRelock(EndpointId endpointId)
     appInstance().DMDoorLockOnAutoRelock(endpointId);
 }
 
-CHIP_ERROR AppTask::InitLockDomain(app::DataModel::Nullable<DlLockState> state, LockParam lockParam,
+CHIP_ERROR AppTask::InitLockDomain(DataModel::Nullable<DlLockState> state, LockParam lockParam,
                                    PersistentStorageDelegate * storage)
 {
     VerifyOrReturnError(storage != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
@@ -701,12 +696,12 @@ CHIP_ERROR AppTask::InitLockDomain(app::DataModel::Nullable<DlLockState> state, 
                             NULL               // No osTimerAttr_t to provide.
     );
     VerifyOrReturnError(mLockTimer != NULL, APP_ERROR_CREATE_TIMER_FAILED,
-                        ChipLogError(NotSpecified, "mLockTimer timer create failed"));
+                        ChipLogError(AppServer, "mLockTimer timer create failed"));
     if (sLockSharedStateMutex == nullptr)
     {
         sLockSharedStateMutex = osMutexNew(nullptr);
         VerifyOrReturnError(sLockSharedStateMutex != nullptr, APP_ERROR_ALLOCATION_FAILED,
-                            ChipLogError(NotSpecified, "sLockSharedStateMutex create failed"));
+                            ChipLogError(AppServer, "sLockSharedStateMutex create failed"));
     }
     if (!state.IsNull() && state.Value() == DlLockState::kUnlocked)
     {
@@ -721,7 +716,7 @@ CHIP_ERROR AppTask::InitLockDomain(app::DataModel::Nullable<DlLockState> state, 
 
 bool AppTask::IsActuatorBusy() const
 {
-    // kUnlatchCompleted as "still in progress" for command-queueing purposes.
+    // kUnlatchCompleted: unlatch done, auto-unlock still pending (command-queueing treats as busy).
     return (mLockActuatorState == LockActuatorState::kLockInitiated || mLockActuatorState == LockActuatorState::kUnlockInitiated ||
             mLockActuatorState == LockActuatorState::kUnlatchInitiated ||
             mLockActuatorState == LockActuatorState::kUnlatchCompleted);
@@ -729,58 +724,59 @@ bool AppTask::IsActuatorBusy() const
 
 bool AppTask::InitiateLockAction(LockAction aAction, bool fromButton)
 {
-    bool action_initiated = false;
-    LockActuatorState new_state;
+    LockActuatorState new_state = mLockActuatorState;
 
-    // Initiate Turn Lock/Unlock Action only when the previous one is complete.
+    // Initiate lock/unlock/unlatch only from a valid completed actuator state.
     if ((mLockActuatorState == LockActuatorState::kLockCompleted || mLockActuatorState == LockActuatorState::kUnlatchCompleted) &&
         (aAction == LockAction::kUnlock))
     {
-        action_initiated = true;
-        new_state        = LockActuatorState::kUnlockInitiated;
+        new_state = LockActuatorState::kUnlockInitiated;
     }
     else if ((mLockActuatorState == LockActuatorState::kLockCompleted ||
               mLockActuatorState == LockActuatorState::kUnlockCompleted) &&
              (aAction == LockAction::kUnlatch))
     {
-        action_initiated = true;
-        new_state        = LockActuatorState::kUnlatchInitiated;
+        new_state = LockActuatorState::kUnlatchInitiated;
     }
     else if (mLockActuatorState == LockActuatorState::kUnlockCompleted && aAction == LockAction::kLock)
     {
-        action_initiated = true;
-        new_state        = LockActuatorState::kLockInitiated;
+        new_state = LockActuatorState::kLockInitiated;
     }
-    if (action_initiated)
+    else
     {
-        if (osTimerStart(mLockTimer, pdMS_TO_TICKS(kActuatorMovementPeriodMs)) != osOK)
-        {
-            ChipLogError(NotSpecified, "mLockTimer timer start() failed");
-            appError(APP_ERROR_START_TIMER_FAILED);
-        }
+        ChipLogDetail(Zcl,
+                      "Door Lock App: rejected action %u (actuator state %u, fromButton=%d): no valid transition",
+                      to_underlying(aAction), to_underlying(mLockActuatorState), fromButton);
+        return false;
+    }
 
-        mLockActuatorState = new_state;
-        if (aAction == LockAction::kUnlock || aAction == LockAction::kLock)
-        {
-            bool locked = (aAction == LockAction::kLock);
-            ChipLogDetail(Zcl, "%s Action has been initiated", locked ? "Lock" : "Unlock");
-            sLockLED.Set(!locked);
+    if (osTimerStart(mLockTimer, pdMS_TO_TICKS(kActuatorMovementPeriodMs)) != osOK)
+    {
+        ChipLogError(AppServer, "mLockTimer timer start() failed");
+        appError(APP_ERROR_START_TIMER_FAILED);
+    }
+
+    mLockActuatorState = new_state;
+    if (aAction == LockAction::kUnlock || aAction == LockAction::kLock)
+    {
+        bool locked = (aAction == LockAction::kLock);
+        ChipLogDetail(Zcl, "%s Action has been initiated", locked ? "Lock" : "Unlock");
+        sLockLED.Set(!locked);
 
 #ifdef DISPLAY_ENABLED
-            appInstance().GetLCD().WriteDemoUI(locked);
+        appInstance().GetLCD().WriteDemoUI(locked);
 #endif // DISPLAY_ENABLED
-        }
-        else if (aAction == LockAction::kUnlatch)
-        {
-            ChipLogDetail(Zcl, "Unlatch Action has been initiated");
-        }
-        if (fromButton)
-        {
-            mSyncClusterToButtonAction = true;
-        }
+    }
+    else if (aAction == LockAction::kUnlatch)
+    {
+        ChipLogDetail(Zcl, "Unlatch Action has been initiated");
+    }
+    if (fromButton)
+    {
+        mSyncClusterToButtonAction = true;
     }
 
-    return action_initiated;
+    return true;
 }
 
 void AppTask::TimerEventHandler(void * timerCbArg)
@@ -844,7 +840,7 @@ void AppTask::UnlockAfterUnlatch(intptr_t /* context */)
 void AppTask::UnlatchCallback(void * argument)
 {
     (void) argument;
-    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(&CustomerAppTask::UnlockAfterUnlatch,
+    TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(&CustomerAppTask::UnlockAfterUnlatch,
                                                                      reinterpret_cast<intptr_t>(nullptr));
 }
 
@@ -892,7 +888,7 @@ void AppTask::ActuatorMovementEventHandler(AppEvent * aEvent)
         {
             if (stateToReport != DlLockState::kUnknownEnumValue)
             {
-                TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(
+                TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(
                     UpdateClusterState, static_cast<intptr_t>(to_underlying(stateToReport)));
             }
             lock->mSyncClusterToButtonAction = false;
@@ -914,11 +910,11 @@ void AppTask::ActuatorMovementEventHandler(AppEvent * aEvent)
         }
         if (hasRemoteAction)
         {
-            DeviceLayer::PlatformMgr().LockChipStack();
+            PlatformMgr().LockChipStack();
             lock->PushClusterLockState(remoteAction.endpointId, remoteAction.targetClusterState, remoteAction.fabricIdx,
                                        remoteAction.nodeId, remoteAction.userIndex,
                                        remoteAction.hasCredential ? &remoteAction.credential : nullptr, remoteAction.hasCredential);
-            DeviceLayer::PlatformMgr().UnlockChipStack();
+            PlatformMgr().UnlockChipStack();
         }
         if (lock->mHasPendingRequest &&
             (lock->mLockActuatorState == LockActuatorState::kLockCompleted ||
@@ -983,7 +979,7 @@ bool AppTask::TryDrainStagedLockRequest(LockRequest & out)
 void AppTask::LockRequestEventHandler(AppEvent * aEvent)
 {
     VerifyOrReturn(aEvent->Type == AppEvent::kEventType_LockRequest,
-                   ChipLogError(NotSpecified, "LockRequestEventHandler: unexpected event type %u", aEvent->Type));
+                   ChipLogError(AppServer, "LockRequestEventHandler: unexpected event type %u", aEvent->Type));
 
     LockRequest req;
     VerifyOrReturn(TryDrainStagedLockRequest(req));
@@ -995,7 +991,7 @@ void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
 {
     if (IsActuatorBusy())
     {
-        ChipLogDetail(NotSpecified, "Door Lock App: actuator busy; queueing %s (replacing any prior pending)",
+        ChipLogDetail(AppServer, "Door Lock App: actuator busy; queueing %s (replacing any prior pending)",
                       request.isButtonAction ? "button" : "remote");
         mPendingRequest    = request;
         mHasPendingRequest = true;
@@ -1007,7 +1003,7 @@ void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
             (mLockActuatorState == LockActuatorState::kLockCompleted) ? DlLockState::kLocked : DlLockState::kUnlocked;
         if (request.targetClusterState == currentTerminal)
         {
-            ChipLogDetail(NotSpecified, "Door Lock App: remote request target (%u) matches current LockState; skipping no-op",
+            ChipLogDetail(AppServer, "Door Lock App: remote request target (%u) matches current LockState; skipping no-op",
                           to_underlying(request.targetClusterState));
             return;
         }
@@ -1016,7 +1012,7 @@ void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
     {
         if (!request.isButtonAction)
         {
-            DeviceLayer::PlatformMgr().LockChipStack();
+            PlatformMgr().LockChipStack();
             if (request.isUnboltUnlatch)
             {
                 mUnlatchContext.Update(request.endpointId, request.fabricIdx, request.nodeId, request.userIndex, request.credential,
@@ -1024,7 +1020,7 @@ void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
             }
             PushClusterLockState(request.endpointId, DlLockState::kNotFullyLocked, request.fabricIdx, request.nodeId,
                                  request.userIndex, request.hasCredential ? &request.credential : nullptr, request.hasCredential);
-            DeviceLayer::PlatformMgr().UnlockChipStack();
+            PlatformMgr().UnlockChipStack();
 
             VerifyOrReturn(sLockSharedStateMutex != nullptr,
                            ChipLogError(Zcl, "Door Lock App: remote-action mutex not initialized; dropping remote action"));
@@ -1039,7 +1035,7 @@ void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
     }
     else
     {
-        ChipLogDetail(NotSpecified, "Action is already in progress or active.");
+        ChipLogDetail(AppServer, "Action is already in progress or active.");
     }
 }
 
@@ -1411,7 +1407,7 @@ bool AppTask::ValidatePin(EndpointId endpointId, const Optional<ByteSpan> & pin,
 
     // Assume pin is required until told otherwise
     bool requirePin = true;
-    app::Clusters::DoorLock::Attributes::RequirePINforRemoteOperation::Get(endpointId, &requirePin);
+    DoorLock::Attributes::RequirePINforRemoteOperation::Get(endpointId, &requirePin);
     if (!pin.HasValue())
     {
         ChipLogDetail(Zcl, "Door Lock App: PIN code is not specified [endpointId=%d]", endpointId);
