@@ -80,7 +80,7 @@ namespace {
 
 using namespace SilabsDoorLockConfig::ResourceRanges;
 
-CustomerAppTask & appInstance()
+CustomerAppTask & AppInstance()
 {
     return CustomerAppTask::GetAppTask();
 }
@@ -204,7 +204,7 @@ CHIP_ERROR AppTask::AppInit()
 
     // Bring up the lock domain via the CRTP hook so derived AppTaskImpl<>
     // classes can override lock-app initialization.
-    err = appInstance().InitLock();
+    err = AppInstance().InitLock();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "InitLock() failed");
@@ -212,7 +212,7 @@ CHIP_ERROR AppTask::AppInit()
     }
 
     DlLockState bootState =
-        (appInstance().GetActuatorState() == LockActuatorState::kUnlockCompleted) ? DlLockState::kUnlocked : DlLockState::kLocked;
+        (AppInstance().GetActuatorState() == LockActuatorState::kUnlockCompleted) ? DlLockState::kUnlocked : DlLockState::kLocked;
     TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState,
                                                                      static_cast<intptr_t>(to_underlying(bootState)));
 
@@ -325,7 +325,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = appInstance().Init();
+    CHIP_ERROR err = AppInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask.Init() failed");
@@ -333,7 +333,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    appInstance().StartStatusLEDTimer();
+    AppInstance().StartStatusLEDTimer();
 #endif
 
     ChipLogProgress(AppServer, "App Task started");
@@ -343,7 +343,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            appInstance().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -357,10 +357,10 @@ void AppTask::LockButtonActionHandler(AppEvent * aEvent)
     LockRequest req;
     req.endpointId = kLockEndpoint;
     req.action =
-        (appInstance().GetActuatorState() == LockActuatorState::kUnlockCompleted) ? LockAction::kLock : LockAction::kUnlock;
+        (AppInstance().GetActuatorState() == LockActuatorState::kUnlockCompleted) ? LockAction::kLock : LockAction::kUnlock;
     req.isButtonAction = true;
 
-    appInstance().HandleLockRequestOnAppTask(req);
+    AppInstance().HandleLockRequestOnAppTask(req);
 }
 
 void AppTask::PostLockActionEvent(int32_t actor, LockAction action)
@@ -370,7 +370,7 @@ void AppTask::PostLockActionEvent(int32_t actor, LockAction action)
     event.LockEvent.Actor  = actor;
     event.LockEvent.Action = static_cast<uint8_t>(action);
     event.Handler          = &CustomerAppTask::LockActionEventHandler;
-    appInstance().PostEvent(&event);
+    AppInstance().PostEvent(&event);
 }
 
 void AppTask::LockActionEventHandler(AppEvent * aEvent)
@@ -379,7 +379,7 @@ void AppTask::LockActionEventHandler(AppEvent * aEvent)
                    ChipLogError(AppServer, "LockActionEventHandler: unexpected event type %u", aEvent->Type));
 
     const LockAction action = static_cast<LockAction>(aEvent->LockEvent.Action);
-    appInstance().InitiateLockAction(action, aEvent->LockEvent.Actor == AppEvent::kEventType_Button);
+    AppInstance().InitiateLockAction(action, aEvent->LockEvent.Actor == AppEvent::kEventType_Button);
 }
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
@@ -390,12 +390,12 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_LOCK_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
         button_event.Handler = &CustomerAppTask::LockButtonActionHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
 }
 
@@ -443,7 +443,7 @@ bool AppTask::DMDoorLockOnDoorLockCommand(EndpointId endpointId, const Nullable<
     Nullable<uint16_t> userIndex;
     LockOpCredentials cred{};
     bool hasCred = false;
-    VerifyOrReturnValue(appInstance().ValidatePin(endpointId, pinCode, userIndex, cred, hasCred, err), false);
+    VerifyOrReturnValue(AppInstance().ValidatePin(endpointId, pinCode, userIndex, cred, hasCred, err), false);
 
     LockRequest req;
     req.endpointId         = endpointId;
@@ -473,7 +473,7 @@ bool AppTask::DMDoorLockOnDoorUnlockCommand(EndpointId endpointId, const Nullabl
     Nullable<uint16_t> userIndex;
     LockOpCredentials cred{};
     bool hasCred = false;
-    VerifyOrReturnValue(appInstance().ValidatePin(endpointId, pinCode, userIndex, cred, hasCred, err), false);
+    VerifyOrReturnValue(AppInstance().ValidatePin(endpointId, pinCode, userIndex, cred, hasCred, err), false);
 
     LockRequest req;
     req.endpointId         = endpointId;
@@ -503,7 +503,7 @@ bool AppTask::DMDoorLockOnDoorUnboltCommand(EndpointId endpointId, const Nullabl
     Nullable<uint16_t> userIndex;
     LockOpCredentials cred{};
     bool hasCred = false;
-    VerifyOrReturnValue(appInstance().ValidatePin(endpointId, pinCode, userIndex, cred, hasCred, err), false);
+    VerifyOrReturnValue(AppInstance().ValidatePin(endpointId, pinCode, userIndex, cred, hasCred, err), false);
 
     LockRequest req;
     req.endpointId         = endpointId;
@@ -526,99 +526,99 @@ void AppTask::DMDoorLockOnAutoRelock(EndpointId /*endpointId*/)
 }
 
 // emberAfPluginDoorLock* — weak DoorLock plugin callbacks. CRTP forwarders
-// into `appInstance().DM*` so customers can intercept via
+// into `AppInstance().DM*` so customers can intercept via
 // `AppTaskImpl<>::DM*Impl()`.
 
 bool emberAfPluginDoorLockOnDoorLockCommand(EndpointId endpointId, const Nullable<FabricIndex> & fabricIdx,
                                             const Nullable<NodeId> & nodeId, const Optional<ByteSpan> & pinCode,
                                             OperationErrorEnum & err)
 {
-    return appInstance().DMDoorLockOnDoorLockCommand(endpointId, fabricIdx, nodeId, pinCode, err);
+    return AppInstance().DMDoorLockOnDoorLockCommand(endpointId, fabricIdx, nodeId, pinCode, err);
 }
 
 bool emberAfPluginDoorLockOnDoorUnlockCommand(EndpointId endpointId, const Nullable<FabricIndex> & fabricIdx,
                                               const Nullable<NodeId> & nodeId, const Optional<ByteSpan> & pinCode,
                                               OperationErrorEnum & err)
 {
-    return appInstance().DMDoorLockOnDoorUnlockCommand(endpointId, fabricIdx, nodeId, pinCode, err);
+    return AppInstance().DMDoorLockOnDoorUnlockCommand(endpointId, fabricIdx, nodeId, pinCode, err);
 }
 
 bool emberAfPluginDoorLockOnDoorUnboltCommand(EndpointId endpointId, const Nullable<FabricIndex> & fabricIdx,
                                               const Nullable<NodeId> & nodeId, const Optional<ByteSpan> & pinCode,
                                               OperationErrorEnum & err)
 {
-    return appInstance().DMDoorLockOnDoorUnboltCommand(endpointId, fabricIdx, nodeId, pinCode, err);
+    return AppInstance().DMDoorLockOnDoorUnboltCommand(endpointId, fabricIdx, nodeId, pinCode, err);
 }
 
 bool emberAfPluginDoorLockGetCredential(EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum credentialType,
                                         EmberAfPluginDoorLockCredentialInfo & credential)
 {
-    return appInstance().DMDoorLockGetCredential(endpointId, credentialIndex, credentialType, credential);
+    return AppInstance().DMDoorLockGetCredential(endpointId, credentialIndex, credentialType, credential);
 }
 
 bool emberAfPluginDoorLockSetCredential(EndpointId endpointId, uint16_t credentialIndex, FabricIndex creator, FabricIndex modifier,
                                         DlCredentialStatus credentialStatus, CredentialTypeEnum credentialType,
                                         const ByteSpan & credentialData)
 {
-    return appInstance().DMDoorLockSetCredential(endpointId, credentialIndex, creator, modifier, credentialStatus, credentialType,
+    return AppInstance().DMDoorLockSetCredential(endpointId, credentialIndex, creator, modifier, credentialStatus, credentialType,
                                                  credentialData);
 }
 
 bool emberAfPluginDoorLockGetUser(EndpointId endpointId, uint16_t userIndex, EmberAfPluginDoorLockUserInfo & user)
 {
-    return appInstance().DMDoorLockGetUser(endpointId, userIndex, user);
+    return AppInstance().DMDoorLockGetUser(endpointId, userIndex, user);
 }
 
 bool emberAfPluginDoorLockSetUser(EndpointId endpointId, uint16_t userIndex, FabricIndex creator, FabricIndex modifier,
                                   const CharSpan & userName, uint32_t uniqueId, UserStatusEnum userStatus, UserTypeEnum usertype,
                                   CredentialRuleEnum credentialRule, const CredentialStruct * credentials, size_t totalCredentials)
 {
-    return appInstance().DMDoorLockSetUser(endpointId, userIndex, creator, modifier, userName, uniqueId, userStatus, usertype,
+    return AppInstance().DMDoorLockSetUser(endpointId, userIndex, creator, modifier, userName, uniqueId, userStatus, usertype,
                                            credentialRule, credentials, totalCredentials);
 }
 
 DlStatus emberAfPluginDoorLockGetSchedule(EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
                                           EmberAfPluginDoorLockWeekDaySchedule & schedule)
 {
-    return appInstance().DMDoorLockGetWeekDaySchedule(endpointId, weekdayIndex, userIndex, schedule);
+    return AppInstance().DMDoorLockGetWeekDaySchedule(endpointId, weekdayIndex, userIndex, schedule);
 }
 
 DlStatus emberAfPluginDoorLockGetSchedule(EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
                                           EmberAfPluginDoorLockYearDaySchedule & schedule)
 {
-    return appInstance().DMDoorLockGetYearDaySchedule(endpointId, yearDayIndex, userIndex, schedule);
+    return AppInstance().DMDoorLockGetYearDaySchedule(endpointId, yearDayIndex, userIndex, schedule);
 }
 
 DlStatus emberAfPluginDoorLockGetSchedule(EndpointId endpointId, uint8_t holidayIndex,
                                           EmberAfPluginDoorLockHolidaySchedule & holidaySchedule)
 {
-    return appInstance().DMDoorLockGetHolidaySchedule(endpointId, holidayIndex, holidaySchedule);
+    return AppInstance().DMDoorLockGetHolidaySchedule(endpointId, holidayIndex, holidaySchedule);
 }
 
 DlStatus emberAfPluginDoorLockSetSchedule(EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex, DlScheduleStatus status,
                                           DaysMaskMap daysMask, uint8_t startHour, uint8_t startMinute, uint8_t endHour,
                                           uint8_t endMinute)
 {
-    return appInstance().DMDoorLockSetWeekDaySchedule(endpointId, weekdayIndex, userIndex, status, daysMask, startHour, startMinute,
+    return AppInstance().DMDoorLockSetWeekDaySchedule(endpointId, weekdayIndex, userIndex, status, daysMask, startHour, startMinute,
                                                       endHour, endMinute);
 }
 
 DlStatus emberAfPluginDoorLockSetSchedule(EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex, DlScheduleStatus status,
                                           uint32_t localStartTime, uint32_t localEndTime)
 {
-    return appInstance().DMDoorLockSetYearDaySchedule(endpointId, yearDayIndex, userIndex, status, localStartTime, localEndTime);
+    return AppInstance().DMDoorLockSetYearDaySchedule(endpointId, yearDayIndex, userIndex, status, localStartTime, localEndTime);
 }
 
 DlStatus emberAfPluginDoorLockSetSchedule(EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus status,
                                           uint32_t localStartTime, uint32_t localEndTime, OperatingModeEnum operatingMode)
 {
-    return appInstance().DMDoorLockSetHolidaySchedule(endpointId, holidayIndex, status, localStartTime, localEndTime,
+    return AppInstance().DMDoorLockSetHolidaySchedule(endpointId, holidayIndex, status, localStartTime, localEndTime,
                                                       operatingMode);
 }
 
 void emberAfPluginDoorLockOnAutoRelock(EndpointId endpointId)
 {
-    appInstance().DMDoorLockOnAutoRelock(endpointId);
+    AppInstance().DMDoorLockOnAutoRelock(endpointId);
 }
 
 CHIP_ERROR AppTask::InitLockDomain(DataModel::Nullable<DlLockState> state, LockParam lockParam,
@@ -738,7 +738,7 @@ bool AppTask::InitiateLockAction(LockAction aAction, bool fromButton)
         sLockLED.Set(!locked);
 
 #ifdef DISPLAY_ENABLED
-        appInstance().GetLCD().WriteDemoUI(locked);
+        AppInstance().GetLCD().WriteDemoUI(locked);
 #endif // DISPLAY_ENABLED
     }
     else if (aAction == LockAction::kUnlatch)
@@ -761,12 +761,12 @@ void AppTask::TimerEventHandler(void * timerCbArg)
     event.Type               = AppEvent::kEventType_Timer;
     event.TimerEvent.Context = lock;
     event.Handler            = &CustomerAppTask::ActuatorMovementEventHandler;
-    appInstance().PostEvent(&event);
+    AppInstance().PostEvent(&event);
 }
 
 void AppTask::UnlockAfterUnlatch(intptr_t /* context */)
 {
-    auto & app = appInstance();
+    auto & app = AppInstance();
     auto & ctx = app.mUnlatchContext;
 
     VerifyOrReturn(ctx.mEndpointId != kInvalidEndpointId,
@@ -908,7 +908,7 @@ void AppTask::ActuatorMovementEventHandler(AppEvent * aEvent)
                 ChipLogDetail(Zcl, "Door Lock App: replaying coalesced %s (action=%u, target=%u)",
                               nextReq.isButtonAction ? "button" : "remote", to_underlying(nextReq.action),
                               to_underlying(nextReq.targetClusterState));
-                appInstance().HandleLockRequestOnAppTask(nextReq);
+                AppInstance().HandleLockRequestOnAppTask(nextReq);
             }
         }
     }
@@ -930,7 +930,7 @@ void AppTask::EnqueueLockRequest(const LockRequest & request)
     event.Type                     = AppEvent::kEventType_LockRequest;
     event.LockRequestEvent.Request = nullptr;
     event.Handler                  = &CustomerAppTask::LockRequestEventHandler;
-    appInstance().PostEvent(&event);
+    AppInstance().PostEvent(&event);
 }
 
 bool AppTask::TryDrainStagedLockRequest(LockRequest & out)
@@ -954,7 +954,7 @@ void AppTask::LockRequestEventHandler(AppEvent * aEvent)
     LockRequest req;
     VerifyOrReturn(TryDrainStagedLockRequest(req));
 
-    appInstance().HandleLockRequestOnAppTask(req);
+    AppInstance().HandleLockRequestOnAppTask(req);
 }
 
 void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
