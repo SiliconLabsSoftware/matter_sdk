@@ -334,6 +334,12 @@ protected:
     /** @brief True during actuator motion or while `kUnlatchCompleted` (auto-unlock pending). */
     bool IsActuatorBusy() const;
 
+    /** @brief `kLockCompleted` or `kUnlockCompleted` (idle at locked/unlocked; safe to replay coalesced requests). */
+    bool IsAtTerminalLockOrUnlock() const;
+
+    /** @brief May start unlock from `kLockCompleted` or `kUnlatchCompleted` (auto-unlock leg). */
+    bool CanInitiateUnlockFromCurrentState() const;
+
     /** @brief Chip-thread: overwrite staged `LockRequest` (newest-wins) and post `kEventType_LockRequest`. */
     static void EnqueueLockRequest(const LockRequest & request);
 

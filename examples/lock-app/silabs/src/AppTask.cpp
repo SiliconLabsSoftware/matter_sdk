@@ -689,19 +689,28 @@ bool AppTask::IsActuatorBusy() const
             mLockActuatorState == LockActuatorState::kUnlatchCompleted);
 }
 
+bool AppTask::IsAtTerminalLockOrUnlock() const
+{
+    return (mLockActuatorState == LockActuatorState::kLockCompleted ||
+            mLockActuatorState == LockActuatorState::kUnlockCompleted);
+}
+
+bool AppTask::CanInitiateUnlockFromCurrentState() const
+{
+    return (mLockActuatorState == LockActuatorState::kLockCompleted ||
+            mLockActuatorState == LockActuatorState::kUnlatchCompleted);
+}
+
 bool AppTask::InitiateLockAction(LockAction aAction, bool fromButton)
 {
     LockActuatorState new_state = mLockActuatorState;
 
-    // Initiate lock/unlock/unlatch only from a valid completed actuator state.
-    if ((mLockActuatorState == LockActuatorState::kLockCompleted || mLockActuatorState == LockActuatorState::kUnlatchCompleted) &&
-        (aAction == LockAction::kUnlock))
+    // Allowed source states depend on the action (see CanInitiateUnlockFromCurrentState / IsAtTerminalLockOrUnlock).
+    if (CanInitiateUnlockFromCurrentState() && aAction == LockAction::kUnlock)
     {
         new_state = LockActuatorState::kUnlockInitiated;
     }
-    else if ((mLockActuatorState == LockActuatorState::kLockCompleted ||
-              mLockActuatorState == LockActuatorState::kUnlockCompleted) &&
-             (aAction == LockAction::kUnlatch))
+    else if (IsAtTerminalLockOrUnlock() && aAction == LockAction::kUnlatch)
     {
         new_state = LockActuatorState::kUnlatchInitiated;
     }
@@ -783,8 +792,6 @@ void AppTask::UnlockAfterUnlatch(intptr_t /* context */)
     unlockRequest.credential         = ctx.mCredential;
     unlockRequest.hasCredential      = ctx.mHasCredential;
 
-    VerifyOrReturn(sLockSharedStateMutex != nullptr,
-                   ChipLogError(Zcl, "Door Lock App: remote-action mutex not initialized; dropping unlatch-unlock"));
     {
         osStatus_t mutexStatus = osMutexAcquire(sLockSharedStateMutex, osWaitForever);
         VerifyOrReturn(mutexStatus == osOK,
@@ -867,7 +874,7 @@ void AppTask::ActuatorMovementEventHandler(AppEvent * aEvent)
         // push outside the mutex so we never hold both this mutex and the chip lock at once.
         LockRequest remoteAction = {};
         bool hasRemoteAction     = false;
-        if (sLockSharedStateMutex != nullptr && osMutexAcquire(sLockSharedStateMutex, osWaitForever) == osOK)
+        if (osMutexAcquire(sLockSharedStateMutex, osWaitForever) == osOK)
         {
             if (lock->mHasActiveRemoteAction)
             {
@@ -885,25 +892,23 @@ void AppTask::ActuatorMovementEventHandler(AppEvent * aEvent)
                                        remoteAction.hasCredential ? &remoteAction.credential : nullptr, remoteAction.hasCredential);
             PlatformMgr().UnlockChipStack();
         }
-        if (lock->mHasPendingRequest &&
-            (lock->mLockActuatorState == LockActuatorState::kLockCompleted ||
-             lock->mLockActuatorState == LockActuatorState::kUnlockCompleted))
+        if (lock->IsAtTerminalLockOrUnlock())
         {
-            LockRequest req          = lock->mPendingRequest;
-            lock->mHasPendingRequest = false;
-            ChipLogDetail(Zcl, "Door Lock App: replaying queued %s (action=%u, target=%u)",
-                          req.isButtonAction ? "button" : "remote", to_underlying(req.action),
-                          to_underlying(req.targetClusterState));
-            appInstance().HandleLockRequestOnAppTask(req);
-        }
-        if (lock->mLockActuatorState == LockActuatorState::kLockCompleted ||
-            lock->mLockActuatorState == LockActuatorState::kUnlockCompleted)
-        {
-            LockRequest stagedReq;
-            if (TryDrainStagedLockRequest(stagedReq))
+            LockRequest nextReq{};
+            bool hasNext = TryDrainStagedLockRequest(nextReq);
+            if (!hasNext && lock->mHasPendingRequest)
             {
-                ChipLogDetail(Zcl, "Door Lock App: draining staged lock request from action-complete fallback");
-                appInstance().HandleLockRequestOnAppTask(stagedReq);
+                nextReq = lock->mPendingRequest;
+                hasNext = true;
+            }
+
+            if (hasNext)
+            {
+                lock->mHasPendingRequest = false;
+                ChipLogDetail(Zcl, "Door Lock App: replaying coalesced %s (action=%u, target=%u)",
+                              nextReq.isButtonAction ? "button" : "remote", to_underlying(nextReq.action),
+                              to_underlying(nextReq.targetClusterState));
+                appInstance().HandleLockRequestOnAppTask(nextReq);
             }
         }
     }
@@ -913,9 +918,6 @@ void AppTask::ActuatorMovementEventHandler(AppEvent * aEvent)
 
 void AppTask::EnqueueLockRequest(const LockRequest & request)
 {
-    VerifyOrReturn(sLockSharedStateMutex != nullptr,
-                   ChipLogError(Zcl, "Door Lock App: staging mutex not initialized; dropping LockRequest"));
-
     osStatus_t mutexStatus = osMutexAcquire(sLockSharedStateMutex, osWaitForever);
     VerifyOrReturn(
         mutexStatus == osOK,
@@ -933,7 +935,6 @@ void AppTask::EnqueueLockRequest(const LockRequest & request)
 
 bool AppTask::TryDrainStagedLockRequest(LockRequest & out)
 {
-    VerifyOrReturnValue(sLockSharedStateMutex != nullptr, false);
     VerifyOrReturnValue(osMutexAcquire(sLockSharedStateMutex, osWaitForever) == osOK, false);
     bool drained = sStagedLockRequestValid;
     if (drained)
@@ -994,8 +995,6 @@ void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
                              request.hasCredential ? &request.credential : nullptr, request.hasCredential);
         PlatformMgr().UnlockChipStack();
 
-        VerifyOrReturn(sLockSharedStateMutex != nullptr,
-                       ChipLogError(Zcl, "Door Lock App: remote-action mutex not initialized; dropping remote action"));
         osStatus_t mutexStatus = osMutexAcquire(sLockSharedStateMutex, osWaitForever);
         VerifyOrReturn(mutexStatus == osOK,
                        ChipLogError(Zcl, "Door Lock App: remote-action mutex acquire failed (%d); dropping remote action",
