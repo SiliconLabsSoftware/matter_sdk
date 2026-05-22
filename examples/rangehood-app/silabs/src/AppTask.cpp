@@ -59,7 +59,7 @@ using namespace ::chip::DeviceLayer;
 
 namespace {
 
-CustomerAppTask & appInstance()
+CustomerAppTask & AppInstance()
 {
     return CustomerAppTask::GetAppTask();
 }
@@ -116,7 +116,7 @@ void FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::Attribu
         event.Type                  = AppEvent::kEventType_RangeHood;
         event.RangeHoodEvent.Action = static_cast<uint8_t>(action);
         event.Handler               = &CustomerAppTask::ActionTriggerHandler;
-        appInstance().PostEvent(&event);
+        AppInstance().PostEvent(&event);
     }
 }
 
@@ -138,7 +138,7 @@ void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId 
     event.Type                  = AppEvent::kEventType_RangeHood;
     event.RangeHoodEvent.Action = static_cast<uint8_t>(action);
     event.Handler               = &CustomerAppTask::ActionTriggerHandler;
-    appInstance().PostEvent(&event);
+    AppInstance().PostEvent(&event);
 }
 
 } // namespace
@@ -163,7 +163,7 @@ CHIP_ERROR AppTask::AppInit()
     GetLCD().SetCustomUI(RangeHoodUI::DrawUI);
 #endif // DISPLAY_ENABLED
 
-    err = InitRangeHood();
+    err = AppInstance().InitRangeHood();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "InitRangeHood failed");
@@ -219,7 +219,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = appInstance().Init();
+    CHIP_ERROR err = AppInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask.Init() failed");
@@ -227,7 +227,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    appInstance().StartStatusLEDTimer();
+    AppInstance().StartStatusLEDTimer();
 #endif
 
     ChipLogProgress(AppServer, "App Task started");
@@ -237,7 +237,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            appInstance().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -252,12 +252,12 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
         btnAction == static_cast<uint8_t>(::chip::DeviceLayer::Silabs::SilabsPlatform::ButtonAction::ButtonPressed))
     {
         button_event.Handler = &CustomerAppTask::FanControlButtonHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
 }
 
