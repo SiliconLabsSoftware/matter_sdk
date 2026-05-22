@@ -181,17 +181,6 @@ StorageKeyName LockHolidayScheduleEndpoint(EndpointId endpoint, uint16_t schedul
     return StorageKeyName::Formatted("g/e/%x/lh/%x", endpoint, scheduleIndex);
 }
 
-// ---- Misc helpers ----------------------------------------------------------
-
-void StartUnlatchTimer(uint32_t timeoutMs)
-{
-    if (osTimerStart(sUnlatchTimer, pdMS_TO_TICKS(timeoutMs)) != osOK)
-    {
-        ChipLogError(AppServer, "sUnlatchTimer timer start() failed");
-        appError(APP_ERROR_START_TIMER_FAILED);
-    }
-}
-
 } // namespace
 
 AppTask::LockRequest AppTask::sStagedLockRequest{};
@@ -304,8 +293,9 @@ CHIP_ERROR AppTask::InitLock()
     sLockLED.Init(LOCK_STATE_LED);
     sLockLED.Set(state.Value() == DlLockState::kUnlocked);
 
-    osTimerAttr_t unlatchTimerAttr = { .name = "UnlatchTimer" };
-    sUnlatchTimer                  = osTimerNew(&CustomerAppTask::UnlatchCallback, osTimerOnce, nullptr, &unlatchTimerAttr);
+    sUnlatchTimer = osTimerNew(&CustomerAppTask::UnlatchCallback, osTimerOnce, nullptr, nullptr);
+    VerifyOrReturnError(sUnlatchTimer != nullptr, APP_ERROR_CREATE_TIMER_FAILED,
+                        ChipLogError(AppServer, "sUnlatchTimer timer create failed"));
 
     // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -674,13 +664,8 @@ CHIP_ERROR AppTask::InitLockDomain(DataModel::Nullable<DlLockState> state, LockP
     // Migrate legacy configuration, if needed
     MigrateLockConfig(lockParam);
 
-    // Create cmsis os sw timer for lock timer.
-    mLockTimer = osTimerNew(TimerEventHandler, // timer callback handler
-                            osTimerOnce,       // no timer reload (one-shot timer)
-                            (void *) this,     // pass the app task obj context
-                            NULL               // No osTimerAttr_t to provide.
-    );
-    VerifyOrReturnError(mLockTimer != NULL, APP_ERROR_CREATE_TIMER_FAILED,
+    mLockTimer = osTimerNew(TimerEventHandler, osTimerOnce, this, nullptr);
+    VerifyOrReturnError(mLockTimer != nullptr, APP_ERROR_CREATE_TIMER_FAILED,
                         ChipLogError(AppServer, "mLockTimer timer create failed"));
     if (sLockSharedStateMutex == nullptr)
     {
@@ -859,7 +844,11 @@ void AppTask::ActuatorMovementEventHandler(AppEvent * aEvent)
             break;
         case LockAction::kUnlatch:
             ChipLogDetail(Zcl, "Unlatch Action has been completed");
-            StartUnlatchTimer(kUnlatchTimeMs);
+            if (osTimerStart(sUnlatchTimer, pdMS_TO_TICKS(kUnlatchTimeMs)) != osOK)
+            {
+                ChipLogError(AppServer, "sUnlatchTimer timer start() failed");
+                appError(APP_ERROR_START_TIMER_FAILED);
+            }
             stateToReport = DlLockState::kUnlatched;
             break;
         case LockAction::kUnlock:
