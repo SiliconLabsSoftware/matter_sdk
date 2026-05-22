@@ -183,23 +183,8 @@ StorageKeyName LockHolidayScheduleEndpoint(EndpointId endpoint, uint16_t schedul
 
 // ---- Misc helpers ----------------------------------------------------------
 
-void CancelUnlatchTimer(void)
-{
-    if (osTimerStop(sUnlatchTimer) != osOK)
-    {
-        ChipLogError(AppServer, "sUnlatchTimer stop() failed");
-        appError(APP_ERROR_STOP_TIMER_FAILED);
-    }
-}
-
 void StartUnlatchTimer(uint32_t timeoutMs)
 {
-    if (osTimerIsRunning(sUnlatchTimer))
-    {
-        ChipLogDetail(AppServer, "app timer already started!");
-        CancelUnlatchTimer();
-    }
-
     if (osTimerStart(sUnlatchTimer, pdMS_TO_TICKS(timeoutMs)) != osOK)
     {
         ChipLogError(AppServer, "sUnlatchTimer timer start() failed");
