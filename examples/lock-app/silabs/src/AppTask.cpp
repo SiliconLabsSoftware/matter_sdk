@@ -379,10 +379,7 @@ void AppTask::LockActionEventHandler(AppEvent * aEvent)
                    ChipLogError(AppServer, "LockActionEventHandler: unexpected event type %u", aEvent->Type));
 
     const LockAction action = static_cast<LockAction>(aEvent->LockEvent.Action);
-    if (!appInstance().InitiateLockAction(action, aEvent->LockEvent.Actor == AppEvent::kEventType_Button))
-    {
-        ChipLogDetail(AppServer, "Action is already in progress or active.");
-    }
+    appInstance().InitiateLockAction(action, aEvent->LockEvent.Actor == AppEvent::kEventType_Button);
 }
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
@@ -714,9 +711,7 @@ bool AppTask::InitiateLockAction(LockAction aAction, bool fromButton)
     }
     else
     {
-        ChipLogDetail(Zcl,
-                      "Door Lock App: rejected action %u (actuator state %u, fromButton=%d): no valid transition",
-                      to_underlying(aAction), to_underlying(mLockActuatorState), fromButton);
+        ChipLogDetail(AppServer, "Action is already in progress or active.");
         return false;
     }
 
@@ -982,34 +977,32 @@ void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
             return;
         }
     }
-    if (InitiateLockAction(request.action, /*fromButton*/ request.isButtonAction))
+    if (!InitiateLockAction(request.action, /*fromButton*/ request.isButtonAction))
     {
-        if (!request.isButtonAction)
-        {
-            PlatformMgr().LockChipStack();
-            if (request.isUnboltUnlatch)
-            {
-                mUnlatchContext.Update(request.endpointId, request.fabricIdx, request.nodeId, request.userIndex, request.credential,
-                                       request.hasCredential);
-            }
-            PushClusterLockState(request.endpointId, DlLockState::kNotFullyLocked, request.fabricIdx, request.nodeId,
-                                 request.userIndex, request.hasCredential ? &request.credential : nullptr, request.hasCredential);
-            PlatformMgr().UnlockChipStack();
-
-            VerifyOrReturn(sLockSharedStateMutex != nullptr,
-                           ChipLogError(Zcl, "Door Lock App: remote-action mutex not initialized; dropping remote action"));
-            osStatus_t mutexStatus = osMutexAcquire(sLockSharedStateMutex, osWaitForever);
-            VerifyOrReturn(mutexStatus == osOK,
-                           ChipLogError(Zcl, "Door Lock App: remote-action mutex acquire failed (%d); dropping remote action",
-                                        static_cast<int>(mutexStatus)));
-            mActiveRemoteAction    = request;
-            mHasActiveRemoteAction = true;
-            osMutexRelease(sLockSharedStateMutex);
-        }
+        return;
     }
-    else
+
+    if (!request.isButtonAction)
     {
-        ChipLogDetail(AppServer, "Action is already in progress or active.");
+        PlatformMgr().LockChipStack();
+        if (request.isUnboltUnlatch)
+        {
+            mUnlatchContext.Update(request.endpointId, request.fabricIdx, request.nodeId, request.userIndex, request.credential,
+                                   request.hasCredential);
+        }
+        PushClusterLockState(request.endpointId, DlLockState::kNotFullyLocked, request.fabricIdx, request.nodeId, request.userIndex,
+                             request.hasCredential ? &request.credential : nullptr, request.hasCredential);
+        PlatformMgr().UnlockChipStack();
+
+        VerifyOrReturn(sLockSharedStateMutex != nullptr,
+                       ChipLogError(Zcl, "Door Lock App: remote-action mutex not initialized; dropping remote action"));
+        osStatus_t mutexStatus = osMutexAcquire(sLockSharedStateMutex, osWaitForever);
+        VerifyOrReturn(mutexStatus == osOK,
+                       ChipLogError(Zcl, "Door Lock App: remote-action mutex acquire failed (%d); dropping remote action",
+                                    static_cast<int>(mutexStatus)));
+        mActiveRemoteAction    = request;
+        mHasActiveRemoteAction = true;
+        osMutexRelease(sLockSharedStateMutex);
     }
 }
 
