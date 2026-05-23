@@ -35,7 +35,7 @@ struct MQTT_Transport_t
     struct altcp_tls_config * tls_config;
     struct altcp_pcb * conn;
 
-    mqtt_transport_connect_cb connect_cb;
+    matter_aws_connect_cb connect_cb;
     ip_addr_t * ipaddr;
     /** received buffers from tcp */
     struct pbuf * pcbRxStart;
@@ -115,7 +115,7 @@ err_t MQTT_Transport_SSLConfigure(MQTT_Transport_t * transP, const u8_t * ca, si
 }
 
 err_t MQTT_Transport_Connect(MQTT_Transport_t * transP, const char * host, size_t hostLen, u16_t port,
-                             mqtt_transport_connect_cb connect_cb)
+                             matter_aws_connect_cb connect_cb)
 {
     err_t ret;
     err_t dns_ret;
