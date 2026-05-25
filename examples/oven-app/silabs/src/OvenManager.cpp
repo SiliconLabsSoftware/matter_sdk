@@ -65,10 +65,7 @@ void OvenManager::Init()
     // Initialize binding manager
     VerifyOrReturn(InitOvenBindingHandler() == CHIP_NO_ERROR, ChipLogError(AppServer, "Initializing OvenBindingHandler failed"));
 
-    // OFFONLY safety: cooktop must come up Off regardless of any residual
-    // state. Scheduled after InitOvenBindingHandler so the binding-manager
-    // init runs ahead of the boot-time Off propagation in the CHIP task
-    // event queue.
+    // Cooktop is a cooking appliance. Setting the state to false after reboot to avoid fire/safety hazards.
     EnforceCookTopOffAtStartup();
 
     // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 1 and 2
@@ -129,11 +126,6 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
 
 void OvenManager::EnforceCookTopOffAtStartup()
 {
-    // setOnOffValue is idempotent (no-op when already Off), so endpoints that
-    // already read 0 incur no side effects. Endpoints reading 1 are written
-    // to 0 and the standard attribute-change callback path then propagates
-    // the Off command to bound OnOff (Light) and FanControl (Extractor Hood)
-    // peers for the cooktop, and updates internal cooksurface state.
     for (EndpointId ep : { kCookTopEndpoint, kCookSurfaceEndpoint1, kCookSurfaceEndpoint2 })
     {
         Status status = OnOffServer::Instance().setOnOffValue(ep, OnOff::Commands::Off::Id, /*initiatedByLevelChange=*/false);
