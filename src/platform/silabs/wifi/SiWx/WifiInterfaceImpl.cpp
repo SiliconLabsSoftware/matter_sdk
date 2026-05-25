@@ -656,6 +656,10 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiPlatformEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, CHIP_ERROR_NO_MEMORY);
 #ifndef SL_MBEDTLS_USE_TINYCRYPT
+    ChipLogDetail(DeviceLayer, "[CR] SL_MBEDTLS_USE_PSA_CRYPTO: 1");
+#ifdef SL_SI91X_SIDE_BAND_CRYPTO
+    ChipLogDetail(DeviceLayer, "[CR] SL_SI91X_SIDE_BAND_CRYPTO: 1");
+#endif // SL_SI91X_SIDE_BAND_CRYPTO
     // PSA Crypto initialization
     VerifyOrReturnError(psa_crypto_init() == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "psa_crypto_init failed: %lx", static_cast<uint32_t>(status)));

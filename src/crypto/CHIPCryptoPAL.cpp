@@ -352,6 +352,7 @@ CHIP_ERROR Spake2p::BeginProver(const uint8_t * my_identity, size_t my_identity_
 
 CHIP_ERROR Spake2p::ComputeRoundOne(const uint8_t * pab, size_t pab_len, uint8_t * out, size_t * out_len)
 {
+    ChipLogDetail(Crypto, "Spake2p::ComputeRoundOne");
     CHIP_ERROR error = CHIP_ERROR_INTERNAL;
     void * MN        = nullptr; // Choose M if a prover, N if a verifier
     void * XY        = nullptr; // Choose X if a prover, Y if a verifier
@@ -386,6 +387,7 @@ exit:
 
 CHIP_ERROR Spake2p::ComputeRoundTwo(const uint8_t * in, size_t in_len, uint8_t * out, size_t * out_len)
 {
+    ChipLogDetail(Crypto, "Spake2p::ComputeRoundTwo");
     CHIP_ERROR error = CHIP_ERROR_INTERNAL;
     MutableByteSpan out_span{ out, *out_len };
     uint8_t point_buffer[kMAX_Point_Length];

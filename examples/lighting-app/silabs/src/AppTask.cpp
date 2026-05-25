@@ -17,9 +17,9 @@
  *    limitations under the License.
  */
 
-#include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "AppTask.h"
 #include "CustomerAppTask.h"
 
 #include "LEDWidget.h"
@@ -240,6 +240,8 @@ void AppTask::LightControlEventHandler(AppEvent * aEvent)
 
 #endif // SL_MATTER_RGB_LED_ENABLED
 
+#include "DeviceChipCryptoPALTests.h"
+
 CHIP_ERROR AppTask::AppInit()
 {
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
@@ -271,6 +273,9 @@ CHIP_ERROR AppTask::AppInit()
 #endif
 
     BaseApplication::InitCompleteCallback(err);
+
+    TEMPORARY_RETURN_IGNORED RunPASEChipCryptoPALTests();
+
     return err;
 }
 
