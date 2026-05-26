@@ -758,10 +758,8 @@ CHIP_ERROR SilabsTracer::FindOrCreateTrace(const CharSpan label, const CharSpan 
 
 CHIP_ERROR SilabsTracer::FindExistingTrace(const CharSpan label, const CharSpan group, size_t & outIdx) const
 {
-    const size_t labelCap =
-        (NamedTrace::kMaxLabelLength > 0) ? static_cast<size_t>(NamedTrace::kMaxLabelLength - 1) : 0;
-    const size_t groupCap =
-        (NamedTrace::kMaxGroupLength > 0) ? static_cast<size_t>(NamedTrace::kMaxGroupLength - 1) : 0;
+    const size_t groupLen = std::min(group.size(), NamedTrace::kMaxGroupLength - 1);
+    const size_t labelLen = std::min(label.size(), NamedTrace::kMaxLabelLength - 1);
 
     for (size_t i = 0; i < kMaxNamedTraces; ++i)
     {
@@ -769,16 +767,9 @@ CHIP_ERROR SilabsTracer::FindExistingTrace(const CharSpan label, const CharSpan 
         if (t.labelLen == 0)
             return CHIP_ERROR_NOT_FOUND; // empty slot
 
-        // Same truncation as FindOrCreateTrace: stored len is min(span size, cap - 1).
-        const size_t incomingLabelLen = std::min(label.size(), labelCap);
-        const size_t incomingGroupLen = std::min(group.size(), groupCap);
-
-        if (incomingLabelLen != static_cast<size_t>(t.labelLen) || incomingGroupLen != static_cast<size_t>(t.groupLen))
-        {
-            continue;
-        }
-
-        if (std::memcmp(t.group, group.data(), t.groupLen) == 0 && std::memcmp(t.label, label.data(), t.labelLen) == 0)
+        if (groupLen == t.groupLen && labelLen == t.labelLen &&
+            std::memcmp(t.group, group.data(), groupLen) == 0 &&
+            std::memcmp(t.label, label.data(), labelLen) == 0)
         {
             outIdx = i;
             return CHIP_NO_ERROR;
