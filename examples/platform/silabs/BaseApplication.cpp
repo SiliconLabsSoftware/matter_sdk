@@ -354,7 +354,7 @@ CHIP_ERROR BaseApplication::Init()
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
     SILABS_TRACE_END_ERROR(TimeTraceOperation::kAppInit, err);
     SILABS_TRACE_END_ERROR(TimeTraceOperation::kBootup, err);
-    mIsApplicationInitialized = true;
+    if (err == CHIP_NO_ERROR) { mIsApplicationInitialized = true };
     return err;
 }
 
