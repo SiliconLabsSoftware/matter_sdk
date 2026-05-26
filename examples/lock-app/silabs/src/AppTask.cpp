@@ -973,8 +973,14 @@ void AppTask::HandleLockRequestOnAppTask(const LockRequest & request)
             (mLockActuatorState == LockActuatorState::kLockCompleted) ? DlLockState::kLocked : DlLockState::kUnlocked;
         if (request.targetClusterState == currentTerminal)
         {
-            ChipLogDetail(AppServer, "Door Lock App: remote request target (%u) matches current LockState; skipping no-op",
+            ChipLogDetail(AppServer,
+                          "Door Lock App: remote request target (%u) matches current LockState; updating LockOperation",
                           to_underlying(request.targetClusterState));
+            PlatformMgr().LockChipStack();
+            PushClusterLockState(request.endpointId, request.targetClusterState, request.fabricIdx, request.nodeId,
+                                 request.userIndex, request.hasCredential ? &request.credential : nullptr,
+                                 request.hasCredential);
+            PlatformMgr().UnlockChipStack();
             return;
         }
     }
