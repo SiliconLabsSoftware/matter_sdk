@@ -406,7 +406,14 @@ CHIP_ERROR GenericThreadStackManagerImpl_OpenThread<ImplClass>::_AttachToThreadN
 
     if (dataset.IsCommissioned())
     {
+#if SL_USE_THREAD_DIRECT
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
+        otError otErr = otThreadDirectWakeListenerEnable(mOTInst, true);
+        VerifyOrReturnError(otErr == OT_ERROR_NONE, MapOpenThreadError(otErr));
+#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
+#else
         ReturnErrorOnFailure(Impl()->SetThreadEnabled(true));
+#endif // SL_USE_THREAD_DIRECT
         mpConnectCallback = callback;
     }
 
@@ -652,12 +659,15 @@ GenericThreadStackManagerImpl_OpenThread<ImplClass>::_SetThreadDeviceType(Connec
 #endif
     case ConnectivityManager::kThreadDeviceType_MinimalEndDevice:
         linkMode.mDeviceType   = false;
-        linkMode.mRxOnWhenIdle = true;
+        linkMode.mRxOnWhenIdle = false;
+        linkMode.mNetworkData  = false; // TODO: NETWORK DATA?
         break;
     case ConnectivityManager::kThreadDeviceType_SleepyEndDevice:
     case ConnectivityManager::kThreadDeviceType_SynchronizedSleepyEndDevice:
         linkMode.mDeviceType   = false;
         linkMode.mRxOnWhenIdle = false;
+        linkMode.mNetworkData  = false;
+        // TODO: NETWORK DATA?
         break;
     default:
         break;
@@ -742,14 +752,35 @@ CHIP_ERROR GenericThreadStackManagerImpl_OpenThread<ImplClass>::ConfigureThreadS
     // If the Thread stack has been provisioned, but is not currently enabled, enable it now.
     if (otThreadGetDeviceRole(mOTInst) == OT_DEVICE_ROLE_DISABLED && otDatasetIsCommissioned(otInst))
     {
+#if SL_USE_THREAD_DIRECT
+        // Set rx-off-when-idle directly here.
+        // The link mode default is rx-on-when-idle, and `otIp6SetEnabled()` below latches that
+        // default in OpenThread stack (`Mac::mRxOnWhenIdle` / `MeshForwarder::Start()`) before
+        // the device type is ever set.
+        {
+            otLinkModeConfig linkMode = otThreadGetLinkMode(otInst);
+
+            linkMode.mRxOnWhenIdle = false;
+            otErr                  = otThreadSetLinkMode(otInst, linkMode);
+            VerifyOrExit(otErr == OT_ERROR_NONE, err = MapOpenThreadError(otErr));
+        }
+#endif // SL_USE_THREAD_DIRECT
+
         // Enable the Thread IPv6 interface.
         otErr = otIp6SetEnabled(otInst, true);
         VerifyOrExit(otErr == OT_ERROR_NONE, err = MapOpenThreadError(otErr));
 
+#if SL_USE_THREAD_DIRECT
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
+        // Find equivalent API for Thread Direct
+        otErr = otThreadDirectWakeListenerEnable(mOTInst, true);
+        VerifyOrExit(otErr == OT_ERROR_NONE, err = MapOpenThreadError(otErr));
+#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
+#else
         otErr = otThreadSetEnabled(otInst, true);
         VerifyOrExit(otErr == OT_ERROR_NONE, err = MapOpenThreadError(otErr));
-
         ChipLogProgress(DeviceLayer, "OpenThread ifconfig up and thread start");
+#endif // SL_USE_THREAD_DIRECT
     }
 #endif
 
@@ -993,7 +1024,7 @@ void GenericThreadStackManagerImpl_OpenThread<ImplClass>::TryNextNetwork()
         }
 
 #else
-        auto err      = MapOpenThreadError(otSeekerStart(mOTInst, _HandleSeekerScanEvaluator, this));
+        auto err = MapOpenThreadError(otSeekerStart(mOTInst, _HandleSeekerScanEvaluator, this));
 
         ChipLogProgress(DeviceLayer, "Thread Discovery restarted, no delay: %s", chip::ErrorStr(err));
 #endif

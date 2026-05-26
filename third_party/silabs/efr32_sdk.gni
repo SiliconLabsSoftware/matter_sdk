@@ -21,6 +21,7 @@ import("${build_root}/config/compiler/compiler.gni")
 
 import("${chip_root}/src/app/icd/icd.gni")
 import("${chip_root}/src/lib/lib.gni")
+import("${chip_root}/src/platform/silabs/efr32/thread_direct.gni")
 import("${chip_root}/src/platform/silabs/multi-ota/args.gni")
 import("silabs_board.gni")
 
@@ -210,8 +211,10 @@ template("efr32_sdk") {
       "${efr32_sdk_root}/bootloader/platform/bootloader/config",
       "${efr32_sdk_root}/cmsis/Core/Include",
       "${efr32_sdk_root}/cmsis/RTOS2/Include",
+      "${efr32_sdk_root}/platform_core/platform/common/inc",
       "${efr32_sdk_root}/openthread_stack/util/third_party/openthread/include",
       "${efr32_sdk_root}/openthread_stack/util/third_party/openthread/src/include",
+      "${efr32_sdk_root}/platform_core/platform/common/inc",
       "${efr32_sdk_root}/platform_core/platform/driver/debug/inc",
       "${efr32_sdk_root}/platform_core/platform/driver/gpio/inc",
       "${efr32_sdk_root}/platform_core/platform/emdrv/common/inc",
@@ -312,8 +315,6 @@ template("efr32_sdk") {
         "${efr32_sdk_root}/freertos/kernel/portable/GCC/ARM_CM33_NTZ/non_secure",
       ]
 
-      libs += [ "${efr32_sdk_root}/openthread/libs/build/${compiler}/cortex-m33/sl-openthread-library/Release/libsl_openthread.a" ]
-
       if (!sl_matter_enable_siwx_ble) {
         libs += [
           "${efr32_sdk_root}/bluetooth_common/lib/build/${compiler}/cortex-m33/bgcommon/release/libbgcommon.a",
@@ -348,6 +349,16 @@ template("efr32_sdk") {
     }
 
     if (silabs_family == "efr32mg24") {
+      if (sl_use_thread_direct) {
+        if (chip_openthread_thread_direct_wake_listener_enable) {
+          libs += [ "${efr32_sdk_root}/openthread/libs/listener/build/${compiler}/cortex-m33/sl-openthread-library/Release/libsl_openthread.a" ]
+        } else {
+          # chip_openthread_thread_direct_wake_initiator_enable
+          libs += [ "${efr32_sdk_root}/openthread/libs/initiator/build/${compiler}/cortex-m33/sl-openthread-library/Release/libsl_openthread.a" ]
+        }
+      } else {
+        libs += [ "${efr32_sdk_root}/openthread/libs/initiator/build/${compiler}/cortex-m33/sl-openthread-library/Release/libsl_openthread.a" ]
+      }
       _include_dirs += [
         "${efr32_sdk_root}/platform_core/platform/Device/SiliconLabs/EFR32MG24/Include",
         "${efr32_sdk_root}/rail_library/plugin/pa-conversions/efr32xg24",
@@ -386,6 +397,16 @@ template("efr32_sdk") {
         "_SILICON_LABS_MODULE=1",
       ]
     } else if (silabs_family == "efr32mg26") {
+      if (sl_use_thread_direct) {
+        if (chip_openthread_thread_direct_wake_listener_enable) {
+          libs += [ "${efr32_sdk_root}/openthread/libs/listener/build/${compiler}/cortex-m33/sl-openthread-library/Release/libsl_openthread.a" ]
+        } else {
+          # chip_openthread_thread_direct_wake_initiator_enable
+          libs += [ "${efr32_sdk_root}/openthread/libs/initiator/build/${compiler}/cortex-m33/sl-openthread-library/Release/libsl_openthread.a" ]
+        }
+      } else {
+        libs += [ "${efr32_sdk_root}/openthread/libs/listener/build/${compiler}/cortex-m33/sl-openthread-library/Release/libsl_openthread.a" ]
+      }
       _include_dirs += [
         "${efr32_sdk_root}/platform_core/platform/Device/SiliconLabs/EFR32MG26/Include",
         "${efr32_sdk_root}/rail_library/plugin/pa-conversions/efr32xg26",
@@ -1014,6 +1035,7 @@ template("efr32_sdk") {
         "${efr32_sdk_root}/platform_core/platform/service/watchdog_manager/src/sl_watchdog_manager_hal_wdog.c",
         "${efr32_sdk_root}/platform_core/platform/service/watchdog_manager/src/sl_watchdog_manager_platform.c",
         "${efr32_sdk_root}/platform_core/platform/service/watchdog_manager/src/sl_watchdog_manager_power.c",
+        "${efr32_sdk_root}/platform_core/service/watchdog_manager/src/sl_watchdog_manager.c",
       ]
     }
 

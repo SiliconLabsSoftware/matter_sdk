@@ -134,7 +134,17 @@ public:
 
     static void PostEvent(const AppEvent * event);
 
-#if SL_MATTER_DISPLAY_ENABLED
+    /**
+     * @brief Wrapper around PlatformMgr().ScheduleWork() that queues work until the thread direct
+     *        link is established in apps using thread direct.
+     *
+     *
+     * @param work Work function to run on the CHIP task once the link is established
+     * @param arg Context passed to work function
+     */
+    static CHIP_ERROR ScheduleWorkGatedOnThreadDirectLink(chip::DeviceLayer::AsyncWorkFunct work, intptr_t arg = 0);
+
+#ifdef DISPLAY_ENABLED
     /**
      * @brief Return LCD object
      */

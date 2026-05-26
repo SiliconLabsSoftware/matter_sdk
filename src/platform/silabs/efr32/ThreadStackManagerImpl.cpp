@@ -32,6 +32,12 @@
 
 #include <openthread/platform/entropy.h>
 
+#if SL_USE_THREAD_DIRECT
+#include <platform/silabs/address_resolve/PreCommissioning.h>
+#define TD_SLW_PERIOD_SLOT 64 // 40000 us (unit of slot duration 625 us).
+// Should work at 64 (40 ms)
+#endif
+
 #include <lib/support/CHIPPlatformMemory.h>
 
 #include <openthread-core-config.h>
@@ -55,7 +61,7 @@ void otAppCliInit(otInstance * aInstance);
 namespace chip {
 namespace DeviceLayer {
 namespace {
-otInstance * sOTInstance = NULL;
+otInstance * sOTInstance = nullptr;
 
 }; // namespace
 
@@ -63,30 +69,30 @@ using namespace ::chip::DeviceLayer::Internal;
 
 ThreadStackManagerImpl ThreadStackManagerImpl::sInstance;
 
-CHIP_ERROR ThreadStackManagerImpl::_InitThreadStack(void)
+CHIP_ERROR ThreadStackManagerImpl::_InitThreadStack()
 {
     return InitThreadStack(sOTInstance);
 }
 
-CHIP_ERROR ThreadStackManagerImpl::_StartThreadTask(void)
+CHIP_ERROR ThreadStackManagerImpl::_StartThreadTask()
 {
     // Stubbed since our thread task is created in the InitThreadStack function and it will start once the scheduler starts.
     return CHIP_NO_ERROR;
 }
 
-void ThreadStackManagerImpl::_LockThreadStack(void)
+void ThreadStackManagerImpl::_LockThreadStack()
 {
     sl_ot_rtos_acquire_stack_mutex();
 }
 
-bool ThreadStackManagerImpl::_TryLockThreadStack(void)
+bool ThreadStackManagerImpl::_TryLockThreadStack()
 {
     // TODO: Implement a non-blocking version of the mutex lock
     sl_ot_rtos_acquire_stack_mutex();
     return true;
 }
 
-void ThreadStackManagerImpl::_UnlockThreadStack(void)
+void ThreadStackManagerImpl::_UnlockThreadStack()
 {
     sl_ot_rtos_release_stack_mutex();
 }
@@ -95,14 +101,14 @@ void ThreadStackManagerImpl::_UnlockThreadStack(void)
 void ThreadStackManagerImpl::_WaitOnSrpClearAllComplete()
 {
     // Only 1 task can be blocked on a srpClearAll request
-    if (mSrpClearAllRequester == NULL)
+    if (mSrpClearAllRequester == nullptr)
     {
         mSrpClearAllRequester = osThreadGetId();
         // Wait on OnSrpClientNotification which confirms the clearing is done.
         // It will notify this current task with NotifySrpClearAllComplete.
         // However, we won't wait more than 2s.
         osThreadFlagsWait(threadSrpClearAllFlags, osFlagsWaitAny, pdMS_TO_TICKS(2000));
-        mSrpClearAllRequester = NULL;
+        mSrpClearAllRequester = nullptr;
     }
 }
 
@@ -128,16 +134,132 @@ CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
     return err;
 }
 
-void ThreadStackManagerImpl::FactoryResetThreadStack(void)
+void ThreadStackManagerImpl::FactoryResetThreadStack()
 {
-    VerifyOrReturn(sOTInstance != NULL);
+    VerifyOrReturn(sOTInstance);
     otInstanceFactoryReset(sOTInstance);
 }
 
 bool ThreadStackManagerImpl::IsInitialized()
 {
-    return otGetInstance() != NULL;
+    return otGetInstance() != nullptr;
 }
+
+#if SL_USE_THREAD_DIRECT
+CHIP_ERROR ThreadStackManagerImpl::ThreadDirectInit()
+{
+    VerifyOrReturnError(sOTInstance, CHIP_ERROR_INTERNAL);
+// #if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
+    //otExtAddress     extAddress;
+    // TODO: This needs to be the target ext address, not the current one.
+    // ReturnErrorOnFailure(Internal::PreCommissioning::GetInstance().GetTargetExtAddress(extAddress));
+    // VerifyOrReturnError(otLinkSetExtendedAddress(sOTInstance, &extAddress) == OT_ERROR_NONE, CHIP_ERROR_INTERNAL);
+// #endif
+    VerifyOrReturnError(otThreadDirectSetSlwSchedule(sOTInstance, TD_SLW_PERIOD_SLOT) == OT_ERROR_NONE, CHIP_ERROR_INTERNAL);
+
+    // TODO: Asses if necessary since this is done by ConnectivityMgr().SetThreadDeviceType
+    //otLinkModeConfig config;
+    // Set link mode: rx-off-when-idle sleepy end device.
+    // config.mRxOnWhenIdle = false;
+    // config.mDeviceType   = false;
+    // config.mNetworkData  = false;
+    // VerifyOrReturnError(otThreadSetLinkMode(sOTInstance, config) == OT_ERROR_NONE, CHIP_ERROR_INTERNAL);
+
+    otThreadDirectSetEventCallback(sOTInstance, HandleDirectEvent, nullptr);
+
+    return CHIP_NO_ERROR;
+}
+
+void ThreadStackManagerImpl::ThreadDirectSendWakeup()
+{
+    otError error;
+    otExtAddress extAddress;
+    ReturnOnFailure(Internal::PreCommissioning::GetInstance().GetTargetExtAddress(extAddress));
+
+    ChipLogProgress(DeviceLayer,
+                    "TD sending wakeup to %02X%02X%02X%02X%02X%02X%02X%02X (type=link)", extAddress.m8[0], extAddress.m8[1],
+                    extAddress.m8[2], extAddress.m8[3], extAddress.m8[4], extAddress.m8[5], extAddress.m8[6], extAddress.m8[7]);
+
+    _LockThreadStack();
+    error = otThreadDirectWakeup(sOTInstance, &extAddress, OT_THREAD_DIRECT_WAKE_TYPE_LINK,
+                                 0,  // interval: use configured default
+                                 0,  // duration: use configured default
+                                 0); // key index: use default wake key (129)
+    _UnlockThreadStack();
+
+    if (error != OT_ERROR_NONE)
+    {
+        ChipLogError(DeviceLayer, "TD wakeup command rejected by OpenThread: %s", otThreadErrorToString(error));
+    }
+}
+
+void ThreadStackManagerImpl::HandleDirectEvent(otThreadDirectEvent aEvent, const otThreadDirectPeerInfo * aPeerInfo, void * aContext)
+{
+    switch (aEvent)
+    {
+        case OT_THREAD_DIRECT_EVENT_WAKE_RECEIVED: {
+        static const char * const kWakeTypeNames[] = { "link", "power-outage", "connectionless" };
+        const char * wakeTypeName                  = (aPeerInfo->mWakeType < 3) ? kWakeTypeNames[aPeerInfo->mWakeType] : "unknown";
+            ChipLogProgress(DeviceLayer, "TD Wake Command received\r\n"
+                        "  from:     %02X%02X%02X%02X%02X%02X%02X%02X\r\n"
+                        "  type:     %s (%u)\r\n"
+                        "  rv-time:  %lu us\r\n"
+                        "  retries:  %u x %u intervals\r\n",
+                        aPeerInfo->mExtAddress.m8[0], aPeerInfo->mExtAddress.m8[1], aPeerInfo->mExtAddress.m8[2],
+                        aPeerInfo->mExtAddress.m8[3], aPeerInfo->mExtAddress.m8[4], aPeerInfo->mExtAddress.m8[5],
+                        aPeerInfo->mExtAddress.m8[6], aPeerInfo->mExtAddress.m8[7], wakeTypeName, aPeerInfo->mWakeType,
+                        (unsigned long) aPeerInfo->mWakeRvTimeUs, aPeerInfo->mWakeRetryCount, aPeerInfo->mWakeRetryInterval);
+            if (sInstance.mThreadDirectDelegate != nullptr)
+            {
+                sInstance.mThreadDirectDelegate->OnThreadDirectWakeupReceived();
+            }
+            break;
+        }
+
+    case OT_THREAD_DIRECT_EVENT_LINKED:
+        ChipLogProgress(DeviceLayer, "TD link established with %02X%02X%02X%02X%02X%02X%02X%02X\r\n", aPeerInfo->mExtAddress.m8[0],
+        aPeerInfo->mExtAddress.m8[1], aPeerInfo->mExtAddress.m8[2], aPeerInfo->mExtAddress.m8[3],
+        aPeerInfo->mExtAddress.m8[4], aPeerInfo->mExtAddress.m8[5], aPeerInfo->mExtAddress.m8[6],
+        aPeerInfo->mExtAddress.m8[7]);
+        if (sInstance.mThreadDirectDelegate != nullptr)
+        {
+            sInstance.mThreadDirectDelegate->OnThreadDirectLinked();
+        }
+        break;
+
+    case OT_THREAD_DIRECT_EVENT_LINK_FAILED:
+        if (aPeerInfo != nullptr)
+        {
+            ChipLogError(DeviceLayer,
+                         "TD link failed with %02X%02X%02X%02X%02X%02X%02X%02X (no response / link setup failed)",
+                         aPeerInfo->mExtAddress.m8[0], aPeerInfo->mExtAddress.m8[1], aPeerInfo->mExtAddress.m8[2],
+                         aPeerInfo->mExtAddress.m8[3], aPeerInfo->mExtAddress.m8[4], aPeerInfo->mExtAddress.m8[5],
+                         aPeerInfo->mExtAddress.m8[6], aPeerInfo->mExtAddress.m8[7]);
+        }
+        else
+        {
+            ChipLogError(DeviceLayer, "TD link failed (no peer info; wake retries exhausted or radio reject)");
+        }
+        if (sInstance.mThreadDirectDelegate != nullptr)
+        {
+            sInstance.mThreadDirectDelegate->OnThreadDirectLinkFailed();
+        }
+        break;
+
+    case OT_THREAD_DIRECT_EVENT_UNLINKED:
+        ChipLogProgress(DeviceLayer, "TD link unlinked\r\n");
+        if (sInstance.mThreadDirectDelegate != nullptr)
+        {
+            sInstance.mThreadDirectDelegate->OnThreadDirectUnlinked();
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
+#endif // SL_USE_THREAD_DIRECT
 
 } // namespace DeviceLayer
 } // namespace chip
@@ -202,7 +324,7 @@ extern "C" void sl_ot_create_instance(void)
 extern "C" void sl_ot_cli_init(void)
 {
 #if !defined(PW_RPC_ENABLED) && CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
-    VerifyOrDie(sOTInstance != NULL);
+    VerifyOrDie(sOTInstance);
     otAppCliInit(sOTInstance);
 #endif
 }

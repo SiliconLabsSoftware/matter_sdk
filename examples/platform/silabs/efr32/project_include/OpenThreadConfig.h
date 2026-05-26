@@ -60,7 +60,7 @@
 #endif // SL_ICD_ENABLED
 
 /****Uncomment below section for OpenThread Debug logs*/
-// #define OPENTHREAD_CONFIG_LOG_LEVEL OT_LOG_LEVEL_DEBG
+#define OPENTHREAD_CONFIG_LOG_LEVEL OT_LOG_LEVEL_CRIT
 
 // #ifndef OPENTHREAD_CONFIG_LOG_CLI
 // #define OPENTHREAD_CONFIG_LOG_CLI 1

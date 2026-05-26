@@ -346,3 +346,6 @@
 	path = third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk
 	url = https://github.com/aws/ota-for-aws-iot-embedded-sdk.git
 	platforms = silabs
+[submodule "third_party/silabs/simplicity_sdk"]
+	path = third_party/silabs/simplicity_sdk
+    url = git@github.com:suveshpratapa/sisdk-release.git

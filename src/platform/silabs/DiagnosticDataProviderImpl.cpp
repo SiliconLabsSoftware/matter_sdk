@@ -223,7 +223,9 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetNetworkInterfaces(NetworkInterface ** 
     const char * threadNetworkName = otThreadGetNetworkName(ThreadStackMgrImpl().OTInstance());
     ifp->name                      = Span<const char>(threadNetworkName, strlen(threadNetworkName));
     ifp->type                      = InterfaceTypeEnum::kThread;
-    ifp->isOperational             = ThreadStackMgrImpl().IsThreadAttached();
+    // ifp->isOperational             = ThreadStackMgrImpl().IsThreadAttached();
+    // Was needed in the Iphone demo, but not sure if needed here
+    ifp->isOperational = true; // TODO: Confirm if needed
     ifp->offPremiseServicesReachableIPv4.SetNull();
     ifp->offPremiseServicesReachableIPv6.SetNull();
 

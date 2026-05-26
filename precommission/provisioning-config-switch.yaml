@@ -1,0 +1,113 @@
+# Unified provisioning configuration.
+# All sections share the same key/value schema. Thread sections use NVM3 object
+# keys (hex integers); MatterFabric uses KVS string keys. Values are hex strings.
+configs:
+  MatterFabric:
+    fabric_index: 1
+    kvs_entries:
+      - key: "f/1/r"
+        value: "1530010101240201370324140118260480228127260580254d3a37062414011824070124080130094104c25dada9edd76500bfb4d944f9f1c1db47bc34f4deb31e3f6ffec8b96adf0fd42335bb22f9f5e351bb321ad00d25e437930914e8fbcde24127952b1c90839ad4370a3501290118240260300414a22ad4b54cc203565dab1c5419f83065ce038f0c300514a22ad4b54cc203565dab1c5419f83065ce038f0c18300b40f11c59618b2f48f652950f4e78c8971993a5619605bbfaaeca389d95e196299a97975c424cbe0539ef04b30b392d7c2cb38283e362b7f80ddb42ea08eca2b97618"
+      - key: "f/1/i"
+        value: "1530010101240201370324140118260480228127260580254d3a370624130218240701240801300941043d220bfe527dc77cc4a0d2a3c754f16e8b889ed369ba8df4d0b1e5166acc850f8f9df2e3570aeb1c33f192f1f3d92c47d940e688eb84dc3862c4ea13ff13989f370a3501290118240260300414536a39eda8c443fec5db305dce18192b7081b8ae300514a22ad4b54cc203565dab1c5419f83065ce038f0c18300b407b73cd1cd6c00f7747aafecea424c9364a073908b30d88bac2db7e8fa45d4ee9263d725ea9719632b91d7e9a74168d57233136f3c745f0ee91203da9fe4e029018"
+      - key: "f/1/n"
+        value: "1530010101240201370324130218260480228127260580254d3a37062415012411011824070124080130094104b37192af92eac82a29329b99c1f953fb1916f82698af67f3ab086be10448d24f73c913f33b683bdd1f1500f90ba27409a7b77b5e5cfc435157d11dc49f87c99d370a35012801182402013603040204011830041400f47ef09881e30beccd6116ed9ab1620bc056a0300514536a39eda8c443fec5db305dce18192b7081b8ae18300b407f6f231c5790b9500732f70b1814a27132b2f51f85bbb62638b28e686d4cb3ab333ce9b4c82f04beb08f5dd93300e6be8bcc450c2e3d88f8bdc216f345395dfc18"
+      - key: "f/1/m"
+        value: "152500f1ff2c010018"
+      - key: "g/fidx"
+        value: "15240002360104011818"
+      - key: "f/1/ac/0/0"
+        value: "1524010524020236030669b6010018340418"
+      - key: "g/gfl"
+        value: "1524010124020118"
+      - key: "f/1/g"
+        value: "1524010024020024030024040024050024060124070018"
+      - key: "f/1/k/0"
+        value: "152401002402013603152404002505ab71300610246152ce71601d5bdf00fdd9265562b318152404002405003006100000000000000000000000000000000018152404002405003006100000000000000000000000000000000018182507ffff18"
+      - key: "g/bt"
+        value: "1524010124020018"
+      - key: "g/bt/0"
+        value: "152401012402012404012405022407ff18"
+  
+  ThreadNetworkInfo:
+    entries:
+      role: 2
+      device_mode: 4
+      rloc16: '0x0401'
+      key_sequence: 0
+      mle_frame_counter: 1008
+      mac_frame_counter: 1171
+      previous_partition_id: '0x4b79f249'
+      ext_address: 1e806b6588a24908
+      ml_eid_iid: 6ef19dd8d3540cf5
+      version: 5
+
+    # - key: "0x20300"
+    #   value: "0204010400000000f00300009304000049f2794b1e806b6588a249086ef19dd8d3540cf50500"
+
+  ThreadActiveDataset:
+    entries:
+      - type: active_timestamp
+        seconds: 1
+        ticks: 0
+        authoritative: false
+      - type: channel
+        page: 0
+        channel: 25
+      - type: wakeup_channel
+        page: 0
+        channel: 20
+      - type: channel_mask
+        entries:
+        - page: 0
+          mask: 001fffe0
+      - type: ext_pan_id
+        value: a17707fd5dd11c06
+      - type: mesh_local_prefix
+        value: fdf65d1c88226404
+      - type: network_key
+        value: 7cb5407c07fdbfaa8bbecbe1d71cbcb6
+      - type: network_name
+        value: OpenThread-5f1f
+      - type: pan_id
+        value: '0x5f1f'
+      - type: pskc
+        value: b8dda77828d365d5207a5a0144d37b31
+      - type: security_policy
+        rotation_time: 672
+        flags: f7f8
+
+    #   - key: "0x20100"
+    #     value: "0e08000000000001000000030000194a0300001435060004001fffe00208a17707fd5dd11c060708fdf65d1c8822640405107cb5407c07fdbfaa8bbecbe1d71cbcb6030f4f70656e5468726561642d3566316601025f1f0410b8dda77828d365d5207a5a0144d37b310c0402a0f7f8"
+  
+  PreCommissioning:
+    entries:
+      - key: "0x708"
+        description: "Operational key"
+        value: "04b37192af92eac82a29329b99c1f953fb1916f82698af67f3ab086be10448d24f73c913f33b683bdd1f1500f90ba27409a7b77b5e5cfc435157d11dc49f87c99d2fc78c6b2fb04bebe220286dbbbd412639a702ed9e2765427571be70291b258d"
+      
+  TargetConnectionParameters:
+    entries:
+      - key: "0x700"
+        description: "Target extended address"
+        value: "3a2e40e0a05448f5"
+      - key: "0x701"
+        description: "Target address: Closure here"
+        value: "fe80::382e:40e0:a054:48f5" # link local derived from ext_address
+      - key: "0x702"
+        description: "Target port"
+        value: "a415" # 5540
+      - key: "0x703"
+        description: "MRP Remote Idle Interval"
+        value: "d0070000" # 2000
+      - key: "0x704"
+        description: "MRP Remote Active Interval"
+        value: "d0070000" # 2000
+      - key: "0x705"
+        description: "MRP Remote Active Threshold Time"
+        value: "a00f0000" # 4000
+      - key: "0x706"
+        description: "Compressed Fabric ID"
+        value: "d66725f89b82e913" # 13E9829BF82567D6
+      - key: "0x707"
+        description: "Node ID"
+        value: "0200000000000000" # 2

@@ -149,6 +149,12 @@ public:
                                                   const chip::app::Clusters::Binding::TableEntry & binding,
                                                   chip::OperationalDeviceProxy * peer_device);
 
+#if SL_USE_THREAD_DIRECT && OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+    static void ProcessClosureControlBindingCommand(chip::CommandId commandId,
+                                                    const chip::app::Clusters::Binding::TableEntry & binding,
+                                                    chip::OperationalDeviceProxy * peer_device);
+#endif // SL_USE_THREAD_DIRECT && OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+
     /**
      * @brief Matter stack callback after a server attribute write, logs Identify cluster changes.
      *

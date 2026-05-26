@@ -22,6 +22,8 @@
 #include <cmsis_os2.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <sl_cmsis_os2_common.h>
+#include <FreeRTOS.h>
+#include <task.h>
 
 #include <platform/silabs/Logging.h>
 
@@ -157,9 +159,9 @@ typedef struct
 #else
 static constexpr uint32_t kUartTxCompleteFlag = 1;
 #if CHIP_DETAIL_LOGGING
-#define UART_MAX_QUEUE_SIZE 60
+#define UART_MAX_QUEUE_SIZE 125
 #else
-#define UART_MAX_QUEUE_SIZE 25
+#define UART_MAX_QUEUE_SIZE 125
 #endif
 #endif
 

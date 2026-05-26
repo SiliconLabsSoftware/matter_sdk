@@ -72,6 +72,13 @@
 #include <platform/silabs/ThreadStackManagerImpl.h>
 #endif // CHIP_ENABLE_OPENTHREAD
 
+#if SL_USE_THREAD_DIRECT
+#include <atomic>
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+#include <platform/silabs/address_resolve/AddressResolverImpl.h>
+#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+#endif // SL_USE_THREAD_DIRECT
+
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #ifdef SL_WIFI
@@ -208,6 +215,85 @@ ObjectPool<Identify,
 
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 
+#if SL_USE_THREAD_DIRECT
+struct PendingThreadDirectWork
+{
+    chip::DeviceLayer::AsyncWorkFunct work;
+    intptr_t arg;
+};
+
+constexpr size_t kPendingThreadDirectWorkQueueSize = 4;
+osMessageQueueId_t sPendingThreadDirectWorkQueue   = nullptr;
+uint8_t sPendingThreadDirectWorkQueueBuffer[kPendingThreadDirectWorkQueueSize * sizeof(PendingThreadDirectWork)];
+osMessageQueue_t sPendingThreadDirectWorkQueueStruct;
+constexpr osMessageQueueAttr_t pendingThreadDirectWorkQueueAttr = { .cb_mem  = &sPendingThreadDirectWorkQueueStruct,
+                                                                    .cb_size = osMessageQueueCbSize,
+                                                                    .mq_mem  = sPendingThreadDirectWorkQueueBuffer,
+                                                                    .mq_size =
+                                                                        sizeof(sPendingThreadDirectWorkQueueBuffer) };
+
+// Written from the OpenThread task, read from the CHIP/App task.
+std::atomic<bool> sThreadDirectLinked{ false };
+
+void DrainPendingThreadDirectWork(AppEvent *)
+{
+    PendingThreadDirectWork pending;
+    while (osMessageQueueGet(sPendingThreadDirectWorkQueue, &pending, nullptr, 0) == osOK)
+    {
+        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(pending.work, pending.arg);
+    }
+}
+
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+void NotifyResolverThreadDirectLinked(intptr_t)
+{
+    static_cast<chip::AddressResolve::Impl::Resolver &>(chip::AddressResolve::Resolver::Instance()).OnThreadDirectLinked();
+}
+
+void NotifyResolverThreadDirectUnlinked(intptr_t)
+{
+    static_cast<chip::AddressResolve::Impl::Resolver &>(chip::AddressResolve::Resolver::Instance()).OnThreadDirectUnlinked();
+}
+
+void NotifyResolverThreadDirectLinkFailed(intptr_t)
+{
+    static_cast<chip::AddressResolve::Impl::Resolver &>(chip::AddressResolve::Resolver::Instance()).OnThreadDirectLinkFailed();
+}
+#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+
+class ThreadDirectLinkDelegate : public chip::DeviceLayer::ThreadDirectDelegate
+{
+public:
+    void OnThreadDirectLinked() override
+    {
+        sThreadDirectLinked.store(true, std::memory_order_relaxed);
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+        // OT callbacks run off the Matter stack; hop before touching AddressResolve / SystemLayer.
+        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(NotifyResolverThreadDirectLinked);
+#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+        AppEvent event = {};
+        event.Handler  = DrainPendingThreadDirectWork;
+        BaseApplication::PostEvent(&event);
+    }
+    void OnThreadDirectUnlinked() override
+    {
+        sThreadDirectLinked.store(false, std::memory_order_relaxed);
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(NotifyResolverThreadDirectUnlinked);
+#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+    }
+    void OnThreadDirectLinkFailed() override
+    {
+        sThreadDirectLinked.store(false, std::memory_order_relaxed);
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(NotifyResolverThreadDirectLinkFailed);
+#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+    }
+};
+
+ThreadDirectLinkDelegate sThreadDirectLinkDelegate;
+#endif // SL_USE_THREAD_DIRECT
+
 } // namespace
 
 bool BaseApplication::sIsProvisioned                  = false;
@@ -307,6 +393,16 @@ CHIP_ERROR BaseApplication::StartAppTask(osThreadFunc_t taskFunction)
         ChipLogError(AppServer, "Failed to allocate app event queue");
         appError(APP_ERROR_EVENT_QUEUE_FAILED);
     }
+
+#if SL_USE_THREAD_DIRECT
+    sPendingThreadDirectWorkQueue = osMessageQueueNew(kPendingThreadDirectWorkQueueSize, sizeof(PendingThreadDirectWork),
+                                                       &pendingThreadDirectWorkQueueAttr);
+    if (sPendingThreadDirectWorkQueue == nullptr)
+    {
+        ChipLogError(AppServer, "Failed to allocate pending Thread Direct work queue");
+        appError(APP_ERROR_EVENT_QUEUE_FAILED);
+    }
+#endif // SL_USE_THREAD_DIRECT
 
     // Start App task.
     sAppTaskHandle = osThreadNew(taskFunction, &sAppEventQueue, &appTaskAttr);
@@ -450,6 +546,11 @@ CHIP_ERROR BaseApplication::BaseInit()
 #endif
 
     err = chip::Server::GetInstance().GetFabricTable().AddFabricDelegate(&sAppDelegate);
+
+#if SL_USE_THREAD_DIRECT
+    ThreadStackMgrImpl().SetThreadDirectDelegate(&sThreadDirectLinkDelegate);
+#endif // SL_USE_THREAD_DIRECT
+
     return err;
 }
 
@@ -959,6 +1060,24 @@ void BaseApplication::DispatchEvent(AppEvent * aEvent)
     {
         ChipLogError(AppServer, "Nullptr event received or no handler. Dropping it.");
     }
+}
+
+CHIP_ERROR BaseApplication::ScheduleWorkGatedOnThreadDirectLink(chip::DeviceLayer::AsyncWorkFunct work, intptr_t arg)
+{
+#if SL_USE_THREAD_DIRECT && OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+    if (sThreadDirectLinked.load(std::memory_order_relaxed))
+    {
+        return PlatformMgr().ScheduleWork(work, arg);
+    }
+
+    PendingThreadDirectWork pending{ work, arg };
+    VerifyOrReturnError(osMessageQueuePut(sPendingThreadDirectWorkQueue, &pending, osPriorityNormal, 0) == osOK,
+                        CHIP_ERROR_NO_MEMORY, ChipLogError(AppServer, "Failed to queue pending Thread Direct work"));
+    ThreadStackMgrImpl().ThreadDirectSendWakeup();
+    return CHIP_NO_ERROR;
+#else
+    return PlatformMgr().ScheduleWork(work, arg);
+#endif // SL_USE_THREAD_DIRECT
 }
 
 void BaseApplication::ScheduleFactoryReset()

@@ -161,7 +161,8 @@ if (wifi_soc != true) {  # CCP board
         "${sl_ot_libs_path}/src/stubs/tcp/tcp_stubs.c",
 
         # Temporary file until the files in the SI SDK is fixed
-        "${matter_support_root}/sdk-copies/openthread/platform-abstraction/efr32/radio.cpp",
+        "${sl_ot_efr32_root}/radio.cpp",
+        "${sl_ot_efr32_root}/radio_direct.cpp",
       ]
 
       include_dirs = [

@@ -122,6 +122,9 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #include <platform/silabs/tracing/SilabsPowerTracing.h> // nogncheck
 #endif                                                  // SL_TRACING_ENERGY_TRACES
 
+#if SL_USE_THREAD_DIRECT
+#include <platform/silabs/address_resolve/PreCommissioning.h>
+#endif // SL_USE_THREAD_DIRECT
 /**********************************************************
  * Defines
  *********************************************************/
@@ -161,6 +164,9 @@ Clusters::NetworkCommissioning::InstanceAndDriver<NetworkCommissioning::GenericT
 // ================================================================================
 // Matter Networking Callbacks
 // ================================================================================
+
+namespace {
+
 void LockOpenThreadTask(void)
 {
     chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
@@ -171,11 +177,18 @@ void UnlockOpenThreadTask(void)
     chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
 }
 
+} // namespace
+
 // ================================================================================
 // SilabsMatterConfig Methods
 // ================================================================================
 CHIP_ERROR SilabsMatterConfig::InitOpenThread(void)
 {
+
+#if SL_USE_THREAD_DIRECT
+    ReturnErrorOnFailure(ThreadStackMgrImpl().ThreadDirectInit());
+#endif // SL_USE_THREAD_DIRECT
+
     ReturnErrorOnFailure(ThreadStackMgr().InitThreadStack());
 
 #if CHIP_DEVICE_CONFIG_THREAD_FTD
@@ -193,10 +206,10 @@ CHIP_ERROR SilabsMatterConfig::InitOpenThread(void)
 #endif // CHIP_DEVICE_CONFIG_THREAD_FTD
 
 #if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
-    TEMPORARY_RETURN_IGNORED sThreadNetworkDriver.Init();
+    ReturnErrorOnFailure(sThreadNetworkDriver.Init()); // calls otDatasetGetActiveTlvs(mOTInst, &datasetTlv);
 #endif
 
-    return ThreadStackMgrImpl().StartThreadTask();
+    return CHIP_NO_ERROR;
 }
 #endif // CHIP_ENABLE_OPENTHREAD
 
@@ -301,10 +314,11 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     err = PlatformMgr().InitChipStack();
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Init Chip Stack: %" CHIP_ERROR_FORMAT, err.Format()));
-
+#if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
     err = chip::DeviceLayer::ConnectivityMgr().SetBLEDeviceName(appName);
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Set BLE Device Name: %" CHIP_ERROR_FORMAT, err.Format()));
+#endif // CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 
     // Provision Manager
     Provision::Manager & provision = Provision::Manager::GetInstance();
@@ -319,6 +333,9 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     static chip::CommonCaseDeviceServerInitParams initParams;
 
 #if CHIP_ENABLE_OPENTHREAD
+#if SL_USE_THREAD_DIRECT
+    LogErrorOnFailure(Internal::PreCommissioning::GetInstance().Init());
+#endif // SL_USE_THREAD_DIRECT
     ReturnErrorOnFailure(InitOpenThread());
 
     // Set up OpenThread configuration when OpenThread is included

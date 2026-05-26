@@ -82,7 +82,8 @@ source_set("libopenthread-efr32") {
     "${sl_ot_efr32_root}/system.c",
 
     # Temporary file until the files in the SI SDK is fixed
-    "${matter_support_root}/sdk-copies/openthread/platform-abstraction/efr32/radio.cpp",
+    "${sl_ot_efr32_root}/radio.cpp",
+    "${sl_ot_efr32_root}/radio_direct.cpp",
   ]
 
   include_dirs = [ "${openthread_root}/examples/platforms/utils" ]
