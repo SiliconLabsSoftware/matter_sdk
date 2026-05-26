@@ -86,22 +86,18 @@ void FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::Attribu
     {
     case chip::app::Clusters::FanControl::Attributes::PercentSetting::Id: {
         CHIP_ERROR err = sExtractorHoodEndpoint.HandlePercentSettingChange(*value);
-        if (err != CHIP_NO_ERROR)
-        {
-            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed: %ld", err.Format());
-            return;
-        }
+        VerifyOrReturn(err == CHIP_NO_ERROR,
+                       ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandlePercentSettingChange failed: %ld",
+                                    err.Format()));
         action = AppTask::FAN_PERCENT_CHANGE_ACTION;
         break;
     }
 
     case chip::app::Clusters::FanControl::Attributes::FanMode::Id: {
         CHIP_ERROR err = sExtractorHoodEndpoint.HandleFanModeChange(*reinterpret_cast<FanModeEnum *>(value));
-        if (err != CHIP_NO_ERROR)
-        {
-            ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed: %ld", err.Format());
-            return;
-        }
+        VerifyOrReturn(err == CHIP_NO_ERROR,
+                       ChipLogError(NotSpecified, "FanControlAttributeChangeHandler: HandleFanModeChange failed: %ld",
+                                    err.Format()));
         action = AppTask::FAN_MODE_CHANGE_ACTION;
         break;
     }
@@ -110,14 +106,11 @@ void FanControlAttributeChangeHandler(chip::EndpointId endpointId, chip::Attribu
         return;
     }
 
-    if (action != AppTask::INVALID_ACTION)
-    {
-        AppEvent event;
-        event.Type                  = AppEvent::kEventType_RangeHood;
-        event.RangeHoodEvent.Action = static_cast<uint8_t>(action);
-        event.Handler               = &CustomerAppTask::ActionTriggerHandler;
-        AppInstance().PostEvent(&event);
-    }
+    AppEvent event;
+    event.Type                  = AppEvent::kEventType_RangeHood;
+    event.RangeHoodEvent.Action = static_cast<uint8_t>(action);
+    event.Handler               = &CustomerAppTask::ActionTriggerHandler;
+    AppInstance().PostEvent(&event);
 }
 
 void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size)
@@ -126,11 +119,8 @@ void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId 
         endpointId == kLightEndpoint,
         ChipLogError(NotSpecified, "OnOffAttributeChangeHandler: Invalid endpoint %u, expected %u", endpointId, kLightEndpoint));
 
-    if (value == nullptr || size < sizeof(uint8_t))
-    {
-        ChipLogError(NotSpecified, "OnOffAttributeChangeHandler: Invalid value or size");
-        return;
-    }
+    VerifyOrReturn(value != nullptr, ChipLogError(NotSpecified, "OnOffAttributeChangeHandler: value is null"));
+    VerifyOrReturn(size >= sizeof(uint8_t), ChipLogError(NotSpecified, "OnOffAttributeChangeHandler: Invalid size %u", size));
 
     AppTask::Action_t action = *value ? AppTask::LIGHT_ON_ACTION : AppTask::LIGHT_OFF_ACTION;
 
@@ -164,11 +154,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif // DISPLAY_ENABLED
 
     err = AppInstance().InitRangeHood();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(AppServer, "InitRangeHood failed");
-        return err;
-    }
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(AppServer, "InitRangeHood failed"));
 
 #ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
