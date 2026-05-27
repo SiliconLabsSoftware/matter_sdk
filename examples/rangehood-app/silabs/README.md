@@ -1,26 +1,30 @@
-# Matter Silabs Platform App Example
+# Matter EFR32 Rangehood Example
 
 An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
 
 <hr>
 
--   [Matter Silabs Platform App Example](#matter-silabs-platform-app-example)
+-   [Matter EFR32 Rangehood Example](#matter-efr32-rangehood-example)
     -   [Introduction](#introduction)
     -   [Extending Base App Implementation](#extending-base-app-implementation)
         -   [CustomerAppTask](#customerapptask)
         -   [How to Override APIs](#how-to-override-apis)
+        -   [DataModelCallbacks and CustomerAppTask](#datamodelcallbacks-and-customerapptask)
         -   [Sample Implementation](#sample-implementation)
         -   [Override API Reference](#override-api-reference)
     -   [Building](#building)
+        -   [Linux](#linux)
+        -   [Mac OS X](#mac-os-x)
     -   [Flashing the Application](#flashing-the-application)
     -   [Viewing Logging Output](#viewing-logging-output)
+        -   [SEGGER RTT](#segger-rtt)
+        -   [Console Log](#console-log)
+            -   [Configuring the VCOM](#configuring-the-vcom)
+        -   [Using the console](#using-the-console)
     -   [Running the Complete Example](#running-the-complete-example)
         -   [Notes](#notes)
-    -   [Running RPC console](#running-rpc-console)
-    -   [Device Tracing](#device-tracing)
     -   [Memory settings](#memory-settings)
     -   [OTA Software Update](#ota-software-update)
-    -   [Group Communication (Multicast)](#group-communication-multicast)
     -   [Building options](#building-options)
         -   [Disabling logging](#disabling-logging)
         -   [Debug build / release build](#debug-build--release-build)
@@ -33,16 +37,33 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
 > frequent releases thoroughly tested and validated. Developers looking to
 > develop matter products with silabs hardware are encouraged to use our latest
 > release with added tools and documentation.
-> [Silabs Matter Github](https://github.com/SiliconLabs/matter/releases)
+> [Silabs matter_sdk Github](https://github.com/SiliconLabsSoftware/matter_sdk/tags)
 
 ## Introduction
 
-The Silabs Platform App is a minimal Matter application designed specifically
-for Silicon Labs platform certification. Its purpose is to validate and certify
-the Silabs platform implementation without including any application-related
-clusters or device functionality. This app focuses solely on the platform-level
-requirements and behaviors necessary for Matter platform certification
-processes.
+The EFR32 rangehood example provides a baseline demonstration of a rangehood
+device, built using Matter and the Silicon Labs gecko SDK. It can be controlled
+by a Chip controller over an Openthread or Wifi network.
+
+The device exposes two endpoints (see [`include/RangeHoodConfig.h`](include/RangeHoodConfig.h)):
+
+-   **Endpoint 1** — Extractor hood with **Fan Control** cluster (fan speed /
+    mode).
+-   **Endpoint 2** — Hood light with **On/Off** cluster.
+
+The EFR32 device can be commissioned over Bluetooth Low Energy where the device
+and the Chip controller will exchange security information with the Rendez-vous
+procedure. If using Thread, Thread Network credentials are then provided to the
+EFR32 device which will then join the Thread network.
+
+If the LCD is enabled, the LCD on the Silabs WSTK shows a QR Code containing the
+needed commissioning information for the BLE connection and starting the
+Rendez-vous procedure. When commissioned, the LCD can show rangehood status (fan
+mode and light state) via [`RangeHoodUI`](include/RangeHoodUI.h).
+
+The rangehood example is intended to serve both as a means to explore the
+workings of Matter as well as a template for creating real products based on the
+Silicon Labs platform.
 
 ## Extending Base App Implementation
 
@@ -62,6 +83,9 @@ the Silicon Labs default behavior. To customize behavior, copy
 `examples/platform/silabs/customer/` into this app's `include/` and `src/`
 folders, then update the corresponding paths in `BUILD.gn`.
 
+Rangehood-specific override hooks include `InitRangeHoodImpl()`,
+`FanControlButtonHandlerImpl()`, and `ActionTriggerHandlerImpl()`.
+
 ### How to Override APIs
 
 `CustomerAppTask` derives from the base AppTask through the Curiously Recurring
@@ -78,6 +102,25 @@ base declares one `*Impl()` per overridable API. Steps:
 4. Build. The CRTP layer automatically routes each call to your `*Impl()` if
    present, otherwise to the Silicon Labs default.
 
+### DataModelCallbacks and CustomerAppTask
+
+What used to live in `DataModelCallbacks.cpp` now lives in `AppTask.cpp`. The
+Matter SDK's `MatterPostAttributeChangeCallback` is implemented in
+`examples/platform/silabs/BaseApplication.cpp` and forwards to
+`AppTask::DMPostAttributeChangeCallback` (defined in `AppTask.cpp`), which you
+can customize via `DMPostAttributeChangeCallbackImpl()` in `CustomerAppTask`.
+
+Forwarding into `AppTask` still goes through CRTP as in
+[How to Override APIs](#how-to-override-apis).
+
+-   **Methods that already exist in the AppTask** — Customize them by overriding
+    the matching `*Impl()` method in `CustomerAppTask`. Do not edit the
+    `AppTask.cpp` for app-specific behavior.
+
+-   **New custom data model methods** — Add them in `CustomerAppTask` directly.
+    Do not add new application logic in autogenerated sources; those edits will
+    not survive regeneration or project upgrades.
+
 ### Sample Implementation
 
 The following shows a minimal example `CustomerAppTask` that overrides
@@ -89,8 +132,7 @@ The following shows a minimal example `CustomerAppTask` that overrides
 #pragma once
 #include "AppTaskImpl.h"
 
-/**
- * Minimal AppTaskImpl-derived class. Override only the *Impl() methods you need **/
+/** Minimal AppTaskImpl-derived class. Override only the *Impl() methods you need **/
 class CustomerAppTask : public AppTaskImpl<CustomerAppTask>
 {
 public:
@@ -117,7 +159,7 @@ private:
 using namespace ::chip::DeviceLayer::Silabs;
 
 #define APP_FUNCTION_BUTTON 0
-#define APP_USER_ACTION 1
+#define APP_ACTION_BUTTON   1
 
 CustomerAppTask CustomerAppTask::sAppTask;
 
@@ -129,10 +171,9 @@ AppTask & AppTask::GetAppTask()
 CHIP_ERROR CustomerAppTask::AppInitImpl()
 {
     SILABS_LOG("CustomerAppTask: custom implementation (AppInitImpl)");
-    CHIP_ERROR err = AppTask::AppInit();
+    CHIP_ERROR err = this->AppTask::AppInit();
     if (err == CHIP_NO_ERROR)
     {
-        // Override the SDK default button handler registered in AppTask::AppInit().
         chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(CustomerAppTask::ButtonEventHandler);
     }
     return err;
@@ -145,12 +186,13 @@ void CustomerAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
 
-    if (button == APP_USER_ACTION)
+    if (button == APP_ACTION_BUTTON &&
+        btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = &CustomerAppTask::ApplicationEventHandler;
+        button_event.Handler = &CustomerAppTask::FanControlButtonHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
     }
-    if (button == APP_FUNCTION_BUTTON)
+    else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
         AppTask::GetAppTask().PostEvent(&button_event);
@@ -189,17 +231,21 @@ the reference for overridable methods and app configuration.
     bootstrap already installs the toolchain):
     [GNU Arm Embedded Toolchain 12.2 Rel1](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 
--   Install some additional tools (likely already present for CHIP developers):
+-   Install some additional tools(likely already present for CHIP developers):
 
-    -   Linux: `sudo apt-get install git ninja-build`
+#### Linux
 
-    -   Mac OS X: `brew install ninja`
+    $ sudo apt-get install git ninja-build
+
+#### Mac OS X
+
+    $ brew install ninja
 
 -   Supported hardware:
 
     -   > For the latest supported hardware please refer to the
-        > [Hardware Requirements](https://github.com/SiliconLabs/matter/blob/latest/docs/silabs/general/HARDWARE_REQUIREMENTS.md)
-        > in the Silicon Labs Matter Github Repo
+        > [Hardware Requirements](https://docs.silabs.com/matter/latest/matter-prerequisites/hardware-requirements)
+        > in the Silicon Labs Matter Documentation
 
     MG24 boards :
 
@@ -209,8 +255,6 @@ the reference for overridable methods and app configuration.
     -   BRD4186C / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@10dBm
     -   BRD4187A / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@20dBm
     -   BRD4187C / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@20dBm
-    -   BRD2703A / MG24 Explorer Kit
-    -   BRD2704A / SparkFun Thing Plus MGM240P board
 
 *   Region code Setting (917 WiFi projects)
 
@@ -221,71 +265,90 @@ the reference for overridable methods and app configuration.
 
 *   Build the example application:
 
-          cd ~/connectedhomeip
-          ./scripts/examples/gn_silabs_example.sh examples/base-platform-app/silabs/ ./out/platform-app BRD4187C
+                ```
+                cd ~/connectedhomeip
+                ./scripts/examples/gn_silabs_example.sh ./examples/rangehood-app/silabs/ ./out/rangehood_app BRD4187C
+                ```
 
 -   To delete generated executable, libraries and object files use:
 
-          $ cd ~/connectedhomeip
-          $ rm -rf ./out/
+                ```
+                $ cd ~/connectedhomeip
+                $ rm -rf ./out/
+                ```
 
     OR use GN/Ninja directly
 
-          $ cd ~/connectedhomeip/examples/base-platform-app/silabs/
-          $ git submodule update --init
-          $ source third_party/connectedhomeip/scripts/activate.sh
-          $ export SILABS_BOARD=BRD4187C
-          $ gn gen out/debug
-          $ ninja -C out/debug
+                ```
+                $ cd ~/connectedhomeip/examples/rangehood-app/silabs/
+                $ git submodule update --init
+                $ source third_party/connectedhomeip/scripts/activate.sh
+                $ export SILABS_BOARD=BRD4187C
+                $ gn gen out/debug --args="efr32_sdk_root=\"${EFR32_SDK_ROOT}\" SILABS_BOARD=\"${SILABS_BOARD}\""
+                $ ninja -C out/debug
+                ```
 
 -   To delete generated executable, libraries and object files use:
 
-          $ cd ~/connectedhomeip/examples/base-platform-app/silabs/
-          $ rm -rf out/
+                ```
+                $ cd ~/connectedhomeip/examples/rangehood-app/silabs
+                $ rm -rf out/
+                ```
 
 *   Build the example as Intermittently Connected Device (ICD)
 
-          $ ./scripts/examples/gn_silabs_example.sh ./examples/base-platform-app/silabs/ ./out/platform-app_ICD BRD4187C --icd
+                ```
+                $ ./scripts/examples/gn_silabs_example.sh ./examples/rangehood-app/silabs/ ./out/rangehood-app_ICD BRD4187C --icd
+                ```
 
     or use gn as previously mentioned but adding the following arguments:
 
-          $ gn gen out/debug '--args=SILABS_BOARD="BRD4187C" enable_sleepy_device=true chip_openthread_ftd=false'
+                ```
+                $ gn gen out/debug '--args=SILABS_BOARD="BRD4187C" enable_sleepy_device=true chip_openthread_ftd=false'
+                ```
 
-*   Build the example with pigweed RPC
+*   Build the example with pigweed RCP
 
-          $ ./scripts/examples/gn_silabs_example.sh examples/base-platform-app/silabs/ out/platform_app_rpc BRD4187C 'import("//with_pw_rpc.gni")'
+                ```
+                $ ./scripts/examples/gn_silabs_example.sh examples/rangehood-app/silabs/ out/rangehood_app_rpc BRD4187C 'import("//with_pw_rpc.gni")'
+                ```
 
     or use GN/Ninja Directly
 
-          $ cd ~/connectedhomeip/examples/base-platform-app/silabs/
-          $ git submodule update --init
-          $ source third_party/connectedhomeip/scripts/activate.sh
-          $ export SILABS_BOARD=BRD4187C
-          $ gn gen out/debug --args='import("//with_pw_rpc.gni")'
-          $ ninja -C out/debug
-
-    [Running Pigweed RPC console](#running-rpc-console)
+                ```
+                $ cd ~/connectedhomeip/examples/rangehood-app/silabs
+                $ git submodule update --init
+                $ source third_party/connectedhomeip/scripts/activate.sh
+                $ export SILABS_BOARD=BRD4187C
+                $ gn gen out/debug --args='import("//with_pw_rpc.gni")'
+                $ ninja -C out/debug
+                ```
 
 For more build options, help is provided when running the build script without
 arguments
 
+         ```
          ./scripts/examples/gn_silabs_example.sh
+         ```
 
 ## Flashing the Application
 
 -   On the command line:
 
-          $ cd ~/connectedhomeip/examples/base-platform-app/silabs/
-          $ python3 out/debug/matter-silabs-platform-example.flash.py
+                ```
+                $ cd ~/connectedhomeip/examples/rangehood-app/silabs
+                $ python3 out/debug/matter-silabs-rangehood-example.flash.py
+                ```
 
 -   Or with the Ozone debugger, just load the .out file.
 
 All EFR32 boards require a bootloader, see Silicon Labs documentation for more
-info. Pre-built bootloader binaries are available in the Assets section of the
-Releases page on
-[Silabs Matter Github](https://github.com/SiliconLabs/matter/releases) .
+info. Pre-built bootloader binaries are available on the
+[Matter Software Artifacts page](https://docs.silabs.com/matter/latest/matter-prerequisites/matter-artifacts#matter-bootloader-binaries).
 
 ## Viewing Logging Output
+
+### SEGGER RTT
 
 The example application is built to use the SEGGER Real Time Transfer (RTT)
 facility for log output. RTT is a feature built-in to the J-Link Interface MCU
@@ -307,14 +370,18 @@ after flashing the .out file.
 
 *   Install the J-Link software
 
-          $ cd ~/Downloads
-          $ sudo dpkg -i JLink_Linux_V*_x86_64.deb
+                ```
+                $ cd ~/Downloads
+                $ sudo dpkg -i JLink_Linux_V*_x86_64.deb
+                ```
 
 *   In Linux, grant the logged in user the ability to talk to the development
     hardware via the linux tty device (/dev/ttyACMx) by adding them to the
     dialout group.
 
-          $ sudo usermod -a -G dialout ${USER}
+                ```
+                $ sudo usermod -a -G dialout ${USER}
+                ```
 
 Once the above is complete, log output can be viewed using the JLinkExe tool in
 combination with JLinkRTTClient as follows:
@@ -323,13 +390,39 @@ combination with JLinkRTTClient as follows:
 
     For MG24 use:
 
-          ```
-          $ JLinkExe -device EFR32MG24AXXXF1536 -if SWD -speed 4000 -autoconnect 1
-          ```
+                ```
+                $ JLinkExe -device EFR32MG24AXXXF1536 -if SWD -speed 4000 -autoconnect 1
+                ```
 
 -   In a second terminal, run the JLinkRTTClient to view logs:
 
-          $ JLinkRTTClient
+                ```
+                $ JLinkRTTClient
+                ```
+
+### Console Log
+
+If the binary was built with this option or if you're using the Siwx917 WiFi
+SoC, the logs and the CLI (if enabled) will be available on the serial console.
+
+This console required a baudrate of **115200** with CTS/RTS. This is the default
+configuration of Silicon Labs dev kits.
+
+**HOWEVER** the console will required a baudrate of **921600** with CTS/RTS if
+the verbose mode is selected (--verbose)
+
+#### Configuring the VCOM
+
+-   Using (Simplicity
+    Studio)[https://community.silabs.com/s/article/wstk-virtual-com-port-baudrate-setting?language=en_US]
+-   Using commander-cli
+    ```
+    commander vcom config --baudrate 921600 --handshake rtscts
+    ```
+
+### Using the console
+
+With any serial terminal application such as screen, putty, minicom etc.
 
 ## Running the Complete Example
 
@@ -346,59 +439,90 @@ combination with JLinkRTTClient as follows:
     Code is be scanned by the CHIP Tool app For the Rendez-vous procedure over
     BLE
 
-        * On devices that do not have or support the LCD Display like the BRD4166A Thunderboard Sense 2,
-          a URL can be found in the RTT logs.
+              * On devices that do not have or support the LCD Display like the BRD4166A Thunderboard Sense 2,
+                a URL can be found in the RTT logs.
 
-          <info  > [SVR] Copy/paste the below URL in a browser to see the QR Code:
-          <info  > [SVR] https://project-chip.github.io/connectedhomeip/qrcode.html?data=CH%3AI34NM%20-00%200C9SS0
+                <info  > [SVR] Copy/paste the below URL in a browser to see the QR Code:
+                <info  > [SVR] https://project-chip.github.io/connectedhomeip/qrcode.html?data=CH%3AI34NM%20-00%200C9SS0
+
+    When the LCD is enabled and the device is commissioned, the display shows
+    rangehood status (fan mode and light) via the custom `RangeHoodUI` handler.
 
     **LED 0** shows the overall state of the device and its connectivity. The
     following states are possible:
 
-        -   _Short Flash On (50 ms on/950 ms off)_ ; The device is in the
-            unprovisioned (unpaired) state and is waiting for a commissioning
-            application to connect.
+              -   Short Flash On (50 ms on/950 ms off): The device is in the
+                  unprovisioned (unpaired) state and is waiting for a commissioning
+                  application to connect.
 
-        -   _Rapid Even Flashing_ ; (100 ms on/100 ms off)_ &mdash; The device is in the
-            unprovisioned state and a commissioning application is connected through
-            Bluetooth LE.
+              -   Rapid Even Flashing (100 ms on/100 ms off): The device is in the
+                  unprovisioned state and a commissioning application is connected through
+                  Bluetooth LE.
 
-        -   _Short Flash Off_ ; (950ms on/50ms off)_ &mdash; The device is fully
-            provisioned, but does not yet have full Thread network or service
-            connectivity.
+              -   Short Flash Off (950ms on/50ms off): The device is fully
+                  provisioned, but does not yet have full Thread network or service
+                  connectivity.
 
-        -   _Solid On_ ; The device is fully provisioned and has full Thread
-            network and service connectivity.
+              -   Solid On: The device is fully provisioned and has full Thread
+                  network and service connectivity.
 
-    **Push Button 0**
+    **LED 1** reflects the hood light (endpoint 2 **On/Off** cluster):
 
-        -   _Press and Release_ : Start, or restart, BLE advertisement in fast mode. It will advertise in this mode
-            for 30 seconds. The device will then switch to a slower interval advertisement.
-            After 15 minutes, the advertisement stops.
-            Additionally, it will cycle through the QR code, application status screen and device status screen, respectively.
+              -   _On_ : Light is on
+              -   _Off_ : Light is off
 
-        -   _Pressed and hold for 6 s_ : Initiates the factory reset of the device.
-            Releasing the button within the 6-second window cancels the factory reset
-            procedure. **LEDs** blink in unison when the factory reset procedure is
-            initiated.
+    **Push Button 0** (function button)
 
-    **Push Button 1**
+              -   _Press and Release_ : Start, or restart, BLE advertisement in fast mode. It will advertise in this mode
+                  for 30 seconds. The device will then switch to a slower interval advertisement.
+                  After 15 minutes, the advertisement stops.
+                  Additionally, it will cycle through the QR code, application status screen and device status screen, respectively.
 
-        -   Triggers a User action event to transition the ICD to Active mode.
-        -
+              -   _Pressed and hold for 6 s_ : Initiates the factory reset of the device.
+                  Releasing the button within the 6-second window cancels the factory reset
+                  procedure. **LEDs** blink in unison when the factory reset procedure is
+                  initiated.
 
-*   You can provision and control the Chip device using the python controller,
-    Chip tool standalone, Android or iOS app
+    **Push Button 1** (action button) Toggles fan mode between **Off** and **High**
+    on the extractor hood endpoint (endpoint 1).
 
-*   You can provision and control the Chip device using the python controller,
+-   You can provision and control the Chip device using the python controller,
     Chip tool standalone, Android or iOS app
 
     [CHIPTool](https://github.com/project-chip/connectedhomeip/blob/master/examples/chip-tool/README.md)
 
-    Here is an example with the chip-tool:
+Here are some CHIPTool examples (node id `1`, endpoints per
+[`RangeHoodConfig.h`](include/RangeHoodConfig.h)):
 
-          $ chip-tool pairing ble-thread 1 hex:<operationalDataset> 20202021 3840
-          $ chip-tool onoff on 1 1
+    Pairing with chip-tool:
+    ```
+    chip-tool pairing ble-thread 1 hex:<operationalDataset> 20202021 3840
+    ```
+
+    Turn hood light on (endpoint 2):
+    ```
+    chip-tool onoff on 1 2
+    ```
+
+    Turn hood light off (endpoint 2):
+    ```
+    chip-tool onoff off 1 2
+    ```
+
+    Set fan to High (endpoint 1, FanMode enum value 3):
+    ```
+    chip-tool fancontrol write fan-mode 3 1 1
+    ```
+
+    Set fan to Off (endpoint 1, FanMode enum value 0):
+    ```
+    chip-tool fancontrol write fan-mode 0 1 1
+    ```
+
+    Read fan mode (endpoint 1):
+    ```
+    chip-tool fancontrol read fan-mode 1 1
+    ```
 
 ### Notes
 
@@ -407,38 +531,16 @@ combination with JLinkRTTClient as follows:
     need to add a static ipv6 addresses on both device and then an ipv6 route to
     the border router on your PC
 
-    -   On Border Router: `sudo ip addr add dev <Network interface> 2002::2/64`
+#### On Border Router:
 
-    -   On PC(Linux): `sudo ip addr add dev <Network interface> 2002::1/64`
+`$ sudo ip addr add dev <Network interface> 2002::2/64`
 
-    -   Add Ipv6 route on PC(Linux)
-        `sudo ip route add <Thread global ipv6 prefix>/64 via 2002::2`
+#### On PC(Linux):
 
-## Running RPC console
+`$ sudo ip addr add dev <Network interface> 2002::1/64`
 
--   As part of building the example with RPCs enabled the chip_rpc python
-    interactive console is installed into your venv. The python wheel files are
-    also created in the output folder: out/debug/chip_rpc_console_wheels. To
-    install the wheel files without rebuilding:
-    `pip3 install out/debug/chip_rpc_console_wheels/*.whl`
-
--   To use the chip-rpc console after it has been installed run:
-    `chip-console --device /dev/tty.<SERIALDEVICE> -b 115200 -o /<YourFolder>/pw_log.out`
-
--   Then you can simulate a button press or release using the following command
-    where : idx = 0 or 1 for Button PB0 or PB1 action = 0 for PRESSED, 1 for
-    RELEASE Test toggling the LED with
-    `rpcs.chip.rpc.Button.Event(idx=1, pushed=True)`
-
-## Device Tracing
-
-Device tracing is available to analyze the device performance. To turn on
-tracing, build with RPC enabled. See Build the example with pigweed RPC.
-
-Obtain tracing json file.
-
-    $ ./{PIGWEED_REPO}/pw_trace_tokenized/py/pw_trace_tokenized/get_trace.py -d {PORT} -o {OUTPUT_FILE} \
-    -t {ELF_FILE} {PIGWEED_REPO}/pw_trace_tokenized/pw_trace_protos/trace_rpc.proto
+#Add Ipv6 route on PC(Linux) \$ sudo ip route add <Thread global ipv6 prefix>/64
+via 2002::2
 
 ## Memory settings
 
@@ -462,44 +564,43 @@ For the description of Software Update process with EFR32 example applications
 see
 [EFR32 OTA Software Update](../../../docs/platforms/silabs/silabs_efr32_software_update.md)
 
-## Group Communication (Multicast)
-
-With this platform example you can also use group communication to send commands
-to multiples devices at once. Please refer to the
-[chip-tool documentation](../../chip-tool/README.md) _Configuring the server
-side for Group Commands_ and _Using the Client to Send Group (Multicast) Matter
-Commands_
-
 ## Building options
 
 All of Silabs's examples within the Matter repo have all the features enabled by
 default, as to provide the best end user experience. However some of those
-features can easily be toggled on or off. Here is a short list of options to be
-passed to the build scripts.
+features can easily be toggled on or off. Here is a short list of options :
 
 ### Disabling logging
 
 `chip_progress_logging, chip_detail_logging, chip_automation_logging`
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/base-platform-app/silabs/ ./out/platform-app BRD4164A "chip_detail_logging=false chip_automation_logging=false chip_progress_logging=false"
+    ```
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/rangehood-app/silabs ./out/rangehood-app BRD4187C "chip_detail_logging=false chip_automation_logging=false chip_progress_logging=false"
+    ```
 
 ### Debug build / release build
 
 `is_debug`
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/base-platform-app/silabs/ ./out/platform-app BRD4164A "is_debug=false"
+    ```
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/rangehood-app/silabs ./out/rangehood-app BRD4187C "is_debug=false"
+    ```
 
 ### Disabling LCD
 
 `show_qr_code`
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/base-platform-app/silabs/ ./out/platform-app BRD4164A "show_qr_code=false"
+    ```
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/rangehood-app/silabs ./out/rangehood-app BRD4187C "show_qr_code=false"
+    ```
 
 ### KVS maximum entry count
 
 `kvs_max_entries`
 
+    ```
     Set the maximum Kvs entries that can be stored in NVM (Default 75)
     Thresholds: 30 <= kvs_max_entries <= 255
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/base-platform-app/silabs/ ./out/platform-app BRD4164A kvs_max_entries=50
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/rangehood-app/silabs ./out/rangehood-app BRD4187C kvs_max_entries=50
+    ```

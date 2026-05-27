@@ -117,6 +117,10 @@
 #include <TracingShellCommands.h>
 #endif // MATTER_TRACING_ENABLED
 
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include <MultiProtocolDataModelHelper.h>
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
 // sl-only
 #if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 #include <ApplicationSleepManager.h>
@@ -1120,11 +1124,17 @@ bool BaseApplication::GetProvisionStatus()
     return BaseApplication::sIsProvisioned;
 }
 
-#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#if defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    EndpointId endpointId   = attributePath.mEndpointId;
+    ClusterId clusterId     = attributePath.mClusterId;
+    AttributeId attributeId = attributePath.mAttributeId;
+    MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
-#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#endif // defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
