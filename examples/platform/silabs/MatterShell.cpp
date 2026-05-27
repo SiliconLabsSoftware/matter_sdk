@@ -21,6 +21,7 @@
 #include <cmsis_os2.h>
 #include <lib/core/CHIPCore.h>
 #include <lib/shell/Engine.h>
+#include <lib/shell/commands/Help.h>
 #include <sl_cmsis_os2_common.h>
 #ifdef SL_CATALOG_CLI_PRESENT
 #include "sl_cli.h"
@@ -29,7 +30,10 @@
 #endif
 
 using namespace ::chip;
-using chip::Shell::Engine;
+using Shell::Engine;
+using Shell::shell_command_t;
+using Shell::streamer_get;
+using Shell::streamer_printf;
 
 namespace {
 
@@ -111,6 +115,48 @@ void cmdSilabsInit()
 
 #endif // SL_CATALOG_CLI_PRESENT
 
+#if defined(SL_CATALOG_WATCHDOG_MANAGER_PRESENT) && defined(SL_MATTER_TEST_WATCHDOG)
+#include "sl_watchdog_manager.h"
+
+namespace WatchdogShellCommands {
+
+Engine sShellWatchdogSubCommands;
+
+CHIP_ERROR WatchdogCommandHandler(int argc, char ** argv)
+{
+    if (argc == 0)
+    {
+        sShellWatchdogSubCommands.ForEachCommand(Shell::PrintCommandHelp, nullptr);
+        return CHIP_NO_ERROR;
+    }
+    return sShellWatchdogSubCommands.ExecCommand(argc, argv);
+}
+
+CHIP_ERROR ForceWatchdogStarvation([[maybe_unused]] int argc, [[maybe_unused]] char ** argv)
+{
+    streamer_printf(streamer_get(), "Watchdog being starved, expect a reboot\r\n");
+    while (1)
+    {
+        __NOP();
+    }
+    return CHIP_NO_ERROR;
+}
+
+void RegisterCommands()
+{
+    static const Shell::shell_command_t cmds_watchdog = { &WatchdogCommandHandler, "watchdog",
+                                                          "Dispatch Silabs Watchdog Manager CLI commands" };
+
+    static const Shell::Command sWatchdogSubCommands[] = {
+        { &ForceWatchdogStarvation, "starve", "Force the watchdog to starve" },
+    };
+    sShellWatchdogSubCommands.RegisterCommands(sWatchdogSubCommands, MATTER_ARRAY_SIZE(sWatchdogSubCommands));
+    Engine::Root().RegisterCommands(&cmds_watchdog, 1);
+}
+
+} // namespace WatchdogShellCommands
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT && SL_MATTER_TEST_WATCHDOG
+
 void startShellTask()
 {
     int status = chip::Shell::Engine::Root().Init();
@@ -126,6 +172,10 @@ void startShellTask()
 #ifdef SL_CATALOG_CLI_PRESENT
     cmdSilabsInit();
 #endif
+
+#if defined(SL_CATALOG_WATCHDOG_MANAGER_PRESENT) && defined(SL_MATTER_TEST_WATCHDOG)
+    WatchdogShellCommands::RegisterCommands();
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT && SL_MATTER_TEST_WATCHDOG
 
     shellTaskHandle = osThreadNew(MatterShellTask, nullptr, &kShellTaskAttr);
     VerifyOrDie(shellTaskHandle);
