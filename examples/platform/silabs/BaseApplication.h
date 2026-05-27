@@ -123,6 +123,13 @@ public:
     void UnlinkAppLed() { sAppActionLed = nullptr; }
 
     /**
+     * @brief Check if the application is initialized
+     *
+     * @return Set to true when Init() was called successfully
+     */
+    bool IsApplicationInitialized() { return mIsApplicationInitialized; }
+
+    /**
      * @brief PostEvent function that add event to AppTask queue for processing
      *
      * @param event AppEvent to post
@@ -297,5 +304,6 @@ protected:
     bool mSyncClusterToButtonAction;
 
 private:
+    bool mIsApplicationInitialized = false;
     static void InitOTARequestorHandler(chip::System::Layer * systemLayer, void * appState);
 };
