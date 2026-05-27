@@ -172,6 +172,11 @@ extern "C" otInstance * otGetInstance(void)
     return sOTInstance;
 }
 
+#if OPENTHREAD_CONFIG_IP6_INIT_EXT_ADDR_POOL_ENABLE
+static otNetifAddress sOtIp6UnicastPool[4];
+static otNetifMulticastAddress sOtIp6MulticastPool[4];
+#endif
+
 extern "C" void sl_ot_create_instance(void)
 {
     SuccessOrDie(chip::Platform::MemoryInit());
@@ -185,6 +190,13 @@ extern "C" void sl_ot_create_instance(void)
     sOTInstance = otInstanceInitSingle();
 #endif // SL_OPENTHREAD_MULTI_PAN_ENABLE
 }
+
+VerifyOrDie(sOTInstance != nullptr);
+
+#if OPENTHREAD_CONFIG_IP6_INIT_EXT_ADDR_POOL_ENABLE
+    // Required before otIp6SetEnabled() when cert prebuilt libs use runtime IPv6 address pools
+    VerifyOrDie(otIp6Init(sOTInstance, sOtIp6UnicastPool, 4, sOtIp6MulticastPool, 4) == OT_ERROR_NONE);
+#endif
 
 extern "C" void sl_ot_cli_init(void)
 {
