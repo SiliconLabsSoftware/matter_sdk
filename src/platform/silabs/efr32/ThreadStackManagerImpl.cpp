@@ -189,7 +189,6 @@ extern "C" void sl_ot_create_instance(void)
     // Standard single instance initialization
     sOTInstance = otInstanceInitSingle();
 #endif // SL_OPENTHREAD_MULTI_PAN_ENABLE
-}
 
 VerifyOrDie(sOTInstance != nullptr);
 
@@ -197,6 +196,7 @@ VerifyOrDie(sOTInstance != nullptr);
     // Required before otIp6SetEnabled() when cert prebuilt libs use runtime IPv6 address pools
     VerifyOrDie(otIp6Init(sOTInstance, sOtIp6UnicastPool, 4, sOtIp6MulticastPool, 4) == OT_ERROR_NONE);
 #endif
+}
 
 extern "C" void sl_ot_cli_init(void)
 {
