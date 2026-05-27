@@ -61,6 +61,8 @@ The air quality sensor example is intended to serve both as a means to explore
 the workings of Matter as well as a template for creating real products based on
 the Silicon Labs platform.
 
+## Extending Base App Implementation
+
 ### CustomerAppTask
 
 To implement custom app behavior you can override any Silicon Labs implemented
