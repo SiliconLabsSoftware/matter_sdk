@@ -143,7 +143,7 @@ void InitAirQualitySensorManager(intptr_t arg)
     AirQualitySensorManager::InitInstance();
 }
 
-void writeAirQualityToAttribute(intptr_t context)
+void AppTask::WriteAirQualityToAttribute(intptr_t context)
 {
     int32_t * air_quality_ptr = reinterpret_cast<int32_t *>(context);
     AirQualitySensorManager::GetInstance()->OnAirQualityChangeHandler(classifyAirQuality(*air_quality_ptr));
@@ -229,7 +229,7 @@ void AppTask::SensorTimerEventHandler(void * arg)
                                 err.Format()));
 
     int32_t * air_quality_ptr = new int32_t(air_quality);
-    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(writeAirQualityToAttribute,
+    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(AppTask::WriteAirQualityToAttribute,
                                                                      reinterpret_cast<intptr_t>(air_quality_ptr));
 }
 

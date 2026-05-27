@@ -71,9 +71,14 @@ public:
     CHIP_ERROR StartAppTask();
 
     /**
-     * @brief Request an update of the Air Quality Senor LCD UI
+     * @brief Request an update of the Air Quality Sensor LCD UI
      */
     void UpdateAirQualitySensorUI();
+
+    /**
+    * @brief Update the Air Quality cluster attribute
+    */
+    static void WriteAirQualityToAttribute(intptr_t context);
 
     /**
      * @brief Event handler when a button is pressed
