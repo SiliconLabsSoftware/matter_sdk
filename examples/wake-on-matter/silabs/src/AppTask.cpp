@@ -319,8 +319,6 @@ void AppTask::AppTaskMain(void * pvParameter)
         appError(err);
     }
 
-    SILABS_LOG("App Task started");
-
     while (true)
     {
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
@@ -342,18 +340,18 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 }
 
 // To prevent linkage failure
-#if SL_OPENTHREAD_MULTI_PAN_ENABLE
 extern "C" void otAppNcpInit(otInstance * aInstance);
-
-static otInstance * sInstance = NULL;
-#endif
+extern "C" otInstance * otGetInstance(void);
+extern "C" void sl_ot_create_instance(void);
+extern "C" otInstance * otInstanceInitMultiple(uint8_t aInstanceNum) {}
+otInstance * sInstance = nullptr;
 
 extern "C" void sl_ot_ncp_init(void)
 {
-#if SL_OPENTHREAD_MULTI_PAN_ENABLE
-    // Matter Stack uses instances at index 0
-    // NCP instance will be at index 1
-    sInstance = otInstanceInitMultiple(1);
-    otAppNcpInit(sInstance);
-#endif
+    if(otGetInstance() == nullptr)
+    {
+        sl_ot_create_instance();
+    }
+    otAppNcpInit(otGetInstance());
+
 }
