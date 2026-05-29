@@ -46,6 +46,8 @@
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
+#include "matter_cpc.h"
+
 using namespace chip;
 using namespace chip::app;
 using namespace chip::app::Clusters;
@@ -332,6 +334,8 @@ void AppTask::AppTaskMain(void * pvParameter)
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
+    sl_matter_cpc_write("HELLO WORLD",sizeof("HELLO WORLD"));
+
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
