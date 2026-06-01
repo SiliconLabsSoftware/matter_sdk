@@ -20,6 +20,8 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "CustomerAppTask.h"
+#include "CustomerClosureManager.h"
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
@@ -75,12 +77,29 @@ static chip::BitMask<Feature> sFeatureMap(Feature::kCalibration);
 } // namespace app
 } // namespace chip
 
-AppTask AppTask::sAppTask;
+namespace {
+CustomerAppTask & appInstance()
+{
+    return CustomerAppTask::GetAppTask();
+}
+} // namespace
+
+void MatterClosureControlClusterServerAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
+{
+    VerifyOrReturn(CustomerAppTask::GetAppTask().IsApplicationInitialized());
+    CustomerAppTask::GetAppTask().DMClosureControlClusterAttributeChangedCallback(attributePath);
+}
+
+void MatterClosureDimensionClusterServerAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
+{
+    VerifyOrReturn(CustomerAppTask::GetAppTask().IsApplicationInitialized());
+    CustomerAppTask::GetAppTask().DMClosureDimensionClusterAttributeChangedCallback(attributePath);
+}
 
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
 #ifdef DISPLAY_ENABLED
     LogErrorOnFailure(GetLCD().Init((uint8_t *) "Closure-App"));
@@ -88,7 +107,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif
 
     // Initialization of Closure Manager and endpoints of closure and closurepanel.
-    ClosureManager::GetInstance().Init();
+    CustomerClosureManager::GetInstance().Init();
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -105,12 +124,13 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
 
+    BaseApplication::InitCompleteCallback(err);
     return err;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
 {
-    return BaseApplication::StartAppTask(AppTaskMain);
+    return BaseApplication::StartAppTask(&AppTask::AppTaskMain);
 }
 
 void AppTask::AppTaskMain(void * pvParameter)
@@ -118,7 +138,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = appInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask Init failed");
@@ -132,7 +152,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
+            appInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -146,13 +166,13 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
     if (button == APP_CLOSURE_BUTTON && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = ClosureButtonActionEventHandler;
-        sAppTask.PostEvent(&button_event);
+        button_event.Handler = &CustomerAppTask::ClosureButtonActionEventHandler;
+        appInstance().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        sAppTask.PostEvent(&button_event);
+        appInstance().PostEvent(&button_event);
     }
 }
 
@@ -323,7 +343,48 @@ void AppTask::UpdateClosureUI()
     if (ConnectivityMgr().IsThreadProvisioned())
 #endif /* !SL_WIFI */
     {
-        AppTask::GetAppTask().GetLCD().WriteDemoUI(false); // State doesn't matter for custom UI
+        appInstance().GetLCD().WriteDemoUI(false); // State doesn't matter for custom UI
     }
 }
 #endif // DISPLAY_ENABLED
+
+void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                            uint8_t * value)
+{
+    using namespace chip::app::Clusters;
+    switch (attributePath.mClusterId)
+    {
+    case Identify::Id:
+        ChipLogProgress(Zcl, "Identify cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                        ChipLogValueMEI(attributePath.mAttributeId), type, *value, size);
+        break;
+    default:
+        break;
+    }
+}
+
+void AppTask::DMClosureControlClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
+{
+    ChipLogProgress(Zcl, "Closure Control cluster ID: " ChipLogFormatMEI, ChipLogValueMEI(attributePath.mAttributeId));
+#ifdef DISPLAY_ENABLED
+    using namespace chip::app::Clusters::ClosureControl::Attributes;
+    switch (attributePath.mAttributeId)
+    {
+    case MainState::Id:
+    case OverallCurrentState::Id: {
+        AppEvent event;
+        event.Type    = AppEvent::kEventType_UpdateUI;
+        event.Handler = &CustomerAppTask::UpdateClosureUIHandler;
+        appInstance().PostEvent(&event);
+        break;
+    }
+    default:
+        break;
+    }
+#endif // DISPLAY_ENABLED
+}
+
+void AppTask::DMClosureDimensionClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
+{
+    ChipLogProgress(Zcl, "Closure Dimension cluster ID: " ChipLogFormatMEI, ChipLogValueMEI(attributePath.mAttributeId));
+}

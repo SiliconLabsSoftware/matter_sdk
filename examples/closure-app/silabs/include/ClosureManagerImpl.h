@@ -16,21 +16,23 @@
  *    limitations under the License.
  */
 
-/**
- * @brief CRTP override layer for closure-app manager (Silabs).
- *
- * Optional hooks mirror AppTaskImpl: override *Impl() on CustomerClosureManager to customize.
- * Uses examples/platform/silabs/CRTPHelpers.h; see closure-app Silabs README (MDD-0036 Dual CRTP).
- */
-
 #pragma once
 
 #include "ClosureManager.h"
 #include "CRTPHelpers.h"
 
-/** Cast the closure manager singleton to Derived& (app-local; not in shared CRTPHelpers.h). */
-#define CRTP_CLOSURE_MANAGER(Derived) static_cast<Derived &>(Derived::GetInstance())
-
+/**
+ * @brief CRTP override layer for `ClosureManager`.
+ *
+ * Each public entry point dispatches to a corresponding `Derived::*Impl()` hook.
+ * The default `*Impl()` (declared private below) forwards to `ClosureManager`,
+ * so `Derived` only needs to override the hooks whose behavior it wants to
+ * customize.
+ *
+ * Customer code overrides these hooks in `CustomerClosureManager`.
+ *
+ * @tparam Derived The CRTP derived class (`CustomerClosureManager`).
+ */
 template <typename Derived>
 class ClosureManagerImpl : public ClosureManager
 {
@@ -43,9 +45,9 @@ public:
     }
 
     chip::Protocols::InteractionModel::Status
-    OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> & position,
-                    const chip::Optional<bool> & latch,
-                    const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed)
+    OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
+                    const chip::Optional<bool> latch,
+                    const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed)
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnMoveToCommandImpl, position, latch, speed);
     }
@@ -57,8 +59,8 @@ public:
 
     chip::Protocols::InteractionModel::Status
     OnSetTargetCommand(const chip::Optional<chip::Percent100ths> & position, const chip::Optional<bool> & latch,
-                         const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
-                         const chip::EndpointId endpointId)
+                       const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
+                       const chip::EndpointId endpointId)
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnSetTargetCommandImpl, position, latch, speed, endpointId);
     }
@@ -79,9 +81,9 @@ private:
     chip::Protocols::InteractionModel::Status OnCalibrateCommandImpl() { return ClosureManager::OnCalibrateCommand(); }
 
     chip::Protocols::InteractionModel::Status
-    OnMoveToCommandImpl(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> & position,
-                        const chip::Optional<bool> & latch,
-                        const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed)
+    OnMoveToCommandImpl(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
+                        const chip::Optional<bool> latch,
+                        const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed)
     {
         return ClosureManager::OnMoveToCommand(position, latch, speed);
     }

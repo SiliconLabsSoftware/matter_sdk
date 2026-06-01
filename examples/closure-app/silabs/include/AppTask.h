@@ -31,6 +31,7 @@
 
 #include "FreeRTOS.h"
 #include "timers.h" // provides FreeRTOS timer support
+#include <app/ConcreteAttributePath.h>
 #include <ble/BLEEndPoint.h>
 #include <lib/core/CHIPError.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -57,7 +58,7 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -101,22 +102,35 @@ public:
      */
     static void ClosureButtonActionEventHandler(AppEvent * aEvent);
 
-private:
-    static AppTask sAppTask;
+    /**
+     * @brief Data model post-attribute-change hook.
+     *
+     * Invoked from `MatterPostAttributeChangeCallback` once the application is
+     * initialized. Override `DMPostAttributeChangeCallbackImpl` in
+     * `CustomerAppTask` to customize.
+     */
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
 
+    /**
+     * @brief ClosureControl cluster attribute-change hook.
+     *
+     * Invoked from `MatterClosureControlClusterServerAttributeChangedCallback`.
+     */
+    void DMClosureControlClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath);
+
+    /**
+     * @brief ClosureDimension cluster attribute-change hook.
+     *
+     * Invoked from `MatterClosureDimensionClusterServerAttributeChangedCallback`.
+     */
+    void DMClosureDimensionClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath);
+
+protected:
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
      *
      * @return CHIP_ERROR
      */
     CHIP_ERROR AppInit() override;
-
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
-     *
-     * @param aEvent button event being processed
-     */
-    static void ButtonHandler(AppEvent * aEvent);
 };

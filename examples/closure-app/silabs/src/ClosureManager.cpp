@@ -17,6 +17,7 @@
  */
 
 #include "ClosureManager.h"
+#include "CustomerClosureManager.h"
 #include "AppConfig.h"
 #include "AppTask.h"
 #include "ClosureControlEndpoint.h"
@@ -79,7 +80,12 @@ const Clusters::Descriptor::Structs::SemanticTagStruct::Type kEndpoint3TagList[]
 
 } // namespace
 
-ClosureManager ClosureManager::sClosureMgr;
+CustomerClosureManager CustomerClosureManager::sInstance;
+
+ClosureManager & ClosureManager::GetInstance()
+{
+    return CustomerClosureManager::GetInstance();
+}
 
 void ClosureManager::Init()
 {

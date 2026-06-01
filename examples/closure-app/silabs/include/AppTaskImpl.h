@@ -23,11 +23,15 @@
 #include "CRTPHelpers.h"
 
 /**
- * @brief CRTP override layer for closure-app `AppTask`.
+ * @brief CRTP override layer for `AppTask`.
  *
  * Each public entry point dispatches to a corresponding `Derived::*Impl()` hook.
- * Default `*Impl()` implementations forward to `AppTask`. Override in
- * `CustomerAppTask` to customize (see Silabs README).
+ * The default `*Impl()` (declared private below) forwards to `AppTask`, so
+ * `Derived` only needs to override the hooks whose behavior it wants to
+ * customize.
+ *
+ * Customer code overrides these hooks in `CustomerAppTask`; see the app README
+ * ("How to Override APIs").
  *
  * @tparam Derived The CRTP derived class (`CustomerAppTask`).
  */
@@ -35,13 +39,17 @@ template <typename Derived>
 class AppTaskImpl : public AppTask
 {
 public:
+    // Initialization hooks.
     CHIP_ERROR AppInit() override { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, AppInitImpl); }
 
+    // External callbacks invoked outside the AppTask thread (e.g. button ISR).
+    // Implementations typically post an event to the AppTask queue.
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
+    // Handlers invoked from AppTask context — see each method for the exact context.
     static void ClosureButtonActionEventHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ClosureButtonActionEventHandlerImpl, aEvent);
@@ -52,13 +60,9 @@ public:
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, UpdateClosureUIHandlerImpl, aEvent);
     }
-
-    static void UpdateClosureUI()
-    {
-        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, UpdateClosureUIImpl);
-    }
 #endif // DISPLAY_ENABLED
 
+    // Data-model attribute-change hooks.
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
     {
@@ -78,18 +82,22 @@ public:
 private:
     friend Derived;
 
+    /** Default implementations — override in Derived to customize. */
+
+    // Initialization hooks (*Impl)
     CHIP_ERROR AppInitImpl() { return AppTask::AppInit(); }
 
+    // External callbacks (*Impl)
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 
+    // Event handlers (*Impl)
     void ClosureButtonActionEventHandlerImpl(AppEvent * aEvent) { AppTask::ClosureButtonActionEventHandler(aEvent); }
 
 #ifdef DISPLAY_ENABLED
     void UpdateClosureUIHandlerImpl(AppEvent * aEvent) { AppTask::UpdateClosureUIHandler(aEvent); }
-
-    void UpdateClosureUIImpl() { AppTask::UpdateClosureUI(); }
 #endif // DISPLAY_ENABLED
 
+    // Data-model attribute-change hooks (*Impl)
     void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                            uint8_t * value)
     {

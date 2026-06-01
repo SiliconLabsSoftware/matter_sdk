@@ -69,7 +69,7 @@ public:
      *
      * @return Reference to the singleton ClosureManager instance.
      */
-    static ClosureManager & GetInstance() { return sClosureMgr; }
+    static ClosureManager & GetInstance();
 
     /**
      * @brief Handles the calibration command for the closure.
@@ -212,9 +212,10 @@ public:
      */
     CHIP_ERROR SetClosurePanelInitialState(chip::app::Clusters::ClosureDimension::ClosureDimensionEndpoint & closurePanelEndpoint);
 
-private:
-    static ClosureManager sClosureMgr;
+protected:
+    ClosureManager() = default;
 
+private:
     osTimerId_t mClosureTimer;
 
     // Below Progress variables and mCurrentAction, mCurrentActionEndpointId should be set only in

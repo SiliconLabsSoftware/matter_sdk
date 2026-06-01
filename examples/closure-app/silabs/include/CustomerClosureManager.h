@@ -21,9 +21,10 @@
 #include "ClosureManagerImpl.h"
 
 /**
- * @brief Concrete singleton for Silabs closure-app; CRTP leaf for ClosureManagerImpl.
+ * @brief Minimal ClosureManagerImpl-derived class.
  *
- * closure-common and app code use `ClosureManager::GetInstance()` (returns `CustomerClosureManager&`; CRTP / static dispatch).
+ * Any *Impl() method you do not override keeps the default ClosureManager
+ * behavior. Override *Impl() methods here to customize individual behaviors.
  */
 class CustomerClosureManager : public ClosureManagerImpl<CustomerClosureManager>
 {
