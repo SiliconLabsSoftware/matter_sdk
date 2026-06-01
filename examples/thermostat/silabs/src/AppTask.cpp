@@ -34,6 +34,7 @@
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/clusters/thermostat-server/ThermostatCluster.h>
 #include <app/server/Server.h>
+#include <thermostat-delegate-impl.h>
 #include <app/util/attribute-storage.h>
 #include <cmsis_os2.h>
 #include <lib/support/CodeUtils.h>
@@ -349,4 +350,11 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
 #ifdef SL_MATTER_ENABLE_AWS
     matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
 #endif // SL_MATTER_ENABLE_AWS
+}
+
+void emberAfThermostatClusterInitCallback(chip::EndpointId endpoint)
+{
+    using namespace chip::app::Clusters::Thermostat;
+    auto & delegate = ThermostatDelegate::GetInstance();
+    SetDefaultDelegate(endpoint, &delegate);
 }
