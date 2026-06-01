@@ -20,7 +20,6 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
-#include "CustomerAppTask.h"
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
@@ -33,7 +32,6 @@
 #endif // DISPLAY_ENABLED
 
 #include <ClosureManager.h>
-#include <app-common/zap-generated/callback.h>
 #include <app-common/zap-generated/cluster-enums.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/ids/Attributes.h>
@@ -77,10 +75,12 @@ static chip::BitMask<Feature> sFeatureMap(Feature::kCalibration);
 } // namespace app
 } // namespace chip
 
+AppTask AppTask::sAppTask;
+
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
 #ifdef DISPLAY_ENABLED
     LogErrorOnFailure(GetLCD().Init((uint8_t *) "Closure-App"));
@@ -118,7 +118,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = GetAppTask().Init();
+    CHIP_ERROR err = sAppTask.Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask Init failed");
@@ -132,7 +132,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            GetAppTask().DispatchEvent(&event);
+            sAppTask.DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -146,55 +146,14 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
     if (button == APP_CLOSURE_BUTTON && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
-        button_event.Handler = &CustomerAppTask::ClosureButtonActionEventHandler;
-        GetAppTask().PostEvent(&button_event);
+        button_event.Handler = ClosureButtonActionEventHandler;
+        sAppTask.PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        GetAppTask().PostEvent(&button_event);
+        sAppTask.PostEvent(&button_event);
     }
-}
-
-void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                            uint8_t * value)
-{
-    switch (attributePath.mClusterId)
-    {
-    case Clusters::Identify::Id:
-        ChipLogProgress(Zcl, "Identify cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributePath.mAttributeId), type, *value, size);
-        break;
-    default:
-        break;
-    }
-}
-
-void AppTask::DMClosureControlClusterAttributeChangedCallback(const ConcreteAttributePath & attributePath)
-{
-    ChipLogProgress(Zcl, "Closure Control cluster ID: " ChipLogFormatMEI, ChipLogValueMEI(attributePath.mAttributeId));
-#ifdef DISPLAY_ENABLED
-    using namespace Clusters::ClosureControl::Attributes;
-
-    switch (attributePath.mAttributeId)
-    {
-    case MainState::Id:
-    case OverallCurrentState::Id: {
-        AppEvent event;
-        event.Type    = AppEvent::kEventType_UpdateUI;
-        event.Handler = &CustomerAppTask::UpdateClosureUIHandler;
-        GetAppTask().PostEvent(&event);
-        break;
-    }
-    default:
-        break;
-    }
-#endif // DISPLAY_ENABLED
-}
-
-void AppTask::DMClosureDimensionClusterAttributeChangedCallback(const ConcreteAttributePath & attributePath)
-{
-    ChipLogProgress(Zcl, "Closure Dimension cluster ID: " ChipLogFormatMEI, ChipLogValueMEI(attributePath.mAttributeId));
 }
 
 void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
@@ -368,16 +327,3 @@ void AppTask::UpdateClosureUI()
     }
 }
 #endif // DISPLAY_ENABLED
-
-// ZAP cluster attribute-changed symbols (declarations in callback.h).
-// Identify and generic post path: MatterPostAttributeChangeCallback in BaseApplication.cpp when
-// CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK is set.
-void MatterClosureControlClusterServerAttributeChangedCallback(const ConcreteAttributePath & attributePath)
-{
-    CustomerAppTask::GetAppTask().DMClosureControlClusterAttributeChangedCallback(attributePath);
-}
-
-void MatterClosureDimensionClusterServerAttributeChangedCallback(const ConcreteAttributePath & attributePath)
-{
-    CustomerAppTask::GetAppTask().DMClosureDimensionClusterAttributeChangedCallback(attributePath);
-}

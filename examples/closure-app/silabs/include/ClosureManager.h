@@ -26,8 +26,6 @@
 
 #pragma once
 
-#include <cmsis_os2.h>
-
 #include "ClosureControlEndpoint.h"
 #include "ClosureDimensionEndpoint.h"
 #include <AppEvent.h>
@@ -36,8 +34,6 @@
 #ifdef DISPLAY_ENABLED
 #include "ClosureUI.h"
 #endif
-
-class CustomerClosureManager;
 
 class ClosureManager
 {
@@ -71,9 +67,9 @@ public:
      * This static method provides access to the single, global instance of the ClosureManager,
      * ensuring that only one instance exists throughout the application's lifetime.
      *
-     * @return Reference to the singleton (CustomerClosureManager; CRTP dispatches Init / On*Command).
+     * @return Reference to the singleton ClosureManager instance.
      */
-    static CustomerClosureManager & GetInstance();
+    static ClosureManager & GetInstance() { return sClosureMgr; }
 
     /**
      * @brief Handles the calibration command for the closure.
@@ -99,8 +95,8 @@ public:
      * @return chip::Protocols::InteractionModel::Status Status of the command handling operation.
      */
     chip::Protocols::InteractionModel::Status
-    OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> & position,
-                    const chip::Optional<bool> & latch, const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed);
+    OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
+                    const chip::Optional<bool> latch, const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed);
 
     /**
      * @brief Handles the Stop command for the Closure.
@@ -216,7 +212,9 @@ public:
      */
     CHIP_ERROR SetClosurePanelInitialState(chip::app::Clusters::ClosureDimension::ClosureDimensionEndpoint & closurePanelEndpoint);
 
-protected:
+private:
+    static ClosureManager sClosureMgr;
+
     osTimerId_t mClosureTimer;
 
     // Below Progress variables and mCurrentAction, mCurrentActionEndpointId should be set only in
@@ -377,5 +375,3 @@ protected:
      */
     chip::app::Clusters::ClosureDimension::ClosureDimensionEndpoint * GetPanelEndpointById(chip::EndpointId endpointId);
 };
-
-#include "CustomerClosureManager.h"

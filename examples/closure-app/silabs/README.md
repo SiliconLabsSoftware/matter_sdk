@@ -38,41 +38,6 @@ The Closure examples are intended to serve both as a means to explore the
 workings of Matter Closure as well as a template for creating real products
 based on the Silicon Labs platform.
 
-Developer reference: [ClosureManager `Action_t` state (PlantUML)](closure_manager_action_state.puml).
-
-### Closure manager (Silabs): Dual CRTP (MDD-0036)
-
-`closure-common` delegates call `ClosureManager::GetInstance()` (returns `CustomerClosureManager&`; static dispatch into `ClosureManagerImpl` for `Init` / `On*Command`, no vtable).
-
-| Layer | Role |
-| --- | --- |
-| `ClosureManager` | Base: stock state, timers, endpoint objects, and default `Init` / `On*Command` bodies (non-virtual; qualified calls from `*Impl`) |
-| `ClosureManagerImpl<CustomerClosureManager>` | Dispatches `Init` / `On*Command` to optional `*Impl()` hooks (`CRTPHelpers.h`) |
-| `CustomerClosureManager` | Singleton (`GetInstance`); override private `InitImpl`, `OnCalibrateCommandImpl`, etc. to customize |
-
-`CRTP_CLOSURE_MANAGER(Derived)` in `ClosureManagerImpl.h` expands to `static_cast<Derived &>(Derived::GetInstance())` for static contexts that need the leaf type.
-
-### App task (Silabs): `AppTaskImpl` + `CustomerAppTask` (lighting-style)
-
-- `CustomerAppTask` (`examples/platform/silabs/customer/CustomerAppTask.{h,cpp}`) is the singleton; `AppTask::GetAppTask()` returns `CustomerAppTask::GetAppTask()` as an `AppTask &`.
-- `AppTaskImpl<CustomerAppTask>` (`silabs/include/AppTaskImpl.h`) dispatches optional `*Impl()` hooks (`CRTPHelpers.h`). Override in `CustomerAppTask` to customize.
-- Buttons: `SetButtonsCb(&CustomerAppTask::ButtonEventHandler)`; closure-button and UI event handlers use `CustomerAppTask::…` statics so CRTP dispatch runs.
-
-| Optional `*Impl()` hook | Default forwards to |
-| --- | --- |
-| `AppInitImpl` | `AppTask::AppInit` |
-| `ButtonEventHandlerImpl` | `AppTask::ButtonEventHandler` |
-| `ClosureButtonActionEventHandlerImpl` | `AppTask::ClosureButtonActionEventHandler` |
-| `UpdateClosureUIHandlerImpl` / `UpdateClosureUIImpl` (DISPLAY) | `AppTask::UpdateClosureUI*` |
-| `DMPostAttributeChangeCallbackImpl` | `AppTask::DMPostAttributeChangeCallback` |
-| `DMClosureControlClusterAttributeChangedCallbackImpl` | `AppTask::DMClosureControlClusterAttributeChangedCallback` |
-| `DMClosureDimensionClusterAttributeChangedCallbackImpl` | `AppTask::DMClosureDimensionClusterAttributeChangedCallback` |
-
-### Data model callbacks
-
-- **`CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK`** is set in `silabs/include/CHIPProjectConfig.h`. `MatterPostAttributeChangeCallback` is implemented in `examples/platform/silabs/BaseApplication.cpp` and forwards to `CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback` (then CRTP to `DMPostAttributeChangeCallbackImpl` if overridden).
-- **Closure cluster ZAP globals** (`MatterClosureControlClusterServerAttributeChangedCallback`, `MatterClosureDimensionClusterServerAttributeChangedCallback`) remain at the end of `silabs/src/AppTask.cpp` as thin wrappers into the same `DM*` instance methods (so products can override the `*Impl` hooks without touching `callback.h`).
-
 ## Building
 
 -   Download the

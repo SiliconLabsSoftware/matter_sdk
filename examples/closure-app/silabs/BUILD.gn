@@ -79,7 +79,6 @@ if (wifi_soc) {
       "${examples_plat_dir}",
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
-      "${examples_common_plat_dir}/customer",
       "${examples_common_plat_dir}/freertos_config",
     ]
 
@@ -104,7 +103,6 @@ if (wifi_soc) {
       "${examples_plat_dir}",
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
-      "${examples_common_plat_dir}/customer",
       "${examples_common_plat_dir}/freertos_config",
     ]
 
@@ -130,11 +128,11 @@ silabs_executable("closure_app") {
   }
 
   sources = [
-    "${examples_common_plat_dir}/customer/CustomerAppTask.cpp",
     "${example_closure_dir}/closure-common/src/ClosureControlEndpoint.cpp",
     "${example_closure_dir}/closure-common/src/ClosureDimensionEndpoint.cpp",
     "src/AppTask.cpp",
     "src/ClosureManager.cpp",
+    "src/DataModelCallbacks.cpp",
   ]
 
   if (!disable_lcd) {
