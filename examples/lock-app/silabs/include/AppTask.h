@@ -254,6 +254,11 @@ public:
     /** @brief Chip-thread work after unlatch timer: transitional cluster state, stage unlock, post lock event. */
     static void UnlockAfterUnlatch(intptr_t context);
 
+#ifdef SL_MATTER_ENABLE_AWS
+    /** @brief Matter AWS MQTT lock/unlock: hand off a remote `LockRequest` to AppTask. */
+    static void EnqueueMatterAwsRemoteLockRequest(const LockRequest & request);
+#endif // SL_MATTER_ENABLE_AWS
+
 protected:
     /** @brief Override of `BaseApplication::AppInit()`. */
     CHIP_ERROR AppInit() override;

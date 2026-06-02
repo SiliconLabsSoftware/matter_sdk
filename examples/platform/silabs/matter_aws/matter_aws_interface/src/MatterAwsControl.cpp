@@ -35,7 +35,7 @@ extern void aws_ota_init(void);
 #endif // ZCL_USING_ON_OFF_CLUSTER_SERVER
 
 #ifdef ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
-#include <LockManager.h>
+#include "MatterAwsDoorLockRemote.h"
 #include <app/clusters/door-lock-server/door-lock-server.h>
 #endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
 
@@ -242,14 +242,10 @@ void MatterAwsIncomingDataCb(void * arg, const char * topic, uint16_t topic_len,
     cmdIndex = GetCommandStringIndex(DlMqttControlCmd, COUNT_OF(DlMqttControlCmd), _cmd);
     if (cmdIndex != kStringNotFound)
     {
-        chip::DeviceLayer::PlatformMgr().LockChipStack();
-        LockMgr().InitiateAction(AppEvent::kEventType_Lock,
-                                 (DlMqttControlCmd[cmdIndex].action.lockState == DlLockState::kLocked)
-                                     ? LockManager::LOCK_ACTION
-                                     : LockManager::UNLOCK_ACTION);
-        DoorLockServer::Instance().SetLockState(kEndpointId, DlMqttControlCmd[cmdIndex].action.lockState,
-                                                OperationSourceEnum::kProprietaryRemote);
-        chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+        if (!MatterAwsApplyDoorLockRemoteCommand(kEndpointId, DlMqttControlCmd[cmdIndex].action.lockState))
+        {
+            ChipLogError(AppServer, "[MATTER_AWS] door lock remote command rejected");
+        }
         return;
     }
 #endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
@@ -363,3 +359,17 @@ void AttributeHandler(EndpointId endpointId, AttributeId attributeId)
 #endif // ZCL_USING_THERMOSTAT_CLUSTER_SERVER
 } // namespace control
 } // namespace matterAws
+
+#ifdef ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
+using chip::app::Clusters::DoorLock::DlLockState;
+using chip::app::Clusters::DoorLock::OperationSourceEnum;
+
+__attribute__((weak)) bool MatterAwsApplyDoorLockRemoteCommand(EndpointId endpointId, DlLockState lockState)
+{
+    bool success = false;
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    success = DoorLockServer::Instance().SetLockState(endpointId, lockState, OperationSourceEnum::kProprietaryRemote);
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+    return success;
+}
+#endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER

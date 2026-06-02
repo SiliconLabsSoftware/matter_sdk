@@ -224,3 +224,6 @@ void LcdPainter::Paint(SilabsLCD & lcd, Type type, uint16_t lift, uint16_t tilt,
     lcd.Update();
     delete coverPaint;
 }
+
+}
+}
