@@ -24,7 +24,7 @@ typedef enum {
   SL_MATTER_CPC_STATE_CONNECTED    = 2,   // SL_CPC_ENDPOINT_ON_CONNECT callback invoked
 } sl_matter_cpc_state_t;
 
-void sl_matter_cpc_init(void);
+sl_status_t sl_matter_cpc_init(void);
 int sl_matter_cpc_read(uint8_t **read_buf);
 void sl_matter_cpc_free(void *buf);
 void sl_matter_cpc_rx_done();

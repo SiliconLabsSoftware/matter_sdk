@@ -59,6 +59,10 @@
 #include "Rpc.h"
 #endif
 
+#if SL_MATTER_CPC_ENABLED
+#include "matter_cpc.h"
+#endif
+
 #ifdef ENABLE_CHIP_SHELL
 #include "MatterShell.h"
 #endif
@@ -272,6 +276,12 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     CHIP_ERROR err;
     SILABS_LOG("=====%s starting=====", appName);
 
+#if SL_MATTER_CPC_ENABLED
+    sl_status_t status = sl_matter_cpc_init();
+    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to Init Matter CPC: 0x%02x", status));
+#endif
+
 #if defined(PW_RPC_ENABLED) && PW_RPC_ENABLED
     chip::rpc::Init();
 #endif
@@ -302,11 +312,12 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     err = PlatformMgr().InitChipStack();
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Init Chip Stack: %" CHIP_ERROR_FORMAT, err.Format()));
-
+#if CONFIG_NETWORK_LAYER_BLE
+#error SHOULD NOT COMPILE
     err = chip::DeviceLayer::ConnectivityMgr().SetBLEDeviceName(appName);
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Set BLE Device Name: %" CHIP_ERROR_FORMAT, err.Format()));
-
+#endif
     // Provision Manager
     Provision::Manager & provision = Provision::Manager::GetInstance();
     ReturnErrorOnFailure(provision.Init());
@@ -320,7 +331,11 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     static chip::CommonCaseDeviceServerInitParams initParams;
 
 #if CHIP_ENABLE_OPENTHREAD
+#if SL_MATTER_OPENTHREAD_NCP_ENABLE
+    ReturnErrorOnFailure(ThreadStackMgr().InitThreadStack()); // Only need to register on state change callback
+#else
     ReturnErrorOnFailure(InitOpenThread());
+#endif
 
     // Set up OpenThread configuration when OpenThread is included
     chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;

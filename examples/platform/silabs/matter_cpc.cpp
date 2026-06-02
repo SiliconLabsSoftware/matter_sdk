@@ -38,12 +38,14 @@
 #include "sli_cpc.h"
 #include "matter_cpc.h"
 
+#include "Assertions.h"
+
 #define SL_MATTER_CPC_RTOS_TASK_PRIORITY osPriorityRealtime3
 #define SL_MATTER_CPC_RTOS_TASK_STACK_SIZE 1000
 
 
-#ifndef SL_CPC_ENDPOINT_MATTER_NCP
-#define SL_CPC_ENDPOINT_MATTER_NCP 0x40
+#ifndef SL_CPC_ENDPOINT_MATTER_NCP_ID
+#define SL_CPC_ENDPOINT_MATTER_NCP_ID SL_CPC_ENDPOINT_USER_ID_0 // 90
 #endif
 
 void sl_matter_packet_step(void);
@@ -149,22 +151,27 @@ void sl_matter_cpc_tx_callback(sl_cpc_user_endpoint_id_t endpoint_id, void *buff
 //   hci_common_transport_transmit_complete(status);
 }
 
-void sl_matter_cpc_init(void)
+sl_status_t sl_matter_cpc_init(void)
 {
-  sl_status_t status;
+  sl_status_t status = SL_STATUS_OK;
+  // TODO remove me when we have a service endpoint
+  status = sl_cpc_open_user_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER_NCP_ID, 0, 1);
 
-  status = sli_cpc_init_service_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER_NCP, 0);
-  EFM_ASSERT(status == SL_STATUS_OK);
+  // status = sli_cpc_init_service_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER_NCP_ID, 0);
+  VerifyOrReturnError(status == SL_STATUS_OK, status);
+  
   status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_IFRAME_WRITE_COMPLETED, (void *)sl_matter_cpc_tx_callback);
-  EFM_ASSERT(status == SL_STATUS_OK);
+  VerifyOrReturnError(status == SL_STATUS_OK, status);
   status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_IFRAME_RECEIVE, (void *)sl_matter_cpc_on_transport_notify);
-  EFM_ASSERT(status == SL_STATUS_OK);
+  VerifyOrReturnError(status == SL_STATUS_OK, status);
   status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_CONNECT, (void*)sl_matter_cpc_on_connect);
-  EFM_ASSERT(status == SL_STATUS_OK);
+  VerifyOrReturnError(status == SL_STATUS_OK, status);
   status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_ERROR, (void*)sl_matter_cpc_error);
-  EFM_ASSERT(status == SL_STATUS_OK);
-  status = sl_cpc_listen_endpoint(&endpoint_handle, SL_CPC_FLAG_NO_BLOCK);
-  EFM_ASSERT(status == SL_STATUS_OK);
+  VerifyOrReturnError(status == SL_STATUS_OK, status);
+  // status = sl_cpc_listen_endpoint(&endpoint_handle, SL_CPC_FLAG_NO_BLOCK);
+  // VerifyOrReturnError(status == SL_STATUS_OK, status);
+  
+  return status;
 }
 
 void sl_matter_cpc_on_connect(uint8_t endpoint_id, void *arg)

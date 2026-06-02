@@ -334,7 +334,7 @@ void AppTask::AppTaskMain(void * pvParameter)
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
-    sl_matter_cpc_write("HELLO WORLD",sizeof("HELLO WORLD"));
+    sl_matter_cpc_write(reinterpret_cast<uint8_t *>(const_cast<char *>("HELLO WORLD")), sizeof("HELLO WORLD"));
 
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
@@ -347,8 +347,6 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 extern "C" void otAppNcpInit(otInstance * aInstance);
 extern "C" otInstance * otGetInstance(void);
 extern "C" void sl_ot_create_instance(void);
-extern "C" otInstance * otInstanceInitMultiple(uint8_t aInstanceNum) {}
-otInstance * sInstance = nullptr;
 
 extern "C" void sl_ot_ncp_init(void)
 {
