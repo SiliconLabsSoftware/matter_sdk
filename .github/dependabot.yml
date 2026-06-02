@@ -14,22 +14,13 @@ updates:
       time: "08:00"
     allow:
       - dependency-name: "third_party/silabs/matter_support"
-    target-branch: "release_2.7-1.4"
-
-  - package-ecosystem: "gitsubmodule"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "08:00"
-    allow:
-      - dependency-name: "third_party/silabs/matter_support"
-    target-branch: "release_2.6-1.4"
-
-  - package-ecosystem: "gitsubmodule"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "08:00"
-    allow:
-      - dependency-name: "third_party/silabs/matter_support"
     target-branch: "release_2.8-1.5"
+
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "08:00"
+    allow:
+      - dependency-name: "third_party/silabs/matter_support"
+    target-branch: "release_2.9-1.6"
