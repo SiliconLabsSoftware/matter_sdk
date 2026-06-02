@@ -83,7 +83,7 @@ using namespace ::chip::DeviceLayer::Silabs;
 
 namespace {
 
-CustomerAppTask & appInstance()
+CustomerAppTask & AppInstance()
 {
     return CustomerAppTask::GetAppTask();
 }
@@ -137,7 +137,7 @@ void PostLightControlColorEvent(ColorAction_t action, const RGBLEDWidget::ColorD
     light_event.LightControlEvent.Action = static_cast<uint8_t>(action);
     light_event.LightControlEvent.Value  = colorData;
     light_event.Handler                  = &CustomerAppTask::LightControlEventHandler;
-    appInstance().PostEvent(&light_event);
+    AppInstance().PostEvent(&light_event);
 }
 #endif
 
@@ -188,7 +188,7 @@ void AppTask::LightTimerEventHandler(void * /* timerCbArg */)
     event.Type               = AppEvent::kEventType_Timer;
     event.TimerEvent.Context = nullptr;
     event.Handler            = &OffEffectTimerEventHandler;
-    appInstance().PostEvent(&event);
+    AppInstance().PostEvent(&event);
 }
 
 void AppTask::LightActionEventHandler(AppEvent * aEvent)
@@ -254,7 +254,7 @@ CHIP_ERROR AppTask::AppInit()
 {
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
-    CHIP_ERROR err = appInstance().InitLight();
+    CHIP_ERROR err = AppInstance().InitLight();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("InitLight() failed");
@@ -368,14 +368,14 @@ void AppTask::AppTaskMain(void * pvParameter)
     //  The DeferredAttributePersistenceProvider will persist the attribute value in non-volatile memory
     //  once it remains constant for SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS milliseconds.
     //  For all other attributes not listed in gDeferredAttributeTable, the default PersistenceProvider is used.
-    appInstance().pDeferredAttributePersister = new DeferredAttributePersistenceProvider(
+    AppInstance().pDeferredAttributePersister = new DeferredAttributePersistenceProvider(
         *attributePersistence, Span<DeferredAttribute>(gDeferredAttributeTable, MATTER_ARRAY_SIZE(gDeferredAttributeTable)),
         System::Clock::Milliseconds32(SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS));
-    VerifyOrDie(appInstance().pDeferredAttributePersister != nullptr);
+    VerifyOrDie(AppInstance().pDeferredAttributePersister != nullptr);
 
-    app::SetAttributePersistenceProvider(appInstance().pDeferredAttributePersister);
+    app::SetAttributePersistenceProvider(AppInstance().pDeferredAttributePersister);
 
-    CHIP_ERROR err = appInstance().Init();
+    CHIP_ERROR err = AppInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("AppTask.Init() failed");
@@ -383,7 +383,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    appInstance().StartStatusLEDTimer();
+    AppInstance().StartStatusLEDTimer();
 #endif
 
     SILABS_LOG("App Task started");
@@ -393,7 +393,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            appInstance().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
@@ -408,12 +408,12 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_LIGHT_SWITCH && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
         button_event.Handler = &CustomerAppTask::LightActionEventHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
 }
 

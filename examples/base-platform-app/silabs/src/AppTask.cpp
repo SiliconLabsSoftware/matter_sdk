@@ -54,7 +54,7 @@ using namespace ::chip::DeviceLayer::Silabs;
 
 namespace {
 
-CustomerAppTask & appInstance()
+CustomerAppTask & AppInstance()
 {
     return CustomerAppTask::GetAppTask();
 }
@@ -97,7 +97,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = appInstance().Init();
+    CHIP_ERROR err = AppInstance().Init();
 
     if (err != CHIP_NO_ERROR)
     {
@@ -106,9 +106,9 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if (defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    Server::GetInstance().GetICDManager().RegisterObserver(&appInstance());
+    Server::GetInstance().GetICDManager().RegisterObserver(&AppInstance());
 #else
-    appInstance().StartStatusLEDTimer();
+    AppInstance().StartStatusLEDTimer();
 #endif
 
     SILABS_LOG("App Task started");
@@ -118,7 +118,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            appInstance().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -141,12 +141,12 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_USER_ACTION)
     {
         button_event.Handler = &CustomerAppTask::ApplicationEventHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
     if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
 }
 
@@ -155,7 +155,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 void AppTask::OnEnterActiveModeDefault()
 {
 #ifdef DISPLAY_ENABLED
-    appInstance().GetLCD().WriteDemoUI(true);
+    AppInstance().GetLCD().WriteDemoUI(true);
 #endif
 }
 
@@ -163,7 +163,7 @@ void AppTask::OnEnterActiveModeDefault()
 void AppTask::OnEnterIdleModeDefault()
 {
 #ifdef DISPLAY_ENABLED
-    appInstance().GetLCD().WriteDemoUI(false);
+    AppInstance().GetLCD().WriteDemoUI(false);
 #endif
 }
 
