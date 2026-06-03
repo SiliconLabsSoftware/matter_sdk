@@ -48,6 +48,10 @@ LEDWidget sFanLED;
 
 uint8_t SpeedToPercent(uint8_t speed, uint8_t speedMax)
 {
+    if (speedMax == 0)
+    {
+        return 0;
+    }
     return static_cast<uint8_t>((static_cast<uint16_t>(speed) * 100) / speedMax);
 }
 } // namespace
@@ -123,7 +127,7 @@ Status FanControlManager::HandleStep(StepDirectionEnum aDirection, bool aWrap, b
     }
 
     // Convert SpeedSetting to PercentSetting
-    uint8_t curPercentSetting = ((static_cast<uint16_t>(curSpeedSetting) * 100) / mSpeedMax);
+    uint8_t curPercentSetting = SpeedToPercent(curSpeedSetting, mSpeedMax);
 
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
     data->percentSetting       = curPercentSetting;
