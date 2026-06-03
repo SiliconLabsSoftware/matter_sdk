@@ -290,7 +290,7 @@ void UpdateFanControlLED()
 #if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
 void UpdateFanControlLCD()
 {
-    GetLCD().WriteDemoUI(false);
+    BaseApplication::GetLCD().WriteDemoUI(false);
 }
 #endif
 
