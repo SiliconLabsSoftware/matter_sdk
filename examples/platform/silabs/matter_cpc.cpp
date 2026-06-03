@@ -48,7 +48,7 @@
 #define SL_CPC_ENDPOINT_MATTER_NCP_ID SL_CPC_ENDPOINT_USER_ID_0 // 90
 #endif
 
-void sl_matter_packet_step(void);
+void sl_matter_cpc_handle_msg(void);
 
 static osSemaphoreId_t matter_cpc_signal_semaphore;
 
@@ -120,7 +120,7 @@ static void matter_cpc_thread(void *p_arg)
   (void)p_arg;
   while (true) {
     osSemaphoreAcquire(matter_cpc_signal_semaphore, osWaitForever);
-    sl_matter_packet_step();
+    sl_matter_cpc_handle_msg();
   }
 }
 
@@ -168,9 +168,7 @@ sl_status_t sl_matter_cpc_init(void)
   VerifyOrReturnError(status == SL_STATUS_OK, status);
   status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_ERROR, (void*)sl_matter_cpc_error);
   VerifyOrReturnError(status == SL_STATUS_OK, status);
-  // status = sl_cpc_listen_endpoint(&endpoint_handle, SL_CPC_FLAG_NO_BLOCK);
-  // VerifyOrReturnError(status == SL_STATUS_OK, status);
-  
+  status = sl_matter_cpc_rtos_init();
   return status;
 }
 
@@ -197,17 +195,7 @@ void sl_matter_cpc_error(uint8_t endpoint_id, void *arg)
   sl_matter_cpc_on_transport_notify(0, NULL);
 }
 
-int sl_matter_cpc_read(uint8_t **read_buf)
-{
-  sl_status_t status;
-  uint16_t len;
 
-  status = sl_cpc_read(&endpoint_handle, (void **) read_buf, &len, 0, 0);
-  if (status != SL_STATUS_OK) {
-    len = 0;
-  }
-  return len;
-}
 
 sl_status_t sl_matter_cpc_write(uint8_t *data, uint16_t len)
 {
@@ -265,7 +253,7 @@ static void reception_failure(void)
 //   state = hci_packet_state_read_header;
 }
 
-void sl_matter_packet_step(void)
+void sl_matter_cpc_handle_msg(void)
 {
   uint16_t bytes_read;
   uint16_t packet_data_read;
@@ -280,94 +268,5 @@ void sl_matter_packet_step(void)
   if (sl_matter_cpc_new_data() <= 0) {
     return;
   }
-
-  bytes_read = sl_matter_cpc_read(&read_buf);
-  if (bytes_read == 0) {
-    sl_matter_cpc_rx_done();
-    return; // CPC Secondary returned error
-  } else {
-    // packet = (hci_packet_t *) read_buf;
-  }
-
-//   switch (state) {
-//     case hci_packet_state_read_header:
-//     {
-//       switch (packet->packet_type) {
-//         case hci_packet_type_ignore:
-//         {
-//           state = hci_packet_state_read_header;
-//           return;
-//         }
-//         case hci_packet_type_command:
-//         {
-//           packet_data_read = bytes_read - (hci_command_header_size + 1);
-//           if (packet->hci_cmd.param_len > packet_data_read) { // 1 byte for packet type
-//             bytes_remaining = packet->hci_cmd.param_len - packet_data_read;
-//           } else {
-//             bytes_remaining = 0;
-//           }
-//           break;
-//         }
-//         case hci_packet_type_acl_data:
-//         {
-//           packet_data_read = bytes_read - (hci_acl_data_header_size + 1);
-//           if (packet->acl_pkt.length > packet_data_read) {
-//             bytes_remaining = packet->acl_pkt.length - packet_data_read;
-//           } else {
-//             bytes_remaining = 0;
-//           }
-//           break;
-//         }
-//         default:
-//         {
-//           reception_failure();
-//           return;
-//         }
-//       }
-
-//       if (bytes_remaining == 0) {
-//         read_complete(bytes_read, true);
-//         state = hci_packet_state_read_header;
-//         return;
-//       } else {
-//         read_complete(bytes_read, false);
-//         state = hci_packet_state_read_data;
-//       }
-//       break;
-//     }
-//     case hci_packet_state_read_data:
-//     {
-//       if (bytes_remaining > bytes_read) {
-//         bytes_remaining -= bytes_read;
-//         read_complete(bytes_read, false);
-//       } else {
-//         read_complete(bytes_read, true);
-//         state = hci_packet_state_read_header;
-//       }
-//       break;
-//     }
-//     default:
-//     {
-//       reception_failure();
-//       return;
-//     }
-//   }
 }
 
-uint32_t hci_common_transport_transmit(uint8_t *data, int16_t len)
-{
-  return sl_matter_cpc_write(data, len);
-}
-
-// void hci_common_transport_init(void)
-// {
-//   if (initialized) {
-//     return;
-//   } else {
-//     initialized = true;
-//   }
-
-//   state = hci_packet_state_read_header;
-//  TODO MATTER specific behavior.
-//   sl_matter_cpc_init();
-// }
