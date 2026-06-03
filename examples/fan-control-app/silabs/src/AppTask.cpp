@@ -20,7 +20,7 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
-
+#include "CustomerAppTask.h"
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
@@ -32,6 +32,7 @@
 #endif // DISPLAY_ENABLED
 
 #include <app-common/zap-generated/attribute-type.h>
+#include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app/clusters/fan-control-server/fan-control-delegate.h>
 #include <app/clusters/fan-control-server/fan-control-server.h>
@@ -39,48 +40,280 @@
 #include <app/util/attribute-storage.h>
 
 #include <assert.h>
+#include <lib/support/CodeUtils.h>
+#include <lib/support/TypeTraits.h>
 
+#include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #include <setup_payload/OnboardingCodesUtil.h>
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
 
-#include <lib/support/CodeUtils.h>
-
-#include <platform/CHIPDeviceLayer.h>
-
 #define APP_FUNCTION_BUTTON 0
+
+#ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
+#define FAN_LED 1
+#else
+#define FAN_LED 0
+#endif
 
 using namespace chip;
 using namespace chip::app;
-using namespace chip::TLV;
-using namespace ::chip::DeviceLayer;
-using namespace chip::app::Clusters::FanControl;
 using namespace chip::app::Clusters;
+using namespace chip::app::Clusters::FanControl;
+using namespace ::chip::DeviceLayer;
+using Protocols::InteractionModel::Status;
 
-/**********************************************************
- * AppTask Definitions
- *********************************************************/
+namespace {
 
-AppTask AppTask::sAppTask;
+constexpr EndpointId kFanEndpoint = 1;
+
+// Fan Mode Limits.
+constexpr int kFanModeLowLowerBound    = 1;
+constexpr int kFanModeLowUpperBound    = 3;
+constexpr int kFanModeMediumLowerBound = 4;
+constexpr int kFanModeMediumUpperBound = 7;
+constexpr int kFanModeHighLowerBound   = 8;
+constexpr int kFanModeHighUpperBound   = 10;
+
+constexpr int kaLowestOffTrue  = 0;
+constexpr int kaLowestOffFalse = 1;
+
+LEDWidget sFanLED;
+
+FanModeEnum sFanMode      = FanModeEnum::kOff;
+uint8_t sSpeedMax         = 0;
+uint8_t sPercentCurrent   = 0;
+uint8_t sSpeedCurrent     = 0;
+
+struct AttributeUpdateInfo
+{
+    FanModeEnum fanMode;
+    uint8_t speedCurrent;
+    uint8_t percentCurrent;
+    uint8_t speedSetting;
+    uint8_t percentSetting;
+    bool isPercentCurrent = false;
+    bool isSpeedCurrent   = false;
+    bool isSpeedSetting   = false;
+    bool isFanMode        = false;
+    bool isPercentSetting = false;
+    EndpointId endPoint;
+};
+
+uint8_t SpeedToPercent(uint8_t speed, uint8_t speedMax)
+{
+    if (speedMax == 0)
+    {
+        return 0;
+    }
+    return static_cast<uint8_t>((static_cast<uint16_t>(speed) * 100) / speedMax);
+}
+
+DataModel::Nullable<uint8_t> GetSpeedSetting()
+{
+    DataModel::Nullable<uint8_t> speedSetting;
+
+    Status status = Attributes::SpeedSetting::Get(kFanEndpoint, speedSetting);
+    if (status != Status::Success)
+    {
+        ChipLogError(NotSpecified, "GetSpeedSetting: failed to get SpeedSetting attribute: %d", to_underlying(status));
+    }
+
+    return speedSetting;
+}
+
+DataModel::Nullable<Percent> GetPercentSetting()
+{
+    DataModel::Nullable<Percent> percentSetting;
+
+    Status status = Attributes::PercentSetting::Get(kFanEndpoint, percentSetting);
+    if (status != Status::Success)
+    {
+        ChipLogError(NotSpecified, "GetPercentSetting: failed to get PercentSetting attribute: %d", to_underlying(status));
+    }
+
+    return percentSetting;
+}
+
+void SetPercentSetting(Percent aNewPercentSetting)
+{
+    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
+    if (!percentSettingNullable.IsNull() && percentSettingNullable.Value() == aNewPercentSetting)
+    {
+        return;
+    }
+
+    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
+    data->percentSetting       = aNewPercentSetting;
+    data->endPoint             = kFanEndpoint;
+    data->isPercentSetting     = true;
+    if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "SetPercentSetting: failed to update PercentSetting attribute");
+    }
+}
+
+void UpdateFanMode()
+{
+    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
+    data->endPoint             = kFanEndpoint;
+    data->fanMode              = sFanMode;
+    data->isFanMode            = true;
+    if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "UpdateFanMode: failed to update FanMode attribute");
+    }
+}
+
+void FanModeWriteCallback(FanModeEnum aNewFanMode)
+{
+    ChipLogDetail(NotSpecified, "FanModeWriteCallback: %d", to_underlying(aNewFanMode));
+    // If PercentSetting is null, use an out-of-bounds value to force an update.
+    uint8_t percentSettingCurrent = GetPercentSetting().ValueOr(101);
+    switch (aNewFanMode)
+    {
+    case FanModeEnum::kOff: {
+        if (percentSettingCurrent != 0)
+        {
+            SetPercentSetting(0);
+        }
+        break;
+    }
+    case FanModeEnum::kLow: {
+        const uint8_t lowPercentMin = SpeedToPercent(static_cast<uint8_t>(kFanModeLowLowerBound), sSpeedMax);
+        const uint8_t lowPercentMax = SpeedToPercent(static_cast<uint8_t>(kFanModeLowUpperBound), sSpeedMax);
+        if (percentSettingCurrent < lowPercentMin || percentSettingCurrent > lowPercentMax)
+        {
+            SetPercentSetting(lowPercentMin);
+        }
+        break;
+    }
+    case FanModeEnum::kMedium: {
+        const uint8_t mediumPercentMin = SpeedToPercent(static_cast<uint8_t>(kFanModeMediumLowerBound), sSpeedMax);
+        const uint8_t mediumPercentMax = SpeedToPercent(static_cast<uint8_t>(kFanModeMediumUpperBound), sSpeedMax);
+        if (percentSettingCurrent < mediumPercentMin || percentSettingCurrent > mediumPercentMax)
+        {
+            SetPercentSetting(mediumPercentMin);
+        }
+        break;
+    }
+    case FanModeEnum::kOn:
+    case FanModeEnum::kHigh: {
+        const uint8_t highPercentMin = SpeedToPercent(static_cast<uint8_t>(kFanModeHighLowerBound), sSpeedMax);
+        const uint8_t highPercentMax = SpeedToPercent(static_cast<uint8_t>(kFanModeHighUpperBound), sSpeedMax);
+        if (percentSettingCurrent < highPercentMin || percentSettingCurrent > highPercentMax)
+        {
+            SetPercentSetting(highPercentMin);
+        }
+        break;
+    }
+    case FanModeEnum::kSmart:
+    case FanModeEnum::kAuto: {
+        ChipLogProgress(NotSpecified, "FanModeWriteCallback: Auto");
+        break;
+    }
+    case FanModeEnum::kUnknownEnumValue: {
+        ChipLogProgress(NotSpecified, "FanModeWriteCallback: Unknown");
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void PercentSettingWriteCallback(uint8_t aNewPercentSetting)
+{
+    VerifyOrReturn(aNewPercentSetting != sPercentCurrent);
+    VerifyOrReturn(sFanMode != FanModeEnum::kAuto);
+    ChipLogDetail(NotSpecified, "PercentSettingWriteCallback: %d", aNewPercentSetting);
+    sPercentCurrent = aNewPercentSetting;
+
+    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
+    data->endPoint             = kFanEndpoint;
+    data->percentCurrent       = sPercentCurrent;
+    data->isPercentCurrent     = true;
+
+    if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "PercentSettingWriteCallback: failed to set PercentCurrent attribute");
+    }
+}
+
+void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
+{
+    VerifyOrReturn(aNewSpeedSetting != sSpeedCurrent);
+    VerifyOrReturn(sFanMode != FanModeEnum::kAuto);
+    ChipLogDetail(NotSpecified, "SpeedSettingWriteCallback: %d", aNewSpeedSetting);
+    sSpeedCurrent = aNewSpeedSetting;
+
+    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
+    data->endPoint             = kFanEndpoint;
+    data->speedCurrent         = sSpeedCurrent;
+    data->isSpeedCurrent       = true;
+
+    if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "SpeedSettingWriteCallback: failed to set SpeedCurrent attribute");
+    }
+
+    // Update the fan mode as per the current speed.
+    if (sSpeedCurrent == 0)
+    {
+        sFanMode = FanModeEnum::kOff;
+    }
+    else if (sSpeedCurrent <= kFanModeLowUpperBound)
+    {
+        sFanMode = FanModeEnum::kLow;
+    }
+    else if (sSpeedCurrent <= kFanModeMediumUpperBound)
+    {
+        sFanMode = FanModeEnum::kMedium;
+    }
+    else if (sSpeedCurrent <= kFanModeHighUpperBound)
+    {
+        sFanMode = FanModeEnum::kHigh;
+    }
+    UpdateFanMode();
+}
+
+void UpdateFanControlLED()
+{
+    sFanLED.Set(false);
+    if (sFanMode != FanModeEnum::kOff && sFanMode != FanModeEnum::kUnknownEnumValue)
+    {
+        sFanLED.Set(true);
+    }
+}
+
+#if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
+void UpdateFanControlLCD()
+{
+    GetLCD().WriteDemoUI(false);
+}
+#endif
+
+} // namespace
+
+AppTask::AppTask() : Delegate(kFanEndpoint) {}
 
 CHIP_ERROR AppTask::AppInit()
 {
-    CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
 #ifdef DISPLAY_ENABLED
     GetLCD().SetCustomUI(FanControlUI::DrawUI);
 #endif
 
-    err = FanControlMgr().Init();
+    CHIP_ERROR err = CustomerAppTask::GetAppTask().InitFanControl();
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(AppServer, "FanControlMgr::Init() failed");
+        ChipLogError(AppServer, "InitFanControl() failed: %" CHIP_ERROR_FORMAT, err.Format());
         appError(err);
     }
-    // Update the LCD with the Stored value. Show QR Code if not provisioned
+
+    // Update the LCD with the Stored value. Show QR Code if not provisioned.
 #ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
 #ifdef QR_CODE_ENABLED
@@ -90,6 +323,27 @@ CHIP_ERROR AppTask::AppInit()
     }
 #endif // QR_CODE_ENABLED
 #endif
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR AppTask::InitFanControl()
+{
+    SetDefaultDelegate(kFanEndpoint, &CustomerAppTask::GetAppTask());
+    sFanLED.Init(FAN_LED);
+    LinkAppLed(&sFanLED);
+
+    PlatformMgr().LockChipStack();
+    Attributes::SpeedMax::Get(kFanEndpoint, &sSpeedMax);
+    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
+    DataModel::Nullable<uint8_t> speedSettingNullable   = GetSpeedSetting();
+    PlatformMgr().UnlockChipStack();
+
+    uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
+    PercentSettingWriteCallback(percentSettingCB);
+
+    uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
+    SpeedSettingWriteCallback(speedSettingCB);
 
     return CHIP_NO_ERROR;
 }
@@ -104,36 +358,164 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = GetAppTask().Init();
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(AppServer, "AppTask.Init() failed");
+        ChipLogError(AppServer, "AppTask.Init() failed: %" CHIP_ERROR_FORMAT, err.Format());
         appError(err);
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    sAppTask.StartStatusLEDTimer();
+    GetAppTask().StartStatusLEDTimer();
 #endif
 
     ChipLogProgress(AppServer, "App Task started");
 
     while (true)
     {
-        osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
+        osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
-            eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
+            GetAppTask().DispatchEvent(&event);
+            eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
 }
 
-void AppTask::UpdateFanControlUI()
+Status AppTask::HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff)
 {
-    // Update the LCD with the Stored value. Show QR Code if not provisioned
-#ifdef DISPLAY_ENABLED
-    GetLCD().WriteDemoUI(false);
-#endif // DISPLAY_ENABLED
+    ChipLogProgress(NotSpecified, "AppTask::HandleStep aDirection %d, aWrap %d, aLowestOff %d", to_underlying(aDirection), aWrap,
+                    aLowestOff);
+
+    VerifyOrReturnError(aDirection != StepDirectionEnum::kUnknownEnumValue, Status::InvalidCommand);
+
+    // if aLowestOff is true, Step command can reduce the fan speed to 0, else 1.
+    uint8_t speedMin = aLowestOff ? kaLowestOffTrue : kaLowestOffFalse;
+
+    DataModel::Nullable<uint8_t> speedSettingNullable = GetSpeedSetting();
+
+    uint8_t curSpeedSetting = speedSettingNullable.IsNull() ? speedMin : speedSettingNullable.Value();
+
+    // increase or decrease the fan speed by one step
+    switch (aDirection)
+    {
+    case StepDirectionEnum::kIncrease: {
+        if (curSpeedSetting >= sSpeedMax)
+        {
+            curSpeedSetting = aWrap ? speedMin : sSpeedMax;
+        }
+        else
+        {
+            curSpeedSetting++;
+        }
+        break;
+    }
+    case StepDirectionEnum::kDecrease: {
+        if (curSpeedSetting <= speedMin)
+        {
+            curSpeedSetting = aWrap ? sSpeedMax : speedMin;
+        }
+        else
+        {
+            curSpeedSetting--;
+        }
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+
+    // Convert SpeedSetting to PercentSetting
+    uint8_t curPercentSetting = SpeedToPercent(curSpeedSetting, sSpeedMax);
+
+    AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
+    data->percentSetting       = curPercentSetting;
+    data->endPoint             = kFanEndpoint;
+    data->isPercentSetting     = true;
+
+    if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "AppTask::HandleStep: Failed to update PercentSetting attribute");
+        return Status::Failure;
+    }
+
+    return Status::Success;
+}
+
+void AppTask::UpdateClusterState(intptr_t arg)
+{
+    AttributeUpdateInfo * data = reinterpret_cast<AttributeUpdateInfo *>(arg);
+    if (data->isSpeedCurrent)
+    {
+        Attributes::SpeedCurrent::Set(data->endPoint, data->speedCurrent);
+    }
+    else if (data->isPercentCurrent)
+    {
+        Attributes::PercentCurrent::Set(data->endPoint, data->percentCurrent);
+    }
+    else if (data->isSpeedSetting)
+    {
+        Attributes::SpeedSetting::Set(data->endPoint, data->speedSetting);
+    }
+    else if (data->isFanMode)
+    {
+        Attributes::FanMode::Set(data->endPoint, data->fanMode);
+    }
+    else if (data->isPercentSetting)
+    {
+        Attributes::PercentSetting::Set(data->endPoint, data->percentSetting);
+    }
+    chip::Platform::Delete(data);
+}
+
+void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                            uint8_t * value)
+{
+    ClusterId clusterId     = attributePath.mClusterId;
+    AttributeId attributeId = attributePath.mAttributeId;
+    ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
+
+    if (clusterId == Clusters::Identify::Id)
+    {
+        ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                        ChipLogValueMEI(attributeId), type, *value, size);
+        return;
+    }
+
+    if (clusterId != FanControl::Id)
+    {
+        return;
+    }
+
+    switch (attributeId)
+    {
+    case Attributes::PercentSetting::Id: {
+        PercentSettingWriteCallback(*value);
+        break;
+    }
+    case Attributes::SpeedSetting::Id: {
+        SpeedSettingWriteCallback(*value);
+        break;
+    }
+    case Attributes::FanMode::Id: {
+        sFanMode = *reinterpret_cast<FanModeEnum *>(value);
+        FanModeWriteCallback(sFanMode);
+        UpdateFanControlLED();
+#if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
+        UpdateFanControlLCD();
+#endif
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+}
+
+FanModeEnum AppTask::GetFanMode()
+{
+    return sFanMode;
 }
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
@@ -145,6 +527,6 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        AppTask::GetAppTask().PostEvent(&button_event);
+        GetAppTask().PostEvent(&button_event);
     }
 }

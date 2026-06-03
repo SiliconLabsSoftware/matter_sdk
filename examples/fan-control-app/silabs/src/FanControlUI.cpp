@@ -20,7 +20,6 @@
 #include <string.h>
 
 #include "AppTask.h"
-#include "FanControlManager.h"
 #include "FanControlUI.h"
 #include "demo-ui-bitmaps.h"
 #include "dmd.h"
@@ -94,7 +93,7 @@ void FanControlUI::DrawHeader(GLIB_Context_t * glibContext)
  */
 void FanControlUI::DrawCurrentFanMode(GLIB_Context_t * glibContext)
 {
-    FanModeEnum mode = FanControlMgr().GetFanMode();
+    FanModeEnum mode = AppTask::GetAppTask().GetFanMode();
     // Print fan mode
     if (mode == FanModeEnum::kOff)
     {

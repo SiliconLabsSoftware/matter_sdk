@@ -19,44 +19,32 @@
 
 #pragma once
 
-/**********************************************************
- * Includes
- *********************************************************/
-
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
-#include "FanControlManager.h"
+
+#include <app/ConcreteAttributePath.h>
+#include <app/clusters/fan-control-server/fan-control-delegate.h>
 #include <ble/Ble.h>
 #include <cmsis_os2.h>
 #include <lib/core/CHIPError.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <protocols/interaction_model/StatusCode.h>
 
-/**********************************************************
- * Defines
- *********************************************************/
-
-// Application-defined error codes in the CHIP_ERROR space.
-#define APP_ERROR_EVENT_QUEUE_FAILED CHIP_APPLICATION_ERROR(0x01)
-#define APP_ERROR_CREATE_TASK_FAILED CHIP_APPLICATION_ERROR(0x02)
-#define APP_ERROR_UNHANDLED_EVENT CHIP_APPLICATION_ERROR(0x03)
-#define APP_ERROR_CREATE_TIMER_FAILED CHIP_APPLICATION_ERROR(0x04)
-#define APP_ERROR_START_TIMER_FAILED CHIP_APPLICATION_ERROR(0x05)
-#define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
-
-/**********************************************************
- * AppTask Declaration
- *********************************************************/
-
-class AppTask : public BaseApplication
+class AppTask : public BaseApplication, public chip::app::Clusters::FanControl::Delegate
 {
-
 public:
-    AppTask() = default;
+    // Bring frequently-used cluster types into class scope. Available to derived classes
+    // (e.g. AppTaskImpl, CustomerAppTask) without re-qualification.
+    using FanModeEnum       = chip::app::Clusters::FanControl::FanModeEnum;
+    using StepDirectionEnum = chip::app::Clusters::FanControl::StepDirectionEnum;
+    using Status            = chip::Protocols::InteractionModel::Status;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    AppTask();
+
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -68,35 +56,42 @@ public:
     CHIP_ERROR StartAppTask();
 
     /**
+     * @brief Bring up the fan-control app: register the FanControl delegate, link the LED,
+     *        seed PercentSetting / SpeedSetting from the data model.
+     */
+    CHIP_ERROR InitFanControl();
+
+    /**
+     * @brief Handle the Step command from the FanControl cluster.
+     */
+    Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override;
+
+    /**
+     * @brief Post-attribute-change callback for all clusters on this endpoint.
+     */
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
+
+    /**
      * @brief Event handler when a button is pressed
-     * Function posts an event for button processing
      *
-     * @param buttonHandle APP_FAN_SWITCH or APP_FUNCTION_BUTTON
-     * @param btnAction button action - SL_SIMPLE_BUTTON_PRESSED,
-     *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
+     * @param button     APP_FUNCTION_BUTTON
+     * @param btnAction  SL_SIMPLE_BUTTON_PRESSED, SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
-    void UpdateFanControlUI();
-
-private:
     /**
-     * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
-     *
-     * @return CHIP_ERROR
+     * @brief PlatformMgr().ScheduleWork() callback that flushes pending FanControl attribute writes
+     *        on the Matter thread.
      */
+    static void UpdateClusterState(intptr_t arg);
+
+    /**
+     * @brief Read the current FanMode attribute. Used by FanControlUI.
+     */
+    FanModeEnum GetFanMode();
+
+protected:
+    /** Override of `BaseApplication::AppInit()`. */
     CHIP_ERROR AppInit() override;
-
-    static AppTask sAppTask;
-
-    static void UpdateClusterState(intptr_t context);
-
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
-     *
-     * @param aEvent button event being processed
-     */
-    static void ButtonHandler(AppEvent * aEvent);
 };
