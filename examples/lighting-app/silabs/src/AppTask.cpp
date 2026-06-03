@@ -368,14 +368,14 @@ void AppTask::AppTaskMain(void * pvParameter)
     //  The DeferredAttributePersistenceProvider will persist the attribute value in non-volatile memory
     //  once it remains constant for SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS milliseconds.
     //  For all other attributes not listed in gDeferredAttributeTable, the default PersistenceProvider is used.
-    appInstance().pDeferredAttributePersister = new DeferredAttributePersistenceProvider(
+    AppInstance().pDeferredAttributePersister = new DeferredAttributePersistenceProvider(
         *attributePersistence, Span<DeferredAttribute>(gDeferredAttributeTable, MATTER_ARRAY_SIZE(gDeferredAttributeTable)),
         System::Clock::Milliseconds32(SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS));
-    VerifyOrDie(appInstance().pDeferredAttributePersister != nullptr);
+    VerifyOrDie(AppInstance().pDeferredAttributePersister != nullptr);
 
-    app::SetAttributePersistenceProvider(appInstance().pDeferredAttributePersister);
+    app::SetAttributePersistenceProvider(AppInstance().pDeferredAttributePersister);
 
-    CHIP_ERROR err = appInstance().Init();
+    CHIP_ERROR err = AppInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("AppTask.Init() failed");
@@ -383,7 +383,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    appInstance().StartStatusLEDTimer();
+    AppInstance().StartStatusLEDTimer();
 #endif
 
     SILABS_LOG("App Task started");
@@ -393,7 +393,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            appInstance().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
