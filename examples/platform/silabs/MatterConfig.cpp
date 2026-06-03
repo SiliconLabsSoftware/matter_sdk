@@ -313,7 +313,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Init Chip Stack: %" CHIP_ERROR_FORMAT, err.Format()));
 #if CONFIG_NETWORK_LAYER_BLE
-#error SHOULD NOT COMPILE
     err = chip::DeviceLayer::ConnectivityMgr().SetBLEDeviceName(appName);
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Set BLE Device Name: %" CHIP_ERROR_FORMAT, err.Format()));
