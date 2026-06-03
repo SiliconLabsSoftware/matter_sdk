@@ -21,6 +21,7 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "CustomerAppTask.h"
+#include "FanControlConfig.h"
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
@@ -67,15 +68,16 @@ using Protocols::InteractionModel::Status;
 
 namespace {
 
-constexpr EndpointId kFanEndpoint = 1;
+// Defaults live in FanControlConfig.h; consumers tune via the Configuration Wizard.
+constexpr EndpointId kFanEndpoint = FAN_CONTROL_ENDPOINT;
 
-// Fan Mode Limits.
-constexpr int kFanModeLowLowerBound    = 1;
-constexpr int kFanModeLowUpperBound    = 3;
-constexpr int kFanModeMediumLowerBound = 4;
-constexpr int kFanModeMediumUpperBound = 7;
-constexpr int kFanModeHighLowerBound   = 8;
-constexpr int kFanModeHighUpperBound   = 10;
+// Fan-mode speed bands. Each band is [lower, upper] inclusive over the SpeedSetting range.
+constexpr int kFanModeLowLowerBound    = FAN_MODE_LOW_LOWER_BOUND;
+constexpr int kFanModeLowUpperBound    = FAN_MODE_LOW_UPPER_BOUND;
+constexpr int kFanModeMediumLowerBound = FAN_MODE_MEDIUM_LOWER_BOUND;
+constexpr int kFanModeMediumUpperBound = FAN_MODE_MEDIUM_UPPER_BOUND;
+constexpr int kFanModeHighLowerBound   = FAN_MODE_HIGH_LOWER_BOUND;
+constexpr int kFanModeHighUpperBound   = FAN_MODE_HIGH_UPPER_BOUND;
 
 constexpr int kaLowestOffTrue  = 0;
 constexpr int kaLowestOffFalse = 1;
