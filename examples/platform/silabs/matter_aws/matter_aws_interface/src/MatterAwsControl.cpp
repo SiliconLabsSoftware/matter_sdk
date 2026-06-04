@@ -35,7 +35,6 @@ extern void aws_ota_init(void);
 #endif // ZCL_USING_ON_OFF_CLUSTER_SERVER
 
 #ifdef ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
-#include "MatterAwsDoorLockRemote.h"
 #include <app/clusters/door-lock-server/door-lock-server.h>
 #endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
 
@@ -242,9 +241,21 @@ void MatterAwsIncomingDataCb(void * arg, const char * topic, uint16_t topic_len,
     cmdIndex = GetCommandStringIndex(DlMqttControlCmd, COUNT_OF(DlMqttControlCmd), _cmd);
     if (cmdIndex != kStringNotFound)
     {
-        if (!MatterAwsApplyDoorLockRemoteCommand(kEndpointId, DlMqttControlCmd[cmdIndex].action.lockState))
+        OperationErrorEnum err = OperationErrorEnum::kUnspecified;
+        const chip::app::DataModel::Nullable<chip::FabricIndex> fabricIdx = chip::app::DataModel::NullNullable;
+        const chip::app::DataModel::Nullable<chip::NodeId> nodeId         = chip::app::DataModel::NullNullable;
+        const chip::Optional<chip::ByteSpan> pinCode                      = chip::NullOptional;
+        const bool wantLock = (DlMqttControlCmd[cmdIndex].action.lockState == DlLockState::kLocked);
+
+        chip::DeviceLayer::PlatformMgr().LockChipStack();
+        const bool success = wantLock
+            ? emberAfPluginDoorLockOnDoorLockCommand(kEndpointId, fabricIdx, nodeId, pinCode, err)
+            : emberAfPluginDoorLockOnDoorUnlockCommand(kEndpointId, fabricIdx, nodeId, pinCode, err);
+        chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
+        if (!success)
         {
-            ChipLogError(AppServer, "[MATTER_AWS] door lock remote command rejected");
+            ChipLogError(AppServer, "[MATTER_AWS] door lock command failed, err=%u", to_underlying(err));
         }
         return;
     }
@@ -359,17 +370,3 @@ void AttributeHandler(EndpointId endpointId, AttributeId attributeId)
 #endif // ZCL_USING_THERMOSTAT_CLUSTER_SERVER
 } // namespace control
 } // namespace matterAws
-
-#ifdef ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
-using chip::app::Clusters::DoorLock::DlLockState;
-using chip::app::Clusters::DoorLock::OperationSourceEnum;
-
-__attribute__((weak)) bool MatterAwsApplyDoorLockRemoteCommand(EndpointId endpointId, DlLockState lockState)
-{
-    bool success = false;
-    chip::DeviceLayer::PlatformMgr().LockChipStack();
-    success = DoorLockServer::Instance().SetLockState(endpointId, lockState, OperationSourceEnum::kProprietaryRemote);
-    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
-    return success;
-}
-#endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER

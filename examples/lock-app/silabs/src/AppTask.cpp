@@ -25,7 +25,6 @@
 #include "CustomerAppTask.h"
 #ifdef SL_MATTER_ENABLE_AWS
 #include "MatterAws.h"
-#include "MatterAwsDoorLockRemote.h"
 #endif // SL_MATTER_ENABLE_AWS
 #if defined(ENABLE_CHIP_SHELL)
 #include "EventHandlerLibShell.h"
@@ -1461,40 +1460,3 @@ void AppTask::PushClusterLockState(EndpointId endpointId, DlLockState lockState,
     DoorLockServer::Instance().SetLockState(endpointId, lockState, OperationSourceEnum::kRemote, NullNullable, NullNullable,
                                             fabricIdx, nodeId);
 }
-
-#ifdef SL_MATTER_ENABLE_AWS
-void AppTask::EnqueueMatterAwsRemoteLockRequest(const LockRequest & request)
-{
-    EnqueueLockRequest(request);
-}
-
-bool MatterAwsApplyDoorLockRemoteCommand(EndpointId endpointId, DlLockState lockState)
-{
-    VerifyOrReturnValue(endpointId == EndpointId(LOCK_ENDPOINT), false,
-                        ChipLogError(AppServer, "[MATTER_AWS] unsupported door lock endpoint %d (expected %d)", endpointId,
-                                     LOCK_ENDPOINT));
-
-    AppTask::LockRequest req = {};
-    req.endpointId           = endpointId;
-    req.isButtonAction       = false;
-
-    if (lockState == DlLockState::kLocked)
-    {
-        req.action             = AppTask::LockAction::kLock;
-        req.targetClusterState = DlLockState::kLocked;
-    }
-    else
-    {
-        PlatformMgr().LockChipStack();
-        const bool supportsUnbolt = DoorLockServer::Instance().SupportsUnbolt(endpointId);
-        PlatformMgr().UnlockChipStack();
-
-        req.isUnboltUnlatch    = supportsUnbolt;
-        req.action             = supportsUnbolt ? AppTask::LockAction::kUnlatch : AppTask::LockAction::kUnlock;
-        req.targetClusterState = supportsUnbolt ? DlLockState::kUnlatched : DlLockState::kUnlocked;
-    }
-
-    AppTask::EnqueueMatterAwsRemoteLockRequest(req);
-    return true;
-}
-#endif // SL_MATTER_ENABLE_AWS
