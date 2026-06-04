@@ -68,6 +68,11 @@ using Protocols::InteractionModel::Status;
 
 namespace {
 
+CustomerAppTask & AppInstance()
+{
+    return CustomerAppTask::GetAppTask();
+}
+
 // Defaults live in FanControlConfig.h; consumers tune via the Configuration Wizard.
 constexpr EndpointId kFanEndpoint = FAN_CONTROL_ENDPOINT;
 
@@ -192,7 +197,7 @@ void PostFanUiUpdateEvent()
     fan_event.FanEvent.Action = to_underlying(sFanMode);
     fan_event.FanEvent.Actor  = static_cast<int32_t>(AppEvent::kEventType_FanControl);
     fan_event.Handler         = &CustomerAppTask::FanUiUpdateEventHandler;
-    CustomerAppTask::GetAppTask().PostEvent(&fan_event);
+    AppInstance().PostEvent(&fan_event);
 }
 
 } // namespace
@@ -207,7 +212,7 @@ CHIP_ERROR AppTask::AppInit()
     GetLCD().SetCustomUI(FanControlUI::DrawUI);
 #endif
 
-    CHIP_ERROR err = CustomerAppTask::GetAppTask().InitFanControl();
+    CHIP_ERROR err = AppInstance().InitFanControl();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "InitFanControl() failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -230,7 +235,7 @@ CHIP_ERROR AppTask::AppInit()
 
 CHIP_ERROR AppTask::InitFanControl()
 {
-    SetDefaultDelegate(kFanEndpoint, &CustomerAppTask::GetAppTask());
+    SetDefaultDelegate(kFanEndpoint, &AppInstance());
     sFanLED.Init(FAN_LED);
     LinkAppLed(&sFanLED);
 
@@ -241,10 +246,10 @@ CHIP_ERROR AppTask::InitFanControl()
     PlatformMgr().UnlockChipStack();
 
     uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
-    PercentSettingWriteCallback(percentSettingCB);
+    AppInstance().PercentSettingWriteCallback(percentSettingCB);
 
     uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
-    SpeedSettingWriteCallback(speedSettingCB);
+    AppInstance().SpeedSettingWriteCallback(speedSettingCB);
 
     return CHIP_NO_ERROR;
 }
@@ -370,7 +375,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = GetAppTask().Init();
+    CHIP_ERROR err = AppInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask.Init() failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -378,7 +383,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    GetAppTask().StartStatusLEDTimer();
+    AppInstance().StartStatusLEDTimer();
 #endif
 
     ChipLogProgress(AppServer, "App Task started");
@@ -388,7 +393,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            GetAppTask().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
@@ -503,16 +508,16 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
     switch (attributeId)
     {
     case Attributes::PercentSetting::Id: {
-        PercentSettingWriteCallback(*value);
+        AppInstance().PercentSettingWriteCallback(*value);
         break;
     }
     case Attributes::SpeedSetting::Id: {
-        SpeedSettingWriteCallback(*value);
+        AppInstance().SpeedSettingWriteCallback(*value);
         break;
     }
     case Attributes::FanMode::Id: {
         sFanMode = *reinterpret_cast<FanModeEnum *>(value);
-        FanModeWriteCallback(sFanMode);
+        AppInstance().FanModeWriteCallback(sFanMode);
         PostFanUiUpdateEvent();
         break;
     }
@@ -536,7 +541,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        GetAppTask().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
 }
 
