@@ -55,9 +55,24 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
-    static void UpdateClusterState(intptr_t arg)
+    static void FanUiUpdateEventHandler(AppEvent * aEvent)
     {
-        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, UpdateClusterStateImpl, arg);
+        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, FanUiUpdateEventHandlerImpl, aEvent);
+    }
+
+    void FanModeWriteCallback(FanModeEnum aNewFanMode)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, FanModeWriteCallbackImpl, aNewFanMode);
+    }
+
+    void PercentSettingWriteCallback(uint8_t aNewPercentSetting)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, PercentSettingWriteCallbackImpl, aNewPercentSetting);
+    }
+
+    void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, SpeedSettingWriteCallbackImpl, aNewSpeedSetting);
     }
 
 private:
@@ -80,5 +95,14 @@ private:
 
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 
-    void UpdateClusterStateImpl(intptr_t arg) { AppTask::UpdateClusterState(arg); }
+    void FanUiUpdateEventHandlerImpl(AppEvent * aEvent) { AppTask::FanUiUpdateEventHandler(aEvent); }
+
+    void FanModeWriteCallbackImpl(FanModeEnum aNewFanMode) { AppTask::FanModeWriteCallback(aNewFanMode); }
+
+    void PercentSettingWriteCallbackImpl(uint8_t aNewPercentSetting)
+    {
+        AppTask::PercentSettingWriteCallback(aNewPercentSetting);
+    }
+
+    void SpeedSettingWriteCallbackImpl(uint8_t aNewSpeedSetting) { AppTask::SpeedSettingWriteCallback(aNewSpeedSetting); }
 };

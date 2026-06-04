@@ -81,8 +81,31 @@ public:
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
     /**
+     * @brief AppTask-thread handler that refreshes the fan LED (and LCD when enabled)
+     *        from the latest FanMode. Posted from DMPostAttributeChangeCallback to keep
+     *        UI work off the Matter thread.
+     */
+    static void FanUiUpdateEventHandler(AppEvent * aEvent);
+
+    /**
+     * @brief Reconcile PercentSetting whenever FanMode changes so the new mode lands
+     *        inside its configured speed band. Invoked from DMPostAttributeChangeCallback.
+     */
+    void FanModeWriteCallback(FanModeEnum aNewFanMode);
+
+    /**
+     * @brief Mirror PercentSetting writes onto PercentCurrent (when not in Auto and not a no-op).
+     */
+    void PercentSettingWriteCallback(uint8_t aNewPercentSetting);
+
+    /**
+     * @brief Mirror SpeedSetting writes onto SpeedCurrent and refresh FanMode from the new speed.
+     */
+    void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting);
+
+    /**
      * @brief PlatformMgr().ScheduleWork() callback that flushes pending FanControl attribute writes
-     *        on the Matter thread.
+     *        on the Matter thread. Exposed as a public API but not part of the CRTP override surface.
      */
     static void UpdateClusterState(intptr_t arg);
 

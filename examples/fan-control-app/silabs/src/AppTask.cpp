@@ -169,7 +169,87 @@ void UpdateFanMode()
     }
 }
 
-void FanModeWriteCallback(FanModeEnum aNewFanMode)
+void UpdateFanControlLED()
+{
+    sFanLED.Set(false);
+    if (sFanMode != FanModeEnum::kOff && sFanMode != FanModeEnum::kUnknownEnumValue)
+    {
+        sFanLED.Set(true);
+    }
+}
+
+#if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
+void UpdateFanControlLCD()
+{
+    BaseApplication::GetLCD().WriteDemoUI(false);
+}
+#endif
+
+void PostFanUiUpdateEvent()
+{
+    AppEvent fan_event{};
+    fan_event.Type            = AppEvent::kEventType_FanControl;
+    fan_event.FanEvent.Action = to_underlying(sFanMode);
+    fan_event.FanEvent.Actor  = static_cast<int32_t>(AppEvent::kEventType_FanControl);
+    fan_event.Handler         = &CustomerAppTask::FanUiUpdateEventHandler;
+    CustomerAppTask::GetAppTask().PostEvent(&fan_event);
+}
+
+} // namespace
+
+AppTask::AppTask() : Delegate(kFanEndpoint) {}
+
+CHIP_ERROR AppTask::AppInit()
+{
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
+
+#ifdef DISPLAY_ENABLED
+    GetLCD().SetCustomUI(FanControlUI::DrawUI);
+#endif
+
+    CHIP_ERROR err = CustomerAppTask::GetAppTask().InitFanControl();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "InitFanControl() failed: %" CHIP_ERROR_FORMAT, err.Format());
+        appError(err);
+    }
+
+    // Update the LCD with the Stored value. Show QR Code if not provisioned.
+#ifdef DISPLAY_ENABLED
+    GetLCD().WriteDemoUI(false);
+#ifdef QR_CODE_ENABLED
+    if (!BaseApplication::GetProvisionStatus())
+    {
+        GetLCD().ShowQRCode(true);
+    }
+#endif // QR_CODE_ENABLED
+#endif
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR AppTask::InitFanControl()
+{
+    SetDefaultDelegate(kFanEndpoint, &CustomerAppTask::GetAppTask());
+    sFanLED.Init(FAN_LED);
+    LinkAppLed(&sFanLED);
+
+    PlatformMgr().LockChipStack();
+    Attributes::SpeedMax::Get(kFanEndpoint, &sSpeedMax);
+    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
+    DataModel::Nullable<uint8_t> speedSettingNullable   = GetSpeedSetting();
+    PlatformMgr().UnlockChipStack();
+
+    uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
+    PercentSettingWriteCallback(percentSettingCB);
+
+    uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
+    SpeedSettingWriteCallback(speedSettingCB);
+
+    return CHIP_NO_ERROR;
+}
+
+void AppTask::FanModeWriteCallback(FanModeEnum aNewFanMode)
 {
     ChipLogDetail(NotSpecified, "FanModeWriteCallback: %d", to_underlying(aNewFanMode));
     // If PercentSetting is null, use an out-of-bounds value to force an update.
@@ -225,7 +305,7 @@ void FanModeWriteCallback(FanModeEnum aNewFanMode)
     }
 }
 
-void PercentSettingWriteCallback(uint8_t aNewPercentSetting)
+void AppTask::PercentSettingWriteCallback(uint8_t aNewPercentSetting)
 {
     VerifyOrReturn(aNewPercentSetting != sPercentCurrent);
     VerifyOrReturn(sFanMode != FanModeEnum::kAuto);
@@ -243,7 +323,7 @@ void PercentSettingWriteCallback(uint8_t aNewPercentSetting)
     }
 }
 
-void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
+void AppTask::SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
 {
     VerifyOrReturn(aNewSpeedSetting != sSpeedCurrent);
     VerifyOrReturn(sFanMode != FanModeEnum::kAuto);
@@ -278,76 +358,6 @@ void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
         sFanMode = FanModeEnum::kHigh;
     }
     UpdateFanMode();
-}
-
-void UpdateFanControlLED()
-{
-    sFanLED.Set(false);
-    if (sFanMode != FanModeEnum::kOff && sFanMode != FanModeEnum::kUnknownEnumValue)
-    {
-        sFanLED.Set(true);
-    }
-}
-
-#if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
-void UpdateFanControlLCD()
-{
-    BaseApplication::GetLCD().WriteDemoUI(false);
-}
-#endif
-
-} // namespace
-
-AppTask::AppTask() : Delegate(kFanEndpoint) {}
-
-CHIP_ERROR AppTask::AppInit()
-{
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
-
-#ifdef DISPLAY_ENABLED
-    GetLCD().SetCustomUI(FanControlUI::DrawUI);
-#endif
-
-    CHIP_ERROR err = CustomerAppTask::GetAppTask().InitFanControl();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(AppServer, "InitFanControl() failed: %" CHIP_ERROR_FORMAT, err.Format());
-        appError(err);
-    }
-
-    // Update the LCD with the Stored value. Show QR Code if not provisioned.
-#ifdef DISPLAY_ENABLED
-    GetLCD().WriteDemoUI(false);
-#ifdef QR_CODE_ENABLED
-    if (!BaseApplication::GetProvisionStatus())
-    {
-        GetLCD().ShowQRCode(true);
-    }
-#endif // QR_CODE_ENABLED
-#endif
-
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR AppTask::InitFanControl()
-{
-    SetDefaultDelegate(kFanEndpoint, &CustomerAppTask::GetAppTask());
-    sFanLED.Init(FAN_LED);
-    LinkAppLed(&sFanLED);
-
-    PlatformMgr().LockChipStack();
-    Attributes::SpeedMax::Get(kFanEndpoint, &sSpeedMax);
-    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
-    DataModel::Nullable<uint8_t> speedSettingNullable   = GetSpeedSetting();
-    PlatformMgr().UnlockChipStack();
-
-    uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
-    PercentSettingWriteCallback(percentSettingCB);
-
-    uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
-    SpeedSettingWriteCallback(speedSettingCB);
-
-    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
@@ -503,10 +513,7 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
     case Attributes::FanMode::Id: {
         sFanMode = *reinterpret_cast<FanModeEnum *>(value);
         FanModeWriteCallback(sFanMode);
-        UpdateFanControlLED();
-#if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
-        UpdateFanControlLCD();
-#endif
+        PostFanUiUpdateEvent();
         break;
     }
     default: {
@@ -531,4 +538,17 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
         button_event.Handler = BaseApplication::ButtonHandler;
         GetAppTask().PostEvent(&button_event);
     }
+}
+
+void AppTask::FanUiUpdateEventHandler(AppEvent * aEvent)
+{
+    if (aEvent == nullptr || aEvent->Type != AppEvent::kEventType_FanControl)
+    {
+        return;
+    }
+
+    UpdateFanControlLED();
+#if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
+    UpdateFanControlLCD();
+#endif
 }
