@@ -35,7 +35,6 @@ extern void aws_ota_init(void);
 #endif // ZCL_USING_ON_OFF_CLUSTER_SERVER
 
 #ifdef ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
-#include <LockManager.h>
 #include <app/clusters/door-lock-server/door-lock-server.h>
 #endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
 
@@ -242,14 +241,22 @@ void MatterAwsIncomingDataCb(void * arg, const char * topic, uint16_t topic_len,
     cmdIndex = GetCommandStringIndex(DlMqttControlCmd, COUNT_OF(DlMqttControlCmd), _cmd);
     if (cmdIndex != kStringNotFound)
     {
+        OperationErrorEnum err = OperationErrorEnum::kUnspecified;
+        const chip::app::DataModel::Nullable<chip::FabricIndex> fabricIdx = chip::app::DataModel::NullNullable;
+        const chip::app::DataModel::Nullable<chip::NodeId> nodeId         = chip::app::DataModel::NullNullable;
+        const chip::Optional<chip::ByteSpan> pinCode                      = chip::NullOptional;
+        const bool wantLock = (DlMqttControlCmd[cmdIndex].action.lockState == DlLockState::kLocked);
+
         chip::DeviceLayer::PlatformMgr().LockChipStack();
-        LockMgr().InitiateAction(AppEvent::kEventType_Lock,
-                                 (DlMqttControlCmd[cmdIndex].action.lockState == DlLockState::kLocked)
-                                     ? LockManager::LOCK_ACTION
-                                     : LockManager::UNLOCK_ACTION);
-        DoorLockServer::Instance().SetLockState(kEndpointId, DlMqttControlCmd[cmdIndex].action.lockState,
-                                                OperationSourceEnum::kProprietaryRemote);
+        const bool success = wantLock
+            ? emberAfPluginDoorLockOnDoorLockCommand(kEndpointId, fabricIdx, nodeId, pinCode, err)
+            : emberAfPluginDoorLockOnDoorUnlockCommand(kEndpointId, fabricIdx, nodeId, pinCode, err);
         chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
+        if (!success)
+        {
+            ChipLogError(AppServer, "[MATTER_AWS] door lock command failed, err=%u", to_underlying(err));
+        }
         return;
     }
 #endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
