@@ -792,7 +792,7 @@ void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePa
     [[maybe_unused]] AttributeId attributeId = attributePath.mAttributeId;
     ChipLogDetail(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
 
-    if (clusterId == Identify::Id)
+    if (clusterId == Clusters::Identify::Id)
     {
         ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                         ChipLogValueMEI(attributeId), type, *value, size);
