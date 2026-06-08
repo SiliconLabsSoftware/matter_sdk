@@ -199,7 +199,10 @@ SilabsLCD slLCD;
 #ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
 Clusters::Identify::EffectIdentifierEnum sIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
 
-ObjectPool<Identify, MATTER_DM_IDENTIFY_CLUSTER_SERVER_ENDPOINT_COUNT + CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT> IdentifyPool;
+ObjectPool<Identify,
+           MATTER_DM_IDENTIFY_CLUSTER_SERVER_ENDPOINT_COUNT + MATTER_DM_IDENTIFY_CLUSTER_CLIENT_ENDPOINT_COUNT +
+               CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT>
+    IdentifyPool;
 
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 
