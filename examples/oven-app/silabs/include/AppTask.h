@@ -96,7 +96,7 @@ private:
     CHIP_ERROR AppInit() override;
 
     /**
-     * @brief Platform event handler for deferred CookTop binding sync after connectivity.
+     * @brief On connectivity after reboot, send CookTop Off to bound rangehood peers.
      */
     static void ConnectivityEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
 

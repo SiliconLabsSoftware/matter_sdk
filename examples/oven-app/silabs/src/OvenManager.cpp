@@ -126,7 +126,6 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
 
 void OvenManager::EnforceCookTopOffAtStartup()
 {
-    mSuppressBindingPropagation = true;
     for (EndpointId ep : { kCookTopEndpoint, kCookSurfaceEndpoint1, kCookSurfaceEndpoint2 })
     {
         Status status = OnOffServer::Instance().setOnOffValue(ep, OnOff::Commands::Off::Id, /*initiatedByLevelChange=*/false);
@@ -136,21 +135,6 @@ void OvenManager::EnforceCookTopOffAtStartup()
                          to_underlying(status));
         }
     }
-    mSuppressBindingPropagation = false;
-    mPendingBindingSync         = true;
-}
-
-void OvenManager::ScheduleBindingSyncAfterConnectivity()
-{
-    VerifyOrReturn(mPendingBindingSync);
-
-    mPendingBindingSync = false;
-
-    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(
-        [](intptr_t) {
-            CookTopBindingPropagateState(OvenManager::GetCookTopEndpoint(), OvenManager::GetInstance().GetCookTopState());
-        },
-        0);
 }
 
 void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
@@ -170,13 +154,8 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
 
         action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
 
-        // Propagate CookTop state to bound peers for both OnOff (RangeHood Light) and FanControl
-        // (Extractor Hood) clusters.
-        // At boot, propagation is deferred until Wi-Fi connectivity is available.
-        if (!mSuppressBindingPropagation)
-        {
-            CookTopBindingPropagateState(kCookTopEndpoint, *value != 0);
-        }
+        // Propagate CookTop state to bound OnOff (RangeHood Light) and FanControl (Extractor Hood) peers.
+        CookTopBindingPropagateState(kCookTopEndpoint, *value != 0);
         break;
     }
     case kCookSurfaceEndpoint1:

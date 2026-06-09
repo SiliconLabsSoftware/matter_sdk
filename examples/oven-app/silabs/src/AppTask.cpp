@@ -114,7 +114,7 @@ void AppTask::ConnectivityEventHandler(const ChipDeviceEvent * event, intptr_t)
     VerifyOrReturn(event->InternetConnectivityChange.IPv4 == kConnectivity_Established ||
                    event->InternetConnectivityChange.IPv6 == kConnectivity_Established);
 
-    OvenManager::GetInstance().ScheduleBindingSyncAfterConnectivity();
+    CookTopBindingPropagateState(OvenManager::GetCookTopEndpoint(), false);
 }
 
 CHIP_ERROR AppTask::StartAppTask()
