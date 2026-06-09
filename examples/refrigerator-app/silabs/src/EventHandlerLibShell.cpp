@@ -107,7 +107,7 @@ CHIP_ERROR RefrigeratorAlarmSuppressHandler(int argc, char ** argv)
 
     RefrigeratorAlarmEventData * data = Platform::New<RefrigeratorAlarmEventData>();
     data->eventState                  = RefrigeratorAlarm::Events::Notify::Fields::kMask;
-    data->doorState                   = static_cast<AlarmBitmap>(0);
+    data->doorState                   = static_cast<RefrigeratorAlarm::AlarmBitmap>(0);
 
     return DeviceLayer::PlatformMgr().ScheduleWork(EventWorkerFunction, reinterpret_cast<intptr_t>(data));
 }
@@ -137,7 +137,7 @@ CHIP_ERROR RefrigeratorDoorEventHandler(int argc, char ** argv)
 
     RefrigeratorAlarmEventData * data = Platform::New<RefrigeratorAlarmEventData>();
     data->eventState                  = RefrigeratorAlarm::Events::Notify::Fields::kState;
-    data->doorState                   = static_cast<AlarmBitmap>(value);
+    data->doorState                   = static_cast<RefrigeratorAlarm::AlarmBitmap>(value);
 
     return DeviceLayer::PlatformMgr().ScheduleWork(EventWorkerFunction, reinterpret_cast<intptr_t>(data));
 }
