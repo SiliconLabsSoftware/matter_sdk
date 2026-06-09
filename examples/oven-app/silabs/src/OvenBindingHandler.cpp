@@ -142,9 +142,9 @@ void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
 
         if (CookTopBindingTrigger(context) != CHIP_NO_ERROR)
         {
-            Platform::Delete(context);
             ChipLogError(AppServer, "Failed to schedule CookTopBindingTrigger for cluster " ChipLogFormatMEI ", context freed",
                          ChipLogValueMEI(clusterId));
         }
+        Platform::Delete(context);
     }
 }
