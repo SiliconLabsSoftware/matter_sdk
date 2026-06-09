@@ -126,6 +126,7 @@ CHIP_ERROR OvenManager::SetTemperatureControlledCabinetInitialState(EndpointId t
 
 void OvenManager::EnforceCookTopOffAtStartup()
 {
+    mSuppressBindingPropagation = true;
     for (EndpointId ep : { kCookTopEndpoint, kCookSurfaceEndpoint1, kCookSurfaceEndpoint2 })
     {
         Status status = OnOffServer::Instance().setOnOffValue(ep, OnOff::Commands::Off::Id, /*initiatedByLevelChange=*/false);
@@ -135,6 +136,21 @@ void OvenManager::EnforceCookTopOffAtStartup()
                          to_underlying(status));
         }
     }
+    mSuppressBindingPropagation = false;
+    mPendingBindingSync         = true;
+}
+
+void OvenManager::ScheduleBindingSyncAfterConnectivity()
+{
+    VerifyOrReturn(mPendingBindingSync);
+
+    mPendingBindingSync = false;
+
+    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(
+        [](intptr_t) {
+            CookTopBindingPropagateState(OvenManager::GetCookTopEndpoint(), OvenManager::GetInstance().GetCookTopState());
+        },
+        0);
 }
 
 void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
@@ -154,34 +170,12 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
 
         action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
 
-        // Propagate CookTop state to bound peers for both OnOff (RangeHood
-        // Light) and FanControl (Extractor Hood) clusters. One context per
-        // cluster is required because BindingManager invokes the context
-        // release handler once per NotifyBoundClusterChanged call.
+        // Propagate CookTop state to bound peers for both OnOff (RangeHood Light) and FanControl
+        // (Extractor Hood) clusters.
+        // At boot, propagation is deferred until Wi-Fi connectivity is available.
+        if (!mSuppressBindingPropagation)
         {
-            const bool isOn = (*value != 0);
-            for (ClusterId clusterId : { OnOff::Id, FanControl::Id })
-            {
-                CookTopBindingContext * context = Platform::New<CookTopBindingContext>();
-                if (context == nullptr)
-                {
-                    ChipLogError(AppServer,
-                                 "Failed to allocate CookTopBindingContext for cluster " ChipLogFormatMEI,
-                                 ChipLogValueMEI(clusterId));
-                    continue;
-                }
-                context->localEndpointId = kCookTopEndpoint;
-                context->clusterId       = clusterId;
-                context->cookTopOn       = isOn;
-
-                if (CookTopBindingTrigger(context) != CHIP_NO_ERROR)
-                {
-                    Platform::Delete(context);
-                    ChipLogError(AppServer,
-                                 "Failed to schedule CookTopBindingTrigger for cluster " ChipLogFormatMEI ", context freed",
-                                 ChipLogValueMEI(clusterId));
-                }
-            }
+            CookTopBindingPropagateState(kCookTopEndpoint, *value != 0);
         }
         break;
     }

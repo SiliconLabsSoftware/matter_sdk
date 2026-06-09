@@ -76,6 +76,11 @@ public:
     void EnforceCookTopOffAtStartup();
 
     /**
+     * @brief Propagate CookTop state to bound peers once network connectivity is available.
+     */
+    void ScheduleBindingSyncAfterConnectivity();
+
+    /**
      * @brief Handles on/off attribute changes.
      *
      * @param endpointId The ID of the endpoint.
@@ -143,9 +148,11 @@ private:
     chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
 
     // Default values for the states of the endpoints
-    bool mIsCookTopOn      = false;
-    bool mIsCookSurface1On = false;
-    bool mIsCookSurface2On = false;
+    bool mIsCookTopOn                = false;
+    bool mIsCookSurface1On           = false;
+    bool mIsCookSurface2On           = false;
+    bool mPendingBindingSync         = false;
+    bool mSuppressBindingPropagation = false;
     // Default value for the current oven mode
     uint8_t mCurrentOvenMode =
         chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);

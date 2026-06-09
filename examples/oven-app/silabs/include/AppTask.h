@@ -96,6 +96,11 @@ private:
     CHIP_ERROR AppInit() override;
 
     /**
+     * @brief Platform event handler for deferred CookTop binding sync after connectivity.
+     */
+    static void ConnectivityEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
+
+    /**
      * @brief PB1 Button event processing function for oven functionality
      *        Press and release will toggle cooktop and cook surface states
      *

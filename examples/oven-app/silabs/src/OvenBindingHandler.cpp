@@ -124,3 +124,27 @@ CHIP_ERROR CookTopBindingTrigger(CookTopBindingContext * context)
                         ChipLogError(AppServer, "CookTopBindingTrigger: null context"));
     return DeviceLayer::PlatformMgr().ScheduleWork(TriggerBindingWork, reinterpret_cast<intptr_t>(context));
 }
+
+void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
+{
+    for (ClusterId clusterId : { OnOff::Id, FanControl::Id })
+    {
+        CookTopBindingContext * context = Platform::New<CookTopBindingContext>();
+        if (context == nullptr)
+        {
+            ChipLogError(AppServer, "Failed to allocate CookTopBindingContext for cluster " ChipLogFormatMEI,
+                         ChipLogValueMEI(clusterId));
+            continue;
+        }
+        context->localEndpointId = cookTopEndpoint;
+        context->clusterId       = clusterId;
+        context->cookTopOn       = cookTopOn;
+
+        if (CookTopBindingTrigger(context) != CHIP_NO_ERROR)
+        {
+            Platform::Delete(context);
+            ChipLogError(AppServer, "Failed to schedule CookTopBindingTrigger for cluster " ChipLogFormatMEI ", context freed",
+                         ChipLogValueMEI(clusterId));
+        }
+    }
+}

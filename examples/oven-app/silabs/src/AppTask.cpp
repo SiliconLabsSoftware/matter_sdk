@@ -86,6 +86,8 @@ CHIP_ERROR AppTask::AppInit()
     OvenManager::GetInstance().Init();
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
+    ReturnErrorOnFailure(PlatformMgr().AddEventHandler(ConnectivityEventHandler, 0));
+
     sLightLED.Init(LIGHT_LED);
     sLightLED.Set(OvenManager::GetInstance().GetCookTopState());
 
@@ -101,6 +103,18 @@ CHIP_ERROR AppTask::AppInit()
 #endif
 
     return err;
+}
+
+void AppTask::ConnectivityEventHandler(const ChipDeviceEvent * event, intptr_t)
+{
+    VerifyOrReturn(event != nullptr);
+    VerifyOrReturn(event->Type == DeviceEventType::kInternetConnectivityChange);
+
+    // Wait for an IP address (IPv4 or IPv6) before CASE to bound peers.
+    VerifyOrReturn(event->InternetConnectivityChange.IPv4 == kConnectivity_Established ||
+                   event->InternetConnectivityChange.IPv6 == kConnectivity_Established);
+
+    OvenManager::GetInstance().ScheduleBindingSyncAfterConnectivity();
 }
 
 CHIP_ERROR AppTask::StartAppTask()

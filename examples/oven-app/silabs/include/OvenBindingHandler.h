@@ -22,3 +22,6 @@ CHIP_ERROR InitOvenBindingHandler();
 // it is freed via the registered context-release handler. On failure, the
 // caller retains ownership and must free it.
 CHIP_ERROR CookTopBindingTrigger(CookTopBindingContext * context);
+
+// Propagate CookTop OnOff state to bound OnOff and FanControl clusters.
+void CookTopBindingPropagateState(chip::EndpointId cookTopEndpoint, bool cookTopOn);
