@@ -1016,16 +1016,10 @@ void InitMatterAwsHandler(System::Layer * systemLayer, void * appState)
 {
     sMatterAwsInitScheduled = false;
 
-    if (sMatterAwsInitDone)
-    {
-        return;
-    }
+    VerifyOrReturn(!sMatterAwsInitDone);
 
-    if (MATTER_AWS_OK != MatterAwsInit(matterAws::control::subscribeCB))
-    {
-        ChipLogError(AppServer, "MatterAwsInit failed");
-        return;
-    }
+    VerifyOrReturn(MATTER_AWS_OK == MatterAwsInit(matterAws::control::subscribeCB),
+                   ChipLogError(AppServer, "MatterAwsInit failed"));
 
     sMatterAwsInitDone = true;
 }
@@ -1051,11 +1045,10 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #endif
         )
         {
-            ChipLogError(AppServer, "Scheduling Matter AWS starting");
             if (!sMatterAwsInitDone && !sMatterAwsInitScheduled)
             {
                 sMatterAwsInitScheduled = true;
-                ChipLogError(AppServer, "Scheduling Matter AWS initialization");
+                ChipLogProgress(AppServer, "Scheduling Matter AWS initialization");
                 TEMPORARY_RETURN_IGNORED chip::DeviceLayer::SystemLayer().StartTimer(
                     chip::System::Clock::Seconds32(MATTER_AWS_INIT_DELAY_SEC), InitMatterAwsHandler, nullptr);
             }
