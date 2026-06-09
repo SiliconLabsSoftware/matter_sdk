@@ -35,44 +35,53 @@ template <typename Derived>
 class AppTaskImpl : public AppTask
 {
 public:
+    // Common AppTask bring up
     CHIP_ERROR AppInit() override { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, AppInitImpl); }
 
+    // Fan control specific initialization
     CHIP_ERROR InitFanControl() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, InitFanControlImpl); }
 
+    // Handle the Fan Control Step command
     Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff) override
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, HandleStepImpl, aDirection, aWrap, aLowestOff);
     }
 
-    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value)
-    {
-        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMPostAttributeChangeCallbackImpl, attributePath, type, size, value);
-    }
-
+    // Handle button press
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
+    // AppTask thread event handler that updates the fan UI
     static void FanUiUpdateEventHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, FanUiUpdateEventHandlerImpl, aEvent);
     }
 
+    // Fan mode attribute write callback
     void FanModeWriteCallback(FanModeEnum aNewFanMode)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, FanModeWriteCallbackImpl, aNewFanMode);
     }
 
+    // Percent setting attribute write callback
     void PercentSettingWriteCallback(uint8_t aNewPercentSetting)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, PercentSettingWriteCallbackImpl, aNewPercentSetting);
     }
 
+    // Speed setting attribute write callback
     void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, SpeedSettingWriteCallbackImpl, aNewSpeedSetting);
+    }
+
+    // Data model hook invoked when a cluster attribute changes
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+        uint8_t * value)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMPostAttributeChangeCallbackImpl, attributePath, type, size, value);
     }
 
 private:
@@ -87,12 +96,6 @@ private:
         return AppTask::HandleStep(aDirection, aWrap, aLowestOff);
     }
 
-    void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                           uint8_t * value)
-    {
-        AppTask::DMPostAttributeChangeCallback(attributePath, type, size, value);
-    }
-
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 
     void FanUiUpdateEventHandlerImpl(AppEvent * aEvent) { AppTask::FanUiUpdateEventHandler(aEvent); }
@@ -105,4 +108,10 @@ private:
     }
 
     void SpeedSettingWriteCallbackImpl(uint8_t aNewSpeedSetting) { AppTask::SpeedSettingWriteCallback(aNewSpeedSetting); }
+
+    void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                           uint8_t * value)
+    {
+        AppTask::DMPostAttributeChangeCallback(attributePath, type, size, value);
+    }
 };
