@@ -131,9 +131,6 @@ silabs_executable("refrigerator_app") {
   sources = [
     "${chip_root}/examples/refrigerator-app/refrigerator-common/src/static-supported-temperature-levels.cpp",
     "src/AppTask.cpp",
-    "src/DataModelCallbacks.cpp",
-    "src/RefrigeratorManager.cpp",
-    "src/refrigerator-and-temperature-controlled-cabinet-mode.cpp",
   ]
 
   if (chip_build_libshell) {
