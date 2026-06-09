@@ -351,6 +351,9 @@ NSString * MTRClusterNameForID(MTRClusterIDType clusterID)
     case MTRClusterIDTypeAmbientContextSensingID:
         result = @"AmbientContextSensing";
         break;
+    case MTRClusterIDTypeAmbientSensingUnionID:
+        result = @"AmbientSensingUnion";
+        break;
     case MTRClusterIDTypeProximityRangingID:
         result = @"ProximityRanging";
         break;
@@ -4466,6 +4469,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"OptOutState";
             break;
 
+        case MTRAttributeIDTypeClusterDeviceEnergyManagementAttributePowerRangeAdjustmentID:
+            result = @"PowerRangeAdjustment";
+            break;
+
         case MTRAttributeIDTypeClusterDeviceEnergyManagementAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
@@ -7778,8 +7785,8 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"AmbientContextTypeSupported";
             break;
 
-        case MTRAttributeIDTypeClusterAmbientContextSensingAttributeObjectCountReachedID:
-            result = @"ObjectCountReached";
+        case MTRAttributeIDTypeClusterAmbientContextSensingAttributeObjectCountThresholdReachedID:
+            result = @"ObjectCountThresholdReached";
             break;
 
         case MTRAttributeIDTypeClusterAmbientContextSensingAttributeObjectCountConfigID:
@@ -7806,6 +7813,10 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
             result = @"PredictedActivity";
             break;
 
+        case MTRAttributeIDTypeClusterAmbientContextSensingAttributeSensorFusionSupportedID:
+            result = @"SensorFusionSupported";
+            break;
+
         case MTRAttributeIDTypeClusterAmbientContextSensingAttributeGeneratedCommandListID:
             result = @"GeneratedCommandList";
             break;
@@ -7828,6 +7839,50 @@ NSString * MTRAttributeNameForID(MTRClusterIDType clusterID, MTRAttributeIDType 
 
         default:
             // Not a known AmbientContextSensing attribute.
+            result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
+            break;
+        }
+        break;
+
+    case MTRClusterIDTypeAmbientSensingUnionID:
+
+        switch (attributeID) {
+
+            // Cluster AmbientSensingUnion attributes
+        case MTRAttributeIDTypeClusterAmbientSensingUnionAttributeUnionNameID:
+            result = @"UnionName";
+            break;
+
+        case MTRAttributeIDTypeClusterAmbientSensingUnionAttributeUnionHealthID:
+            result = @"UnionHealth";
+            break;
+
+        case MTRAttributeIDTypeClusterAmbientSensingUnionAttributeUnionContributorListID:
+            result = @"UnionContributorList";
+            break;
+
+        case MTRAttributeIDTypeClusterAmbientSensingUnionAttributeGeneratedCommandListID:
+            result = @"GeneratedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterAmbientSensingUnionAttributeAcceptedCommandListID:
+            result = @"AcceptedCommandList";
+            break;
+
+        case MTRAttributeIDTypeClusterAmbientSensingUnionAttributeAttributeListID:
+            result = @"AttributeList";
+            break;
+
+        case MTRAttributeIDTypeClusterAmbientSensingUnionAttributeFeatureMapID:
+            result = @"FeatureMap";
+            break;
+
+        case MTRAttributeIDTypeClusterAmbientSensingUnionAttributeClusterRevisionID:
+            result = @"ClusterRevision";
+            break;
+
+        default:
+            // Not a known AmbientSensingUnion attribute.
             result = [NSString stringWithFormat:@"<Unknown attributeID %u>", attributeID];
             break;
         }
@@ -11493,6 +11548,14 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
             result = @"CancelRequest";
             break;
 
+        case MTRCommandIDTypeClusterDeviceEnergyManagementCommandPowerRangeAdjustRequestID:
+            result = @"PowerRangeAdjustRequest";
+            break;
+
+        case MTRCommandIDTypeClusterDeviceEnergyManagementCommandCancelPowerRangeAdjustRequestID:
+            result = @"CancelPowerRangeAdjustRequest";
+            break;
+
         default:
             result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
             break;
@@ -12224,6 +12287,16 @@ NSString * MTRRequestCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDTy
         break;
 
     case MTRClusterIDTypeAmbientContextSensingID:
+
+        switch (commandID) {
+
+        default:
+            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            break;
+        }
+        break;
+
+    case MTRClusterIDTypeAmbientSensingUnionID:
 
         switch (commandID) {
 
@@ -14705,6 +14778,16 @@ NSString * MTRResponseCommandNameForID(MTRClusterIDType clusterID, MTRCommandIDT
         }
         break;
 
+    case MTRClusterIDTypeAmbientSensingUnionID:
+
+        switch (commandID) {
+
+        default:
+            result = [NSString stringWithFormat:@"<Unknown commandID %u>", commandID];
+            break;
+        }
+        break;
+
     case MTRClusterIDTypeProximityRangingID:
 
         switch (commandID) {
@@ -16359,6 +16442,14 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
             result = @"Resumed";
             break;
 
+        case MTREventIDTypeClusterDeviceEnergyManagementEventPowerRangeAdjustStartID:
+            result = @"PowerRangeAdjustStart";
+            break;
+
+        case MTREventIDTypeClusterDeviceEnergyManagementEventPowerRangeAdjustEndID:
+            result = @"PowerRangeAdjustEnd";
+            break;
+
         default:
             result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
             break;
@@ -16961,6 +17052,29 @@ NSString * MTREventNameForID(MTRClusterIDType clusterID, MTREventIDType eventID)
 
         case MTREventIDTypeClusterAmbientContextSensingEventAmbientContextDetectEndedID:
             result = @"AmbientContextDetectEnded";
+            break;
+
+        default:
+            result = [NSString stringWithFormat:@"<Unknown eventID %u>", eventID];
+            break;
+        }
+        break;
+
+    case MTRClusterIDTypeAmbientSensingUnionID:
+
+        switch (eventID) {
+
+            // Cluster AmbientSensingUnion events
+        case MTREventIDTypeClusterAmbientSensingUnionEventUnionContributorAddedID:
+            result = @"UnionContributorAdded";
+            break;
+
+        case MTREventIDTypeClusterAmbientSensingUnionEventUnionContributorRemovedID:
+            result = @"UnionContributorRemoved";
+            break;
+
+        case MTREventIDTypeClusterAmbientSensingUnionEventUnionContributorStatusChangedID:
+            result = @"UnionContributorStatusChanged";
             break;
 
         default:

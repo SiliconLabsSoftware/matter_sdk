@@ -361,6 +361,9 @@ public class ClusterIDMapping {
         if (clusterId == AmbientContextSensing.ID) {
             return new AmbientContextSensing();
         }
+        if (clusterId == AmbientSensingUnion.ID) {
+            return new AmbientSensingUnion();
+        }
         if (clusterId == ProximityRanging.ID) {
             return new ProximityRanging();
         }
@@ -9782,6 +9785,7 @@ public class ClusterIDMapping {
             PowerAdjustmentCapability(5L),
             Forecast(6L),
             OptOutState(7L),
+            PowerRangeAdjustment(8L),
             GeneratedCommandList(65528L),
             AcceptedCommandList(65529L),
             AttributeList(65531L),
@@ -9810,7 +9814,9 @@ public class ClusterIDMapping {
             PowerAdjustStart(0L),
             PowerAdjustEnd(1L),
             Paused(2L),
-            Resumed(3L),;
+            Resumed(3L),
+            PowerRangeAdjustStart(4L),
+            PowerRangeAdjustEnd(5L),;
             private final long id;
             Event(long id) {
                 this.id = id;
@@ -9838,7 +9844,9 @@ public class ClusterIDMapping {
             ResumeRequest(4L),
             ModifyForecastRequest(5L),
             RequestConstraintBasedForecast(6L),
-            CancelRequest(7L),;
+            CancelRequest(7L),
+            PowerRangeAdjustRequest(8L),
+            CancelPowerRangeAdjustRequest(9L),;
             private final long id;
             Command(long id) {
                 this.id = id;
@@ -9935,6 +9943,23 @@ public class ClusterIDMapping {
                     }
                     public static RequestConstraintBasedForecastCommandField value(int id) throws NoSuchFieldError {
                         for (RequestConstraintBasedForecastCommandField field : RequestConstraintBasedForecastCommandField.values()) {
+                        if (field.getID() == id) {
+                            return field;
+                        }
+                        }
+                        throw new NoSuchFieldError();
+                    }
+                }public enum PowerRangeAdjustRequestCommandField {MinPower(0),MaxPower(1),Duration(2),Cause(3),;
+                    private final int id;
+                    PowerRangeAdjustRequestCommandField(int id) {
+                        this.id = id;
+                    }
+
+                    public int getID() {
+                        return id;
+                    }
+                    public static PowerRangeAdjustRequestCommandField value(int id) throws NoSuchFieldError {
+                        for (PowerRangeAdjustRequestCommandField field : PowerRangeAdjustRequestCommandField.values()) {
                         if (field.getID() == id) {
                             return field;
                         }
@@ -15736,13 +15761,14 @@ public class ClusterIDMapping {
             AudioContextDetected(2L),
             AmbientContextType(3L),
             AmbientContextTypeSupported(4L),
-            ObjectCountReached(5L),
+            ObjectCountThresholdReached(5L),
             ObjectCountConfig(6L),
             ObjectCount(7L),
             SimultaneousDetectionLimit(8L),
             HoldTime(9L),
             HoldTimeLimits(10L),
             PredictedActivity(11L),
+            SensorFusionSupported(12L),
             GeneratedCommandList(65528L),
             AcceptedCommandList(65529L),
             AttributeList(65531L),
@@ -15770,6 +15796,111 @@ public class ClusterIDMapping {
         public enum Event {
             AmbientContextDetectStarted(0L),
             AmbientContextDetectEnded(1L),;
+            private final long id;
+            Event(long id) {
+                this.id = id;
+            }
+
+            public long getID() {
+                return id;
+            }
+
+            public static Event value(long id) throws NoSuchFieldError {
+                for (Event event : Event.values()) {
+                    if (event.getID() == id) {
+                        return event;
+                    }
+                }
+                throw new NoSuchFieldError();
+            }
+        }
+
+        public enum Command {;
+            private final long id;
+            Command(long id) {
+                this.id = id;
+            }
+
+            public long getID() {
+                return id;
+            }
+
+            public static Command value(long id) throws NoSuchFieldError {
+                for (Command command : Command.values()) {
+                    if (command.getID() == id) {
+                        return command;
+                    }
+                }
+                throw new NoSuchFieldError();
+            }
+        }@Override
+        public String getAttributeName(long id) throws NoSuchFieldError {
+            return Attribute.value(id).toString();
+        }
+
+        @Override
+        public String getEventName(long id) throws NoSuchFieldError {
+            return Event.value(id).toString();
+        }
+
+        @Override
+        public String getCommandName(long id) throws NoSuchFieldError {
+            return Command.value(id).toString();
+        }
+
+        @Override
+        public long getAttributeID(String name) throws IllegalArgumentException {
+            return Attribute.valueOf(name).getID();
+        }
+
+        @Override
+        public long getEventID(String name) throws IllegalArgumentException {
+            return Event.valueOf(name).getID();
+        }
+
+        @Override
+        public long getCommandID(String name) throws IllegalArgumentException {
+            return Command.valueOf(name).getID();
+        }
+    }
+    public static class AmbientSensingUnion implements BaseCluster {
+        public static final long ID = 1074L;
+        public long getID() {
+            return ID;
+        }
+
+        public enum Attribute {
+            UnionName(0L),
+            UnionHealth(1L),
+            UnionContributorList(2L),
+            GeneratedCommandList(65528L),
+            AcceptedCommandList(65529L),
+            AttributeList(65531L),
+            FeatureMap(65532L),
+            ClusterRevision(65533L),;
+            private final long id;
+            Attribute(long id) {
+                this.id = id;
+            }
+
+            public long getID() {
+                return id;
+            }
+
+            public static Attribute value(long id) throws NoSuchFieldError {
+                for (Attribute attribute : Attribute.values()) {
+                    if (attribute.getID() == id) {
+                        return attribute;
+                    }
+                }
+                throw new NoSuchFieldError();
+            }
+        }
+
+        public enum Event {
+            UnionContributorAdded(0L),
+            UnionContributorRemoved(1L),
+            UnionContributorStatusChanged(2L),;
             private final long id;
             Event(long id) {
                 this.id = id;

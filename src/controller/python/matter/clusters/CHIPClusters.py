@@ -6551,6 +6551,22 @@ class ChipClusters:
                 "args": {
                 },
             },
+            0x00000008: {
+                "commandId": 0x00000008,
+                "commandName": "PowerRangeAdjustRequest",
+                "args": {
+                    "minPower": "int",
+                    "maxPower": "int",
+                    "duration": "int",
+                    "cause": "int",
+                },
+            },
+            0x00000009: {
+                "commandId": 0x00000009,
+                "commandName": "CancelPowerRangeAdjustRequest",
+                "args": {
+                },
+            },
         },
         "attributes": {
             0x00000000: {
@@ -6599,6 +6615,12 @@ class ChipClusters:
                 "attributeName": "OptOutState",
                 "attributeId": 0x00000007,
                 "type": "int",
+                "reportable": True,
+            },
+            0x00000008: {
+                "attributeName": "PowerRangeAdjustment",
+                "attributeId": 0x00000008,
+                "type": "",
                 "reportable": True,
             },
             0x0000FFF8: {
@@ -11946,7 +11968,7 @@ class ChipClusters:
                 "reportable": True,
             },
             0x00000005: {
-                "attributeName": "ObjectCountReached",
+                "attributeName": "ObjectCountThresholdReached",
                 "attributeId": 0x00000005,
                 "type": "bool",
                 "reportable": True,
@@ -11969,7 +11991,6 @@ class ChipClusters:
                 "attributeId": 0x00000008,
                 "type": "int",
                 "reportable": True,
-                "writable": True,
             },
             0x00000009: {
                 "attributeName": "HoldTime",
@@ -11987,6 +12008,69 @@ class ChipClusters:
             0x0000000B: {
                 "attributeName": "PredictedActivity",
                 "attributeId": 0x0000000B,
+                "type": "",
+                "reportable": True,
+            },
+            0x0000000C: {
+                "attributeName": "SensorFusionSupported",
+                "attributeId": 0x0000000C,
+                "type": "",
+                "reportable": True,
+            },
+            0x0000FFF8: {
+                "attributeName": "GeneratedCommandList",
+                "attributeId": 0x0000FFF8,
+                "type": "int",
+                "reportable": True,
+            },
+            0x0000FFF9: {
+                "attributeName": "AcceptedCommandList",
+                "attributeId": 0x0000FFF9,
+                "type": "int",
+                "reportable": True,
+            },
+            0x0000FFFB: {
+                "attributeName": "AttributeList",
+                "attributeId": 0x0000FFFB,
+                "type": "int",
+                "reportable": True,
+            },
+            0x0000FFFC: {
+                "attributeName": "FeatureMap",
+                "attributeId": 0x0000FFFC,
+                "type": "int",
+                "reportable": True,
+            },
+            0x0000FFFD: {
+                "attributeName": "ClusterRevision",
+                "attributeId": 0x0000FFFD,
+                "type": "int",
+                "reportable": True,
+            },
+        },
+    }
+    _AMBIENT_SENSING_UNION_CLUSTER_INFO = {
+        "clusterName": "AmbientSensingUnion",
+        "clusterId": 0x00000432,
+        "commands": {
+        },
+        "attributes": {
+            0x00000000: {
+                "attributeName": "UnionName",
+                "attributeId": 0x00000000,
+                "type": "str",
+                "reportable": True,
+                "writable": True,
+            },
+            0x00000001: {
+                "attributeName": "UnionHealth",
+                "attributeId": 0x00000001,
+                "type": "int",
+                "reportable": True,
+            },
+            0x00000002: {
+                "attributeName": "UnionContributorList",
+                "attributeId": 0x00000002,
                 "type": "",
                 "reportable": True,
             },
@@ -16992,6 +17076,7 @@ class ChipClusters:
         0x0000042F: _RADON_CONCENTRATION_MEASUREMENT_CLUSTER_INFO,
         0x00000430: _SOIL_MEASUREMENT_CLUSTER_INFO,
         0x00000431: _AMBIENT_CONTEXT_SENSING_CLUSTER_INFO,
+        0x00000432: _AMBIENT_SENSING_UNION_CLUSTER_INFO,
         0x00000433: _PROXIMITY_RANGING_CLUSTER_INFO,
         0x00000434: _SMOKE_CONCENTRATION_MEASUREMENT_CLUSTER_INFO,
         0x00000450: _NETWORK_IDENTITY_MANAGEMENT_CLUSTER_INFO,
@@ -17146,6 +17231,7 @@ class ChipClusters:
         "RadonConcentrationMeasurement": _RADON_CONCENTRATION_MEASUREMENT_CLUSTER_INFO,
         "SoilMeasurement": _SOIL_MEASUREMENT_CLUSTER_INFO,
         "AmbientContextSensing": _AMBIENT_CONTEXT_SENSING_CLUSTER_INFO,
+        "AmbientSensingUnion": _AMBIENT_SENSING_UNION_CLUSTER_INFO,
         "ProximityRanging": _PROXIMITY_RANGING_CLUSTER_INFO,
         "SmokeConcentrationMeasurement": _SMOKE_CONCENTRATION_MEASUREMENT_CLUSTER_INFO,
         "NetworkIdentityManagement": _NETWORK_IDENTITY_MANAGEMENT_CLUSTER_INFO,
