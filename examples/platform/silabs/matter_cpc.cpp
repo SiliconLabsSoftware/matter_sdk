@@ -38,6 +38,8 @@
 #include "sli_cpc.h"
 #include "matter_cpc.h"
 
+#include "cpc/cpc_shell_interface.hpp"
+
 #include "Assertions.h"
 
 #define SL_MATTER_CPC_RTOS_TASK_PRIORITY osPriorityRealtime3
@@ -253,10 +255,22 @@ static void reception_failure(void)
 //   state = hci_packet_state_read_header;
 }
 
+// Dispatcher singleton. The base class returns kUnsupported (empty payload)
+// for every handler; firmware that wants real Matter behaviour can link in
+// a subclass that overrides the specific handlers it cares about and swap
+// `g_cpc_shell` for an instance of that subclass.
+static wom::secondary_interface::CpcShellInterface g_cpc_shell;
+
+// Persistent scratch buffer for outbound frames. sl_cpc_write may queue the
+// buffer asynchronously (see sl_matter_cpc_tx_callback), so the storage
+// must outlive the call — a stack buffer would race the completion.
+static uint8_t cpc_tx_frame[wom::secondary_interface::kMaxFrameLen];
+
 void sl_matter_cpc_handle_msg(void)
 {
-  uint16_t bytes_read;
-  uint16_t packet_data_read;
+  using wom::secondary_interface::CpcShellInterface;
+  using wom::secondary_interface::CommandResult;
+  using wom::secondary_interface::Opcode;
 
   if (false == sl_matter_is_cpc_connected()) {
     sl_matter_reconnect_cpc();
@@ -268,5 +282,52 @@ void sl_matter_cpc_handle_msg(void)
   if (sl_matter_cpc_new_data() <= 0) {
     return;
   }
+
+  // 1. Pull a single inbound frame off the endpoint. CPC delivers each host
+  //    sl_cpc_write as one discrete sl_cpc_read packet, so the request/
+  //    response protocol maps one CPC packet to one wire frame.
+  void * rx_data = NULL;
+  uint16_t rx_len = 0;
+  sl_status_t status = sl_cpc_read(&endpoint_handle, &rx_data, &rx_len,
+                                   0, SL_CPC_FLAG_NO_BLOCK);
+  if (status != SL_STATUS_OK || rx_data == NULL || rx_len == 0) {
+    if (rx_data != NULL) {
+      sl_cpc_free_rx_buffer(rx_data);
+    }
+    return;
+  }
+
+  // 2. Decode SYNC/LEN/CMD/CRC. Malformed frames are dropped silently.
+  Opcode opcode;
+  const uint8_t * args = NULL;
+  size_t args_len = 0;
+  bool decoded = CpcShellInterface::DecodeFrame(
+      static_cast<const uint8_t *>(rx_data),
+      static_cast<size_t>(rx_len),
+      &opcode, &args, &args_len);
+
+  // 3. Run per-opcode argument validation and invoke the matching handler.
+  CommandResult result;
+  bool dispatched = decoded
+      && g_cpc_shell.Dispatch(opcode, args, args_len, &result);
+
+  // 4. Build the response frame in the persistent tx buffer. The handler's
+  //    `result.response` may alias into rx_data (e.g. an echo path), so we
+  //    must encode (which memcpys) before releasing the RX buffer.
+  size_t tx_len = 0;
+  if (dispatched) {
+    tx_len = CpcShellInterface::EncodeFrame(
+        opcode, result.response, result.response_len,
+        cpc_tx_frame, sizeof(cpc_tx_frame));
+  }
+
+  sl_cpc_free_rx_buffer(rx_data);
+
+  if (tx_len == 0) {
+    return;
+  }
+
+  // 5. Hand the framed response back to the host.
+  (void) sl_matter_cpc_write(cpc_tx_frame, static_cast<uint16_t>(tx_len));
 }
 
