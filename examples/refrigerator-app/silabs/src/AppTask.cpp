@@ -410,7 +410,7 @@ void RefrigeratorAndTemperatureControlledCabinetMode::Shutdown()
 
 void emberAfRefrigeratorAndTemperatureControlledCabinetModeClusterInitCallback(chip::EndpointId endpointId)
 {
-    VerifyOrDie(endpointId == 1); // this cluster is only enabled for endpoint 1.
+    VerifyOrDie(endpointId == kRefEndpointId); // this cluster is enabled on refrigerator endpoint (1 in default implementation)
     VerifyOrDie(gRefrigeratorAndTemperatureControlledCabinetModeDelegate == nullptr &&
                 gRefrigeratorAndTemperatureControlledCabinetModeInstance == nullptr);
     gRefrigeratorAndTemperatureControlledCabinetModeDelegate =
