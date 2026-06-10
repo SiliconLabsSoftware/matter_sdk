@@ -17,6 +17,7 @@
 
 #include "EventHandlerLibShell.h"
 #include "AppTask.h"
+#include "RefrigeratorConfig.h"
 #include "lib/shell/Engine.h"
 #include "lib/shell/commands/Help.h"
 
@@ -24,7 +25,7 @@
 #include "platform/CHIPDeviceLayer.h"
 #include <lib/support/CodeUtils.h>
 
-constexpr uint8_t kRefEndpointId = 1;
+constexpr chip::EndpointId kRefEndpointId = REFRIGERATOR_ENDPOINT;
 
 using namespace chip;
 using namespace chip::app;
