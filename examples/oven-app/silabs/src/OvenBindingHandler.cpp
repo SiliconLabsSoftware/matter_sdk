@@ -102,27 +102,11 @@ void InitBindingMgrWork(intptr_t)
     ChipLogDetail(AppServer, "Oven binding manager initialized");
 }
 
-void TriggerBindingWork(intptr_t context)
-{
-    auto * ctx = reinterpret_cast<CookTopBindingContext *>(context);
-    VerifyOrReturn(ctx != nullptr, ChipLogError(AppServer, "TriggerBindingWork: null context"));
-
-    SuccessOrLog(Binding::Manager::GetInstance().NotifyBoundClusterChanged(ctx->localEndpointId, ctx->clusterId, ctx),
-                 AppServer, "Failed to notify bound cluster changed");
-}
-
 } // namespace
 
 CHIP_ERROR InitOvenBindingHandler()
 {
     return DeviceLayer::PlatformMgr().ScheduleWork(InitBindingMgrWork);
-}
-
-CHIP_ERROR CookTopBindingTrigger(CookTopBindingContext * context)
-{
-    VerifyOrReturnError(context != nullptr, CHIP_ERROR_INVALID_ARGUMENT,
-                        ChipLogError(AppServer, "CookTopBindingTrigger: null context"));
-    return DeviceLayer::PlatformMgr().ScheduleWork(TriggerBindingWork, reinterpret_cast<intptr_t>(context));
 }
 
 void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
@@ -140,11 +124,13 @@ void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
         context->clusterId       = clusterId;
         context->cookTopOn       = cookTopOn;
 
-        if (CookTopBindingTrigger(context) != CHIP_NO_ERROR)
+        CHIP_ERROR err =
+            Binding::Manager::GetInstance().NotifyBoundClusterChanged(cookTopEndpoint, clusterId, context);
+        if (err != CHIP_NO_ERROR)
         {
-            ChipLogError(AppServer, "Failed to schedule CookTopBindingTrigger for cluster " ChipLogFormatMEI ", context freed",
-                         ChipLogValueMEI(clusterId));
+            Platform::Delete(context);
+            ChipLogError(AppServer, "NotifyBoundClusterChanged failed for cluster " ChipLogFormatMEI ": %" CHIP_ERROR_FORMAT,
+                         ChipLogValueMEI(clusterId), err.Format());
         }
-        Platform::Delete(context);
     }
 }
