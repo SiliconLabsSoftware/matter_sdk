@@ -24,7 +24,9 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "CustomerAppTask.h"
 #include "LEDWidget.h"
+#include "RefrigeratorConfig.h"
 
 #ifdef DISPLAY_ENABLED
 #include "RefrigeratorUI.h"
@@ -90,12 +92,18 @@ namespace TempCtrlAttr   = chip::app::Clusters::TemperatureControl::Attributes;
  * Variable declarations
  *********************************************************/
 
-// set Parent Endpoint and Composition Type for an Endpoint
-EndpointId kRefEndpointId           = 1;
-EndpointId kColdCabinetEndpointId   = 2;
-EndpointId kFreezeCabinetEndpointId = 3;
-
 namespace {
+
+CustomerAppTask & AppInstance()
+{
+    return CustomerAppTask::GetAppTask();
+}
+
+// Endpoint composition. Defaults live in RefrigeratorConfig.h
+constexpr EndpointId kRefEndpointId           = REFRIGERATOR_ENDPOINT;
+constexpr EndpointId kColdCabinetEndpointId   = COLD_CABINET_ENDPOINT;
+constexpr EndpointId kFreezeCabinetEndpointId = FREEZE_CABINET_ENDPOINT;
+
 app::Clusters::TemperatureControl::AppSupportedTemperatureLevelsDelegate sAppSupportedTemperatureLevelsDelegate;
 
 // Please refer to https://github.com/CHIP-Specifications/connectedhomeip-spec/blob/master/src/namespaces
@@ -111,20 +119,54 @@ const Clusters::Descriptor::Structs::SemanticTagStruct::Type freezerTagList[]   
 
 RefrigeratorAndTemperatureControlledCabinetModeDelegate * gRefrigeratorAndTemperatureControlledCabinetModeDelegate = nullptr;
 ModeBase::Instance * gRefrigeratorAndTemperatureControlledCabinetModeInstance                                      = nullptr;
+
+// Static SupportedModes definition for the cabinet mode cluster
+const ModeTagStructType kModeTagsNormal[1]      = { { .value = to_underlying(ModeTag::kAuto) } };
+const ModeTagStructType kModeTagsRapidCool[1]   = { { .value = to_underlying(ModeTag::kRapidCool) } };
+const ModeTagStructType kModeTagsRapidFreeze[2] = { { .value = to_underlying(ModeBase::ModeTag::kMax) },
+                                                    { .value = to_underlying(ModeTag::kRapidFreeze) } };
+
+const detail::Structs::ModeOptionStruct::Type kModeOptions[3] = {
+    detail::Structs::ModeOptionStruct::Type{
+        .label = "Normal"_span, .mode = ModeNormal, .modeTags = DataModel::List<const ModeTagStructType>(kModeTagsNormal) },
+    detail::Structs::ModeOptionStruct::Type{ .label    = "Rapid Cool"_span,
+                                             .mode     = ModeRapidCool,
+                                             .modeTags = DataModel::List<const ModeTagStructType>(kModeTagsRapidCool) },
+    detail::Structs::ModeOptionStruct::Type{ .label    = "Rapid Freeze"_span,
+                                             .mode     = ModeRapidFreeze,
+                                             .modeTags = DataModel::List<const ModeTagStructType>(kModeTagsRapidFreeze) },
+};
+
+int8_t ConvertToPrintableTemp(int16_t temperature)
+{
+    constexpr uint8_t kRoundUpValue = 50;
+
+    // Round up the temperature as we won't print decimals on LCD
+    // Is it a negative temperature
+    if (temperature < 0)
+    {
+        temperature -= kRoundUpValue;
+    }
+    else
+    {
+        temperature += kRoundUpValue;
+    }
+
+    return static_cast<int8_t>(temperature / 100);
+}
+
 } // namespace
 
 /**********************************************************
  * AppTask Definitions
  *********************************************************/
 
-AppTask AppTask::sAppTask;
-
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
-    err = InitRefrigerator();
+    err = AppInstance().InitRefrigerator();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask::InitRefrigerator() failed");
@@ -153,7 +195,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = GetAppTask().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask.Init() failed");
@@ -161,7 +203,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    sAppTask.StartStatusLEDTimer();
+    GetAppTask().StartStatusLEDTimer();
 #endif
 
     ChipLogDetail(AppServer, "App Task started");
@@ -170,7 +212,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
+            GetAppTask().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -185,7 +227,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_FUNCTION_BUTTON)
     {
         aEvent.Handler = BaseApplication::ButtonHandler;
-        sAppTask.PostEvent(&aEvent);
+        AppInstance().PostEvent(&aEvent);
     }
 }
 
@@ -205,70 +247,10 @@ CHIP_ERROR AppTask::InitRefrigerator()
     return CHIP_NO_ERROR;
 }
 
-int8_t AppTask::ConvertToPrintableTemp(int16_t temperature)
-{
-    constexpr uint8_t kRoundUpValue = 50;
-
-    // Round up the temperature as we won't print decimals on LCD
-    // Is it a negative temperature
-    if (temperature < 0)
-    {
-        temperature -= kRoundUpValue;
-    }
-    else
-    {
-        temperature += kRoundUpValue;
-    }
-
-    return static_cast<int8_t>(temperature / 100);
-}
-
-void AppTask::TempCtrlAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
-{
-    switch (attributeId)
-    {
-    case TempCtrlAttr::TemperatureSetpoint::Id: {
-        int16_t temperatureSetpoint = ConvertToPrintableTemp(static_cast<int16_t>(*value));
-        mTemperatureSetpoint        = temperatureSetpoint;
-    }
-    break;
-    default: {
-        ChipLogError(AppServer, "Unhandled Temperature controlled attribute %ld", attributeId);
-        return;
-    }
-    break;
-    }
-}
-
-void AppTask::RefAlarmAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
-{
-    switch (attributeId)
-    {
-    case RefAlarmAttr::Mask::Id: {
-        auto mask = static_cast<uint32_t>(*value);
-        mMask     = static_cast<chip::app::Clusters::RefrigeratorAlarm::AlarmBitmap>(mask);
-        RefAlarmAttr::Mask::Set(endpointId, mMask);
-    }
-    break;
-
-    case RefAlarmAttr::State::Id: {
-        auto state = static_cast<uint32_t>(*value);
-        mState     = static_cast<chip::app::Clusters::RefrigeratorAlarm::AlarmBitmap>(state);
-        RefAlarmAttr::State::Set(endpointId, mState);
-    }
-    break;
-
-    default: {
-        ChipLogError(AppServer, "Unhandled Refrigerator Alarm attribute %ld", attributeId);
-        return;
-    }
-    break;
-    }
-}
-
 void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                             uint8_t * value)
 {
+    EndpointId endpointId   = attributePath.mEndpointId;
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
     ChipLogDetail(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
@@ -277,70 +259,96 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
     {
     case Clusters::Identify::Id:
         ChipLogProgress(Zcl, "Identify cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
-                        ChipLogValueMEI(attributePath.mAttributeId), type, *value, size);
+                        ChipLogValueMEI(attributeId), type, *value, size);
         break;
+
     case Clusters::RefrigeratorAlarm::Id:
-        RefAlarmAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        switch (attributeId)
+        {
+        case RefAlarmAttr::Mask::Id:
+            mMask = static_cast<chip::app::Clusters::RefrigeratorAlarm::AlarmBitmap>(static_cast<uint32_t>(*value));
+            RefAlarmAttr::Mask::Set(endpointId, mMask);
+            break;
+        case RefAlarmAttr::State::Id:
+            mState = static_cast<chip::app::Clusters::RefrigeratorAlarm::AlarmBitmap>(static_cast<uint32_t>(*value));
+            RefAlarmAttr::State::Set(endpointId, mState);
+            break;
+        default:
+            ChipLogError(AppServer, "Unhandled Refrigerator Alarm attribute " ChipLogFormatMEI, ChipLogValueMEI(attributeId));
+            return;
+        }
 #ifdef SL_MATTER_ENABLE_AWS
-        matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
+        matterAws::control::AttributeHandler(endpointId, attributeId);
 #endif // SL_MATTER_ENABLE_AWS
         break;
+
     case Clusters::TemperatureControl::Id:
-        TempCtrlAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        switch (attributeId)
+        {
+        case TempCtrlAttr::TemperatureSetpoint::Id:
+            mTemperatureSetpoint = ConvertToPrintableTemp(static_cast<int16_t>(*value));
+            break;
+        default:
+            ChipLogError(AppServer, "Unhandled Temperature Control attribute " ChipLogFormatMEI, ChipLogValueMEI(attributeId));
+            return;
+        }
 #ifdef SL_MATTER_ENABLE_AWS
-        matterAws::control::AttributeHandler(attributePath.mEndpointId, attributeId);
+        matterAws::control::AttributeHandler(endpointId, attributeId);
 #endif // SL_MATTER_ENABLE_AWS
         break;
+
     default:
         break;
     }
 }
 
-void MatterPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size, uint8_t * value)
-{
-    AppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
-}
-
-/** @brief Refrigerator Alarm Cluster Init
- *
- * This function is called when a specific cluster is initialized. It gives the
- * application an opportunity to take care of cluster initialization procedures.
- * It is called exactly once for each endpoint where cluster is present.
- *
- * @param endpoint   Ver.: always
- *
- */
-void emberAfRefrigeratorAlarmClusterInitCallback(EndpointId endpoint) {}
-
-/** @brief Temperature Control Cluster Init
- *
- * This function is called when a specific cluster is initialized. It gives the
- * application an opportunity to take care of cluster initialization procedures.
- * It is called exactly once for each endpoint where cluster is present.
- *
- * @param endpoint   Ver.: always
- *
- */
-void emberAfTemperatureControlClusterInitCallback(EndpointId endpoint) {}
+// -----------------------------------------------------------------------------
+// CabinetMode delegate overrides. Each forwards to the overridable AppTask hook
+// through the CustomerAppTask / AppTaskImpl (CRTP) layer.
+// -----------------------------------------------------------------------------
 
 CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::Init()
 {
-    return CHIP_NO_ERROR;
+    return AppInstance().DMCabinetModeInit();
 }
 
 void RefrigeratorAndTemperatureControlledCabinetModeDelegate::HandleChangeToMode(
     uint8_t NewMode, ModeBase::Commands::ChangeToModeResponse::Type & response)
 {
-    if (gRefrigeratorAndTemperatureControlledCabinetModeDelegate == nullptr)
-    {
-        response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
-        response.statusText.SetValue("Delegate not initialized"_span);
-        return;
-    }
-    uint8_t currentMode = GetInstance()->GetCurrentMode();
+    AppInstance().DMCabinetModeHandleChangeToMode(NewMode, GetInstance()->GetCurrentMode(), response);
+}
 
+CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeLabelByIndex(uint8_t modeIndex,
+                                                                                        chip::MutableCharSpan & label)
+{
+    return AppInstance().DMCabinetModeGetModeLabelByIndex(modeIndex, label);
+}
+
+CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
+{
+    return AppInstance().DMCabinetModeGetModeValueByIndex(modeIndex, value);
+}
+
+CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeTagsByIndex(uint8_t modeIndex,
+                                                                                       List<ModeTagStructType> & tags)
+{
+    return AppInstance().DMCabinetModeGetModeTagsByIndex(modeIndex, tags);
+}
+
+// -----------------------------------------------------------------------------
+// CabinetMode delegate datamodel hooks.
+// -----------------------------------------------------------------------------
+
+CHIP_ERROR AppTask::DMCabinetModeInit()
+{
+    return CHIP_NO_ERROR;
+}
+
+void AppTask::DMCabinetModeHandleChangeToMode(uint8_t newMode, uint8_t currentMode,
+                                              ModeBase::Commands::ChangeToModeResponse::Type & response)
+{
     // Disallow transitions between Normal (0) and Rapid Freeze (2)
-    if ((currentMode == ModeNormal && NewMode == ModeRapidFreeze) || (currentMode == ModeRapidFreeze && NewMode == ModeNormal))
+    if ((currentMode == ModeNormal && newMode == ModeRapidFreeze) || (currentMode == ModeRapidFreeze && newMode == ModeNormal))
     {
         response.status = to_underlying(ModeBase::StatusCode::kGenericFailure);
         response.statusText.SetValue("Direct transition between Normal and Rapid Freeze not allowed"_span);
@@ -350,8 +358,7 @@ void RefrigeratorAndTemperatureControlledCabinetModeDelegate::HandleChangeToMode
     response.status = to_underlying(ModeBase::StatusCode::kSuccess);
 }
 
-CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeLabelByIndex(uint8_t modeIndex,
-                                                                                        chip::MutableCharSpan & label)
+CHIP_ERROR AppTask::DMCabinetModeGetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label)
 {
     if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
     {
@@ -360,7 +367,7 @@ CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeLabel
     return chip::CopyCharSpanToMutableCharSpan(kModeOptions[modeIndex].label, label);
 }
 
-CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
+CHIP_ERROR AppTask::DMCabinetModeGetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
 {
     if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
     {
@@ -370,8 +377,7 @@ CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeValue
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeTagsByIndex(uint8_t modeIndex,
-                                                                                       List<ModeTagStructType> & tags)
+CHIP_ERROR AppTask::DMCabinetModeGetModeTagsByIndex(uint8_t modeIndex, List<ModeTagStructType> & tags)
 {
     if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
     {
@@ -389,26 +395,7 @@ CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeTagsB
     return CHIP_NO_ERROR;
 }
 
-ModeBase::Instance * RefrigeratorAndTemperatureControlledCabinetMode::Instance()
-{
-    return gRefrigeratorAndTemperatureControlledCabinetModeInstance;
-}
-
-void RefrigeratorAndTemperatureControlledCabinetMode::Shutdown()
-{
-    if (gRefrigeratorAndTemperatureControlledCabinetModeInstance != nullptr)
-    {
-        delete gRefrigeratorAndTemperatureControlledCabinetModeInstance;
-        gRefrigeratorAndTemperatureControlledCabinetModeInstance = nullptr;
-    }
-    if (gRefrigeratorAndTemperatureControlledCabinetModeDelegate != nullptr)
-    {
-        delete gRefrigeratorAndTemperatureControlledCabinetModeDelegate;
-        gRefrigeratorAndTemperatureControlledCabinetModeDelegate = nullptr;
-    }
-}
-
-void emberAfRefrigeratorAndTemperatureControlledCabinetModeClusterInitCallback(chip::EndpointId endpointId)
+void AppTask::DMCabinetModeClusterInit(chip::EndpointId endpointId)
 {
     VerifyOrDie(endpointId == kRefEndpointId); // this cluster is enabled on refrigerator endpoint (1 in default implementation)
     VerifyOrDie(gRefrigeratorAndTemperatureControlledCabinetModeDelegate == nullptr &&
@@ -416,7 +403,12 @@ void emberAfRefrigeratorAndTemperatureControlledCabinetModeClusterInitCallback(c
     gRefrigeratorAndTemperatureControlledCabinetModeDelegate =
         new RefrigeratorAndTemperatureControlledCabinetMode::RefrigeratorAndTemperatureControlledCabinetModeDelegate;
     gRefrigeratorAndTemperatureControlledCabinetModeInstance =
-        new ModeBase::Instance(gRefrigeratorAndTemperatureControlledCabinetModeDelegate, 0x1,
+        new ModeBase::Instance(gRefrigeratorAndTemperatureControlledCabinetModeDelegate, kRefEndpointId,
                                RefrigeratorAndTemperatureControlledCabinetMode::Id, chip::to_underlying(ModeBase::Feature::kOnOff));
     TEMPORARY_RETURN_IGNORED gRefrigeratorAndTemperatureControlledCabinetModeInstance->Init();
+}
+
+void emberAfRefrigeratorAndTemperatureControlledCabinetModeClusterInitCallback(chip::EndpointId endpointId)
+{
+    AppInstance().DMCabinetModeClusterInit(endpointId);
 }

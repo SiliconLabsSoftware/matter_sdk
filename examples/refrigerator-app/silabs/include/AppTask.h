@@ -70,22 +70,7 @@ const uint8_t ModeRapidFreeze = 2;
 class RefrigeratorAndTemperatureControlledCabinetModeDelegate : public ModeBase::Delegate
 {
 private:
-    using ModeTagStructType                  = detail::Structs::ModeTagStruct::Type;
-    ModeTagStructType modeTagsNormal[1]      = { { .value = to_underlying(ModeTag::kAuto) } };
-    ModeTagStructType modeTagsRapidCool[1]   = { { .value = to_underlying(ModeTag::kRapidCool) } };
-    ModeTagStructType modeTagsRapidFreeze[2] = { { .value = to_underlying(ModeBase::ModeTag::kMax) },
-                                                 { .value = to_underlying(ModeTag::kRapidFreeze) } };
-
-    const detail::Structs::ModeOptionStruct::Type kModeOptions[3] = {
-        detail::Structs::ModeOptionStruct::Type{
-            .label = "Normal"_span, .mode = ModeNormal, .modeTags = DataModel::List<const ModeTagStructType>(modeTagsNormal) },
-        detail::Structs::ModeOptionStruct::Type{ .label    = "Rapid Cool"_span,
-                                                 .mode     = ModeRapidCool,
-                                                 .modeTags = DataModel::List<const ModeTagStructType>(modeTagsRapidCool) },
-        detail::Structs::ModeOptionStruct::Type{ .label    = "Rapid Freeze"_span,
-                                                 .mode     = ModeRapidFreeze,
-                                                 .modeTags = DataModel::List<const ModeTagStructType>(modeTagsRapidFreeze) },
-    };
+    using ModeTagStructType = detail::Structs::ModeTagStruct::Type;
 
     CHIP_ERROR Init() override;
     void HandleChangeToMode(uint8_t mode, ModeBase::Commands::ChangeToModeResponse::Type & response) override;
@@ -96,10 +81,6 @@ private:
 public:
     ~RefrigeratorAndTemperatureControlledCabinetModeDelegate() override = default;
 };
-
-ModeBase::Instance * Instance();
-
-void Shutdown();
 
 } // namespace RefrigeratorAndTemperatureControlledCabinetMode
 
@@ -117,7 +98,8 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    /** @brief Returns the active app instance */
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -126,42 +108,54 @@ public:
      */
     static void AppTaskMain(void * pvParameter);
 
+    /** @brief Creates and starts the AppTask thread */
     CHIP_ERROR StartAppTask();
 
     /**
      * @brief Event handler when a button is pressed
      * Function posts an event for button processing
      *
-     * @param buttonHandle APP_CONTROL_BUTTON or APP_FUNCTION_BUTTON
+     * @param button    APP_FUNCTION_BUTTON
      * @param btnAction button action - SL_SIMPLE_BUTTON_PRESSED,
      *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
-    /**
-     * @brief Data model hook invoked when a cluster attribute changes.
-     *        Merged from DataModelCallbacks.cpp (MatterPostAttributeChangeCallback).
-     */
+    /** @brief Data model hook invoked when a cluster attribute changes */
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
 
     /**
-     * @brief Handle a TemperatureControl cluster attribute change. Merged from RefrigeratorManager.
+     * @brief Constructs the RefrigeratorAndTemperatureControlledCabinetMode delegate and
+     *        ModeBase::Instance on @p endpoint and calls Instance::Init(). Invoked from the
+     *        weak emberAf...CabinetModeClusterInitCallback CRTP forwarder.
      */
-    void TempCtrlAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+    void DMCabinetModeClusterInit(chip::EndpointId endpointId);
 
-    /**
-     * @brief Handle a RefrigeratorAlarm cluster attribute change. Merged from RefrigeratorManager.
-     */
-    void RefAlarmAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
+    // -----------------------------------------------------------------------------
+    // RefrigeratorAndTemperatureControlledCabinetMode delegate datamodel hooks. The
+    // delegate's ModeBase::Delegate overrides forward here, override the matching
+    // *Impl() in CustomerAppTask to customize per callback behavior.
+    // -----------------------------------------------------------------------------
 
-    uint8_t GetMode();
-    int8_t GetCurrentTemp();
-    int8_t SetMode();
+    /** @brief Delegate Init hook. */
+    CHIP_ERROR DMCabinetModeInit();
 
-private:
-    static AppTask sAppTask;
+    /** @brief Validates the requested mode transition and sets the ChangeToModeResponse status. */
+    void DMCabinetModeHandleChangeToMode(uint8_t newMode, uint8_t currentMode,
+                                         chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response);
 
+    /** @brief Supplies the SupportedModes label for @p modeIndex from the kModeOptions array. */
+    CHIP_ERROR DMCabinetModeGetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label);
+
+    /** @brief Supplies the SupportedModes value for @p modeIndex from the kModeOptions array. */
+    CHIP_ERROR DMCabinetModeGetModeValueByIndex(uint8_t modeIndex, uint8_t & value);
+
+    /** @brief Supplies the SupportedModes tags for @p modeIndex from the kModeOptions array. */
+    CHIP_ERROR DMCabinetModeGetModeTagsByIndex(
+        uint8_t modeIndex, chip::app::DataModel::List<chip::app::Clusters::detail::Structs::ModeTagStruct::Type> & tags);
+
+protected:
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
      *
@@ -170,40 +164,15 @@ private:
     CHIP_ERROR AppInit() override;
 
     /**
-     * @brief Refrigerator specific initialization. Merged from RefrigeratorManager::Init().
-     *        Sets endpoint composition, tag lists, and the supported temperature levels delegate.
+     * @brief Refrigerator specific initialization. Sets endpoint composition, tag lists,
+     *        and the supported temperature levels delegate.
      */
     CHIP_ERROR InitRefrigerator();
 
-    int8_t ConvertToPrintableTemp(int16_t temperature);
-
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
-     *
-     * @param aEvent button event being processed
-     */
-    static void ButtonHandler(AppEvent * aEvent);
-
-    /**
-     * @brief PB1 Button event processing function
-     *        Function triggers an action sent to the CHIP task
-     // TODO: Action for refrigerator is not decided yet
-     *
-     * @param aEvent button event being processed
-     */
-    static void RefrigeratorActionEventHandler(AppEvent * aEvent);
-
-    // Refrigerator state, merged from RefrigeratorManager.
-    int16_t mCurrentMode;
-    int16_t mOnMode;
-
+private:
+    // Refrigerator state, updated from the datamodel attribute-change hook.
     int16_t mTemperatureSetpoint;
-    int16_t mMinTemperature;
-    int16_t mMaxTemperature;
 
     chip::app::Clusters::RefrigeratorAlarm::AlarmBitmap mMask;
     chip::app::Clusters::RefrigeratorAlarm::AlarmBitmap mState;
-    chip::app::Clusters::RefrigeratorAlarm::AlarmBitmap mSupported;
 };
