@@ -126,7 +126,7 @@ const ModeTagStructType kModeTagsRapidCool[1]   = { { .value = to_underlying(Mod
 const ModeTagStructType kModeTagsRapidFreeze[2] = { { .value = to_underlying(ModeBase::ModeTag::kMax) },
                                                     { .value = to_underlying(ModeTag::kRapidFreeze) } };
 
-const detail::Structs::ModeOptionStruct::Type kModeOptions[3] = {
+const Clusters::detail::Structs::ModeOptionStruct::Type kModeOptions[3] = {
     detail::Structs::ModeOptionStruct::Type{
         .label = "Normal"_span, .mode = ModeNormal, .modeTags = DataModel::List<const ModeTagStructType>(kModeTagsNormal) },
     detail::Structs::ModeOptionStruct::Type{ .label    = "Rapid Cool"_span,
