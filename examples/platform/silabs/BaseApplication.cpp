@@ -1049,7 +1049,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
             {
                 sMatterAwsInitScheduled = true;
                 ChipLogProgress(AppServer, "Scheduling Matter AWS initialization");
-                TEMPORARY_RETURN_IGNORED chip::DeviceLayer::SystemLayer().StartTimer(
+                RETURN_SAFELY_IGNORED chip::DeviceLayer::SystemLayer().StartTimer(
                     chip::System::Clock::Seconds32(MATTER_AWS_INIT_DELAY_SEC), InitMatterAwsHandler, nullptr);
             }
         }

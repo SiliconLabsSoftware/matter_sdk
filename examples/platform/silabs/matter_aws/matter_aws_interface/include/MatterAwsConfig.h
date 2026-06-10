@@ -34,6 +34,8 @@
 #define MATTER_AWS_TASK_STACK_SIZE (2 * 1024) // 2k
 #define MATTER_AWS_TASK_PRIORITY (osPriorityAboveNormal)
 
+/* Delay before MatterAwsInit() when SL_MATTER_ENABLE_AWS is enabled and internet
+ * connectivity (IPv4, or IPv6 if dual-stack) is first reported as established. */
 #ifndef MATTER_AWS_INIT_DELAY_SEC
 #define MATTER_AWS_INIT_DELAY_SEC (5)
 #endif
