@@ -25,7 +25,11 @@
 #include "LEDWidget.h"
 #if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
 #include "RGBLEDWidget.h"
-#endif
+#endif //(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+
+#include <app/persistence/AttributePersistenceProviderInstance.h>
+#include <app/persistence/DefaultAttributePersistenceProvider.h>
+#include <app/persistence/DeferredAttributePersistenceProvider.h>
 
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/ids/Attributes.h>
@@ -57,7 +61,9 @@
 
 #include <lib/support/CodeUtils.h>
 
+#include <lib/support/Span.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
 
 #ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
 #define LIGHT_LED 1
@@ -154,6 +160,15 @@ OnOffEffect gEffect = {
     to_underlying(DelayedAllOffEffectVariantEnum::kDelayedOffFastFade),
 };
 
+// Array of attributes that will have their non-volatile storage deferred/delayed.
+// This is useful for attributes that change frequently over short periods of time, such as during transitions.
+// In this example, we defer the storage of the Level Control's CurrentLevel attribute and the Color Control's
+// CurrentHue and CurrentSaturation attributes for the LIGHT_ENDPOINT.
+DeferredAttribute gDeferredAttributeTable[] = {
+    DeferredAttribute(ConcreteAttributePath(LIGHT_ENDPOINT, LevelControl::Id, LevelControl::Attributes::CurrentLevel::Id)),
+    DeferredAttribute(ConcreteAttributePath(LIGHT_ENDPOINT, ColorControl::Id, ColorControl::Attributes::CurrentHue::Id)),
+    DeferredAttribute(ConcreteAttributePath(LIGHT_ENDPOINT, ColorControl::Id, ColorControl::Attributes::CurrentSaturation::Id))
+};
 } // namespace
 
 void AppTask::UpdateOnOffClusterState(intptr_t context)
@@ -248,6 +263,7 @@ CHIP_ERROR AppTask::AppInit()
 
     sLightLED.Init(LIGHT_LED);
     sLightLED.Set(sLightOn);
+    SILABS_TRACE_NAMED_INSTANT("LightOn", "Reboot");
 
 // Update the LCD with the stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -264,6 +280,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif // QR_CODE_ENABLED
 #endif
 
+    BaseApplication::InitCompleteCallback(err);
     return err;
 }
 
@@ -338,7 +355,27 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = GetAppTask().Init();
+    // Initialization that needs to happen before the BaseInit is called here as the BaseApplication::Init() will call
+    // the AppInit() after BaseInit.
+
+    // Retrieve the existing AttributePersistenceProvider, which should already be created and initialized.
+    // This provider is typically set up by the CodegenDataModelProviderInstance constructor,
+    // which is called in InitMatter within MatterConfig.cpp.
+    // We use this as the base provider for deferred attribute persistence.
+    AttributePersistenceProvider * attributePersistence = GetAttributePersistenceProvider();
+    VerifyOrDie(attributePersistence != nullptr);
+
+    //  The DeferredAttributePersistenceProvider will persist the attribute value in non-volatile memory
+    //  once it remains constant for SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS milliseconds.
+    //  For all other attributes not listed in gDeferredAttributeTable, the default PersistenceProvider is used.
+    AppInstance().pDeferredAttributePersister = new DeferredAttributePersistenceProvider(
+        *attributePersistence, Span<DeferredAttribute>(gDeferredAttributeTable, MATTER_ARRAY_SIZE(gDeferredAttributeTable)),
+        System::Clock::Milliseconds32(SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS));
+    VerifyOrDie(AppInstance().pDeferredAttributePersister != nullptr);
+
+    app::SetAttributePersistenceProvider(AppInstance().pDeferredAttributePersister);
+
+    CHIP_ERROR err = AppInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("AppTask.Init() failed");
@@ -346,7 +383,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    GetAppTask().StartStatusLEDTimer();
+    AppInstance().StartStatusLEDTimer();
 #endif
 
     SILABS_LOG("App Task started");
@@ -356,7 +393,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            GetAppTask().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
