@@ -20,7 +20,7 @@ using namespace chip::app::Clusters;
 
 namespace {
 
-// Drop cached CASE sessions to bound peers so BindingManager re-handshakes after a peer reboot.
+// Drop cached CASE sessions to bound peers so BindingManager re-handshakes after every binding action.
 void ReleaseBoundPeerSessions(EndpointId localEndpoint)
 {
     auto & sessionManager = Server::GetInstance().GetSecureSessionManager();
@@ -141,6 +141,8 @@ CHIP_ERROR InitOvenBindingHandler()
 
 void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
 {
+    // Drop cached CASE sessions to bound peers as there is a chance that the peer has rebooted. 
+    // The old session may be stale and we need to re-handshake.
     ReleaseBoundPeerSessions(cookTopEndpoint);
 
     for (ClusterId clusterId : { OnOff::Id, FanControl::Id })
