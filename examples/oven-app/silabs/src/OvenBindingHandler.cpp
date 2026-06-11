@@ -141,7 +141,7 @@ CHIP_ERROR InitOvenBindingHandler()
 
 void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
 {
-    // Drop cached CASE sessions to bound peers as there is a chance that the peer has rebooted. 
+    // Drop cached CASE sessions to bound peers as there is a chance that the peer has rebooted.
     // The old session may be stale and we need to re-handshake.
     ReleaseBoundPeerSessions(cookTopEndpoint);
 
