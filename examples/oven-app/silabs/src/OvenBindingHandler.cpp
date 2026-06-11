@@ -6,6 +6,7 @@
 #include "OvenBindingHandler.h"
 #include "AppConfig.h"
 #include <app-common/zap-generated/cluster-objects.h>
+#include <app/CASESessionManager.h>
 #include <app/clusters/bindings/BindingManager.h>
 #include <app/server/Server.h>
 #include <controller/InvokeInteraction.h>
@@ -18,6 +19,26 @@ using namespace chip::app;
 using namespace chip::app::Clusters;
 
 namespace {
+
+// Drop cached CASE sessions to bound peers so BindingManager re-handshakes after a peer reboot.
+void ReleaseBoundPeerSessions(EndpointId localEndpoint)
+{
+    auto & sessionManager = Server::GetInstance().GetSecureSessionManager();
+    CASESessionManager * caseSessionManager = Server::GetInstance().GetCASESessionManager();
+
+    for (const Binding::TableEntry & entry : Binding::Manager::GetInstance().GetBindingTable())
+    {
+        if (entry.local == localEndpoint && entry.type == Binding::MATTER_UNICAST_BINDING)
+        {
+            const ScopedNodeId peerId(entry.nodeId, entry.fabricIndex);
+            sessionManager.ExpireAllSessions(peerId);
+            if (caseSessionManager != nullptr)
+            {
+                caseSessionManager->ReleaseSession(peerId);
+            }
+        }
+    }
+}
 
 void ProcessOnOffUnicast(bool cookTopOn, const Binding::TableEntry & binding, Messaging::ExchangeManager * exchangeMgr,
                          const SessionHandle & sessionHandle)
@@ -102,6 +123,15 @@ void InitBindingMgrWork(intptr_t)
     ChipLogDetail(AppServer, "Oven binding manager initialized");
 }
 
+void TriggerBindingWork(intptr_t context)
+{
+    auto * ctx = reinterpret_cast<CookTopBindingContext *>(context);
+    VerifyOrReturn(ctx != nullptr, ChipLogError(AppServer, "TriggerBindingWork: null context"));
+
+    SuccessOrLog(Binding::Manager::GetInstance().NotifyBoundClusterChanged(ctx->localEndpointId, ctx->clusterId, ctx),
+                 AppServer, "Failed to notify bound cluster changed");
+}
+
 } // namespace
 
 CHIP_ERROR InitOvenBindingHandler()
@@ -111,6 +141,8 @@ CHIP_ERROR InitOvenBindingHandler()
 
 void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
 {
+    ReleaseBoundPeerSessions(cookTopEndpoint);
+
     for (ClusterId clusterId : { OnOff::Id, FanControl::Id })
     {
         CookTopBindingContext * context = Platform::New<CookTopBindingContext>();
@@ -125,12 +157,12 @@ void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
         context->cookTopOn       = cookTopOn;
 
         CHIP_ERROR err =
-            Binding::Manager::GetInstance().NotifyBoundClusterChanged(cookTopEndpoint, clusterId, context);
+            DeviceLayer::PlatformMgr().ScheduleWork(TriggerBindingWork, reinterpret_cast<intptr_t>(context));
         if (err != CHIP_NO_ERROR)
         {
             Platform::Delete(context);
-            ChipLogError(AppServer, "NotifyBoundClusterChanged failed for cluster " ChipLogFormatMEI ": %" CHIP_ERROR_FORMAT,
-                         ChipLogValueMEI(clusterId), err.Format());
+            ChipLogError(AppServer, "Failed to schedule binding work for cluster " ChipLogFormatMEI ", context freed",
+                         ChipLogValueMEI(clusterId));
         }
     }
 }
