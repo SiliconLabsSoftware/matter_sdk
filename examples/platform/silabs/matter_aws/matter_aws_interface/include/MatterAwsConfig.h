@@ -54,10 +54,16 @@
 #define MQTT_QOS_0 (0)
 #define MQTT_SUBSCRIBE_TOPIC "command"
 
-/* MQTT Client Certification Configuration */
+/* MQTT Client Certification Configuration (stack buffer sizes in MatterAwsTaskFn) */
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
 #define MATTER_AWS_CA_CERT_LENGTH (1400)
 #define MATTER_AWS_DEV_CERT_LENGTH (1400)
 #define MATTER_AWS_DEV_KEY_LENGTH (1800)
+#else
+#define MATTER_AWS_CA_CERT_LENGTH (800)
+#define MATTER_AWS_DEV_CERT_LENGTH (1400)
+#define MATTER_AWS_DEV_KEY_LENGTH (500)
+#endif
 #define MATTER_AWS_HOSTNAME_LENGTH (55)
 #define MATTER_AWS_CLIENTID_LENGTH (30)
 
