@@ -123,15 +123,6 @@ void InitBindingMgrWork(intptr_t)
     ChipLogDetail(AppServer, "Oven binding manager initialized");
 }
 
-void TriggerBindingWork(intptr_t context)
-{
-    auto * ctx = reinterpret_cast<CookTopBindingContext *>(context);
-    VerifyOrReturn(ctx != nullptr, ChipLogError(AppServer, "TriggerBindingWork: null context"));
-
-    SuccessOrLog(Binding::Manager::GetInstance().NotifyBoundClusterChanged(ctx->localEndpointId, ctx->clusterId, ctx),
-                 AppServer, "Failed to notify bound cluster changed");
-}
-
 } // namespace
 
 CHIP_ERROR InitOvenBindingHandler()
@@ -158,8 +149,7 @@ void CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
         context->clusterId       = clusterId;
         context->cookTopOn       = cookTopOn;
 
-        CHIP_ERROR err =
-            DeviceLayer::PlatformMgr().ScheduleWork(TriggerBindingWork, reinterpret_cast<intptr_t>(context));
+        CHIP_ERROR err = Binding::Manager::GetInstance().NotifyBoundClusterChanged(context->localEndpointId, context->clusterId, context);
         if (err != CHIP_NO_ERROR)
         {
             Platform::Delete(context);

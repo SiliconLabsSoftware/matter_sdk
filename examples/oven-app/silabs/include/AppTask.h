@@ -96,7 +96,7 @@ private:
     CHIP_ERROR AppInit() override;
 
     /**
-     * @brief On connectivity after reboot, send CookTop Off to bound rangehood peers.
+     * @brief After reboot, send CookTop Off to bound rangehood peers once IP and DNS-SD are ready.
      */
     static void ConnectivityEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
 

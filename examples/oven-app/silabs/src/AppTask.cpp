@@ -70,6 +70,10 @@ using namespace chip::TLV;
 
 LEDWidget sLightLED; // Use LEDWidget for basic LED functionality
 
+namespace {
+bool sDnssdReady          = false;
+} // namespace
+
 AppTask AppTask::sAppTask;
 
 CHIP_ERROR AppTask::AppInit()
@@ -108,13 +112,20 @@ CHIP_ERROR AppTask::AppInit()
 void AppTask::ConnectivityEventHandler(const ChipDeviceEvent * event, intptr_t)
 {
     VerifyOrReturn(event != nullptr);
-    VerifyOrReturn(event->Type == DeviceEventType::kInternetConnectivityChange);
 
-    // Wait for an IP address (IPv4 or IPv6) before CASE to bound peers.
-    VerifyOrReturn(event->InternetConnectivityChange.IPv4 == kConnectivity_Established ||
-                   event->InternetConnectivityChange.IPv6 == kConnectivity_Established);
-
-    CookTopBindingPropagateState(OvenManager::GetCookTopEndpoint(), false);
+    switch (event->Type)
+    {
+    case DeviceEventType::kDnssdInitialized:
+        if (sDnssdReady)
+        {
+            return;
+        }
+        sDnssdReady = true;
+        CookTopBindingPropagateState(OvenManager::GetCookTopEndpoint(), false);
+        break;
+    default:
+        break;
+    }
 }
 
 CHIP_ERROR AppTask::StartAppTask()
