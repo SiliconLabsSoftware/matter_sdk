@@ -42,7 +42,7 @@ jobs:
             - name: Mask the generated token
               run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
 
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
               with:
                   ref: ${{ matrix.base_branch }}
                   persist-credentials: false
