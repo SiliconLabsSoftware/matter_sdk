@@ -86,7 +86,9 @@ CHIP_ERROR AppTask::AppInit()
         mCurrentSensorUI = kSensorUIEnum::kQrCode;
     }
 #endif // QR_CODE_ENABLED
+
     UpdateSensorDisplay();
+
 #endif // DISPLAY_ENABLED
 
     return err;
@@ -157,7 +159,6 @@ void AppTask::UpdateSensorDisplay(void)
     default:
         // Handle unknown sensor
         // This should never happen
-        ChipLogError(AppServer, "UpdateSensorDisplay: unknown UI state %u", static_cast<unsigned>(mCurrentSensorUI));
         break;
     }
 }
@@ -175,8 +176,6 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
 
-    ChipLogProgress(AppServer, "ButtonEventHandler: button=%u action=%u", button, btnAction);
-
     switch (ButtonTypes(button))
     {
     case ButtonTypes::kFunctionButton:
@@ -186,7 +185,6 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     case ButtonTypes::kApplicationButton:
         if (SilabsPlatform::ButtonAction(btnAction) == SilabsPlatform::ButtonAction::ButtonPressed)
         {
-            ChipLogProgress(AppServer, "Application button pressed; posting ProcessButtonEvent");
             button_event.Handler = ProccessButtonEvent;
             sAppTask.PostEvent(&button_event);
         }
@@ -203,7 +201,6 @@ void AppTask::ProccessButtonEvent(AppEvent * event)
     VerifyOrReturn(event != nullptr);
     VerifyOrReturn(event->Type == AppEvent::kEventType_Button);
 
-    ChipLogProgress(AppServer, "ProccessButtonEvent: dispatching button event to SensorManager");
     SensorManager::ButtonActionTriggered(event);
 }
 
