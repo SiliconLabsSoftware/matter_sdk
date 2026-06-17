@@ -274,11 +274,6 @@ DataModel::ActionReturnStatus OccupancySensingCluster::SetHoldTime(uint16_t hold
     return Protocols::InteractionModel::Status::Success;
 }
 
-void OccupancySensingCluster::SetDelegate(OccupancySensingDelegate * delegate)
-{
-    mDelegate = delegate;
-}
-
 void OccupancySensingCluster::SetOccupancy(bool occupied)
 {
     if (mHoldTimeDelegate)

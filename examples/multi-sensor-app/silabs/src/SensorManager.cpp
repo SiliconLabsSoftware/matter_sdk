@@ -30,8 +30,10 @@
 #include <SensorManager.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
+#include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/clusters/relative-humidity-measurement-server/CodegenIntegration.h>
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
+#include <data-model-providers/codegen/CodegenDataModelProvider.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_cmsis_os2_common.h>
 
@@ -73,25 +75,56 @@ uint16_t mLastReportedHumidityValue   = 0;
 int16_t mLastReportedTemperatureValue = 0;
 bool isInitialised                    = false;
 
-class SensorManagerOccupancyDelegate : public OccupancySensingDelegate
+class SensorManagerAttributeChangeListener : public DataModel::AttributeChangeListener
 {
 public:
-    void OnOccupancyChanged(bool occupied) override
+    void OnAttributeChanged(const ConcreteAttributePath & path, DataModel::AttributeChangeType type) override
     {
-        AppEvent event                         = {};
-        event.Type                             = AppEvent::kEventType_OccupancyAttributeUpdate;
-        event.Handler                          = AppTask::OccupancyAttributeUpdateEvent;
-        event.OccupancyEvent.occupancyDetected = occupied;
-        AppTask::GetAppTask().PostEvent(&event);
-    }
+        static_cast<void>(type);
 
-    void OnHoldTimeChanged(uint16_t holdTime) override
-    {
-        ChipLogProgress(AppServer, "SensorManagerOccupancyDelegate::OnHoldTimeChanged: %u", holdTime);
+        VerifyOrReturn(path.mEndpointId == kOccupancySensorEndpoint || path.mEndpointId == kTemperatureSensorEndpoint ||
+                       path.mEndpointId == kHumiditySensorEndpoint);
+
+        switch (path.mClusterId)
+        {
+        case OccupancySensing::Id: {
+            VerifyOrReturn(path.mAttributeId == OccupancySensing::Attributes::Occupancy::Id);
+
+            OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(path.mEndpointId);
+            VerifyOrReturn(cluster != nullptr);
+
+            AppEvent event                         = {};
+            event.Type                             = AppEvent::kEventType_OccupancyAttributeUpdate;
+            event.Handler                          = AppTask::OccupancyAttributeUpdateEvent;
+            event.OccupancyEvent.occupancyDetected = cluster->IsOccupied();
+            AppTask::GetAppTask().PostEvent(&event);
+            break;
+        }
+        case TemperatureMeasurement::Id: {
+            VerifyOrReturn(path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id);
+
+            AppEvent event = {};
+            event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
+            event.Handler  = AppTask::SensorAttributeUpdateEvent;
+            AppTask::GetAppTask().PostEvent(&event);
+            break;
+        }
+        case RelativeHumidityMeasurement::Id: {
+            VerifyOrReturn(path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id);
+
+            AppEvent event = {};
+            event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
+            event.Handler  = AppTask::SensorAttributeUpdateEvent;
+            AppTask::GetAppTask().PostEvent(&event);
+            break;
+        }
+        default:
+            break;
+        }
     }
 };
 
-SensorManagerOccupancyDelegate gOccupancyDelegate;
+SensorManagerAttributeChangeListener gAttributeChangeListener;
 
 /**
  * @brief Process function when the Sensor Timer event is triggered.
@@ -202,10 +235,9 @@ CHIP_ERROR Init()
     VerifyOrDieWithMsg(Si70xxSensor::Init() == SL_STATUS_OK, AppServer, "Failed to initialize the sensor!");
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 
-    OccupancySensingCluster * occupancyCluster = OccupancySensing::FindClusterOnEndpoint(kOccupancySensorEndpoint);
-    VerifyOrDieWithMsg(occupancyCluster != nullptr, AppServer, "Occupancy cluster not found on endpoint %u",
-                       static_cast<unsigned>(kOccupancySensorEndpoint));
-    occupancyCluster->SetDelegate(&gOccupancyDelegate);
+    DeviceLayer::PlatformMgr().LockChipStack();
+    CodegenDataModelProvider::Instance().RegisterAttributeChangeListener(gAttributeChangeListener);
+    DeviceLayer::PlatformMgr().UnlockChipStack();
 
     isInitialised = true;
 
