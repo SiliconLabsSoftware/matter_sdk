@@ -56,15 +56,11 @@ uint8_t encodeCommand(mmic_command_id_e id, void * parameter, uint16_t size, uin
     workbuffer[0] = MMIC_HEADER_CMD;
     if (commands[id].argsCnt == 0)
     {
-        // Can be encoded and sent directly
-        if (id == ping) 
-        {
-            workbuffer[1] = MMIC_PACKET_OVERHEAD; // no arguments
-            workbuffer[2] = id;
-            
-            uint16_t crc = crc16(workbuffer,3);
-            memcpy(workbuffer+3, &crc, 2);
-        }
+        workbuffer[1] = MMIC_PACKET_OVERHEAD; // no arguments
+        workbuffer[2] = id;
+        
+        uint16_t crc = crc16(workbuffer,3);
+        memcpy(workbuffer+3, &crc, 2);
         
         *encodedPacket=workbuffer; // Warning must be freed by the caller
     }
@@ -170,6 +166,18 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
         case ping:
             encodeResponse(ping, "pong", sizeof("pong"), response, packetSize);
             break;
+        case version:
+            encodeResponse(ping, MMIC_VERSION_STRING, sizeof(MMIC_VERSION_STRING), response, packetSize);
+            break;
+        case matter_state: // To verify commissioning
+            {
+                matterState_t state;
+                if (encodeMatterState(&state) == 0)
+                {
+                    encodeResponse(ot_state, &state, sizeof(matterState_t), response, packetSize);
+                }
+            }
+            break;
         default:
             return 3; //Not implemented
     };
@@ -178,4 +186,16 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
     return 0;
 }
 
+uint8_t encodeMatterState(matterState_t * state)
+{
+
+}
+uint8_t establishSubscription()
+{
+
+}
+uint8_t getSubscriptionsInfo()
+{
+    
+}
 #endif // HOST_SIDE

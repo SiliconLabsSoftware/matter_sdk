@@ -46,7 +46,8 @@
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
-#include "matter_cpc.h"
+// #include "matter_cpc.h"
+#include "mmic_task.h"
 
 using namespace chip;
 using namespace chip::app;
@@ -321,6 +322,8 @@ void AppTask::AppTaskMain(void * pvParameter)
         appError(err);
     }
 
+    mmic_init();
+
     while (true)
     {
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
@@ -334,7 +337,7 @@ void AppTask::AppTaskMain(void * pvParameter)
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
-    sl_matter_cpc_write(reinterpret_cast<uint8_t *>(const_cast<char *>("HELLO WORLD")), sizeof("HELLO WORLD"));
+    // sl_matter_cpc_write(reinterpret_cast<uint8_t *>(const_cast<char *>("HELLO WORLD")), sizeof("HELLO WORLD"));
 
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
@@ -342,6 +345,14 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     button_event.Handler            = BaseApplication::ButtonHandler;
     AppTask::GetAppTask().PostEvent(&button_event);
 }
+
+
+#include <openthread/platform/logging.h>
+
+extern "C" void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char * aFormat, ...)
+{
+}
+
 
 // To prevent linkage failure
 extern "C" void otAppNcpInit(otInstance * aInstance);
