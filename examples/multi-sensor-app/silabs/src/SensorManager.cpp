@@ -73,6 +73,26 @@ uint16_t mLastReportedHumidityValue   = 0;
 int16_t mLastReportedTemperatureValue = 0;
 bool isInitialised                    = false;
 
+class SensorManagerOccupancyDelegate : public OccupancySensingDelegate
+{
+public:
+    void OnOccupancyChanged(bool occupied) override
+    {
+        AppEvent event                         = {};
+        event.Type                             = AppEvent::kEventType_OccupancyAttributeUpdate;
+        event.Handler                          = AppTask::OccupancyAttributeUpdateEvent;
+        event.OccupancyEvent.occupancyDetected = occupied;
+        AppTask::GetAppTask().PostEvent(&event);
+    }
+
+    void OnHoldTimeChanged(uint16_t holdTime) override
+    {
+        ChipLogProgress(AppServer, "SensorManagerOccupancyDelegate::OnHoldTimeChanged: %u", holdTime);
+    }
+};
+
+SensorManagerOccupancyDelegate gOccupancyDelegate;
+
 /**
  * @brief Process function when the Sensor Timer event is triggered.
  *        This update the Data Model sensor values with the latest measurements.
@@ -181,6 +201,12 @@ CHIP_ERROR Init()
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
     VerifyOrDieWithMsg(Si70xxSensor::Init() == SL_STATUS_OK, AppServer, "Failed to initialize the sensor!");
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+
+    OccupancySensingCluster * occupancyCluster = OccupancySensing::FindClusterOnEndpoint(kOccupancySensorEndpoint);
+    VerifyOrDieWithMsg(occupancyCluster != nullptr, AppServer, "Occupancy cluster not found on endpoint %u",
+                       static_cast<unsigned>(kOccupancySensorEndpoint));
+    occupancyCluster->SetDelegate(&gOccupancyDelegate);
+
     isInitialised = true;
 
     VerifyOrDieWithMsg(DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {

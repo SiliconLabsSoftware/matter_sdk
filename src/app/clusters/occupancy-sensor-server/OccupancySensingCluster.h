@@ -104,6 +104,7 @@ public:
     // SetHoldTimeLimits is a convenience method and shall only be used during initialization to set the fixed
     // hold time limits attribute when it cannot be set using the constructor.
     void SetHoldTimeLimits(const OccupancySensing::Structs::HoldTimeLimitsStruct::Type & holdTimeLimits);
+    void SetDelegate(OccupancySensingDelegate * delegate);
     void SetOccupancy(bool occupied);
     bool IsOccupied() const;
     bool IsHoldTimeEnabled() const;
