@@ -33,6 +33,7 @@
 #include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/clusters/relative-humidity-measurement-server/CodegenIntegration.h>
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
+#include <app/util/generic-callbacks.h>
 #include <data-model-providers/codegen/CodegenDataModelProvider.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_cmsis_os2_common.h>
@@ -84,43 +85,7 @@ public:
 
         VerifyOrReturn(path.mEndpointId == kOccupancySensorEndpoint || path.mEndpointId == kTemperatureSensorEndpoint ||
                        path.mEndpointId == kHumiditySensorEndpoint);
-
-        switch (path.mClusterId)
-        {
-        case OccupancySensing::Id: {
-            VerifyOrReturn(path.mAttributeId == OccupancySensing::Attributes::Occupancy::Id);
-
-            OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(path.mEndpointId);
-            VerifyOrReturn(cluster != nullptr);
-
-            AppEvent event                         = {};
-            event.Type                             = AppEvent::kEventType_OccupancyAttributeUpdate;
-            event.Handler                          = AppTask::OccupancyAttributeUpdateEvent;
-            event.OccupancyEvent.occupancyDetected = cluster->IsOccupied();
-            AppTask::GetAppTask().PostEvent(&event);
-            break;
-        }
-        case TemperatureMeasurement::Id: {
-            VerifyOrReturn(path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id);
-
-            AppEvent event = {};
-            event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
-            event.Handler  = AppTask::SensorAttributeUpdateEvent;
-            AppTask::GetAppTask().PostEvent(&event);
-            break;
-        }
-        case RelativeHumidityMeasurement::Id: {
-            VerifyOrReturn(path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id);
-
-            AppEvent event = {};
-            event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
-            event.Handler  = AppTask::SensorAttributeUpdateEvent;
-            AppTask::GetAppTask().PostEvent(&event);
-            break;
-        }
-        default:
-            break;
-        }
+        MatterPostAttributeChangeCallback(path, 0, 0, nullptr);
     }
 };
 
