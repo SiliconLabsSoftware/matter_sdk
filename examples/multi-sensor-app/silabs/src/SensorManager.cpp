@@ -85,6 +85,17 @@ public:
 
         VerifyOrReturn(path.mEndpointId == kOccupancySensorEndpoint || path.mEndpointId == kTemperatureSensorEndpoint ||
                        path.mEndpointId == kHumiditySensorEndpoint);
+
+        const bool isOccupancyUpdate = path.mClusterId == OccupancySensing::Id &&
+            path.mAttributeId == OccupancySensing::Attributes::Occupancy::Id;
+        const bool isTemperatureUpdate = path.mClusterId == TemperatureMeasurement::Id &&
+            path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id;
+        const bool isHumidityUpdate = path.mClusterId == RelativeHumidityMeasurement::Id &&
+            path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id;
+
+        // Only forward the sensor attributes whose callback handlers do not depend on the raw value payload.
+        VerifyOrReturn(isOccupancyUpdate || isTemperatureUpdate || isHumidityUpdate);
+
         MatterPostAttributeChangeCallback(path, 0, 0, nullptr);
     }
 };
