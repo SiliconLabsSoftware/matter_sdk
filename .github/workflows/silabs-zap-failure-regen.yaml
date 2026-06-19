@@ -14,12 +14,12 @@ jobs:
             cancel-in-progress: true
 
         if:
-            ${{ github.event.workflow_run.conclusion == 'failure' &&
-            github.event.workflow_run.head_branch == 'automation/update_main' }}
+            ${{ github.event.workflow_run.conclusion == 'failure' && (
+            github.event.workflow_run.head_branch == 'automation/update_main' || startsWith(github.event.workflow_run.head_branch, 'automation/update_release_')) }}
 
         runs-on: ubuntu-latest
         container:
-            image: ghcr.io/project-chip/chip-build:129
+            image: ghcr.io/project-chip/chip-build:200
 
         steps:
             - name: Generate token for the workflow
