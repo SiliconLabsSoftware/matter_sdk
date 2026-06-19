@@ -1,0 +1,41 @@
+name: Daily Sync of the csa branch
+
+on:
+    schedule:
+        - cron: "0 0 * * *" # Runs once a day at midnight
+    workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+    sync:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Generate token for the workflow
+              id: generate_token
+              uses: actions/create-github-app-token@v2
+              with:
+                  app-id: ${{ vars.SILABSSW_MATTER_CI_BOT_APP_ID }}
+                  private-key:
+                      ${{ secrets.SILABSSW_MATTER_CI_BOT_APP_PRIVATE_KEY }}
+            - name: Mask the generated token
+              run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
+
+            - name: Checkout matter_sdk::csa branch
+              uses: actions/checkout@v4
+              with:
+                  repository: SiliconLabsSoftware/matter_sdk
+                  ref: csa
+                  token: ${{ steps.generate_token.outputs.token }}
+
+            - name: Add CSA repository remote
+              run:
+                  git remote add upstream
+                  https://github.com/project-chip/connectedhomeip.git
+
+            - name: Update the csa branch locally
+              run: git pull upstream master
+
+            - name: Push the update csa branch to the remote
+              run: |
+                  git push origin csa

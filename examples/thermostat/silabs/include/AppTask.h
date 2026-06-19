@@ -24,6 +24,7 @@
 #include <app/ConcreteAttributePath.h>
 #include <cstdint>
 #include <lib/core/CHIPError.h>
+#include <lib/core/DataModelTypes.h>
 
 struct AppEvent;
 
@@ -32,6 +33,7 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
+    /** @brief Returns the active app instance */
     static AppTask & GetAppTask();
 
     /**
@@ -41,8 +43,10 @@ public:
      */
     static void AppTaskMain(void * pvParameter);
 
+    /** @brief Creates and starts the AppTask thread */
     CHIP_ERROR StartAppTask();
 
+    /** @brief Requests a refresh of the thermostat LCD UI */
     static void UpdateThermoStatUI();
 
     /**
@@ -72,6 +76,11 @@ public:
                                        uint8_t * value);
 
     /**
+     * @brief Thermostat cluster init hook. Registers ThermostatDelegate for preset-related attributes.
+     */
+    void DMThermostatClusterInit(chip::EndpointId endpoint);
+
+    /**
      * @brief Initialize the temperature sensor backing this thermostat.
      *
      * Default behavior: when `SL_MATTER_USE_SI70XX_SENSOR` is set, initializes the
@@ -91,7 +100,7 @@ public:
     CHIP_ERROR GetTemperature(int16_t & temperature);
 
 protected:
-    /** Override of `BaseApplication::AppInit()`. */
+    /** @brief Override of `BaseApplication::AppInit()` */
     CHIP_ERROR AppInit() override;
 
     /** Bring up the thermostat app: sensor timer, sensor driver, first UI paint. */
