@@ -35,9 +35,22 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v4
               with:
-                  ref: automation/update_main
+                  ref: ${{ github.event.workflow_run.head_branch }}
                   fetch-depth: 0
                   token: ${{ steps.generate_token.outputs.token }}
+
+            - name: Determine target and base branches
+              id: branch_info
+              run: |
+                  target_branch="${{ github.event.workflow_run.head_branch }}"
+                  if [[ "${target_branch}" == "automation/update_main" ]]; then
+                      base_branch="main"
+                  else
+                      base_branch="${target_branch#automation/update_}"
+                  fi
+
+                  echo "target_branch=${target_branch}" >> "${GITHUB_OUTPUT}"
+                  echo "base_branch=${base_branch}" >> "${GITHUB_OUTPUT}"
 
             - name: Checkout submodules & Bootstrap
               uses: ./.github/actions/checkout-submodules-and-bootstrap
@@ -45,17 +58,17 @@ jobs:
                   platform: linux
                   bootstrap-log-name: bootstrap-logs-zap-failure-regen
 
-            - name: Merge Fetch main branch
+            - name: Fetch base branch
               run: |
-                  git fetch --no-recurse-submodules origin main
+                  git fetch --no-recurse-submodules origin "${{ steps.branch_info.outputs.base_branch }}"
 
             - name: Set committer to GitHub App
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-            - name: Merge main branch into automation/update_main
-              run: git merge --no-edit origin/main
+            - name: Merge base branch into automation branch
+              run: git merge --no-edit "origin/${{ steps.branch_info.outputs.base_branch }}"
 
             - name: Generate Silabs examples zap files
               run: |
@@ -82,4 +95,4 @@ jobs:
               run: |
                   git add -A
                   git commit -m "[SL-ONLY] Regenerate ZAP files for Silabs apps"
-                  git push origin automation/update_main
+                  git push origin "${{ steps.branch_info.outputs.target_branch }}"
