@@ -33,7 +33,6 @@
 #include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/clusters/relative-humidity-measurement-server/CodegenIntegration.h>
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
-#include <app/util/generic-callbacks.h>
 #include <data-model-providers/codegen/CodegenDataModelProvider.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_cmsis_os2_common.h>
@@ -79,24 +78,37 @@ bool isInitialised                    = false;
 class SensorManagerAttributeChangeListener : public DataModel::AttributeChangeListener
 {
 public:
-    void OnAttributeChanged(const ConcreteAttributePath & path, DataModel::AttributeChangeType type) override
+    void OnAttributeChanged(const ConcreteAttributePath & path, DataModel::AttributeChangeType) override
     {
-        static_cast<void>(type);
-
-        VerifyOrReturn(path.mEndpointId == kOccupancySensorEndpoint || path.mEndpointId == kTemperatureSensorEndpoint ||
-                       path.mEndpointId == kHumiditySensorEndpoint);
-
-        const bool isOccupancyUpdate = path.mClusterId == OccupancySensing::Id &&
+        const bool isOccupancyUpdate = path.mEndpointId == kOccupancySensorEndpoint && path.mClusterId == OccupancySensing::Id &&
             path.mAttributeId == OccupancySensing::Attributes::Occupancy::Id;
-        const bool isTemperatureUpdate = path.mClusterId == TemperatureMeasurement::Id &&
+        const bool isTemperatureUpdate = path.mEndpointId == kTemperatureSensorEndpoint &&
+            path.mClusterId == TemperatureMeasurement::Id &&
             path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id;
-        const bool isHumidityUpdate = path.mClusterId == RelativeHumidityMeasurement::Id &&
+        const bool isHumidityUpdate = path.mEndpointId == kHumiditySensorEndpoint &&
+            path.mClusterId == RelativeHumidityMeasurement::Id &&
             path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id;
 
-        // Only forward the sensor attributes whose callback handlers do not depend on the raw value payload.
-        VerifyOrReturn(isOccupancyUpdate || isTemperatureUpdate || isHumidityUpdate);
+        if (isOccupancyUpdate)
+        {
+            OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(path.mEndpointId);
+            VerifyOrReturn(cluster != nullptr);
 
-        MatterPostAttributeChangeCallback(path, 0, 0, nullptr);
+            AppEvent event                         = {};
+            event.Type                             = AppEvent::kEventType_OccupancyAttributeUpdate;
+            event.Handler                          = AppTask::OccupancyAttributeUpdateEvent;
+            event.OccupancyEvent.occupancyDetected = cluster->IsOccupied();
+            AppTask::GetAppTask().PostEvent(&event);
+            return;
+        }
+
+        if (isTemperatureUpdate || isHumidityUpdate)
+        {
+            AppEvent event = {};
+            event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
+            event.Handler  = AppTask::SensorAttributeUpdateEvent;
+            AppTask::GetAppTask().PostEvent(&event);
+        }
     }
 };
 
