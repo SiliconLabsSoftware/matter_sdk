@@ -20,10 +20,13 @@
 #pragma once
 
 #include "BaseApplication.h"
-
 #include <app/ConcreteAttributePath.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <cstdint>
+
+#include <app/persistence/DeferredAttributePersistenceProvider.h>
+#include <ble/Ble.h>
+#include <cmsis_os2.h>
 #include <lib/core/CHIPError.h>
 
 struct AppEvent;
@@ -80,4 +83,5 @@ protected:
     CHIP_ERROR InitLight();
 
     static void UpdateOnOffClusterState(intptr_t context);
+    chip::app::DeferredAttributePersistenceProvider * pDeferredAttributePersister = nullptr;
 };
