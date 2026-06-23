@@ -172,7 +172,6 @@ void AppTask::CycleSensorUI()
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
-
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
