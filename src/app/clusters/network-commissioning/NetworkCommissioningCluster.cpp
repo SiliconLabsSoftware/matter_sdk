@@ -205,6 +205,7 @@ CHIP_ERROR NetworkCommissioningCluster::Init()
 
 void NetworkCommissioningCluster::Deinit()
 {
+    mClusterContext.platformManager.RemoveEventHandler(OnPlatformEventHandler, reinterpret_cast<intptr_t>(this));
 #if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
     if (sInstances.Contains(this))
     {
@@ -375,16 +376,16 @@ NetworkCommissioningCluster::HandleAddOrUpdateWiFiNetwork(CommandHandler & handl
     }
 
     // Presence of a Network Identity indicates we're configuring for Per-Device Credentials
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_PDC
     if (req.networkIdentity.HasValue())
     {
-#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_PDC
         if (mFeatureFlags.Has(Feature::kWiFiNetworkInterface))
         {
             return HandleAddOrUpdateWiFiNetworkWithPDC(handler, commandPath, req);
         }
-#endif // CHIP_DEVICE_CONFIG_ENABLE_WIFI_PDC
         return Protocols::InteractionModel::Status::InvalidCommand;
     }
+#endif // CHIP_DEVICE_CONFIG_ENABLE_WIFI_PDC
 
     // Spec 11.8.8.4
     // Valid Credentials length are:
@@ -1216,10 +1217,12 @@ CHIP_ERROR NetworkCommissioningCluster::AcceptedCommands(const ConcreteClusterPa
 #endif // (CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION || CHIP_DEVICE_CONFIG_ENABLE_WIFI_AP)
     {}
 
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_PDC
     if (Features().Has(Feature::kPerDeviceCredentials))
     {
         ReturnErrorOnFailure(builder.AppendElements({ QueryIdentity::kMetadataEntry }));
     }
+#endif // CHIP_DEVICE_CONFIG_ENABLE_WIFI_PDC
 
     return CHIP_NO_ERROR;
 }
@@ -1241,10 +1244,12 @@ CHIP_ERROR NetworkCommissioningCluster::GeneratedCommands(const ConcreteClusterP
         }));
     }
 
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_PDC
     if (Features().Has(Feature::kPerDeviceCredentials))
     {
         ReturnErrorOnFailure(builder.Append(QueryIdentityResponse::Id));
     }
+#endif // CHIP_DEVICE_CONFIG_ENABLE_WIFI_PDC
     return CHIP_NO_ERROR;
 }
 

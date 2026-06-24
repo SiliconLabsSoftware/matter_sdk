@@ -1155,33 +1155,33 @@ void SessionManager::SecureGroupMessageDispatch(const PacketHeader & partialPack
         bool privacy = partialPacketHeader.HasPrivacyFlag();
         decrypted =
             GroupKeyDecryptAttempt(partialPacketHeader, packetHeaderCopy, payloadHeader, privacy, msgCopy, mac, groupContext);
-
-#if CHIP_CONFIG_PRIVACY_ACCEPT_NONSPEC_SVE2
-        if (privacy && !decrypted)
-        {
-            // Try processing the P=1 message again without privacy as a work-around for invalid early-SVE2 nodes.
-            msgCopy = msg.CloneData();
-            if (msgCopy.IsNull())
-            {
-                ChipLogError(Inet, "Failed to clone Groupcast message buffer. Discarding.");
-                return;
-            }
-            decrypted =
-                GroupKeyDecryptAttempt(partialPacketHeader, packetHeaderCopy, payloadHeader, false, msgCopy, mac, groupContext);
-        }
-#endif // CHIP_CONFIG_PRIVACY_ACCEPT_NONSPEC_SVE2
     }
     iter.Release();
     // Groupcast Testing
     auto & testing = chip::Groupcast::GetTesting();
-    if (testing.IsEnabled() && testing.IsFabricUnderTest(groupContext.fabric_index))
+
+    if (testing.IsEnabled())
     {
-        testing.SetGroupID(packetHeaderCopy.GetDestinationGroupId().Value());
-        if (!decrypted)
+        if (decrypted)
         {
+            // We have a valid groupContext from the loop
+            if (testing.IsFabricUnderTest(groupContext.fabric_index))
+            {
+                testing.SetGroupID(packetHeaderCopy.GetDestinationGroupId().Value());
+            }
+        }
+        else
+        {
+            // FAILURE CASE: No valid groupContext or decryption failed. This can happen
+            // when there is an empty group key map. This means GroupSessions cannot be
+            // iterated over to populate groupContext, and the fabric index cannot be
+            // explicitly checked here.
+
             testing.SetTestResult(chip::Groupcast::Testing::Result::kNoAvailableKey);
+            testing.NotifyDelegate();
         }
     }
+
     if (!decrypted)
     {
         ChipLogError(Inet, "Failed to decrypt group message. Discarding everything");

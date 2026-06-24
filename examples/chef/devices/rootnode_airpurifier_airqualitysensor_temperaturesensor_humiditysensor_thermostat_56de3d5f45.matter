@@ -857,7 +857,7 @@ cluster GeneralCommissioning = 48 {
 
 /** Functionality to configure, enable, disable network credentials and access on a Matter device. */
 cluster NetworkCommissioning = 49 {
-  revision 3;
+  revision 2;
 
   enum NetworkCommissioningStatusEnum : enum8 {
     kSuccess = 0;
@@ -888,7 +888,6 @@ cluster NetworkCommissioning = 49 {
     kWiFiNetworkInterface = 0x1;
     kThreadNetworkInterface = 0x2;
     kEthernetNetworkInterface = 0x4;
-    kPerDeviceCredentials = 0x8;
   }
 
   bitmap ThreadCapabilitiesBitmap : bitmap16 {
@@ -905,14 +904,11 @@ cluster NetworkCommissioning = 49 {
     kWPAPersonal = 0x4 [spec_name = "WPA-PERSONAL"];
     kWPA2Personal = 0x8 [spec_name = "WPA2-PERSONAL"];
     kWPA3Personal = 0x10 [spec_name = "WPA3-PERSONAL"];
-    kWPA3MatterPDC = 0x20 [spec_name = "WPA3-Matter-PDC"];
   }
 
   struct NetworkInfoStruct {
     octet_string<32> networkID = 0;
     boolean connected = 1;
-    optional nullable octet_string<20> networkIdentifier = 2;
-    optional nullable octet_string<20> clientIdentifier = 3;
   }
 
   struct ThreadInterfaceScanResultStruct {
@@ -968,9 +964,6 @@ cluster NetworkCommissioning = 49 {
     octet_string<32> ssid = 0;
     octet_string<64> credentials = 1;
     optional int64u breadcrumb = 2;
-    optional octet_string<140> networkIdentity = 3;
-    optional octet_string<20> clientIdentifier = 4;
-    optional octet_string<32> possessionNonce = 5;
   }
 
   request struct AddOrUpdateThreadNetworkRequest {
@@ -987,8 +980,6 @@ cluster NetworkCommissioning = 49 {
     NetworkCommissioningStatusEnum networkingStatus = 0;
     optional long_char_string<512> debugText = 1;
     optional int8u networkIndex = 2;
-    optional octet_string<140> clientIdentity = 3;
-    optional octet_string<64> possessionSignature = 4;
   }
 
   request struct ConnectNetworkRequest {
@@ -1008,16 +999,6 @@ cluster NetworkCommissioning = 49 {
     optional int64u breadcrumb = 2;
   }
 
-  request struct QueryIdentityRequest {
-    octet_string<20> keyIdentifier = 0;
-    optional octet_string<32> possessionNonce = 1;
-  }
-
-  response struct QueryIdentityResponse = 10 {
-    octet_string<140> identity = 0;
-    optional octet_string<64> possessionSignature = 1;
-  }
-
   /** This command is used to scan for available networks on the network interface associated with the cluster instance. */
   command access(invoke: administer) ScanNetworks(ScanNetworksRequest): ScanNetworksResponse = 0;
   /** This command is used to add or update a Wi-Fi network configuration. */
@@ -1030,8 +1011,6 @@ cluster NetworkCommissioning = 49 {
   command access(invoke: administer) ConnectNetwork(ConnectNetworkRequest): ConnectNetworkResponse = 6;
   /** This command is used to re-order the network configuration list. */
   command access(invoke: administer) ReorderNetwork(ReorderNetworkRequest): NetworkConfigResponse = 8;
-  /** This command is used to query the identity of a network configuration. */
-  command access(invoke: administer) QueryIdentity(QueryIdentityRequest): QueryIdentityResponse = 9;
 }
 
 /** The cluster provides commands for retrieving unstructured diagnostic logs from a Node that may be used to aid in diagnostics. */
@@ -2185,7 +2164,7 @@ cluster RelativeHumidityMeasurement = 1029 {
 
 /** Attributes for reporting carbon monoxide concentration measurements */
 cluster CarbonMonoxideConcentrationMeasurement = 1036 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2210,6 +2189,8 @@ cluster CarbonMonoxideConcentrationMeasurement = 1036 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2241,7 +2222,7 @@ cluster CarbonMonoxideConcentrationMeasurement = 1036 {
 
 /** Attributes for reporting carbon dioxide concentration measurements */
 cluster CarbonDioxideConcentrationMeasurement = 1037 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2266,6 +2247,8 @@ cluster CarbonDioxideConcentrationMeasurement = 1037 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2297,7 +2280,7 @@ cluster CarbonDioxideConcentrationMeasurement = 1037 {
 
 /** Attributes for reporting nitrogen dioxide concentration measurements */
 cluster NitrogenDioxideConcentrationMeasurement = 1043 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2322,6 +2305,8 @@ cluster NitrogenDioxideConcentrationMeasurement = 1043 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2353,7 +2338,7 @@ cluster NitrogenDioxideConcentrationMeasurement = 1043 {
 
 /** Attributes for reporting ozone concentration measurements */
 cluster OzoneConcentrationMeasurement = 1045 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2378,6 +2363,8 @@ cluster OzoneConcentrationMeasurement = 1045 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2409,7 +2396,7 @@ cluster OzoneConcentrationMeasurement = 1045 {
 
 /** Attributes for reporting PM2.5 concentration measurements */
 cluster Pm25ConcentrationMeasurement = 1066 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2434,6 +2421,8 @@ cluster Pm25ConcentrationMeasurement = 1066 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2465,7 +2454,7 @@ cluster Pm25ConcentrationMeasurement = 1066 {
 
 /** Attributes for reporting formaldehyde concentration measurements */
 cluster FormaldehydeConcentrationMeasurement = 1067 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2490,6 +2479,8 @@ cluster FormaldehydeConcentrationMeasurement = 1067 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2521,7 +2512,7 @@ cluster FormaldehydeConcentrationMeasurement = 1067 {
 
 /** Attributes for reporting PM1 concentration measurements */
 cluster Pm1ConcentrationMeasurement = 1068 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2546,6 +2537,8 @@ cluster Pm1ConcentrationMeasurement = 1068 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2577,7 +2570,7 @@ cluster Pm1ConcentrationMeasurement = 1068 {
 
 /** Attributes for reporting PM10 concentration measurements */
 cluster Pm10ConcentrationMeasurement = 1069 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2602,6 +2595,8 @@ cluster Pm10ConcentrationMeasurement = 1069 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2633,7 +2628,7 @@ cluster Pm10ConcentrationMeasurement = 1069 {
 
 /** Attributes for reporting total volatile organic compounds concentration measurements */
 cluster TotalVolatileOrganicCompoundsConcentrationMeasurement = 1070 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2658,6 +2653,8 @@ cluster TotalVolatileOrganicCompoundsConcentrationMeasurement = 1070 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2689,7 +2686,7 @@ cluster TotalVolatileOrganicCompoundsConcentrationMeasurement = 1070 {
 
 /** Attributes for reporting radon concentration measurements */
 cluster RadonConcentrationMeasurement = 1071 {
-  revision 3;
+  revision 5;
 
   shared enum LevelValueEnum : enum8 {
     kUnknown = 0;
@@ -2714,6 +2711,8 @@ cluster RadonConcentrationMeasurement = 1071 {
     kNGM3 = 5 [spec_name = "NGM3"];
     kPM3 = 6 [spec_name = "PM3"];
     kBQM3 = 7 [spec_name = "BQM3"];
+    kDBPM = 8 [spec_name = "DBPM"];
+    kPCFT = 9 [spec_name = "PCFT"];
   }
 
   bitmap Feature : bitmap32 {
@@ -2744,7 +2743,7 @@ cluster RadonConcentrationMeasurement = 1071 {
 }
 
 endpoint 0 {
-  device type ma_rootdevice = 22, version 5;
+  device type ma_rootdevice = 22, version 4;
 
 
   server cluster Descriptor {
@@ -2904,7 +2903,7 @@ endpoint 0 {
   }
 }
 endpoint 1 {
-  device type ma_air_purifier = 45, version 1;
+  device type ma_air_purifier = 45, version 2;
 
 
   server cluster Identify {
@@ -2981,23 +2980,23 @@ endpoint 1 {
   }
 
   server cluster FanControl {
-    persist  attribute fanMode default = 0;
+    callback attribute fanMode;
     ram      attribute fanModeSequence default = 2;
-    ram      attribute percentSetting default = 0;
-    ram      attribute percentCurrent default = 0;
+    callback attribute percentSetting;
+    callback attribute percentCurrent;
     ram      attribute speedMax default = 10;
-    ram      attribute speedSetting default = 0;
-    ram      attribute speedCurrent default = 0;
+    callback attribute speedSetting;
+    callback attribute speedCurrent;
     ram      attribute rockSupport default = 0x07;
-    ram      attribute rockSetting default = 0x00;
+    callback attribute rockSetting;
     ram      attribute windSupport default = 0x03;
-    ram      attribute windSetting default = 0x00;
-    ram      attribute airflowDirection default = 0;
+    callback attribute windSetting;
+    callback attribute airflowDirection;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
     ram      attribute featureMap default = 0x3F;
-    ram      attribute clusterRevision default = 0x0006;
+    callback attribute clusterRevision;
 
     handle command Step;
   }
