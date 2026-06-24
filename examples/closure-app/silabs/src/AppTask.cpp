@@ -353,7 +353,7 @@ void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePa
     using namespace chip::app::Clusters;
     switch (attributePath.mClusterId)
     {
-    case Identify::Id:
+    case Clusters::Identify::Id:
         ChipLogProgress(Zcl, "Identify cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                         ChipLogValueMEI(attributePath.mAttributeId), type, *value, size);
         break;
