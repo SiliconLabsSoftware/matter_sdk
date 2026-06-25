@@ -23,10 +23,13 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "CustomerAppTask.h"
 #include "LEDWidget.h"
+#include "SensorConfig.h"
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
+#include <app/clusters/occupancy-sensor-server/CodegenIntegration.h>
 #include <app/clusters/relative-humidity-measurement-server/CodegenIntegration.h>
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
 #include <app/data-model-provider/AttributeChangeListener.h>
@@ -77,9 +80,9 @@ constexpr uint8_t kOccupancyLedId = 1;
 constexpr uint8_t kOccupancyLedId = 0;
 #endif
 
-constexpr EndpointId kOccupancySensorEndpoint   = 1;
-constexpr EndpointId kTemperatureSensorEndpoint = 2;
-constexpr EndpointId kHumiditySensorEndpoint    = 3;
+constexpr EndpointId kOccupancySensorEndpoint   = OCCUPANCY_SENSOR_ENDPOINT;
+constexpr EndpointId kTemperatureSensorEndpoint = TEMPERATURE_SENSOR_ENDPOINT;
+constexpr EndpointId kHumiditySensorEndpoint    = HUMIDITY_SENSOR_ENDPOINT;
 
 // The > 0 is necessary to avoid causing a type-limits compilation error when the threshold is equal to 0
 // which is specific to the uint8_t data type
@@ -122,7 +125,7 @@ public:
 
             AppEvent event                         = {};
             event.Type                             = AppEvent::kEventType_OccupancyAttributeUpdate;
-            event.Handler                          = AppTask::OccupancyAttributeUpdateEvent;
+            event.Handler                          = CustomerAppTask::OccupancyAttributeUpdateEvent;
             event.OccupancyEvent.occupancyDetected = cluster->IsOccupied();
             AppTask::GetAppTask().PostEvent(&event);
             return;
@@ -132,7 +135,7 @@ public:
         {
             AppEvent event = {};
             event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
-            event.Handler  = AppTask::SensorAttributeUpdateEvent;
+            event.Handler  = CustomerAppTask::SensorAttributeUpdateEvent;
             AppTask::GetAppTask().PostEvent(&event);
         }
     }
@@ -140,19 +143,22 @@ public:
 
 SensorManagerAttributeChangeListener gAttributeChangeListener;
 
-} // namespace
+CustomerAppTask & AppInstance()
+{
+    return CustomerAppTask::GetAppTask();
+}
 
-AppTask AppTask::sAppTask;
+} // namespace
 
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    GetPlatform().SetButtonsCb(CustomerAppTask::ButtonEventHandler);
 
     sOccupancyLed.Init(kOccupancyLedId);
     sOccupancyLed.Set(false);
 
-    err = InitSensorManager();
+    err = AppInstance().InitSensorManager();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "InitSensorManager failed");
@@ -188,7 +194,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = GetAppTask().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask Init Failed!");
@@ -196,7 +202,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 
 #if !(defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER)
-    sAppTask.StartStatusLEDTimer();
+    GetAppTask().StartStatusLEDTimer();
 #endif
 
     ChipLogProgress(AppServer, "AppTask started.");
@@ -206,7 +212,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
+            GetAppTask().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -215,11 +221,12 @@ void AppTask::AppTaskMain(void * pvParameter)
 #ifdef DISPLAY_ENABLED
 void AppTask::UpdateDisplay()
 {
-    CycleSensorUI();
+    mCurrentSensorUI =
+        static_cast<kSensorUIEnum>((static_cast<uint8_t>(mCurrentSensorUI) + 1) % static_cast<uint8_t>(kSensorUIEnum::kCount));
     UpdateSensorDisplay();
 }
 
-void AppTask::UpdateSensorDisplay(void)
+void AppTask::UpdateSensorDisplay()
 {
     switch (mCurrentSensorUI)
     {
@@ -246,12 +253,6 @@ void AppTask::UpdateSensorDisplay(void)
         break;
     }
 }
-
-void AppTask::CycleSensorUI()
-{
-    mCurrentSensorUI =
-        static_cast<kSensorUIEnum>((static_cast<uint8_t>(mCurrentSensorUI) + 1) % static_cast<uint8_t>(kSensorUIEnum::kCount));
-}
 #endif // DISPLAY_ENABLED
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
@@ -264,49 +265,53 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
     case ButtonTypes::kFunctionButton:
         button_event.Handler = BaseApplication::ButtonHandler;
-        sAppTask.PostEvent(&button_event);
+        GetAppTask().PostEvent(&button_event);
         break;
     case ButtonTypes::kApplicationButton:
         if (SilabsPlatform::ButtonAction(btnAction) == SilabsPlatform::ButtonAction::ButtonPressed)
         {
-            button_event.Handler = ProccessButtonEvent;
-            sAppTask.PostEvent(&button_event);
+            button_event.Handler = CustomerAppTask::ProcessButtonEvent;
+            GetAppTask().PostEvent(&button_event);
         }
         break;
 
     default:
-        // Should never happen
         return;
     }
 }
 
-void AppTask::ProccessButtonEvent(AppEvent * event)
+void AppTask::ProcessButtonEvent(AppEvent * aEvent)
 {
-    VerifyOrReturn(event != nullptr);
-    VerifyOrReturn(event->Type == AppEvent::kEventType_Button);
+    VerifyOrReturn(aEvent != nullptr);
+    VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Button);
 
-    GetAppTask().ButtonActionTriggered(event);
+    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
+        OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(kOccupancySensorEndpoint);
+        VerifyOrReturn(cluster != nullptr);
+        bool state = cluster->IsOccupied();
+        cluster->SetOccupancy(!state);
+    });
 }
 
-void AppTask::SensorAttributeUpdateEvent(AppEvent * event)
+void AppTask::SensorAttributeUpdateEvent(AppEvent * aEvent)
 {
-    VerifyOrReturn(event != nullptr);
-    VerifyOrReturn(event->Type == AppEvent::kEventType_SensorAttributeUpdate);
+    VerifyOrReturn(aEvent != nullptr);
+    VerifyOrReturn(aEvent->Type == AppEvent::kEventType_SensorAttributeUpdate);
 
 #ifdef DISPLAY_ENABLED
-    sAppTask.UpdateSensorDisplay();
+    GetAppTask().UpdateSensorDisplay();
 #endif // DISPLAY_ENABLED
 }
 
-void AppTask::OccupancyAttributeUpdateEvent(AppEvent * event)
+void AppTask::OccupancyAttributeUpdateEvent(AppEvent * aEvent)
 {
-    VerifyOrReturn(event != nullptr);
-    VerifyOrReturn(event->Type == AppEvent::kEventType_OccupancyAttributeUpdate);
+    VerifyOrReturn(aEvent != nullptr);
+    VerifyOrReturn(aEvent->Type == AppEvent::kEventType_OccupancyAttributeUpdate);
 
-    sOccupancyLed.Set(event->OccupancyEvent.occupancyDetected);
+    sOccupancyLed.Set(aEvent->OccupancyEvent.occupancyDetected);
 
 #ifdef DISPLAY_ENABLED
-    sAppTask.UpdateSensorDisplay();
+    GetAppTask().UpdateSensorDisplay();
 #endif // DISPLAY_ENABLED
 }
 
@@ -317,10 +322,45 @@ void AppTask::SensorActionTriggered(chip::System::Layer * aLayer, void * aAppSta
     int16_t temperature = 0;
     uint16_t humidity   = 0;
 
-#if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
-    VerifyOrReturn(SL_STATUS_OK == Si70xxSensor::GetSensorData(humidity, temperature));
-#else
+    VerifyOrReturn(AppInstance().GetTemperatureAndHumidity(temperature, humidity) == CHIP_NO_ERROR);
 
+    if (abs(mLastReportedTemperatureValue - temperature) > kAttributeChangeReportThreshold)
+    {
+        mLastReportedTemperatureValue = temperature;
+    }
+    {
+        DataModel::Nullable<int16_t> tempVal;
+        tempVal.SetNonNull(temperature);
+        VerifyOrReturn(TemperatureMeasurement::SetMeasuredValue(kTemperatureSensorEndpoint, tempVal) == CHIP_NO_ERROR);
+    }
+
+    if (abs(mLastReportedHumidityValue - humidity) > kAttributeChangeReportThreshold)
+    {
+        mLastReportedHumidityValue = humidity;
+    }
+    {
+        DataModel::Nullable<uint16_t> humVal;
+        humVal.SetNonNull(humidity);
+        VerifyOrReturn(RelativeHumidityMeasurement::SetMeasuredValue(kHumiditySensorEndpoint, humVal) == CHIP_NO_ERROR);
+    }
+
+    VerifyOrDieWithMsg(aLayer->StartTimer(kSensorReadPeriod, CustomerAppTask::SensorActionTriggered, nullptr) == CHIP_NO_ERROR,
+                       AppServer, "Failed to start recurring timer!");
+
+    ChipLogDetail(AppServer, "Current temperature value: %d", temperature);
+    ChipLogDetail(AppServer, "Current humidity value: %d", humidity);
+}
+
+CHIP_ERROR AppTask::GetTemperatureAndHumidity(int16_t & temperature, uint16_t & humidity)
+{
+#if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+    sl_status_t status = Si70xxSensor::GetSensorData(humidity, temperature);
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(AppServer, "Failed to read sensor data: %lx", status);
+        return MATTER_PLATFORM_ERROR(status);
+    }
+#else
     TemperatureMeasurementCluster * tempCluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
     DataModel::Nullable<int16_t> maxTempMeasuredValue =
         (tempCluster != nullptr) ? tempCluster->GetMaxMeasuredValue() : DataModel::Nullable<int16_t>{};
@@ -359,34 +399,9 @@ void AppTask::SensorActionTriggered(chip::System::Layer * aLayer, void * aAppSta
         humidity    = currentHumidityValue.Value() + 1;
         temperature = currentTempValue.Value() + 1;
     }
-
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 
-    if (abs(mLastReportedTemperatureValue - temperature) > kAttributeChangeReportThreshold)
-    {
-        mLastReportedTemperatureValue = temperature;
-    }
-    {
-        DataModel::Nullable<int16_t> tempVal;
-        tempVal.SetNonNull(temperature);
-        VerifyOrReturn(TemperatureMeasurement::SetMeasuredValue(kTemperatureSensorEndpoint, tempVal) == CHIP_NO_ERROR);
-    }
-
-    if (abs(mLastReportedHumidityValue - humidity) > kAttributeChangeReportThreshold)
-    {
-        mLastReportedHumidityValue = humidity;
-    }
-    {
-        DataModel::Nullable<uint16_t> humVal;
-        humVal.SetNonNull(humidity);
-        VerifyOrReturn(RelativeHumidityMeasurement::SetMeasuredValue(kHumiditySensorEndpoint, humVal) == CHIP_NO_ERROR);
-    }
-
-    VerifyOrDieWithMsg(aLayer->StartTimer(kSensorReadPeriod, SensorActionTriggered, nullptr) == CHIP_NO_ERROR, AppServer,
-                       "Failed to start recurring timer!");
-
-    ChipLogDetail(AppServer, "Current temperature value: %d", temperature);
-    ChipLogDetail(AppServer, "Current humidity value: %d", humidity);
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR AppTask::InitSensorManager()
@@ -401,24 +416,11 @@ CHIP_ERROR AppTask::InitSensorManager()
 
     isInitialised = true;
 
-    VerifyOrDieWithMsg(DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
-        SensorActionTriggered(&chip::DeviceLayer::SystemLayer(), nullptr);
-    }) == CHIP_NO_ERROR,
-                       AppServer, "Failed to schedule the first SensorCallback!");
+    CHIP_ERROR err = chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(0),
+                                                                 CustomerAppTask::SensorActionTriggered, nullptr);
+    VerifyOrDieWithMsg(err == CHIP_NO_ERROR, AppServer, "Failed to schedule the first SensorCallback!");
 
     return CHIP_NO_ERROR;
-}
-
-void AppTask::ButtonActionTriggered(AppEvent * aEvent)
-{
-    VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Button);
-
-    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
-        OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(kOccupancySensorEndpoint);
-        VerifyOrReturn(cluster != nullptr);
-        bool state = cluster->IsOccupied();
-        cluster->SetOccupancy(!state);
-    });
 }
 
 Status AppTask::GetMeasuredTemperature(DataModel::Nullable<int16_t> & value)
@@ -497,8 +499,8 @@ bool AppTask::IsOccupancyDetected()
     return occupied;
 }
 
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
-                                       uint8_t * value)
+void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                            uint8_t * value)
 {
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;

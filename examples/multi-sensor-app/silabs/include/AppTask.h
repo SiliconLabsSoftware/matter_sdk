@@ -1,7 +1,7 @@
 /*
  *
  *    Copyright (c) 2020 Project CHIP Authors
- *    Copyright (c) 2019 Google LLC.
+ *    Copyright (c) 2019 Google LLC. 
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,26 +18,15 @@
  */
 #pragma once
 
-/**********************************************************
- * Includes
- *********************************************************/
-
-#include "AppEvent.h"
 #include "BaseApplication.h"
 #include <app/ConcreteAttributePath.h>
-#include <app/clusters/occupancy-sensor-server/CodegenIntegration.h>
 #include <app/data-model/Nullable.h>
-#include <ble/BLEEndPoint.h>
 #include <lib/core/CHIPError.h>
-#include <memory>
+#include <lib/core/DataModelTypes.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <protocols/interaction_model/StatusCode.h>
-#include <stdbool.h>
-#include <stdint.h>
 
-/**********************************************************
- * Defines
- *********************************************************/
+struct AppEvent;
 
 // Application-defined error codes in the CHIP_ERROR space.
 #define APP_ERROR_EVENT_QUEUE_FAILED CHIP_APPLICATION_ERROR(0x01)
@@ -47,17 +36,14 @@
 #define APP_ERROR_START_TIMER_FAILED CHIP_APPLICATION_ERROR(0x05)
 #define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
 
-/**********************************************************
- * AppTask Declaration
- *********************************************************/
-
 class AppTask : public BaseApplication
 {
 
 public:
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    /** @brief Returns the active app instance (defined in CustomerAppTask.cpp). */
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -83,28 +69,29 @@ public:
      *        Use the EventHandler structure to be used as a callback the Application events.
      *
      */
-    static void ProccessButtonEvent(AppEvent * event);
+    static void ProcessButtonEvent(AppEvent * aEvent);
 
     /**
      * @brief Triggers necessary updates when the Sensor values have been changed.
      *        Use the EventHandler structure to be used as a callback the Application events.
      */
-    static void SensorAttributeUpdateEvent(AppEvent * event);
+    static void SensorAttributeUpdateEvent(AppEvent * aEvent);
 
     /**
      * @brief Triggers necessary updates when the Occupancy values have been changed.
      *        Use the EventHandler structure to be used as a callback the Application events.
      */
-    static void OccupancyAttributeUpdateEvent(AppEvent * event);
+    static void OccupancyAttributeUpdateEvent(AppEvent * aEvent);
 
     /**
-     * @brief Process function when the application button is pressed.
-     *        Toggles the occupancy sensor attribute.
-     *        Schedules the attribute update to be done from the Matter task.
-     *
-     * @param aEvent button event being processed
+     * @brief Reads the current temperature and humidity from the sensor (Si70xx) or,
+     *        when the sensor is not present returns simulated values.
      */
-    void ButtonActionTriggered(AppEvent * aEvent);
+    CHIP_ERROR GetTemperatureAndHumidity(int16_t & temperature, uint16_t & humidity);
+
+    /** @brief Data model hook invoked when a cluster attribute changes */
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
 
     /**
      * @brief Returns the DataModel TemperatureMeasurement::MeasuredValue attribute.
@@ -153,11 +140,35 @@ public:
      *        Function switch to the next LCD UI and update the show values.
      */
     void UpdateDisplay() override;
+
+    /**
+     * @brief Trigger an LCD update to get the latest attribute values
+     *        Only the currently shown LCD image is updated.
+     */
+    void UpdateSensorDisplay();
 #endif // DISPLAY_ENABLED
 
-private:
-    static AppTask sAppTask;
+protected:
+    /**
+     * @brief Override of BaseApplication::AppInit(), called by BaseApplication::Init().
+     */
+    CHIP_ERROR AppInit() override;
 
+    /**
+     * @brief Initializes the sensor subsystem: registers the attribute change listener,
+     *        initializes the hardware sensor driver (if enabled), and schedules the
+     *        first sensor reading.
+     */
+    CHIP_ERROR InitSensorManager();
+
+    /**
+     * @brief chip::System::Layer timer callback that reads sensor values and updates
+     *        the TemperatureMeasurement / RelativeHumidityMeasurement clusters.
+     *        Must be called from the Matter task context.
+     */
+    static void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState);
+
+private:
     enum class kSensorUIEnum : uint8_t
     {
         kOccupancySensor = 0,
@@ -170,51 +181,6 @@ private:
         kCount = 3,
 #endif
     };
-
-    /**
-     * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
-     *
-     * @return CHIP_ERROR
-     */
-    CHIP_ERROR AppInit() override;
-
-    /**
-     * @brief Initializes the sensor subsystem: registers the attribute change listener,
-     *        initializes the underlying hardware sensor (if enabled), and schedules the
-     *        first sensor reading.
-     *
-     * @return CHIP_ERROR CHIP_NO_ERROR on success
-     */
-    CHIP_ERROR InitSensorManager();
-
-    /**
-     * @brief Timer/ScheduleWork callback that reads sensor values and updates the data model.
-     *        Must be called from the Matter task context.
-     */
-    static void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState);
-
-#ifdef DISPLAY_ENABLED
-    /**
-     * @brief Function cycle between the different LCD UIs.
-     *        The LCD order is : Occupancy -> Temp/Hum values -> Status Screen -> QR code (if enabled) -> Occupancy.
-     */
-    void CycleSensorUI();
-
-    /**
-     * @brief Trigger an LCD update to get the latest attribute values
-     *        Only the currently shown LCD image is updated.
-     */
-    void UpdateSensorDisplay(void);
-#endif // DISPLAY_ENABLED
-
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
-     *
-     * @param aEvent button event being processed
-     */
-    static void ButtonHandler(AppEvent * aEvent);
 
     kSensorUIEnum mCurrentSensorUI;
 };
