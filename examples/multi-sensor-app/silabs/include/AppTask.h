@@ -24,11 +24,14 @@
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
+#include <app/ConcreteAttributePath.h>
 #include <app/clusters/occupancy-sensor-server/CodegenIntegration.h>
+#include <app/data-model/Nullable.h>
 #include <ble/BLEEndPoint.h>
 #include <lib/core/CHIPError.h>
 #include <memory>
 #include <platform/CHIPDeviceLayer.h>
+#include <protocols/interaction_model/StatusCode.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -94,6 +97,56 @@ public:
      */
     static void OccupancyAttributeUpdateEvent(AppEvent * event);
 
+    /**
+     * @brief Process function when the application button is pressed.
+     *        Toggles the occupancy sensor attribute.
+     *        Schedules the attribute update to be done from the Matter task.
+     *
+     * @param aEvent button event being processed
+     */
+    void ButtonActionTriggered(AppEvent * aEvent);
+
+    /**
+     * @brief Returns the DataModel TemperatureMeasurement::MeasuredValue attribute.
+     *        The caller MUST hold the lock on the Matter task.
+     */
+    chip::Protocols::InteractionModel::Status GetMeasuredTemperature(chip::app::DataModel::Nullable<int16_t> & value);
+
+    /**
+     * @brief Returns the DataModel TemperatureMeasurement::MaxMeasuredValue attribute.
+     *        The caller MUST hold the lock on the Matter task.
+     */
+    chip::Protocols::InteractionModel::Status GetMaxMeasuredTemperature(chip::app::DataModel::Nullable<int16_t> & value);
+
+    /**
+     * @brief Returns the DataModel TemperatureMeasurement::MinMeasuredValue attribute.
+     *        The caller MUST hold the lock on the Matter task.
+     */
+    chip::Protocols::InteractionModel::Status GetMinMeasuredTemperature(chip::app::DataModel::Nullable<int16_t> & value);
+
+    /**
+     * @brief Returns the DataModel RelativeHumidityMeasurement::MeasuredValue attribute.
+     *        The caller MUST hold the lock on the Matter task.
+     */
+    chip::Protocols::InteractionModel::Status GetMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value);
+
+    /**
+     * @brief Returns the DataModel RelativeHumidityMeasurement::MaxMeasuredValue attribute.
+     *        The caller MUST hold the lock on the Matter task.
+     */
+    chip::Protocols::InteractionModel::Status GetMaxMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value);
+
+    /**
+     * @brief Returns the DataModel RelativeHumidityMeasurement::MinMeasuredValue attribute.
+     *        The caller MUST hold the lock on the Matter task.
+     */
+    chip::Protocols::InteractionModel::Status GetMinMeasuredHumidity(chip::app::DataModel::Nullable<uint16_t> & value);
+
+    /**
+     * @brief Reads the Occupancy attribute and returns whether occupancy is currently detected.
+     */
+    bool IsOccupancyDetected();
+
 #ifdef DISPLAY_ENABLED
     /**
      * @brief LCD callback function to cycle LCD display.
@@ -124,6 +177,21 @@ private:
      * @return CHIP_ERROR
      */
     CHIP_ERROR AppInit() override;
+
+    /**
+     * @brief Initializes the sensor subsystem: registers the attribute change listener,
+     *        initializes the underlying hardware sensor (if enabled), and schedules the
+     *        first sensor reading.
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR on success
+     */
+    CHIP_ERROR InitSensorManager();
+
+    /**
+     * @brief Timer/ScheduleWork callback that reads sensor values and updates the data model.
+     *        Must be called from the Matter task context.
+     */
+    static void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState);
 
 #ifdef DISPLAY_ENABLED
     /**

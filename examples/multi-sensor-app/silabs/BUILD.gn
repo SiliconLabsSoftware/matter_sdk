@@ -121,8 +121,6 @@ silabs_executable("multi-sensor-app") {
 
   sources = [
     "src/AppTask.cpp",
-    "src/DataModelCallbacks.cpp",
-    "src/SensorManager.cpp",
   ]
 
   if (!disable_lcd) {
