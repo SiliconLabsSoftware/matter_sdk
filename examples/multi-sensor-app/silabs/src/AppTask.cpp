@@ -416,9 +416,10 @@ CHIP_ERROR AppTask::InitSensorManager()
 
     isInitialised = true;
 
-    CHIP_ERROR err = chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(0),
-                                                                 CustomerAppTask::SensorActionTriggered, nullptr);
-    VerifyOrDieWithMsg(err == CHIP_NO_ERROR, AppServer, "Failed to schedule the first SensorCallback!");
+    VerifyOrDieWithMsg(DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
+        CustomerAppTask::SensorActionTriggered(&chip::DeviceLayer::SystemLayer(), nullptr);
+    }) == CHIP_NO_ERROR,
+                       AppServer, "Failed to schedule the first SensorCallback!");
 
     return CHIP_NO_ERROR;
 }
