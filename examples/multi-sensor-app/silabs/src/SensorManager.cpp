@@ -30,8 +30,10 @@
 #include <SensorManager.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
+#include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/clusters/relative-humidity-measurement-server/CodegenIntegration.h>
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
+#include <data-model-providers/codegen/CodegenDataModelProvider.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_cmsis_os2_common.h>
 
@@ -72,6 +74,45 @@ constexpr chip::System::Clock::Seconds32 kSensorReadPeriod = chip::System::Clock
 uint16_t mLastReportedHumidityValue   = 0;
 int16_t mLastReportedTemperatureValue = 0;
 bool isInitialised                    = false;
+
+class SensorManagerAttributeChangeListener : public DataModel::AttributeChangeListener
+{
+public:
+    void OnAttributeChanged(const ConcreteAttributePath & path, DataModel::AttributeChangeType) override
+    {
+        const bool isOccupancyUpdate = path.mEndpointId == kOccupancySensorEndpoint && path.mClusterId == OccupancySensing::Id &&
+            path.mAttributeId == OccupancySensing::Attributes::Occupancy::Id;
+        const bool isTemperatureUpdate = path.mEndpointId == kTemperatureSensorEndpoint &&
+            path.mClusterId == TemperatureMeasurement::Id &&
+            path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id;
+        const bool isHumidityUpdate = path.mEndpointId == kHumiditySensorEndpoint &&
+            path.mClusterId == RelativeHumidityMeasurement::Id &&
+            path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id;
+
+        if (isOccupancyUpdate)
+        {
+            OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(path.mEndpointId);
+            VerifyOrReturn(cluster != nullptr);
+
+            AppEvent event                         = {};
+            event.Type                             = AppEvent::kEventType_OccupancyAttributeUpdate;
+            event.Handler                          = AppTask::OccupancyAttributeUpdateEvent;
+            event.OccupancyEvent.occupancyDetected = cluster->IsOccupied();
+            AppTask::GetAppTask().PostEvent(&event);
+            return;
+        }
+
+        if (isTemperatureUpdate || isHumidityUpdate)
+        {
+            AppEvent event = {};
+            event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
+            event.Handler  = AppTask::SensorAttributeUpdateEvent;
+            AppTask::GetAppTask().PostEvent(&event);
+        }
+    }
+};
+
+SensorManagerAttributeChangeListener gAttributeChangeListener;
 
 /**
  * @brief Process function when the Sensor Timer event is triggered.
@@ -181,6 +222,11 @@ CHIP_ERROR Init()
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
     VerifyOrDieWithMsg(Si70xxSensor::Init() == SL_STATUS_OK, AppServer, "Failed to initialize the sensor!");
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+
+    DeviceLayer::PlatformMgr().LockChipStack();
+    CodegenDataModelProvider::Instance().RegisterAttributeChangeListener(gAttributeChangeListener);
+    DeviceLayer::PlatformMgr().UnlockChipStack();
+
     isInitialised = true;
 
     VerifyOrDieWithMsg(DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
