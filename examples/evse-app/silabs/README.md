@@ -207,6 +207,22 @@ the reference for overridable methods and app configuration.
 | [`include/AppTaskImpl.h`](include/AppTaskImpl.h) | Declarations of every overridable `*Impl()` method. Copy the signatures you need from here into `CustomerAppTask.h`.                                 |
 | [`src/AppTask.cpp`](src/AppTask.cpp)             | Silicon Labs default implementation of AppTask. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior. |
 
+### Energy Management Hardware Integration
+
+The CRTP `CustomerAppTask` pattern covers AppTask behavior. Energy management hardware
+integration (Power and Energy Measurement, Power Topology, and
+activating/deactivating the charging hardware in response to cluster commands) is not 
+currently routed through CRTP. Work is planned to route this functionality through the
+CRTP `CustomerAppTask` interface in the future.
+
+Until that follow up work is complete, manufacturers who need to connect real
+energy management hardware must edit the following shared delegate implementations
+directly:
+
+- [`examples/energy-management/electrical-sensor/src/ElectricalEnergyMeasurementDelegateImpl.cpp`](../../energy-management/electrical-sensor/src/ElectricalEnergyMeasurementDelegateImpl.cpp) 
+- [`examples/energy-management/electrical-sensor/src/ElectricalPowerMeasurementDelegateImpl.cpp`](../../energy-management/electrical-sensor/src/ElectricalPowerMeasurementDelegateImpl.cpp)
+- [`examples/energy-management/electrical-sensor/src/PowerTopologyDelegateImpl.cpp`](../../energy-management/electrical-sensor/src/PowerTopologyDelegateImpl.cpp)
+
 ## Building
 
 -   Download the
