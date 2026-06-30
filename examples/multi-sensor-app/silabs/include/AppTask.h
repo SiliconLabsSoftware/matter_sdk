@@ -166,7 +166,7 @@ protected:
      *        the TemperatureMeasurement / RelativeHumidityMeasurement clusters.
      *        Must be called from the Matter task context.
      */
-    static void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState);
+    static void TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState);
 
 private:
     enum class kSensorUIEnum : uint8_t

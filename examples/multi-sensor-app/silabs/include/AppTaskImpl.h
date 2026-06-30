@@ -63,9 +63,9 @@ public:
     }
 
     // chip::System::Layer timer handler, reads sensor values and updates measurement clusters
-    static void SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState)
+    static void TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState)
     {
-        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, SensorActionTriggeredImpl, aLayer, aAppState);
+        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, TriggerSensorActionImpl, aLayer, aAppState);
     }
 
     // Asynchronous event handler, drives occupancy LED and refreshes LCD on occupancy change
@@ -106,9 +106,9 @@ private:
 
     void ProcessButtonEventImpl(AppEvent * aEvent) { AppTask::ProcessButtonEvent(aEvent); }
 
-    void SensorActionTriggeredImpl(chip::System::Layer * aLayer, void * aAppState)
+    void TriggerSensorActionImpl(chip::System::Layer * aLayer, void * aAppState)
     {
-        AppTask::SensorActionTriggered(aLayer, aAppState);
+        AppTask::TriggerSensorAction(aLayer, aAppState);
     }
 
     void OccupancyAttributeUpdateEventImpl(AppEvent * aEvent) { AppTask::OccupancyAttributeUpdateEvent(aEvent); }

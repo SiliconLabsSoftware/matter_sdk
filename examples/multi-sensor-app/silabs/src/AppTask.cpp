@@ -316,7 +316,7 @@ void AppTask::OccupancyAttributeUpdateEvent(AppEvent * aEvent)
 #endif // DISPLAY_ENABLED
 }
 
-void AppTask::SensorActionTriggered(chip::System::Layer * aLayer, void * aAppState)
+void AppTask::TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState)
 {
     VerifyOrDieWithMsg(isInitialised, AppServer, "Sensor Action was triggered before the Sensor Manager was initialised!");
 
@@ -345,7 +345,7 @@ void AppTask::SensorActionTriggered(chip::System::Layer * aLayer, void * aAppSta
         VerifyOrReturn(RelativeHumidityMeasurement::SetMeasuredValue(kHumiditySensorEndpoint, humVal) == CHIP_NO_ERROR);
     }
 
-    VerifyOrDieWithMsg(aLayer->StartTimer(kSensorReadPeriod, CustomerAppTask::SensorActionTriggered, nullptr) == CHIP_NO_ERROR,
+    VerifyOrDieWithMsg(aLayer->StartTimer(kSensorReadPeriod, CustomerAppTask::TriggerSensorAction, nullptr) == CHIP_NO_ERROR,
                        AppServer, "Failed to start recurring timer!");
 
     ChipLogDetail(AppServer, "Current temperature value: %d", temperature);
@@ -418,7 +418,7 @@ CHIP_ERROR AppTask::InitSensorManager()
     isInitialised = true;
 
     VerifyOrDieWithMsg(DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
-        CustomerAppTask::SensorActionTriggered(&chip::DeviceLayer::SystemLayer(), nullptr);
+        CustomerAppTask::TriggerSensorAction(&chip::DeviceLayer::SystemLayer(), nullptr);
     }) == CHIP_NO_ERROR,
                        AppServer, "Failed to schedule the first SensorCallback!");
 
