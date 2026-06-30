@@ -400,8 +400,8 @@ CHIP_ERROR AppTask::GetTemperatureAndHumidity(int16_t & temperature, uint16_t & 
     }
     else
     {
-        humidity    = currentHumidityValue.Value() + 1;
-        temperature = currentTempValue.Value() + 1;
+        humidity    = (currentHumidityValue.Value() + 1) % maxMeasuredHumidityValue.Value();
+        temperature = (currentTempValue.Value() + 1) % maxTempMeasuredValue.Value();
     }
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 
