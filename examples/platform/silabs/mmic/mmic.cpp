@@ -64,14 +64,46 @@ uint8_t encodeCommand(mmic_command_id_e id, void * parameter, uint16_t size, uin
         
         *encodedPacket=workbuffer; // Warning must be freed by the caller
     }
+    else
+    {
+        switch(id)
+        {
+            case establish_subscription:
+            {
+                // Caller (host_main) serializes the subscriptionArgs_t payload
+                // into `parameter`. Validate and copy it onto the wire.
+                if (size != sizeof(subscriptionArgs_t))
+                {
+                    free(workbuffer);
+                    return 1;
+                }
+
+                const size_t actualPacketSize = MMIC_PACKET_OVERHEAD + size;
+
+                workbuffer[1] = (uint8_t)actualPacketSize;
+                workbuffer[2] = id;
+                memcpy(workbuffer + 3, parameter, size);
+
+                uint16_t crc = crc16(workbuffer, (uint8_t)(actualPacketSize - 2));
+                memcpy(workbuffer + actualPacketSize - 2, &crc, 2);
+
+                *packetSize    = actualPacketSize;
+                *encodedPacket = workbuffer; // Warning must be freed by the caller
+                break;
+            }
+            default:
+                free(workbuffer);
+                return 2;
+        }
+    }
   
     return 0;
 }
 
-uint8_t decodeResponse(uint8_t * buffer, size_t len, uint8_t ** stringToPrint)
+uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
 {
 
-    if(buffer == NULL || len == 0 || stringToPrint == NULL)
+    if(buffer == NULL || len == 0 )
     {
         return 1;
     }
@@ -93,15 +125,23 @@ uint8_t decodeResponse(uint8_t * buffer, size_t len, uint8_t ** stringToPrint)
     switch(buffer[2])
     {
         case ping:
-            uint8_t * tmp = malloc( ((buffer[1]-MMIC_PACKET_OVERHEAD) +4) * sizeof(uint8_t));
-            if(tmp==NULL) return 3;
-
-            snprintf(tmp,((buffer[1]-MMIC_PACKET_OVERHEAD) +4), "\r\n%s\r\n",(char *)buffer+3 );
-            *stringToPrint = tmp;
+            printf("\r\n%s\r\n",(char *)buffer+3 );
+            break;
+        case version:
+            printf("\r\n%s\r\n",(char *)buffer+3 );
+            break;
+        case matter_state:
+            matterState_t state;
+            memcpy(&state,buffer+3, sizeof(matterState_t));
+            printf("\r\nNumber of Fabrics: %d\r\nCommisionning Window Open:  %s\r\n",state.nbOfFabric, (state.commissioningWindowOpen)? "true" : "false" );
+            break; 
+        case establish_subscription:
+            printf("\r\n%s\r\n", buffer[2] == 0 ? "Success":"Failure");
             break;
         default:
             return 3; //Not implemented
     };
+    fflush(stdout);
     return 0;
 }
 
@@ -112,6 +152,12 @@ void printHelp(void)
     #undef X   
 }
 #else
+#include "../subscription/SubscriptionManager.h"
+#include <app/server/CommissioningWindowManager.h>
+#include <app/server/Server.h>
+#include <credentials/FabricTable.h>
+#include <lib/core/CHIPError.h>
+
 
 uint8_t encodeResponse(mmic_command_id_e id, void * response, size_t responseLen, uint8_t ** encodedPacket, size_t * packetSize)
 {
@@ -164,18 +210,52 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
     switch(buffer[2])
     {
         case ping:
-            encodeResponse(ping, "pong", sizeof("pong"), response, packetSize);
+            encodeResponse(ping, const_cast<char *>("pong"), sizeof("pong"), response, packetSize);
             break;
         case version:
-            encodeResponse(ping, MMIC_VERSION_STRING, sizeof(MMIC_VERSION_STRING), response, packetSize);
+            encodeResponse(ping, const_cast<char *>(MMIC_VERSION_STRING), sizeof(MMIC_VERSION_STRING), response, packetSize);
             break;
         case matter_state: // To verify commissioning
             {
                 matterState_t state;
                 if (encodeMatterState(&state) == 0)
                 {
-                    encodeResponse(ot_state, &state, sizeof(matterState_t), response, packetSize);
+                    encodeResponse(matter_state, &state, sizeof(matterState_t), response, packetSize);
                 }
+            }
+            break;
+        case openCommissioning:
+            {
+                if(chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow() != CHIP_NO_ERROR)
+                {
+                    // encode success response
+                }
+            }
+            break;
+        case establish_subscription:
+            {
+                const uint16_t payloadLen = buffer[1] - MMIC_PACKET_OVERHEAD;
+                if (payloadLen < sizeof(subscriptionArgs_t))
+                {
+                    return 2;
+                }
+
+                subscriptionArgs_t args;
+                memcpy(&args, buffer + 3, sizeof(args));
+
+                chip::Silabs::SubscriptionManager::Info info;
+                info.fabricIndex = args.fabricIndex;
+                info.nodeId      = args.nodeId;
+                info.endpointId  = args.endpointId;
+                info.clusterId   = args.clusterId;
+                info.attributeId = args.attributeId;
+
+                chip::Silabs::SubscriptionManager::Handle handle =
+                    chip::Silabs::SubscriptionManager::kInvalidHandle;
+                CHIP_ERROR err = chip::Silabs::SubscriptionManager::Instance().Subscribe(info, &handle);
+
+                uint8_t status = err == CHIP_NO_ERROR ? 0 : 1;
+                encodeResponse(establish_subscription, &status, sizeof(status), response, packetSize);
             }
             break;
         default:
@@ -186,16 +266,26 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
     return 0;
 }
 
+
+
 uint8_t encodeMatterState(matterState_t * state)
 {
+    if(state == nullptr)
+    {
+        return 1;
+    }
 
+    state->nbOfFabric = chip::Server::GetInstance().GetFabricTable().FabricCount();
+    state->commissioningWindowOpen= chip::Server::GetInstance().GetCommissioningWindowManager().IsCommissioningWindowOpen();
+    return 0;
+    
 }
 uint8_t establishSubscription()
 {
-
+    return 0;
 }
 uint8_t getSubscriptionsInfo()
 {
-    
+    return 0;
 }
 #endif // HOST_SIDE

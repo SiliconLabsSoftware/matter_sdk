@@ -1,3 +1,0 @@
-/Users/jepenven/workspace/matter/matter_extension/third_party/matter_sdk/examples/platform/silabs/mmic/build/CMakeFiles/mmic_host.dir
-/Users/jepenven/workspace/matter/matter_extension/third_party/matter_sdk/examples/platform/silabs/mmic/build/CMakeFiles/edit_cache.dir
-/Users/jepenven/workspace/matter/matter_extension/third_party/matter_sdk/examples/platform/silabs/mmic/build/CMakeFiles/rebuild_cache.dir

@@ -21,15 +21,26 @@
     X(version, "Returns version string", 0, uint8_t)\
     X(matter_state, "Returns Matter current state", 0, uint8_t)\
     X(establish_subscription, "Establish subscription ", 5, matterState_t)\
-    X(subscription_info, "Returns Matter current state", 0, uint8_t)
+    X(subscription_info, "Returns Matter current state", 0, uint8_t)\
+    X(openCommissioning, "Open Commissioning Window", 0, uint8_t)
 
-typedef enum 
+typedef enum mmic_command_id : uint8_t
 {
     #define X(a,b,c, d) a,
     COMMAND_LIST
     #undef X
     INVALID_COMMAND_ID,
 } mmic_command_id_e;
+
+// Wire layout for the establish_subscription command payload (little-endian, packed).
+struct __attribute__((packed)) subscriptionArgs_t
+{
+    uint8_t  fabricIndex;
+    uint64_t nodeId;
+    uint16_t endpointId;
+    uint32_t clusterId;
+    uint32_t attributeId;
+};
 
 typedef struct mmic
 {
@@ -42,7 +53,7 @@ typedef struct matterState
     uint64_t nodeId;
     uint8_t nbOfFabric;
     uint8_t nbOfSubscription;
-    uint8_t advertising;
+    bool commissioningWindowOpen;
 }matterState_t;
 
 /* CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF, no reflect, no xorout). */
@@ -54,7 +65,7 @@ uint8_t encodeCommand(mmic_command_id_e id, void * parameter, uint16_t size, uin
 void printHelp(void);
  // TODO find a way to either do a map or find the max string len
 extern const char commandsString[][255];
-uint8_t decodeResponse(uint8_t * buffer, size_t len, uint8_t ** stringToPrint);
+uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len);
 
 
 #else
