@@ -149,6 +149,16 @@ CustomerAppTask & AppInstance()
     return CustomerAppTask::GetAppTask();
 }
 
+TemperatureMeasurementCluster * GetTemperatureCluster()
+{
+    return TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
+}
+
+RelativeHumidityMeasurementCluster * GetHumidityCluster()
+{
+    return RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
+}
+
 } // namespace
 
 CHIP_ERROR AppTask::AppInit()
@@ -362,11 +372,11 @@ CHIP_ERROR AppTask::GetTemperatureAndHumidity(int16_t & temperature, uint16_t & 
         return MATTER_PLATFORM_ERROR(status);
     }
 #else
-    TemperatureMeasurementCluster * tempCluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
+    TemperatureMeasurementCluster * tempCluster = GetTemperatureCluster();
     DataModel::Nullable<int16_t> maxTempMeasuredValue =
         (tempCluster != nullptr) ? tempCluster->GetMaxMeasuredValue() : DataModel::Nullable<int16_t>{};
 
-    RelativeHumidityMeasurementCluster * rhCluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
+    RelativeHumidityMeasurementCluster * rhCluster = GetHumidityCluster();
     DataModel::Nullable<uint16_t> maxMeasuredHumidityValue =
         (rhCluster != nullptr) ? rhCluster->GetMaxMeasuredValue() : DataModel::Nullable<uint16_t>{};
 
@@ -427,66 +437,48 @@ CHIP_ERROR AppTask::InitSensorManager()
 
 Status AppTask::GetMeasuredTemperature(DataModel::Nullable<int16_t> & value)
 {
-    TemperatureMeasurementCluster * cluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
-    if (cluster == nullptr)
-    {
-        return Status::UnsupportedEndpoint;
-    }
+    TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
+    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMeasuredValue();
     return Status::Success;
 }
 
 Status AppTask::GetMaxMeasuredTemperature(DataModel::Nullable<int16_t> & value)
 {
-    TemperatureMeasurementCluster * cluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
-    if (cluster == nullptr)
-    {
-        return Status::UnsupportedEndpoint;
-    }
+    TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
+    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMaxMeasuredValue();
     return Status::Success;
 }
 
 Status AppTask::GetMinMeasuredTemperature(DataModel::Nullable<int16_t> & value)
 {
-    TemperatureMeasurementCluster * cluster = TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
-    if (cluster == nullptr)
-    {
-        return Status::UnsupportedEndpoint;
-    }
+    TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
+    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMinMeasuredValue();
     return Status::Success;
 }
 
 Status AppTask::GetMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
 {
-    RelativeHumidityMeasurementCluster * cluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
-    if (cluster == nullptr)
-    {
-        return Status::UnsupportedEndpoint;
-    }
+    RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
+    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMeasuredValue();
     return Status::Success;
 }
 
 Status AppTask::GetMaxMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
 {
-    RelativeHumidityMeasurementCluster * cluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
-    if (cluster == nullptr)
-    {
-        return Status::UnsupportedEndpoint;
-    }
+    RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
+    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMaxMeasuredValue();
     return Status::Success;
 }
 
 Status AppTask::GetMinMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
 {
-    RelativeHumidityMeasurementCluster * cluster = RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
-    if (cluster == nullptr)
-    {
-        return Status::UnsupportedEndpoint;
-    }
+    RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
+    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMinMeasuredValue();
     return Status::Success;
 }
