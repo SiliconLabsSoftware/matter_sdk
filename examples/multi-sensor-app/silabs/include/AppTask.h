@@ -20,6 +20,7 @@
 
 #include "BaseApplication.h"
 #include <app/ConcreteAttributePath.h>
+#include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/data-model/Nullable.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
@@ -36,7 +37,7 @@ struct AppEvent;
 #define APP_ERROR_START_TIMER_FAILED CHIP_APPLICATION_ERROR(0x05)
 #define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
 
-class AppTask : public BaseApplication
+class AppTask : public BaseApplication, public chip::app::DataModel::AttributeChangeListener
 {
 
 public:
@@ -70,6 +71,13 @@ public:
      *
      */
     static void ProcessButtonEvent(AppEvent * aEvent);
+
+    /**
+     * @brief AttributeChangeListener hook invoked after a cluster attribute changes.
+     *        Posts application events for occupancy and sensor measurement updates.
+     */
+    void OnAttributeChanged(const chip::app::ConcreteAttributePath & path,
+                            chip::app::DataModel::AttributeChangeType type) override;
 
     /**
      * @brief Triggers necessary updates when the Sensor values have been changed.

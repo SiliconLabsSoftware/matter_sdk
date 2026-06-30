@@ -80,6 +80,12 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, SensorAttributeUpdateEventImpl, aEvent);
     }
 
+    // AttributeChangeListener hook, posts application events on cluster attribute changes
+    void OnAttributeChanged(const chip::app::ConcreteAttributePath & path, chip::app::DataModel::AttributeChangeType type) override
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnAttributeChangedImpl, path, type);
+    }
+
     // Data model hook invoked when a cluster attribute changes
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
@@ -114,6 +120,11 @@ private:
     void OccupancyAttributeUpdateEventImpl(AppEvent * aEvent) { AppTask::OccupancyAttributeUpdateEvent(aEvent); }
 
     void SensorAttributeUpdateEventImpl(AppEvent * aEvent) { AppTask::SensorAttributeUpdateEvent(aEvent); }
+
+    void OnAttributeChangedImpl(const chip::app::ConcreteAttributePath & path, chip::app::DataModel::AttributeChangeType type)
+    {
+        AppTask::OnAttributeChanged(path, type);
+    }
 
     void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                            uint8_t * value)
