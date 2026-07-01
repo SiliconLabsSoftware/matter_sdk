@@ -59,22 +59,22 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, FanUiUpdateEventHandlerImpl, aEvent);
     }
 
-    // Fan mode attribute write callback
-    void FanModeWriteCallback(FanModeEnum aNewFanMode)
+    // Handle FanMode attribute changes
+    void HandleFanModeChange(FanModeEnum aNewFanMode)
     {
-        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, FanModeWriteCallbackImpl, aNewFanMode);
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, HandleFanModeChangeImpl, aNewFanMode);
     }
 
-    // Percent setting attribute write callback
-    void PercentSettingWriteCallback(uint8_t aNewPercentSetting)
+    // Handle PercentSetting attribute changes
+    void HandlePercentSettingChange(uint8_t aNewPercentSetting)
     {
-        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, PercentSettingWriteCallbackImpl, aNewPercentSetting);
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, HandlePercentSettingChangeImpl, aNewPercentSetting);
     }
 
-    // Speed setting attribute write callback
-    void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
+    // Handle SpeedSetting attribute changes
+    void HandleSpeedSettingChange(uint8_t aNewSpeedSetting)
     {
-        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, SpeedSettingWriteCallbackImpl, aNewSpeedSetting);
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, HandleSpeedSettingChangeImpl, aNewSpeedSetting);
     }
 
     // Data model hook invoked when a cluster attribute changes
@@ -100,14 +100,14 @@ private:
 
     void FanUiUpdateEventHandlerImpl(AppEvent * aEvent) { AppTask::FanUiUpdateEventHandler(aEvent); }
 
-    void FanModeWriteCallbackImpl(FanModeEnum aNewFanMode) { AppTask::FanModeWriteCallback(aNewFanMode); }
+    void HandleFanModeChangeImpl(FanModeEnum aNewFanMode) { AppTask::HandleFanModeChange(aNewFanMode); }
 
-    void PercentSettingWriteCallbackImpl(uint8_t aNewPercentSetting)
+    void HandlePercentSettingChangeImpl(uint8_t aNewPercentSetting)
     {
-        AppTask::PercentSettingWriteCallback(aNewPercentSetting);
+        AppTask::HandlePercentSettingChange(aNewPercentSetting);
     }
 
-    void SpeedSettingWriteCallbackImpl(uint8_t aNewSpeedSetting) { AppTask::SpeedSettingWriteCallback(aNewSpeedSetting); }
+    void HandleSpeedSettingChangeImpl(uint8_t aNewSpeedSetting) { AppTask::HandleSpeedSettingChange(aNewSpeedSetting); }
 
     void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                            uint8_t * value)

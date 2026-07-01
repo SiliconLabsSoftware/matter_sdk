@@ -42,6 +42,21 @@ public:
     using StepDirectionEnum = chip::app::Clusters::FanControl::StepDirectionEnum;
     using Status            = chip::Protocols::InteractionModel::Status;
 
+    struct AttributeUpdateInfo
+    {
+        FanModeEnum fanMode;
+        uint8_t speedCurrent;
+        uint8_t percentCurrent;
+        uint8_t speedSetting;
+        uint8_t percentSetting;
+        bool isPercentCurrent = false;
+        bool isSpeedCurrent   = false;
+        bool isSpeedSetting   = false;
+        bool isFanMode        = false;
+        bool isPercentSetting = false;
+        chip::EndpointId endPoint;
+    };
+
     AppTask();
 
     static AppTask & GetAppTask();
@@ -91,17 +106,17 @@ public:
      * @brief Reconcile PercentSetting whenever FanMode changes so the new mode lands
      *        inside its configured speed band. Invoked from DMPostAttributeChangeCallback.
      */
-    void FanModeWriteCallback(FanModeEnum aNewFanMode);
+    void HandleFanModeChange(FanModeEnum aNewFanMode);
 
     /**
      * @brief Mirror PercentSetting writes onto PercentCurrent (when not in Auto and not a no-op).
      */
-    void PercentSettingWriteCallback(uint8_t aNewPercentSetting);
+    void HandlePercentSettingChange(uint8_t aNewPercentSetting);
 
     /**
      * @brief Mirror SpeedSetting writes onto SpeedCurrent and refresh FanMode from the new speed.
      */
-    void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting);
+    void HandleSpeedSettingChange(uint8_t aNewSpeedSetting);
 
     /**
      * @brief PlatformMgr().ScheduleWork() callback that flushes pending FanControl attribute writes
