@@ -31,8 +31,12 @@
 
 #include "FreeRTOS.h"
 #include "timers.h" // provides FreeRTOS timer support
+#include <app-common/zap-generated/ids/Clusters.h>
+#include <app/ConcreteAttributePath.h>
+#include <app/clusters/bindings/BindingManager.h>
 #include <ble/BLEEndPoint.h>
 #include <lib/core/CHIPError.h>
+#include <lib/core/DataModelTypes.h>
 #include <platform/CHIPDeviceLayer.h>
 
 /**********************************************************
@@ -46,6 +50,20 @@
 #define APP_ERROR_CREATE_TIMER_FAILED CHIP_APPLICATION_ERROR(0x04)
 #define APP_ERROR_START_TIMER_FAILED CHIP_APPLICATION_ERROR(0x05)
 #define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
+
+/**
+ * @brief Data needed to propagate a CookTop state change to a single bound cluster
+ *        (OnOff on the RangeHood Light endpoint or FanControl on the Extractor Hood endpoint).
+ *        A separate context is allocated per cluster in CookTopBindingPropagateState(); on
+ *        success ownership transfers to the binding manager and it is freed via the
+ *        context-release handler.
+ */
+struct CookTopBindingContext
+{
+    chip::EndpointId localEndpointId;
+    chip::ClusterId clusterId;
+    bool cookTopOn;
+};
 
 /**********************************************************
  * AppTask Declaration
@@ -84,6 +102,29 @@ public:
      * @param aEvent Oven Event to process
      */
     static void OvenActionHandler(AppEvent * aEvent);
+
+    /**
+     * @brief Data model hook invoked after a cluster attribute changes; routes OnOff/OvenMode
+     *        changes to OvenManager and logs Identify/TemperatureControl changes.
+     */
+    void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                       uint8_t * value);
+
+    /**
+     * @brief Schedules initialization of the binding manager on the Matter thread.
+     */
+    static CHIP_ERROR InitBindingHandler();
+
+    /**
+     * @brief Propagate the CookTop OnOff state to bound OnOff and FanControl peers.
+     */
+    static void CookTopBindingPropagateState(chip::EndpointId cookTopEndpoint, bool cookTopOn);
+
+    /**
+     * @brief Binding manager callback invoked per bound device to propagate a CookTop state change.
+     */
+    static void BoundDeviceChangedHandler(const chip::app::Clusters::Binding::TableEntry & binding,
+                                          chip::OperationalDeviceProxy * peerDevice, void * context);
 
 private:
     static AppTask sAppTask;

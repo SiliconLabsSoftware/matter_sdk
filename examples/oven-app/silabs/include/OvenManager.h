@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include "AppSupportedTemperatureLevelsDelegate.h"
 #include "CookEndpoints.h"
 #include "OvenEndpoint.h"
 
@@ -37,7 +36,9 @@
 #include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <app/clusters/on-off-server/on-off-server.h>
+#include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
 #include <lib/core/DataModelTypes.h>
+#include <lib/support/Span.h>
 #include <lib/support/TypeTraits.h>
 #include <platform/CHIPDeviceLayer.h>
 
@@ -115,6 +116,25 @@ public:
      */
     static constexpr chip::EndpointId GetCookTopEndpoint() { return kCookTopEndpoint; }
 
+    // Fixed number of CookSurface endpoints (endpoints 4, 5) served by this delegate.
+    static constexpr size_t kNumCookSurfaceEndpoints = 2;
+    // Number of supported temperature levels (Low, Medium, High).
+    static constexpr size_t kNumTemperatureLevels = 3;
+
+    /**
+     * @brief Register supported temperature level strings for a given endpoint.
+     *
+     * The caller supplies an array of CharSpan entries whose lifetime exceeds that of this delegate.
+     * @return CHIP_NO_ERROR on success,
+     *         CHIP_ERROR_NO_MEMORY if capacity exceeded,
+     *         CHIP_ERROR_ENDPOINT_EXISTS if duplicate endpoint provided.
+     */
+    CHIP_ERROR RegisterSupportedLevels(chip::EndpointId endpoint, const chip::CharSpan * levels, uint8_t levelCount);
+
+    // SupportedTemperatureLevelsIteratorDelegate overrides.
+    uint8_t Size() override;
+    CHIP_ERROR Next(chip::MutableCharSpan & item) override;
+
 private:
     void HandleOvenModeChanged(uint8_t newMode);
 
@@ -137,7 +157,10 @@ private:
     };
 
     static OvenManager sOvenMgr;
-    chip::app::Clusters::AppSupportedTemperatureLevelsDelegate mTemperatureControlDelegate;
+
+    // Internal table of endpoint -> levels mapping (filled via RegisterSupportedLevels()).
+    EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];
+    size_t mRegisteredEndpointCount = 0;
 
     // Default values for the states of the endpoints
     bool mIsCookTopOn      = false;

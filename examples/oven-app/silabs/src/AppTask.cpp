@@ -21,7 +21,6 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "LEDWidget.h"
-#include "OvenBindingHandler.h"
 
 #ifdef DISPLAY_ENABLED
 #include "OvenUI.h"
@@ -36,13 +35,18 @@
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
+#include <app/CASESessionManager.h>
 #include <app/ConcreteAttributePath.h>
+#include <app/ConcreteCommandPath.h>
+#include <app/clusters/bindings/BindingManager.h>
 #include <app/clusters/network-commissioning/network-commissioning.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
 #include <app/util/endpoint-config-api.h>
 #include <assert.h>
+#include <controller/InvokeInteraction.h>
+#include <controller/WriteInteraction.h>
 #include <lib/support/BitMask.h>
 #include <lib/support/CodeUtils.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -71,7 +75,87 @@ using namespace chip::TLV;
 LEDWidget sLightLED; // Use LEDWidget for basic LED functionality
 
 namespace {
-bool sDnssdReady          = false;
+bool sDnssdReady = false;
+
+// Drop cached CASE sessions to bound peers so BindingManager re-handshakes after every binding action.
+void ReleaseBoundPeerSessions(EndpointId localEndpoint)
+{
+    auto & sessionManager                   = Server::GetInstance().GetSecureSessionManager();
+    CASESessionManager * caseSessionManager = Server::GetInstance().GetCASESessionManager();
+
+    for (const Binding::TableEntry & entry : Binding::Manager::GetInstance().GetBindingTable())
+    {
+        if (entry.local == localEndpoint && entry.type == Binding::MATTER_UNICAST_BINDING)
+        {
+            const ScopedNodeId peerId(entry.nodeId, entry.fabricIndex);
+            sessionManager.ExpireAllSessions(peerId);
+            if (caseSessionManager != nullptr)
+            {
+                caseSessionManager->ReleaseSession(peerId);
+            }
+        }
+    }
+}
+
+void ProcessOnOffUnicast(bool cookTopOn, const Binding::TableEntry & binding, Messaging::ExchangeManager * exchangeMgr,
+                         const SessionHandle & sessionHandle)
+{
+    auto onSuccess = [](const ConcreteCommandPath &, const StatusIB &, const auto &) {
+        ChipLogDetail(AppServer, "CookTop OnOff bound unicast command success");
+    };
+    auto onFailure = [](CHIP_ERROR error) {
+        ChipLogError(AppServer, "CookTop OnOff bound unicast failed: %s", error.AsString());
+    };
+
+    if (cookTopOn)
+    {
+        OnOff::Commands::On::Type cmd;
+        SuccessOrLog(Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, cmd, onSuccess, onFailure),
+                     AppServer, "Failed to invoke On command");
+    }
+    else
+    {
+        OnOff::Commands::Off::Type cmd;
+        SuccessOrLog(Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, cmd, onSuccess, onFailure),
+                     AppServer, "Failed to invoke Off command");
+    }
+}
+
+void ProcessFanControlUnicast(bool cookTopOn, const Binding::TableEntry & binding, const SessionHandle & sessionHandle)
+{
+    auto onSuccess = [](const ConcreteAttributePath &) {
+        ChipLogDetail(AppServer, "CookTop FanControl FanMode bound write success");
+    };
+    auto onFailure = [](const ConcreteAttributePath *, CHIP_ERROR error) {
+        ChipLogError(AppServer, "CookTop FanControl FanMode bound write failed: %s", error.AsString());
+    };
+
+    FanControl::FanModeEnum fanMode = cookTopOn ? FanControl::FanModeEnum::kOn : FanControl::FanModeEnum::kOff;
+
+    SuccessOrLog(Controller::WriteAttribute<FanControl::Attributes::FanMode::TypeInfo>(sessionHandle, binding.remote, fanMode,
+                                                                                       onSuccess, onFailure),
+                 AppServer, "Failed to write FanMode attribute");
+}
+
+void ContextReleaseHandler(void * context)
+{
+    if (context)
+    {
+        Platform::Delete(static_cast<CookTopBindingContext *>(context));
+    }
+}
+
+void InitBindingMgrWork(intptr_t)
+{
+    auto & server = Server::GetInstance();
+    VerifyOrDieWithMsg(CHIP_NO_ERROR ==
+                           Binding::Manager::GetInstance().Init(
+                               { &server.GetFabricTable(), server.GetCASESessionManager(), &server.GetPersistentStorage() }),
+                       AppServer, "Failed to initialize binding manager");
+    Binding::Manager::GetInstance().RegisterBoundDeviceChangedHandler(&AppTask::BoundDeviceChangedHandler);
+    Binding::Manager::GetInstance().RegisterBoundDeviceContextReleaseHandler(ContextReleaseHandler);
+    ChipLogDetail(AppServer, "Oven binding manager initialized");
+}
 } // namespace
 
 AppTask AppTask::sAppTask;
@@ -234,4 +318,96 @@ void AppTask::OvenActionHandler(AppEvent * aEvent)
     default:
         break;
     }
+}
+
+void AppTask::BoundDeviceChangedHandler(const Binding::TableEntry & binding, OperationalDeviceProxy * peerDevice, void * context)
+{
+    VerifyOrReturn(context != nullptr);
+    auto * data = static_cast<CookTopBindingContext *>(context);
+
+    // Group bindings are not used by the CookTop/RangeHood pairing.
+    VerifyOrReturn(binding.type == Binding::MATTER_UNICAST_BINDING);
+    VerifyOrReturn(peerDevice != nullptr && peerDevice->ConnectionReady());
+
+    switch (data->clusterId)
+    {
+    case OnOff::Id:
+        ProcessOnOffUnicast(data->cookTopOn, binding, peerDevice->GetExchangeManager(), peerDevice->GetSecureSession().Value());
+        break;
+    case FanControl::Id:
+        ProcessFanControlUnicast(data->cookTopOn, binding, peerDevice->GetSecureSession().Value());
+        break;
+    default:
+        break;
+    }
+}
+
+CHIP_ERROR AppTask::InitBindingHandler()
+{
+    return DeviceLayer::PlatformMgr().ScheduleWork(InitBindingMgrWork);
+}
+
+void AppTask::CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
+{
+    // Drop cached CASE sessions to bound peers as there is a chance that the peer has rebooted.
+    // The old session may be stale and we need to re-handshake.
+    ReleaseBoundPeerSessions(cookTopEndpoint);
+
+    for (ClusterId clusterId : { OnOff::Id, FanControl::Id })
+    {
+        CookTopBindingContext * context = Platform::New<CookTopBindingContext>();
+        if (context == nullptr)
+        {
+            ChipLogError(AppServer, "Failed to allocate CookTopBindingContext for cluster " ChipLogFormatMEI,
+                         ChipLogValueMEI(clusterId));
+            continue;
+        }
+        context->localEndpointId = cookTopEndpoint;
+        context->clusterId       = clusterId;
+        context->cookTopOn       = cookTopOn;
+
+        CHIP_ERROR err = Binding::Manager::GetInstance().NotifyBoundClusterChanged(context->localEndpointId, context->clusterId,
+                                                                                   context);
+        if (err != CHIP_NO_ERROR)
+        {
+            Platform::Delete(context);
+            ChipLogError(AppServer, "Failed to schedule binding work for cluster " ChipLogFormatMEI ", context freed",
+                         ChipLogValueMEI(clusterId));
+        }
+    }
+}
+
+void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
+                                            uint8_t * value)
+{
+    ClusterId clusterId     = attributePath.mClusterId;
+    AttributeId attributeId = attributePath.mAttributeId;
+    switch (clusterId)
+    {
+    case Clusters::Identify::Id:
+        ChipLogDetail(Zcl, "Identify cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
+                      type, *value, size);
+        break;
+    case Clusters::OnOff::Id:
+        ChipLogDetail(Zcl, "OnOff cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
+                      type, *value, size);
+        OvenManager::GetInstance().OnOffAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        break;
+    case Clusters::TemperatureControl::Id:
+        ChipLogDetail(Zcl, "TemperatureControl cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
+                      ChipLogValueMEI(attributeId), type, *value, size);
+        break;
+    case Clusters::OvenMode::Id:
+        ChipLogDetail(Zcl, "OvenMode cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
+                      type, *value, size);
+        OvenManager::GetInstance().OvenModeAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        break;
+    default:
+        break;
+    }
+}
+
+void MatterPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size, uint8_t * value)
+{
+    AppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 }

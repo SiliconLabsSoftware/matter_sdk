@@ -18,7 +18,6 @@
 
 #include "OvenManager.h"
 #include "CookEndpoints.h"
-#include "OvenBindingHandler.h"
 #include "OvenEndpoint.h"
 
 #include <app-common/zap-generated/cluster-objects.h>
@@ -59,8 +58,8 @@ void OvenManager::Init()
         chipDie();
     }
 
-    // Register the shared TemperatureLevelsDelegate for all the cooksurface endpoints
-    TemperatureControl::SetDelegate(&mTemperatureControlDelegate);
+    // OvenManager is itself the shared TemperatureLevelsDelegate for all the cooksurface endpoints
+    TemperatureControl::SetDelegate(this);
     // Set initial state for TemperatureControlledCabinetEndpoint
     VerifyOrReturn(SetTemperatureControlledCabinetInitialState(kTemperatureControlledCabinetEndpoint) == CHIP_NO_ERROR,
                    ChipLogError(AppServer, "Setting TemperatureControlledCabinet initial state failed"));
@@ -71,8 +70,8 @@ void OvenManager::Init()
     VerifyOrReturn(SetCookSurfaceInitialState(mCookSurfaceEndpoint2.GetEndpointId()) == CHIP_NO_ERROR,
                    ChipLogError(AppServer, "Setting CookSurfaceEndpoint2 initial state failed"));
 
-    // Initialize binding manager
-    VerifyOrReturn(InitOvenBindingHandler() == CHIP_NO_ERROR, ChipLogError(AppServer, "Initializing OvenBindingHandler failed"));
+    // Initialize binding manager (owned by AppTask)
+    VerifyOrReturn(AppTask::InitBindingHandler() == CHIP_NO_ERROR, ChipLogError(AppServer, "Initializing binding handler failed"));
 
     // Cooktop is a cooking appliance. Setting the state to false after reboot to avoid fire/safety hazards.
     EnforceCookTopOffAtStartup();
@@ -80,14 +79,12 @@ void OvenManager::Init()
     // Register supported temperature levels (Low, Medium, High) for CookSurface endpoints 1 and 2
     static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),
                                                    CharSpan::fromCharString("High") };
-    VerifyOrReturn(mTemperatureControlDelegate.RegisterSupportedLevels(
-                       kCookSurfaceEndpoint1, kCookSurfaceLevels,
-                       static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels)) == CHIP_NO_ERROR,
+    VerifyOrReturn(RegisterSupportedLevels(kCookSurfaceEndpoint1, kCookSurfaceLevels,
+                                           static_cast<uint8_t>(kNumTemperatureLevels)) == CHIP_NO_ERROR,
                    ChipLogError(AppServer, "Registering supported levels for CookSurfaceEndpoint1 failed"));
 
-    VerifyOrReturn(mTemperatureControlDelegate.RegisterSupportedLevels(
-                       kCookSurfaceEndpoint2, kCookSurfaceLevels,
-                       static_cast<uint8_t>(AppSupportedTemperatureLevelsDelegate::kNumTemperatureLevels)) == CHIP_NO_ERROR,
+    VerifyOrReturn(RegisterSupportedLevels(kCookSurfaceEndpoint2, kCookSurfaceLevels,
+                                           static_cast<uint8_t>(kNumTemperatureLevels)) == CHIP_NO_ERROR,
                    ChipLogError(AppServer, "Registering supported levels for CookSurfaceEndpoint2 failed"));
 
     VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &mIsCookTopOn) == Status::Success,
@@ -183,7 +180,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
 
         // Propagate CookTop state to bound OnOff (RangeHood Light) and FanControl (Extractor Hood) peers.
-        CookTopBindingPropagateState(kCookTopEndpoint, *value != 0);
+        AppTask::CookTopBindingPropagateState(kCookTopEndpoint, *value != 0);
         break;
     }
     case kCookSurfaceEndpoint1:
@@ -227,4 +224,62 @@ bool OvenManager::IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
         }
     }
     return false;
+}
+
+CHIP_ERROR OvenManager::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels, uint8_t levelCount)
+{
+    VerifyOrReturnError(levels != nullptr && levelCount > 0, CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(AppServer, "RegisterSupportedLevels: invalid levels/null or count=0"));
+
+    VerifyOrReturnError(mRegisteredEndpointCount < kNumCookSurfaceEndpoints, CHIP_ERROR_NO_MEMORY,
+                        ChipLogError(AppServer, "RegisterSupportedLevels: capacity exceeded (%u)",
+                                     static_cast<unsigned>(mRegisteredEndpointCount)));
+    // Prevent duplicate endpoints
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
+    {
+        VerifyOrReturnError(supportedOptionsByEndpoints[i].mEndpointId != endpoint, CHIP_ERROR_ENDPOINT_EXISTS,
+                            ChipLogError(AppServer, "RegisterSupportedLevels: duplicate endpoint %u", endpoint));
+    }
+
+    supportedOptionsByEndpoints[mRegisteredEndpointCount++] = EndpointPair(endpoint, levels, levelCount);
+    ChipLogProgress(AppServer, "Registered %u levels for endpoint %u", static_cast<unsigned>(levelCount), endpoint);
+    return CHIP_NO_ERROR;
+}
+
+uint8_t OvenManager::Size()
+{
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
+    {
+        const EndpointPair & endpointPair = supportedOptionsByEndpoints[i];
+        if (endpointPair.mEndpointId == mEndpoint)
+        {
+            ChipLogProgress(AppServer, "Found endpoint %d with size %d", mEndpoint, endpointPair.mSize);
+            return endpointPair.mSize;
+        }
+    }
+    ChipLogError(AppServer, "No matching endpoint found for %d in Size()", mEndpoint);
+    return 0;
+}
+
+CHIP_ERROR OvenManager::Next(MutableCharSpan & item)
+{
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
+    {
+        const EndpointPair & endpointPair = supportedOptionsByEndpoints[i];
+        if (endpointPair.mEndpointId == mEndpoint)
+        {
+            if (mIndex < endpointPair.mSize)
+            {
+                CHIP_ERROR err = CopyCharSpanToMutableCharSpan(endpointPair.mTemperatureLevels[mIndex], item);
+                if (err == CHIP_NO_ERROR)
+                {
+                    mIndex++;
+                }
+                return err;
+            }
+            return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+        }
+    }
+    ChipLogProgress(AppServer, "No matching endpoint found for %d in Next()", mEndpoint);
+    return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
 }
