@@ -70,8 +70,8 @@ uint8_t ledPinArray[SL_LED_COUNT] = { SL_LED_LED0_PIN, SL_LED_LED1_PIN };
 #endif // (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED)
 #endif // ENABLE_WSTK_LEDS
 
-#if SL_ICD_ENABLED
 #include "sl_si91x_driver_gpio.h"
+#if SL_ICD_ENABLED
 #include "sl_si91x_power_manager.h"
 #endif // SL_ICD_ENABLED
 }
