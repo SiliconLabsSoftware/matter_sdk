@@ -42,6 +42,8 @@ public:
         kGenericEvent          = 0,
         kCommissioningComplete = 1,
         kConnectivityChange    = 2,
+        kActiveMode            = 3,
+        kIdleMode              = 4,
     };
 
     /**
@@ -57,8 +59,8 @@ public:
          * @brief Function informs the WifiSleepManager in which Low Power mode the device can go to.
          *        The two supported sleep modes are DTIM based sleep and LI based sleep.
          *
-         *        When the function is called, the WifiSleepManager is about to go to sleep and using this function to make decision
-         *        as too wether it can go LI based sleep, lowest power mode, or DTIM based sleep.
+         *        When the function is called, the WifiSleepManager is about to go to sleep and uses this to choose LI sleep
+         *        (or LIT disconnect sleep when CHIP_CONFIG_ENABLE_ICD_LIT is enabled) versus DTIM based sleep.
          *
          *        DTIM based sleep requires the Wi-Fi devices to be synced with the DTIM beacon.
          *        In this mode, the broadcast filter is disabled and the device will process multicast and
@@ -171,7 +173,7 @@ public:
      *        1. If there are high performance requests, configure high performance mode.
      *        2. If commissioning is in progress, configure DTIM based sleep.
      *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
-     *        4. If the application callback allows, configure LI based sleep; otherwise, configure DTIM based sleep.
+     *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
      *
@@ -231,6 +233,26 @@ private:
      */
     CHIP_ERROR ConfigureLIBasedSleep();
 
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+    /**
+     * @brief LIT path: intentional STA disconnect only (see PowerSaveInterface::ConfigureLITDisconnect).
+     */
+    CHIP_ERROR ConfigureLITDisconnect();
+
+    CHIP_ERROR ConfigureLITConnect();
+    /**
+     * Margin before end of mode-based idle interval to bring Wi-Fi up for ICD traffic (check-in / reports).
+     */
+    static constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
+
+    static void OnLitPrecheckInReconnectTimerFired(chip::System::Layer * layer, void * context);
+    static void RunLitPrecheckInReconnect(intptr_t arg);
+    static void ArmLitPrecheckInTimerWork(intptr_t arg);
+    static void CancelLitPrecheckInTimerWork(intptr_t arg);
+    void DoCancelLitPrecheckInReconnectTimer();
+    void DoStartLitPrecheckInReconnectTimer();
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
+
     /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
      *
@@ -248,6 +270,7 @@ private:
     WifiStateProvider * mWifiStateProvider   = nullptr;
     bool mIsCommissioningInProgress          = false;
     uint8_t mHighPerformanceRequestCounter   = 0;
+    bool mActiveMode                         = false;
 
     ApplicationCallback * mCallback = nullptr;
 };
