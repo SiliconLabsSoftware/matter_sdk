@@ -77,6 +77,7 @@ if (wifi_soc) {
       "${chip_root}/src/platform/silabs/SiWx",
       "${silabs_project_dir}/include",
       "${examples_plat_dir}",
+      "${examples_common_plat_dir}/customer",
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
       "${examples_common_plat_dir}/freertos_config",
@@ -101,6 +102,7 @@ if (wifi_soc) {
       "${chip_root}/src/platform/silabs/efr32",
       "${silabs_project_dir}/include",
       "${examples_plat_dir}",
+      "${examples_common_plat_dir}/customer",
       "${chip_root}/src/lib",
       "${examples_common_plat_dir}",
       "${examples_common_plat_dir}/freertos_config",
@@ -130,9 +132,10 @@ silabs_executable("closure_app") {
   sources = [
     "${example_closure_dir}/closure-common/src/ClosureControlEndpoint.cpp",
     "${example_closure_dir}/closure-common/src/ClosureDimensionEndpoint.cpp",
+    "${examples_common_plat_dir}/customer/CustomerAppTask.cpp",
     "src/AppTask.cpp",
     "src/ClosureManager.cpp",
-    "src/DataModelCallbacks.cpp",
+    "src/CustomerClosureManager.cpp",
   ]
 
   if (!disable_lcd) {

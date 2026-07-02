@@ -79,8 +79,6 @@ const Clusters::Descriptor::Structs::SemanticTagStruct::Type kEndpoint3TagList[]
 
 } // namespace
 
-ClosureManager ClosureManager::sClosureMgr;
-
 void ClosureManager::Init()
 {
     // Create cmsis os sw timer for light timer.
