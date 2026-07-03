@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @file
- * @brief iostream usart examples functions
+ * @brief MMIC task using the matter_cpc transport.
  *******************************************************************************
  * # License
  * <b>Copyright 2025 Silicon Laboratories Inc. www.silabs.com</b>
@@ -18,21 +18,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "sl_iostream.h"
-#include "sl_iostream_init_instances.h"
-#include "sl_iostream_handles.h"
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
 
+#include "matter_cpc.h"
 #include "mmic.h"
 
 /*******************************************************************************
  *******************************   DEFINES   ***********************************
  ******************************************************************************/
-
-#ifndef BUFSIZE
-#define BUFSIZE    80
-#endif
 
 #ifndef TERMINAL_TASK_STACK_SIZE
 #define TERMINAL_TASK_STACK_SIZE      1024  // Stack size in bytes (CMSIS-OS 2)
@@ -70,81 +64,66 @@ void mmic_task(void *pvParameters);
 /*******************************************************************************
  * Initialize example.
  ******************************************************************************/
-void mmic_init(void)
+sl_status_t mmic_init(void)
 {
-  /* Prevent buffering of output/input. */
-#if !defined(__CROSSWORKS_ARM) && defined(__GNUC__)
-  setvbuf(stdout, NULL, _IONBF, 0);   /* Set unbuffered mode for stdout (newlib) */
-  setvbuf(stdin, NULL, _IONBF, 0);    /* Set unbuffered mode for stdin (newlib) */
-#endif
-
+  sl_status_t status;
+  // Initialize the matter_cpc transport that backs the MMIC protocol.
+  status=sl_matter_cpc_init();
+  if(status != SL_STATUS_OK)
+  {
+    return status;
+  }
   // Create terminal task (CMSIS-OS 2)
   sTerminalTaskHandle = osThreadNew(mmic_task, NULL, &sTerminalTaskAttr);
-  (void)sTerminalTaskHandle;
+  return (sTerminalTaskHandle != NULL) ? SL_STATUS_OK : SL_STATUS_FAIL;
 }
 
 /*******************************************************************************
  * Terminal task.
  ******************************************************************************/
+
 void mmic_task(void *pvParameters)
 {
-  
-  uint8_t buffer[64];
-  char byte;
-  sl_status_t status;
-  uint8_t cmdReceived =0;
-  uint8_t state=0; // 0 -- Header, 1 -- Length
-  uint8_t packetLenght=0;
+  uint8_t * rxBuffer = NULL;
+  int rxLen = 0;
   uint8_t * responseBuffer = NULL;
   size_t responseSize = 0;
   (void)pvParameters;
 
-  /* Setting default stream */
-  sl_iostream_set_default(sl_iostream_vcom_handle);
-
-  /* Retrieve characters, print local echo and full line back */
   while (1) {
-
-    while(cmdReceived == 0)
-    {
-      sl_iostream_getchar(SL_IOSTREAM_STDIN, &byte);
-      if(byte==MMIC_HEADER_CMD && state==0)
-      {
-        buffer[0]=byte;
-        state=1;
-      } else if(state == 1)
-      {
-        buffer[1]=byte;
-        packetLenght=2;
-        state=3;
-      } else if(state == 3 && packetLenght < buffer[1])
-      {
-        buffer[packetLenght] = byte;
-        packetLenght++;
-      }
-
-      if(packetLenght >= sizeof(buffer))
-      {
-        // cleanup
-        state=0;
-        memset(buffer, 0, sizeof(buffer));
-      }
-
-      if(state == 3 && packetLenght == buffer[1])
-      {
-        // received everything
-        break;
-      }
+    // Ensure the CPC endpoint is connected before any I/O attempt.
+    if (!sl_matter_is_cpc_connected()) {
+      sl_matter_reconnect_cpc();
+      osDelay(10);
+      continue;
     }
-    
-    parseAndRunCommand(buffer, buffer[1], &responseBuffer, &responseSize);
-    if(responseBuffer!=NULL)
-    {
-      sl_iostream_write(SL_IOSTREAM_STDOUT, responseBuffer, responseSize);
-      free(responseBuffer);responseBuffer=NULL;
+
+    // Blocking call. 
+    sl_matter_cpc_wait_for_new_data();
+
+
+    // matter_cpc delivers a full frame per read; no byte-level state machine needed.
+    rxLen = sl_matter_cpc_read(&rxBuffer);
+    if (rxLen <= 0 || rxBuffer == NULL) {
+      if (rxBuffer != NULL) {
+        sl_matter_cpc_free(rxBuffer);
+      }
+      continue;
     }
-    // cleanup
-    state=0;
-    memset(buffer, 0, sizeof(buffer));
+
+    // Basic length sanity check against the MMIC framing (header + advertised length).
+    if (rxLen >= 2 && (uint16_t)rxLen >= rxBuffer[1] && rxBuffer[0] == MMIC_HEADER_CMD) {
+      parseAndRunCommand(rxBuffer, rxBuffer[1], &responseBuffer, &responseSize);
+    }
+
+    sl_matter_cpc_free(rxBuffer);
+    rxBuffer = NULL;
+
+    if (responseBuffer != NULL) {
+      (void)sl_matter_cpc_write(responseBuffer, (uint16_t)responseSize);
+      free(responseBuffer);
+      responseBuffer = NULL;
+      responseSize = 0;
+    }
   }
 }

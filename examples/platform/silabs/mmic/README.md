@@ -26,7 +26,31 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang
 cmake --build build
 ```
 
+### Transport selection (UART vs CPC)
+
+By default `mmic_host` talks to the device over a UART.
+
+To instead talk to the device through the Silicon Labs CPC (Co-Processor
+Communication) daemon on **endpoint 90**, configure with:
+
+```sh
+cmake -S . -B build -DMMIC_USE_CPC=ON
+cmake --build build
+```
+
+This requires the CPC daemon (`cpcd`) development files (`sl_cpc.h` and
+`libcpc`) to be discoverable by CMake. If they live in a non-standard
+location, point at them explicitly:
+
+```sh
+cmake -S . -B build -DMMIC_USE_CPC=ON \
+    -DCPC_INCLUDE_DIR=/path/to/include \
+    -DCPC_LIBRARY=/path/to/libcpc.so
+```
+
 ## Run
+
+### UART build (default)
 
 Pass the serial device as the only argument.
 
@@ -44,6 +68,19 @@ macOS:
 
 The port is opened at 115200 8N1. Bytes received from the port are printed to
 stdout. Type `exit` (or send EOF) to close the port and quit.
+
+### CPC build (`-DMMIC_USE_CPC=ON`)
+
+The `cpcd` daemon must already be running and bridging to the device.
+Optionally pass the cpcd instance name (defaults to `cpcd_0`):
+
+```sh
+./build/mmic_host              # uses "cpcd_0"
+./build/mmic_host cpcd_myrcp   # uses the named instance
+```
+
+`mmic_host` opens CPC endpoint 90 and exchanges the same framed
+command/response bytes as in UART mode.
 
 ## Clean
 

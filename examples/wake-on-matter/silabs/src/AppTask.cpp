@@ -347,11 +347,11 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 }
 
 
-#include <openthread/platform/logging.h>
+// #include <openthread/platform/logging.h>
 
-extern "C" void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char * aFormat, ...)
-{
-}
+// extern "C" void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char * aFormat, ...)
+// {
+// }
 
 
 // To prevent linkage failure

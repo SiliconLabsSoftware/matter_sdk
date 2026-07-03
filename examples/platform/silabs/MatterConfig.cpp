@@ -59,8 +59,8 @@
 #include "Rpc.h"
 #endif
 
-#if SL_MATTER_CPC_ENABLED
-#include "matter_cpc.h"
+#if SL_MATTER_MMIC_ENABLED
+#include "mmic_task.h"
 #endif
 
 #ifdef ENABLE_CHIP_SHELL
@@ -276,10 +276,10 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     CHIP_ERROR err;
     SILABS_LOG("=====%s starting=====", appName);
 
-#if SL_MATTER_CPC_ENABLED
-    sl_status_t status = sl_matter_cpc_init();
+#if SL_MATTER_MMIC_ENABLED
+    sl_status_t status = mmic_init();
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to Init Matter CPC: 0x%02x", status));
+                        ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
 #endif
 
 #if defined(PW_RPC_ENABLED) && PW_RPC_ENABLED

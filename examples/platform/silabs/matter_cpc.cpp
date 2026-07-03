@@ -54,61 +54,6 @@ void sl_matter_cpc_handle_msg(void);
 
 static osSemaphoreId_t matter_cpc_signal_semaphore;
 
-//Matter CPC thread
-static void matter_cpc_thread(void *p_arg);
-static osThreadId_t tid_thread_matter_cpc;
-__ALIGNED(8) static uint8_t thread_matter_cpc_stk[
-  SL_MATTER_CPC_RTOS_TASK_STACK_SIZE & 0xFFFFFFF8u];
-__ALIGNED(4) static uint8_t thread_matter_cpc_cb[osThreadCbSize];
-static const osThreadAttr_t thread_matter_cpc_attr = {
-  .name = "Matter CPC",
-  .cb_mem = thread_matter_cpc_cb,
-  .cb_size = osThreadCbSize,
-  .stack_mem = thread_matter_cpc_stk,
-  .stack_size = sizeof(thread_matter_cpc_stk),
-  .priority = (osPriority_t) SL_MATTER_CPC_RTOS_TASK_PRIORITY
-};
-
-uint8_t sl_matter_cpc_get_stack_space(uint32_t *stack_space)
-{
-  *stack_space = osThreadGetStackSpace(tid_thread_matter_cpc);
-  return 0;
-}
-
-void sl_matter_cpc_rtos_deinit(void)
-{
-  (void) osSemaphoreDelete(matter_cpc_signal_semaphore);
-  matter_cpc_signal_semaphore = NULL;
-
-  (void) osThreadTerminate(tid_thread_matter_cpc);
-  tid_thread_matter_cpc = NULL;
-}
-
-sl_status_t sl_matter_cpc_rtos_init(void)
-{
-  if (matter_cpc_signal_semaphore == NULL) {
-    matter_cpc_signal_semaphore = osSemaphoreNew(1, 0, NULL);
-  }
-  if (matter_cpc_signal_semaphore == NULL) {
-    goto failed;
-  }
-
-  // Create thread for Matter CPC
-  if (tid_thread_matter_cpc == NULL) {
-    tid_thread_matter_cpc = osThreadNew(matter_cpc_thread,
-                                        NULL,
-                                        &thread_matter_cpc_attr);
-  }
-  if (tid_thread_matter_cpc == NULL) {
-    goto failed;
-  }
-
-  return SL_STATUS_OK;
-  failed:
-  sl_matter_cpc_rtos_deinit();
-  return SL_STATUS_FAIL;
-}
-
 void sl_matter_cpc_on_transport_notify(uint8_t endpoint_id, void * arg)
 {
   (void)endpoint_id;
@@ -117,31 +62,14 @@ void sl_matter_cpc_on_transport_notify(uint8_t endpoint_id, void * arg)
   osSemaphoreRelease(matter_cpc_signal_semaphore);
 }
 
-static void matter_cpc_thread(void *p_arg)
-{
-  (void)p_arg;
-  while (true) {
-    osSemaphoreAcquire(matter_cpc_signal_semaphore, osWaitForever);
-    sl_matter_cpc_handle_msg();
-  }
-}
 
 static sl_matter_cpc_state_t cpc_state = SL_MATTER_CPC_STATE_DISCONNECTED;
 static sl_cpc_endpoint_handle_t endpoint_handle;
 
-int sl_matter_cpc_new_data()
+int sl_matter_cpc_wait_for_new_data()
 {
+  osSemaphoreAcquire(matter_cpc_signal_semaphore, osWaitForever);
   return 1;//CPC-RTOS calls read packet only if semaphore is set
-}
-
-void sl_matter_cpc_rx_done()
-{
-  //NOOP: semaphore is used to block
-}
-
-void sl_btctrl_hci_cpc_rx(uint8_t endpoint_id, void *arg)
-{
-  sl_matter_cpc_on_transport_notify(endpoint_id, arg);
 }
 
 void sl_matter_cpc_tx_callback(sl_cpc_user_endpoint_id_t endpoint_id, void *buffer, void *arg, sl_status_t status)
@@ -170,7 +98,12 @@ sl_status_t sl_matter_cpc_init(void)
   VerifyOrReturnError(status == SL_STATUS_OK, status);
   status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_ERROR, (void*)sl_matter_cpc_error);
   VerifyOrReturnError(status == SL_STATUS_OK, status);
-  status = sl_matter_cpc_rtos_init();
+
+  if (matter_cpc_signal_semaphore == NULL) {
+    matter_cpc_signal_semaphore = osSemaphoreNew(1, 0, NULL);
+    status = (matter_cpc_signal_semaphore != NULL) ? SL_STATUS_OK : SL_STATUS_FAIL;
+  }
+  
   return status;
 }
 
@@ -197,7 +130,30 @@ void sl_matter_cpc_error(uint8_t endpoint_id, void *arg)
   sl_matter_cpc_on_transport_notify(0, NULL);
 }
 
+int sl_matter_cpc_read(uint8_t **read_buf)
+{
+  if (read_buf == NULL) {
+    return -1;
+  }
 
+  void *   data        = NULL;
+  uint16_t data_length = 0;
+
+  // Non-blocking: callers are expected to gate this with sl_matter_cpc_wait_for_new_data().
+  sl_status_t status = sl_cpc_read(&endpoint_handle, &data, &data_length, 0, SL_CPC_FLAG_NO_BLOCK);
+
+  if (status == SL_STATUS_EMPTY) {
+    *read_buf = NULL;
+    return 0;
+  }
+  if (status != SL_STATUS_OK) {
+    *read_buf = NULL;
+    return -1;
+  }
+
+  *read_buf = (uint8_t *) data;
+  return (int) data_length;
+}
 
 sl_status_t sl_matter_cpc_write(uint8_t *data, uint16_t len)
 {
@@ -232,102 +188,5 @@ void sl_matter_reconnect_cpc(void)
       // Invalid state
       EFM_ASSERT(false);
   }
-}
-
-
-
-static bool initialized = false;
-static uint8_t *read_buf = NULL;
-static uint16_t bytes_remaining;
-
-static void read_complete(uint16_t bytes_read, bool last_fragment)
-{
-    // TODO MATTER specific behavior.
-//   hci_common_transport_receive(read_buf, bytes_read, last_fragment);
-  sl_matter_cpc_free(read_buf);
-  sl_matter_cpc_rx_done();
-}
-
-static void reception_failure(void)
-{
-  read_complete(0, false);
-  // TODO MATTER specific behavior.
-//   state = hci_packet_state_read_header;
-}
-
-// Dispatcher singleton. The base class returns kUnsupported (empty payload)
-// for every handler; firmware that wants real Matter behaviour can link in
-// a subclass that overrides the specific handlers it cares about and swap
-// `g_cpc_shell` for an instance of that subclass.
-static wom::secondary_interface::CpcShellInterface g_cpc_shell;
-
-// Persistent scratch buffer for outbound frames. sl_cpc_write may queue the
-// buffer asynchronously (see sl_matter_cpc_tx_callback), so the storage
-// must outlive the call — a stack buffer would race the completion.
-static uint8_t cpc_tx_frame[wom::secondary_interface::kMaxFrameLen];
-
-void sl_matter_cpc_handle_msg(void)
-{
-  using wom::secondary_interface::CpcShellInterface;
-  using wom::secondary_interface::CommandResult;
-  using wom::secondary_interface::Opcode;
-
-  if (false == sl_matter_is_cpc_connected()) {
-    sl_matter_reconnect_cpc();
-    // The CPC endpoint is reconnected once the sl_matter_cpc_on_connect() callback has been invoked.
-    return;
-  }
-
-  /* Check if data available */
-  if (sl_matter_cpc_new_data() <= 0) {
-    return;
-  }
-
-  // 1. Pull a single inbound frame off the endpoint. CPC delivers each host
-  //    sl_cpc_write as one discrete sl_cpc_read packet, so the request/
-  //    response protocol maps one CPC packet to one wire frame.
-  void * rx_data = NULL;
-  uint16_t rx_len = 0;
-  sl_status_t status = sl_cpc_read(&endpoint_handle, &rx_data, &rx_len,
-                                   0, SL_CPC_FLAG_NO_BLOCK);
-  if (status != SL_STATUS_OK || rx_data == NULL || rx_len == 0) {
-    if (rx_data != NULL) {
-      sl_cpc_free_rx_buffer(rx_data);
-    }
-    return;
-  }
-
-  // 2. Decode SYNC/LEN/CMD/CRC. Malformed frames are dropped silently.
-  Opcode opcode;
-  const uint8_t * args = NULL;
-  size_t args_len = 0;
-  bool decoded = CpcShellInterface::DecodeFrame(
-      static_cast<const uint8_t *>(rx_data),
-      static_cast<size_t>(rx_len),
-      &opcode, &args, &args_len);
-
-  // 3. Run per-opcode argument validation and invoke the matching handler.
-  CommandResult result;
-  bool dispatched = decoded
-      && g_cpc_shell.Dispatch(opcode, args, args_len, &result);
-
-  // 4. Build the response frame in the persistent tx buffer. The handler's
-  //    `result.response` may alias into rx_data (e.g. an echo path), so we
-  //    must encode (which memcpys) before releasing the RX buffer.
-  size_t tx_len = 0;
-  if (dispatched) {
-    tx_len = CpcShellInterface::EncodeFrame(
-        opcode, result.response, result.response_len,
-        cpc_tx_frame, sizeof(cpc_tx_frame));
-  }
-
-  sl_cpc_free_rx_buffer(rx_data);
-
-  if (tx_len == 0) {
-    return;
-  }
-
-  // 5. Hand the framed response back to the host.
-  (void) sl_matter_cpc_write(cpc_tx_frame, static_cast<uint16_t>(tx_len));
 }
 

@@ -18,15 +18,28 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
+#include <atomic>
+
+#if MMIC_USE_CPC
+#include <sl_cpc.h>
+#else
+#include <termios.h>
+#endif
+
 #include "mmic.h"
+
+#if MMIC_USE_CPC
+/* CPC endpoint the device-side mmic task exposes. */
+#define MMIC_CPC_ENDPOINT_ID     ((uint8_t)90)
+/* TX window size for the endpoint; 1 matches the cpcd examples. */
+#define MMIC_CPC_TX_WINDOW_SIZE  ((uint8_t)1)
+#endif
 
 #define MMIC_MAX_TOKENS    16
 #define MMIC_MAX_ARG_BYTES 128
@@ -124,8 +137,61 @@ static int serializeArgs(mmic_command_id_e id,
     }
 }
 
+static std::atomic<int> g_stop{0};
+
+#if MMIC_USE_CPC
+
+static cpc_handle_t   g_cpc_handle;
+static cpc_endpoint_t g_cpc_endpoint;
+
+/* Write `len` bytes from `data` to CPC endpoint 90. Returns 0 on success. */
+int serial_write(const uint8_t *data, size_t len)
+{
+    if (data == NULL) {
+        return -1;
+    }
+
+    ssize_t n = cpc_write_endpoint(g_cpc_endpoint,
+                                   (void *)data,
+                                   len,
+                                   CPC_ENDPOINT_WRITE_FLAG_NONE);
+    if (n < 0 || (size_t)n != len) {
+        return -1;
+    }
+    return 0;
+}
+
+/* Reader thread: prints anything received on the CPC endpoint to stdout. */
+static void *reader_thread(void *arg)
+{
+    (void)arg;
+    uint8_t buf[SL_CPC_READ_MINIMUM_SIZE];
+
+    while (!g_stop.load()) {
+        ssize_t n = cpc_read_endpoint(g_cpc_endpoint,
+                                      buf,
+                                      sizeof(buf),
+                                      CPC_ENDPOINT_READ_FLAG_NONE);
+        if (n > 0) {
+            decodeAndPrintResponse(buf, (size_t)n);
+        } else if (n < 0) {
+            if (errno == EINTR || errno == EAGAIN) {
+                continue;
+            }
+            /* Endpoint closed by us on shutdown -> exit quietly. */
+            if (g_stop.load()) {
+                break;
+            }
+            fprintf(stderr, "\n[cpc read error: %s]\n", strerror(errno));
+            break;
+        }
+    }
+    return NULL;
+}
+
+#else /* !MMIC_USE_CPC : UART transport */
+
 static int g_serial_fd = -1;
-static atomic_int g_stop = 0;
 
 /* Configure an open fd for 115200, 8 data bits, no parity, 1 stop bit, no flow control. */
 static int configure_port(int fd)
@@ -198,7 +264,7 @@ static void *reader_thread(void *arg)
     (void)arg;
     uint8_t buf[256]={0};
 
-    while (!atomic_load(&g_stop)) {
+    while (!g_stop.load()) {
         ssize_t n = read(g_serial_fd, buf, sizeof(buf));
         if (n > 0) {
             decodeAndPrintResponse(buf, n);
@@ -211,8 +277,42 @@ static void *reader_thread(void *arg)
     return NULL;
 }
 
+#endif /* MMIC_USE_CPC */
+
 int main(int argc, char **argv)
 {
+#if MMIC_USE_CPC
+    if (argc > 2) {
+        fprintf(stderr, "Usage: %s [cpcd_instance_name]\n", argv[0]);
+        return 1;
+    }
+    const char *instance = (argc == 2) ? argv[1] : NULL;// use default socket location
+
+    if (cpc_init(&g_cpc_handle, instance, false, NULL) != 0) { 
+        fprintf(stderr, "cpc_init(\"%s\") failed: %s\n",
+                instance, strerror(errno));
+        return 1;
+    }
+
+    if (cpc_open_endpoint(g_cpc_handle,
+                          &g_cpc_endpoint,
+                          MMIC_CPC_ENDPOINT_ID,
+                          MMIC_CPC_TX_WINDOW_SIZE) < 0) {
+        fprintf(stderr, "cpc_open_endpoint(%u) failed: %s\n",
+                (unsigned)MMIC_CPC_ENDPOINT_ID, strerror(errno));
+        return 1;
+    }
+
+    pthread_t reader;
+    if (pthread_create(&reader, NULL, reader_thread, NULL) != 0) {
+        fprintf(stderr, "Failed to start reader thread\n");
+        cpc_close_endpoint(&g_cpc_endpoint);
+        return 1;
+    }
+
+    printf("Connected to cpcd instance \"%s\" on endpoint %u. Type 'exit' to quit.\n",
+           instance, (unsigned)MMIC_CPC_ENDPOINT_ID);
+#else
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <serial_device>\n", argv[0]);
         return 1;
@@ -240,6 +340,7 @@ int main(int argc, char **argv)
     }
 
     printf("Connected to %s @ 115200 8N1. Type 'exit' to quit.\n", device);
+#endif
 
     char line[512];
     while (1) {
@@ -325,11 +426,18 @@ int main(int argc, char **argv)
         fprintf(stderr, "Unknown command: %s\n", argv_cmd[0]);
     }
 
-    atomic_store(&g_stop, 1);
-    pthread_join(reader, NULL);
+    g_stop.store(1);
 
+#if MMIC_USE_CPC
+    /* Closing the endpoint makes any in-flight cpc_read_endpoint() return
+     * with an error, which lets the reader thread observe g_stop and exit. */
+    cpc_close_endpoint(&g_cpc_endpoint);
+    pthread_join(reader, NULL);
+#else
+    pthread_join(reader, NULL);
     close(g_serial_fd);
     g_serial_fd = -1;
+#endif
 
     return 0;
 }

@@ -20,6 +20,14 @@ if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin
     message(FATAL_ERROR "mmic host build only supports Linux and macOS (got ${CMAKE_SYSTEM_NAME}).")
 endif()
 
+# Transport selection.
+#
+# By default the host talks to the device over a UART. Pass
+#   -DMMIC_USE_CPC=ON
+# on the CMake command line to instead use Silicon Labs CPC (Co-Processor
+# Communication) via libcpc, opening endpoint 90 on the running cpcd instance.
+option(MMIC_USE_CPC "Use Silicon Labs CPC (endpoint 90) instead of UART" OFF)
+
 find_package(Threads REQUIRED)
 
 add_executable(mmic_host
@@ -30,6 +38,26 @@ add_executable(mmic_host
 target_include_directories(mmic_host PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_options(mmic_host PRIVATE -Wall -Wextra)
+
+if(MMIC_USE_CPC)
+    find_path(CPC_INCLUDE_DIR NAMES sl_cpc.h)
+    find_library(CPC_LIBRARY NAMES cpc)
+    if(NOT CPC_INCLUDE_DIR OR NOT CPC_LIBRARY)
+        message(FATAL_ERROR
+            "MMIC_USE_CPC=ON but libcpc / sl_cpc.h were not found. "
+            "Install the Silicon Labs CPC daemon (cpcd) development files, "
+            "or point the build at them with -DCPC_INCLUDE_DIR=... "
+            "-DCPC_LIBRARY=...")
+    endif()
+    message(STATUS "mmic_host: CPC transport enabled (endpoint 90)")
+    message(STATUS "  CPC_INCLUDE_DIR = ${CPC_INCLUDE_DIR}")
+    message(STATUS "  CPC_LIBRARY     = ${CPC_LIBRARY}")
+    target_compile_definitions(mmic_host PRIVATE MMIC_USE_CPC=1)
+    target_include_directories(mmic_host PRIVATE ${CPC_INCLUDE_DIR})
+    target_link_libraries(mmic_host PRIVATE ${CPC_LIBRARY})
+else()
+    message(STATUS "mmic_host: UART transport enabled (default)")
+endif()
 
 # Emit full DWARF debug info and disable frame-pointer omission so backtraces
 # in gdb / lldb are reliable, regardless of build type.

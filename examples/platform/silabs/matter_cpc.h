@@ -29,22 +29,11 @@ int sl_matter_cpc_read(uint8_t **read_buf);
 void sl_matter_cpc_free(void *buf);
 void sl_matter_cpc_rx_done();
 sl_status_t sl_matter_cpc_write(uint8_t *data, uint16_t len);
-int sl_matter_cpc_new_data();
+int sl_matter_cpc_wait_for_new_data();
 void sl_matter_cpc_on_connect(uint8_t endpoint_id, void *arg);
 void sl_matter_cpc_error(uint8_t endpoint_id, void *arg);
 bool sl_matter_is_cpc_connected(void);
 void sl_matter_reconnect_cpc(void);
-
-
-/**
- * Initialize RTOS task for HCI CPC Reader
- */
-sl_status_t sl_matter_cpc_rtos_init(void);
-
-/**
- * Deinitialize HCI tasks
- */
-void sl_matter_cpc_rtos_deinit(void);
 
 /**
  * Callback handler invoked when a new iframe is available. Also invoked
@@ -52,13 +41,3 @@ void sl_matter_cpc_rtos_deinit(void);
  */
 void sl_matter_cpc_on_transport_notify(uint8_t endpoint_id, void * arg);
 
-/**
- * Deprecated: use sl_matter_cpc_on_transport_notify().
- */
-void sl_matter_cpc_rx(uint8_t endpoint_id, void *arg);
-
-/**
- * Get the available stack space of the HCI CPC thread as determined
- * by the stack watermark recorded during execution.
- */
-uint8_t sl_matter_cpc_get_stack_space(uint32_t *stack_space);

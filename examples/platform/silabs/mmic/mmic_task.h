@@ -2,7 +2,8 @@
 
 #pragma once
 
+#include "sl_status.h"
 
-void mmic_init(void);
+sl_status_t mmic_init(void);
 
 
