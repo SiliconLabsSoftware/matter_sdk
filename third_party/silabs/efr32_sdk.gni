@@ -730,9 +730,7 @@ template("efr32_sdk") {
       # -femulated-tls is needed since clang will try to use TLS,
       # which is not supported by the EFR32 thus resulting on linking failing on
       # undefined __aeabi_read_tp symbol
-      cflags += [
-        "-femulated-tls",
-      ]
+      cflags += [ "-femulated-tls" ]
     }
 
     if (defined(invoker.defines)) {
@@ -1010,10 +1008,10 @@ template("efr32_sdk") {
 
     if (sl_config_watchdog_manager_enable) {
       sources += [
-        "${efr32_sdk_root}/platform_core/service/watchdog_manager/src/sl_watchdog_manager.c",
         "${efr32_sdk_root}/platform_core/platform/service/watchdog_manager/src/sl_watchdog_manager_hal_wdog.c",
         "${efr32_sdk_root}/platform_core/platform/service/watchdog_manager/src/sl_watchdog_manager_platform.c",
         "${efr32_sdk_root}/platform_core/platform/service/watchdog_manager/src/sl_watchdog_manager_power.c",
+        "${efr32_sdk_root}/platform_core/service/watchdog_manager/src/sl_watchdog_manager.c",
       ]
     }
 
