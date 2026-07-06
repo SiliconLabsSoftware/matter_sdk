@@ -17,7 +17,6 @@
  */
 
 #include "OvenEndpoint.h"
-#include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 
 #include "OvenManager.h"
@@ -101,43 +100,12 @@ void OvenModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Commands::C
         }
     };
 
-    // Verify newMode is among supported modes
-    if (!IsSupportedMode(NewMode))
-    {
-        setResponse(ModeBase::StatusCode::kUnsupportedMode);
-        return;
-    }
-
-    // Read Current Oven Mode
-    uint8_t currentMode;
-    Status attrStatus = OvenMode::Attributes::CurrentMode::Get(mEndpointId, &currentMode);
-    if (attrStatus != Status::Success)
-    {
-        ChipLogError(AppServer, "OvenManager: Failed to read CurrentMode");
-        setResponse(ModeBase::StatusCode::kGenericFailure, "Read CurrentMode failed");
-        return;
-    }
-
-    // No action needed if current mode is the same as new mode
-    if (currentMode == NewMode)
-    {
-        setResponse(ModeBase::StatusCode::kSuccess);
-        return;
-    }
+    const uint8_t currentMode = GetInstance()->GetCurrentMode();
 
     if (OvenManager::GetInstance().IsTransitionBlocked(currentMode, NewMode))
     {
         ChipLogProgress(AppServer, "OvenManager: Blocked transition %u -> %u", currentMode, NewMode);
         setResponse(ModeBase::StatusCode::kGenericFailure, "Transition blocked");
-        return;
-    }
-
-    // Write new mode
-    Status writeStatus = OvenMode::Attributes::CurrentMode::Set(mEndpointId, NewMode);
-    if (writeStatus != Status::Success)
-    {
-        ChipLogError(AppServer, "OvenManager: Failed to write CurrentMode");
-        setResponse(ModeBase::StatusCode::kGenericFailure, "Write CurrentMode failed");
         return;
     }
 

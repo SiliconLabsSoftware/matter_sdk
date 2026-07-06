@@ -21,7 +21,6 @@
 #include "OvenBindingHandler.h"
 #include "OvenEndpoint.h"
 
-#include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <app/clusters/temperature-control-server/CodegenIntegration.h>
@@ -90,10 +89,7 @@ void OvenManager::Init()
     VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &mIsCookSurface2On) == Status::Success,
                    ChipLogError(AppServer, "Getting CookSurfaceEndpoint2 OnOff state failed"));
 
-    // Get current oven mode
-    VerifyOrReturn(OvenMode::Attributes::CurrentMode::Get(kTemperatureControlledCabinetEndpoint, &mCurrentOvenMode) ==
-                       Status::Success,
-                   ChipLogError(AppServer, "Getting CurrentOvenMode failed"));
+    mCurrentOvenMode = mTemperatureControlledCabinetEndpoint.GetOvenModeInstance().GetCurrentMode();
 }
 
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
