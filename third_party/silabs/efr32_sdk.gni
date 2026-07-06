@@ -917,6 +917,7 @@ template("efr32_sdk") {
       "${silabs_gen_folder}/autogen/gatt_db.c",
       "${silabs_gen_folder}/autogen/sl_bluetooth.c",
       "${silabs_gen_folder}/autogen/sl_board_default_init.c",
+      "${silabs_gen_folder}/autogen/sl_dma_manager_instances.c",
       "${silabs_gen_folder}/autogen/sl_event_handler.c",
       "${silabs_gen_folder}/autogen/sl_iostream_handles.c",
       "${silabs_gen_folder}/main.c",
