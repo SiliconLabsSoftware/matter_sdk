@@ -266,7 +266,12 @@ if (wifi_soc != true) {  # CCP board
         silabs_family = "efr32mg24"
       }
 
-      libs = [ "${sl_ot_libs_path}/libs/libsl_ot_stack_${XTD}_${COAP_API}${silabs_family}_gcc.a" ]
+      compiler = "gcc"
+      if (is_clang) {
+        compiler = "llvm"
+      }
+
+      libs = [ "${sl_ot_libs_path}/libs/libsl_ot_stack_${XTD}_${COAP_API}${silabs_family}_${compiler}.a" ]
     }
   }
 }

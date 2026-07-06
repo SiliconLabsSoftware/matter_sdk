@@ -13,6 +13,7 @@ segger
 
 # efr32_sdk.gni
 bgapi_protocol
+bluetooth_apploader
 bluetooth_common
 bluetooth_le_controller
 bluetooth_le_host
@@ -163,6 +164,7 @@ rail_library/autogen/librail_release/librail_multiprotocol_module_efr32xg24_llvm
 
 # all (combined unique, alphabetical)
 bgapi_protocol
+bluetooth_apploader
 bluetooth_common
 bluetooth_le_controller
 bluetooth_le_host
