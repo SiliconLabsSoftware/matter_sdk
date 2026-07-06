@@ -342,6 +342,7 @@ template("efr32_sdk") {
           "${efr32_sdk_root}/bluetooth_le_host/build/${compiler}/cortex-m33/privacy/resolving_list/release/libble_host_resolving_list_stub.a",
           "${efr32_sdk_root}/bluetooth_le_host/build/${compiler}/cortex-m33/privacy/rpa_resolution/release/libble_host_rpa_resolution_stub.a",
           "${efr32_sdk_root}/bluetooth_le_host/build/${compiler}/cortex-m33/system/release/libble_host_system.a",
+          "${efr32_sdk_root}/bluetooth_le_host/build/${compiler}/cortex-m33/crypto/release/libble_host_crypto_stub.a",
         ]
       }
     }
