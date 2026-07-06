@@ -231,6 +231,7 @@ template("siwx917_sdk") {
       "${silabs_board}=1",
       "SL_BOARD_NAME=${silabs_board}",
       "__HEAP_SIZE=0",
+      "_RTE_",
       "PLATFORM_HEADER=\"platform-header.h\"",
       "USE_NVM3=1",
       "__error_t_defined",
@@ -878,6 +879,7 @@ template("siwx917_sdk") {
         "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/power_manager/src/sli_si91x_power_manager.c",
         "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/power_manager/src/sli_si91x_power_manager_wakeup_init.c",
         "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/systemlevel/src/rsi_time_period.c",
+        "${wifi_sdk_root}/third_party/silicon_labs/freertos/src/sl_si91x_low_power_tickless_mode.c",
       ]
     }
 
