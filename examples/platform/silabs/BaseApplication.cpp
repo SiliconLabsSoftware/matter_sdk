@@ -1116,11 +1116,11 @@ bool BaseApplication::GetProvisionStatus()
     return BaseApplication::sIsProvisioned;
 }
 
-#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#if defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 }
-#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#endif // defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
