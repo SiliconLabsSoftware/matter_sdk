@@ -171,6 +171,8 @@ bool sHaveBLEConnections = false;
 
 constexpr uint32_t kLightTimerPeriod = static_cast<uint32_t>(pdMS_TO_TICKS(10));
 
+constexpr System::Clock::Milliseconds32 kZbLeaveAnnouceDelay = System::Clock::Milliseconds32(1000);
+
 uint8_t sAppEventQueueBuffer[APP_EVENT_QUEUE_SIZE * sizeof(AppEvent)];
 osMessageQueue_t sAppEventQueueStruct;
 constexpr osMessageQueueAttr_t appEventQueueAttr = { .cb_mem  = &sAppEventQueueStruct,
@@ -1077,8 +1079,9 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 #ifdef SL_MATTER_ZIGBEE_SEQUENTIAL // Matter Zigbee sequential
         Zigbee::RequestLeave();
-        Zigbee::ZLLNotFactoryNew();
 #endif // SL_MATTER_ZIGBEE_SEQUENTIAL
+        RETURN_SAFELY_IGNORED DeviceLayer::SystemLayer().StartTimer(
+            kZbLeaveAnnouceDelay, [](System::Layer *, void *) { Zigbee::ZLLNotFactoryNew(); }, nullptr);
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
     }
     break;
@@ -1120,11 +1123,11 @@ bool BaseApplication::GetProvisionStatus()
     return BaseApplication::sIsProvisioned;
 }
 
-#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#if defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 }
-#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#endif // defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
