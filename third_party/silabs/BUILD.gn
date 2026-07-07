@@ -61,7 +61,7 @@ if (chip_with_lwip) {
 }
 
 if (wifi_soc != true) {  # CCP board
-  # Openthread GSDK libraries configurations
+  # Openthread SISDK libraries configurations
 
   if (use_silabs_thread_lib) {
     config("libopenthread-platform_config") {
