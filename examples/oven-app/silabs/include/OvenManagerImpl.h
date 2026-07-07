@@ -82,7 +82,7 @@ private:
 /**
  * @brief Common alias so the shared CustomerAppManager resolves per-app.
  *
- * The shared CustomerAppManager includes "AppManagerImpl.h" and derives 
+ * The shared CustomerAppManager includes "AppManagerImpl.h" and derives
  * from `AppManagerImpl<CustomerAppManager>`.
  */
 template <typename D>
