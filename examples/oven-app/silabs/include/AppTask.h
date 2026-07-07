@@ -75,7 +75,8 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
-    static AppTask & GetAppTask() { return sAppTask; }
+    /** @brief Returns the active app instance. */
+    static AppTask & GetAppTask();
 
     /**
      * @brief AppTask task main loop function
@@ -97,11 +98,24 @@ public:
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
     /**
+     * @brief PB1 Button event processing function for oven functionality
+     *        Press and release will toggle cooktop and cook surface states
+     *
+     * @param aEvent button event being processed
+     */
+    static void OvenButtonHandler(AppEvent * aEvent);
+
+    /**
      * @brief Handle oven-related AppEvents to update UI and LEDs.
      *
      * @param aEvent Oven Event to process
      */
     static void OvenActionHandler(AppEvent * aEvent);
+
+    /**
+     * @brief After reboot, send CookTop Off to bound rangehood peers once IP and DNS-SD are ready.
+     */
+    static void ConnectivityEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
 
     /**
      * @brief Data model hook invoked after a cluster attribute changes; routes OnOff/OvenMode
@@ -113,7 +127,7 @@ public:
     /**
      * @brief Schedules initialization of the binding manager on the Matter thread.
      */
-    static CHIP_ERROR InitBindingHandler();
+    static void InitBindingHandler(intptr_t arg);
 
     /**
      * @brief Propagate the CookTop OnOff state to bound OnOff and FanControl peers.
@@ -121,33 +135,30 @@ public:
     static void CookTopBindingPropagateState(chip::EndpointId cookTopEndpoint, bool cookTopOn);
 
     /**
+     * @brief Sends an OnOff cluster command to a bound peer to mirror CookTop state.
+     */
+    static void ProcessOnOffUnicast(bool cookTopOn, const chip::app::Clusters::Binding::TableEntry & binding,
+                                   chip::Messaging::ExchangeManager * exchangeMgr, const chip::SessionHandle & sessionHandle);
+
+    /**
+     * @brief Writes the FanControl FanMode attribute on a bound peer to mirror CookTop state.
+     */
+    static void ProcessFanControlUnicast(bool cookTopOn, const chip::app::Clusters::Binding::TableEntry & binding,
+                                       const chip::SessionHandle & sessionHandle);
+
+    /**
      * @brief Binding manager callback invoked per bound device to propagate a CookTop state change.
      */
     static void BoundDeviceChangedHandler(const chip::app::Clusters::Binding::TableEntry & binding,
                                           chip::OperationalDeviceProxy * peerDevice, void * context);
 
-private:
-    static AppTask sAppTask;
-
+protected:
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
      *
      * @return CHIP_ERROR
      */
     CHIP_ERROR AppInit() override;
-
-    /**
-     * @brief After reboot, send CookTop Off to bound rangehood peers once IP and DNS-SD are ready.
-     */
-    static void ConnectivityEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
-
-    /**
-     * @brief PB1 Button event processing function for oven functionality
-     *        Press and release will toggle cooktop and cook surface states
-     *
-     * @param aEvent button event being processed
-     */
-    static void OvenButtonHandler(AppEvent * aEvent);
 
     /**
      * @brief Updates the cluster state for button actions

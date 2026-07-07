@@ -20,6 +20,8 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "CustomerAppManager.h"
+#include "CustomerAppTask.h"
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
@@ -77,6 +79,11 @@ LEDWidget sLightLED; // Use LEDWidget for basic LED functionality
 namespace {
 bool sDnssdReady = false;
 
+CustomerAppTask & AppInstance()
+{
+    return CustomerAppTask::GetAppTask();
+}
+
 // Drop cached CASE sessions to bound peers so BindingManager re-handshakes after every binding action.
 void ReleaseBoundPeerSessions(EndpointId localEndpoint)
 {
@@ -97,46 +104,6 @@ void ReleaseBoundPeerSessions(EndpointId localEndpoint)
     }
 }
 
-void ProcessOnOffUnicast(bool cookTopOn, const Binding::TableEntry & binding, Messaging::ExchangeManager * exchangeMgr,
-                         const SessionHandle & sessionHandle)
-{
-    auto onSuccess = [](const ConcreteCommandPath &, const StatusIB &, const auto &) {
-        ChipLogDetail(AppServer, "CookTop OnOff bound unicast command success");
-    };
-    auto onFailure = [](CHIP_ERROR error) {
-        ChipLogError(AppServer, "CookTop OnOff bound unicast failed: %s", error.AsString());
-    };
-
-    if (cookTopOn)
-    {
-        OnOff::Commands::On::Type cmd;
-        SuccessOrLog(Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, cmd, onSuccess, onFailure),
-                     AppServer, "Failed to invoke On command");
-    }
-    else
-    {
-        OnOff::Commands::Off::Type cmd;
-        SuccessOrLog(Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, cmd, onSuccess, onFailure),
-                     AppServer, "Failed to invoke Off command");
-    }
-}
-
-void ProcessFanControlUnicast(bool cookTopOn, const Binding::TableEntry & binding, const SessionHandle & sessionHandle)
-{
-    auto onSuccess = [](const ConcreteAttributePath &) {
-        ChipLogDetail(AppServer, "CookTop FanControl FanMode bound write success");
-    };
-    auto onFailure = [](const ConcreteAttributePath *, CHIP_ERROR error) {
-        ChipLogError(AppServer, "CookTop FanControl FanMode bound write failed: %s", error.AsString());
-    };
-
-    FanControl::FanModeEnum fanMode = cookTopOn ? FanControl::FanModeEnum::kOn : FanControl::FanModeEnum::kOff;
-
-    SuccessOrLog(Controller::WriteAttribute<FanControl::Attributes::FanMode::TypeInfo>(sessionHandle, binding.remote, fanMode,
-                                                                                       onSuccess, onFailure),
-                 AppServer, "Failed to write FanMode attribute");
-}
-
 void ContextReleaseHandler(void * context)
 {
     if (context)
@@ -144,26 +111,12 @@ void ContextReleaseHandler(void * context)
         Platform::Delete(static_cast<CookTopBindingContext *>(context));
     }
 }
-
-void InitBindingMgrWork(intptr_t)
-{
-    auto & server = Server::GetInstance();
-    VerifyOrDieWithMsg(CHIP_NO_ERROR ==
-                           Binding::Manager::GetInstance().Init(
-                               { &server.GetFabricTable(), server.GetCASESessionManager(), &server.GetPersistentStorage() }),
-                       AppServer, "Failed to initialize binding manager");
-    Binding::Manager::GetInstance().RegisterBoundDeviceChangedHandler(&AppTask::BoundDeviceChangedHandler);
-    Binding::Manager::GetInstance().RegisterBoundDeviceContextReleaseHandler(ContextReleaseHandler);
-    ChipLogDetail(AppServer, "Oven binding manager initialized");
-}
 } // namespace
-
-AppTask AppTask::sAppTask;
 
 CHIP_ERROR AppTask::AppInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
 #ifdef DISPLAY_ENABLED
     SuccessOrLog(GetLCD().Init((uint8_t *) "Oven-App"), AppServer, "Failed to initialize LCD");
@@ -171,10 +124,10 @@ CHIP_ERROR AppTask::AppInit()
 #endif
     DeviceLayer::PlatformMgr().LockChipStack();
     // Initialization of Oven Manager and endpoints of oven.
-    OvenManager::GetInstance().Init();
+    CustomerAppManager::GetInstance().Init();
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    ReturnErrorOnFailure(PlatformMgr().AddEventHandler(ConnectivityEventHandler, 0));
+    ReturnErrorOnFailure(PlatformMgr().AddEventHandler(&CustomerAppTask::ConnectivityEventHandler, 0));
 
     sLightLED.Init(LIGHT_LED);
     sLightLED.Set(OvenManager::GetInstance().GetCookTopState());
@@ -205,7 +158,7 @@ void AppTask::ConnectivityEventHandler(const ChipDeviceEvent * event, intptr_t)
             return;
         }
         sDnssdReady = true;
-        CookTopBindingPropagateState(OvenManager::GetCookTopEndpoint(), false);
+        CustomerAppTask::CookTopBindingPropagateState(OvenManager::GetCookTopEndpoint(), false);
         break;
     default:
         break;
@@ -222,14 +175,14 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = sAppTask.Init();
+    CHIP_ERROR err = AppInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask.Init() failed");
         appError(err);
     }
 
-    sAppTask.StartStatusLEDTimer();
+    AppInstance().StartStatusLEDTimer();
 
     ChipLogProgress(AppServer, "App Task started");
 
@@ -238,7 +191,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -253,14 +206,14 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     // Handle button1 specifically for oven functionality
     if (button == APP_ACTION_BUTTON)
     {
-        button_event.Handler = OvenButtonHandler;
+        button_event.Handler = &CustomerAppTask::OvenButtonHandler;
     }
     else
     {
         button_event.Handler = BaseApplication::ButtonHandler;
     }
 
-    AppTask::GetAppTask().PostEvent(&button_event);
+    AppInstance().PostEvent(&button_event);
 }
 
 void AppTask::OvenButtonHandler(AppEvent * aEvent)
@@ -332,19 +285,67 @@ void AppTask::BoundDeviceChangedHandler(const Binding::TableEntry & binding, Ope
     switch (data->clusterId)
     {
     case OnOff::Id:
-        ProcessOnOffUnicast(data->cookTopOn, binding, peerDevice->GetExchangeManager(), peerDevice->GetSecureSession().Value());
+        AppTask::ProcessOnOffUnicast(data->cookTopOn, binding, peerDevice->GetExchangeManager(),
+                                     peerDevice->GetSecureSession().Value());
         break;
     case FanControl::Id:
-        ProcessFanControlUnicast(data->cookTopOn, binding, peerDevice->GetSecureSession().Value());
+        AppTask::ProcessFanControlUnicast(data->cookTopOn, binding, peerDevice->GetSecureSession().Value());
         break;
     default:
         break;
     }
 }
 
-CHIP_ERROR AppTask::InitBindingHandler()
+void AppTask::ProcessOnOffUnicast(bool cookTopOn, const Binding::TableEntry & binding, Messaging::ExchangeManager * exchangeMgr,
+                                 const SessionHandle & sessionHandle)
 {
-    return DeviceLayer::PlatformMgr().ScheduleWork(InitBindingMgrWork);
+    auto onSuccess = [](const ConcreteCommandPath &, const StatusIB &, const auto &) {
+        ChipLogDetail(AppServer, "CookTop OnOff bound unicast command success");
+    };
+    auto onFailure = [](CHIP_ERROR error) {
+        ChipLogError(AppServer, "CookTop OnOff bound unicast failed: %s", error.AsString());
+    };
+
+    if (cookTopOn)
+    {
+        OnOff::Commands::On::Type cmd;
+        SuccessOrLog(Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, cmd, onSuccess, onFailure),
+                     AppServer, "Failed to invoke On command");
+    }
+    else
+    {
+        OnOff::Commands::Off::Type cmd;
+        SuccessOrLog(Controller::InvokeCommandRequest(exchangeMgr, sessionHandle, binding.remote, cmd, onSuccess, onFailure),
+                     AppServer, "Failed to invoke Off command");
+    }
+}
+
+void AppTask::ProcessFanControlUnicast(bool cookTopOn, const Binding::TableEntry & binding, const SessionHandle & sessionHandle)
+{
+    auto onSuccess = [](const ConcreteAttributePath &) {
+        ChipLogDetail(AppServer, "CookTop FanControl FanMode bound write success");
+    };
+    auto onFailure = [](const ConcreteAttributePath *, CHIP_ERROR error) {
+        ChipLogError(AppServer, "CookTop FanControl FanMode bound write failed: %s", error.AsString());
+    };
+
+    FanControl::FanModeEnum fanMode = cookTopOn ? FanControl::FanModeEnum::kOn : FanControl::FanModeEnum::kOff;
+
+    SuccessOrLog(Controller::WriteAttribute<FanControl::Attributes::FanMode::TypeInfo>(sessionHandle, binding.remote, fanMode,
+                                                                                       onSuccess, onFailure),
+                 AppServer, "Failed to write FanMode attribute");
+}
+
+void AppTask::InitBindingHandler(intptr_t)
+{
+    auto & server = Server::GetInstance();
+    VerifyOrDieWithMsg(CHIP_NO_ERROR ==
+                           Binding::Manager::GetInstance().Init(
+                               { &server.GetFabricTable(), server.GetCASESessionManager(), &server.GetPersistentStorage() }),
+                       AppServer, "Failed to initialize binding manager");
+    Binding::Manager::GetInstance().RegisterBoundDeviceChangedHandler(&CustomerAppTask::BoundDeviceChangedHandler);
+    Binding::Manager::GetInstance().RegisterBoundDeviceContextReleaseHandler(&ContextReleaseHandler);
+    ChipLogDetail(AppServer, "Oven binding manager initialized");
 }
 
 void AppTask::CookTopBindingPropagateState(EndpointId cookTopEndpoint, bool cookTopOn)
@@ -391,7 +392,7 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
     case Clusters::OnOff::Id:
         ChipLogDetail(Zcl, "OnOff cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
                       type, *value, size);
-        OvenManager::GetInstance().OnOffAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        CustomerAppManager::GetInstance().OnOffAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     case Clusters::TemperatureControl::Id:
         ChipLogDetail(Zcl, "TemperatureControl cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
@@ -400,14 +401,9 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
     case Clusters::OvenMode::Id:
         ChipLogDetail(Zcl, "OvenMode cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
                       type, *value, size);
-        OvenManager::GetInstance().OvenModeAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        CustomerAppManager::GetInstance().OvenModeAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     default:
         break;
     }
-}
-
-void MatterPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size, uint8_t * value)
-{
-    AppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 }

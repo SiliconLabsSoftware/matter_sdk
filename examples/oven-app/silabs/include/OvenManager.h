@@ -69,7 +69,7 @@ public:
      *
      * @return Reference to the singleton OvenManager instance.
      */
-    static OvenManager & GetInstance() { return sOvenMgr; }
+    static OvenManager & GetInstance();
 
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
@@ -93,11 +93,13 @@ public:
     /**
      * @brief Checks if a transition between two oven modes is blocked.
      *
+     * Virtual so oven-app-common can call through `OvenManager::GetInstance()`.
+     *
      * @param fromMode The current mode.
      * @param toMode The desired mode.
      * @return True if the transition is blocked, false otherwise.
      */
-    bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
+    virtual bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
 
     /**
      * @brief Gets the current state of the CookTop.
@@ -155,8 +157,6 @@ private:
         { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean),
           chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake) },
     };
-
-    static OvenManager sOvenMgr;
 
     // Internal table of endpoint -> levels mapping (filled via RegisterSupportedLevels()).
     EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];

@@ -29,6 +29,8 @@
 
 #include "AppConfig.h"
 #include "AppTask.h"
+#include "CustomerAppManager.h"
+#include "CustomerAppTask.h"
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 using namespace chip;
@@ -36,7 +38,10 @@ using namespace chip::app;
 using namespace chip::app::Clusters;
 using chip::Protocols::InteractionModel::Status;
 
-OvenManager OvenManager::sOvenMgr;
+OvenManager & OvenManager::GetInstance()
+{
+    return CustomerAppManager::GetInstance();
+}
 
 void OvenManager::Init()
 {
@@ -71,7 +76,8 @@ void OvenManager::Init()
                    ChipLogError(AppServer, "Setting CookSurfaceEndpoint2 initial state failed"));
 
     // Initialize binding manager (owned by AppTask)
-    VerifyOrReturn(AppTask::InitBindingHandler() == CHIP_NO_ERROR, ChipLogError(AppServer, "Initializing binding handler failed"));
+    VerifyOrReturn(DeviceLayer::PlatformMgr().ScheduleWork(&CustomerAppTask::InitBindingHandler, 0) == CHIP_NO_ERROR,
+                   ChipLogError(AppServer, "Initializing binding handler failed"));
 
     // Cooktop is a cooking appliance. Setting the state to false after reboot to avoid fire/safety hazards.
     EnforceCookTopOffAtStartup();
@@ -180,7 +186,7 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
 
         // Propagate CookTop state to bound OnOff (RangeHood Light) and FanControl (Extractor Hood) peers.
-        AppTask::CookTopBindingPropagateState(kCookTopEndpoint, *value != 0);
+        CustomerAppTask::CookTopBindingPropagateState(kCookTopEndpoint, *value != 0);
         break;
     }
     case kCookSurfaceEndpoint1:
@@ -209,9 +215,22 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         AppEvent event         = {};
         event.Type             = AppEvent::kEventType_Oven;
         event.OvenEvent.Action = action;
-        event.Handler          = AppTask::OvenActionHandler;
+        event.Handler          = &CustomerAppTask::OvenActionHandler;
         AppTask::GetAppTask().PostEvent(&event);
     }
+}
+
+void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                                 uint16_t size)
+{
+    VerifyOrReturn(value != nullptr, ChipLogError(AppServer, "OvenModeAttributeChangeHandler: value pointer is null"));
+
+    mCurrentOvenMode       = *value;
+    AppEvent event         = {};
+    event.Type             = AppEvent::kEventType_Oven;
+    event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
+    event.Handler          = &CustomerAppTask::OvenActionHandler;
+    AppTask::GetAppTask().PostEvent(&event);
 }
 
 bool OvenManager::IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
