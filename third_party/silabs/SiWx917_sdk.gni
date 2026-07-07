@@ -55,13 +55,14 @@ template("siwx917_sdk") {
     # Treat these includes as system includes, so warnings in them are not fatal.
     _include_dirs = [
       "${chip_root}",
+      "${root_gen_dir}/include",
       "${efr32_sdk_root}/platform_core/platform/emdrv/nvm3/config",
-      "${efr32_sdk_root}/platform_core/platform/common/inc",
+      "${efr32_sdk_root}/cmsis_common/platform/common/inc",
       "${efr32_sdk_root}/platform_core/platform/service/mem_pool/inc/",
       "${efr32_sdk_root}/platform_core/platform/emdrv/nvm3/inc",
       "${efr32_sdk_root}/platform_core/platform/emdrv/common/inc",
       "${efr32_sdk_root}/platform_core/platform/service/device_init/inc",
-      "${efr32_sdk_root}/platform_core/platform/common/inc",
+      "${efr32_sdk_root}/platform_common/platform/common/inc",
       "${efr32_sdk_root}/platform_core/platform/emdrv/dmadrv/inc",
       "${efr32_sdk_root}/platform_core/platform/driver/gpio/inc",
       "${efr32_sdk_root}/platform_core/platform/emdrv/gpiointerrupt/inc",
@@ -70,9 +71,6 @@ template("siwx917_sdk") {
       "${efr32_sdk_root}/platform_core/platform/emdrv/spidrv/inc",
       "${efr32_sdk_root}/platform_core/platform/emdrv/spidrv/config",
       "${efr32_sdk_root}/platform_core/platform/service/device_manager/inc",
-      "${chip_root}/src",
-      "${target_gen_dir}/include",
-      "${chip_root}/examples/platform/silabs/",
       "${matter_support_root}/board-support/si91x/siwx917/${silabs_board}/autogen",
       "${matter_support_root}/board-support/si91x/siwx917/${silabs_board}/config",
 
@@ -87,11 +85,12 @@ template("siwx917_sdk") {
 
       # si91x component
       "${wifi_sdk_root}/components/device/silabs/si91x/wireless/ahb_interface/inc",
+      "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_hal_si91x/inc",
+      "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_si91x_wifi_event_handler/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/wireless/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sl_net/inc",
       "${wifi_sdk_root}/components/sli_wifi/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/sl_log/inc",
-      "${wifi_sdk_root}/components/device/stm32/silabs_utility/common/inc",
 
       # siwx917_soc component
       "${wifi_sdk_root}/components/board/silabs/config/${silabs_board}",
@@ -112,9 +111,13 @@ template("siwx917_sdk") {
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/unified_peripheral_drivers/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/hal/inc",
       "${wifi_sdk_root}/components/sli_buffer_manager/inc",
+      "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/memory_manager/inc",
+      "${wifi_sdk_root}/components/sli_event_engine/inc",
+      "${wifi_sdk_root}/components/sli_routing_utility/inc",
 
       # wifi component
       "${wifi_sdk_root}/components/protocol/wifi/inc",
+      "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_si91x_wifi_command_engine/inc",
 
       # wifi_resources component
       "${wifi_sdk_root}/resources/certificates",
@@ -123,9 +126,10 @@ template("siwx917_sdk") {
 
       # network_manager component
       "${wifi_sdk_root}/components/service/network_manager/inc",
+      "${wifi_sdk_root}/components/sli_queue_manager/inc",
 
       # nvm3
-      "${efr32_sdk_root}/platform_core/platform/common/inc",
+      "${efr32_sdk_root}/platform_common/platform/common/inc",
       "${efr32_sdk_root}/platform_core/platform/common/inc",
       "${efr32_sdk_root}/platform_core/platform/emlib/inc",
       "${efr32_sdk_root}/platform_core/platform/service/system/inc",
@@ -133,7 +137,7 @@ template("siwx917_sdk") {
       "${efr32_sdk_root}/cmsis/Core/Include",
       "${efr32_sdk_root}/freertos/cmsis/Include",
       "${efr32_sdk_root}/freertos/kernel/include",
-      "${wifi_sdk_root}/components/protocol/wifi/src/si91x",
+      "${wifi_sdk_root}/components/protocol/wifi/",
       "${efr32_sdk_root}/freertos/kernel/portable/GCC/ARM_CM4F",
 
       #for LCD
@@ -168,6 +172,14 @@ template("siwx917_sdk") {
 
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/power_manager/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/clock_manager/inc",
+      "${wifi_sdk_root}/components/sli_command_engine/inc",
+
+      # Simplicity SDK
+      "${efr32_sdk_root}/platform_core/platform/service/sl_log/inc",
+      "${efr32_sdk_root}/platform_core/platform/service/sl_log/config",
+      "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config",
+      "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config/preset",
+      "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/inc",
     ]
 
     if (sl_enable_rgb_led) {
@@ -314,7 +326,7 @@ template("siwx917_sdk") {
       defines += [ "CHIP_DEVICE_CONFIG_ENABLE_IPV4=1" ]
     }
     if (invoker.enable_matter_aws) {
-      _include_dirs += [ "${chip_root}/src/platform/silabs/mqtt/stack" ]
+      _include_dirs += [ "${chip_root}/third_party/silabs/mqtt/stack" ]
     }
 
     if (chip_enable_icd_server || !disable_lcd) {
@@ -352,21 +364,15 @@ template("siwx917_sdk") {
         "SL_IDLE_MODE_DURATION_S=${sl_idle_mode_duration_s}",
         "SL_SHORT_IDLE_MODE_DURATION_S=${sl_short_idle_mode_duration_s}",
         "SL_ICD_SUPPORTED_CLIENTS_PER_FABRIC=${sl_icd_supported_clients_per_fabric}",
-        "SL_TRANSPORT_IDLE_INTERVAL=${sl_transport_idle_interval_ms}",
-        "SL_TRANSPORT_ACTIVE_INTERVAL=${sl_transport_active_interval_ms}",
         "SL_SI91X_POWER_MANAGER_UC_AVAILABLE=1",
         "SL_SI91X_TICKLESS_MODE=1",
+        "SL_TRANSPORT_IDLE_INTERVAL=${sl_transport_idle_interval_ms}",
+        "SL_TRANSPORT_ACTIVE_INTERVAL=${sl_transport_active_interval_ms}",
 
         # Enable Wakeup source for ICD
         "SL_ENABLE_GPIO_WAKEUP_SOURCE=1",
         "ENABLE_NPSS_GPIO_2=1",
       ]
-    }
-
-    if (sl_uart_log_output) {
-      defines += [ "SILABS_LOG_OUT_UART=1" ]
-    } else {
-      defines += [ "SILABS_LOG_OUT_UART=0" ]
     }
 
     if (chip_build_libshell) {  # matter shell
@@ -443,14 +449,14 @@ template("siwx917_sdk") {
           "${sl_si91x_psa_crypto_path}/multithread/inc",
 
           # mbedTLS
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config",
+          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config/",
           "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config/preset",
           "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/inc",
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_psa_driver/inc",
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sli_crypto/inc",
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sli_psec_osal/inc",
-          "${efr32_sdk_root}/mbedtls/include",
-          "${efr32_sdk_root}/mbedtls/library",
+          "${efr32_sdk_root}/security_mbedtls/platform/security/sl_component/sl_psa_driver/inc",
+          "${efr32_sdk_root}/security_mbedtls/platform/security/sl_component/sli_crypto/inc",
+          "${efr32_sdk_root}/security_se_manager/platform/security/sl_component/sli_psec_osal/inc",
+          "${efr32_sdk_root}/security_mbedtls_source/include",
+          "${efr32_sdk_root}/security_mbedtls_source/library",
         ]
       }
 
@@ -533,13 +539,13 @@ template("siwx917_sdk") {
           "${_mbedtls_root}/library/x509write_csr.c",
 
           # Simplicity SDK
-          "${efr32_sdk_root}/mbedtls/include/psa/crypto_compat.h",
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/src/sl_psa_crypto.c",
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/src/sli_psa_crypto.c",
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_psa_driver/src/sl_psa_its_nvm3.c",
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_psa_driver/src/sli_psa_trng.c",
-          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_psa_driver/src/sli_se_version_dependencies.c",
+          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config/src/sl_psa_crypto.c",
+          "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config/src/sli_psa_crypto.c",
           "${efr32_sdk_root}/platform_core/platform/security/sl_component/sli_psec_osal/src/sli_psec_osal_cmsis_rtos2.c",
+          "${efr32_sdk_root}/security_mbedtls/platform/security/sl_component/sl_psa_driver/src/sl_psa_its_nvm3.c",
+          "${efr32_sdk_root}/security_mbedtls/platform/security/sl_component/sl_psa_driver/src/sli_psa_trng.c",
+          "${efr32_sdk_root}/security_mbedtls/platform/security/sl_component/sl_psa_driver/src/sli_se_version_dependencies.c",
+          "${efr32_sdk_root}/security_mbedtls_source/include/psa/crypto_compat.h",
 
           # WISECONNECT 3 SDK
           "${sl_si91x_psa_crypto_path}/aead/src/sl_si91x_psa_aead.c",
@@ -585,7 +591,7 @@ template("siwx917_sdk") {
           "${_mbedtls_root}/include",
           "${_mbedtls_root}/library",
 
-          # GECKO SDK configuration included to be used in autogenerated files
+          # Simplicity SDK configuration included to be used in autogenerated files
           "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config",
           "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/config/preset",
           "${efr32_sdk_root}/platform_core/platform/security/sl_component/sl_mbedtls_support/inc",
@@ -653,7 +659,7 @@ template("siwx917_sdk") {
           "${matter_support_root}/tinycrypt/src/ecc_dsa.c",
           "${matter_support_root}/tinycrypt/src/tinycrypt_util.c",
 
-          # GECKO SDK
+          # Simplicity SDK
           "${efr32_sdk_root}/platform_core/platform/security/sl_component/sli_psec_osal/src/sli_psec_osal_cmsis_rtos2.c",
         ]
 
@@ -760,6 +766,8 @@ template("siwx917_sdk") {
       "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_si91x_wifi_event_handler/src/sli_si91x_wifi_event_handler.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/wireless/src/sl_rsi_utility.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/wireless/src/sl_si91x_driver.c",
+      "${wifi_sdk_root}/components/device/silabs/si91x/wireless/src/sli_si91x_driver.c",
+      "${wifi_sdk_root}/components/sli_wifi/src/sli_wifi_power_profile.c",
 
       # modified hal
       "${efr32_sdk_root}/freertos/kernel/croutine.c",
@@ -781,9 +789,20 @@ template("siwx917_sdk") {
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/hardware_drivers/button/src/sl_si91x_button.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/clock_manager/src/sl_si91x_clock_manager.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/clock_manager/src/sli_si91x_clock_manager.c",
+      "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/memory_manager/src/sl_si91x_memory_manager.c",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/nvm3/src/sl_si91x_nvm3_hal_flash.c",
+      "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_hal_si91x/src/sli_hal_si91x.c",
+      "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_si91x_wifi_command_engine/src/sli_si91x_wifi_command_engine.c",
+      "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_si91x_wifi_command_engine/src/sli_si91x_wifi_command_engine_config.c",
+      "${wifi_sdk_root}/components/service/network_manager/src/sli_net_credentials.c",
+      "${wifi_sdk_root}/components/sli_buffer_manager/src/sli_buffer_manager.c",
+      "${wifi_sdk_root}/components/sli_command_engine/src/sli_command_engine.c",
+      "${wifi_sdk_root}/components/sli_event_engine/src/sli_event_engine.c",
+      "${wifi_sdk_root}/components/sli_queue_manager/src/sli_queue_manager.c",
+      "${wifi_sdk_root}/components/sli_routing_utility/src/sli_routing_utility.c",
 
       # sl memory manager
+      "${efr32_sdk_root}/platform_core/platform/service/mem_pool/src/sl_mem_pool.c",
       "${efr32_sdk_root}/platform_core/platform/service/memory_manager/src/sl_memory_manager_cpp.cpp",
       "${efr32_sdk_root}/platform_core/platform/service/memory_manager/src/sl_memory_manager_pool.c",
       "${efr32_sdk_root}/platform_core/platform/service/memory_manager/src/sl_memory_manager_pool_common.c",
@@ -872,6 +891,7 @@ template("siwx917_sdk") {
 
     if (chip_enable_icd_server) {
       sources += [
+        "${efr32_sdk_root}/freertos/kernel/portable/SiliconLabs/cortexm/sl_si91x_low_power_tickless_mode.c",
         "${matter_support_root}/board-support/si91x/siwx917/${silabs_board}/autogen/sl_si91x_power_manager_handler.c",
         "${matter_support_root}/board-support/si91x/siwx917/${silabs_board}/autogen/sl_si91x_power_manager_wakeup_handler.c",
         "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/peripheral_drivers/src/sl_si91x_m4_ps.c",
@@ -879,7 +899,6 @@ template("siwx917_sdk") {
         "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/power_manager/src/sli_si91x_power_manager.c",
         "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/power_manager/src/sli_si91x_power_manager_wakeup_init.c",
         "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/systemlevel/src/rsi_time_period.c",
-        "${wifi_sdk_root}/third_party/silicon_labs/freertos/src/sl_si91x_low_power_tickless_mode.c",
       ]
     }
 
