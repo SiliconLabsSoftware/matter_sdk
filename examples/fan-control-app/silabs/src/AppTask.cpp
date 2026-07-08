@@ -218,9 +218,20 @@ CHIP_ERROR AppTask::InitFanControl()
 
     PlatformMgr().LockChipStack();
     Attributes::SpeedMax::Get(kFanEndpoint, &sSpeedMax);
+    FanModeEnum fanMode = sFanMode;
+    Status fanModeStatus = Attributes::FanMode::Get(kFanEndpoint, &fanMode);
     DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
     DataModel::Nullable<uint8_t> speedSettingNullable   = GetSpeedSetting();
     PlatformMgr().UnlockChipStack();
+
+    if (fanModeStatus != Status::Success)
+    {
+        ChipLogError(NotSpecified, "InitFanControl: failed to get FanMode attribute: %d", to_underlying(fanModeStatus));
+    }
+    else
+    {
+        sFanMode = fanMode;
+    }
 
     uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
     AppInstance().HandlePercentSettingChange(percentSettingCB);
