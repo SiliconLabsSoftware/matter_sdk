@@ -228,6 +228,11 @@ CHIP_ERROR AppTask::InitFanControl()
     uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
     AppInstance().HandleSpeedSettingChange(speedSettingCB);
 
+    // Startup runs before BaseApplication marks the app initialized, so
+    // boot-time FanMode writes may not loop back through the DM callback.
+    AppInstance().HandleFanModeChange(sFanMode);
+    PostFanUiUpdateEvent();
+
     return CHIP_NO_ERROR;
 }
 
@@ -466,6 +471,8 @@ void AppTask::UpdateClusterState(intptr_t arg)
 void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                             uint8_t * value)
 {
+    VerifyOrReturn(attributePath.mEndpointId == kFanEndpoint);
+
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
     ChipLogProgress(Zcl, "Cluster callback: " ChipLogFormatMEI, ChipLogValueMEI(clusterId));
