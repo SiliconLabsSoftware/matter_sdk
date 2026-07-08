@@ -29,9 +29,9 @@
  * so `Derived` only needs to override the hooks whose behavior it wants to
  * customize.
  *
- * Customer code overrides these hooks in `CustomerClosureManager`.
+ * Customer code overrides these hooks in `CustomerAppManager`.
  *
- * @tparam Derived The CRTP derived class (`CustomerClosureManager`).
+ * @tparam Derived The CRTP derived class (`CustomerAppManager`).
  */
 template <typename Derived>
 class ClosureManagerImpl : public ClosureManager

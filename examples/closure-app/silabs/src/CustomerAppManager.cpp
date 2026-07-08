@@ -20,8 +20,8 @@
  * @file
  * @brief Customer-facing ClosureManager definition site.
  *
- * Add `*Impl()` overrides in `CustomerClosureManager` (declared in
- * CustomerClosureManager.h) to customize individual ClosureManager behaviors.
+ * Add `*Impl()` overrides in `CustomerAppManager` (declared in
+ * CustomerAppManager.h) to customize individual ClosureManager behaviors.
  * Any `*Impl()` you do not override keeps the default ClosureManager behavior.
  *
  * Overridable hooks (declared in ClosureManagerImpl.h):
@@ -35,11 +35,11 @@
  * Out-of-line override bodies belong here.
  */
 
-#include "CustomerClosureManager.h"
+#include "CustomerAppManager.h"
 
-CustomerClosureManager CustomerClosureManager::sInstance;
+CustomerAppManager CustomerAppManager::sInstance;
 
 ClosureManager & ClosureManager::GetInstance()
 {
-    return CustomerClosureManager::GetInstance();
+    return CustomerAppManager::GetInstance();
 }

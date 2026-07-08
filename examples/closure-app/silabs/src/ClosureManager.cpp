@@ -16,11 +16,11 @@
  *    limitations under the License.
  */
 
-#include "ClosureManager.h"
 #include "AppConfig.h"
 #include "AppTask.h"
 #include "ClosureControlEndpoint.h"
 #include "ClosureDimensionEndpoint.h"
+#include "ClosureManager.h"
 
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/server/Server.h>

@@ -21,7 +21,7 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "CustomerAppTask.h"
-#include "CustomerClosureManager.h"
+#include "CustomerAppManager.h"
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
@@ -106,7 +106,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif
 
     // Initialization of Closure Manager and endpoints of closure and closurepanel.
-    CustomerClosureManager::GetInstance().Init();
+    CustomerAppManager::GetInstance().Init();
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -183,10 +183,10 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
         LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(
             [](intptr_t) {
                 // Check if an action is already in progress
-                if (ClosureManager::GetInstance().IsClosureControlMotionInProgress())
+                if (CustomerAppManager::GetInstance().IsClosureControlMotionInProgress())
                 {
                     // Stop the current action
-                    auto status = ClosureManager::GetInstance().GetClosureControlCluster().HandleStop();
+                    auto status = CustomerAppManager::GetInstance().GetClosureControlCluster().HandleStop();
                     if (status != Protocols::InteractionModel::Status::Success)
                     {
                         ChipLogError(AppServer, "Failed to stop closure action: %u", to_underlying(status));
@@ -195,7 +195,7 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
                 else
                 {
                     DataModel::Nullable<ClosureControl::GenericOverallCurrentState> currentState =
-                        ClosureManager::GetInstance().GetClosureControlCluster().GetOverallCurrentState();
+                        CustomerAppManager::GetInstance().GetClosureControlCluster().GetOverallCurrentState();
 
                     if (currentState.IsNull())
                     {
@@ -231,7 +231,7 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
                     }
 
                     // Move to the target position with latch set to false and preserved speed value
-                    auto status = ClosureManager::GetInstance().GetClosureControlCluster().HandleMoveTo(
+                    auto status = CustomerAppManager::GetInstance().GetClosureControlCluster().HandleMoveTo(
                         MakeOptional(targetPosition), latch, speed);
                     if (status != Protocols::InteractionModel::Status::Success)
                     {
@@ -258,11 +258,11 @@ void AppTask::UpdateClosureUIHandler(AppEvent * aEvent)
 
 void AppTask::UpdateClosureUI()
 {
-    ClosureManager & closureManager = ClosureManager::GetInstance();
+    CustomerAppManager & CustomerAppManager = CustomerAppManager::GetInstance();
 
     // Lock chip stack when accessing CHIP attributes from app task context
     DeviceLayer::PlatformMgr().LockChipStack();
-    auto uiData = closureManager.GetClosureUIData();
+    auto uiData = CustomerAppManager.GetClosureUIData();
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     ClosureUI::SetMainState(uiData.mainState);

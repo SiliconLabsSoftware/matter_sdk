@@ -26,13 +26,13 @@
  * Any *Impl() method you do not override keeps the default ClosureManager
  * behavior. Override *Impl() methods here to customize individual behaviors.
  */
-class CustomerClosureManager : public ClosureManagerImpl<CustomerClosureManager>
+class CustomerAppManager : public ClosureManagerImpl<CustomerAppManager>
 {
 public:
-    static CustomerClosureManager & GetInstance() { return sInstance; }
+    static CustomerAppManager & GetInstance() { return sInstance; }
 
 private:
-    friend class ClosureManagerImpl<CustomerClosureManager>;
+    friend class ClosureManagerImpl<CustomerAppManager>;
 
-    static CustomerClosureManager sInstance;
+    static CustomerAppManager sInstance;
 };
