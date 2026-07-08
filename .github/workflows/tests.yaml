@@ -782,7 +782,8 @@ jobs:
     repl_tests_linux_build:
         name: REPL Tests - Linux (BUILD)
 
-        if: github.actor != 'restyled-io[bot]'
+        # [SL-ONLY]Disable this test as it runs using namespace-profile a CSA Paid for runener
+        if: false
 
         env:
             BUILD_VARIANT: ipv6only-no-ble-no-wifi-asan
@@ -1043,7 +1044,8 @@ jobs:
         # Updating the timeout for REPL Tests - Linux (RUN)(TC_[D-O]) takes over 60 minutes consistently in CI
         timeout-minutes: 70
 
-        if: github.actor != 'restyled-io[bot]'
+        # [SL-ONLY]Disable this test as it runs using namespace-profile a CSA Paid for runener
+        if: false
 
         strategy:
             # Since some of these tests can be flaky, do not fail all matrix parts when a single one fails

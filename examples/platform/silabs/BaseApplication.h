@@ -74,6 +74,7 @@ private:
     void OnCommissioningSessionStopped() override;
     void OnCommissioningSessionEstablishmentError(CHIP_ERROR err) override;
     void OnCommissioningWindowClosed() override;
+    void OnCommissioningWindowOpened() override;
 
     // FabricTable::Delegate
     void OnFabricCommitted(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex) override;
@@ -129,6 +130,7 @@ public:
      *
      * @param event AppEvent to post
      */
+
     static void PostEvent(const AppEvent * event);
 
 #ifdef DISPLAY_ENABLED
