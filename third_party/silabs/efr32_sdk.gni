@@ -690,7 +690,7 @@ template("efr32_sdk") {
       if (use_external_flash) {
         defines += [ "CONFIG_USE_EXTERNAL_FLASH" ]
 
-        _include_dirs += [ "${efr32_sdk_root}/boards/hardware/driver/mx25_flash_shutdown/inc/sl_mx25_flash_shutdown_usart" ]
+        _include_dirs += [ "${efr32_sdk_root}/board_drivers/hardware/driver/mx25_flash_shutdown/inc/sl_mx25_flash_shutdown_usart" ]
       }
 
       _include_dirs += [
@@ -1040,7 +1040,7 @@ template("efr32_sdk") {
       ]
 
       if (use_external_flash) {
-        sources += [ "${efr32_sdk_root}/boards/hardware/driver/mx25_flash_shutdown/src/sl_mx25_flash_shutdown_usart/sl_mx25_flash_shutdown.c" ]
+        sources += [ "${efr32_sdk_root}/board_drivers/hardware/driver/mx25_flash_shutdown/src/sl_mx25_flash_shutdown_usart/sl_mx25_flash_shutdown.c" ]
       }
     }
 
