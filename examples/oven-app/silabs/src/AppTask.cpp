@@ -20,7 +20,6 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
-#include "CustomerAppManager.h"
 #include "CustomerAppTask.h"
 #include "LEDWidget.h"
 
@@ -32,7 +31,7 @@
 #endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
 
-#include <OvenManager.h>
+#include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-enums.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/ids/Attributes.h>
@@ -41,8 +40,11 @@
 #include <app/ConcreteAttributePath.h>
 #include <app/ConcreteCommandPath.h>
 #include <app/clusters/bindings/BindingManager.h>
+#include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <app/clusters/network-commissioning/network-commissioning.h>
 #include <app/clusters/on-off-server/on-off-server.h>
+#include <app/clusters/temperature-control-server/CodegenIntegration.h>
+#include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
 #include <app/util/endpoint-config-api.h>
@@ -73,6 +75,7 @@ using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 using namespace ::chip::DeviceLayer::Internal;
 using namespace chip::TLV;
+using chip::Protocols::InteractionModel::Status;
 
 LEDWidget sLightLED; // Use LEDWidget for basic LED functionality
 
@@ -123,14 +126,14 @@ CHIP_ERROR AppTask::AppInit()
     GetLCD().SetCustomUI(OvenUI::DrawUI);
 #endif
     DeviceLayer::PlatformMgr().LockChipStack();
-    // Initialization of Oven Manager and endpoints of oven.
-    CustomerAppManager::GetInstance().Init();
+    err = AppInstance().InitOven();
     DeviceLayer::PlatformMgr().UnlockChipStack();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(AppServer, "InitOven failed"));
 
     ReturnErrorOnFailure(PlatformMgr().AddEventHandler(&CustomerAppTask::ConnectivityEventHandler, 0));
 
     sLightLED.Init(LIGHT_LED);
-    sLightLED.Set(OvenManager::GetInstance().GetCookTopState());
+    sLightLED.Set(AppInstance().GetCookTopState());
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -146,6 +149,214 @@ CHIP_ERROR AppTask::AppInit()
     return err;
 }
 
+CHIP_ERROR AppTask::InitOven()
+{
+    ReturnErrorOnFailure(mTemperatureControlledCabinetEndpoint.Init());
+
+    // AppTask is the shared TemperatureLevelsDelegate for all the cooksurface endpoints
+    TemperatureControl::SetDelegate(this);
+
+    ReturnErrorOnFailure(SetTemperatureControlledCabinetInitialState(kTemperatureControlledCabinetEndpoint));
+    ReturnErrorOnFailure(SetCookSurfaceInitialState(mCookSurfaceEndpoint1.GetEndpointId()));
+    ReturnErrorOnFailure(SetCookSurfaceInitialState(mCookSurfaceEndpoint2.GetEndpointId()));
+
+    ReturnErrorOnFailure(DeviceLayer::PlatformMgr().ScheduleWork(&CustomerAppTask::InitBindingHandler, 0));
+
+    // Cooktop is a cooking appliance. Setting the state to false after reboot to avoid fire/safety hazards.
+    EnforceCookTopOffAtStartup();
+
+    static const CharSpan kCookSurfaceLevels[] = { CharSpan::fromCharString("Low"), CharSpan::fromCharString("Medium"),
+                                                   CharSpan::fromCharString("High") };
+    ReturnErrorOnFailure(RegisterSupportedLevels(kCookSurfaceEndpoint1, kCookSurfaceLevels,
+                                                 static_cast<uint8_t>(kNumTemperatureLevels)));
+    ReturnErrorOnFailure(RegisterSupportedLevels(kCookSurfaceEndpoint2, kCookSurfaceLevels,
+                                                 static_cast<uint8_t>(kNumTemperatureLevels)));
+
+    VerifyOrReturnError(OnOffServer::Instance().getOnOffValue(kCookTopEndpoint, &mIsCookTopOn) == Status::Success,
+                        CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Getting CookTop OnOff state failed"));
+    VerifyOrReturnError(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint1, &mIsCookSurface1On) == Status::Success,
+                        CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Getting CookSurfaceEndpoint1 OnOff state failed"));
+    VerifyOrReturnError(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &mIsCookSurface2On) == Status::Success,
+                        CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Getting CookSurfaceEndpoint2 OnOff state failed"));
+
+    VerifyOrReturnError(OvenMode::Attributes::CurrentMode::Get(kTemperatureControlledCabinetEndpoint, &mCurrentOvenMode) ==
+                            Status::Success,
+                        CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Getting CurrentOvenMode failed"));
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR AppTask::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
+{
+    TemperatureMeasurementCluster * temperatureMeasurementCluster =
+        TemperatureMeasurement::FindClusterOnEndpoint(cookSurfaceEndpoint);
+    VerifyOrReturnError(temperatureMeasurementCluster != nullptr, CHIP_ERROR_INTERNAL);
+
+    auto * temperatureControlCluster = TemperatureControl::FindClusterOnEndpoint(kTemperatureControlledCabinetEndpoint);
+    VerifyOrReturnError(temperatureControlCluster != nullptr, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "TemperatureControl cluster not found on endpoint"));
+
+    DataModel::Nullable<int16_t> minMeasuredValue(temperatureControlCluster->GetMinTemperature());
+    DataModel::Nullable<int16_t> maxMeasuredValue(temperatureControlCluster->GetMaxTemperature());
+
+    ReturnErrorOnFailure(temperatureMeasurementCluster->SetMeasuredValue(minMeasuredValue));
+    return temperatureMeasurementCluster->SetMeasuredValueRange(minMeasuredValue, maxMeasuredValue);
+}
+
+CHIP_ERROR AppTask::SetTemperatureControlledCabinetInitialState(EndpointId temperatureControlledCabinetEndpoint)
+{
+    auto * cluster = TemperatureControl::FindClusterOnEndpoint(temperatureControlledCabinetEndpoint);
+    VerifyOrReturnError(cluster != nullptr, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "TemperatureControl cluster not found on endpoint"));
+
+    return cluster->SetTemperatureSetpoint(cluster->GetMinTemperature());
+}
+
+void AppTask::EnforceCookTopOffAtStartup()
+{
+    for (EndpointId ep : { kCookTopEndpoint, kCookSurfaceEndpoint1, kCookSurfaceEndpoint2 })
+    {
+        Status status = OnOffServer::Instance().setOnOffValue(ep, OnOff::Commands::Off::Id, /*initiatedByLevelChange=*/false);
+        if (status != Status::Success)
+        {
+            ChipLogError(AppServer, "EnforceCookTopOffAtStartup: setOnOffValue(ep=%u) failed: %u", ep, to_underlying(status));
+        }
+    }
+}
+
+void AppTask::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
+{
+    VerifyOrReturn(value != nullptr, ChipLogError(AppServer, "OnOffAttributeChangeHandler: value pointer is null"));
+
+    Action_t action = INVALID_ACTION;
+    switch (endpointId)
+    {
+    case kCookTopEndpoint: {
+        mIsCookTopOn = (*value != 0);
+        VerifyOrReturn(mCookSurfaceEndpoint1.SetOnOffState(*value) == Status::Success,
+                       ChipLogError(AppServer, "Failed to set CookSurfaceEndpoint1 state"));
+        VerifyOrReturn(mCookSurfaceEndpoint2.SetOnOffState(*value) == Status::Success,
+                       ChipLogError(AppServer, "Failed to set CookSurfaceEndpoint2 state"));
+
+        action = (*value != 0) ? COOK_TOP_ON_ACTION : COOK_TOP_OFF_ACTION;
+
+        CustomerAppTask::CookTopBindingPropagateState(kCookTopEndpoint, *value != 0);
+        break;
+    }
+    case kCookSurfaceEndpoint1:
+    case kCookSurfaceEndpoint2:
+        if (endpointId == kCookSurfaceEndpoint1)
+        {
+            mIsCookSurface1On = (*value != 0);
+        }
+        else
+        {
+            mIsCookSurface2On = (*value != 0);
+        }
+
+        if (!mIsCookSurface1On && !mIsCookSurface2On)
+        {
+            VerifyOrReturn(mCookTopEndpoint.SetOnOffState(false) == Status::Success,
+                           ChipLogError(AppServer, "Failed to set CookTopEndpoint state"));
+
+            mIsCookTopOn = false;
+        }
+        break;
+    default:
+        break;
+    }
+
+    if (action != INVALID_ACTION)
+    {
+        AppEvent event         = {};
+        event.Type             = AppEvent::kEventType_Oven;
+        event.OvenEvent.Action = action;
+        event.Handler          = &CustomerAppTask::OvenActionHandler;
+        AppTask::GetAppTask().PostEvent(&event);
+    }
+}
+
+void AppTask::OvenModeAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
+{
+    VerifyOrReturn(value != nullptr, ChipLogError(AppServer, "OvenModeAttributeChangeHandler: value pointer is null"));
+
+    mCurrentOvenMode       = *value;
+    AppEvent event         = {};
+    event.Type             = AppEvent::kEventType_Oven;
+    event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
+    event.Handler          = &CustomerAppTask::OvenActionHandler;
+    AppTask::GetAppTask().PostEvent(&event);
+}
+
+bool AppTask::IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
+{
+    for (auto const & bt : kBlockedTransitions)
+    {
+        if (bt.fromMode == fromMode && bt.toMode == toMode)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+CHIP_ERROR AppTask::RegisterSupportedLevels(EndpointId endpoint, const CharSpan * levels, uint8_t levelCount)
+{
+    VerifyOrReturnError(levels != nullptr && levelCount > 0, CHIP_ERROR_INVALID_ARGUMENT,
+                        ChipLogError(AppServer, "RegisterSupportedLevels: invalid levels/null or count=0"));
+
+    VerifyOrReturnError(mRegisteredEndpointCount < kNumCookSurfaceEndpoints, CHIP_ERROR_NO_MEMORY,
+                        ChipLogError(AppServer, "RegisterSupportedLevels: capacity exceeded (%u)",
+                                     static_cast<unsigned>(mRegisteredEndpointCount)));
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
+    {
+        VerifyOrReturnError(supportedOptionsByEndpoints[i].mEndpointId != endpoint, CHIP_ERROR_ENDPOINT_EXISTS,
+                            ChipLogError(AppServer, "RegisterSupportedLevels: duplicate endpoint %u", endpoint));
+    }
+
+    supportedOptionsByEndpoints[mRegisteredEndpointCount++] = EndpointPair(endpoint, levels, levelCount);
+    ChipLogProgress(AppServer, "Registered %u levels for endpoint %u", static_cast<unsigned>(levelCount), endpoint);
+    return CHIP_NO_ERROR;
+}
+
+uint8_t AppTask::Size()
+{
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
+    {
+        const EndpointPair & endpointPair = supportedOptionsByEndpoints[i];
+        if (endpointPair.mEndpointId == mEndpoint)
+        {
+            ChipLogProgress(AppServer, "Found endpoint %d with size %d", mEndpoint, endpointPair.mSize);
+            return endpointPair.mSize;
+        }
+    }
+    ChipLogError(AppServer, "No matching endpoint found for %d in Size()", mEndpoint);
+    return 0;
+}
+
+CHIP_ERROR AppTask::Next(MutableCharSpan & item)
+{
+    for (size_t i = 0; i < mRegisteredEndpointCount; ++i)
+    {
+        const EndpointPair & endpointPair = supportedOptionsByEndpoints[i];
+        if (endpointPair.mEndpointId == mEndpoint)
+        {
+            if (mIndex < endpointPair.mSize)
+            {
+                CHIP_ERROR err = CopyCharSpanToMutableCharSpan(endpointPair.mTemperatureLevels[mIndex], item);
+                if (err == CHIP_NO_ERROR)
+                {
+                    mIndex++;
+                }
+                return err;
+            }
+            return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+        }
+    }
+    ChipLogProgress(AppServer, "No matching endpoint found for %d in Next()", mEndpoint);
+    return CHIP_ERROR_PROVIDER_LIST_EXHAUSTED;
+}
+
 void AppTask::ConnectivityEventHandler(const ChipDeviceEvent * event, intptr_t)
 {
     VerifyOrReturn(event != nullptr);
@@ -158,7 +369,7 @@ void AppTask::ConnectivityEventHandler(const ChipDeviceEvent * event, intptr_t)
             return;
         }
         sDnssdReady = true;
-        CustomerAppTask::CookTopBindingPropagateState(OvenManager::GetCookTopEndpoint(), false);
+        CustomerAppTask::CookTopBindingPropagateState(GetCookTopEndpoint(), false);
         break;
     default:
         break;
@@ -224,7 +435,7 @@ void AppTask::OvenButtonHandler(AppEvent * aEvent)
         ChipLogDetail(AppServer, "Oven button pressed - starting toggle action");
 
         // Determine new state (toggle current state)
-        bool newOnOffState = !OvenManager::GetInstance().GetCookTopState();
+        bool newOnOffState = !AppInstance().GetCookTopState();
 
         // Schedule work to set the OnOff attribute.
         SuccessOrLog(chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, static_cast<intptr_t>(newOnOffState)),
@@ -240,8 +451,7 @@ void AppTask::UpdateClusterState(intptr_t context)
 
     // Set the OnOff attribute value for the cooktop endpoint
     DeviceLayer::PlatformMgr().LockChipStack();
-    Protocols::InteractionModel::Status status =
-        OnOffServer::Instance().setOnOffValue(OvenManager::GetCookTopEndpoint(), newOnOffState, false);
+    Protocols::InteractionModel::Status status = OnOffServer::Instance().setOnOffValue(GetCookTopEndpoint(), newOnOffState, false);
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     if (status != Protocols::InteractionModel::Status::Success)
@@ -255,15 +465,15 @@ void AppTask::OvenActionHandler(AppEvent * aEvent)
     // Emulate hardware Action : Update the LEDs and LCD of oven-app as required.
     switch (aEvent->OvenEvent.Action)
     {
-    case OvenManager::COOK_TOP_ON_ACTION:
-    case OvenManager::COOK_TOP_OFF_ACTION: {
-        sLightLED.Set(OvenManager::GetInstance().GetCookTopState());
+    case COOK_TOP_ON_ACTION:
+    case COOK_TOP_OFF_ACTION: {
+        sLightLED.Set(AppInstance().GetCookTopState());
 #ifdef DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
 #endif // DISPLAY_ENABLED
         break;
     }
-    case OvenManager::OVEN_MODE_UPDATE_ACTION:
+    case OVEN_MODE_UPDATE_ACTION:
 #ifdef DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
 #endif // DISPLAY_ENABLED
@@ -392,7 +602,7 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
     case Clusters::OnOff::Id:
         ChipLogDetail(Zcl, "OnOff cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
                       type, *value, size);
-        CustomerAppManager::GetInstance().OnOffAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        CustomerAppTask::GetAppTask().OnOffAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     case Clusters::TemperatureControl::Id:
         ChipLogDetail(Zcl, "TemperatureControl cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
@@ -401,7 +611,7 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
     case Clusters::OvenMode::Id:
         ChipLogDetail(Zcl, "OvenMode cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
                       type, *value, size);
-        CustomerAppManager::GetInstance().OvenModeAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
+        CustomerAppTask::GetAppTask().OvenModeAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
         break;
     default:
         break;

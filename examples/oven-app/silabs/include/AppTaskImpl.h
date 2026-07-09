@@ -87,6 +87,30 @@ public:
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMPostAttributeChangeCallbackImpl, attributePath, type, size, value);
     }
 
+    // Initialize AppTask oven endpoints and associated resources
+    CHIP_ERROR InitOven() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, InitOvenImpl); }
+
+    // Handle OnOff cluster attribute changes
+    void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                     uint16_t size)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnOffAttributeChangeHandlerImpl, endpointId, attributeId, value, size);
+    }
+
+    // Handle OvenMode cluster attribute changes
+    void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                        uint16_t size)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OvenModeAttributeChangeHandlerImpl, endpointId, attributeId, value,
+                                    size);
+    }
+
+    // Check whether a transition between two oven modes is blocked
+    bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode) override
+    {
+        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, IsTransitionBlockedImpl, fromMode, toMode);
+    }
+
 private:
     friend Derived;
 
@@ -124,4 +148,20 @@ private:
     {
         AppTask::DMPostAttributeChangeCallback(attributePath, type, size, value);
     }
+
+    CHIP_ERROR InitOvenImpl() { return AppTask::InitOven(); }
+
+    void OnOffAttributeChangeHandlerImpl(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                         uint16_t size)
+    {
+        AppTask::OnOffAttributeChangeHandler(endpointId, attributeId, value, size);
+    }
+
+    void OvenModeAttributeChangeHandlerImpl(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                            uint16_t size)
+    {
+        AppTask::OvenModeAttributeChangeHandler(endpointId, attributeId, value, size);
+    }
+
+    bool IsTransitionBlockedImpl(uint8_t fromMode, uint8_t toMode) { return AppTask::IsTransitionBlocked(fromMode, toMode); }
 };

@@ -28,15 +28,23 @@
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
+#include "CookEndpoints.h"
+#include "OvenEndpoint.h"
 
 #include "FreeRTOS.h"
 #include "timers.h" // provides FreeRTOS timer support
+#include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/clusters/bindings/BindingManager.h>
+#include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <app/clusters/on-off-server/on-off-server.h>
+#include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
 #include <ble/BLEEndPoint.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
+#include <lib/support/Span.h>
+#include <lib/support/TypeTraits.h>
 #include <platform/CHIPDeviceLayer.h>
 
 /**********************************************************
@@ -69,10 +77,20 @@ struct CookTopBindingContext
  * AppTask Declaration
  *********************************************************/
 
-class AppTask : public BaseApplication
+class AppTask : public BaseApplication,
+                public chip::app::Clusters::TemperatureControl::SupportedTemperatureLevelsIteratorDelegate
 {
 
 public:
+    enum Action_t
+    {
+        COOK_TOP_ON_ACTION = 0,
+        COOK_TOP_OFF_ACTION,
+        OVEN_MODE_UPDATE_ACTION,
+
+        INVALID_ACTION
+    };
+
     AppTask() = default;
 
     /** @brief Returns the active app instance. */
@@ -119,7 +137,7 @@ public:
 
     /**
      * @brief Data model hook invoked after a cluster attribute changes; routes OnOff/OvenMode
-     *        changes to OvenManager and logs Identify/TemperatureControl changes.
+     *        changes and logs Identify/TemperatureControl changes.
      */
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
@@ -152,6 +170,44 @@ public:
     static void BoundDeviceChangedHandler(const chip::app::Clusters::Binding::TableEntry & binding,
                                           chip::OperationalDeviceProxy * peerDevice, void * context);
 
+    /** @brief Oven-specific initialization (endpoints, temperature levels, binding). */
+    CHIP_ERROR InitOven();
+
+    CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
+
+    CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
+
+    /** @brief Force CookTop and CookSurface OnOff attributes to Off at startup. */
+    void EnforceCookTopOffAtStartup();
+
+    void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                     uint16_t size);
+
+    void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
+                                        uint16_t size);
+
+    /**
+     * @brief Checks if a transition between two oven modes is blocked.
+     *
+     * Virtual so oven-app-common can call through `AppTask::GetAppTask()`.
+     */
+    virtual bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
+
+    bool GetCookTopState() const { return mIsCookTopOn; }
+
+    uint8_t GetCurrentOvenMode() const { return mCurrentOvenMode; }
+
+    static constexpr chip::EndpointId GetCookTopEndpoint() { return kCookTopEndpoint; }
+
+    static constexpr size_t kNumCookSurfaceEndpoints = 2;
+    static constexpr size_t kNumTemperatureLevels    = 3;
+
+    CHIP_ERROR RegisterSupportedLevels(chip::EndpointId endpoint, const chip::CharSpan * levels, uint8_t levelCount);
+
+    // SupportedTemperatureLevelsIteratorDelegate overrides.
+    uint8_t Size() override;
+    CHIP_ERROR Next(chip::MutableCharSpan & item) override;
+
 protected:
     /**
      * @brief Override of BaseApplication::AppInit() virtual method, called by BaseApplication::Init()
@@ -171,4 +227,56 @@ protected:
      * @param context bool value encoded as intptr_t
      */
     static void UpdateClusterState(intptr_t context);
+
+private:
+    struct EndpointPair
+    {
+        chip::EndpointId mEndpointId               = chip::kInvalidEndpointId;
+        const chip::CharSpan * mTemperatureLevels = nullptr;
+        uint8_t mSize                              = 0;
+
+        EndpointPair() = default;
+        EndpointPair(chip::EndpointId aEndpointId, const chip::CharSpan * aTemperatureLevels, uint8_t aSize) :
+            mEndpointId(aEndpointId), mTemperatureLevels(aTemperatureLevels), mSize(aSize)
+        {}
+    };
+
+    static constexpr uint8_t kBlockedTransitionCount = 3;
+    struct BlockedTransition
+    {
+        uint8_t fromMode;
+        uint8_t toMode;
+    };
+
+    static constexpr BlockedTransition kBlockedTransitions[kBlockedTransitionCount] = {
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeGrill),
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing) },
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeProofing),
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean) },
+        { chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeClean),
+          chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake) },
+    };
+
+    EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];
+    size_t mRegisteredEndpointCount = 0;
+
+    bool mIsCookTopOn      = false;
+    bool mIsCookSurface1On = false;
+    bool mIsCookSurface2On = false;
+    uint8_t mCurrentOvenMode =
+        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
+
+    static constexpr chip::EndpointId kOvenEndpoint                         = 1;
+    static constexpr chip::EndpointId kTemperatureControlledCabinetEndpoint = 2;
+    static constexpr chip::EndpointId kCookTopEndpoint                      = 3;
+    static constexpr chip::EndpointId kCookSurfaceEndpoint1                 = 4;
+    static constexpr chip::EndpointId kCookSurfaceEndpoint2                 = 5;
+
+    chip::app::Clusters::Oven::OvenEndpoint mOvenEndpoint;
+    chip::app::Clusters::TemperatureControlledCabinet::TemperatureControlledCabinetEndpoint mTemperatureControlledCabinetEndpoint{
+        kTemperatureControlledCabinetEndpoint
+    };
+    chip::app::Clusters::CookTop::CookTopEndpoint mCookTopEndpoint{ kCookTopEndpoint };
+    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint1{ kCookSurfaceEndpoint1 };
+    chip::app::Clusters::CookSurface::CookSurfaceEndpoint mCookSurfaceEndpoint2{ kCookSurfaceEndpoint2 };
 };
