@@ -77,11 +77,20 @@ struct CookTopBindingContext
  * AppTask Declaration
  *********************************************************/
 
+/**
+ * @class AppTask
+ * @brief Manages oven application lifecycle, endpoints, cooktop binding, and UI state.
+ *
+ * Owns initialization and operations for the oven, temperature-controlled cabinet,
+ * cook top, and cook surface endpoints. Serves as the shared temperature-levels
+ * delegate for cook surface endpoints.
+ */
 class AppTask : public BaseApplication,
                 public chip::app::Clusters::TemperatureControl::SupportedTemperatureLevelsIteratorDelegate
 {
 
 public:
+    /** @brief Oven action identifiers posted to the AppTask event queue. */
     enum Action_t
     {
         COOK_TOP_ON_ACTION = 0,
@@ -103,6 +112,7 @@ public:
      */
     static void AppTaskMain(void * pvParameter);
 
+    /** @brief Creates and starts the AppTask thread. */
     CHIP_ERROR StartAppTask();
 
     /**
@@ -173,16 +183,34 @@ public:
     /** @brief Oven-specific initialization (endpoints, temperature levels, binding). */
     CHIP_ERROR InitOven();
 
+    /** @brief Sets initial temperature-measurement state for a cook surface endpoint. */
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
+    /** @brief Sets initial temperature setpoint for the temperature-controlled cabinet endpoint. */
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
 
     /** @brief Force CookTop and CookSurface OnOff attributes to Off at startup. */
     void EnforceCookTopOffAtStartup();
 
+    /**
+     * @brief Handles OnOff cluster attribute changes.
+     *
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
     void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                      uint16_t size);
 
+    /**
+     * @brief Handles OvenMode cluster attribute changes.
+     *
+     * @param endpointId The ID of the endpoint.
+     * @param attributeId The ID of the attribute.
+     * @param value Pointer to the new value.
+     * @param size Size of the new value.
+     */
     void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                         uint16_t size);
 
@@ -190,22 +218,41 @@ public:
      * @brief Checks if a transition between two oven modes is blocked.
      *
      * Virtual so oven-app-common can call through `AppTask::GetAppTask()`.
+     *
+     * @param fromMode The current mode.
+     * @param toMode The desired mode.
+     * @return True if the transition is blocked, false otherwise.
      */
     virtual bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
 
+    /** @brief Gets the current state of the CookTop. */
     bool GetCookTopState() const { return mIsCookTopOn; }
 
+    /** @brief Gets the current oven mode. */
     uint8_t GetCurrentOvenMode() const { return mCurrentOvenMode; }
 
+    /** @brief Gets the endpoint ID for the CookTop endpoint. */
     static constexpr chip::EndpointId GetCookTopEndpoint() { return kCookTopEndpoint; }
 
+    /** @brief Fixed number of CookSurface endpoints served by the temperature-levels delegate. */
     static constexpr size_t kNumCookSurfaceEndpoints = 2;
+    /** @brief Number of supported temperature levels (Low, Medium, High). */
     static constexpr size_t kNumTemperatureLevels    = 3;
 
+    /**
+     * @brief Register supported temperature level strings for a given endpoint.
+     *
+     * The caller supplies an array of CharSpan entries whose lifetime exceeds that of this delegate.
+     *
+     * @return CHIP_NO_ERROR on success,
+     *         CHIP_ERROR_NO_MEMORY if capacity exceeded,
+     *         CHIP_ERROR_ENDPOINT_EXISTS if duplicate endpoint provided.
+     */
     CHIP_ERROR RegisterSupportedLevels(chip::EndpointId endpoint, const chip::CharSpan * levels, uint8_t levelCount);
 
-    // SupportedTemperatureLevelsIteratorDelegate overrides.
+    /** @brief Returns the number of supported temperature levels for the active endpoint. */
     uint8_t Size() override;
+    /** @brief Returns the next supported temperature level label for the active endpoint. */
     CHIP_ERROR Next(chip::MutableCharSpan & item) override;
 
 protected:
@@ -229,6 +276,9 @@ protected:
     static void UpdateClusterState(intptr_t context);
 
 private:
+    /**
+     * @brief Endpoint to temperature levels mapping. The endpoint must have a temperature control cluster.
+     */
     struct EndpointPair
     {
         chip::EndpointId mEndpointId               = chip::kInvalidEndpointId;
