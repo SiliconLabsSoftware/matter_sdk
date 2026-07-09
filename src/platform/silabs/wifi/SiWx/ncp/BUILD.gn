@@ -72,10 +72,10 @@ source_set("siwx-ncp") {
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sl_net/src/sl_net_si91x_callback_framework.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sl_net/src/sl_net_si91x_integration_handler.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sl_net/src/sli_net_si91x_utility.c",
+    "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_hal_si91x/src/sli_hal_si91x.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/src/sl_rsi_utility.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/src/sl_si91x_driver.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/src/sli_si91x_driver.c",
-    "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_hal_si91x/src/sli_hal_si91x.c",
     "${wifi_sdk_root}/components/sli_wifi/src/sli_wifi_power_profile.c",
 
     # wifi component
@@ -89,19 +89,19 @@ source_set("siwx-ncp") {
     "${wifi_sdk_root}/components/sli_queue_manager/src/sli_queue_manager.c",
 
     # basic_network_manager component
+    "${efr32_sdk_root}/platform_core/platform/service/mem_pool/src/sl_mem_pool.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/host_mcu/efx32/efx32_ncp_host.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_si91x_wifi_command_engine/src/sli_si91x_wifi_command_engine.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_si91x_wifi_command_engine/src/sli_si91x_wifi_command_engine_config.c",
     "${wifi_sdk_root}/components/device/silabs/si91x/wireless/sli_si91x_wifi_event_handler/src/sli_si91x_wifi_event_handler.c",
     "${wifi_sdk_root}/components/service/network_manager/src/si91x/sl_net_credentials.c",
-    "${wifi_sdk_root}/components/service/network_manager/src/sli_net_credentials.c",
     "${wifi_sdk_root}/components/service/network_manager/src/sl_net_for_lwip.c",
     "${wifi_sdk_root}/components/service/network_manager/src/sli_net_common_utility.c",
+    "${wifi_sdk_root}/components/service/network_manager/src/sli_net_credentials.c",
     "${wifi_sdk_root}/components/sli_buffer_manager/src/sli_buffer_manager.c",
     "${wifi_sdk_root}/components/sli_command_engine/src/sli_command_engine.c",
     "${wifi_sdk_root}/components/sli_event_engine/src/sli_event_engine.c",
     "${wifi_sdk_root}/components/sli_routing_utility/src/sli_routing_utility.c",
-    "${efr32_sdk_root}/platform_core/platform/service/mem_pool/src/sl_mem_pool.c",
 
     # utility
     "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/service/memory_manager/src/sl_si91x_memory_manager.c",
