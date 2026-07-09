@@ -159,6 +159,7 @@ template("siwx917_sdk") {
       "${efr32_sdk_root}/platform_core/platform/service/iostream/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/hardware_drivers/button/inc",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/drivers/hardware_drivers/button/config",
+      "${wifi_sdk_root}/components/device/silabs/si91x/mcu/core/chip/config",
       "${wifi_sdk_root}/components/device/silabs/si91x/mcu/core/config",
 
       # sl memory manager

@@ -664,9 +664,9 @@ template("efr32_sdk") {
         "SL_BT_CONFIG_USER_ADVERTISERS=2",
       ]
 
-      libs += [ "${efr32_sdk_root}/bluetooth_le_host/build/gcc/cortex-m33/ble_bgapi/release/libble_bgapi_gatt_client.a" ]
+      libs += [ "${efr32_sdk_root}/bluetooth_le_host/build/${compiler}/cortex-m33/ble_bgapi/release/libble_bgapi_gatt_client.a" ]
     } else if (!sl_matter_enable_siwx_ble) {
-      libs += [ "${efr32_sdk_root}/bluetooth_le_host/build/gcc/cortex-m33/ble_bgapi/release/libble_bgapi_stub_gatt_client.a" ]
+      libs += [ "${efr32_sdk_root}/bluetooth_le_host/build/${compiler}/cortex-m33/ble_bgapi/release/libble_bgapi_stub_gatt_client.a" ]
     }
     if (chip_build_libshell) {  # matter shell
       defines += [
