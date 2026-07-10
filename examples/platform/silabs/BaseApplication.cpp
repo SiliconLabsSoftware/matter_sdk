@@ -117,6 +117,10 @@
 #include <TracingShellCommands.h>
 #endif // MATTER_TRACING_ENABLED
 
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include <MultiProtocolDataModelHelper.h>
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
 // sl-only
 #if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 #include <ApplicationSleepManager.h>
@@ -171,6 +175,8 @@ bool sHaveBLEConnections = false;
 
 constexpr uint32_t kLightTimerPeriod = static_cast<uint32_t>(pdMS_TO_TICKS(10));
 
+constexpr System::Clock::Milliseconds32 kZbLeaveAnnouceDelay = System::Clock::Milliseconds32(1000);
+
 uint8_t sAppEventQueueBuffer[APP_EVENT_QUEUE_SIZE * sizeof(AppEvent)];
 osMessageQueue_t sAppEventQueueStruct;
 constexpr osMessageQueueAttr_t appEventQueueAttr = { .cb_mem  = &sAppEventQueueStruct,
@@ -195,7 +201,10 @@ SilabsLCD slLCD;
 #ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
 Clusters::Identify::EffectIdentifierEnum sIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
 
-ObjectPool<Identify, MATTER_DM_IDENTIFY_CLUSTER_SERVER_ENDPOINT_COUNT + CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT> IdentifyPool;
+ObjectPool<Identify,
+           MATTER_DM_IDENTIFY_CLUSTER_SERVER_ENDPOINT_COUNT + MATTER_DM_IDENTIFY_CLUSTER_CLIENT_ENDPOINT_COUNT +
+               CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT>
+    IdentifyPool;
 
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 
@@ -326,6 +335,8 @@ CHIP_ERROR BaseApplication::Init()
         appError(err);
         return err;
     }
+
+    mIsApplicationInitialized = true;
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 #ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
     if (PlatformMgr().ScheduleWork([](intptr_t) { MultiProtocolDataModel::Initialize(); }) != CHIP_NO_ERROR)
@@ -341,6 +352,10 @@ CHIP_ERROR BaseApplication::Init()
     if (nbOfMatterFabric != 0)
     {
         Zigbee::RequestLeave();
+        PlatformMgr().LockChipStack();
+        RETURN_SAFELY_IGNORED DeviceLayer::SystemLayer().StartTimer(
+            kZbLeaveAnnouceDelay, [](System::Layer *, void *) { Zigbee::ZLLNotFactoryNew(); }, nullptr);
+        PlatformMgr().UnlockChipStack();
     }
     else
 #endif // SL_MATTER_ZIGBEE_SEQUENTIAL
@@ -1073,8 +1088,9 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 #ifdef SL_MATTER_ZIGBEE_SEQUENTIAL // Matter Zigbee sequential
         Zigbee::RequestLeave();
-        Zigbee::ZLLNotFactoryNew();
 #endif // SL_MATTER_ZIGBEE_SEQUENTIAL
+        RETURN_SAFELY_IGNORED DeviceLayer::SystemLayer().StartTimer(
+            kZbLeaveAnnouceDelay, [](System::Layer *, void *) { Zigbee::ZLLNotFactoryNew(); }, nullptr);
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
     }
     break;
@@ -1116,11 +1132,19 @@ bool BaseApplication::GetProvisionStatus()
     return BaseApplication::sIsProvisioned;
 }
 
-#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#if defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
+    // Verify that the App layer is initialized before propagating attribute changes callback to it.
+    VerifyOrReturn(CustomerAppTask::GetAppTask().IsApplicationInitialized());
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    EndpointId endpointId   = attributePath.mEndpointId;
+    ClusterId clusterId     = attributePath.mClusterId;
+    AttributeId attributeId = attributePath.mAttributeId;
+    MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
-#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#endif // defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)

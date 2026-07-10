@@ -2319,7 +2319,7 @@ endpoint 2 {
   }
 
   server cluster OnOff {
-    ram      attribute onOff;
+    persist  attribute onOff;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
