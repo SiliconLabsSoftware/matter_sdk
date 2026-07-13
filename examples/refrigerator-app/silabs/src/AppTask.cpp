@@ -233,15 +233,15 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 
 CHIP_ERROR AppTask::InitRefrigerator()
 {
-    TEMPORARY_RETURN_IGNORED SetTreeCompositionForEndpoint(kRefEndpointId);
-    TEMPORARY_RETURN_IGNORED SetParentEndpointForEndpoint(kColdCabinetEndpointId, kRefEndpointId);
-    TEMPORARY_RETURN_IGNORED SetParentEndpointForEndpoint(kFreezeCabinetEndpointId, kRefEndpointId);
+    ReturnErrorOnFailure(SetTreeCompositionForEndpoint(kRefEndpointId));
+    ReturnErrorOnFailure(SetParentEndpointForEndpoint(kColdCabinetEndpointId, kRefEndpointId));
+    ReturnErrorOnFailure(SetParentEndpointForEndpoint(kFreezeCabinetEndpointId, kRefEndpointId));
 
     // set TagList
-    TEMPORARY_RETURN_IGNORED SetTagList(kColdCabinetEndpointId,
-                                        Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(refrigeratorTagList));
-    TEMPORARY_RETURN_IGNORED SetTagList(kFreezeCabinetEndpointId,
-                                        Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(freezerTagList));
+    ReturnErrorOnFailure(
+        SetTagList(kColdCabinetEndpointId, Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(refrigeratorTagList)));
+    ReturnErrorOnFailure(
+        SetTagList(kFreezeCabinetEndpointId, Span<const Clusters::Descriptor::Structs::SemanticTagStruct::Type>(freezerTagList)));
 
     app::Clusters::TemperatureControl::SetDelegate(&sAppSupportedTemperatureLevelsDelegate);
     return CHIP_NO_ERROR;
