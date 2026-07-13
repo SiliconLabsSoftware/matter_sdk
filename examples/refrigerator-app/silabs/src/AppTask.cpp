@@ -194,7 +194,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = GetAppTask().Init();
+    CHIP_ERROR err = GetAppTask().BaseApplication::Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask.Init() failed");
