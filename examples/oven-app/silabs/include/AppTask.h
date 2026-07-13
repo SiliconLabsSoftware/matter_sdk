@@ -246,7 +246,7 @@ public:
     CHIP_ERROR RegisterSupportedLevels(chip::EndpointId endpoint, const chip::CharSpan * levels, uint8_t levelCount);
 
     // Prototypes from inherited TemperatureControl::SupportedTemperatureLevelsIteratorDelegate interface
-    
+
     /** @brief Returns the number of supported temperature levels for the active endpoint. */
     uint8_t Size() override;
     /** @brief Returns the next supported temperature level label for the active endpoint. */
