@@ -183,10 +183,8 @@ public:
     /** @brief Oven-specific initialization (endpoints, temperature levels, binding). */
     CHIP_ERROR InitOven();
 
-    /** @brief Sets initial temperature-measurement state for a cook surface endpoint. */
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
-    /** @brief Sets initial temperature setpoint for the temperature-controlled cabinet endpoint. */
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
 
     /** @brief Force CookTop and CookSurface OnOff attributes to Off at startup. */
@@ -225,13 +223,10 @@ public:
      */
     virtual bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode);
 
-    /** @brief Gets the current state of the CookTop. */
     bool GetCookTopState() const { return mIsCookTopOn; }
 
-    /** @brief Gets the current oven mode. */
     uint8_t GetCurrentOvenMode() const { return mCurrentOvenMode; }
 
-    /** @brief Gets the endpoint ID for the CookTop endpoint. */
     static constexpr chip::EndpointId GetCookTopEndpoint() { return kCookTopEndpoint; }
 
     /** @brief Fixed number of CookSurface endpoints served by the temperature-levels delegate. */
