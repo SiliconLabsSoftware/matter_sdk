@@ -117,8 +117,7 @@ const Clusters::Descriptor::Structs::SemanticTagStruct::Type refrigeratorTagList
 const Clusters::Descriptor::Structs::SemanticTagStruct::Type freezerTagList[]      = { { .namespaceID = kNamespaceRefrigerator,
                                                                                          .tag         = kTagFreezer } };
 
-RefrigeratorAndTemperatureControlledCabinetModeDelegate * gRefrigeratorAndTemperatureControlledCabinetModeDelegate = nullptr;
-ModeBase::Instance * gRefrigeratorAndTemperatureControlledCabinetModeInstance                                      = nullptr;
+ModeBase::Instance * gCabinetModeInstance = nullptr;
 
 // Static SupportedModes definition for the cabinet mode cluster
 const ModeTagStructType kModeTagsNormal[1]      = { { .value = to_underlying(ModeTag::kAuto) } };
@@ -303,50 +302,18 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
 }
 
 // -----------------------------------------------------------------------------
-// CabinetMode delegate overrides. Each forwards to the overridable AppTask hook
-// through the CustomerAppTask / AppTaskImpl (CRTP) layer.
+// ModeBase::Delegate implementation for RefrigeratorAndTemperatureControlledCabinetMode.
 // -----------------------------------------------------------------------------
 
-CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::Init()
-{
-    return AppInstance().DMCabinetModeInit();
-}
-
-void RefrigeratorAndTemperatureControlledCabinetModeDelegate::HandleChangeToMode(
-    uint8_t NewMode, ModeBase::Commands::ChangeToModeResponse::Type & response)
-{
-    AppInstance().DMCabinetModeHandleChangeToMode(NewMode, GetInstance()->GetCurrentMode(), response);
-}
-
-CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeLabelByIndex(uint8_t modeIndex,
-                                                                                        chip::MutableCharSpan & label)
-{
-    return AppInstance().DMCabinetModeGetModeLabelByIndex(modeIndex, label);
-}
-
-CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
-{
-    return AppInstance().DMCabinetModeGetModeValueByIndex(modeIndex, value);
-}
-
-CHIP_ERROR RefrigeratorAndTemperatureControlledCabinetModeDelegate::GetModeTagsByIndex(uint8_t modeIndex,
-                                                                                       List<ModeTagStructType> & tags)
-{
-    return AppInstance().DMCabinetModeGetModeTagsByIndex(modeIndex, tags);
-}
-
-// -----------------------------------------------------------------------------
-// CabinetMode delegate datamodel hooks.
-// -----------------------------------------------------------------------------
-
-CHIP_ERROR AppTask::DMCabinetModeInit()
+CHIP_ERROR AppTask::Init()
 {
     return CHIP_NO_ERROR;
 }
 
-void AppTask::DMCabinetModeHandleChangeToMode(uint8_t newMode, uint8_t currentMode,
-                                              ModeBase::Commands::ChangeToModeResponse::Type & response)
+void AppTask::HandleChangeToMode(uint8_t newMode, ModeBase::Commands::ChangeToModeResponse::Type & response)
 {
+    const uint8_t currentMode = GetInstance()->GetCurrentMode();
+
     // Disallow transitions between Normal (0) and Rapid Freeze (2)
     if ((currentMode == ModeNormal && newMode == ModeRapidFreeze) || (currentMode == ModeRapidFreeze && newMode == ModeNormal))
     {
@@ -358,7 +325,7 @@ void AppTask::DMCabinetModeHandleChangeToMode(uint8_t newMode, uint8_t currentMo
     response.status = to_underlying(ModeBase::StatusCode::kSuccess);
 }
 
-CHIP_ERROR AppTask::DMCabinetModeGetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label)
+CHIP_ERROR AppTask::GetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label)
 {
     if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
     {
@@ -367,7 +334,7 @@ CHIP_ERROR AppTask::DMCabinetModeGetModeLabelByIndex(uint8_t modeIndex, chip::Mu
     return chip::CopyCharSpanToMutableCharSpan(kModeOptions[modeIndex].label, label);
 }
 
-CHIP_ERROR AppTask::DMCabinetModeGetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
+CHIP_ERROR AppTask::GetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
 {
     if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
     {
@@ -377,7 +344,7 @@ CHIP_ERROR AppTask::DMCabinetModeGetModeValueByIndex(uint8_t modeIndex, uint8_t 
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR AppTask::DMCabinetModeGetModeTagsByIndex(uint8_t modeIndex, List<ModeTagStructType> & tags)
+CHIP_ERROR AppTask::GetModeTagsByIndex(uint8_t modeIndex, List<ModeTagStructType> & tags)
 {
     if (modeIndex >= MATTER_ARRAY_SIZE(kModeOptions))
     {
@@ -395,20 +362,17 @@ CHIP_ERROR AppTask::DMCabinetModeGetModeTagsByIndex(uint8_t modeIndex, List<Mode
     return CHIP_NO_ERROR;
 }
 
-void AppTask::DMCabinetModeClusterInit(chip::EndpointId endpointId)
+void AppTask::CabinetModeClusterInit(chip::EndpointId endpointId)
 {
     VerifyOrDie(endpointId == kRefEndpointId); // this cluster is enabled on refrigerator endpoint (1 in default implementation)
-    VerifyOrDie(gRefrigeratorAndTemperatureControlledCabinetModeDelegate == nullptr &&
-                gRefrigeratorAndTemperatureControlledCabinetModeInstance == nullptr);
-    gRefrigeratorAndTemperatureControlledCabinetModeDelegate =
-        new RefrigeratorAndTemperatureControlledCabinetMode::RefrigeratorAndTemperatureControlledCabinetModeDelegate;
-    gRefrigeratorAndTemperatureControlledCabinetModeInstance =
-        new ModeBase::Instance(gRefrigeratorAndTemperatureControlledCabinetModeDelegate, kRefEndpointId,
-                               RefrigeratorAndTemperatureControlledCabinetMode::Id, chip::to_underlying(ModeBase::Feature::kOnOff));
-    TEMPORARY_RETURN_IGNORED gRefrigeratorAndTemperatureControlledCabinetModeInstance->Init();
+    VerifyOrDie(gCabinetModeInstance == nullptr);
+    gCabinetModeInstance =
+        new ModeBase::Instance(&AppInstance(), kRefEndpointId, RefrigeratorAndTemperatureControlledCabinetMode::Id,
+                               chip::to_underlying(ModeBase::Feature::kOnOff));
+    VerifyOrDie(gCabinetModeInstance->Init() == CHIP_NO_ERROR);
 }
 
 void emberAfRefrigeratorAndTemperatureControlledCabinetModeClusterInitCallback(chip::EndpointId endpointId)
 {
-    AppInstance().DMCabinetModeClusterInit(endpointId);
+    AppInstance().CabinetModeClusterInit(endpointId);
 }

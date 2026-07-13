@@ -38,6 +38,7 @@
 #include <app/ConcreteAttributePath.h>
 #include <app/clusters/mode-base-server/mode-base-server.h>
 #include <app/clusters/refrigerator-alarm-server/refrigerator-alarm-server.h>
+#include <app/data-model/List.h>
 #include <app/util/attribute-storage.h>
 #include <app/util/config.h>
 #include <ble/BLEEndPoint.h>
@@ -67,21 +68,6 @@ const uint8_t ModeNormal      = 0;
 const uint8_t ModeRapidCool   = 1;
 const uint8_t ModeRapidFreeze = 2;
 
-class RefrigeratorAndTemperatureControlledCabinetModeDelegate : public ModeBase::Delegate
-{
-private:
-    using ModeTagStructType = detail::Structs::ModeTagStruct::Type;
-
-    CHIP_ERROR Init() override;
-    void HandleChangeToMode(uint8_t mode, ModeBase::Commands::ChangeToModeResponse::Type & response) override;
-    CHIP_ERROR GetModeLabelByIndex(uint8_t modeIndex, MutableCharSpan & label) override;
-    CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t & value) override;
-    CHIP_ERROR GetModeTagsByIndex(uint8_t modeIndex, DataModel::List<ModeTagStructType> & tags) override;
-
-public:
-    ~RefrigeratorAndTemperatureControlledCabinetModeDelegate() override = default;
-};
-
 } // namespace RefrigeratorAndTemperatureControlledCabinetMode
 
 } // namespace Clusters
@@ -92,7 +78,7 @@ public:
  * AppTask Declaration
  *********************************************************/
 
-class AppTask : public BaseApplication
+class AppTask : public BaseApplication, public chip::app::Clusters::ModeBase::Delegate
 {
 
 public:
@@ -126,34 +112,29 @@ public:
                                        uint8_t * value);
 
     /**
-     * @brief Constructs the RefrigeratorAndTemperatureControlledCabinetMode delegate and
-     *        ModeBase::Instance on @p endpoint and calls Instance::Init(). Invoked from the
-     *        weak emberAf...CabinetModeClusterInitCallback CRTP forwarder.
+     * @brief Constructs the ModeBase::Instance for the cabinet mode cluster on @p endpointId.
+     *        Invoked from the emberAf...CabinetModeClusterInitCallback CRTP forwarder.
      */
-    void DMCabinetModeClusterInit(chip::EndpointId endpointId);
+    void CabinetModeClusterInit(chip::EndpointId endpointId);
 
-    // -----------------------------------------------------------------------------
-    // RefrigeratorAndTemperatureControlledCabinetMode delegate datamodel hooks. The
-    // delegate's ModeBase::Delegate overrides forward here, override the matching
-    // *Impl() in CustomerAppTask to customize per callback behavior.
-    // -----------------------------------------------------------------------------
+    // ModeBase::Delegate interface. Override matching *Impl() hooks in CustomerAppTask to customize.
 
-    /** @brief Delegate Init hook. */
-    CHIP_ERROR DMCabinetModeInit();
+    /** @brief Cabinet mode cluster delegate initialization hook. */
+    CHIP_ERROR Init() override;
 
     /** @brief Validates the requested mode transition and sets the ChangeToModeResponse status. */
-    void DMCabinetModeHandleChangeToMode(uint8_t newMode, uint8_t currentMode,
-                                         chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response);
+    void HandleChangeToMode(uint8_t newMode,
+                            chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response) override;
 
-    /** @brief Supplies the SupportedModes label for @p modeIndex from the kModeOptions array. */
-    CHIP_ERROR DMCabinetModeGetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label);
+    /** @brief Supplies the SupportedModes label for @p modeIndex. */
+    CHIP_ERROR GetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label) override;
 
-    /** @brief Supplies the SupportedModes value for @p modeIndex from the kModeOptions array. */
-    CHIP_ERROR DMCabinetModeGetModeValueByIndex(uint8_t modeIndex, uint8_t & value);
+    /** @brief Supplies the SupportedModes value for @p modeIndex. */
+    CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t & value) override;
 
-    /** @brief Supplies the SupportedModes tags for @p modeIndex from the kModeOptions array. */
-    CHIP_ERROR DMCabinetModeGetModeTagsByIndex(
-        uint8_t modeIndex, chip::app::DataModel::List<chip::app::Clusters::detail::Structs::ModeTagStruct::Type> & tags);
+    /** @brief Supplies the SupportedModes tags for @p modeIndex. */
+    CHIP_ERROR GetModeTagsByIndex(
+        uint8_t modeIndex, chip::app::DataModel::List<chip::app::Clusters::detail::Structs::ModeTagStruct::Type> & tags) override;
 
 protected:
     /**

@@ -53,37 +53,34 @@ public:
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMPostAttributeChangeCallbackImpl, attributePath, type, size, value);
     }
 
-    // Data model hook to construct the RefrigeratorAndTemperatureControlledCabinetMode cluster on the given endpoint
-    void DMCabinetModeClusterInit(chip::EndpointId endpointId)
+    // Constructs the ModeBase::Instance for the cabinet mode cluster on the given endpoint
+    void CabinetModeClusterInit(chip::EndpointId endpointId)
     {
-        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMCabinetModeClusterInitImpl, endpointId);
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, CabinetModeClusterInitImpl, endpointId);
     }
 
-    // CabinetMode delegate datamodel hooks. Default `*Impl()` forwards to
-    // `AppTask::DMCabinetMode*`. Override in `Derived` to customize the mode
-    // list behavior.
-    CHIP_ERROR DMCabinetModeInit() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, DMCabinetModeInitImpl); }
+    // ModeBase::Delegate hooks. Override matching *Impl() in Derived to customize cabinet mode behavior.
+    CHIP_ERROR Init() override { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, CabinetModeInitImpl); }
 
-    void DMCabinetModeHandleChangeToMode(uint8_t newMode, uint8_t currentMode,
-                                         chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response)
+    void HandleChangeToMode(uint8_t newMode, chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response) override
     {
-        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMCabinetModeHandleChangeToModeImpl, newMode, currentMode, response);
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, HandleChangeToModeImpl, newMode, response);
     }
 
-    CHIP_ERROR DMCabinetModeGetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label)
+    CHIP_ERROR GetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan & label) override
     {
-        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, DMCabinetModeGetModeLabelByIndexImpl, modeIndex, label);
+        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, GetModeLabelByIndexImpl, modeIndex, label);
     }
 
-    CHIP_ERROR DMCabinetModeGetModeValueByIndex(uint8_t modeIndex, uint8_t & value)
+    CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t & value) override
     {
-        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, DMCabinetModeGetModeValueByIndexImpl, modeIndex, value);
+        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, GetModeValueByIndexImpl, modeIndex, value);
     }
 
-    CHIP_ERROR DMCabinetModeGetModeTagsByIndex(
-        uint8_t modeIndex, chip::app::DataModel::List<chip::app::Clusters::detail::Structs::ModeTagStruct::Type> & tags)
+    CHIP_ERROR GetModeTagsByIndex(
+        uint8_t modeIndex, chip::app::DataModel::List<chip::app::Clusters::detail::Structs::ModeTagStruct::Type> & tags) override
     {
-        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, DMCabinetModeGetModeTagsByIndexImpl, modeIndex, tags);
+        CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, GetModeTagsByIndexImpl, modeIndex, tags);
     }
 
 private:
@@ -104,31 +101,28 @@ private:
         AppTask::DMPostAttributeChangeCallback(attributePath, type, size, value);
     }
 
-    void DMCabinetModeClusterInitImpl(chip::EndpointId endpointId) { AppTask::DMCabinetModeClusterInit(endpointId); }
+    void CabinetModeClusterInitImpl(chip::EndpointId endpointId) { AppTask::CabinetModeClusterInit(endpointId); }
 
-    // CabinetMode delegate DM defaults, each forwards to the matching AppTask::DMCabinetMode* method
+    CHIP_ERROR CabinetModeInitImpl() { return AppTask::Init(); }
 
-    CHIP_ERROR DMCabinetModeInitImpl() { return AppTask::DMCabinetModeInit(); }
-
-    void DMCabinetModeHandleChangeToModeImpl(uint8_t newMode, uint8_t currentMode,
-                                             chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response)
+    void HandleChangeToModeImpl(uint8_t newMode, chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type & response)
     {
-        AppTask::DMCabinetModeHandleChangeToMode(newMode, currentMode, response);
+        AppTask::HandleChangeToMode(newMode, response);
     }
 
-    CHIP_ERROR DMCabinetModeGetModeLabelByIndexImpl(uint8_t modeIndex, chip::MutableCharSpan & label)
+    CHIP_ERROR GetModeLabelByIndexImpl(uint8_t modeIndex, chip::MutableCharSpan & label)
     {
-        return AppTask::DMCabinetModeGetModeLabelByIndex(modeIndex, label);
+        return AppTask::GetModeLabelByIndex(modeIndex, label);
     }
 
-    CHIP_ERROR DMCabinetModeGetModeValueByIndexImpl(uint8_t modeIndex, uint8_t & value)
+    CHIP_ERROR GetModeValueByIndexImpl(uint8_t modeIndex, uint8_t & value)
     {
-        return AppTask::DMCabinetModeGetModeValueByIndex(modeIndex, value);
+        return AppTask::GetModeValueByIndex(modeIndex, value);
     }
 
-    CHIP_ERROR DMCabinetModeGetModeTagsByIndexImpl(
+    CHIP_ERROR GetModeTagsByIndexImpl(
         uint8_t modeIndex, chip::app::DataModel::List<chip::app::Clusters::detail::Structs::ModeTagStruct::Type> & tags)
     {
-        return AppTask::DMCabinetModeGetModeTagsByIndex(modeIndex, tags);
+        return AppTask::GetModeTagsByIndex(modeIndex, tags);
     }
 };
