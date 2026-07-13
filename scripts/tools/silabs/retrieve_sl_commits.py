@@ -106,7 +106,10 @@ def filter_commit_presence(commit_line, target_branch, label):
         if label:
             print("%s%s[CHERRY-PICKED on %s]" % (commit_line, FIELD_SEP, target_branch))
     else:
-        print(commit_line)
+        if label:
+            print("%s%s[MISSING from %s]" % (commit_line, FIELD_SEP, target_branch))
+        else:
+            print(commit_line)
 
 
 def main():
