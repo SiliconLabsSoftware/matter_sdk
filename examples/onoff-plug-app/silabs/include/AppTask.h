@@ -55,11 +55,12 @@ public:
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
     /**
-     * @brief Data model hook invoked when a cluster attribute changes.
+     * @brief Matter stack callback after a server attribute write, syncs plug LED and LCD demo UI
+     *        when @c OnOff::OnOff changes.
      *
      * @param attributePath Endpoint, cluster, and attribute that changed
-     * @param type          Ember attribute type of @p value
-     * @param size          Size of @p value in bytes
+     * @param type          TLV encoding type of @p value
+     * @param size          Size in bytes of @p value
      * @param value         Pointer to the new attribute value
      */
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
