@@ -34,70 +34,69 @@ template <typename Derived>
 class AppTaskImpl : public AppTask
 {
 public:
-    // Common AppTask bring up
     CHIP_ERROR AppInit() override { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, AppInitImpl); }
 
-    // Handle button press
+    // Platform button callback, posts oven or base application events.
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
-    // AppTask thread event handler that toggles the cooktop from a button press
+    // PB1 button handler, toggles cooktop and cook surface states.
     static void OvenButtonHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, OvenButtonHandlerImpl, aEvent);
     }
 
-    // AppTask thread event handler for a queued oven action event (LED/LCD reaction)
+    // Updates LED and display for queued oven action events.
     static void OvenActionHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, OvenActionHandlerImpl, aEvent);
     }
 
-    // Platform event handler, propagates CookTop Off to bound peers after reboot
+    // Platform event handler, propagates CookTop Off to bound peers after reboot.
     static void ConnectivityEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ConnectivityEventHandlerImpl, event, arg);
     }
 
-    // Handler scheduled on the Matter thread to set up the binding table
+    // Schedules binding manager initialization on the Matter thread.
     static void InitBindingHandler(intptr_t arg)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, InitBindingHandlerImpl, arg);
     }
 
-    // Propagate the CookTop OnOff state to bound OnOff and FanControl peers
+    // Propagates CookTop OnOff state to bound OnOff and FanControl peers.
     static void CookTopBindingPropagateState(chip::EndpointId cookTopEndpoint, bool cookTopOn)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, CookTopBindingPropagateStateImpl, cookTopEndpoint, cookTopOn);
     }
 
-    // Binding manager callback invoked per bound device
+    // Binding manager callback, propagates CookTop state changes per bound device.
     static void BoundDeviceChangedHandler(const chip::app::Clusters::Binding::TableEntry & binding,
                                           chip::OperationalDeviceProxy * peerDevice, void * context)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, BoundDeviceChangedHandlerImpl, binding, peerDevice, context);
     }
 
-    // Data model hook invoked when a cluster attribute changes
+    // Matter stack callback after a server attribute write, routes OnOff and OvenMode updates.
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMPostAttributeChangeCallbackImpl, attributePath, type, size, value);
     }
 
-    // Initialize AppTask oven endpoints and associated resources
+    // Initializes oven endpoints, temperature levels, and binding.
     CHIP_ERROR InitOven() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, InitOvenImpl); }
 
-    // Handle OnOff cluster attribute changes
+    // Updates cooktop/cook surface state and queues LED/LCD updates on OnOff changes.
     void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                      uint16_t size)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnOffAttributeChangeHandlerImpl, endpointId, attributeId, value, size);
     }
 
-    // Handle OvenMode cluster attribute changes
+    // Updates oven mode state and queues LED/LCD updates on OvenMode changes.
     void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                         uint16_t size)
     {
@@ -105,7 +104,7 @@ public:
                                     size);
     }
 
-    // Check whether a transition between two oven modes is blocked
+    // Checks whether a transition between two oven modes is blocked.
     bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode) override
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(AppTaskImpl, Derived, IsTransitionBlockedImpl, fromMode, toMode);
