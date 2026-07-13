@@ -35,7 +35,6 @@ class AppTask : public BaseApplication
 public:
     AppTask() = default;
 
-    /** @brief Returns the active app instance */
     static AppTask & GetAppTask();
 
     /**
@@ -45,7 +44,6 @@ public:
      */
     static void AppTaskMain(void * pvParameter);
 
-    /** @brief Creates and starts the AppTask thread */
     CHIP_ERROR StartAppTask();
 
     /**
@@ -56,20 +54,33 @@ public:
      */
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
-    /** @brief Data model hook invoked when a cluster attribute changes */
+    /**
+     * @brief Data model hook invoked when a cluster attribute changes.
+     *
+     * @param attributePath Endpoint, cluster, and attribute that changed
+     * @param type          Ember attribute type of @p value
+     * @param size          Size of @p value in bytes
+     * @param value         Pointer to the new attribute value
+     */
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
 
-    /** @brief AppTask thread event handler that applies an OnOff action */
+    /**
+     * @brief Toggles plug on/off, updates LED/display, and schedules cluster sync on the CHIP thread.
+     *
+     * @param aEvent Button AppEvent posted from @c ButtonEventHandler
+     */
     static void OnOffActionEventHandler(AppEvent * aEvent);
 
 protected:
-    /** @brief Override of `BaseApplication::AppInit()` */
     CHIP_ERROR AppInit() override;
 
-    /** @brief Plug specific initialization */
     CHIP_ERROR InitPlug();
 
-    /** @brief Chip-thread work item: push the OnOff cluster state via `OnOffServer::setOnOffValue` */
+    /**
+     * @brief Chip-thread work item: push the OnOff cluster state via @c OnOffServer::setOnOffValue.
+     *
+     * @param context On/off state encoded as @c intptr_t (0 = off, non-zero = on)
+     */
     static void UpdateOnOffClusterState(intptr_t context);
 };
