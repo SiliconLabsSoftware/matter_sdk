@@ -100,6 +100,8 @@ void OvenModeDelegate::HandleChangeToMode(uint8_t NewMode, ModeBase::Commands::C
         }
     };
 
+    VerifyOrReturn(GetInstance() != nullptr, ChipLogError(AppServer, "Delegate not initialized"));
+
     const uint8_t currentMode = GetInstance()->GetCurrentMode();
 
     if (OvenManager::GetInstance().IsTransitionBlocked(currentMode, NewMode))

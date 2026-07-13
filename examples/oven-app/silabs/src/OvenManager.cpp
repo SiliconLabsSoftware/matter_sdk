@@ -104,21 +104,16 @@ void OvenManager::Init()
 
 void OvenManager::OnAttributeChanged(const ConcreteAttributePath & path, DataModel::AttributeChangeType type)
 {
-    if (path.mEndpointId != kTemperatureControlledCabinetEndpoint || path.mClusterId != OvenMode::Id ||
-        path.mAttributeId != OvenMode::Attributes::CurrentMode::Id)
-    {
-        return;
-    }
+    VerifyOrReturn(path.mEndpointId == kTemperatureControlledCabinetEndpoint, ChipLogError(AppServer, "OnAttributeChanged: path.mEndpointId is invalid"));
+    VerifyOrReturn(path.mClusterId == OvenMode::Id, ChipLogError(AppServer, "OnAttributeChanged: path.mClusterId is invalid"));
+    VerifyOrReturn(path.mAttributeId == OvenMode::Attributes::CurrentMode::Id, ChipLogError(AppServer, "OnAttributeChanged: path.mAttributeId is invalid"));
 
     HandleOvenModeChanged(mTemperatureControlledCabinetEndpoint.GetOvenModeInstance().GetCurrentMode());
 }
 
 void OvenManager::HandleOvenModeChanged(uint8_t newMode)
 {
-    if (mCurrentOvenMode == newMode)
-    {
-        return;
-    }
+    VerifyOrReturn(mCurrentOvenMode != newMode, ChipLogProgress(AppServer, "OvenManager: newMode is the same as current mode"));
 
     mCurrentOvenMode = newMode;
 
