@@ -34,16 +34,20 @@
 #include "AppEvent.h"
 
 #include <app-common/zap-generated/ids/Attributes.h>
+#include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/TypeTraits.h>
 #include <platform/CHIPDeviceLayer.h>
 
-class OvenManager
+class OvenManager : public chip::app::DataModel::AttributeChangeListener
 {
 
 public:
+    void OnAttributeChanged(const chip::app::ConcreteAttributePath & path,
+                            chip::app::DataModel::AttributeChangeType type) override;
+
     enum Action_t
     {
         COOK_TOP_ON_ACTION = 0,
@@ -86,16 +90,6 @@ public:
     void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
 
     /**
-     * @brief Handles oven mode attribute changes.
-     *
-     * @param endpointId The ID of the endpoint.
-     * @param attributeId The ID of the attribute.
-     * @param value Pointer to the new value.
-     * @param size Size of the new value.
-     */
-    void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value, uint16_t size);
-
-    /**
      * @brief Checks if a transition between two oven modes is blocked.
      *
      * @param fromMode The current mode.
@@ -122,6 +116,9 @@ public:
     static constexpr chip::EndpointId GetCookTopEndpoint() { return kCookTopEndpoint; }
 
 private:
+    void HandleOvenModeChanged(uint8_t newMode);
+
+    bool mAttributeListenerRegistered = false;
     static constexpr uint8_t kBlockedTransitionCount = 3; // Number of blocked transitions
     struct BlockedTransition
     {

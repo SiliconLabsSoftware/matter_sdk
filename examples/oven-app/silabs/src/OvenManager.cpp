@@ -21,8 +21,8 @@
 #include "OvenBindingHandler.h"
 #include "OvenEndpoint.h"
 
-#include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
+#include <app/InteractionModelEngine.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <app/clusters/temperature-control-server/CodegenIntegration.h>
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
@@ -41,6 +41,15 @@ OvenManager OvenManager::sOvenMgr;
 
 void OvenManager::Init()
 {
+    DataModel::Provider * provider = InteractionModelEngine::GetInstance()->GetDataModelProvider();
+    VerifyOrReturn(provider != nullptr, ChipLogError(AppServer, "DataModel provider not available"));
+
+    if (!mAttributeListenerRegistered)
+    {
+        provider->RegisterAttributeChangeListener(*this);
+        mAttributeListenerRegistered = true;
+    }
+
     // Endpoint initializations
 
     CHIP_ERROR initErr = mTemperatureControlledCabinetEndpoint.Init();
@@ -90,10 +99,29 @@ void OvenManager::Init()
     VerifyOrReturn(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &mIsCookSurface2On) == Status::Success,
                    ChipLogError(AppServer, "Getting CookSurfaceEndpoint2 OnOff state failed"));
 
-    // Get current oven mode
-    VerifyOrReturn(OvenMode::Attributes::CurrentMode::Get(kTemperatureControlledCabinetEndpoint, &mCurrentOvenMode) ==
-                       Status::Success,
-                   ChipLogError(AppServer, "Getting CurrentOvenMode failed"));
+    mCurrentOvenMode = mTemperatureControlledCabinetEndpoint.GetOvenModeInstance().GetCurrentMode();
+}
+
+void OvenManager::OnAttributeChanged(const ConcreteAttributePath & path, DataModel::AttributeChangeType type)
+{
+    VerifyOrReturn(path.mEndpointId == kTemperatureControlledCabinetEndpoint, ChipLogError(AppServer, "OnAttributeChanged: path.mEndpointId is invalid"));
+    VerifyOrReturn(path.mClusterId == OvenMode::Id, ChipLogError(AppServer, "OnAttributeChanged: path.mClusterId is invalid"));
+    VerifyOrReturn(path.mAttributeId == OvenMode::Attributes::CurrentMode::Id, ChipLogError(AppServer, "OnAttributeChanged: path.mAttributeId is invalid"));
+
+    HandleOvenModeChanged(mTemperatureControlledCabinetEndpoint.GetOvenModeInstance().GetCurrentMode());
+}
+
+void OvenManager::HandleOvenModeChanged(uint8_t newMode)
+{
+    VerifyOrReturn(mCurrentOvenMode != newMode, ChipLogProgress(AppServer, "OvenManager: newMode is the same as current mode"));
+
+    mCurrentOvenMode = newMode;
+
+    AppEvent event         = {};
+    event.Type             = AppEvent::kEventType_Oven;
+    event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
+    event.Handler          = AppTask::OvenActionHandler;
+    AppTask::GetAppTask().PostEvent(&event);
 }
 
 CHIP_ERROR OvenManager::SetCookSurfaceInitialState(EndpointId cookSurfaceEndpoint)
@@ -187,19 +215,6 @@ void OvenManager::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId
         event.Handler          = AppTask::OvenActionHandler;
         AppTask::GetAppTask().PostEvent(&event);
     }
-}
-
-void OvenManager::OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
-                                                 uint16_t size)
-{
-    VerifyOrReturn(value != nullptr, ChipLogError(AppServer, "OvenModeAttributeChangeHandler: value pointer is null"));
-
-    mCurrentOvenMode       = *value;
-    AppEvent event         = {};
-    event.Type             = AppEvent::kEventType_Oven;
-    event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
-    event.Handler          = AppTask::OvenActionHandler;
-    AppTask::GetAppTask().PostEvent(&event);
 }
 
 bool OvenManager::IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
