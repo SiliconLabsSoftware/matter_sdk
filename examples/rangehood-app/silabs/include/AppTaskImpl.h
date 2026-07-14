@@ -60,7 +60,7 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, FanControlButtonHandlerImpl, aEvent);
     }
 
-    // Matter stack callback after a server attribute write, forwards FanControl and OnOff updates.
+    // Matter stack callback after a server attribute change, forwards FanControl and OnOff updates.
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
     {

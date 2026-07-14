@@ -46,14 +46,14 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
-    // AppTask thread handler for PB1 button events, triggers application actions on the CHIP task.
+    // AppTask thread handler for PB1 button events, triggers application actions on the Matter task.
     static void ApplicationEventHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ApplicationEventHandlerImpl, aEvent);
     }
 
 #if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
-    // ICD lifecycle hooks invoked by the ICD manager
+    // ICDStateObserver callbacks invoked by the ICD manager
     // Override to react to power mode transitions
     void OnEnterActiveMode() override
     {

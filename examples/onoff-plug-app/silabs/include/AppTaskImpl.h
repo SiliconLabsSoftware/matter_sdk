@@ -49,7 +49,7 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
-    // Toggles plug on/off, updates LED/display, and schedules OnOff cluster sync on the CHIP thread.
+    // Toggles plug on/off, updates LED/display, and schedules OnOff cluster sync on the Matter thread.
     static void OnOffActionEventHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, OnOffActionEventHandlerImpl, aEvent);
