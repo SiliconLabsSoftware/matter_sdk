@@ -263,7 +263,11 @@ void FanControlManager::HandleFanControlAttributeChange(AttributeId attributeId,
 
     case Attributes::FanMode::Id: {
         mFanMode = *reinterpret_cast<FanModeEnum *>(value);
-        ApplyFanModeMapping(mFanMode);
+        // MultiSpeed: cluster keeps FanMode / PercentSetting / SpeedSetting consistent.
+        if (!mSupportsMultiSpeed)
+        {
+            ApplyFanModeMapping(mFanMode);
+        }
         UpdateFanControlLED();
 #if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
         UpdateFanControlLCD();
@@ -320,12 +324,6 @@ void FanControlManager::SpeedSettingWriteCallback(uint8_t aNewSpeedSetting)
     if (chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "FanControlManager::SpeedSettingWriteCallback: failed to set SpeedCurrent attribute");
-    }
-
-    FanModeEnum newFanMode = DeriveFanModeFromSpeed(aNewSpeedSetting);
-    if (newFanMode != mFanMode)
-    {
-        SyncFanMode(newFanMode);
     }
 }
 
