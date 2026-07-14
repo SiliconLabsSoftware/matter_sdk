@@ -40,17 +40,21 @@ class AppTaskImpl : public AppTask
 public:
     CHIP_ERROR AppInit() override { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, AppInitImpl); }
 
+    // Platform button callback, posts an AppEvent to the AppTask queue for processing.
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
+    // AppTask thread handler for PB1 button events, triggers application actions on the Matter task.
     static void ApplicationEventHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ApplicationEventHandlerImpl, aEvent);
     }
 
 #if defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
+    // ICDStateObserver callbacks invoked by the ICD manager
+    // Override to react to power mode transitions
     void OnEnterActiveMode() override
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnEnterActiveModeImpl);
@@ -65,6 +69,9 @@ public:
 
 private:
     friend Derived;
+
+    // Default *Impl() hooks, each forwards to the matching AppTask method
+    // Override the corresponding hook in CustomerAppTask to customize behavior
 
     CHIP_ERROR AppInitImpl() { return AppTask::AppInit(); }
 

@@ -43,16 +43,19 @@ public:
 
     CHIP_ERROR InitPlug() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, InitPlugImpl); }
 
+    // Platform button callback, posts on/off toggle or base-application button events.
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
+    // Toggles plug on/off, updates LED/display, and schedules OnOff cluster sync on the Matter thread.
     static void OnOffActionEventHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, OnOffActionEventHandlerImpl, aEvent);
     }
 
+    // Matter stack callback after a server attribute write, syncs plug LED and display on OnOff changes.
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
     {
@@ -62,7 +65,8 @@ public:
 private:
     friend Derived;
 
-    /** Default implementations - override in Derived to customize. **/
+    // Default *Impl() hooks, each forwards to the matching AppTask method
+    // Override the corresponding hook in CustomerAppTask to customize behavior
 
     CHIP_ERROR AppInitImpl() { return AppTask::AppInit(); }
 

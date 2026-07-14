@@ -21,6 +21,19 @@
 #include "AppTask.h"
 #include "CRTPHelpers.h"
 
+/**
+ * @brief CRTP override layer for `AppTask`.
+ *
+ * Each public entry point dispatches to a corresponding `Derived::*Impl()` hook.
+ * The default `*Impl()` (declared private below) forwards to `AppTask`, so
+ * `Derived` only needs to override the hooks whose behavior it wants to
+ * customize.
+ *
+ * Customer code overrides these hooks in `CustomerAppTask`; see the app README
+ * ("How to Override APIs").
+ *
+ * @tparam Derived The CRTP derived class (`CustomerAppTask`).
+ */
 template <typename Derived>
 class AppTaskImpl : public AppTask
 {
@@ -29,21 +42,25 @@ public:
 
     CHIP_ERROR InitRangeHood() { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, InitRangeHoodImpl); }
 
+    // Platform button callback, posts fan-control or base application events.
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
+    // Applies light/fan actions to LED and display after attribute driven updates.
     static void ActionTriggerHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ActionTriggerHandlerImpl, aEvent);
     }
 
+    // Action button handler, toggles extractor hood fan mode.
     static void FanControlButtonHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, FanControlButtonHandlerImpl, aEvent);
     }
 
+    // Matter stack callback after a server attribute change, forwards FanControl and OnOff updates.
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
     {
@@ -52,6 +69,9 @@ public:
 
 private:
     friend Derived;
+
+    // Default *Impl() hooks, each forwards to the matching AppTask method
+    // Override the corresponding hook in CustomerAppTask to customize behavior
 
     CHIP_ERROR AppInitImpl() { return AppTask::AppInit(); }
 
