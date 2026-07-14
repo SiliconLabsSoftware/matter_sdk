@@ -79,7 +79,7 @@ protected:
     CHIP_ERROR InitPlug();
 
     /**
-     * @brief Chip-thread work item: push the OnOff cluster state via @c OnOffServer::setOnOffValue.
+     * @brief Handler scheduled on the Matter thread to push the OnOff cluster state via @c OnOffServer::setOnOffValue.
      *
      * @param context On/off state encoded as @c intptr_t (0 = off, non-zero = on)
      */
