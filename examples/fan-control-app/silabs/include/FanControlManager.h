@@ -51,12 +51,6 @@ public:
 
     void PercentSettingWriteCallback(uint8_t aNewPercentSetting);
     void SpeedSettingWriteCallback(uint8_t aNewSpeedSetting);
-    void FanModeWriteCallback(FanModeEnum aNewFanMode);
-
-    void SetPercentSetting(Percent aNewPercentSetting);
-    DataModel::Nullable<uint8_t> GetSpeedSetting();
-    DataModel::Nullable<Percent> GetPercentSetting();
-    void UpdateFanMode();
 
     static void UpdateClusterState(intptr_t arg);
 
@@ -88,20 +82,30 @@ public:
 private:
     friend FanControlManager & FanControlMgr(void);
 
+    bool SupportsMultiSpeed() const;
+    FanModeEnum DeriveFanModeFromSpeed(uint8_t speed) const;
+    FanModeEnum DeriveFanModeFromPercent(Percent percent) const;
+    void ApplyFanModeMapping(FanModeEnum aNewFanMode);
+    void SyncFanMode(FanModeEnum aNewFanMode);
+    void SetSpeedSetting(uint8_t aNewSpeedSetting);
+    void SetPercentSetting(Percent aNewPercentSetting);
+    DataModel::Nullable<uint8_t> GetSpeedSetting();
+    DataModel::Nullable<Percent> GetPercentSetting();
+
     EndpointId mEndPoint = 1;
     FanModeEnum mFanMode;
     uint8_t mSpeedMax;
+    bool mSupportsMultiSpeed = false;
 
     uint8_t percentCurrent;
     uint8_t speedCurrent;
 
-    // Fan Mode Limits
+    // Fan mode speed bands (MultiSpeed)
     static constexpr int kFanModeLowLowerBound    = 1;
     static constexpr int kFanModeLowUpperBound    = 3;
     static constexpr int kFanModeMediumLowerBound = 4;
     static constexpr int kFanModeMediumUpperBound = 7;
     static constexpr int kFanModeHighLowerBound   = 8;
-    static constexpr int kFanModeHighUpperBound   = 10;
 
     static constexpr int kaLowestOffTrue  = 0;
     static constexpr int kaLowestOffFalse = 1;
