@@ -57,7 +57,7 @@ public:
     static void FanControlButtonHandler(AppEvent * aEvent);
 
     /**
-     * @brief Matter stack callback after a server attribute write, forwards @c FanControl and @c OnOff
+     * @brief Matter stack callback after a server attribute change, forwards @c FanControl and @c OnOff
      *        updates to endpoint handlers to refresh range-hood UI and LEDs.
      *
      * @param attributePath Endpoint, cluster, and attribute that changed

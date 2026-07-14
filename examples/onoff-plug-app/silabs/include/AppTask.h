@@ -55,7 +55,7 @@ public:
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction);
 
     /**
-     * @brief Matter stack callback after a server attribute write, syncs plug LED and LCD demo UI
+     * @brief Matter stack callback after a server attribute change, syncs plug LED and LCD demo UI
      *        when @c OnOff::OnOff changes.
      *
      * @param attributePath Endpoint, cluster, and attribute that changed
@@ -67,7 +67,7 @@ public:
                                        uint8_t * value);
 
     /**
-     * @brief Toggles plug on/off, updates LED/display, and schedules cluster sync on the CHIP thread.
+     * @brief Toggles plug on/off, updates LED/display, and schedules cluster sync on the Matter thread.
      *
      * @param aEvent Button AppEvent posted from @c ButtonEventHandler
      */
