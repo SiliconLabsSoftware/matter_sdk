@@ -29,6 +29,9 @@
 # -c explicitly pass --commit to restyle CLI to generate commits per tool
 # -u automatically push resulting commits using 'git push'
 # -h show this help message
+# Reference Selection (when ref is not specified):
+#   - If origin is https://github.com/SiliconLabsSoftware/matter_sdk.git (main repo): uses origin/main
+#   - Otherwise (fork setup): uses upstream/main if upstream remote exists, otherwise defaults to main
 
 show_help() {
     echo "Usage: restyle-diff.sh [-d] [-p] [-c] [-u] [-h] [ref]"
@@ -172,8 +175,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$ref" ]]; then
-    ref="master"
-    git remote | grep -qxF upstream && ref="upstream/master"
+    # Check if origin points to the main repo
+    origin_url=$(git remote get-url origin 2>/dev/null || echo "")
+    if [[ "$origin_url" == "https://github.com/SiliconLabsSoftware/matter_sdk.git" ]]; then
+        ref="origin/main"
+    else
+        # Assume fork setup - use upstream/main if available, otherwise local main
+        ref="main"
+        git remote | grep -qxF upstream && ref="upstream/main"
+    fi
 fi
 
 paths=$(git diff --ignore-submodules --name-only --merge-base "$ref")
