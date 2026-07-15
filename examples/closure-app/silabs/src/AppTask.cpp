@@ -81,18 +81,23 @@ CustomerAppTask & appInstance()
 {
     return CustomerAppTask::GetAppTask();
 }
+
+CustomerAppManager & closureManagerInstance()
+{
+    return CustomerAppManager::GetInstance();
+}
 } // namespace
 
 void MatterClosureControlClusterServerAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
 {
-    VerifyOrReturn(CustomerAppTask::GetAppTask().IsApplicationInitialized());
-    CustomerAppTask::GetAppTask().DMClosureControlClusterAttributeChangedCallback(attributePath);
+    VerifyOrReturn(appInstance().IsApplicationInitialized());
+    appInstance().DMClosureControlClusterAttributeChangedCallback(attributePath);
 }
 
 void MatterClosureDimensionClusterServerAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
 {
-    VerifyOrReturn(CustomerAppTask::GetAppTask().IsApplicationInitialized());
-    CustomerAppTask::GetAppTask().DMClosureDimensionClusterAttributeChangedCallback(attributePath);
+    VerifyOrReturn(appInstance().IsApplicationInitialized());
+    appInstance().DMClosureDimensionClusterAttributeChangedCallback(attributePath);
 }
 
 CHIP_ERROR AppTask::AppInit()
@@ -106,7 +111,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif
 
     // Initialization of Closure Manager and endpoints of closure and closurepanel.
-    CustomerAppManager::GetInstance().Init();
+    closureManagerInstance().Init();
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -183,10 +188,10 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
         LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(
             [](intptr_t) {
                 // Check if an action is already in progress
-                if (CustomerAppManager::GetInstance().IsClosureControlMotionInProgress())
+                if (closureManagerInstance().IsClosureControlMotionInProgress())
                 {
                     // Stop the current action
-                    auto status = CustomerAppManager::GetInstance().GetClosureControlCluster().HandleStop();
+                    auto status = closureManagerInstance().GetClosureControlCluster().HandleStop();
                     if (status != Protocols::InteractionModel::Status::Success)
                     {
                         ChipLogError(AppServer, "Failed to stop closure action: %u", to_underlying(status));
@@ -195,7 +200,7 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
                 else
                 {
                     DataModel::Nullable<ClosureControl::GenericOverallCurrentState> currentState =
-                        CustomerAppManager::GetInstance().GetClosureControlCluster().GetOverallCurrentState();
+                        closureManagerInstance().GetClosureControlCluster().GetOverallCurrentState();
 
                     if (currentState.IsNull())
                     {
@@ -231,7 +236,7 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
                     }
 
                     // Move to the target position with latch set to false and preserved speed value
-                    auto status = CustomerAppManager::GetInstance().GetClosureControlCluster().HandleMoveTo(
+                    auto status = closureManagerInstance().GetClosureControlCluster().HandleMoveTo(
                         MakeOptional(targetPosition), latch, speed);
                     if (status != Protocols::InteractionModel::Status::Success)
                     {
@@ -258,11 +263,11 @@ void AppTask::UpdateClosureUIHandler(AppEvent * aEvent)
 
 void AppTask::UpdateClosureUI()
 {
-    CustomerAppManager & CustomerAppManager = CustomerAppManager::GetInstance();
+    CustomerAppManager & manager = closureManagerInstance();
 
     // Lock chip stack when accessing CHIP attributes from app task context
     DeviceLayer::PlatformMgr().LockChipStack();
-    auto uiData = CustomerAppManager.GetClosureUIData();
+    auto uiData = manager.GetClosureUIData();
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     ClosureUI::SetMainState(uiData.mainState);
