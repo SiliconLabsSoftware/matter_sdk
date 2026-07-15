@@ -81,7 +81,7 @@ public:
      * @return chip::Protocols::InteractionModel::Status
      *         Returns Status::Success if all operations succeed, otherwise Status::Failure.
      */
-    chip::Protocols::InteractionModel::Status OnCalibrateCommand();
+    virtual chip::Protocols::InteractionModel::Status OnCalibrateCommand();
 
     /**
      * @brief Handles the MoveTo command for the Closure.
@@ -94,7 +94,7 @@ public:
      * @param speed Optional speed setting for the movement, represented as a ThreeLevelAutoEnum.
      * @return chip::Protocols::InteractionModel::Status Status of the command handling operation.
      */
-    chip::Protocols::InteractionModel::Status
+    virtual chip::Protocols::InteractionModel::Status
     OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
                     const chip::Optional<bool> latch, const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed);
 
@@ -107,7 +107,7 @@ public:
      *         Returns Status::Success if the Stop command is handled successfully,
      *         or an appropriate error status otherwise.
      */
-    chip::Protocols::InteractionModel::Status OnStopCommand();
+    virtual chip::Protocols::InteractionModel::Status OnStopCommand();
 
     /**
      * @brief Handles the SetTarget command for a closure panel.
@@ -124,7 +124,7 @@ public:
      *         Returns Status::Success if the SetTarget command is handled successfully,
      *         or an appropriate error status otherwise.
      */
-    chip::Protocols::InteractionModel::Status
+    virtual chip::Protocols::InteractionModel::Status
     OnSetTargetCommand(const chip::Optional<chip::Percent100ths> & position, const chip::Optional<bool> & latch,
                        const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
                        const chip::EndpointId endpointId);
@@ -141,7 +141,7 @@ public:
      * @param endpointId The endpoint on which to perform the operation.
      * @return chip::Protocols::InteractionModel::Status Status of the command execution.
      */
-    chip::Protocols::InteractionModel::Status
+    virtual chip::Protocols::InteractionModel::Status
     OnStepCommand(const chip::app::Clusters::ClosureDimension::StepDirectionEnum & direction, const uint16_t & numberOfSteps,
                   const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
                   const chip::EndpointId & endpointId);

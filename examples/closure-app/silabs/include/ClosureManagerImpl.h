@@ -39,7 +39,7 @@ class ClosureManagerImpl : public ClosureManager
 public:
     void Init() { CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, InitImpl); }
 
-    chip::Protocols::InteractionModel::Status OnCalibrateCommand()
+    chip::Protocols::InteractionModel::Status OnCalibrateCommand() override
     {
         CRTP_OPTIONAL_DISPATCH(ClosureManagerImpl, Derived, OnCalibrateCommandImpl);
     }
@@ -47,12 +47,12 @@ public:
     chip::Protocols::InteractionModel::Status
     OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
                     const chip::Optional<bool> latch,
-                    const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed)
+                    const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed) override
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnMoveToCommandImpl, position, latch, speed);
     }
 
-    chip::Protocols::InteractionModel::Status OnStopCommand()
+    chip::Protocols::InteractionModel::Status OnStopCommand() override
     {
         CRTP_OPTIONAL_DISPATCH(ClosureManagerImpl, Derived, OnStopCommandImpl);
     }
@@ -60,7 +60,7 @@ public:
     chip::Protocols::InteractionModel::Status
     OnSetTargetCommand(const chip::Optional<chip::Percent100ths> & position, const chip::Optional<bool> & latch,
                        const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
-                       const chip::EndpointId endpointId)
+                       const chip::EndpointId endpointId) override
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnSetTargetCommandImpl, position, latch, speed, endpointId);
     }
@@ -68,7 +68,7 @@ public:
     chip::Protocols::InteractionModel::Status
     OnStepCommand(const chip::app::Clusters::ClosureDimension::StepDirectionEnum & direction, const uint16_t & numberOfSteps,
                   const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
-                  const chip::EndpointId & endpointId)
+                  const chip::EndpointId & endpointId) override
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnStepCommandImpl, direction, numberOfSteps, speed, endpointId);
     }
