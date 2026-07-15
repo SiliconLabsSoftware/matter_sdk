@@ -344,15 +344,18 @@ void ClosureManager::HandleClosureActionCompleteEvent(AppEvent * event)
         break;
     case Action_t::SET_TARGET_ACTION:
         LogErrorOnFailure(PlatformMgr().ScheduleWork(
-            [endpointId](intptr_t) { customerMgr().HandlePanelSetTargetAction(endpointId); }));
+            [](intptr_t arg) { customerMgr().HandlePanelSetTargetAction(static_cast<EndpointId>(arg)); },
+            static_cast<intptr_t>(endpointId)));
         break;
     case Action_t::PANEL_UNLATCH_ACTION:
         LogErrorOnFailure(PlatformMgr().ScheduleWork(
-            [endpointId](intptr_t) { customerMgr().HandlePanelUnlatchAction(endpointId); }));
+            [](intptr_t arg) { customerMgr().HandlePanelUnlatchAction(static_cast<EndpointId>(arg)); },
+            static_cast<intptr_t>(endpointId)));
         break;
     case Action_t::PANEL_STEP_ACTION:
-        LogErrorOnFailure(
-            PlatformMgr().ScheduleWork([endpointId](intptr_t) { customerMgr().HandlePanelStepAction(endpointId); }));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(
+            [](intptr_t arg) { customerMgr().HandlePanelStepAction(static_cast<EndpointId>(arg)); },
+            static_cast<intptr_t>(endpointId)));
         break;
     default:
         break;
