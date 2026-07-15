@@ -31,6 +31,7 @@
  *   - OnStopCommandImpl()
  *   - OnSetTargetCommandImpl(position, latch, speed, endpointId)
  *   - OnStepCommandImpl(direction, numberOfSteps, speed, endpointId)
+ *     (virtual on ClosureManager — cluster delegates through ClosureManager & hit these)
  *   - HandleClosureActionCompleteImpl(action)
  *   - HandleClosureMotionActionImpl()
  *   - HandleClosureUnlatchActionImpl()

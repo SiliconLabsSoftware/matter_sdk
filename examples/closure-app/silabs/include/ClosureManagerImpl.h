@@ -24,12 +24,10 @@
 /**
  * @brief CRTP override layer for `ClosureManager`.
  *
- * Each overridable entry point dispatches to a corresponding `Derived::*Impl()` hook.
- * The default `*Impl()` (declared private below) forwards to `ClosureManager`,
- * so `Derived` only needs to override the hooks whose behavior it wants to
- * customize.
- *
- * Customer code overrides these hooks in `CustomerAppManager`.
+ * `Init` and `On*Command` are virtual on `ClosureManager` so Matter cluster
+ * delegates that call through `ClosureManager &` still reach these wrappers
+ * (and thus optional `Derived::*Impl()` overrides). Protected state-machine
+ * hooks remain non-virtual and rely on leaf-typed call sites.
  *
  * @tparam Derived The CRTP derived class (`CustomerAppManager`).
  */
@@ -37,21 +35,22 @@ template <typename Derived>
 class ClosureManagerImpl : public ClosureManager
 {
 public:
-    void Init() { CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, InitImpl); }
+    void Init() override { CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, InitImpl); }
 
-    chip::Protocols::InteractionModel::Status OnCalibrateCommand()
+    chip::Protocols::InteractionModel::Status OnCalibrateCommand() override
     {
         CRTP_OPTIONAL_DISPATCH(ClosureManagerImpl, Derived, OnCalibrateCommandImpl);
     }
 
     chip::Protocols::InteractionModel::Status
     OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
-                    const chip::Optional<bool> latch, const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed)
+                    const chip::Optional<bool> latch,
+                    const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed) override
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnMoveToCommandImpl, position, latch, speed);
     }
 
-    chip::Protocols::InteractionModel::Status OnStopCommand()
+    chip::Protocols::InteractionModel::Status OnStopCommand() override
     {
         CRTP_OPTIONAL_DISPATCH(ClosureManagerImpl, Derived, OnStopCommandImpl);
     }
@@ -59,7 +58,7 @@ public:
     chip::Protocols::InteractionModel::Status
     OnSetTargetCommand(const chip::Optional<chip::Percent100ths> & position, const chip::Optional<bool> & latch,
                        const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
-                       const chip::EndpointId endpointId)
+                       const chip::EndpointId endpointId) override
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnSetTargetCommandImpl, position, latch, speed, endpointId);
     }
@@ -67,7 +66,7 @@ public:
     chip::Protocols::InteractionModel::Status
     OnStepCommand(const chip::app::Clusters::ClosureDimension::StepDirectionEnum & direction, const uint16_t & numberOfSteps,
                   const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
-                  const chip::EndpointId & endpointId)
+                  const chip::EndpointId & endpointId) override
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnStepCommandImpl, direction, numberOfSteps, speed, endpointId);
     }
