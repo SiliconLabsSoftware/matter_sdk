@@ -228,8 +228,8 @@ the reference for overridable methods and app configuration.
 
     MG24 boards :
 
-    -   BRD4186A / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@10dBm
-    -   BRD4187A / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@20dBm
+    -   BRD4186C / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@10dBm
+    -   BRD4187C / SLWSTK6006A / Wireless Starter Kit / 2.4GHz@20dBm
 
 *   Build the example application:
 
