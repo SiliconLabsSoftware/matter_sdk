@@ -1,6 +1,7 @@
 /*
  *
- *    Copyright (c) 2024 Project CHIP Authors
+ *    Copyright (c) 2020 Project CHIP Authors
+ *    Copyright (c) 2019 Google LLC.
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,29 +16,21 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#pragma once
 
-#ifdef DISPLAY_ENABLED
-#include <AppTask.h>
-#include <glib.h>
-#include <lcd.h>
+#ifndef SL_MATTER_EVSE_CONFIG_H
+#define SL_MATTER_EVSE_CONFIG_H
 
-namespace SensorsUI {
+// <<< Use Configuration Wizard in Context Menu >>>
 
-/**
- * @brief Custom UI to print the temperature and humidity value from the Matter DataModel
- *
- *        The layout of this UI is:
- *        Temp. Sensor
- *        Current: Value
- *        Max: Value
- *        Min: Value
- *
- *        Humidity Sensor
- *        Max: Value
- *        Min: Value
- */
-void SensorUI(GLIB_Context_t * glibContext);
+// EvseConfig.h
+// Preprocessor knobs for the silabs EVSE example. Edit these #define
+// statements to customize the endpoint hosting the EnergyEvse /
+// DeviceEnergyManagement clusters.
 
-} // namespace SensorsUI
-#endif // DISPLAY_ENABLED
+// <o EVSE_ENDPOINT> EnergyEvse / DeviceEnergyManagement cluster endpoint
+// <i> Default: 1
+#define EVSE_ENDPOINT 1
+
+// <<< end of configuration section >>>
+
+#endif // SL_MATTER_EVSE_CONFIG_H
