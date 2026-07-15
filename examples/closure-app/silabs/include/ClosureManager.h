@@ -214,6 +214,7 @@ public:
 
 protected:
     ClosureManager() = default;
+    virtual ~ClosureManager() = default;
 
 private:
     osTimerId_t mClosureTimer;
