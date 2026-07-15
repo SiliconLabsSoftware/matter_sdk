@@ -24,7 +24,11 @@
  * @brief Minimal ClosureManagerImpl-derived class.
  *
  * Any *Impl() method you do not override keeps the default ClosureManager
- * behavior. Override *Impl() methods here to customize individual behaviors.
+ * behavior. Override *Impl() methods here to customize individual behaviors
+ * (cluster commands and protected state-machine hooks).
+ *
+ * Example:
+ *   void HandlePanelSetTargetActionImpl(chip::EndpointId ep) { ... }
  */
 class CustomerAppManager : public ClosureManagerImpl<CustomerAppManager>
 {

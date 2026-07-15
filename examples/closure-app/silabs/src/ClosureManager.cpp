@@ -21,6 +21,7 @@
 #include "ClosureControlEndpoint.h"
 #include "ClosureDimensionEndpoint.h"
 #include "ClosureManager.h"
+#include "CustomerAppManager.h"
 
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/server/Server.h>
@@ -41,6 +42,12 @@ constexpr uint32_t kDefaultCountdownTimeSeconds   = 10;   // 10 seconds
 constexpr uint32_t kCalibrateCountdownTimeMs      = 3000; // 3 seconds
 constexpr uint32_t kMotionCountdownTimeMs         = 1000; // 1 second for each motion.
 constexpr chip::Percent100ths kMotionPositionStep = 2000; // 20% of the total range per motion interval.
+
+// Leaf-typed accessor so CRTP *Impl() overrides apply for state-machine hooks.
+CustomerAppManager & customerMgr()
+{
+    return CustomerAppManager::GetInstance();
+}
 
 // Define the Namespace and Tag for the endpoint
 // Derived from https://github.com/CHIP-Specifications/connectedhomeip-spec/blob/master/src/namespaces/Namespace-Closure.adoc
@@ -319,37 +326,33 @@ void ClosureManager::HandleClosureActionCompleteEvent(AppEvent * event)
                    ChipLogError(AppServer, "Got Event for %d in InitiateAction while current ongoing action is %d",
                                 to_underlying(currentAction), to_underlying(instance.GetCurrentAction())));
 
+    EndpointId endpointId = event->ClosureEvent.EndpointId;
+
     switch (currentAction)
     {
     case Action_t::CALIBRATE_ACTION:
         LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) {
-            ClosureManager & instance = ClosureManager::GetInstance();
-            instance.HandleClosureActionComplete(instance.GetCurrentAction());
+            CustomerAppManager & mgr = customerMgr();
+            mgr.HandleClosureActionComplete(mgr.GetCurrentAction());
         }));
         break;
     case Action_t::MOVE_TO_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) { ClosureManager::GetInstance().HandleClosureMotionAction(); }));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) { customerMgr().HandleClosureMotionAction(); }));
         break;
     case Action_t::UNLATCH_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) { ClosureManager::GetInstance().HandleClosureUnlatchAction(); }));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) { customerMgr().HandleClosureUnlatchAction(); }));
         break;
     case Action_t::SET_TARGET_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) {
-            ClosureManager & instance = ClosureManager::GetInstance();
-            instance.HandlePanelSetTargetAction(instance.mCurrentActionEndpointId);
-        }));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(
+            [endpointId](intptr_t) { customerMgr().HandlePanelSetTargetAction(endpointId); }));
         break;
     case Action_t::PANEL_UNLATCH_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) {
-            ClosureManager & instance = ClosureManager::GetInstance();
-            instance.HandlePanelUnlatchAction(instance.mCurrentActionEndpointId);
-        }));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(
+            [endpointId](intptr_t) { customerMgr().HandlePanelUnlatchAction(endpointId); }));
         break;
     case Action_t::PANEL_STEP_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) {
-            ClosureManager & instance = ClosureManager::GetInstance();
-            instance.HandlePanelStepAction(instance.mCurrentActionEndpointId);
-        }));
+        LogErrorOnFailure(
+            PlatformMgr().ScheduleWork([endpointId](intptr_t) { customerMgr().HandlePanelStepAction(endpointId); }));
         break;
     default:
         break;
@@ -494,7 +497,7 @@ chip::Protocols::InteractionModel::Status ClosureManager::OnStopCommand()
     mCurrentActionEndpointId = mClosureEndpoint1.GetEndpointId();
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    HandleClosureActionComplete(Action_t::STOP_ACTION);
+    customerMgr().HandleClosureActionComplete(Action_t::STOP_ACTION);
 
     return Status::Success;
 }
@@ -685,8 +688,8 @@ void ClosureManager::HandleClosureMotionAction()
     bool isEndPoint3ProgressPossible = false;
 
     // Get the Next Current State to be set for the endpoint 2, if target postion is not reached.
-    if (GetPanelNextPosition(mClosurePanelEndpoint2CurrentState.Value(), mClosurePanelEndpoint2TargetState.Value(),
-                             mClosurePanelEndpoint2NextPosition))
+    if (customerMgr().GetPanelNextPosition(mClosurePanelEndpoint2CurrentState.Value(), mClosurePanelEndpoint2TargetState.Value(),
+                                           mClosurePanelEndpoint2NextPosition))
     {
         VerifyOrReturn(!mClosurePanelEndpoint2NextPosition.IsNull(),
                        ChipLogError(AppServer, "Failed to get next position for Endpoint 2"));
@@ -701,8 +704,8 @@ void ClosureManager::HandleClosureMotionAction()
     }
 
     // Get the Next Current State to be set for the endpoint 3, if target postion is not reached.
-    if (GetPanelNextPosition(mClosurePanelEndpoint3CurrentState.Value(), mClosurePanelEndpoint3TargetState.Value(),
-                             mClosurePanelEndpoint3NextPosition))
+    if (customerMgr().GetPanelNextPosition(mClosurePanelEndpoint3CurrentState.Value(), mClosurePanelEndpoint3TargetState.Value(),
+                                           mClosurePanelEndpoint3NextPosition))
     {
         VerifyOrReturn(!mClosurePanelEndpoint3NextPosition.IsNull(),
                        ChipLogError(AppServer, "Failed to get next position for Endpoint 3"));
@@ -786,7 +789,7 @@ void ClosureManager::HandleClosureMotionAction()
     }
 
     // Target reached and no latch action needed, call HandleClosureAction
-    instance.HandleClosureActionComplete(ClosureManager::Action_t::MOVE_TO_ACTION);
+    customerMgr().HandleClosureActionComplete(ClosureManager::Action_t::MOVE_TO_ACTION);
 }
 
 chip::Protocols::InteractionModel::Status ClosureManager::OnSetTargetCommand(const Optional<Percent100ths> & position,
@@ -901,7 +904,7 @@ void ClosureManager::HandlePanelSetTargetAction(EndpointId endpointId)
     DataModel::Nullable<chip::Percent100ths> nextPosition = DataModel::NullNullable;
 
     // Get the Next Current State to be set for the endpoint 2, if target postion is not reached.
-    if (GetPanelNextPosition(panelCurrentState.Value(), panelTargetState.Value(), nextPosition))
+    if (customerMgr().GetPanelNextPosition(panelCurrentState.Value(), panelTargetState.Value(), nextPosition))
     {
         VerifyOrReturn(!nextPosition.IsNull(), ChipLogError(AppServer, "Next position is not set for Endpoint %d", endpointId));
 
@@ -951,7 +954,7 @@ void ClosureManager::HandlePanelSetTargetAction(EndpointId endpointId)
         }
     }
 
-    instance.HandleClosureActionComplete(Action_t::SET_TARGET_ACTION);
+    customerMgr().HandleClosureActionComplete(Action_t::SET_TARGET_ACTION);
 }
 
 void ClosureManager::HandleClosureUnlatchAction()
@@ -1016,7 +1019,7 @@ void ClosureManager::HandleClosureUnlatchAction()
     CancelTimer(); // Cancel any existing timer before proceeding with the motion action
 
     // After unlatching, we can proceed with the motion action
-    instance.HandleClosureMotionAction();
+    customerMgr().HandleClosureMotionAction();
 }
 
 void ClosureManager::HandlePanelUnlatchAction(EndpointId endpointId)
@@ -1066,7 +1069,7 @@ void ClosureManager::HandlePanelUnlatchAction(EndpointId endpointId)
     instance.CancelTimer(); // Cancel any existing timer before starting a Set Target action
 
     // Call HandlePanelSetTargetAction to continue with the SetTarget action
-    instance.HandlePanelSetTargetAction(endpointId);
+    customerMgr().HandlePanelSetTargetAction(endpointId);
 }
 
 chip::Protocols::InteractionModel::Status ClosureManager::OnStepCommand(const StepDirectionEnum & direction,
@@ -1196,7 +1199,7 @@ void ClosureManager::HandlePanelStepAction(EndpointId endpointId)
         return;
     }
 
-    instance.HandleClosureActionComplete(PANEL_STEP_ACTION);
+    customerMgr().HandleClosureActionComplete(PANEL_STEP_ACTION);
 }
 
 ClosureDimension::ClosureDimensionEndpoint * ClosureManager::GetPanelEndpointById(EndpointId endpointId)

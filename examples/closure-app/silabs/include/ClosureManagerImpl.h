@@ -24,7 +24,7 @@
 /**
  * @brief CRTP override layer for `ClosureManager`.
  *
- * Each public entry point dispatches to a corresponding `Derived::*Impl()` hook.
+ * Each overridable entry point dispatches to a corresponding `Derived::*Impl()` hook.
  * The default `*Impl()` (declared private below) forwards to `ClosureManager`,
  * so `Derived` only needs to override the hooks whose behavior it wants to
  * customize.
@@ -39,20 +39,19 @@ class ClosureManagerImpl : public ClosureManager
 public:
     void Init() { CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, InitImpl); }
 
-    chip::Protocols::InteractionModel::Status OnCalibrateCommand() override
+    chip::Protocols::InteractionModel::Status OnCalibrateCommand()
     {
         CRTP_OPTIONAL_DISPATCH(ClosureManagerImpl, Derived, OnCalibrateCommandImpl);
     }
 
     chip::Protocols::InteractionModel::Status
     OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
-                    const chip::Optional<bool> latch,
-                    const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed) override
+                    const chip::Optional<bool> latch, const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed)
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnMoveToCommandImpl, position, latch, speed);
     }
 
-    chip::Protocols::InteractionModel::Status OnStopCommand() override
+    chip::Protocols::InteractionModel::Status OnStopCommand()
     {
         CRTP_OPTIONAL_DISPATCH(ClosureManagerImpl, Derived, OnStopCommandImpl);
     }
@@ -60,7 +59,7 @@ public:
     chip::Protocols::InteractionModel::Status
     OnSetTargetCommand(const chip::Optional<chip::Percent100ths> & position, const chip::Optional<bool> & latch,
                        const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
-                       const chip::EndpointId endpointId) override
+                       const chip::EndpointId endpointId)
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnSetTargetCommandImpl, position, latch, speed, endpointId);
     }
@@ -68,9 +67,47 @@ public:
     chip::Protocols::InteractionModel::Status
     OnStepCommand(const chip::app::Clusters::ClosureDimension::StepDirectionEnum & direction, const uint16_t & numberOfSteps,
                   const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
-                  const chip::EndpointId & endpointId) override
+                  const chip::EndpointId & endpointId)
     {
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnStepCommandImpl, direction, numberOfSteps, speed, endpointId);
+    }
+
+    // Protected state-machine hooks — shadowed here so leaf-typed callers hit CRTP.
+    void HandleClosureActionComplete(Action_t action)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandleClosureActionCompleteImpl, action);
+    }
+
+    void HandleClosureMotionAction()
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandleClosureMotionActionImpl);
+    }
+
+    void HandleClosureUnlatchAction()
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandleClosureUnlatchActionImpl);
+    }
+
+    bool GetPanelNextPosition(const chip::app::Clusters::ClosureDimension::GenericDimensionStateStruct & currentState,
+                              const chip::app::Clusters::ClosureDimension::GenericDimensionStateStruct & targetState,
+                              chip::app::DataModel::Nullable<chip::Percent100ths> & nextPosition)
+    {
+        CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, GetPanelNextPositionImpl, currentState, targetState, nextPosition);
+    }
+
+    void HandlePanelSetTargetAction(chip::EndpointId endpointId)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandlePanelSetTargetActionImpl, endpointId);
+    }
+
+    void HandlePanelUnlatchAction(chip::EndpointId endpointId)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandlePanelUnlatchActionImpl, endpointId);
+    }
+
+    void HandlePanelStepAction(chip::EndpointId endpointId)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandlePanelStepActionImpl, endpointId);
     }
 
 private:
@@ -105,4 +142,23 @@ private:
     {
         return ClosureManager::OnStepCommand(direction, numberOfSteps, speed, endpointId);
     }
+
+    void HandleClosureActionCompleteImpl(Action_t action) { ClosureManager::HandleClosureActionComplete(action); }
+
+    void HandleClosureMotionActionImpl() { ClosureManager::HandleClosureMotionAction(); }
+
+    void HandleClosureUnlatchActionImpl() { ClosureManager::HandleClosureUnlatchAction(); }
+
+    bool GetPanelNextPositionImpl(const chip::app::Clusters::ClosureDimension::GenericDimensionStateStruct & currentState,
+                                  const chip::app::Clusters::ClosureDimension::GenericDimensionStateStruct & targetState,
+                                  chip::app::DataModel::Nullable<chip::Percent100ths> & nextPosition)
+    {
+        return ClosureManager::GetPanelNextPosition(currentState, targetState, nextPosition);
+    }
+
+    void HandlePanelSetTargetActionImpl(chip::EndpointId endpointId) { ClosureManager::HandlePanelSetTargetAction(endpointId); }
+
+    void HandlePanelUnlatchActionImpl(chip::EndpointId endpointId) { ClosureManager::HandlePanelUnlatchAction(endpointId); }
+
+    void HandlePanelStepActionImpl(chip::EndpointId endpointId) { ClosureManager::HandlePanelStepAction(endpointId); }
 };

@@ -31,6 +31,13 @@
  *   - OnStopCommandImpl()
  *   - OnSetTargetCommandImpl(position, latch, speed, endpointId)
  *   - OnStepCommandImpl(direction, numberOfSteps, speed, endpointId)
+ *   - HandleClosureActionCompleteImpl(action)
+ *   - HandleClosureMotionActionImpl()
+ *   - HandleClosureUnlatchActionImpl()
+ *   - HandlePanelSetTargetActionImpl(endpointId)
+ *   - HandlePanelUnlatchActionImpl(endpointId)
+ *   - HandlePanelStepActionImpl(endpointId)
+ *   - GetPanelNextPositionImpl(currentState, targetState, nextPosition)
  *
  * Out-of-line override bodies belong here.
  */
