@@ -359,6 +359,18 @@ private:
     static void HandleClosureActionCompleteEvent(AppEvent * event);
 
     /**
+     * @brief ScheduleWork handlers. `arg` is the expected Action_t at schedule time; work is
+     * skipped if the current action no longer matches (e.g. after Stop). Panel handlers read
+     * `mCurrentActionEndpointId` when the work runs, not a snapshotted endpoint.
+     */
+    static void HandleScheduledCalibrateComplete(intptr_t expectedAction);
+    static void HandleScheduledClosureMotion(intptr_t expectedAction);
+    static void HandleScheduledClosureUnlatch(intptr_t expectedAction);
+    static void HandleScheduledPanelSetTarget(intptr_t expectedAction);
+    static void HandleScheduledPanelUnlatch(intptr_t expectedAction);
+    static void HandleScheduledPanelStep(intptr_t expectedAction);
+
+    /**
      * @brief Timer event handler for the ClosureManager.
      *
      * This static function is called when the closure timer expires. The handler creates an AppEvent and

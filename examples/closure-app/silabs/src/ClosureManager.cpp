@@ -326,40 +326,71 @@ void ClosureManager::HandleClosureActionCompleteEvent(AppEvent * event)
                    ChipLogError(AppServer, "Got Event for %d in InitiateAction while current ongoing action is %d",
                                 to_underlying(currentAction), to_underlying(instance.GetCurrentAction())));
 
-    EndpointId endpointId = event->ClosureEvent.EndpointId;
+    const intptr_t expectedAction = static_cast<intptr_t>(currentAction);
 
     switch (currentAction)
     {
     case Action_t::CALIBRATE_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) {
-            CustomerAppManager & mgr = customerMgr();
-            mgr.HandleClosureActionComplete(mgr.GetCurrentAction());
-        }));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(HandleScheduledCalibrateComplete, expectedAction));
         break;
     case Action_t::MOVE_TO_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) { customerMgr().HandleClosureMotionAction(); }));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(HandleScheduledClosureMotion, expectedAction));
         break;
     case Action_t::UNLATCH_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork([](intptr_t) { customerMgr().HandleClosureUnlatchAction(); }));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(HandleScheduledClosureUnlatch, expectedAction));
         break;
     case Action_t::SET_TARGET_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork(
-            [](intptr_t arg) { customerMgr().HandlePanelSetTargetAction(static_cast<EndpointId>(arg)); },
-            static_cast<intptr_t>(endpointId)));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(HandleScheduledPanelSetTarget, expectedAction));
         break;
     case Action_t::PANEL_UNLATCH_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork(
-            [](intptr_t arg) { customerMgr().HandlePanelUnlatchAction(static_cast<EndpointId>(arg)); },
-            static_cast<intptr_t>(endpointId)));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(HandleScheduledPanelUnlatch, expectedAction));
         break;
     case Action_t::PANEL_STEP_ACTION:
-        LogErrorOnFailure(PlatformMgr().ScheduleWork(
-            [](intptr_t arg) { customerMgr().HandlePanelStepAction(static_cast<EndpointId>(arg)); },
-            static_cast<intptr_t>(endpointId)));
+        LogErrorOnFailure(PlatformMgr().ScheduleWork(HandleScheduledPanelStep, expectedAction));
         break;
     default:
         break;
     }
+}
+
+void ClosureManager::HandleScheduledCalibrateComplete(intptr_t expectedAction)
+{
+    ClosureManager & instance = GetInstance();
+    VerifyOrReturn(instance.GetCurrentAction() == static_cast<Action_t>(expectedAction));
+    customerMgr().HandleClosureActionComplete(instance.GetCurrentAction());
+}
+
+void ClosureManager::HandleScheduledClosureMotion(intptr_t expectedAction)
+{
+    VerifyOrReturn(GetInstance().GetCurrentAction() == static_cast<Action_t>(expectedAction));
+    customerMgr().HandleClosureMotionAction();
+}
+
+void ClosureManager::HandleScheduledClosureUnlatch(intptr_t expectedAction)
+{
+    VerifyOrReturn(GetInstance().GetCurrentAction() == static_cast<Action_t>(expectedAction));
+    customerMgr().HandleClosureUnlatchAction();
+}
+
+void ClosureManager::HandleScheduledPanelSetTarget(intptr_t expectedAction)
+{
+    ClosureManager & instance = GetInstance();
+    VerifyOrReturn(instance.GetCurrentAction() == static_cast<Action_t>(expectedAction));
+    customerMgr().HandlePanelSetTargetAction(instance.mCurrentActionEndpointId);
+}
+
+void ClosureManager::HandleScheduledPanelUnlatch(intptr_t expectedAction)
+{
+    ClosureManager & instance = GetInstance();
+    VerifyOrReturn(instance.GetCurrentAction() == static_cast<Action_t>(expectedAction));
+    customerMgr().HandlePanelUnlatchAction(instance.mCurrentActionEndpointId);
+}
+
+void ClosureManager::HandleScheduledPanelStep(intptr_t expectedAction)
+{
+    ClosureManager & instance = GetInstance();
+    VerifyOrReturn(instance.GetCurrentAction() == static_cast<Action_t>(expectedAction));
+    customerMgr().HandlePanelStepAction(instance.mCurrentActionEndpointId);
 }
 
 void ClosureManager::HandleClosureActionComplete(Action_t action)
