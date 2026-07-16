@@ -21,7 +21,7 @@
 #include "ClosureControlEndpoint.h"
 #include "ClosureDimensionEndpoint.h"
 #include "ClosureManager.h"
-#include "CustomerAppManager.h"
+#include <CustomerAppManager.h>
 
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/server/Server.h>

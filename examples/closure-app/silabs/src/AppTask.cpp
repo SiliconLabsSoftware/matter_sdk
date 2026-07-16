@@ -21,7 +21,7 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "CustomerAppTask.h"
-#include "CustomerAppManager.h"
+#include <CustomerAppManager.h>
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
