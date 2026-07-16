@@ -39,41 +39,43 @@ template <typename Derived>
 class AppTaskImpl : public AppTask
 {
 public:
-    // Initialization hooks.
+    // Common AppTask bring up
     CHIP_ERROR AppInit() override { CRTP_OPTIONAL_DISPATCH(AppTaskImpl, Derived, AppInitImpl); }
 
-    // External callbacks invoked outside the AppTask thread (e.g. button ISR).
-    // Implementations typically post an event to the AppTask queue.
+    // Handle button press
     static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ButtonEventHandlerImpl, button, btnAction);
     }
 
-    // Handlers invoked from AppTask context — see each method for the exact context.
+    // AppTask thread handler for the closure button action event
     static void ClosureButtonActionEventHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ClosureButtonActionEventHandlerImpl, aEvent);
     }
 
 #ifdef DISPLAY_ENABLED
+    // AppTask thread handler to refresh the closure UI
     static void UpdateClosureUIHandler(AppEvent * aEvent)
     {
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, UpdateClosureUIHandlerImpl, aEvent);
     }
 #endif // DISPLAY_ENABLED
 
-    // Data-model attribute-change hooks.
+    // Data model hook invoked when a cluster attribute changes
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMPostAttributeChangeCallbackImpl, attributePath, type, size, value);
     }
 
+    // Data model hook for ClosureControl cluster attribute changes
     void DMClosureControlClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMClosureControlClusterAttributeChangedCallbackImpl, attributePath);
     }
 
+    // Data model hook for ClosureDimension cluster attribute changes
     void DMClosureDimensionClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMClosureDimensionClusterAttributeChangedCallbackImpl, attributePath);
@@ -82,22 +84,19 @@ public:
 private:
     friend Derived;
 
-    /** Default implementations — override in Derived to customize. */
+    // Default *Impl() hooks, each forwards to the matching AppTask method
+    // Override the corresponding hook in CustomerAppTask to customize behavior
 
-    // Initialization hooks (*Impl)
     CHIP_ERROR AppInitImpl() { return AppTask::AppInit(); }
 
-    // External callbacks (*Impl)
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 
-    // Event handlers (*Impl)
     void ClosureButtonActionEventHandlerImpl(AppEvent * aEvent) { AppTask::ClosureButtonActionEventHandler(aEvent); }
 
 #ifdef DISPLAY_ENABLED
     void UpdateClosureUIHandlerImpl(AppEvent * aEvent) { AppTask::UpdateClosureUIHandler(aEvent); }
 #endif // DISPLAY_ENABLED
 
-    // Data-model attribute-change hooks (*Impl)
     void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                            uint8_t * value)
     {

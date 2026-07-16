@@ -59,8 +59,6 @@ public:
      * - Initializes closure endpoints (ep1, ep2, ep3).
      * - Sets the semantic tag lists for each closure endpoint.
      *
-     * Virtual so callers through `ClosureManager &` (and CRTP `*Impl` overrides) resolve
-     * to the customer leaf.
      */
     virtual void Init();
 

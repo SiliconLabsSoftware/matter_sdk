@@ -132,15 +132,11 @@ overridable API. Steps:
 4. Build. The CRTP layer automatically routes each call to your `*Impl()` if
    present, otherwise to the Silicon Labs default.
 
-`ClosureManager` differs from `AppTask` in one important way: `Init` and the
-cluster command handlers (`OnCalibrateCommand`, `OnMoveToCommand`,
-`OnStopCommand`, `OnSetTargetCommand`, `OnStepCommand`) are **virtual** on
-`ClosureManager`. `ClosureManagerImpl` overrides those virtuals and then
-dispatches to `*Impl()`. That is why shared `closure-common/` callers that use
-`ClosureManager::GetInstance().OnMoveToCommand(...)` still reach a
-`CustomerAppManager` `*Impl()` override. Protected state-machine hooks
-(`HandleClosureMotionAction`, `HandlePanelSetTargetAction`, etc.) remain
-non-virtual and rely on leaf-typed call sites inside `ClosureManager.cpp`.
+Some `ClosureManager` APIs (`Init`, cluster `On*Command` handlers) are virtual
+internally so shared `closure-common/` code can reach your leaf. You still only
+override the matching `*Impl()` on `CustomerAppManager` — do not override the
+virtuals directly. Copy signatures from
+[`ClosureManagerImpl.h`](include/ClosureManagerImpl.h).
 
 ### DataModelCallbacks and CustomerAppTask
 
@@ -303,7 +299,8 @@ the reference for overridable methods and app configuration.
 
 The base API and default ClosureManager behavior are maintained under
 [`include/ClosureManagerImpl.h`](include/ClosureManagerImpl.h) and
-[`src/ClosureManager.cpp`](src/ClosureManager.cpp).
+[`src/ClosureManager.cpp`](src/ClosureManager.cpp). Use them as the reference
+for overridable methods.
 
 | File                                                             | Purpose                                                                                                                                                          |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |

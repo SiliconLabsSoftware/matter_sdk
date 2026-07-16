@@ -24,10 +24,13 @@
 /**
  * @brief CRTP override layer for `ClosureManager`.
  *
- * `Init` and `On*Command` are virtual on `ClosureManager` so Matter cluster
- * delegates that call through `ClosureManager &` still reach these wrappers
- * (and thus optional `Derived::*Impl()` overrides). Protected state-machine
- * hooks remain non-virtual and rely on leaf-typed call sites.
+ * Each public entry point dispatches to a corresponding `Derived::*Impl()` hook.
+ * The default `*Impl()` (declared private below) forwards to `ClosureManager`, so
+ * `Derived` only needs to override the hooks whose behavior it wants to
+ * customize.
+ *
+ * Customer code overrides these hooks in `CustomerAppManager`; see the app README
+ * ("How to Override APIs").
  *
  * @tparam Derived The CRTP derived class (`CustomerAppManager`).
  */
@@ -35,13 +38,16 @@ template <typename Derived>
 class ClosureManagerImpl : public ClosureManager
 {
 public:
+    // ClosureManager bring up
     void Init() override { CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, InitImpl); }
 
+    // Cluster calibrate command handler
     chip::Protocols::InteractionModel::Status OnCalibrateCommand() override
     {
         CRTP_OPTIONAL_DISPATCH(ClosureManagerImpl, Derived, OnCalibrateCommandImpl);
     }
 
+    // Cluster MoveTo command handler
     chip::Protocols::InteractionModel::Status
     OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
                     const chip::Optional<bool> latch,
@@ -50,11 +56,13 @@ public:
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnMoveToCommandImpl, position, latch, speed);
     }
 
+    // Cluster Stop command handler
     chip::Protocols::InteractionModel::Status OnStopCommand() override
     {
         CRTP_OPTIONAL_DISPATCH(ClosureManagerImpl, Derived, OnStopCommandImpl);
     }
 
+    // Panel SetTarget command handler
     chip::Protocols::InteractionModel::Status
     OnSetTargetCommand(const chip::Optional<chip::Percent100ths> & position, const chip::Optional<bool> & latch,
                        const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
@@ -63,6 +71,7 @@ public:
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnSetTargetCommandImpl, position, latch, speed, endpointId);
     }
 
+    // Panel Step command handler
     chip::Protocols::InteractionModel::Status
     OnStepCommand(const chip::app::Clusters::ClosureDimension::StepDirectionEnum & direction, const uint16_t & numberOfSteps,
                   const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> & speed,
@@ -71,22 +80,25 @@ public:
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, OnStepCommandImpl, direction, numberOfSteps, speed, endpointId);
     }
 
-    // Protected state-machine hooks — shadowed here so leaf-typed callers hit CRTP.
+    // Notify endpoints when a closure action completes
     void HandleClosureActionComplete(Action_t action)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandleClosureActionCompleteImpl, action);
     }
 
+    // Advance closure endpoints toward their MoveTo target
     void HandleClosureMotionAction()
     {
         CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandleClosureMotionActionImpl);
     }
 
+    // Unlatch the closure endpoint before continuing motion
     void HandleClosureUnlatchAction()
     {
         CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandleClosureUnlatchActionImpl);
     }
 
+    // Compute the next panel position step toward the target
     bool GetPanelNextPosition(const chip::app::Clusters::ClosureDimension::GenericDimensionStateStruct & currentState,
                               const chip::app::Clusters::ClosureDimension::GenericDimensionStateStruct & targetState,
                               chip::app::DataModel::Nullable<chip::Percent100ths> & nextPosition)
@@ -94,16 +106,19 @@ public:
         CRTP_OPTIONAL_DISPATCH_ARGS(ClosureManagerImpl, Derived, GetPanelNextPositionImpl, currentState, targetState, nextPosition);
     }
 
+    // Advance a panel endpoint toward its SetTarget position
     void HandlePanelSetTargetAction(chip::EndpointId endpointId)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandlePanelSetTargetActionImpl, endpointId);
     }
 
+    // Unlatch a panel endpoint before SetTarget motion
     void HandlePanelUnlatchAction(chip::EndpointId endpointId)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandlePanelUnlatchActionImpl, endpointId);
     }
 
+    // Advance a panel endpoint by one Step action
     void HandlePanelStepAction(chip::EndpointId endpointId)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(ClosureManagerImpl, Derived, HandlePanelStepActionImpl, endpointId);
@@ -111,6 +126,9 @@ public:
 
 private:
     friend Derived;
+
+    // Default *Impl() hooks, each forwards to the matching ClosureManager method
+    // Override the corresponding hook in CustomerAppManager to customize behavior
 
     void InitImpl() { ClosureManager::Init(); }
 
