@@ -471,6 +471,9 @@ template("efr32_sdk") {
     # the content of these, only when changing the filename itself.
     # To fix this, these files are also manually depended upon in the source set
     # declared in efr32_mbedtls_config further down this file.
+    # Include path required so bare MBEDTLS_*_CONFIG_FILE filenames resolve after
+    # the headers were moved under src/platform/silabs/efr32/config/.
+    _include_dirs += [ "${chip_root}/src/platform/silabs/efr32/config" ]
     defines += [
       "MBEDTLS_CONFIG_FILE=\"efr32-chip-mbedtls-config.h\"",
       "MBEDTLS_PSA_CRYPTO_CONFIG_FILE=\"efr32-psa-crypto-config.h\"",
