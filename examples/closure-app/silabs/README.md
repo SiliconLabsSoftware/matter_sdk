@@ -72,7 +72,7 @@ This example uses two parallel CRTP chains:
 | Concern | Base | CRTP hook layer | Customer leaf |
 | ------- | ---- | --------------- | ------------- |
 | Lifecycle / UI / buttons / DM callbacks | `AppTask` | [`AppTaskImpl`](include/AppTaskImpl.h) | [`CustomerAppTask`](../../platform/silabs/customer/CustomerAppTask.h) |
-| Closure domain logic (motion, latch, panels) | `ClosureManager` | [`ClosureManagerImpl`](include/ClosureManagerImpl.h) | [`CustomerAppManager`](include/CustomerAppManager.h) |
+| Closure domain logic (motion, latch, panels) | `ClosureManager` | [`ClosureManagerImpl`](include/ClosureManagerImpl.h) | [`CustomerAppManager`](include/customer/CustomerAppManager.h) |
 
 Override only the `*Impl()` hooks you need on either leaf. Any hook you do not
 override keeps the Silicon Labs default behavior.
@@ -99,8 +99,8 @@ Closure domain logic (cluster command handlers and the motion/latch state
 machine) lives on `ClosureManager`, not on `AppTask`. The customer leaf for that
 chain is already in this app:
 
--   [`include/CustomerAppManager.h`](include/CustomerAppManager.h)
--   [`src/CustomerAppManager.cpp`](src/CustomerAppManager.cpp)
+-   [`include/customer/CustomerAppManager.h`](include/customer/CustomerAppManager.h)
+-   [`src/customer/CustomerAppManager.cpp`](src/customer/CustomerAppManager.cpp)
 
 The base implementation and the full set of overridable `*Impl()` APIs live
 under [`include/ClosureManagerImpl.h`](include/ClosureManagerImpl.h) and
@@ -256,7 +256,7 @@ void CustomerAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
 **CustomerAppManager.h** (add only the `*Impl()` you need to the existing leaf)
 
 ```cpp
-// In include/CustomerAppManager.h, declare under private: (keep GetInstance / sInstance)
+// In include/customer/CustomerAppManager.h, declare under private: (keep GetInstance / sInstance)
 chip::Protocols::InteractionModel::Status OnMoveToCommandImpl(
     const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
     const chip::Optional<bool> latch,
@@ -306,8 +306,8 @@ for overridable methods.
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`include/ClosureManagerImpl.h`](include/ClosureManagerImpl.h)   | Declarations of every overridable `ClosureManager` `*Impl()` method. Copy the signatures you need from here into `CustomerAppManager.h`.                         |
 | [`src/ClosureManager.cpp`](src/ClosureManager.cpp)               | Silicon Labs default implementation of ClosureManager. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior.      |
-| [`include/CustomerAppManager.h`](include/CustomerAppManager.h)   | Per-app customer leaf for the ClosureManager CRTP chain. Override `*Impl()` hooks here.                                                                          |
-| [`src/CustomerAppManager.cpp`](src/CustomerAppManager.cpp)       | Owns `CustomerAppManager::sInstance` and `ClosureManager::GetInstance()`. Place out-of-line `*Impl()` bodies here.                                               |
+| [`include/customer/CustomerAppManager.h`](include/customer/CustomerAppManager.h) | Per-app customer leaf for the ClosureManager CRTP chain. Override `*Impl()` hooks here.                                                                          |
+| [`src/customer/CustomerAppManager.cpp`](src/customer/CustomerAppManager.cpp)     | Owns `CustomerAppManager::sInstance` and `ClosureManager::GetInstance()`. Place out-of-line `*Impl()` bodies here.                                               |
 
 ## Building
 
