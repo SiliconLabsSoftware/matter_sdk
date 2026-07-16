@@ -738,8 +738,8 @@ template("efr32_sdk") {
     # system to recompile mbedTLS (= the SDK) when the mbedTLS config gets
     # edited.
     sources = [
-      "${chip_root}/src/platform/silabs/efr32/efr32-chip-mbedtls-config.h",
-      "${chip_root}/src/platform/silabs/efr32/efr32-psa-crypto-config.h",
+      "${chip_root}/src/platform/silabs/efr32/config/efr32-chip-mbedtls-config.h",
+      "${chip_root}/src/platform/silabs/efr32/config/efr32-psa-crypto-config.h",
     ]
 
     public_configs = [ "${chip_root}/src:includes" ]
