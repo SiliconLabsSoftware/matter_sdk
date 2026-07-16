@@ -39,7 +39,9 @@
 #include <app/CASESessionManager.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/ConcreteCommandPath.h>
+#include <app/InteractionModelEngine.h>
 #include <app/clusters/bindings/BindingManager.h>
+#include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <app/clusters/network-commissioning/network-commissioning.h>
 #include <app/clusters/on-off-server/on-off-server.h>
@@ -48,6 +50,7 @@
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
 #include <app/util/endpoint-config-api.h>
+#include <app/util/generic-callbacks.h>
 #include <assert.h>
 #include <controller/InvokeInteraction.h>
 #include <controller/WriteInteraction.h>
@@ -151,6 +154,15 @@ CHIP_ERROR AppTask::AppInit()
 
 CHIP_ERROR AppTask::InitOven()
 {
+    DataModel::Provider * provider = InteractionModelEngine::GetInstance()->GetDataModelProvider();
+    VerifyOrReturnError(provider != nullptr, CHIP_ERROR_INTERNAL,
+                        ChipLogError(AppServer, "DataModel provider not available"));
+    if (!mAttributeListenerRegistered)
+    {
+        provider->RegisterAttributeChangeListener(*this);
+        mAttributeListenerRegistered = true;
+    }
+
     ReturnErrorOnFailure(mTemperatureControlledCabinetEndpoint.Init());
 
     // AppTask is the shared TemperatureLevelsDelegate for all the cooksurface endpoints
@@ -179,9 +191,7 @@ CHIP_ERROR AppTask::InitOven()
     VerifyOrReturnError(OnOffServer::Instance().getOnOffValue(kCookSurfaceEndpoint2, &mIsCookSurface2On) == Status::Success,
                         CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Getting CookSurfaceEndpoint2 OnOff state failed"));
 
-    VerifyOrReturnError(OvenMode::Attributes::CurrentMode::Get(kTemperatureControlledCabinetEndpoint, &mCurrentOvenMode) ==
-                            Status::Success,
-                        CHIP_ERROR_INTERNAL, ChipLogError(AppServer, "Getting CurrentOvenMode failed"));
+    mCurrentOvenMode = mTemperatureControlledCabinetEndpoint.GetOvenModeInstance().GetCurrentMode();
 
     return CHIP_NO_ERROR;
 }
@@ -276,17 +286,32 @@ void AppTask::OnOffAttributeChangeHandler(EndpointId endpointId, AttributeId att
     }
 }
 
-void AppTask::OvenModeAttributeChangeHandler(EndpointId endpointId, AttributeId attributeId, uint8_t * value, uint16_t size)
+void AppTask::OnAttributeChanged(const ConcreteAttributePath & path, DataModel::AttributeChangeType)
 {
-    VerifyOrReturn(value != nullptr, ChipLogError(AppServer, "OvenModeAttributeChangeHandler: value pointer is null"));
+    VerifyOrReturn(path.mEndpointId == kTemperatureControlledCabinetEndpoint,
+                   ChipLogError(AppServer, "OnAttributeChanged: path.mEndpointId is invalid"));
+    VerifyOrReturn(path.mClusterId == OvenMode::Id, ChipLogError(AppServer, "OnAttributeChanged: path.mClusterId is invalid"));
+    VerifyOrReturn(path.mAttributeId == OvenMode::Attributes::CurrentMode::Id,
+                   ChipLogError(AppServer, "OnAttributeChanged: path.mAttributeId is invalid"));
 
-    mCurrentOvenMode       = *value;
+    HandleOvenModeChanged(mTemperatureControlledCabinetEndpoint.GetOvenModeInstance().GetCurrentMode());
+}
+
+void AppTask::HandleOvenModeChanged(uint8_t newMode)
+{
+    VerifyOrReturn(mCurrentOvenMode != newMode, ChipLogProgress(AppServer, "AppTask: newMode is the same as current mode"));
+
+    mCurrentOvenMode       = newMode;
     AppEvent event         = {};
     event.Type             = AppEvent::kEventType_Oven;
     event.OvenEvent.Action = OVEN_MODE_UPDATE_ACTION;
     event.Handler          = &CustomerAppTask::OvenActionHandler;
     AppTask::GetAppTask().PostEvent(&event);
 }
+
+void AppTask::DMOvenModeClusterInitCallback(EndpointId) {}
+
+void AppTask::DMOvenModeClusterShutdownCallback(EndpointId, MatterClusterShutdownType) {}
 
 bool AppTask::IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)
 {
@@ -608,12 +633,17 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
         ChipLogDetail(Zcl, "TemperatureControl cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                       ChipLogValueMEI(attributeId), type, *value, size);
         break;
-    case Clusters::OvenMode::Id:
-        ChipLogDetail(Zcl, "OvenMode cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
-                      type, *value, size);
-        CustomerAppTask::GetAppTask().OvenModeAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
-        break;
     default:
         break;
     }
+}
+
+void MatterOvenModeClusterInitCallback(EndpointId endpointId)
+{
+    CustomerAppTask::GetAppTask().DMOvenModeClusterInitCallback(endpointId);
+}
+
+void MatterOvenModeClusterShutdownCallback(EndpointId endpointId, MatterClusterShutdownType shutdownType)
+{
+    CustomerAppTask::GetAppTask().DMOvenModeClusterShutdownCallback(endpointId, shutdownType);
 }

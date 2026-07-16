@@ -79,11 +79,29 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, BoundDeviceChangedHandlerImpl, binding, peerDevice, context);
     }
 
-    // Matter stack callback after a server attribute write, routes OnOff and OvenMode updates.
+    // Matter stack callback after a server attribute write, routes OnOff updates.
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMPostAttributeChangeCallbackImpl, attributePath, type, size, value);
+    }
+
+    // AttributeChangeListener hook, filters OvenMode::CurrentMode changes.
+    void OnAttributeChanged(const chip::app::ConcreteAttributePath & path, chip::app::DataModel::AttributeChangeType type) override
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnAttributeChangedImpl, path, type);
+    }
+
+    // Data model hook invoked when the OvenMode cluster server is initialized.
+    void DMOvenModeClusterInitCallback(chip::EndpointId endpointId)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMOvenModeClusterInitCallbackImpl, endpointId);
+    }
+
+    // Data model hook invoked when the OvenMode cluster server is shut down.
+    void DMOvenModeClusterShutdownCallback(chip::EndpointId endpointId, MatterClusterShutdownType shutdownType)
+    {
+        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, DMOvenModeClusterShutdownCallbackImpl, endpointId, shutdownType);
     }
 
     // Initializes oven endpoints, temperature levels, and binding.
@@ -94,14 +112,6 @@ public:
                                      uint16_t size)
     {
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnOffAttributeChangeHandlerImpl, endpointId, attributeId, value, size);
-    }
-
-    // Updates oven mode state and queues LED/LCD updates on OvenMode changes.
-    void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
-                                        uint16_t size)
-    {
-        CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OvenModeAttributeChangeHandlerImpl, endpointId, attributeId, value,
-                                    size);
     }
 
     // Checks whether a transition between two oven modes is blocked.
@@ -156,10 +166,19 @@ private:
         AppTask::OnOffAttributeChangeHandler(endpointId, attributeId, value, size);
     }
 
-    void OvenModeAttributeChangeHandlerImpl(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
-                                            uint16_t size)
+    void OnAttributeChangedImpl(const chip::app::ConcreteAttributePath & path, chip::app::DataModel::AttributeChangeType type)
     {
-        AppTask::OvenModeAttributeChangeHandler(endpointId, attributeId, value, size);
+        AppTask::OnAttributeChanged(path, type);
+    }
+
+    void DMOvenModeClusterInitCallbackImpl(chip::EndpointId endpointId)
+    {
+        AppTask::DMOvenModeClusterInitCallback(endpointId);
+    }
+
+    void DMOvenModeClusterShutdownCallbackImpl(chip::EndpointId endpointId, MatterClusterShutdownType shutdownType)
+    {
+        AppTask::DMOvenModeClusterShutdownCallback(endpointId, shutdownType);
     }
 
     bool IsTransitionBlockedImpl(uint8_t fromMode, uint8_t toMode) { return AppTask::IsTransitionBlocked(fromMode, toMode); }

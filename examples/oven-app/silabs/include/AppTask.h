@@ -37,6 +37,8 @@
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/clusters/bindings/BindingManager.h>
+#include <app/data-model-provider/AttributeChangeListener.h>
+#include <app/util/af-types.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
 #include <app/clusters/on-off-server/on-off-server.h>
 #include <app/clusters/temperature-control-server/supported-temperature-levels-manager.h>
@@ -86,6 +88,7 @@ struct CookTopBindingContext
  * delegate for cook surface endpoints.
  */
 class AppTask : public BaseApplication,
+                public chip::app::DataModel::AttributeChangeListener,
                 public chip::app::Clusters::TemperatureControl::SupportedTemperatureLevelsIteratorDelegate
 {
 
@@ -146,11 +149,35 @@ public:
     static void ConnectivityEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
 
     /**
-     * @brief Data model hook invoked after a cluster attribute changes; routes OnOff/OvenMode
-     *        changes and logs Identify/TemperatureControl changes.
+     * @brief Data model hook invoked after a cluster attribute changes; routes OnOff changes
+     *        and logs Identify/TemperatureControl changes.
      */
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value);
+
+    /**
+     * @brief AttributeChangeListener hook invoked after a cluster attribute changes.
+     *        Filters OvenMode::CurrentMode on the temperature-controlled cabinet endpoint.
+     */
+    void OnAttributeChanged(const chip::app::ConcreteAttributePath & path,
+                            chip::app::DataModel::AttributeChangeType type) override;
+
+    /**
+     * @brief Updates cached oven mode and posts OVEN_MODE_UPDATE_ACTION to OvenActionHandler.
+     *
+     * @param newMode The new oven mode value.
+     */
+    void HandleOvenModeChanged(uint8_t newMode);
+
+    /**
+     * @brief Data model hook invoked when the OvenMode cluster server is initialized.
+     */
+    void DMOvenModeClusterInitCallback(chip::EndpointId endpointId);
+
+    /**
+     * @brief Data model hook invoked when the OvenMode cluster server is shut down.
+     */
+    void DMOvenModeClusterShutdownCallback(chip::EndpointId endpointId, MatterClusterShutdownType shutdownType);
 
     /**
      * @brief Schedules initialization of the binding manager on the Matter thread.
@@ -200,17 +227,6 @@ public:
      */
     void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
                                      uint16_t size);
-
-    /**
-     * @brief Handles OvenMode cluster attribute changes.
-     *
-     * @param endpointId The ID of the endpoint.
-     * @param attributeId The ID of the attribute.
-     * @param value Pointer to the new value.
-     * @param size Size of the new value.
-     */
-    void OvenModeAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t * value,
-                                        uint16_t size);
 
     /**
      * @brief Checks if a transition between two oven modes is blocked.
@@ -307,9 +323,10 @@ private:
     EndpointPair supportedOptionsByEndpoints[kNumCookSurfaceEndpoints];
     size_t mRegisteredEndpointCount = 0;
 
-    bool mIsCookTopOn      = false;
-    bool mIsCookSurface1On = false;
-    bool mIsCookSurface2On = false;
+    bool mAttributeListenerRegistered = false;
+    bool mIsCookTopOn                 = false;
+    bool mIsCookSurface1On            = false;
+    bool mIsCookSurface2On            = false;
     uint8_t mCurrentOvenMode =
         chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
 
