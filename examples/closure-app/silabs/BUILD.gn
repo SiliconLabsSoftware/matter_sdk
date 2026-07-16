@@ -76,6 +76,7 @@ if (wifi_soc) {
     include_dirs = [
       "${chip_root}/src/platform/silabs/SiWx",
       "${silabs_project_dir}/include",
+      "${silabs_project_dir}/include/customer",
       "${examples_plat_dir}",
       "${examples_common_plat_dir}/customer",
       "${chip_root}/src/lib",
@@ -135,7 +136,7 @@ silabs_executable("closure_app") {
     "${examples_common_plat_dir}/customer/CustomerAppTask.cpp",
     "src/AppTask.cpp",
     "src/ClosureManager.cpp",
-    "src/CustomerAppManager.cpp",
+    "src/customer/CustomerAppManager.cpp",
   ]
 
   if (!disable_lcd) {
