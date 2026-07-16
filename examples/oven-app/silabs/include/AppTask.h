@@ -85,7 +85,8 @@ struct CookTopBindingContext
  *
  * Owns initialization and operations for the oven, temperature-controlled cabinet,
  * cook top, and cook surface endpoints. Serves as the shared temperature-levels
- * delegate for cook surface endpoints.
+ * delegate for cook surface endpoints and listens for OvenMode attribute changes
+ * via DataModel::AttributeChangeListener.
  */
 class AppTask : public BaseApplication,
                 public chip::app::DataModel::AttributeChangeListener,
@@ -210,8 +211,20 @@ public:
     /** @brief Oven-specific initialization (endpoints, temperature levels, binding). */
     CHIP_ERROR InitOven();
 
+    /**
+     * @brief Sets the initial temperature-measurement value and range for a CookSurface endpoint
+     *        from the TemperatureControlledCabinet min/max temperature.
+     *
+     * @param cookSurfaceEndpoint Endpoint to initialize.
+     */
     CHIP_ERROR SetCookSurfaceInitialState(chip::EndpointId cookSurfaceEndpoint);
 
+    /**
+     * @brief Sets the initial temperature setpoint for the TemperatureControlledCabinet endpoint
+     *        to its minimum supported temperature.
+     *
+     * @param temperatureControlledCabinetEndpoint Endpoint to initialize.
+     */
     CHIP_ERROR SetTemperatureControlledCabinetInitialState(chip::EndpointId temperatureControlledCabinetEndpoint);
 
     /** @brief Force CookTop and CookSurface OnOff attributes to Off at startup. */
@@ -328,7 +341,7 @@ private:
     bool mIsCookSurface1On            = false;
     bool mIsCookSurface2On            = false;
     uint8_t mCurrentOvenMode =
-        chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
+    chip::to_underlying(chip::app::Clusters::TemperatureControlledCabinet::OvenModeDelegate::OvenModes::kModeBake);
 
     static constexpr chip::EndpointId kOvenEndpoint                         = 1;
     static constexpr chip::EndpointId kTemperatureControlledCabinetEndpoint = 2;
