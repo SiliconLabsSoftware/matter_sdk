@@ -65,9 +65,6 @@ public:
     /**
      * @brief Returns the singleton instance of the ClosureManager.
      *
-     * This static method provides access to the single, global instance of the ClosureManager,
-     * ensuring that only one instance exists throughout the application's lifetime.
-     *
      * @return Reference to the singleton ClosureManager instance.
      */
     static ClosureManager & GetInstance();

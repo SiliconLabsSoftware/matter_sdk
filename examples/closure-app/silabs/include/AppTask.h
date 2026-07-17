@@ -28,6 +28,7 @@
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
+#include <CustomerAppManager.h>
 
 #include "FreeRTOS.h"
 #include "timers.h" // provides FreeRTOS timer support
@@ -119,3 +120,9 @@ protected:
      */
     CHIP_ERROR AppInit() override;
 };
+
+/** Leaf-typed ClosureManager accessor so CRTP *Impl() overrides apply. */
+inline CustomerAppManager & AppManagerInstance()
+{
+    return CustomerAppManager::GetInstance();
+}

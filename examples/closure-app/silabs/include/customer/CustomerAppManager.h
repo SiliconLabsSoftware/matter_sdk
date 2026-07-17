@@ -21,13 +21,13 @@
 #include "ClosureManagerImpl.h"
 
 /**
- * @brief Minimal ClosureManagerImpl-derived class.
+ * @brief Customer-facing ClosureManager definition site.
  *
- * Any *Impl() method you do not override keeps the default ClosureManager
- * behavior. Override *Impl() methods here to customize individual behaviors.
- *
- * Example:
- *   void HandlePanelSetTargetActionImpl(chip::EndpointId ep) { ... }
+ * Add `*Impl()` overrides in `CustomerAppManager` to customize individual ClosureManager behaviors.
+ * Any `*Impl()` you do not override keeps the default ClosureManager behavior.
+ * 
+ * See the app README ("How to Override APIs") and ClosureManagerImpl.h for
+ * overridable methods.
  */
 class CustomerAppManager : public ClosureManagerImpl<CustomerAppManager>
 {

@@ -12,7 +12,6 @@ An example showing the use of CHIP on the Silicon Labs EFR32 MG24.
         -   [How to Override APIs](#how-to-override-apis)
         -   [DataModelCallbacks and CustomerAppTask](#datamodelcallbacks-and-customerapptask)
         -   [Sample Implementation](#sample-implementation)
-        -   [Override API Reference](#override-api-reference)
     -   [Building](#building)
     -   [Flashing the Application](#flashing-the-application)
     -   [Viewing Logging Output](#viewing-logging-output)
@@ -105,14 +104,8 @@ chain is already in this app:
 The base implementation and the full set of overridable `*Impl()` APIs live
 under [`include/ClosureManagerImpl.h`](include/ClosureManagerImpl.h) and
 [`src/ClosureManager.cpp`](src/ClosureManager.cpp). Edit `CustomerAppManager` to
-override only the hooks you need (for example `OnMoveToCommandImpl` or
-`HandlePanelSetTargetActionImpl`). Do not edit `ClosureManager.cpp` for
+override only the hooks you need. Do not edit `ClosureManager.cpp` for
 app-specific behavior.
-
-`CustomerAppManager` is the closure-app counterpart to lighting's single
-`CustomerAppTask` leaf. Lighting merges its manager into `AppTask`; closure
-keeps `ClosureManager` because shared `closure-common/` code calls
-`ClosureManager::GetInstance()`.
 
 ### How to Override APIs
 
@@ -120,8 +113,8 @@ Both leaves use the Curiously Recurring Template Pattern (CRTP). You override
 only the `*Impl()` methods you need; each base declares one `*Impl()` per
 overridable API. Steps:
 
-1. Find the method to override in the base API (see
-   [Override API reference](#override-api-reference) below).
+1. Find the method to override in [`AppTaskImpl.h`](include/AppTaskImpl.h) or
+   [`ClosureManagerImpl.h`](include/ClosureManagerImpl.h).
 2. Declare the same method signature in the customer leaf under `private:`
    (`CustomerAppTask` or `CustomerAppManager`). Match the base `*Impl()`
    signature exactly — note that `*Impl()` overrides are **non-static instance
@@ -253,7 +246,7 @@ void CustomerAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
 }
 ```
 
-**CustomerAppManager.h** (add only the `*Impl()` you need to the existing leaf)
+**CustomerAppManager.h**
 
 ```cpp
 // In include/customer/CustomerAppManager.h, declare under private: (keep GetInstance / sInstance)
@@ -277,37 +270,6 @@ chip::Protocols::InteractionModel::Status CustomerAppManager::OnMoveToCommandImp
     return ClosureManager::OnMoveToCommand(position, latch, speed);
 }
 ```
-
-### Override API Reference
-
-`CHIP_ERROR StartAppTask()` is declared on `AppTask` only. It is not an
-`*Impl()` hook: platform code (for example `MatterConfig`) calls
-`AppTask::GetAppTask().StartAppTask()` with static type `AppTask &`, which runs
-the implementation in `AppTask.cpp` (creating the FreeRTOS app task via
-`BaseApplication::StartAppTask(...)`). To change startup behavior, edit
-`AppTask::StartAppTask()` or `BaseApplication::StartAppTask` in your product
-sources.
-
-The base API and default AppTask behavior for this example are maintained under
-[`include/`](include/AppTaskImpl.h) and [`src/`](src/AppTask.cpp). Use them as
-the reference for overridable methods and app configuration.
-
-| File                                             | Purpose                                                                                                                                              |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`include/AppTaskImpl.h`](include/AppTaskImpl.h) | Declarations of every overridable `AppTask` `*Impl()` method. Copy the signatures you need from here into `CustomerAppTask.h`.                       |
-| [`src/AppTask.cpp`](src/AppTask.cpp)             | Silicon Labs default implementation of AppTask. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior. |
-
-The base API and default ClosureManager behavior are maintained under
-[`include/ClosureManagerImpl.h`](include/ClosureManagerImpl.h) and
-[`src/ClosureManager.cpp`](src/ClosureManager.cpp). Use them as the reference
-for overridable methods.
-
-| File                                                             | Purpose                                                                                                                                                          |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`include/ClosureManagerImpl.h`](include/ClosureManagerImpl.h)   | Declarations of every overridable `ClosureManager` `*Impl()` method. Copy the signatures you need from here into `CustomerAppManager.h`.                         |
-| [`src/ClosureManager.cpp`](src/ClosureManager.cpp)               | Silicon Labs default implementation of ClosureManager. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior.      |
-| [`include/customer/CustomerAppManager.h`](include/customer/CustomerAppManager.h) | Per-app customer leaf for the ClosureManager CRTP chain. Override `*Impl()` hooks here.                                                                          |
-| [`src/customer/CustomerAppManager.cpp`](src/customer/CustomerAppManager.cpp)     | Owns `CustomerAppManager::sInstance` and `ClosureManager::GetInstance()`. Place out-of-line `*Impl()` bodies here.                                               |
 
 ## Building
 

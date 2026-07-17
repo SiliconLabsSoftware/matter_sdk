@@ -21,7 +21,6 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 #include "CustomerAppTask.h"
-#include <CustomerAppManager.h>
 #include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
@@ -77,14 +76,9 @@ static chip::BitMask<Feature> sFeatureMap(Feature::kCalibration);
 } // namespace chip
 
 namespace {
-CustomerAppTask & appInstance()
+CustomerAppTask & AppInstance()
 {
     return CustomerAppTask::GetAppTask();
-}
-
-CustomerAppManager & closureManagerInstance()
-{
-    return CustomerAppManager::GetInstance();
 }
 
 #ifdef DISPLAY_ENABLED
@@ -96,7 +90,7 @@ void UpdateClosureUI(AppEvent * aEvent)
         return;
     }
 
-    CustomerAppManager & manager = closureManagerInstance();
+    CustomerAppManager & manager = AppManagerInstance();
 
     // Lock chip stack when accessing CHIP attributes from app task context
     DeviceLayer::PlatformMgr().LockChipStack();
@@ -180,7 +174,7 @@ void UpdateClosureUI(AppEvent * aEvent)
     if (ConnectivityMgr().IsThreadProvisioned())
 #endif /* !SL_WIFI */
     {
-        appInstance().GetLCD().WriteDemoUI(false); // State doesn't matter for custom UI
+        AppInstance().GetLCD().WriteDemoUI(false); // State doesn't matter for custom UI
     }
 }
 #endif // DISPLAY_ENABLED
@@ -188,14 +182,14 @@ void UpdateClosureUI(AppEvent * aEvent)
 
 void MatterClosureControlClusterServerAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
 {
-    VerifyOrReturn(appInstance().IsApplicationInitialized());
-    appInstance().DMClosureControlClusterAttributeChangedCallback(attributePath);
+    VerifyOrReturn(AppInstance().IsApplicationInitialized());
+    AppInstance().DMClosureControlClusterAttributeChangedCallback(attributePath);
 }
 
 void MatterClosureDimensionClusterServerAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
 {
-    VerifyOrReturn(appInstance().IsApplicationInitialized());
-    appInstance().DMClosureDimensionClusterAttributeChangedCallback(attributePath);
+    VerifyOrReturn(AppInstance().IsApplicationInitialized());
+    AppInstance().DMClosureDimensionClusterAttributeChangedCallback(attributePath);
 }
 
 CHIP_ERROR AppTask::AppInit()
@@ -209,7 +203,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif
 
     // Initialization of Closure Manager and endpoints of closure and closurepanel.
-    closureManagerInstance().Init();
+    AppManagerInstance().Init();
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -240,7 +234,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
-    CHIP_ERROR err = appInstance().Init();
+    CHIP_ERROR err = AppInstance().Init();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "AppTask Init failed");
@@ -254,7 +248,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            appInstance().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -269,12 +263,12 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
     if (button == APP_CLOSURE_BUTTON && btnAction == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
     {
         button_event.Handler = &CustomerAppTask::ClosureButtonActionEventHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
     else if (button == APP_FUNCTION_BUTTON)
     {
         button_event.Handler = BaseApplication::ButtonHandler;
-        appInstance().PostEvent(&button_event);
+        AppInstance().PostEvent(&button_event);
     }
 }
 
@@ -286,10 +280,10 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
         LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(
             [](intptr_t) {
                 // Check if an action is already in progress
-                if (closureManagerInstance().IsClosureControlMotionInProgress())
+                if (AppManagerInstance().IsClosureControlMotionInProgress())
                 {
                     // Stop the current action
-                    auto status = closureManagerInstance().GetClosureControlCluster().HandleStop();
+                    auto status = AppManagerInstance().GetClosureControlCluster().HandleStop();
                     if (status != Protocols::InteractionModel::Status::Success)
                     {
                         ChipLogError(AppServer, "Failed to stop closure action: %u", to_underlying(status));
@@ -298,7 +292,7 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
                 else
                 {
                     DataModel::Nullable<ClosureControl::GenericOverallCurrentState> currentState =
-                        closureManagerInstance().GetClosureControlCluster().GetOverallCurrentState();
+                        AppManagerInstance().GetClosureControlCluster().GetOverallCurrentState();
 
                     if (currentState.IsNull())
                     {
@@ -334,7 +328,7 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
                     }
 
                     // Move to the target position with latch set to false and preserved speed value
-                    auto status = closureManagerInstance().GetClosureControlCluster().HandleMoveTo(
+                    auto status = AppManagerInstance().GetClosureControlCluster().HandleMoveTo(
                         MakeOptional(targetPosition), latch, speed);
                     if (status != Protocols::InteractionModel::Status::Success)
                     {
@@ -377,7 +371,7 @@ void AppTask::DMClosureControlClusterAttributeChangedCallback(const chip::app::C
         AppEvent event;
         event.Type    = AppEvent::kEventType_UpdateUI;
         event.Handler = UpdateClosureUI;
-        appInstance().PostEvent(&event);
+        AppInstance().PostEvent(&event);
         break;
     }
     default:
