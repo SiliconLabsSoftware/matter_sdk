@@ -54,14 +54,6 @@ public:
         CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, ClosureButtonActionEventHandlerImpl, aEvent);
     }
 
-#ifdef DISPLAY_ENABLED
-    // AppTask thread handler to refresh the closure UI
-    static void UpdateClosureUIHandler(AppEvent * aEvent)
-    {
-        CRTP_OPTIONAL_STATIC_DISPATCH(AppTaskImpl, Derived, UpdateClosureUIHandlerImpl, aEvent);
-    }
-#endif // DISPLAY_ENABLED
-
     // Data model hook invoked when a cluster attribute changes
     void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
@@ -92,10 +84,6 @@ private:
     void ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction) { AppTask::ButtonEventHandler(button, btnAction); }
 
     void ClosureButtonActionEventHandlerImpl(AppEvent * aEvent) { AppTask::ClosureButtonActionEventHandler(aEvent); }
-
-#ifdef DISPLAY_ENABLED
-    void UpdateClosureUIHandlerImpl(AppEvent * aEvent) { AppTask::UpdateClosureUIHandler(aEvent); }
-#endif // DISPLAY_ENABLED
 
     void DMPostAttributeChangeCallbackImpl(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                            uint8_t * value)

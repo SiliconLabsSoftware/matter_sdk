@@ -86,6 +86,104 @@ CustomerAppManager & closureManagerInstance()
 {
     return CustomerAppManager::GetInstance();
 }
+
+#ifdef DISPLAY_ENABLED
+// AppEvent handler for kEventType_UpdateUI; pass nullptr to refresh from AppInit.
+void UpdateClosureUI(AppEvent * aEvent)
+{
+    if (aEvent != nullptr && aEvent->Type != AppEvent::kEventType_UpdateUI)
+    {
+        return;
+    }
+
+    CustomerAppManager & manager = closureManagerInstance();
+
+    // Lock chip stack when accessing CHIP attributes from app task context
+    DeviceLayer::PlatformMgr().LockChipStack();
+    auto uiData = manager.GetClosureUIData();
+    DeviceLayer::PlatformMgr().UnlockChipStack();
+
+    ClosureUI::SetMainState(uiData.mainState);
+
+    const char * positionSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
+    if (!uiData.overallCurrentState.IsNull() && uiData.overallCurrentState.Value().position.HasValue() &&
+        !uiData.overallCurrentState.Value().position.Value().IsNull())
+    {
+        switch (uiData.overallCurrentState.Value().position.Value().Value())
+        {
+        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kFullyClosed:
+            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_CLOSED;
+            break;
+        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kFullyOpened:
+            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_OPEN;
+            break;
+        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kPartiallyOpened:
+            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_PARTIAL;
+            break;
+        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kOpenedForPedestrian:
+            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_PEDESTRIAN;
+            break;
+        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kOpenedForVentilation:
+            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_VENTILATION;
+            break;
+        default:
+            positionSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
+            break;
+        }
+    }
+    ClosureUI::FormatAndSetPosition(positionSuffix);
+
+    const char * latchSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
+    if (!uiData.overallCurrentState.IsNull() && uiData.overallCurrentState.Value().latch.HasValue() &&
+        !uiData.overallCurrentState.Value().latch.Value().IsNull())
+    {
+        latchSuffix = uiData.overallCurrentState.Value().latch.Value().Value() ? ClosureUIStrings::LATCH_SUFFIX_ENGAGED
+                                                                               : ClosureUIStrings::LATCH_SUFFIX_RELEASED;
+    }
+    ClosureUI::FormatAndSetLatch(latchSuffix);
+
+    const char * secureSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
+    if (!uiData.overallCurrentState.IsNull() && !uiData.overallCurrentState.Value().secureState.IsNull())
+    {
+        secureSuffix = uiData.overallCurrentState.Value().secureState.Value() ? ClosureUIStrings::SECURE_SUFFIX_YES
+                                                                              : ClosureUIStrings::SECURE_SUFFIX_NO;
+    }
+    ClosureUI::FormatAndSetSecure(secureSuffix);
+
+    const char * speedSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
+    if (!uiData.overallCurrentState.IsNull() && uiData.overallCurrentState.Value().speed.HasValue())
+    {
+        switch (uiData.overallCurrentState.Value().speed.Value())
+        {
+        case chip::app::Clusters::Globals::ThreeLevelAutoEnum::kLow:
+            speedSuffix = ClosureUIStrings::SPEED_SUFFIX_LOW;
+            break;
+        case chip::app::Clusters::Globals::ThreeLevelAutoEnum::kMedium:
+            speedSuffix = ClosureUIStrings::SPEED_SUFFIX_MEDIUM;
+            break;
+        case chip::app::Clusters::Globals::ThreeLevelAutoEnum::kHigh:
+            speedSuffix = ClosureUIStrings::SPEED_SUFFIX_HIGH;
+            break;
+        case chip::app::Clusters::Globals::ThreeLevelAutoEnum::kAuto:
+            speedSuffix = ClosureUIStrings::SPEED_SUFFIX_AUTO;
+            break;
+        default:
+            speedSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
+            break;
+        }
+    }
+    ClosureUI::FormatAndSetSpeed(speedSuffix);
+
+#ifdef SL_WIFI
+    if (ConnectivityMgr().IsWiFiStationProvisioned())
+#else
+    if (ConnectivityMgr().IsThreadProvisioned())
+#endif /* !SL_WIFI */
+    {
+        appInstance().GetLCD().WriteDemoUI(false); // State doesn't matter for custom UI
+    }
+}
+#endif // DISPLAY_ENABLED
 } // namespace
 
 void MatterClosureControlClusterServerAttributeChangedCallback(const chip::app::ConcreteAttributePath & attributePath)
@@ -115,7 +213,7 @@ CHIP_ERROR AppTask::AppInit()
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
-    UpdateClosureUI();
+    UpdateClosureUI(nullptr);
 #ifdef QR_CODE_ENABLED
 #ifdef SL_WIFI
     if (!ConnectivityMgr().IsWiFiStationProvisioned())
@@ -252,106 +350,6 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
     }
 }
 
-#ifdef DISPLAY_ENABLED
-void AppTask::UpdateClosureUIHandler(AppEvent * aEvent)
-{
-    if (aEvent->Type == AppEvent::kEventType_UpdateUI)
-    {
-        UpdateClosureUI();
-    }
-}
-
-void AppTask::UpdateClosureUI()
-{
-    CustomerAppManager & manager = closureManagerInstance();
-
-    // Lock chip stack when accessing CHIP attributes from app task context
-    DeviceLayer::PlatformMgr().LockChipStack();
-    auto uiData = manager.GetClosureUIData();
-    DeviceLayer::PlatformMgr().UnlockChipStack();
-
-    ClosureUI::SetMainState(uiData.mainState);
-
-    const char * positionSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
-    if (!uiData.overallCurrentState.IsNull() && uiData.overallCurrentState.Value().position.HasValue() &&
-        !uiData.overallCurrentState.Value().position.Value().IsNull())
-    {
-        switch (uiData.overallCurrentState.Value().position.Value().Value())
-        {
-        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kFullyClosed:
-            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_CLOSED;
-            break;
-        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kFullyOpened:
-            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_OPEN;
-            break;
-        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kPartiallyOpened:
-            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_PARTIAL;
-            break;
-        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kOpenedForPedestrian:
-            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_PEDESTRIAN;
-            break;
-        case chip::app::Clusters::ClosureControl::CurrentPositionEnum::kOpenedForVentilation:
-            positionSuffix = ClosureUIStrings::POSITION_SUFFIX_VENTILATION;
-            break;
-        default:
-            positionSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
-            break;
-        }
-    }
-    ClosureUI::FormatAndSetPosition(positionSuffix);
-
-    const char * latchSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
-    if (!uiData.overallCurrentState.IsNull() && uiData.overallCurrentState.Value().latch.HasValue() &&
-        !uiData.overallCurrentState.Value().latch.Value().IsNull())
-    {
-        latchSuffix = uiData.overallCurrentState.Value().latch.Value().Value() ? ClosureUIStrings::LATCH_SUFFIX_ENGAGED
-                                                                               : ClosureUIStrings::LATCH_SUFFIX_RELEASED;
-    }
-    ClosureUI::FormatAndSetLatch(latchSuffix);
-
-    const char * secureSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
-    if (!uiData.overallCurrentState.IsNull() && !uiData.overallCurrentState.Value().secureState.IsNull())
-    {
-        secureSuffix = uiData.overallCurrentState.Value().secureState.Value() ? ClosureUIStrings::SECURE_SUFFIX_YES
-                                                                              : ClosureUIStrings::SECURE_SUFFIX_NO;
-    }
-    ClosureUI::FormatAndSetSecure(secureSuffix);
-
-    const char * speedSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
-    if (!uiData.overallCurrentState.IsNull() && uiData.overallCurrentState.Value().speed.HasValue())
-    {
-        switch (uiData.overallCurrentState.Value().speed.Value())
-        {
-        case chip::app::Clusters::Globals::ThreeLevelAutoEnum::kLow:
-            speedSuffix = ClosureUIStrings::SPEED_SUFFIX_LOW;
-            break;
-        case chip::app::Clusters::Globals::ThreeLevelAutoEnum::kMedium:
-            speedSuffix = ClosureUIStrings::SPEED_SUFFIX_MEDIUM;
-            break;
-        case chip::app::Clusters::Globals::ThreeLevelAutoEnum::kHigh:
-            speedSuffix = ClosureUIStrings::SPEED_SUFFIX_HIGH;
-            break;
-        case chip::app::Clusters::Globals::ThreeLevelAutoEnum::kAuto:
-            speedSuffix = ClosureUIStrings::SPEED_SUFFIX_AUTO;
-            break;
-        default:
-            speedSuffix = ClosureUIStrings::SUFFIX_UNKNOWN;
-            break;
-        }
-    }
-    ClosureUI::FormatAndSetSpeed(speedSuffix);
-
-#ifdef SL_WIFI
-    if (ConnectivityMgr().IsWiFiStationProvisioned())
-#else
-    if (ConnectivityMgr().IsThreadProvisioned())
-#endif /* !SL_WIFI */
-    {
-        appInstance().GetLCD().WriteDemoUI(false); // State doesn't matter for custom UI
-    }
-}
-#endif // DISPLAY_ENABLED
-
 void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                             uint8_t * value)
 {
@@ -378,7 +376,7 @@ void AppTask::DMClosureControlClusterAttributeChangedCallback(const chip::app::C
     case OverallCurrentState::Id: {
         AppEvent event;
         event.Type    = AppEvent::kEventType_UpdateUI;
-        event.Handler = &CustomerAppTask::UpdateClosureUIHandler;
+        event.Handler = UpdateClosureUI;
         appInstance().PostEvent(&event);
         break;
     }
