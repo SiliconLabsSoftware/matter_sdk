@@ -61,21 +61,16 @@ workings of Matter as well as a template for creating real products based on the
 Silicon Labs platform.
 
 Unlike the lighting example (single CRTP chain on `AppTask`), this app keeps a
-separate `ClosureManager` for closure domain logic and exposes a second CRTP
-chain for product customization. See
+separate `ClosureManager` for closure domain logic and a second CRTP chain for
+product customization. See
 [Extending Base App Implementation](#extending-base-app-implementation).
 
 ## Extending Base App Implementation
-
-This example uses two parallel CRTP chains:
 
 | Concern | Base | CRTP hook layer | Customer leaf |
 | ------- | ---- | --------------- | ------------- |
 | Lifecycle / UI / buttons / DM callbacks | `AppTask` | [`AppTaskImpl`](include/AppTaskImpl.h) | [`CustomerAppTask`](../../platform/silabs/customer/CustomerAppTask.h) |
 | Closure domain logic (motion, latch, panels) | `ClosureManager` | [`ClosureManagerImpl`](include/ClosureManagerImpl.h) | [`CustomerAppManager`](include/customer/CustomerAppManager.h) |
-
-Override only the `*Impl()` hooks you need on either leaf. Any hook you do not
-override keeps the Silicon Labs default behavior.
 
 ### CustomerAppTask
 
@@ -95,18 +90,14 @@ folders, then update the corresponding paths in `BUILD.gn`.
 
 ### CustomerAppManager
 
-Closure domain logic (cluster command handlers and the motion/latch state
-machine) lives on `ClosureManager`, not on `AppTask`. The customer leaf for that
-chain is already in this app:
-
--   [`include/customer/CustomerAppManager.h`](include/customer/CustomerAppManager.h)
--   [`src/customer/CustomerAppManager.cpp`](src/customer/CustomerAppManager.cpp)
-
-The base implementation and the full set of overridable `*Impl()` APIs live
-under [`include/ClosureManagerImpl.h`](include/ClosureManagerImpl.h) and
-[`src/ClosureManager.cpp`](src/ClosureManager.cpp). Edit `CustomerAppManager` to
-override only the hooks you need. Do not edit `ClosureManager.cpp` for
-app-specific behavior.
+Closure domain logic lives on `ClosureManager`. The customer leaf is already in
+this app under
+[`include/customer/CustomerAppManager.h`](include/customer/CustomerAppManager.h)
+and
+[`src/customer/CustomerAppManager.cpp`](src/customer/CustomerAppManager.cpp).
+Override `*Impl()` hooks there; do not edit `ClosureManager.cpp` for
+app-specific behavior. See
+[`ClosureManagerImpl.h`](include/ClosureManagerImpl.h) for the full hook list.
 
 ### How to Override APIs
 
@@ -116,38 +107,33 @@ overridable API. Steps:
 
 1. Find the method to override in the base API (see
    [Override API reference](#override-api-reference) below).
-2. Declare the same method signature in the customer leaf under `private:`
-   (`CustomerAppTask` or `CustomerAppManager`). Match the base `*Impl()`
-   signature exactly — note that `*Impl()` overrides are **non-static instance
-   methods** even when the public dispatcher (e.g. `ButtonEventHandler`) is
-   `static`.
-3. Implement the method in the corresponding `.cpp`
-   (`CustomerAppTask.cpp` or `CustomerAppManager.cpp`).
+2. Declare the same method signature in `CustomerAppTask.h` or
+   `CustomerAppManager.h` under `private:`. Match the base `*Impl()` signature
+   exactly — note that `*Impl()` overrides are **non-static instance methods**
+   even when the public dispatcher (e.g. `ButtonEventHandler`) is `static`.
+3. Implement the method in the corresponding `.cpp`.
 4. Build. The CRTP layer automatically routes each call to your `*Impl()` if
    present, otherwise to the Silicon Labs default.
 
 Some `ClosureManager` APIs (`Init`, cluster `On*Command` handlers) are virtual
-internally so shared `closure-common/` code can reach your leaf. You still only
-override the matching `*Impl()` on `CustomerAppManager` — do not override the
-virtuals directly. Copy signatures from
-[`ClosureManagerImpl.h`](include/ClosureManagerImpl.h).
+so shared `closure-common/` code can reach your leaf. Override the matching
+`*Impl()` on `CustomerAppManager` — do not override the virtuals directly.
 
 ### DataModelCallbacks and CustomerAppTask
 
 What used to live in `DataModelCallbacks.cpp` now lives in `AppTask.cpp`. The
 Matter SDK's `MatterPostAttributeChangeCallback` is implemented in
-`examples/platform/silabs/BaseApplication.cpp` and forwards through
-`CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(...)` (defined in
-`AppTask.cpp`), which you can customize via
-`DMPostAttributeChangeCallbackImpl()` in `CustomerAppTask`.
+`examples/platform/silabs/BaseApplication.cpp` and forwards to
+`AppTask::DMPostAttributeChangeCallback` (defined in `AppTask.cpp`), which you
+can customize via `DMPostAttributeChangeCallbackImpl()` in `CustomerAppTask`.
 
 Closure-specific cluster attribute-changed callbacks
 (`MatterClosureControlClusterServerAttributeChangedCallback`,
 `MatterClosureDimensionClusterServerAttributeChangedCallback`) are forwarders
-at the top of `AppTask.cpp` and dispatch to
+in `AppTask.cpp` and dispatch to
 `DMClosureControlClusterAttributeChangedCallback` /
-`DMClosureDimensionClusterAttributeChangedCallback`, which you can customize via
-the matching `*Impl()` hooks on `CustomerAppTask`.
+`DMClosureDimensionClusterAttributeChangedCallback`, customized via the
+matching `*Impl()` hooks on `CustomerAppTask`.
 
 Forwarding into `AppTask` still goes through CRTP as in
 [How to Override APIs](#how-to-override-apis).
@@ -169,7 +155,8 @@ Forwarding into `AppTask` still goes through CRTP as in
 
 The following shows a minimal example that overrides `AppInitImpl()` and
 `ButtonEventHandlerImpl()` on `CustomerAppTask`, and adds
-`OnMoveToCommandImpl()` to the existing `CustomerAppManager` leaf.
+`OnMoveToCommandImpl()` to the existing `CustomerAppManager` leaf. Declare the
+manager hook under `private:` without replacing `GetInstance` / `sInstance`.
 
 **CustomerAppTask.h**
 
@@ -250,15 +237,13 @@ void CustomerAppTask::ButtonEventHandlerImpl(uint8_t button, uint8_t btnAction)
 **CustomerAppManager.h**
 
 ```cpp
-// In include/customer/CustomerAppManager.h, declare under private: (keep GetInstance / sInstance)
 chip::Protocols::InteractionModel::Status OnMoveToCommandImpl(
     const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum> position,
     const chip::Optional<bool> latch,
     const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum> speed);
 ```
 
-**CustomerAppManager.cpp** (add the override body; do not replace `sInstance` /
-`GetInstance()`, which already live in this file)
+**CustomerAppManager.cpp**
 
 ```cpp
 chip::Protocols::InteractionModel::Status CustomerAppManager::OnMoveToCommandImpl(
@@ -291,10 +276,7 @@ the reference for overridable methods and app configuration.
 | [`include/AppTaskImpl.h`](include/AppTaskImpl.h) | Declarations of every overridable `*Impl()` method. Copy the signatures you need from here into `CustomerAppTask.h`.                                 |
 | [`src/AppTask.cpp`](src/AppTask.cpp)             | Silicon Labs default implementation of AppTask. This is what runs for any `*Impl()` you do not override. Use as reference when customizing behavior. |
 
-The base API and default ClosureManager behavior are maintained under
-[`include/ClosureManagerImpl.h`](include/ClosureManagerImpl.h) and
-[`src/ClosureManager.cpp`](src/ClosureManager.cpp). Use them as the reference
-for overridable methods.
+This example also has a ClosureManager CRTP chain:
 
 | File                                                           | Purpose                                                                                                                                                     |
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |

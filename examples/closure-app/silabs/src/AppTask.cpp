@@ -20,6 +20,7 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
+#include "CustomerAppManager.h"
 #include "CustomerAppTask.h"
 #include "LEDWidget.h"
 
@@ -90,7 +91,7 @@ void UpdateClosureUI(AppEvent * aEvent)
         return;
     }
 
-    CustomerAppManager & manager = AppManagerInstance();
+    CustomerAppManager & manager = CustomerAppManager::GetInstance();
 
     // Lock chip stack when accessing CHIP attributes from app task context
     DeviceLayer::PlatformMgr().LockChipStack();
@@ -203,7 +204,7 @@ CHIP_ERROR AppTask::AppInit()
 #endif
 
     // Initialization of Closure Manager and endpoints of closure and closurepanel.
-    AppManagerInstance().Init();
+    CustomerAppManager::GetInstance().Init();
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #ifdef DISPLAY_ENABLED
@@ -280,10 +281,10 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
         LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(
             [](intptr_t) {
                 // Check if an action is already in progress
-                if (AppManagerInstance().IsClosureControlMotionInProgress())
+                if (CustomerAppManager::GetInstance().IsClosureControlMotionInProgress())
                 {
                     // Stop the current action
-                    auto status = AppManagerInstance().GetClosureControlCluster().HandleStop();
+                    auto status = CustomerAppManager::GetInstance().GetClosureControlCluster().HandleStop();
                     if (status != Protocols::InteractionModel::Status::Success)
                     {
                         ChipLogError(AppServer, "Failed to stop closure action: %u", to_underlying(status));
@@ -292,7 +293,7 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
                 else
                 {
                     DataModel::Nullable<ClosureControl::GenericOverallCurrentState> currentState =
-                        AppManagerInstance().GetClosureControlCluster().GetOverallCurrentState();
+                        CustomerAppManager::GetInstance().GetClosureControlCluster().GetOverallCurrentState();
 
                     if (currentState.IsNull())
                     {
@@ -328,7 +329,7 @@ void AppTask::ClosureButtonActionEventHandler(AppEvent * aEvent)
                     }
 
                     // Move to the target position with latch set to false and preserved speed value
-                    auto status = AppManagerInstance().GetClosureControlCluster().HandleMoveTo(
+                    auto status = CustomerAppManager::GetInstance().GetClosureControlCluster().HandleMoveTo(
                         MakeOptional(targetPosition), latch, speed);
                     if (status != Protocols::InteractionModel::Status::Success)
                     {

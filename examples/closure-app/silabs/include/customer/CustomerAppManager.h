@@ -21,10 +21,10 @@
 #include "ClosureManagerImpl.h"
 
 /**
- * @brief Customer-facing ClosureManager definition site.
+ * @brief Minimal ClosureManagerImpl-derived class.
  *
- * Add `*Impl()` overrides in `CustomerAppManager` to customize individual ClosureManager behaviors.
- * Any `*Impl()` you do not override keeps the default ClosureManager behavior.
+ * Any *Impl() method you do not override keeps the default ClosureManager behavior.
+ * Override *Impl() methods here to customize individual behaviors.
  *
  * See the app README ("Override API Reference") for the full list of
  * overridable methods.
