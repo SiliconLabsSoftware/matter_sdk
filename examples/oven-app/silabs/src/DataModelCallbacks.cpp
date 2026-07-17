@@ -31,6 +31,7 @@
 #include <app/CommandHandler.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/ConcreteCommandPath.h>
+#include <app/util/generic-callbacks.h>
 
 using namespace ::chip;
 using namespace ::chip::app;
@@ -55,12 +56,11 @@ void MatterPostAttributeChangeCallback(const ConcreteAttributePath & attributePa
         ChipLogDetail(Zcl, "TemperatureControl cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                       ChipLogValueMEI(attributeId), type, *value, size);
         break;
-    case Clusters::OvenMode::Id:
-        ChipLogDetail(Zcl, "OvenMode cluster ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
-                      type, *value, size);
-        OvenManager::GetInstance().OvenModeAttributeChangeHandler(attributePath.mEndpointId, attributeId, value, size);
-        break;
     default:
         break;
     }
 }
+
+void MatterOvenModeClusterInitCallback(EndpointId endpointId) {}
+
+void MatterOvenModeClusterShutdownCallback(EndpointId endpointId, MatterClusterShutdownType) {}
