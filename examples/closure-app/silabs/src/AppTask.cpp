@@ -93,7 +93,7 @@ void UpdateClosureUI(AppEvent * aEvent)
 
     CustomerAppManager & manager = CustomerAppManager::GetInstance();
 
-    // Lock chip stack when accessing CHIP attributes from app task context
+    // Lock Matter stack when accessing attributes from app task context
     DeviceLayer::PlatformMgr().LockChipStack();
     auto uiData = manager.GetClosureUIData();
     DeviceLayer::PlatformMgr().UnlockChipStack();
