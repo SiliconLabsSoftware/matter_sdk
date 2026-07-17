@@ -25,7 +25,7 @@
  *
  * Add `*Impl()` overrides in `CustomerAppManager` to customize individual ClosureManager behaviors.
  * Any `*Impl()` you do not override keeps the default ClosureManager behavior.
- * 
+ *
  * See the app README ("Override API Reference") for the full list of
  * overridable methods.
  */
