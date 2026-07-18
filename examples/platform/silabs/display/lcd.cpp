@@ -21,6 +21,7 @@
 
 #include "demo-ui.h"
 #include "lcd.h"
+#include "silabs_utils.h"
 #include <platform/PlatformError.h>
 
 #include "dmd.h"
