@@ -17,6 +17,7 @@
  *    limitations under the License.
  */
 
+#include "silabs_utils.h"
 #include "AppConfig.h"
 #include "BaseApplication.h"
 #include <MatterConfig.h>
