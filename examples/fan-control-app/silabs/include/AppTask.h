@@ -103,18 +103,20 @@ public:
     static void FanUiUpdateEventHandler(AppEvent * aEvent);
 
     /**
-     * @brief Reconcile PercentSetting whenever FanMode changes so the new mode lands
-     *        inside its configured speed band. Invoked from DMPostAttributeChangeCallback.
+     * @brief Reconcile PercentSetting or SpeedSetting when FanMode changes, depending on
+     *        MultiSpeed feature support. Invoked from DMPostAttributeChangeCallback when
+     *        MultiSpeed is disabled.
      */
     void HandleFanModeChange(FanModeEnum aNewFanMode);
 
     /**
      * @brief Mirror PercentSetting writes onto PercentCurrent (when not in Auto and not a no-op).
+     *        When MultiSpeed is disabled, also synchronizes FanMode from the percent value.
      */
     void HandlePercentSettingChange(uint8_t aNewPercentSetting);
 
     /**
-     * @brief Mirror SpeedSetting writes onto SpeedCurrent and refresh FanMode from the new speed.
+     * @brief Mirror SpeedSetting writes onto SpeedCurrent when MultiSpeed is enabled.
      */
     void HandleSpeedSettingChange(uint8_t aNewSpeedSetting);
 
