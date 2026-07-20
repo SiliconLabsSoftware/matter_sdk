@@ -1,0 +1,18 @@
+[Unit]
+Description=Cpcd service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=ubuntu
+ExecStart=/usr/bin/stdbuf -o0 /usr/local/bin/cpcd -c /usr/local/etc/cpcd.conf
+ExecStop=/bin/kill -WINCH ${MAINPID}
+PIDFile=/run/cpcd_0.pid
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cpcd
+
+[Install]
+WantedBy=otbr-agent.service

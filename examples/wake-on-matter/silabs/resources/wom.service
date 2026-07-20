@@ -1,0 +1,14 @@
+[Unit]
+Description=Wake-on-Matter OpenThread bring-up
+Documentation=https://openthread.io/reference/cli
+After=otbr-agent.service
+Requires=otbr-agent.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/ot-ctl ifconfig up
+ExecStart=/usr/bin/ot-ctl thread start
+
+[Install]
+WantedBy=multi-user.target
