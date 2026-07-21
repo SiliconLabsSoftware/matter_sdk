@@ -289,23 +289,7 @@ protected:
      */
     void HandlePanelStepAction(chip::EndpointId endpointId);
 
-private:
-    osTimerId_t mClosureTimer;
-
-    // Below Progress variables and mCurrentAction, mCurrentActionEndpointId should be set only in
-    // chip task context. Incase if these variables are to be set in other task context, then we should
-    // make them thread-safe using mutex or other synchronization mechanisms. Presently, we use
-    // DeviceLayer::PlatformMgr().LockChipStack() and DeviceLayer::PlatformMgr().UnlockChipStack()
-    // to ensure that these variables are set in thread safe manner in chip task context.
-    bool mIsCalibrationInProgress = false;
-    bool mIsMoveToInProgress      = false;
-    bool mIsSetTargetInProgress   = false;
-    bool mIsStepActionInProgress  = false;
-
-    Action_t mCurrentAction                   = Action_t::INVALID_ACTION;
-    chip::EndpointId mCurrentActionEndpointId = chip::kInvalidEndpointId;
-
-    // Define the endpoint ID for the Closure
+    // State, endpoints, and helpers available to CustomerAppManager *Impl() overrides.
     static constexpr chip::EndpointId kClosureEndpoint1      = 1;
     static constexpr chip::EndpointId kClosurePanelEndpoint2 = 2;
     static constexpr chip::EndpointId kClosurePanelEndpoint3 = 3;
@@ -332,6 +316,21 @@ private:
      * the application error handler with APP_ERROR_STOP_TIMER_FAILED.
      */
     void CancelTimer();
+
+    osTimerId_t mClosureTimer;
+
+    // Below Progress variables and mCurrentAction, mCurrentActionEndpointId should be set only in
+    // chip task context. Incase if these variables are to be set in other task context, then we should
+    // make them thread-safe using mutex or other synchronization mechanisms. Presently, we use
+    // DeviceLayer::PlatformMgr().LockChipStack() and DeviceLayer::PlatformMgr().UnlockChipStack()
+    // to ensure that these variables are set in thread safe manner in chip task context.
+    bool mIsCalibrationInProgress = false;
+    bool mIsMoveToInProgress      = false;
+    bool mIsSetTargetInProgress   = false;
+    bool mIsStepActionInProgress  = false;
+
+    Action_t mCurrentAction                   = Action_t::INVALID_ACTION;
+    chip::EndpointId mCurrentActionEndpointId = chip::kInvalidEndpointId;
 
     /**
      * @brief Initiates a closure action based on the provided application event.
