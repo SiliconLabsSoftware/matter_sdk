@@ -26,7 +26,7 @@
 #include <lib/core/CHIPError.h>
 #include <protocols/interaction_model/StatusCode.h>
 
-#if defined (DISPLAY_ENABLED) && DISPLAY_ENABLED
+#if defined (SL_MATTER_DISPLAY_ENABLED) && SL_MATTER_DISPLAY_ENABLED
 #include "glib.h"
 #endif
 
