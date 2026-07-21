@@ -18,15 +18,11 @@
 
 #include "AppConfig.h"
 #include "AppTask.h"
-#include "ClosureControlEndpoint.h"
-#include "ClosureDimensionEndpoint.h"
 #include "ClosureManager.h"
 #include "CustomerAppManager.h"
 
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app/server/Server.h>
-#include <app/util/attribute-storage.h>
-#include <lib/support/TimeUtils.h>
 #include <platform/CHIPDeviceLayer.h>
 
 using namespace chip;

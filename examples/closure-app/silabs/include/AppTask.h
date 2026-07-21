@@ -21,11 +21,8 @@
 
 #include "BaseApplication.h"
 #include <app/ConcreteAttributePath.h>
-#include <cmsis_os2.h>
 #include <cstdint>
 #include <lib/core/CHIPError.h>
-
-struct AppEvent;
 
 class AppTask : public BaseApplication
 {

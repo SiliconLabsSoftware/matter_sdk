@@ -22,36 +22,22 @@
 #include "AppEvent.h"
 #include "CustomerAppManager.h"
 #include "CustomerAppTask.h"
-#include "LEDWidget.h"
 
 #ifdef DISPLAY_ENABLED
 #include "ClosureUI.h"
 #include "ClosureUIStrings.h"
 #include "lcd.h"
-#ifdef QR_CODE_ENABLED
-#include "qrcodegen.h"
-#endif // QR_CODE_ENABLED
 #endif // DISPLAY_ENABLED
 
-#include <app-common/zap-generated/cluster-enums.h>
 #include <app-common/zap-generated/cluster-objects.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
-#include <app/clusters/network-commissioning/network-commissioning.h>
-#include <app/server/Server.h>
-#include <app/util/attribute-storage.h>
-#include <app/util/endpoint-config-api.h>
-#include <assert.h>
-#include <lib/support/BitMask.h>
 #include <lib/support/CodeUtils.h>
+#include <lib/support/TypeTraits.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-#include <setup_payload/OnboardingCodesUtil.h>
-#include <setup_payload/QRCodeSetupPayloadGenerator.h>
-#include <setup_payload/SetupPayload.h>
-#include <stdio.h>
 
 #define APP_FUNCTION_BUTTON 0
 #define APP_CLOSURE_BUTTON 1
@@ -61,20 +47,6 @@ using namespace chip::app;
 using namespace chip::app::Clusters;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
-using namespace ::chip::DeviceLayer::Internal;
-using namespace chip::TLV;
-
-namespace chip {
-namespace app {
-namespace Clusters {
-namespace ClosureControl {
-
-static chip::BitMask<Feature> sFeatureMap(Feature::kCalibration);
-
-} // namespace ClosureControl
-} // namespace Clusters
-} // namespace app
-} // namespace chip
 
 namespace {
 CustomerAppTask & AppInstance()
