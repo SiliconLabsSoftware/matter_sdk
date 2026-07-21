@@ -41,15 +41,6 @@
 #include <sl_watchdog_manager.h>
 #endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
 
-#ifdef SL_WIFI
-#include <platform/silabs/NetworkCommissioningWiFiDriver.h>
-#include <platform/silabs/wifi/WifiInterface.h> // nogncheck
-
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-#include <platform/silabs/wifi/icd/WifiSleepManager.h> // nogncheck
-
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-#endif // SL_WIFI
 
 #if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 #include "ApplicationSleepManager.h"
@@ -139,11 +130,19 @@ using namespace ::chip::Credentials;
 using namespace chip::DeviceLayer::Silabs;
 using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
 
-#if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
 #ifdef SL_WIFI
+#include <platform/silabs/NetworkCommissioningWiFiDriver.h>
+#include <platform/silabs/wifi/WifiInterface.h> // nogncheck
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+#include <platform/silabs/wifi/icd/WifiSleepManager.h> // nogncheck
+
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+
+#if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
 Clusters::NetworkCommissioning::InstanceAndDriver<NetworkCommissioning::SlWiFiDriver> sWifiNetworkDriver(kRootEndpointId);
-#endif /* SL_WIFI */
 #endif // !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
+#endif /* SL_WIFI */
 
 #if CHIP_ENABLE_OPENTHREAD
 #include <inet/EndPointStateOpenThread.h>
@@ -181,7 +180,13 @@ void UnlockOpenThreadTask(void)
 // ================================================================================
 CHIP_ERROR SilabsMatterConfig::InitOpenThread(void)
 {
-    ReturnErrorOnFailure(ThreadStackMgr().InitThreadStack());
+
+    
+    ReturnErrorOnFailure(ThreadStackMgr().InitThreadStack()); // Only need to register on state change callback
+
+#if SL_MATTER_OPENTHREAD_NCP_ENABLE
+    return CHIP_NO_ERROR;
+#endif 
 
 #if CHIP_DEVICE_CONFIG_THREAD_FTD
     ReturnErrorOnFailure(ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router));
@@ -256,6 +261,7 @@ void SilabsMatterConfig::AppInit()
 #endif // SL_WIFI
 
     TEMPORARY_RETURN_IGNORED GetPlatform().Init();
+    
     sMainTaskHandle = osThreadNew(ApplicationStart, nullptr, &kMainTaskAttr);
     VerifyOrDie(sMainTaskHandle); // We can't proceed if the Main Task creation failed.
 
@@ -330,11 +336,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     static chip::CommonCaseDeviceServerInitParams initParams;
 
 #if CHIP_ENABLE_OPENTHREAD
-#if SL_MATTER_OPENTHREAD_NCP_ENABLE
-    ReturnErrorOnFailure(ThreadStackMgr().InitThreadStack()); // Only need to register on state change callback
-#else
     ReturnErrorOnFailure(InitOpenThread());
-#endif
 
     // Set up OpenThread configuration when OpenThread is included
     chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;
@@ -342,14 +344,12 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     nativeParams.unlockCb              = UnlockOpenThreadTask;
     nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
     initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
-#endif
-#if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
-#ifdef SL_WIFI
+#endif // CHIP_ENABLE_OPENTHREAD
+#if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL && defined(SL_WIFI)
     // This must be initialized after InitWiFiStack and InitChipStack which enable communication between the TA an M4
     // This is required for TA nvm access used by the sWifiNetworkDriver.
     ReturnErrorOnFailure(sWifiNetworkDriver.Init());
-#endif
-#endif // !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
+#endif // !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL && defined(SL_WIFI)
 
     // Verify if the platform is updated by reading the NVM3 config value. This needs to be done after the wifi network driver
     // initialization, as the 917 nvm is accessed through the TA, and the communication between the M4 and the TA is available at
