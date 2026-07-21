@@ -112,13 +112,13 @@ public:
 
     /**
      * @brief Mirror PercentSetting writes onto PercentCurrent (when not in Auto and not a no-op).
-     *        When MultiSpeed is disabled, also synchronizes FanMode from the percent value.
+     *        FanMode is updated by the cluster on PercentSetting writes; the app does not re-derive it.
      */
     void HandlePercentSettingChange(uint8_t aNewPercentSetting);
 
     /**
      * @brief Derive FanMode from a PercentSetting value using SpeedMax-derived bands.
-     *        Override via DeriveFanModeFromPercentImpl() in CustomerAppTask.
+     *        Optional customer override hook; default handlers rely on cluster FanMode updates.
      */
     FanModeEnum DeriveFanModeFromPercent(Percent percent);
 
@@ -145,13 +145,13 @@ public:
      * @brief Write SpeedSetting synchronously on the Matter thread. No-op when MultiSpeed is
      *        disabled. Exposed for customer code; not overridable.
      */
-    void SetSpeedSetting(uint8_t aNewSpeedSetting);
+    Status SetSpeedSetting(uint8_t aNewSpeedSetting);
 
     /**
      * @brief Schedule a PercentSetting write on the Matter thread. Exposed for customer code;
      *        not overridable.
      */
-    void SetPercentSetting(Percent aNewPercentSetting);
+    Status SetPercentSetting(Percent aNewPercentSetting);
 
     /**
      * @brief PlatformMgr().ScheduleWork() callback that flushes pending FanControl attribute writes

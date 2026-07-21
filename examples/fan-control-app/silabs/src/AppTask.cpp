@@ -237,12 +237,12 @@ DataModel::Nullable<Percent> AppTask::GetPercentSetting()
     return percentSetting;
 }
 
-void AppTask::SetPercentSetting(Percent aNewPercentSetting)
+Status AppTask::SetPercentSetting(Percent aNewPercentSetting)
 {
     DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
     if (!percentSettingNullable.IsNull() && percentSettingNullable.Value() == aNewPercentSetting)
     {
-        return;
+        return Status::Success;
     }
 
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
@@ -252,17 +252,24 @@ void AppTask::SetPercentSetting(Percent aNewPercentSetting)
     if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "SetPercentSetting: failed to update PercentSetting attribute");
+        chip::Platform::Delete(data);
+        return Status::Failure;
     }
+
+    return Status::Success;
 }
 
-void AppTask::SetSpeedSetting(uint8_t aNewSpeedSetting)
+Status AppTask::SetSpeedSetting(uint8_t aNewSpeedSetting)
 {
-    VerifyOrReturn(SupportsMultiSpeed());
+    if (!SupportsMultiSpeed())
+    {
+        return Status::Success;
+    }
 
     DataModel::Nullable<uint8_t> speedSettingNullable = GetSpeedSetting();
     if (!speedSettingNullable.IsNull() && speedSettingNullable.Value() == aNewSpeedSetting)
     {
-        return;
+        return Status::Success;
     }
 
     Status status = Attributes::SpeedSetting::Set(kFanEndpoint, aNewSpeedSetting);
@@ -270,6 +277,8 @@ void AppTask::SetSpeedSetting(uint8_t aNewSpeedSetting)
     {
         ChipLogError(NotSpecified, "SetSpeedSetting: failed to set SpeedSetting attribute: %d", to_underlying(status));
     }
+
+    return status;
 }
 
 void AppTask::SyncFanMode(FanModeEnum aNewFanMode)
@@ -428,26 +437,20 @@ void AppTask::HandlePercentSettingChange(uint8_t aNewPercentSetting)
     VerifyOrReturn(aNewPercentSetting != sPercentCurrent);
     VerifyOrReturn(sFanMode != FanModeEnum::kAuto);
     ChipLogDetail(NotSpecified, "HandlePercentSettingChange: %d", aNewPercentSetting);
-    sPercentCurrent = aNewPercentSetting;
 
     AppTask::AttributeUpdateInfo * data = chip::Platform::New<AppTask::AttributeUpdateInfo>();
     data->endPoint             = kFanEndpoint;
-    data->percentCurrent       = sPercentCurrent;
+    data->percentCurrent       = aNewPercentSetting;
     data->isPercentCurrent     = true;
 
     if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "HandlePercentSettingChange: failed to set PercentCurrent attribute");
+        chip::Platform::Delete(data);
+        return;
     }
 
-    if (!SupportsMultiSpeed())
-    {
-        FanModeEnum newFanMode = AppInstance().DeriveFanModeFromPercent(aNewPercentSetting);
-        if (newFanMode != sFanMode)
-        {
-            SyncFanMode(newFanMode);
-        }
-    }
+    sPercentCurrent = aNewPercentSetting;
 }
 
 void AppTask::HandleSpeedSettingChange(uint8_t aNewSpeedSetting)
@@ -456,17 +459,20 @@ void AppTask::HandleSpeedSettingChange(uint8_t aNewSpeedSetting)
     VerifyOrReturn(aNewSpeedSetting != sSpeedCurrent);
     VerifyOrReturn(sFanMode != FanModeEnum::kAuto);
     ChipLogDetail(NotSpecified, "HandleSpeedSettingChange: %d", aNewSpeedSetting);
-    sSpeedCurrent = aNewSpeedSetting;
 
     AppTask::AttributeUpdateInfo * data = chip::Platform::New<AppTask::AttributeUpdateInfo>();
     data->endPoint             = kFanEndpoint;
-    data->speedCurrent         = sSpeedCurrent;
+    data->speedCurrent         = aNewSpeedSetting;
     data->isSpeedCurrent       = true;
 
     if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "HandleSpeedSettingChange: failed to set SpeedCurrent attribute");
+        chip::Platform::Delete(data);
+        return;
     }
+
+    sSpeedCurrent = aNewSpeedSetting;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
@@ -546,46 +552,42 @@ Status AppTask::HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowes
         }
         }
 
-        SetSpeedSetting(curSpeedSetting);
+        return SetSpeedSetting(curSpeedSetting);
     }
-    else
+
+    DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
+    Percent curPercentSetting = percentSettingNullable.IsNull() ? static_cast<Percent>(speedMin) : percentSettingNullable.Value();
+
+    switch (aDirection)
     {
-        DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
-        Percent curPercentSetting = percentSettingNullable.IsNull() ? static_cast<Percent>(speedMin) : percentSettingNullable.Value();
-
-        switch (aDirection)
+    case StepDirectionEnum::kIncrease: {
+        if (curPercentSetting >= 100)
         {
-        case StepDirectionEnum::kIncrease: {
-            if (curPercentSetting >= 100)
-            {
-                curPercentSetting = aWrap ? static_cast<Percent>(speedMin) : 100;
-            }
-            else
-            {
-                curPercentSetting++;
-            }
-            break;
+            curPercentSetting = aWrap ? static_cast<Percent>(speedMin) : 100;
         }
-        case StepDirectionEnum::kDecrease: {
-            if (curPercentSetting <= speedMin)
-            {
-                curPercentSetting = aWrap ? 100 : static_cast<Percent>(speedMin);
-            }
-            else
-            {
-                curPercentSetting--;
-            }
-            break;
+        else
+        {
+            curPercentSetting++;
         }
-        default: {
-            break;
+        break;
+    }
+    case StepDirectionEnum::kDecrease: {
+        if (curPercentSetting <= speedMin)
+        {
+            curPercentSetting = aWrap ? 100 : static_cast<Percent>(speedMin);
         }
+        else
+        {
+            curPercentSetting--;
         }
-
-        SetPercentSetting(curPercentSetting);
+        break;
+    }
+    default: {
+        break;
+    }
     }
 
-    return Status::Success;
+    return SetPercentSetting(curPercentSetting);
 }
 
 void AppTask::UpdateClusterState(intptr_t arg)
