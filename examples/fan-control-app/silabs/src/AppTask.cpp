@@ -166,7 +166,7 @@ CHIP_ERROR AppTask::InitFanControl()
     sSupportsMultiSpeed = ReadSupportsMultiSpeedFromFeatureMap();
     if (Attributes::SpeedMax::Get(kFanEndpoint, &sSpeedMax) != Status::Success || sSpeedMax == 0)
     {
-        sSpeedMax = static_cast<uint8_t>(FAN_MODE_HIGH_LOWER_BOUND);
+        sSpeedMax = static_cast<uint8_t>(FAN_MODE_HIGH_UPPER_BOUND);
     }
     FanModeEnum fanMode = sFanMode;
     Status fanModeStatus = Attributes::FanMode::Get(kFanEndpoint, &fanMode);
