@@ -39,6 +39,7 @@ public:
     // Bring frequently-used cluster types into class scope. Available to derived classes
     // (e.g. AppTaskImpl, CustomerAppTask) without re-qualification.
     using FanModeEnum       = chip::app::Clusters::FanControl::FanModeEnum;
+    using Percent           = chip::Percent;
     using StepDirectionEnum = chip::app::Clusters::FanControl::StepDirectionEnum;
     using Status            = chip::Protocols::InteractionModel::Status;
 
@@ -116,9 +117,41 @@ public:
     void HandlePercentSettingChange(uint8_t aNewPercentSetting);
 
     /**
+     * @brief Derive FanMode from a PercentSetting value using SpeedMax-derived bands.
+     *        Override via DeriveFanModeFromPercentImpl() in CustomerAppTask.
+     */
+    FanModeEnum DeriveFanModeFromPercent(Percent percent);
+
+    /**
      * @brief Mirror SpeedSetting writes onto SpeedCurrent when MultiSpeed is enabled.
      */
     void HandleSpeedSettingChange(uint8_t aNewSpeedSetting);
+
+    /**
+     * @brief Returns whether the FanControl cluster advertises the MultiSpeed feature.
+     *        Cached during InitFanControl(). Exposed for customer code; not overridable.
+     */
+    bool SupportsMultiSpeed() const;
+
+    /**
+     * @brief Convert a discrete speed step into a percent using SpeedMax.
+     */
+    static uint8_t SpeedToPercent(uint8_t speed, uint8_t speedMax);
+
+    chip::app::DataModel::Nullable<uint8_t> GetSpeedSetting();
+    chip::app::DataModel::Nullable<Percent> GetPercentSetting();
+
+    /**
+     * @brief Write SpeedSetting synchronously on the Matter thread. No-op when MultiSpeed is
+     *        disabled. Exposed for customer code; not overridable.
+     */
+    void SetSpeedSetting(uint8_t aNewSpeedSetting);
+
+    /**
+     * @brief Schedule a PercentSetting write on the Matter thread. Exposed for customer code;
+     *        not overridable.
+     */
+    void SetPercentSetting(Percent aNewPercentSetting);
 
     /**
      * @brief PlatformMgr().ScheduleWork() callback that flushes pending FanControl attribute writes
@@ -134,4 +167,10 @@ public:
 protected:
     /** Override of `BaseApplication::AppInit()`. */
     CHIP_ERROR AppInit() override;
+
+    /**
+     * @brief Write FanMode when it differs from the data model. Used by default attribute
+     *        handlers; exposed for customer overrides that reuse SDK sync behavior.
+     */
+    void SyncFanMode(FanModeEnum aNewFanMode);
 };
