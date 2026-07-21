@@ -30,6 +30,14 @@ jobs:
                           This PR syncs the csa-v1.6-branch branch with the release_2.9-1.6 branch.
 
                           **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
+                    - local_branch: csa-v1.6.1-branch
+                      pr_branch: automation/update_release_2.10-1.6.1
+                      base_branch: release_2.10-1.6.1
+                      title: "Sync csa-v1.6.1-branch branch with release_2.10-1.6.1"
+                      body: |
+                          This PR syncs the csa-v1.6.1-branch branch with the release_2.10-1.6.1 branch.
+
+                          **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
 
         steps:
             - name: Generate token for the workflow
@@ -37,8 +45,7 @@ jobs:
               uses: actions/create-github-app-token@v2
               with:
                   app-id: ${{ vars.SILABSSW_MATTER_CI_BOT_APP_ID }}
-                  private-key:
-                      ${{ secrets.SILABSSW_MATTER_CI_BOT_APP_PRIVATE_KEY }}
+                  private-key: ${{ secrets.SILABSSW_MATTER_CI_BOT_APP_PRIVATE_KEY }}
             - name: Mask the generated token
               run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
 
@@ -60,5 +67,4 @@ jobs:
                   title: ${{ matrix.title }}
                   body: ${{ matrix.body }}
                   token: ${{ steps.generate_token.outputs.token }}
-                  labels:
-                      changing-git-submodules-on-purpose, sl-require-admin-action
+                  labels: changing-git-submodules-on-purpose, sl-require-admin-action

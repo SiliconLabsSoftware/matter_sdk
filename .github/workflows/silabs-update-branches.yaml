@@ -16,6 +16,8 @@ jobs:
                       upstream_branch: master
                     - local_branch: csa-v1.6-branch
                       upstream_branch: v1.6-branch
+                    - local_branch: csa-v1.6.1-branch
+                      upstream_branch: v1.6.1-branch
 
         steps:
             - name: Generate token for the workflow
