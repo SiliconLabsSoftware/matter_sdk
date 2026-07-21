@@ -33,7 +33,7 @@
 #include <setup_payload/SetupPayload.h>
 #include <sl_cmsis_os2_common.h>
 
-#if defined (DISPLAY_ENABLED) && DISPLAY_ENABLED
+#if defined (SL_MATTER_DISPLAY_ENABLED) && SL_MATTER_DISPLAY_ENABLED
 #include <SensorsUI.h>
 #endif
 
@@ -75,7 +75,7 @@ CHIP_ERROR AppTask::AppInit()
         appError(err);
     }
 
-#ifdef DISPLAY_ENABLED
+#ifdef SL_MATTER_DISPLAY_ENABLED
     mCurrentSensorUI = kSensorUIEnum::kOccupancySensor;
 
 // Show QR Code if not provisioned
@@ -89,7 +89,7 @@ CHIP_ERROR AppTask::AppInit()
 
     UpdateSensorDisplay();
 
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 
     return err;
 }
@@ -128,7 +128,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 }
 
-#ifdef DISPLAY_ENABLED
+#ifdef SL_MATTER_DISPLAY_ENABLED
 void AppTask::UpdateDisplay()
 {
     CycleSensorUI();
@@ -168,7 +168,7 @@ void AppTask::CycleSensorUI()
     mCurrentSensorUI =
         static_cast<kSensorUIEnum>((static_cast<uint8_t>(mCurrentSensorUI) + 1) % static_cast<uint8_t>(kSensorUIEnum::kCount));
 }
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
@@ -209,9 +209,9 @@ void AppTask::SensorAttributeUpdateEvent(AppEvent * event)
     VerifyOrReturn(event != nullptr);
     VerifyOrReturn(event->Type == AppEvent::kEventType_SensorAttributeUpdate);
 
-#ifdef DISPLAY_ENABLED
+#ifdef SL_MATTER_DISPLAY_ENABLED
     sAppTask.UpdateSensorDisplay();
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 }
 
 void AppTask::OccupancyAttributeUpdateEvent(AppEvent * event)
@@ -221,7 +221,7 @@ void AppTask::OccupancyAttributeUpdateEvent(AppEvent * event)
 
     sOccupancyLed.Set(event->OccupancyEvent.occupancyDetected);
 
-#ifdef DISPLAY_ENABLED
+#ifdef SL_MATTER_DISPLAY_ENABLED
     sAppTask.UpdateSensorDisplay();
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 }
