@@ -151,7 +151,19 @@ def split_preprocessor_sections(text: str) -> List[Tuple[Optional[str], str]]:
     while i < len(lines):
         line = lines[i]
         stripped = line.strip()
-        if stripped.startswith("#if"):
+        if stripped.startswith("#ifdef "):
+            if current:
+                sections.append((ifdef_stack[-1], "".join(current)))
+                current = []
+            directive = stripped[7:].strip()
+            ifdef_stack.append(ifdef_macro_from_directive(directive))
+        elif stripped.startswith("#ifndef "):
+            if current:
+                sections.append((ifdef_stack[-1], "".join(current)))
+                current = []
+            directive = stripped[8:].strip()
+            ifdef_stack.append(ifdef_macro_from_directive(directive))
+        elif stripped.startswith("#if"):
             if current:
                 sections.append((ifdef_stack[-1], "".join(current)))
                 current = []
@@ -241,8 +253,9 @@ def parse_impl_header(path: Path) -> List[ParsedApi]:
     if not public_section:
         return []
 
+    public_section_no_comments = strip_comments(public_section)
     methods: List[ParsedApi] = []
-    for ifdef, block in split_preprocessor_sections(public_section):
+    for ifdef, block in split_preprocessor_sections(public_section_no_comments):
         methods.extend(extract_methods_from_section(block, ifdef))
     return methods
 
@@ -346,7 +359,7 @@ def compare_apis(
 
     for api in expected:
         if api.name not in actual_by_name:
-            errors.append(f"{header_path}: missing API '{api.name}' from manifest")
+            errors.append(f"{header_path}: missing API '{api.name}' from header")
             continue
         actual_api = actual_by_name[api.name]
         if normalize_signature(api.signature) != normalize_signature(actual_api.signature):
