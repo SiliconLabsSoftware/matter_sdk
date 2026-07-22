@@ -176,14 +176,19 @@ CHIP_ERROR AppTask::InitFanControl()
     uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
     AppInstance().HandlePercentSettingChange(percentSettingCB);
 
+    if (!sSupportsMultiSpeed)
+    {
+        // Startup runs before BaseApplication marks the app initialized, so
+        // boot-time FanMode writes may not loop back through the DM callback.
+        AppInstance().HandleFanModeChange(sFanMode);
+    }
+
     if (sSupportsMultiSpeed)
     {
         uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
         AppInstance().HandleSpeedSettingChange(speedSettingCB);
     }
-    // Startup runs before BaseApplication marks the app initialized, so
-    // boot-time FanMode writes may not loop back through the DM callback.
-    AppInstance().HandleFanModeChange(sFanMode);
+
     PostFanUiUpdateEvent();
 
     return CHIP_NO_ERROR;
