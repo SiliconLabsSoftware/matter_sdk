@@ -13,7 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Validate Silabs APIs against a committed manifest."""
+"""@brief Validate Silabs APIs against a committed manifest.
+
+Parses public APIs from AppTaskImpl.h (and ClosureManagerImpl.h
+for closure app) and compares API names and signatures to .github/silabs-apis.yaml.
+Fails when headers and manifest drift (missing, extra, or changed APIs).
+
+Use --bootstrap once to regenerate the manifest from current headers.
+"""
 
 from __future__ import annotations
 
