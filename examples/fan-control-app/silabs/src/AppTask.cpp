@@ -87,16 +87,6 @@ uint8_t sPercentCurrent      = 0;
 uint8_t sSpeedCurrent        = 0;
 bool sSupportsMultiSpeed     = false;
 
-bool ReadSupportsMultiSpeedFromFeatureMap()
-{
-    uint32_t featureMap = 0;
-    if (Attributes::FeatureMap::Get(kFanEndpoint, &featureMap) != Status::Success)
-    {
-        return false;
-    }
-    return (featureMap & to_underlying(Feature::kMultiSpeed)) != 0;
-}
-
 void UpdateFanControlLED()
 {
     sFanLED.Set(false);
@@ -163,7 +153,7 @@ CHIP_ERROR AppTask::InitFanControl()
     LinkAppLed(&sFanLED);
 
     PlatformMgr().LockChipStack();
-    sSupportsMultiSpeed = ReadSupportsMultiSpeedFromFeatureMap();
+    ReadSupportsMultiSpeedFromFeatureMap();
     if (Attributes::SpeedMax::Get(kFanEndpoint, &sSpeedMax) != Status::Success || sSpeedMax == 0)
     {
         sSpeedMax = static_cast<uint8_t>(FAN_MODE_HIGH_UPPER_BOUND);
@@ -186,19 +176,29 @@ CHIP_ERROR AppTask::InitFanControl()
     uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
     AppInstance().HandlePercentSettingChange(percentSettingCB);
 
-    if (AppInstance().SupportsMultiSpeed())
+    if (sSupportsMultiSpeed)
     {
         uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
         AppInstance().HandleSpeedSettingChange(speedSettingCB);
     }
-
+    // Startup runs before BaseApplication marks the app initialized, so
+    // boot-time FanMode writes may not loop back through the DM callback.
+    AppInstance().HandleFanModeChange(sFanMode);
     PostFanUiUpdateEvent();
 
     return CHIP_NO_ERROR;
 }
 
-bool AppTask::SupportsMultiSpeed() const
+bool AppTask::ReadSupportsMultiSpeedFromFeatureMap()
 {
+    uint32_t featureMap = 0;
+    if (Attributes::FeatureMap::Get(kFanEndpoint, &featureMap) != Status::Success)
+    {
+        sSupportsMultiSpeed = false;
+        return false;
+    }
+
+    sSupportsMultiSpeed = (featureMap & to_underlying(Feature::kMultiSpeed)) != 0;
     return sSupportsMultiSpeed;
 }
 
@@ -261,7 +261,7 @@ Status AppTask::SetPercentSetting(Percent aNewPercentSetting)
 
 Status AppTask::SetSpeedSetting(uint8_t aNewSpeedSetting)
 {
-    if (!SupportsMultiSpeed())
+    if (!sSupportsMultiSpeed)
     {
         return Status::Success;
     }
@@ -290,15 +290,18 @@ void AppTask::SyncFanMode(FanModeEnum aNewFanMode)
         return;
     }
 
-    sFanMode            = aNewFanMode;
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
     data->endPoint      = kFanEndpoint;
-    data->fanMode       = sFanMode;
+    data->fanMode       = aNewFanMode;
     data->isFanMode     = true;
     if (PlatformMgr().ScheduleWork(&CustomerAppTask::UpdateClusterState, reinterpret_cast<intptr_t>(data)) != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "SyncFanMode: failed to update FanMode attribute");
+        chip::Platform::Delete(data);
+        return;
     }
+
+    sFanMode = aNewFanMode;
 }
 
 FanModeEnum AppTask::DeriveFanModeFromPercent(Percent percent)
@@ -322,7 +325,7 @@ void AppTask::HandleFanModeChange(FanModeEnum aNewFanMode)
 {
     ChipLogDetail(NotSpecified, "HandleFanModeChange: %d", to_underlying(aNewFanMode));
 
-    if (SupportsMultiSpeed())
+    if (sSupportsMultiSpeed)
     {
         uint8_t speedSettingCurrent = GetSpeedSetting().ValueOr(101);
         uint8_t highSpeedSetting =
@@ -455,7 +458,7 @@ void AppTask::HandlePercentSettingChange(uint8_t aNewPercentSetting)
 
 void AppTask::HandleSpeedSettingChange(uint8_t aNewSpeedSetting)
 {
-    VerifyOrReturn(SupportsMultiSpeed());
+    VerifyOrReturn(sSupportsMultiSpeed);
     VerifyOrReturn(aNewSpeedSetting != sSpeedCurrent);
     VerifyOrReturn(sFanMode != FanModeEnum::kAuto);
     ChipLogDetail(NotSpecified, "HandleSpeedSettingChange: %d", aNewSpeedSetting);
@@ -518,7 +521,7 @@ Status AppTask::HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowes
 
     uint8_t speedMin = aLowestOff ? kaLowestOffTrue : kaLowestOffFalse;
 
-    if (SupportsMultiSpeed())
+    if (sSupportsMultiSpeed)
     {
         DataModel::Nullable<uint8_t> speedSettingNullable = GetSpeedSetting();
         uint8_t curSpeedSetting                         = speedSettingNullable.IsNull() ? speedMin : speedSettingNullable.Value();
@@ -644,7 +647,7 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
         break;
     }
     case Attributes::SpeedSetting::Id: {
-        if (AppInstance().SupportsMultiSpeed())
+        if (sSupportsMultiSpeed)
         {
             AppInstance().HandleSpeedSettingChange(*value);
         }
@@ -653,7 +656,7 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
     case Attributes::FanMode::Id: {
         sFanMode = *reinterpret_cast<FanModeEnum *>(value);
         // MultiSpeed: cluster keeps FanMode / PercentSetting / SpeedSetting consistent.
-        if (!AppInstance().SupportsMultiSpeed())
+        if (!sSupportsMultiSpeed)
         {
             AppInstance().HandleFanModeChange(sFanMode);
         }
