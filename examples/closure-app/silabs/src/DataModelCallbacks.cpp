@@ -55,7 +55,7 @@ void MatterPostAttributeChangeCallback(const ConcreteAttributePath & attributePa
 void MatterClosureControlClusterServerAttributeChangedCallback(const ConcreteAttributePath & attributePath)
 {
     ChipLogProgress(Zcl, "Closure Control cluster ID: " ChipLogFormatMEI, ChipLogValueMEI(attributePath.mAttributeId));
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     using namespace Clusters::ClosureControl::Attributes;
 
     switch (attributePath.mAttributeId)
@@ -71,7 +71,7 @@ void MatterClosureControlClusterServerAttributeChangedCallback(const ConcreteAtt
     default:
         break;
     }
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 }
 
 void MatterClosureDimensionClusterServerAttributeChangedCallback(const ConcreteAttributePath & attributePath)

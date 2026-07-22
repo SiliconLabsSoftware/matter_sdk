@@ -17,7 +17,7 @@
  */
 
 #include "FanControlManager.h"
-#if defined (DISPLAY_ENABLED) && DISPLAY_ENABLED
+#if defined (SL_MATTER_DISPLAY_ENABLED) && SL_MATTER_DISPLAY_ENABLED
 #include "FanControlUI.h"
 #endif
 
@@ -187,7 +187,7 @@ void FanControlManager::HandleFanControlAttributeChange(AttributeId attributeId,
         mFanMode = *reinterpret_cast<FanModeEnum *>(value);
         FanModeWriteCallback(mFanMode);
         UpdateFanControlLED();
-#if defined (DISPLAY_ENABLED) && DISPLAY_ENABLED
+#if defined (SL_MATTER_DISPLAY_ENABLED) && SL_MATTER_DISPLAY_ENABLED
         UpdateFanControlLCD();
 #endif
         break;
