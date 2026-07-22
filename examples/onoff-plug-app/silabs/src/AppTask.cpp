@@ -113,7 +113,7 @@ CHIP_ERROR AppTask::AppInit()
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #if SL_MATTER_DISPLAY_ENABLED
     GetLCD().WriteDemoUI(sPlugOn);
-#ifdef SL_MATTER_QR_CODE_ENABLED
+#if SL_MATTER_QR_CODE_ENABLED
 #ifdef SL_WIFI
     if (!ConnectivityMgr().IsWiFiStationProvisioned())
 #else

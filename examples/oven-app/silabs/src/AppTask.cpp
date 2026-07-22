@@ -26,7 +26,7 @@
 #if SL_MATTER_DISPLAY_ENABLED
 #include "OvenUI.h"
 #include "lcd.h"
-#ifdef SL_MATTER_QR_CODE_ENABLED
+#if SL_MATTER_QR_CODE_ENABLED
 #include "qrcodegen.h"
 #endif // SL_MATTER_QR_CODE_ENABLED
 #endif // SL_MATTER_DISPLAY_ENABLED
@@ -98,7 +98,7 @@ CHIP_ERROR AppTask::AppInit()
 // Update the LCD with the Stored value. Show QR Code if not provisioned
 #if SL_MATTER_DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
-#ifdef SL_MATTER_QR_CODE_ENABLED
+#if SL_MATTER_QR_CODE_ENABLED
     if (!BaseApplication::GetProvisionStatus())
     {
         GetLCD().ShowQRCode(true);
