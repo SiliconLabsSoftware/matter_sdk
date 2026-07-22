@@ -24,6 +24,12 @@ config("icd-shell-config") {
 config("im-shell-config") {
   include_dirs = [ "./im/" ]
 }
+config("tracing-shell-config") {
+  include_dirs = [ "./tracing/" ]
+}
+config("ble-shell-config") {
+  include_dirs = [ "./ble/" ]
+}
 
 source_set("matter-shell") {
   defines = [ "ENABLE_CHIP_SHELL" ]
@@ -65,4 +71,29 @@ source_set("im") {
     "${chip_root}/src/app:interaction-model",
     "${chip_root}/src/app/server:server",
   ]
+}
+
+source_set("tracing") {
+  sources = [
+    "./tracing/TracingShellCommands.cpp",
+    "./tracing/TracingShellCommands.h",
+  ]
+
+  public_configs = [ ":tracing-shell-config" ]
+
+  deps = [
+    ":matter-shell",
+    "${chip_root}/src/platform/silabs/tracing:SilabsTracing",
+  ]
+}
+
+source_set("ble") {
+  sources = [
+    "./ble/BLEShellCommands.cpp",
+    "./ble/BLEShellCommands.h",
+  ]
+
+  public_configs = [ ":ble-shell-config" ]
+
+  deps = [ ":matter-shell" ]
 }
