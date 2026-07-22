@@ -10,7 +10,6 @@ on:
             - ".github/silabs-crtp-apis.yaml"
             - "scripts/tools/silabs/validate_crtp_apis.py"
     workflow_dispatch:
-    push: # TODO: remove this after testing
 
 concurrency:
     group: silabs-validate-apis-${{ github.ref }}
