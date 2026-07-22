@@ -128,10 +128,11 @@ public:
     void HandleSpeedSettingChange(uint8_t aNewSpeedSetting);
 
     /**
-     * @brief Returns whether the FanControl cluster advertises the MultiSpeed feature.
-     *        Cached during InitFanControl(). Exposed for customer code; not overridable.
+     * @brief Read MultiSpeed support from the FanControl FeatureMap and refresh the
+     *        sSupportsMultiSpeed cache. Call during InitFanControl() (including custom
+     *        overrides) with the chip stack locked. Exposed for customer code; not overridable.
      */
-    bool SupportsMultiSpeed() const;
+    bool ReadSupportsMultiSpeedFromFeatureMap();
 
     /**
      * @brief Convert a discrete speed step into a percent using SpeedMax.
