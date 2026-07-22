@@ -80,7 +80,9 @@ public:
     /**
     * @brief Update the Air Quality cluster attribute
     */
-    static void WriteAirQualityToAttribute(intptr_t context);
+    static void WriteAirQualityToAttribute(intptr_t context, bool is_test);
+
+    static void TestMethod(intptr_t context, bool is_test);
 
     /**
      * @brief Event handler when a button is pressed

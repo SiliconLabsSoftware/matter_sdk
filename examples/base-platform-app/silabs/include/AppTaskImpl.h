@@ -61,11 +61,13 @@ public:
         CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnEnterActiveModeImpl);
     }
 
-    void OnEnterIdleMode() override { CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnEnterIdleModeImpl); }
+    void OnEnterIdleMode(bool is_test) override { CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnEnterIdleModeImpl); }
 
     void OnTransitionToIdle() override { CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnTransitionToIdleImpl); }
 
     void OnICDModeChange() override { CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, OnICDModeChangeImpl); }
+
+    void TestMethod(bool is_test) { CRTP_OPTIONAL_VOID_DISPATCH(AppTaskImpl, Derived, TestMethodImpl); }
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_SERVER) && CHIP_CONFIG_ENABLE_ICD_SERVER
 
 private:
