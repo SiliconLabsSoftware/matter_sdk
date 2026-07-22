@@ -1,0 +1,405 @@
+# CI validation baseline for Silabs CRTP override APIs.
+# When adding/changing an API, update this file and the Confluence page.
+# https://confluence.silabs.com/spaces/MATTER/pages/873669145/CRTP+Override+APIs+by+App
+apps:
+  air-quality-sensor-app:
+    classes:
+      AppTask:
+        header: examples/air-quality-sensor-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitAirQualitySensor
+          signature: CHIP_ERROR InitAirQualitySensor()
+        - name: GetAirQualityValue
+          signature: CHIP_ERROR GetAirQualityValue(int32_t &air_quality)
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: SensorTimerEventHandler
+          signature: static void SensorTimerEventHandler(void *arg)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+  base-platform-app:
+    classes:
+      AppTask:
+        header: examples/base-platform-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: ApplicationEventHandler
+          signature: static void ApplicationEventHandler(AppEvent *aEvent)
+        - name: OnEnterActiveMode
+          signature: void OnEnterActiveMode()override
+          ifdef: CHIP_CONFIG_ENABLE_ICD_SERVER
+        - name: OnEnterIdleMode
+          signature: void OnEnterIdleMode()override
+          ifdef: CHIP_CONFIG_ENABLE_ICD_SERVER
+        - name: OnTransitionToIdle
+          signature: void OnTransitionToIdle()override
+          ifdef: CHIP_CONFIG_ENABLE_ICD_SERVER
+        - name: OnICDModeChange
+          signature: void OnICDModeChange()override
+          ifdef: CHIP_CONFIG_ENABLE_ICD_SERVER
+  closure-app:
+    classes:
+      AppTask:
+        header: examples/closure-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: ClosureButtonActionEventHandler
+          signature: static void ClosureButtonActionEventHandler(AppEvent *aEvent)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+        - name: DMClosureControlClusterAttributeChangedCallback
+          signature: void DMClosureControlClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath &attributePath)
+        - name: DMClosureDimensionClusterAttributeChangedCallback
+          signature: void DMClosureDimensionClusterAttributeChangedCallback(const chip::app::ConcreteAttributePath &attributePath)
+      ClosureManager:
+        header: examples/closure-app/silabs/include/ClosureManagerImpl.h
+        apis:
+        - name: Init
+          signature: void Init()override
+        - name: OnCalibrateCommand
+          signature: chip::Protocols::InteractionModel::Status OnCalibrateCommand()override
+        - name: OnMoveToCommand
+          signature: chip::Protocols::InteractionModel::Status OnMoveToCommand(const chip::Optional<chip::app::Clusters::ClosureControl::TargetPositionEnum>position,
+            const chip::Optional<bool>latch, const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum>speed)override
+        - name: OnStopCommand
+          signature: chip::Protocols::InteractionModel::Status OnStopCommand()override
+        - name: OnSetTargetCommand
+          signature: chip::Protocols::InteractionModel::Status OnSetTargetCommand(const chip::Optional<chip::Percent100ths>&position,
+            const chip::Optional<bool>&latch, const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum>&speed,
+            const chip::EndpointId endpointId)override
+        - name: OnStepCommand
+          signature: chip::Protocols::InteractionModel::Status OnStepCommand(const chip::app::Clusters::ClosureDimension::StepDirectionEnum
+            &direction, const uint16_t &numberOfSteps, const chip::Optional<chip::app::Clusters::Globals::ThreeLevelAutoEnum>&speed,
+            const chip::EndpointId &endpointId)override
+        - name: HandleClosureActionComplete
+          signature: void HandleClosureActionComplete(Action_t action)
+        - name: HandleClosureMotionAction
+          signature: void HandleClosureMotionAction()
+        - name: HandleClosureUnlatchAction
+          signature: void HandleClosureUnlatchAction()
+        - name: GetPanelNextPosition
+          signature: bool GetPanelNextPosition(const chip::app::Clusters::ClosureDimension::GenericDimensionStateStruct &currentState,
+            const chip::app::Clusters::ClosureDimension::GenericDimensionStateStruct &targetState, chip::app::DataModel::Nullable<chip::Percent100ths>&nextPosition)
+        - name: HandlePanelSetTargetAction
+          signature: void HandlePanelSetTargetAction(chip::EndpointId endpointId)
+        - name: HandlePanelUnlatchAction
+          signature: void HandlePanelUnlatchAction(chip::EndpointId endpointId)
+        - name: HandlePanelStepAction
+          signature: void HandlePanelStepAction(chip::EndpointId endpointId)
+  evse-app:
+    classes:
+      AppTask:
+        header: examples/evse-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: ApplicationInit
+          signature: void ApplicationInit()
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: EnergyManagementActionEventHandler
+          signature: static void EnergyManagementActionEventHandler(AppEvent *aEvent)
+  fan-control-app:
+    classes:
+      AppTask:
+        header: examples/fan-control-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitFanControl
+          signature: CHIP_ERROR InitFanControl()
+        - name: HandleStep
+          signature: Status HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowestOff)override
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: FanUiUpdateEventHandler
+          signature: static void FanUiUpdateEventHandler(AppEvent *aEvent)
+        - name: HandleFanModeChange
+          signature: void HandleFanModeChange(FanModeEnum aNewFanMode)
+        - name: HandlePercentSettingChange
+          signature: void HandlePercentSettingChange(uint8_t aNewPercentSetting)
+        - name: HandleSpeedSettingChange
+          signature: void HandleSpeedSettingChange(uint8_t aNewSpeedSetting)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+  light-switch-app:
+    classes:
+      AppTask:
+        header: examples/light-switch-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitLightSwitch
+          signature: CHIP_ERROR InitLightSwitch(chip::EndpointId lightSwitchEndpoint, chip::EndpointId genericSwitchEndpoint)
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: AppEventHandler
+          signature: static void AppEventHandler(AppEvent *aEvent)
+        - name: InitBindingHandler
+          signature: static void InitBindingHandler(intptr_t arg)
+        - name: LightSwitchChangedHandler
+          signature: static void LightSwitchChangedHandler(const chip::app::Clusters::Binding::TableEntry &binding, chip::OperationalDeviceProxy
+            *peer_device, void *context)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+  lighting-app:
+    classes:
+      AppTask:
+        header: examples/lighting-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitLight
+          signature: CHIP_ERROR InitLight()
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: OnTriggerOffWithEffect
+          signature: static void OnTriggerOffWithEffect(OnOffEffect *effect)
+        - name: LightActionEventHandler
+          signature: static void LightActionEventHandler(AppEvent *aEvent)
+        - name: LightTimerEventHandler
+          signature: static void LightTimerEventHandler(void *timerCbArg)
+        - name: LightControlEventHandler
+          signature: static void LightControlEventHandler(AppEvent *aEvent)
+          ifdef: SL_MATTER_RGB_LED_ENABLED
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+  lock-app:
+    classes:
+      AppTask:
+        header: examples/lock-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitLock
+          signature: CHIP_ERROR InitLock()
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: LockButtonActionHandler
+          signature: static void LockButtonActionHandler(AppEvent *aEvent)
+        - name: UnlatchCallback
+          signature: static void UnlatchCallback(void *argument)
+        - name: ActuatorMovementEventHandler
+          signature: static void ActuatorMovementEventHandler(AppEvent *aEvent)
+        - name: LockActionEventHandler
+          signature: static void LockActionEventHandler(AppEvent *aEvent)
+        - name: LockRequestEventHandler
+          signature: static void LockRequestEventHandler(AppEvent *aEvent)
+        - name: HandleLockRequestOnAppTask
+          signature: void HandleLockRequestOnAppTask(const AppTask::LockRequest &request)
+        - name: UnlockAfterUnlatch
+          signature: static void UnlockAfterUnlatch(intptr_t context)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+        - name: DMDoorLockOnDoorLockCommand
+          signature: bool DMDoorLockOnDoorLockCommand(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex>&fabricIdx,
+            const chip::app::DataModel::Nullable<chip::NodeId>&nodeId, const chip::Optional<chip::ByteSpan>&pinCode, chip::app::Clusters::DoorLock::OperationErrorEnum
+            &err)
+        - name: DMDoorLockOnDoorUnlockCommand
+          signature: bool DMDoorLockOnDoorUnlockCommand(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex>&fabricIdx,
+            const chip::app::DataModel::Nullable<chip::NodeId>&nodeId, const chip::Optional<chip::ByteSpan>&pinCode, chip::app::Clusters::DoorLock::OperationErrorEnum
+            &err)
+        - name: DMDoorLockOnDoorUnboltCommand
+          signature: bool DMDoorLockOnDoorUnboltCommand(chip::EndpointId endpointId, const chip::app::DataModel::Nullable<chip::FabricIndex>&fabricIdx,
+            const chip::app::DataModel::Nullable<chip::NodeId>&nodeId, const chip::Optional<chip::ByteSpan>&pinCode, chip::app::Clusters::DoorLock::OperationErrorEnum
+            &err)
+        - name: DMDoorLockGetCredential
+          signature: bool DMDoorLockGetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum
+            credentialType, EmberAfPluginDoorLockCredentialInfo &credential)
+        - name: DMDoorLockSetCredential
+          signature: bool DMDoorLockSetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, chip::FabricIndex
+            creator, chip::FabricIndex modifier, DlCredentialStatus credentialStatus, CredentialTypeEnum credentialType, const
+            chip::ByteSpan &credentialData)
+        - name: DMDoorLockGetUser
+          signature: bool DMDoorLockGetUser(chip::EndpointId endpointId, uint16_t userIndex, EmberAfPluginDoorLockUserInfo
+            &user)
+        - name: DMDoorLockSetUser
+          signature: bool DMDoorLockSetUser(chip::EndpointId endpointId, uint16_t userIndex, chip::FabricIndex creator, chip::FabricIndex
+            modifier, const chip::CharSpan &userName, uint32_t uniqueId, UserStatusEnum userStatus, UserTypeEnum usertype,
+            CredentialRuleEnum credentialRule, const CredentialStruct *credentials, size_t totalCredentials)
+        - name: DMDoorLockGetWeekDaySchedule
+          signature: DlStatus DMDoorLockGetWeekDaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
+            EmberAfPluginDoorLockWeekDaySchedule &schedule)
+        - name: DMDoorLockSetWeekDaySchedule
+          signature: DlStatus DMDoorLockSetWeekDaySchedule(chip::EndpointId endpointId, uint8_t weekdayIndex, uint16_t userIndex,
+            DlScheduleStatus status, DaysMaskMap daysMask, uint8_t startHour, uint8_t startMinute, uint8_t endHour, uint8_t
+            endMinute)
+        - name: DMDoorLockGetYearDaySchedule
+          signature: DlStatus DMDoorLockGetYearDaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
+            EmberAfPluginDoorLockYearDaySchedule &schedule)
+        - name: DMDoorLockSetYearDaySchedule
+          signature: DlStatus DMDoorLockSetYearDaySchedule(chip::EndpointId endpointId, uint8_t yearDayIndex, uint16_t userIndex,
+            DlScheduleStatus status, uint32_t localStartTime, uint32_t localEndTime)
+        - name: DMDoorLockGetHolidaySchedule
+          signature: DlStatus DMDoorLockGetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, EmberAfPluginDoorLockHolidaySchedule
+            &holidaySchedule)
+        - name: DMDoorLockSetHolidaySchedule
+          signature: DlStatus DMDoorLockSetHolidaySchedule(chip::EndpointId endpointId, uint8_t holidayIndex, DlScheduleStatus
+            status, uint32_t localStartTime, uint32_t localEndTime, OperatingModeEnum operatingMode)
+        - name: DMDoorLockOnAutoRelock
+          signature: void DMDoorLockOnAutoRelock(chip::EndpointId endpointId)
+  multi-sensor-app:
+    classes:
+      AppTask:
+        header: examples/multi-sensor-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitSensorManager
+          signature: CHIP_ERROR InitSensorManager()
+        - name: GetTemperatureAndHumidity
+          signature: CHIP_ERROR GetTemperatureAndHumidity(int16_t &temperature, uint16_t &humidity)
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: ProcessButtonEvent
+          signature: static void ProcessButtonEvent(AppEvent *aEvent)
+        - name: TriggerSensorAction
+          signature: static void TriggerSensorAction(chip::System::Layer *aLayer, void *aAppState)
+        - name: OccupancyAttributeUpdateEvent
+          signature: static void OccupancyAttributeUpdateEvent(AppEvent *aEvent)
+        - name: SensorAttributeUpdateEvent
+          signature: static void SensorAttributeUpdateEvent(AppEvent *aEvent)
+        - name: OnAttributeChanged
+          signature: void OnAttributeChanged(const chip::app::ConcreteAttributePath &path, chip::app::DataModel::AttributeChangeType
+            type)override
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+  onoff-plug-app:
+    classes:
+      AppTask:
+        header: examples/onoff-plug-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitPlug
+          signature: CHIP_ERROR InitPlug()
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: OnOffActionEventHandler
+          signature: static void OnOffActionEventHandler(AppEvent *aEvent)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+  oven-app:
+    classes:
+      AppTask:
+        header: examples/oven-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: OvenButtonHandler
+          signature: static void OvenButtonHandler(AppEvent *aEvent)
+        - name: OvenActionHandler
+          signature: static void OvenActionHandler(AppEvent *aEvent)
+        - name: ConnectivityEventHandler
+          signature: static void ConnectivityEventHandler(const chip::DeviceLayer::ChipDeviceEvent *event, intptr_t arg)
+        - name: InitBindingHandler
+          signature: static void InitBindingHandler(intptr_t arg)
+        - name: CookTopBindingPropagateState
+          signature: static void CookTopBindingPropagateState(chip::EndpointId cookTopEndpoint, bool cookTopOn)
+        - name: BoundDeviceChangedHandler
+          signature: static void BoundDeviceChangedHandler(const chip::app::Clusters::Binding::TableEntry &binding, chip::OperationalDeviceProxy
+            *peerDevice, void *context)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+        - name: OnAttributeChanged
+          signature: void OnAttributeChanged(const chip::app::ConcreteAttributePath &path, chip::app::DataModel::AttributeChangeType
+            type)override
+        - name: DMOvenModeClusterInitCallback
+          signature: void DMOvenModeClusterInitCallback(chip::EndpointId endpointId)
+        - name: DMOvenModeClusterShutdownCallback
+          signature: void DMOvenModeClusterShutdownCallback(chip::EndpointId endpointId, MatterClusterShutdownType shutdownType)
+        - name: InitOven
+          signature: CHIP_ERROR InitOven()
+        - name: OnOffAttributeChangeHandler
+          signature: void OnOffAttributeChangeHandler(chip::EndpointId endpointId, chip::AttributeId attributeId, uint8_t
+            *value, uint16_t size)
+        - name: IsTransitionBlocked
+          signature: bool IsTransitionBlocked(uint8_t fromMode, uint8_t toMode)override
+  rangehood-app:
+    classes:
+      AppTask:
+        header: examples/rangehood-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitRangeHood
+          signature: CHIP_ERROR InitRangeHood()
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: ActionTriggerHandler
+          signature: static void ActionTriggerHandler(AppEvent *aEvent)
+        - name: FanControlButtonHandler
+          signature: static void FanControlButtonHandler(AppEvent *aEvent)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+  refrigerator-app:
+    classes:
+      AppTask:
+        header: examples/refrigerator-app/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitRefrigerator
+          signature: CHIP_ERROR InitRefrigerator()
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+        - name: CabinetModeClusterInit
+          signature: void CabinetModeClusterInit(chip::EndpointId endpointId)
+        - name: Init
+          signature: CHIP_ERROR Init()override
+        - name: HandleChangeToMode
+          signature: void HandleChangeToMode(uint8_t newMode, chip::app::Clusters::ModeBase::Commands::ChangeToModeResponse::Type
+            &response)override
+        - name: GetModeLabelByIndex
+          signature: CHIP_ERROR GetModeLabelByIndex(uint8_t modeIndex, chip::MutableCharSpan &label)override
+        - name: GetModeValueByIndex
+          signature: CHIP_ERROR GetModeValueByIndex(uint8_t modeIndex, uint8_t &value)override
+        - name: GetModeTagsByIndex
+          signature: CHIP_ERROR GetModeTagsByIndex(uint8_t modeIndex, chip::app::DataModel::List<chip::app::Clusters::detail::Structs::ModeTagStruct::Type>&tags)override
+  thermostat:
+    classes:
+      AppTask:
+        header: examples/thermostat/silabs/include/AppTaskImpl.h
+        apis:
+        - name: AppInit
+          signature: CHIP_ERROR AppInit()override
+        - name: InitThermostat
+          signature: CHIP_ERROR InitThermostat()
+        - name: InitSensor
+          signature: CHIP_ERROR InitSensor()
+        - name: GetTemperature
+          signature: CHIP_ERROR GetTemperature(int16_t &temperature)
+        - name: ButtonEventHandler
+          signature: static void ButtonEventHandler(uint8_t button, uint8_t btnAction)
+        - name: SensorTimerEventHandler
+          signature: static void SensorTimerEventHandler(void *arg)
+        - name: TemperatureUpdateEventHandler
+          signature: static void TemperatureUpdateEventHandler(AppEvent *aEvent)
+        - name: DMPostAttributeChangeCallback
+          signature: void DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath &attributePath, uint8_t type,
+            uint16_t size, uint8_t *value)
+        - name: DMThermostatClusterInit
+          signature: void DMThermostatClusterInit(chip::EndpointId endpoint)

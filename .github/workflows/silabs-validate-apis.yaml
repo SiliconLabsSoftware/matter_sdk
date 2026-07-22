@@ -1,0 +1,35 @@
+name: Validate Silabs CRTP APIs
+
+on:
+    pull_request:
+        branches:
+            - main
+            - "release_*"
+        paths:
+            - "examples/*/silabs/include/*Impl.h"
+            - ".github/silabs-crtp-apis.yaml"
+            - "scripts/tools/silabs/validate_crtp_apis.py"
+    workflow_dispatch:
+
+concurrency:
+    group: silabs-validate-apis-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    validate-crtp-apis:
+        name: Validate CRTP override APIs
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+
+            - name: Install dependencies
+              run: python -m pip install pyyaml
+
+            - name: Validate CRTP APIs against manifest
+              run: python3 scripts/tools/silabs/validate_crtp_apis.py
