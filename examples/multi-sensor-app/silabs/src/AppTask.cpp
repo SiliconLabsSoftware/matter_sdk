@@ -75,7 +75,7 @@ CHIP_ERROR AppTask::AppInit()
         appError(err);
     }
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     mCurrentSensorUI = kSensorUIEnum::kOccupancySensor;
 
 // Show QR Code if not provisioned
@@ -128,7 +128,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 }
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 void AppTask::UpdateDisplay()
 {
     CycleSensorUI();
@@ -209,7 +209,7 @@ void AppTask::SensorAttributeUpdateEvent(AppEvent * event)
     VerifyOrReturn(event != nullptr);
     VerifyOrReturn(event->Type == AppEvent::kEventType_SensorAttributeUpdate);
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     sAppTask.UpdateSensorDisplay();
 #endif // SL_MATTER_DISPLAY_ENABLED
 }
@@ -221,7 +221,7 @@ void AppTask::OccupancyAttributeUpdateEvent(AppEvent * event)
 
     sOccupancyLed.Set(event->OccupancyEvent.occupancyDetected);
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     sAppTask.UpdateSensorDisplay();
 #endif // SL_MATTER_DISPLAY_ENABLED
 }

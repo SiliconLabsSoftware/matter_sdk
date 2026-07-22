@@ -17,7 +17,7 @@
  */
 #pragma once
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 #include <AppTask.h>
 #include <SensorManager.h>
 #include <glib.h>

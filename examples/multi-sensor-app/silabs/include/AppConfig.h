@@ -29,7 +29,7 @@
 
 #define SENSOR_NAME "Sensor-App"
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 
 // Occupancy Sensor UI - Occupancy detected
 #define ON_DEMO_BITMAP                                                                                                             \

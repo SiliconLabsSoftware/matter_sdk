@@ -25,7 +25,7 @@
 
 #include "LEDWidget.h"
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 #include "RangeHoodUI.h"
 #include "lcd.h"
 #ifdef QR_CODE_ENABLED
@@ -148,7 +148,7 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     SuccessOrLog(GetLCD().Init((uint8_t *) "Rangehood-App"), AppServer, "Failed to initialize LCD");
     GetLCD().SetCustomUI(RangeHoodUI::DrawUI);
 #endif // SL_MATTER_DISPLAY_ENABLED
@@ -156,7 +156,7 @@ CHIP_ERROR AppTask::AppInit()
     err = AppInstance().InitRangeHood();
     VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(AppServer, "InitRangeHood failed"));
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
 #ifdef QR_CODE_ENABLED
 #ifdef SL_WIFI
@@ -256,7 +256,7 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
     case LIGHT_ON_ACTION:
         ChipLogProgress(AppServer, "Light ON");
         sLightLED.Set(true);
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
 #endif // SL_MATTER_DISPLAY_ENABLED
         break;
@@ -264,13 +264,13 @@ void AppTask::ActionTriggerHandler(AppEvent * aEvent)
     case LIGHT_OFF_ACTION:
         ChipLogProgress(AppServer, "Light OFF");
         sLightLED.Set(false);
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
 #endif // SL_MATTER_DISPLAY_ENABLED
         break;
 
     case FAN_MODE_CHANGE_ACTION:
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
 #endif // SL_MATTER_DISPLAY_ENABLED
         break;

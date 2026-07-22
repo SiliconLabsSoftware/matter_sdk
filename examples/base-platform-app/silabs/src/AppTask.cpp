@@ -24,7 +24,7 @@
 
 #include "LEDWidget.h"
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 #include "lcd.h"
 #ifdef QR_CODE_ENABLED
 #include "qrcodegen.h"
@@ -70,7 +70,7 @@ CHIP_ERROR AppTask::AppInit()
     sLightLED.Init(LIGHT_LED);
     sLightLED.Set(false);
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     GetLCD().WriteDemoUI(true);
 #ifdef QR_CODE_ENABLED
 #ifdef SL_WIFI
@@ -154,7 +154,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 // DO NOT COPY for product logic. This is only a showcase of the Platform app support for the LIT ICD feature in test.
 void AppTask::OnEnterActiveModeDefault()
 {
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     appInstance().GetLCD().WriteDemoUI(true);
 #endif
 }
@@ -162,7 +162,7 @@ void AppTask::OnEnterActiveModeDefault()
 // DO NOT COPY for product logic. This is only a showcase of the Platform app support for the LIT ICD feature in test.
 void AppTask::OnEnterIdleModeDefault()
 {
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     appInstance().GetLCD().WriteDemoUI(false);
 #endif
 }

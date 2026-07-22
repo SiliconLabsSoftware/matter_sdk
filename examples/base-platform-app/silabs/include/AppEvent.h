@@ -20,7 +20,7 @@
 #pragma once
 
 #include <cstdint>
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 #include "lcd.h"
 #endif
 
@@ -45,7 +45,7 @@ struct AppEvent
         {
             uint8_t Action;
         } ButtonEvent;
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
         struct
         {
             SilabsLCD::Screen_e screen;

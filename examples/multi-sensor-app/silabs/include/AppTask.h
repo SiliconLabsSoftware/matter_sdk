@@ -94,7 +94,7 @@ public:
      */
     static void OccupancyAttributeUpdateEvent(AppEvent * event);
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     /**
      * @brief LCD callback function to cycle LCD display.
      *        Function switch to the next LCD UI and update the show values.
@@ -125,7 +125,7 @@ private:
      */
     CHIP_ERROR AppInit() override;
 
-#ifdef SL_MATTER_DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     /**
      * @brief Function cycle between the different LCD UIs.
      *        The LCD order is : Occupancy -> Temp/Hum values -> Status Screen -> QR code (if enabled) -> Occupancy.
