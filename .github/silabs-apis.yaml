@@ -1,4 +1,4 @@
-# CI validation baseline for Silabs CRTP override APIs.
+# CI validation baseline for Silabs APIs.
 # When adding/changing an API, update this file and the Confluence page.
 # https://confluence.silabs.com/spaces/MATTER/pages/873669145/CRTP+Override+APIs+by+App
 apps:

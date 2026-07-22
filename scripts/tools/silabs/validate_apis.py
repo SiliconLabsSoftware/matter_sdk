@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Validate Silabs CRTP override APIs against a committed manifest."""
+"""Validate Silabs APIs against a committed manifest."""
 
 from __future__ import annotations
 
@@ -28,9 +28,9 @@ from typing import Dict, List, Optional, Tuple
 
 import yaml
 
-DEFAULT_MANIFEST = ".github/silabs-crtp-apis.yaml"
+DEFAULT_MANIFEST = ".github/silabs-apis.yaml"
 MANIFEST_HEADER_COMMENT = (
-    "# CI validation baseline for Silabs CRTP override APIs.\n"
+    "# CI validation baseline for Silabs APIs.\n"
     "# When adding/changing an API, update this file and the Confluence page.\n"
     "# https://confluence.silabs.com/spaces/MATTER/pages/873669145/CRTP+Override+APIs+by+App\n"
 )
@@ -441,12 +441,12 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     errors = validate_manifest(repo_root, manifest)
     if errors:
-        print("CRTP API validation failed:", file=sys.stderr)
+        print("API validation failed:", file=sys.stderr)
         for error in errors:
             print(f"  - {error}", file=sys.stderr)
         return 1
 
-    print("CRTP API validation passed.")
+    print("API validation passed.")
     return 0
 
 
