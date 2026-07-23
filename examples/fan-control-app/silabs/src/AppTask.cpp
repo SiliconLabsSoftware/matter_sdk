@@ -154,7 +154,7 @@ CHIP_ERROR AppTask::InitFanControl()
 
     PlatformMgr().LockChipStack();
     ReadSupportsMultiSpeedFromFeatureMap();
-    if (Attributes::SpeedMax::Get(kFanEndpoint, &sSpeedMax) != Status::Success || sSpeedMax == 0)
+    if (Attributes::SpeedMax::Get(kFanEndpoint, &sSpeedMax) != Status::Success)
     {
         sSpeedMax = static_cast<uint8_t>(FAN_MODE_HIGH_UPPER_BOUND);
     }
@@ -182,8 +182,7 @@ CHIP_ERROR AppTask::InitFanControl()
         // boot-time FanMode writes may not loop back through the DM callback.
         AppInstance().HandleFanModeChange(sFanMode);
     }
-
-    if (sSupportsMultiSpeed)
+    else
     {
         uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
         AppInstance().HandleSpeedSettingChange(speedSettingCB);
@@ -209,10 +208,7 @@ bool AppTask::ReadSupportsMultiSpeedFromFeatureMap()
 
 uint8_t AppTask::SpeedToPercent(uint8_t speed, uint8_t speedMax)
 {
-    if (speedMax == 0)
-    {
-        return 0;
-    }
+    VerifyOrReturnValue(speedMax != 0, 0);
     return static_cast<uint8_t>((static_cast<uint16_t>(speed) * 100) / speedMax);
 }
 
@@ -221,11 +217,7 @@ DataModel::Nullable<uint8_t> AppTask::GetSpeedSetting()
     DataModel::Nullable<uint8_t> speedSetting;
 
     Status status = Attributes::SpeedSetting::Get(kFanEndpoint, speedSetting);
-    if (status != Status::Success)
-    {
-        ChipLogError(NotSpecified, "GetSpeedSetting: failed to get SpeedSetting attribute: %d", to_underlying(status));
-    }
-
+    VerifyOrReturnValue(status == Status::Success, speedSetting);
     return speedSetting;
 }
 
@@ -234,10 +226,7 @@ DataModel::Nullable<Percent> AppTask::GetPercentSetting()
     DataModel::Nullable<Percent> percentSetting;
 
     Status status = Attributes::PercentSetting::Get(kFanEndpoint, percentSetting);
-    if (status != Status::Success)
-    {
-        ChipLogError(NotSpecified, "GetPercentSetting: failed to get PercentSetting attribute: %d", to_underlying(status));
-    }
+    VerifyOrReturnValue(status == Status::Success, percentSetting, ChipLogError(NotSpecified, "GetPercentSetting: failed to get PercentSetting attribute: %d", to_underlying(status)));
 
     return percentSetting;
 }
@@ -245,10 +234,7 @@ DataModel::Nullable<Percent> AppTask::GetPercentSetting()
 Status AppTask::SetPercentSetting(Percent aNewPercentSetting)
 {
     DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
-    if (!percentSettingNullable.IsNull() && percentSettingNullable.Value() == aNewPercentSetting)
-    {
-        return Status::Success;
-    }
+    VerifyOrReturnValue(!percentSettingNullable.IsNull() && percentSettingNullable.Value() == aNewPercentSetting, Status::Success);
 
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
     data->percentSetting       = aNewPercentSetting;
@@ -266,22 +252,13 @@ Status AppTask::SetPercentSetting(Percent aNewPercentSetting)
 
 Status AppTask::SetSpeedSetting(uint8_t aNewSpeedSetting)
 {
-    if (!sSupportsMultiSpeed)
-    {
-        return Status::Success;
-    }
+    VerifyOrReturnValue(sSupportsMultiSpeed, Status::Success);
 
     DataModel::Nullable<uint8_t> speedSettingNullable = GetSpeedSetting();
-    if (!speedSettingNullable.IsNull() && speedSettingNullable.Value() == aNewSpeedSetting)
-    {
-        return Status::Success;
-    }
+    VerifyOrReturnValue(!speedSettingNullable.IsNull() && speedSettingNullable.Value() == aNewSpeedSetting, Status::Success);
 
     Status status = Attributes::SpeedSetting::Set(kFanEndpoint, aNewSpeedSetting);
-    if (status != Status::Success)
-    {
-        ChipLogError(NotSpecified, "SetSpeedSetting: failed to set SpeedSetting attribute: %d", to_underlying(status));
-    }
+    VerifyOrReturnValue(status == Status::Success, status, ChipLogError(NotSpecified, "SetSpeedSetting: failed to set SpeedSetting attribute: %d", to_underlying(status)));
 
     return status;
 }
@@ -311,18 +288,14 @@ void AppTask::SyncFanMode(FanModeEnum aNewFanMode)
 
 FanModeEnum AppTask::DeriveFanModeFromPercent(Percent percent)
 {
-    if (percent == 0)
-    {
-        return FanModeEnum::kOff;
-    }
-    if (percent <= SpeedToPercent(static_cast<uint8_t>(FAN_MODE_LOW_UPPER_BOUND), sSpeedMax))
-    {
-        return FanModeEnum::kLow;
-    }
-    if (percent <= SpeedToPercent(static_cast<uint8_t>(FAN_MODE_MEDIUM_UPPER_BOUND), sSpeedMax))
-    {
-        return FanModeEnum::kMedium;
-    }
+    VerifyOrReturnValue(percent != 0, FanModeEnum::kOff);
+
+    const uint8_t lowPercentMax = SpeedToPercent(static_cast<uint8_t>(FAN_MODE_LOW_UPPER_BOUND), sSpeedMax);
+    VerifyOrReturnValue(percent > lowPercentMax, FanModeEnum::kLow);
+
+    const uint8_t mediumPercentMax = SpeedToPercent(static_cast<uint8_t>(FAN_MODE_MEDIUM_UPPER_BOUND), sSpeedMax);
+    VerifyOrReturnValue(percent > mediumPercentMax, FanModeEnum::kMedium);
+
     return FanModeEnum::kHigh;
 }
 
