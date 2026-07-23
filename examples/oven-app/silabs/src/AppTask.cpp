@@ -23,13 +23,13 @@
 #include "LEDWidget.h"
 #include "OvenBindingHandler.h"
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 #include "OvenUI.h"
 #include "lcd.h"
-#ifdef QR_CODE_ENABLED
+#if SL_MATTER_QR_CODE_ENABLED
 #include "qrcodegen.h"
-#endif // QR_CODE_ENABLED
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_QR_CODE_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 
 #include <OvenManager.h>
 #include <app-common/zap-generated/cluster-enums.h>
@@ -81,7 +81,7 @@ CHIP_ERROR AppTask::AppInit()
     CHIP_ERROR err = CHIP_NO_ERROR;
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     SuccessOrLog(GetLCD().Init((uint8_t *) "Oven-App"), AppServer, "Failed to initialize LCD");
     GetLCD().SetCustomUI(OvenUI::DrawUI);
 #endif
@@ -96,14 +96,14 @@ CHIP_ERROR AppTask::AppInit()
     sLightLED.Set(OvenManager::GetInstance().GetCookTopState());
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
-#ifdef QR_CODE_ENABLED
+#if SL_MATTER_QR_CODE_ENABLED
     if (!BaseApplication::GetProvisionStatus())
     {
         GetLCD().ShowQRCode(true);
     }
-#endif // QR_CODE_ENABLED
+#endif // SL_MATTER_QR_CODE_ENABLED
 #endif
 
     return err;
@@ -221,15 +221,15 @@ void AppTask::OvenActionHandler(AppEvent * aEvent)
     case OvenManager::COOK_TOP_ON_ACTION:
     case OvenManager::COOK_TOP_OFF_ACTION: {
         sLightLED.Set(OvenManager::GetInstance().GetCookTopState());
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
         break;
     }
     case OvenManager::OVEN_MODE_UPDATE_ACTION:
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
         break;
     default:
         break;
