@@ -1017,6 +1017,16 @@ void BaseApplication::InitOTARequestorHandler(System::Layer * systemLayer, void 
 }
 #endif // defined(SILABS_OTA_ENABLED) && SILABS_OTA_ENABLED
 
+#ifdef SL_MATTER_ENABLE_AWS
+namespace {
+void InitMatterAwsHandler(System::Layer * systemLayer, void * appState)
+{
+    VerifyOrReturn(MATTER_AWS_OK == MatterAwsInit(matterAws::control::subscribeCB),
+                   ChipLogError(AppServer, "MatterAwsInit failed"));
+}
+} // namespace
+#endif // SL_MATTER_ENABLE_AWS
+
 void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 {
     switch (event->Type)
@@ -1030,12 +1040,15 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
 #ifdef SL_MATTER_ENABLE_AWS
-        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
+        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+            || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
+#endif
+        )
         {
-            if (MATTER_AWS_OK != MatterAwsInit(matterAws::control::subscribeCB))
-            {
-                ChipLogError(AppServer, "MatterAwsInit failed");
-            }
+            ChipLogProgress(AppServer, "Scheduling Matter AWS initialization");
+            RETURN_SAFELY_IGNORED chip::DeviceLayer::SystemLayer().StartTimer(
+                chip::System::Clock::Seconds32(MATTER_AWS_INIT_DELAY_SEC), InitMatterAwsHandler, nullptr);
         }
 #endif // SL_MATTER_ENABLE_AWS
 #if SL_MATTER_DISPLAY_ENABLED
