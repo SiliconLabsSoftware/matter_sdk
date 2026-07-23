@@ -79,13 +79,13 @@ CHIP_ERROR AppTask::AppInit()
     mCurrentSensorUI = kSensorUIEnum::kOccupancySensor;
 
 // Show QR Code if not provisioned
-#ifdef QR_CODE_ENABLED
+#if SL_MATTER_QR_CODE_ENABLED
     if (!BaseApplication::GetProvisionStatus())
     {
         GetLCD().ShowQRCode(true);
         mCurrentSensorUI = kSensorUIEnum::kQrCode;
     }
-#endif // QR_CODE_ENABLED
+#endif // SL_MATTER_QR_CODE_ENABLED
 
     UpdateSensorDisplay();
 
@@ -151,7 +151,7 @@ void AppTask::UpdateSensorDisplay(void)
         BaseApplication::UpdateLCDStatusScreen();
         GetLCD().WriteStatus();
         break;
-#ifdef QR_CODE_ENABLED
+#if SL_MATTER_QR_CODE_ENABLED
     case kSensorUIEnum::kQrCode:
         GetLCD().ShowQRCode(true);
         break;
