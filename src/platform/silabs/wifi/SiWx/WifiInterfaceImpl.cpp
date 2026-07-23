@@ -20,10 +20,13 @@
 #endif // SL_MATTER_GN_BUILD
 
 #include "SlNetConfig.h"
+
+#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "ble_config.h"
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
+
 #include "sl_status.h"
 #include "sl_wifi_device.h"
-
 #include <algorithm>
 #include <app/icd/server/ICDServerConfig.h>
 #include <cmsis_os2.h>
@@ -61,7 +64,9 @@ extern "C" {
 #endif // SLI_SI91X_MCU_INTERFACE
 
 #if (EXP_BOARD)
+#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "rsi_bt_common_apis.h"
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "sl_board_configuration.h"
 #endif
 
@@ -388,8 +393,13 @@ sl_status_t SetWifiConfigurations()
             },
         },
         .ip = {
-            .mode = SL_IP_MANAGEMENT_DHCP,
-            .type = SL_IPV6,
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+            .mode = SL_IP_MANAGEMENT_DHCP_IPV4_LINK_LOCAL_IPV6,
+            .type = static_cast<sl_ip_address_type_t>(SL_IPV4 | SL_IPV6),
+#else
+            .mode     = SL_IP_MANAGEMENT_DHCP,
+            .type     = SL_IPV6,
+#endif // defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
             .host_name = NULL,
             .ip = {{{0}}},
         }
@@ -801,9 +811,11 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
     // Power save configuration is already set, nothing to do
     VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
 
+#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
     int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
     VerifyOrReturnError(error == RSI_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %ld", error));
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 
     sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
                                                       .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
