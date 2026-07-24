@@ -1,0 +1,35 @@
+name: Validate Silabs APIs
+
+on:
+    pull_request:
+        branches:
+            - main
+            - "release_*"
+        paths:
+            - "examples/*/silabs/include/*Impl.h"
+            - ".github/silabs-apis.yaml"
+            - "scripts/tools/silabs/validate_apis.py"
+    workflow_dispatch:
+
+concurrency:
+    group: silabs-validate-apis-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    validate-apis:
+        name: Validate APIs
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Set up Python
+              uses: actions/setup-python@v7
+              with:
+                  python-version: "3.11"
+
+            - name: Install dependencies
+              run: python -m pip install pyyaml
+
+            - name: Validate APIs against manifest
+              run: python3 scripts/tools/silabs/validate_apis.py
