@@ -1,0 +1,133 @@
+name: silabs-sync-efr32-docker-image
+
+on:
+  pull_request_target:
+    branches:
+      - main
+      - "release_*"
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  silabs-sync-efr32-docker-image:
+    name: silabs-sync-efr32-docker-image
+    if: |
+      github.actor != 'restyled-io[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate token for the workflow
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.SILABSSW_MATTER_CI_BOT_APP_ID }}
+          private-key: ${{ secrets.SILABSSW_MATTER_CI_BOT_APP_PRIVATE_KEY }}
+
+      - name: Mask the generated token
+        run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
+
+      - name: Checkout pull request branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Sync EFR32 image tags
+        id: sync_tags
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          workflow_dir = Path(".github/workflows")
+          source_path = workflow_dir / "examples-efr32.yaml"
+          image_pattern = re.compile(
+              r"(^\s*image:\s*ghcr\.io/project-chip/chip-build-efr32:)(\d+)(\s*)$",
+              re.MULTILINE,
+          )
+
+          source_text = source_path.read_text()
+          source_match = image_pattern.search(source_text)
+          if source_match is None:
+              raise SystemExit(f"Could not find EFR32 image tag in {source_path}")
+
+          target_version = int(source_match.group(2))
+          updated_files = []
+          skipped_newer_files = []
+
+          for path in sorted(workflow_dir.glob("*.yaml")):
+              text = path.read_text()
+              matches = list(image_pattern.finditer(text))
+              if not matches:
+                  continue
+
+              new_text = text
+              updated = False
+
+              for match in reversed(matches):
+                  current_version = int(match.group(2))
+                  if current_version < target_version:
+                      new_text = (
+                          new_text[: match.start(2)]
+                          + str(target_version)
+                          + new_text[match.end(2) :]
+                      )
+                      updated = True
+                  elif current_version > target_version:
+                      skipped_newer_files.append(f"{path}:{current_version}")
+
+              if updated:
+                  path.write_text(new_text)
+                  updated_files.append(str(path))
+
+          github_output = Path(os.environ["GITHUB_OUTPUT"])
+          with github_output.open("a", encoding="utf-8") as output:
+              output.write(
+                  f"has_updates={'true' if updated_files else 'false'}\n"
+              )
+              output.write("updated_files<<EOF\n")
+              output.write("\n".join(updated_files))
+              output.write("\nEOF\n")
+              output.write("skipped_newer_files<<EOF\n")
+              output.write("\n".join(skipped_newer_files))
+              output.write("\nEOF\n")
+
+          print(f"Source EFR32 image tag: {target_version}")
+          if updated_files:
+              print("Updated workflow files:")
+              for path in updated_files:
+                  print(f" - {path}")
+          else:
+              print("No older workflow tags were found.")
+
+          if skipped_newer_files:
+              print("Skipped workflows with newer tags:")
+              for item in skipped_newer_files:
+                  print(f" - {item}")
+          PY
+
+      - name: Configure git author
+        if: steps.sync_tags.outputs.has_updates == 'true'
+        run: |
+          git config user.name "silabs-matter-ci-bot[bot]"
+          git config user.email "silabs-matter-ci-bot[bot]@users.noreply.github.com"
+
+      - name: Commit and push synced tags
+        if: steps.sync_tags.outputs.has_updates == 'true'
+        run: |
+          git add .github/workflows/*.yaml
+          git commit -m "Sync EFR32 Docker image tag"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
