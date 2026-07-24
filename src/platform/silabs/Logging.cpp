@@ -2,6 +2,7 @@
 #include <platform/silabs/Logging.h>
 
 #include <platform/logging/LogV.h>
+#include <platform/silabs/Logging.h>
 
 #include <lib/core/CHIPConfig.h>
 #include <platform/CHIPDeviceConfig.h>
@@ -259,6 +260,13 @@ extern "C" void silabsLog(const char * aFormat, ...)
     va_end(v);
 }
 
+#if SILABS_LOG_ENABLED
+bool isLogInitialized()
+{
+    return sLogInitialized;
+}
+#endif // SILABS_LOG_ENABLED
+
 namespace chip {
 namespace Logging {
 namespace Platform {
@@ -315,6 +323,7 @@ extern "C" void LwIPLog(const char * aFormat, ...)
 }
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
+#if 0 // [SL-TEMP] sli_zigbee_af_print_internal_var_arg requires sisdk 2026.6 or later.
 #if defined(SL_COMPONENT_CATALOG_PRESENT) &&                                                                                       \
     (defined(SL_CATALOG_ZIGBEE_ZCL_CLI_PRESENT) || defined(SL_CATALOG_ZIGBEE_DEBUG_PRINT_PRESENT))
 #include "zcl-debug-print.h"
@@ -370,6 +379,7 @@ extern "C" void sli_zigbee_af_print_internal_var_arg(uint16_t area, uint32_t log
 }
 #endif // defined(SL_COMPONENT_CATALOG_PRESENT) && (defined(SL_CATALOG_ZIGBEE_ZCL_CLI_PRESENT) ||
        // defined(SL_CATALOG_ZIGBEE_DEBUG_PRINT_PRESENT))
+#endif // 0 - [SL-TEMP] sli_zigbee_af_print_internal_var_arg requires sisdk 2026.6 or later.
 
 /**
  * Platform logging function for OpenThread
