@@ -176,16 +176,16 @@ CHIP_ERROR AppTask::InitFanControl()
     uint8_t percentSettingCB = percentSettingNullable.IsNull() ? 0 : percentSettingNullable.Value();
     AppInstance().HandlePercentSettingChange(percentSettingCB);
 
-    if (!sSupportsMultiSpeed)
+    if (sSupportsMultiSpeed)
+    {
+        uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
+        AppInstance().HandleSpeedSettingChange(speedSettingCB);
+    }
+    else
     {
         // Startup runs before BaseApplication marks the app initialized, so
         // boot-time FanMode writes may not loop back through the DM callback.
         AppInstance().HandleFanModeChange(sFanMode);
-    }
-    else
-    {
-        uint8_t speedSettingCB = speedSettingNullable.IsNull() ? 0 : speedSettingNullable.Value();
-        AppInstance().HandleSpeedSettingChange(speedSettingCB);
     }
 
     PostFanUiUpdateEvent();
@@ -352,64 +352,63 @@ void AppTask::HandleFanModeChange(FanModeEnum aNewFanMode)
         default:
             break;
         }
+        return;
     }
-    else
-    {
-        uint8_t percentSettingCurrent = GetPercentSetting().ValueOr(101);
-        const uint8_t lowPercentMin   = 1;
-        const uint8_t lowPercentMax   = SpeedToPercent(static_cast<uint8_t>(FAN_MODE_LOW_UPPER_BOUND), sSpeedMax);
-        const uint8_t mediumPercentMin =
-            SpeedToPercent(static_cast<uint8_t>(FAN_MODE_MEDIUM_LOWER_BOUND), sSpeedMax);
-        const uint8_t mediumPercentMax =
-            SpeedToPercent(static_cast<uint8_t>(FAN_MODE_MEDIUM_UPPER_BOUND), sSpeedMax);
-        const uint8_t highPercentMin =
-            SpeedToPercent(static_cast<uint8_t>((sSpeedMax >= FAN_MODE_HIGH_LOWER_BOUND) ? FAN_MODE_HIGH_LOWER_BOUND : sSpeedMax),
-                           sSpeedMax);
-        const uint8_t highPercentMax = 100;
 
-        switch (aNewFanMode)
+    uint8_t percentSettingCurrent = GetPercentSetting().ValueOr(101);
+    const uint8_t lowPercentMin   = 1;
+    const uint8_t lowPercentMax   = SpeedToPercent(static_cast<uint8_t>(FAN_MODE_LOW_UPPER_BOUND), sSpeedMax);
+    const uint8_t mediumPercentMin =
+        SpeedToPercent(static_cast<uint8_t>(FAN_MODE_MEDIUM_LOWER_BOUND), sSpeedMax);
+    const uint8_t mediumPercentMax =
+        SpeedToPercent(static_cast<uint8_t>(FAN_MODE_MEDIUM_UPPER_BOUND), sSpeedMax);
+    const uint8_t highPercentMin =
+        SpeedToPercent(static_cast<uint8_t>((sSpeedMax >= FAN_MODE_HIGH_LOWER_BOUND) ? FAN_MODE_HIGH_LOWER_BOUND : sSpeedMax),
+                       sSpeedMax);
+    const uint8_t highPercentMax = 100;
+
+    switch (aNewFanMode)
+    {
+    case FanModeEnum::kOff: {
+        if (percentSettingCurrent != 0)
         {
-        case FanModeEnum::kOff: {
-            if (percentSettingCurrent != 0)
-            {
-                SetPercentSetting(0);
-            }
-            break;
+            SetPercentSetting(0);
         }
-        case FanModeEnum::kLow: {
-            if (percentSettingCurrent < lowPercentMin || percentSettingCurrent > lowPercentMax)
-            {
-                SetPercentSetting(SpeedToPercent(static_cast<uint8_t>(FAN_MODE_LOW_LOWER_BOUND), sSpeedMax));
-            }
-            break;
+        break;
+    }
+    case FanModeEnum::kLow: {
+        if (percentSettingCurrent < lowPercentMin || percentSettingCurrent > lowPercentMax)
+        {
+            SetPercentSetting(SpeedToPercent(static_cast<uint8_t>(FAN_MODE_LOW_LOWER_BOUND), sSpeedMax));
         }
-        case FanModeEnum::kMedium: {
-            if (percentSettingCurrent < mediumPercentMin || percentSettingCurrent > mediumPercentMax)
-            {
-                SetPercentSetting(mediumPercentMin);
-            }
-            break;
+        break;
+    }
+    case FanModeEnum::kMedium: {
+        if (percentSettingCurrent < mediumPercentMin || percentSettingCurrent > mediumPercentMax)
+        {
+            SetPercentSetting(mediumPercentMin);
         }
-        case FanModeEnum::kOn:
-        case FanModeEnum::kHigh: {
-            if (percentSettingCurrent < highPercentMin || percentSettingCurrent > highPercentMax)
-            {
-                SetPercentSetting(highPercentMin);
-            }
-            break;
+        break;
+    }
+    case FanModeEnum::kOn:
+    case FanModeEnum::kHigh: {
+        if (percentSettingCurrent < highPercentMin || percentSettingCurrent > highPercentMax)
+        {
+            SetPercentSetting(highPercentMin);
         }
-        case FanModeEnum::kSmart:
-        case FanModeEnum::kAuto: {
-            ChipLogProgress(NotSpecified, "HandleFanModeChange: Auto");
-            break;
-        }
-        case FanModeEnum::kUnknownEnumValue: {
-            ChipLogProgress(NotSpecified, "HandleFanModeChange: Unknown");
-            break;
-        }
-        default:
-            break;
-        }
+        break;
+    }
+    case FanModeEnum::kSmart:
+    case FanModeEnum::kAuto: {
+        ChipLogProgress(NotSpecified, "HandleFanModeChange: Auto");
+        break;
+    }
+    case FanModeEnum::kUnknownEnumValue: {
+        ChipLogProgress(NotSpecified, "HandleFanModeChange: Unknown");
+        break;
+    }
+    default:
+        break;
     }
 }
 
@@ -542,24 +541,18 @@ Status AppTask::HandleStep(StepDirectionEnum aDirection, bool aWrap, bool aLowes
     switch (aDirection)
     {
     case StepDirectionEnum::kIncrease: {
-        if (curPercentSetting >= 100)
+        curPercentSetting++;
+        if (curPercentSetting > 100)
         {
             curPercentSetting = aWrap ? static_cast<Percent>(speedMin) : 100;
-        }
-        else
-        {
-            curPercentSetting++;
         }
         break;
     }
     case StepDirectionEnum::kDecrease: {
-        if (curPercentSetting <= speedMin)
+        curPercentSetting--;
+        if (curPercentSetting < speedMin)
         {
             curPercentSetting = aWrap ? 100 : static_cast<Percent>(speedMin);
-        }
-        else
-        {
-            curPercentSetting--;
         }
         break;
     }
