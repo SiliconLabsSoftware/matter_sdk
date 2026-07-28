@@ -23,7 +23,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                platform: [mg24, mgm24, mg26, siwx]
+                platform: [mg24, mgm24, mg26, siwx, simg301]
 
         steps:
             - name: Checkout
@@ -42,7 +42,8 @@ jobs:
                       ${{ matrix.platform == 'mg24' && './.github/silabs-builds-mg24.json' ||
                           matrix.platform == 'mgm24' && './.github/silabs-builds-mgm24.json' ||
                           matrix.platform == 'mg26' && './.github/silabs-builds-mg26.json' ||
-                          matrix.platform == 'siwx' && './.github/silabs-builds-siwx.json' }}
+                          matrix.platform == 'siwx' && './.github/silabs-builds-siwx.json' ||
+                          matrix.platform == 'simg301' && './.github/silabs-builds-simg301.json' }}
                   example-app: ${{ inputs.example-app }}
                   path-to-example-app: examples/${{ inputs.example-app }}/silabs
                   build-script: "./scripts/examples/gn_silabs_example.sh"
