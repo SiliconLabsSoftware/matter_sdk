@@ -127,7 +127,9 @@ jobs:
 
       - name: Commit and push synced tags
         if: steps.sync_tags.outputs.has_updates == 'true'
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           git add .github/workflows/*.yaml
           git commit -m "Sync EFR32 Docker image tag"
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          git push origin "HEAD:${PR_HEAD_REF}"
