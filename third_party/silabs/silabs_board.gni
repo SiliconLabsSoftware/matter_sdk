@@ -221,7 +221,11 @@ if (is_si917_board) {
   disable_lcd = true
   sl_enable_rgb_led = true
 
-  # Custom Board ----------
+  # Series 3 ----------
+} else if (silabs_board == "BRD4407A") {
+  silabs_family = "simg301"
+  silabs_mcu = "simg301m104lil"
+ # Custom Board ----------
 } else if (silabs_board == "CUSTOM") {
   print("Using custom board configuration")
   print("silabs_family:", silabs_family)
