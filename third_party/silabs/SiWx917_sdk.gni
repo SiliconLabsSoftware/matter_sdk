@@ -57,6 +57,7 @@ template("siwx917_sdk") {
       "${chip_root}",
       "${root_gen_dir}/include",
       "${efr32_sdk_root}/platform_core/platform/emdrv/nvm3/config",
+      "${efr32_sdk_root}/cmsis_common/platform/common/inc",
       "${efr32_sdk_root}/platform_core/platform/common/inc",
       "${efr32_sdk_root}/platform_core/platform/service/mem_pool/inc/",
       "${efr32_sdk_root}/platform_core/platform/emdrv/nvm3/inc",

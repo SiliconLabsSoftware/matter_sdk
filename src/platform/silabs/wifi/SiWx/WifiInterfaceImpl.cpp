@@ -1057,7 +1057,7 @@ CHIP_ERROR WifiInterfaceImpl::StartNetworkScan(chip::ByteSpan ssid, ::ScanCallba
     if (status != SL_STATUS_OK && status != SL_STATUS_IN_PROGRESS)
     {
         // Since the log is required for debugging and the error log is present in the invoker itself
-        ChipLogDetail(DeviceLayer, "sl_wifi_start_scan failed: 0x04%" PRIx32, static_cast<uint32_t>(status));
+        ChipLogDetail(DeviceLayer, "sl_wifi_start_scan failed: 0x%04" PRIx32, static_cast<uint32_t>(status));
 
         // Reset the scan state in case of failure
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kScanStarted);
