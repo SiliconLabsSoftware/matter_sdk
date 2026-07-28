@@ -104,7 +104,7 @@ if (wifi_soc) {
       "${examples_common_plat_dir}",
       "${examples_common_plat_dir}/freertos_config",
     ]
-    
+
     defines = []
     if (chip_enable_pw_rpc) {
       defines += [
