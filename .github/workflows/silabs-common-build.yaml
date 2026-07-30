@@ -18,7 +18,7 @@ jobs:
         runs-on: ubuntu-latest
 
         container:
-            image: ghcr.io/project-chip/chip-build-efr32:207
+            image: ghcr.io/siliconlabssoftware/csa-sl-sdks:SiSDKv2026.6.0_WiFi_SDKv4.1.0
 
         strategy:
             fail-fast: false
