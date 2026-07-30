@@ -177,7 +177,6 @@ void WifiInterface::CancelConnectionAttempt()
     if (osTimerIsRunning(mRetryTimer))
     {
         osTimerStop(mRetryTimer);
-        mRetryTimer = nullptr;
     }
 }
 
