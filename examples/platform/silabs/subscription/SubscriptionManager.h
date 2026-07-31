@@ -54,6 +54,7 @@ public:
         chip::EndpointId endpointId   = 0;
         chip::ClusterId clusterId     = 0;
         chip::AttributeId attributeId = 0;
+        uint64_t timeSinceLastReport  = 0;
     };
 
     /**

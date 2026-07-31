@@ -29,6 +29,12 @@
 #include "sli_cli_io.h"
 #endif
 
+#include <app/server/Server.h>
+#include <credentials/FabricTable.h>
+#include <crypto/CHIPCryptoPAL.h>
+#include <inttypes.h>
+#include <lib/support/Span.h>
+
 using namespace ::chip;
 using Shell::Engine;
 using Shell::shell_command_t;
@@ -153,6 +159,62 @@ void RegisterCommands()
 
 } // namespace MemoryShellCommands
 
+namespace FabricShellCommands {
+
+static void PrintHex(const uint8_t * data, size_t len)
+{
+    for (size_t i = 0; i < len; ++i)
+    {
+        streamer_printf(streamer_get(), "%02x", data[i]);
+    }
+}
+
+CHIP_ERROR PrintFabricInfo([[maybe_unused]] int argc, [[maybe_unused]] char ** argv)
+{
+    auto & fabricTable = chip::Server::GetInstance().GetFabricTable();
+    const uint8_t count = fabricTable.FabricCount();
+    streamer_printf(streamer_get(), "Fabrics: %u\r\n", (unsigned) count);
+
+    auto it = fabricTable.begin();
+    if (it != fabricTable.end())
+    {
+        streamer_printf(streamer_get(), "  fabricIndex: %d" "\r\n",
+                        static_cast<uint8_t>(it->GetFabricIndex()));
+        streamer_printf(streamer_get(), "    fabricId:  0x" ChipLogFormatX64 "\r\n",
+                        ChipLogValueX64(it->GetFabricId()));
+        streamer_printf(streamer_get(), "    nodeId:    0x" ChipLogFormatX64 "\r\n",
+                        ChipLogValueX64(it->GetNodeId()));
+
+        uint8_t cfidBuf[sizeof(uint64_t)];
+        chip::MutableByteSpan cfidSpan(cfidBuf);
+        if (it->GetCompressedFabricIdBytes(cfidSpan) == CHIP_NO_ERROR)
+        {
+            streamer_printf(streamer_get(), "    compressedFabricId: ");
+            PrintHex(cfidBuf, sizeof(cfidBuf));
+            streamer_printf(streamer_get(), "\r\n");
+        }
+
+        chip::Crypto::P256PublicKey rootPubKey;
+        if (fabricTable.FetchRootPubkey(it->GetFabricIndex(), rootPubKey) == CHIP_NO_ERROR)
+        {
+            streamer_printf(streamer_get(), "    rootPublicKey:      ");
+            PrintHex(rootPubKey.ConstBytes(), rootPubKey.Length());
+            streamer_printf(streamer_get(), "\r\n");
+        }
+    }
+    return CHIP_NO_ERROR;
+}
+
+void RegisterCommands()
+{
+    static const Shell::shell_command_t cmd_fabric = { &PrintFabricInfo, "fabric",
+                                                       "Display fabric table (index, fabricId, nodeId, "
+                                                       "compressedFabricId, rootPublicKey)" };
+    Engine::Root().RegisterCommands(&cmd_fabric, 1);
+}
+
+} // namespace FabricShellCommands
+
 void startShellTask()
 {
     int status = chip::Shell::Engine::Root().Init();
@@ -170,6 +232,7 @@ void startShellTask()
 #endif
 
     MemoryShellCommands::RegisterCommands();
+    FabricShellCommands::RegisterCommands();
     shellTaskHandle = osThreadNew(MatterShellTask, nullptr, &kShellTaskAttr);
     VerifyOrDie(shellTaskHandle);
 }

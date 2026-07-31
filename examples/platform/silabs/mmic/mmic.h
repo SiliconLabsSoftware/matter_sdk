@@ -41,8 +41,8 @@ static inline void mmic_write_length(uint8_t * pkt, uint16_t len)
     X(ping, "Counterpart replies with \"pong\"", 0, uint8_t)\
     X(version, "Returns version string", 0, uint8_t)\
     X(matter_state, "Returns Matter current state", 0, uint8_t)\
-    X(establish_subscription, "Establish subscription ", 5, matterState_t)\
-    X(subscription_info, "Returns Matter current state", 0, uint8_t)\
+    X(establish_subscription, "Establish subscription (usage: establish_subscription <fabricIndex> <nodeId> <endpointId> <clusterId> <attributeId>)", 5, subscriptionArgs_t)\
+    X(subscription_info, "List active subscriptions", 0, uint8_t)\
     X(openCommissioning, "Open Commissioning Window", 0, uint8_t)\
     X(commission, "Commission using chip-tool storage (usage: commission <nodeId>)", 1, uint64_t)
 
@@ -63,6 +63,29 @@ struct __attribute__((packed)) subscriptionArgs_t
     uint32_t clusterId;
     uint32_t attributeId;
 };
+
+// Wire layout for the establish_subscription response (little-endian, packed).
+// status: 0 on success, non-zero on failure.
+// handle: SubscriptionManager slot handle (0xFF if not allocated).
+struct __attribute__((packed)) subscriptionEstablishResp_t
+{
+    uint8_t status;
+    uint8_t handle;
+};
+
+// Wire layout for one entry in the subscription_info response.
+struct __attribute__((packed)) subscriptionEntry_t
+{
+    uint8_t  handle;
+    uint8_t  fabricIndex;
+    uint64_t nodeId;
+    uint16_t endpointId;
+    uint32_t clusterId;
+    uint32_t attributeId;
+};
+
+// Cap for wire encoding of subscription_info. Must match SubscriptionManager::kMaxSubscriptions.
+#define MMIC_SUBSCRIPTION_MAX_ENTRIES 10
 
 // Wire layout for the commission command payload (little-endian, packed).
 // This is the fixed-size header; certs (RCAC || ICAC || NOC) follow inline.
@@ -97,6 +120,15 @@ typedef struct matterState
     uint8_t nbOfFabric;
     uint8_t nbOfSubscription;
     bool commissioningWindowOpen;
+
+    // First-fabric identity (populated only when nbOfFabric > 0). Useful for
+    // diagnosing CASE destinationId mismatches: the Sigma1 destinationId is
+    // HMAC(IPK, random || rootPublicKey || fabricId || peerNodeId), so the
+    // peer must see the same fabricId + compressedFabricId + rootPublicKey.
+    uint8_t fabricIndex;
+    uint64_t fabricId;
+    uint8_t compressedFabricId[8];  // Big-endian, matches Matter spec.
+    uint8_t rootPublicKey[65];      // Uncompressed SEC1 point (0x04 || X || Y).
 
     // mDNS advertisement. DnssdServer has no public "is advertising" getter, so
     // this is inferred: operational records are advertised whenever the device

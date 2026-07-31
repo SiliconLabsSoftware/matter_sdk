@@ -192,7 +192,15 @@ static int serializeArgs(mmic_command_id_e id,
             hdr.nodeId   = nodeId;
             hdr.fabricId = g_chipToolStorage.fabricId;
             hdr.vendorId = g_chipToolStorage.vendorId;
-            memcpy(hdr.ipk,       g_chipToolStorage.ipk.data(),   MMIC_COMMISSION_IPK_LEN);
+            // Send the RAW chip-tool epoch key ("temporary ipk 01", per
+            // TestGroupData.h::DefaultIpkValue). chip-tool persists only the
+            // *derived* operational key in f/1/k/0, so we can't reuse
+            // g_chipToolStorage.ipk here — SetSingleIpkEpochKey on the device
+            // would derive it a second time and never match the peer.
+            static const uint8_t kRawIpk[MMIC_COMMISSION_IPK_LEN] = {
+                't', 'e', 'm', 'p', 'o', 'r', 'a', 'r', 'y', ' ', 'i', 'p', 'k', ' ', '0', '1'
+            };
+            memcpy(hdr.ipk,       kRawIpk,                        MMIC_COMMISSION_IPK_LEN);
             memcpy(hdr.opkeyPub,  issued.opKeyPub.data(),         MMIC_COMMISSION_OPKEY_PUB_LEN);
             memcpy(hdr.opkeyPriv, issued.opKeyPriv.data(),        MMIC_COMMISSION_OPKEY_PRIV_LEN);
             hdr.rcacLen = (uint16_t)g_chipToolStorage.rcacTlv.size();

@@ -140,6 +140,24 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
             memcpy(&state, buffer + MMIC_OFFSET_PAYLOAD, sizeof(matterState_t));
             printf("\r\nNumber of Fabrics: %d\r\nCommisionning Window Open:  %s\r\n",state.nbOfFabric, (state.commissioningWindowOpen)? "true" : "false" );
             printf("mDNS Operational Advertising: %s\r\n", state.mdnsOperationalAdvertising ? "true" : "false");
+            if (state.nbOfFabric > 0)
+            {
+                printf("Fabric[%u]: nodeId=0x%016llx fabricId=0x%016llx\r\n",
+                       (unsigned) state.fabricIndex,
+                       (unsigned long long) state.nodeId,
+                       (unsigned long long) state.fabricId);
+                printf("  compressedFabricId: ");
+                for (size_t i = 0; i < sizeof(state.compressedFabricId); ++i)
+                {
+                    printf("%02x", state.compressedFabricId[i]);
+                }
+                printf("\r\n  rootPublicKey: ");
+                for (size_t i = 0; i < sizeof(state.rootPublicKey); ++i)
+                {
+                    printf("%02x", state.rootPublicKey[i]);
+                }
+                printf("\r\n");
+            }
             if (state.commissioningWindowOpen)
             {
                 printf("mDNS Commissionable Advertising (_matterc._udp):\r\n"
@@ -172,10 +190,45 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
                    state.threadExtendedPanId[6], state.threadExtendedPanId[7]);
             break; 
         case openCommissioning:
-        case establish_subscription:
         case commission:
-            printf("\r\n%s : %d\r\n", buffer[MMIC_OFFSET_OP] == 0 ? "Success":"Failure", buffer[MMIC_OFFSET_OP]);
+            printf("\r\n%s : %d\r\n", *(buffer + MMIC_OFFSET_PAYLOAD) == 0 ? "Success":"Failure", *(buffer + MMIC_OFFSET_PAYLOAD));
             break;
+        case establish_subscription:
+        {
+            const uint16_t payloadLen = frameLen - MMIC_PACKET_OVERHEAD;
+            if (payloadLen < sizeof(subscriptionEstablishResp_t)) {
+                printf("\r\nestablish_subscription: truncated response\r\n");
+                break;
+            }
+            subscriptionEstablishResp_t r;
+            memcpy(&r, buffer + MMIC_OFFSET_PAYLOAD, sizeof(r));
+            if (r.status == 0) {
+                printf("\r\nestablish_subscription: Success (handle=%u)\r\n", (unsigned) r.handle);
+            } else {
+                printf("\r\nestablish_subscription: Failure (status=%u)\r\n", (unsigned) r.status);
+            }
+            break;
+        }
+        case subscription_info:
+        {
+            const uint16_t payloadLen = frameLen - MMIC_PACKET_OVERHEAD;
+            if (payloadLen < 1) { printf("\r\nsubscription_info: empty payload\r\n"); break; }
+            uint8_t count = buffer[MMIC_OFFSET_PAYLOAD];
+            const size_t expected = 1 + (size_t) count * sizeof(subscriptionEntry_t);
+            if (payloadLen < expected) { printf("\r\nsubscription_info: truncated\r\n"); break; }
+            printf("\r\nActive subscriptions (%u):\r\n", (unsigned) count);
+            const uint8_t * p = buffer + MMIC_OFFSET_PAYLOAD + 1;
+            for (uint8_t i = 0; i < count; ++i)
+            {
+                subscriptionEntry_t e;
+                memcpy(&e, p + i * sizeof(subscriptionEntry_t), sizeof(e));
+                printf("  [%u] fabric=%u node=0x%016llx endpoint=%u cluster=0x%08x attribute=0x%08x\r\n",
+                       (unsigned) e.handle, (unsigned) e.fabricIndex,
+                       (unsigned long long) e.nodeId, (unsigned) e.endpointId,
+                       (unsigned) e.clusterId, (unsigned) e.attributeId);
+            }
+            break;
+        }
         default:
             return 3; //Not implemented
     };
@@ -199,6 +252,7 @@ void printHelp(void)
 #include <crypto/CHIPCryptoPAL.h>
 #include <lib/core/CHIPError.h>
 #include <lib/support/Span.h>
+#include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/CommissionableDataProvider.h>
 #include <platform/ConnectivityManager.h>
@@ -256,6 +310,62 @@ static uint8_t performCommission(const commissionArgs_t * args,
                                  const uint8_t * rcac, uint16_t rcacLen,
                                  const uint8_t * icac, uint16_t icacLen,
                                  const uint8_t * noc,  uint16_t nocLen);
+
+// SubscriptionManager delegate: logs lifecycle + attribute reports to the
+// device console. Attaches lazily on the first establish_subscription call.
+namespace {
+class MmicSubscriptionDelegate : public chip::Silabs::SubscriptionManager::Delegate
+{
+public:
+    void OnAttributeData(chip::Silabs::SubscriptionManager::Handle handle,
+                         const chip::Silabs::SubscriptionManager::Info & info,
+                         const chip::app::ConcreteDataAttributePath & path,
+                         chip::TLV::TLVReader * data,
+                         const chip::app::StatusIB & status) override
+    {
+        (void) data;
+        ChipLogProgress(NotSpecified,
+                        "mmic sub[%u] report: node=0x" ChipLogFormatX64
+                        " endpoint=%u cluster=" ChipLogFormatMEI " attr=" ChipLogFormatMEI
+                        " status=0x%02x",
+                        handle, ChipLogValueX64(info.nodeId), path.mEndpointId,
+                        ChipLogValueMEI(path.mClusterId), ChipLogValueMEI(path.mAttributeId),
+                        static_cast<unsigned>(status.mStatus));
+    }
+    void OnSubscriptionEstablished(chip::Silabs::SubscriptionManager::Handle handle,
+                                   const chip::Silabs::SubscriptionManager::Info & info,
+                                   chip::SubscriptionId subscriptionId) override
+    {
+        ChipLogProgress(NotSpecified,
+                        "mmic sub[%u] established (subId=" ChipLogFormatX64 ") node=0x" ChipLogFormatX64,
+                        handle, ChipLogValueX64(subscriptionId), ChipLogValueX64(info.nodeId));
+    }
+    void OnError(chip::Silabs::SubscriptionManager::Handle handle,
+                 const chip::Silabs::SubscriptionManager::Info & info, CHIP_ERROR error) override
+    {
+        (void) info;
+        ChipLogError(NotSpecified, "mmic sub[%u] error: %" CHIP_ERROR_FORMAT, handle, error.Format());
+    }
+    void OnSubscriptionTerminated(chip::Silabs::SubscriptionManager::Handle handle,
+                                  const chip::Silabs::SubscriptionManager::Info & info) override
+    {
+        ChipLogProgress(NotSpecified, "mmic sub[%u] terminated (node=0x" ChipLogFormatX64 ")",
+                        handle, ChipLogValueX64(info.nodeId));
+    }
+};
+
+MmicSubscriptionDelegate gSubscriptionDelegate;
+bool gSubscriptionDelegateInstalled = false;
+
+void ensureSubscriptionDelegateInstalled()
+{
+    if (!gSubscriptionDelegateInstalled)
+    {
+        chip::Silabs::SubscriptionManager::Instance().SetDelegate(&gSubscriptionDelegate);
+        gSubscriptionDelegateInstalled = true;
+    }
+}
+} // namespace
 
 uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, size_t * packetSize)
 {
@@ -322,12 +432,55 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
                 info.clusterId   = args.clusterId;
                 info.attributeId = args.attributeId;
 
+                ensureSubscriptionDelegateInstalled();
+
                 chip::Silabs::SubscriptionManager::Handle handle =
                     chip::Silabs::SubscriptionManager::kInvalidHandle;
-                CHIP_ERROR err = chip::Silabs::SubscriptionManager::Instance().Subscribe(info, &handle);
 
-                uint8_t status = err == CHIP_NO_ERROR ? 0 : 1;
-                encodeResponse(establish_subscription, &status, sizeof(status), response, packetSize);
+                chip::DeviceLayer::PlatformMgr().LockChipStack();
+                CHIP_ERROR err = chip::Silabs::SubscriptionManager::Instance().Subscribe(info, &handle);
+                chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
+                subscriptionEstablishResp_t resp;
+                resp.status = (err == CHIP_NO_ERROR) ? 0 : 1;
+                resp.handle = handle;
+                encodeResponse(establish_subscription, &resp, sizeof(resp), response, packetSize);
+            }
+            break;
+        case subscription_info:
+            {
+                auto & mgr = chip::Silabs::SubscriptionManager::Instance();
+
+                subscriptionEntry_t entries[MMIC_SUBSCRIPTION_MAX_ENTRIES];
+                uint8_t count = 0;
+
+                chip::DeviceLayer::PlatformMgr().LockChipStack();
+                for (uint8_t h = 0;
+                     h < chip::Silabs::SubscriptionManager::kMaxSubscriptions &&
+                     count < MMIC_SUBSCRIPTION_MAX_ENTRIES;
+                     ++h)
+                {
+                    const auto * info = mgr.GetInfo(h);
+                    if (info == nullptr) continue;
+                    entries[count].handle      = h;
+                    entries[count].fabricIndex = info->fabricIndex;
+                    entries[count].nodeId      = info->nodeId;
+                    entries[count].endpointId  = info->endpointId;
+                    entries[count].clusterId   = info->clusterId;
+                    entries[count].attributeId = info->attributeId;
+                    ++count;
+                }
+                chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
+                uint8_t payload[1 + MMIC_SUBSCRIPTION_MAX_ENTRIES * sizeof(subscriptionEntry_t)];
+                payload[0] = count;
+                if (count > 0)
+                {
+                    memcpy(&payload[1], entries, (size_t) count * sizeof(subscriptionEntry_t));
+                }
+                encodeResponse(subscription_info, payload,
+                               1 + (size_t) count * sizeof(subscriptionEntry_t),
+                               response, packetSize);
             }
             break;
         case commission:
@@ -383,6 +536,32 @@ uint8_t encodeMatterState(matterState_t * state)
 
     // Proxy: operational DNS-SD advertising is up once at least one fabric exists.
     state->mdnsOperationalAdvertising = (state->nbOfFabric > 0);
+
+    // Populate first-fabric identity for debugging.
+    {
+        auto & fabricTable = server.GetFabricTable();
+        auto it = fabricTable.begin();
+        if (it != fabricTable.end())
+        {
+            state->fabricIndex = it->GetFabricIndex();
+            state->fabricId    = it->GetFabricId();
+            state->nodeId      = it->GetNodeId();
+
+            uint8_t cfidBuf[sizeof(uint64_t)];
+            chip::MutableByteSpan cfidSpan(cfidBuf);
+            if (it->GetCompressedFabricIdBytes(cfidSpan) == CHIP_NO_ERROR)
+            {
+                memcpy(state->compressedFabricId, cfidBuf, sizeof(state->compressedFabricId));
+            }
+
+            chip::Crypto::P256PublicKey rootPubKey;
+            if (fabricTable.FetchRootPubkey(it->GetFabricIndex(), rootPubKey) == CHIP_NO_ERROR &&
+                rootPubKey.Length() == sizeof(state->rootPublicKey))
+            {
+                memcpy(state->rootPublicKey, rootPubKey.ConstBytes(), sizeof(state->rootPublicKey));
+            }
+        }
+    }
 
     if (state->commissioningWindowOpen)
     {

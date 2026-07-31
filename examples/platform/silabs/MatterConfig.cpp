@@ -184,10 +184,6 @@ CHIP_ERROR SilabsMatterConfig::InitOpenThread(void)
     
     ReturnErrorOnFailure(ThreadStackMgr().InitThreadStack()); // Only need to register on state change callback
 
-#if SL_MATTER_OPENTHREAD_NCP_ENABLE
-    return CHIP_NO_ERROR;
-#endif 
-
 #if CHIP_DEVICE_CONFIG_THREAD_FTD
     ReturnErrorOnFailure(ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router));
 #else // CHIP_DEVICE_CONFIG_THREAD_FTD
@@ -261,7 +257,7 @@ void SilabsMatterConfig::AppInit()
 #endif // SL_WIFI
 
     TEMPORARY_RETURN_IGNORED GetPlatform().Init();
-    
+
     sMainTaskHandle = osThreadNew(ApplicationStart, nullptr, &kMainTaskAttr);
     VerifyOrDie(sMainTaskHandle); // We can't proceed if the Main Task creation failed.
 

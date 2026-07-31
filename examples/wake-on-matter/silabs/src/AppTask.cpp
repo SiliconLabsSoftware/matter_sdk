@@ -46,6 +46,8 @@
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
+#include <em_device.h>
+
 // #include "matter_cpc.h"
 #include "mmic_task.h"
 
@@ -315,6 +317,12 @@ void AppTask::AppTaskMain(void * pvParameter)
     AppEvent event;
     osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
 
+    // Enable configurable fault handlers so UsageFault (STKOF, etc.), MemManage
+    // and BusFault are caught directly instead of being escalated to HardFault.
+    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk | SCB_SHCSR_MEMFAULTENA_Msk | SCB_SHCSR_BUSFAULTENA_Msk;
+    __DSB();
+    __ISB();
+
     CHIP_ERROR err = sAppTask.Init();
     if (err != CHIP_NO_ERROR)
     {
@@ -329,7 +337,12 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
         while (eventReceived == osOK)
         {
-            sAppTask.DispatchEvent(&event);
+            if(event.Type==AppEvent::kEventType_Button && event.ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
+            {
+                SILABS_LOG("Button pressed !!!");
+                
+
+            }
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
         }
     }
@@ -337,8 +350,6 @@ void AppTask::AppTaskMain(void * pvParameter)
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
-    // sl_matter_cpc_write(reinterpret_cast<uint8_t *>(const_cast<char *>("HELLO WORLD")), sizeof("HELLO WORLD"));
-
     AppEvent button_event           = {};
     button_event.Type               = AppEvent::kEventType_Button;
     button_event.ButtonEvent.Action = btnAction;
@@ -358,13 +369,94 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 extern "C" void otAppNcpInit(otInstance * aInstance);
 extern "C" otInstance * otGetInstance(void);
 extern "C" void sl_ot_create_instance(void);
+extern "C" void efr32LogInit(void) {};
 
+#include <openthread/dataset.h>
+#include <openthread/instance.h>
+#include <openthread/ip6.h>
+#include <openthread/thread.h>
+
+#include <platform/ThreadStackManager.h>
+
+extern "C" void AppTaskThreadStateChangedHandler(otChangedFlags aFlags, void * aContext)
+{
+    if ((aFlags & OT_CHANGED_THREAD_ROLE) == 0)
+    {
+        return;
+    }
+
+    otInstance * instance = static_cast<otInstance *>(aContext);
+    otDeviceRole role     = otThreadGetDeviceRole(instance);
+    if (role != OT_DEVICE_ROLE_LEADER || !otIp6IsEnabled(instance))
+    {
+        return;
+    }
+
+    SILABS_LOG("Wazza Thread Network Up and running");
+
+    // Pull the active operational dataset from the NCP instance and push it to
+    // the Matter ThreadStackManager so both instances share the same network.
+    otOperationalDatasetTlvs datasetTlvs;
+    otError otErr = otDatasetGetActiveTlvs(instance, &datasetTlvs);
+    if (otErr != OT_ERROR_NONE)
+    {
+        SILABS_LOG("otDatasetGetActiveTlvs failed: %d", otErr);
+        return;
+    }
+
+    ByteSpan dataset(datasetTlvs.mTlvs, datasetTlvs.mLength);
+    CHIP_ERROR err = ThreadStackMgr().SetThreadProvision(dataset);
+    if (err != CHIP_NO_ERROR)
+    {
+        SILABS_LOG("SetThreadProvision failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return;
+    }
+
+    err = ThreadStackMgr().SetThreadEnabled(true);
+    if (err != CHIP_NO_ERROR)
+    {
+        SILABS_LOG("SetThreadEnabled failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return;
+    }
+
+    // Kick the Matter DNS-SD advertiser so records get (re)published now that
+    // the Thread interface is available.
+    const bool isCommissioned = (Server::GetInstance().GetFabricTable().FabricCount() > 0);
+
+    PlatformMgr().LockChipStack();
+    if (isCommissioned)
+    {
+        SILABS_LOG("Commissioned: restarting operational DNS-SD advertisement");
+        CHIP_ERROR advErr = DnssdServer::Instance().AdvertiseOperational();
+        if (advErr != CHIP_NO_ERROR)
+        {
+            SILABS_LOG("AdvertiseOperational failed: %" CHIP_ERROR_FORMAT, advErr.Format());
+        }
+    }
+    else
+    {
+        SILABS_LOG("Not commissioned: restarting commissionable DNS-SD advertisement");
+        DnssdServer::Instance().StartServer(Dnssd::CommissioningMode::kEnabledBasic);
+    }
+    PlatformMgr().UnlockChipStack();
+}
+#if SL_OPENTHREAD_MULTI_PAN_ENABLE
+static otInstance * sInstance = NULL;
+extern "C" otInstance * otInstanceInitSingle(void) {}
+#endif
 extern "C" void sl_ot_ncp_init(void)
 {
     if(otGetInstance() == nullptr)
     {
         sl_ot_create_instance();
     }
+#if SL_OPENTHREAD_MULTI_PAN_ENABLE
+    // Matter Stack uses instances at index 0
+    // NCP instance will be at index 1
+    sInstance = otInstanceInitMultiple(1);
+    otAppNcpInit(sInstance);
+    otSetStateChangedCallback(sInstance, AppTaskThreadStateChangedHandler, sInstance);
+#else
     otAppNcpInit(otGetInstance());
-
+#endif // SL_OPENTHREAD_MULTI_PAN_ENABLE
 }
