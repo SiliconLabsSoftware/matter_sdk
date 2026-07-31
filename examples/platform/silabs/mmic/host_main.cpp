@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +34,8 @@
 #endif
 
 #include "mmic.h"
+#include "chip_tool_storage.h"
+#include "matter_cert_issuer.h"
 
 #if MMIC_USE_CPC
 /* CPC endpoint the device-side mmic task exposes. */
@@ -42,7 +45,13 @@
 #endif
 
 #define MMIC_MAX_TOKENS    16
-#define MMIC_MAX_ARG_BYTES 128
+/* Large enough to hold the commission command payload (commissionArgs_t header
+ * plus three Matter-TLV certificates, ~800 bytes total). */
+#define MMIC_MAX_ARG_BYTES 2048
+
+/* Chip-tool storage loaded at startup from the working directory.
+ * When loaded == false, the `commission` command is disabled. */
+static ChipToolStorage g_chipToolStorage;
 
 /* Split `line` in place on whitespace. Fills `tokens[]` with pointers into
  * the line buffer and returns the number of tokens (0..maxTokens). */
@@ -132,12 +141,103 @@ static int serializeArgs(mmic_command_id_e id,
             return (int)sizeof(args);
         }
 
+        case commission:
+        {
+            /* Usage: commission <nodeId>
+             * Requires chip-tool storage to have been loaded successfully at startup.
+             * Builds a fresh NOC for the target nodeId, packs the commissionArgs_t
+             * header plus RCAC || ICAC || NOC (all Matter-TLV) into `out`. */
+            if (argc != 2) {
+                fprintf(stderr, "Usage: %s <nodeId>\n", commandsString[id]);
+                return -1;
+            }
+            if (!g_chipToolStorage.loaded) {
+                fprintf(stderr, "%s is disabled: %s\n",
+                        commandsString[id], g_chipToolStorage.missingReason.c_str());
+                return -1;
+            }
+
+            uint64_t nodeId = 0;
+            if (parseU64(argv[1], UINT64_MAX, &nodeId) != 0) {
+                fprintf(stderr, "bad nodeId\n");
+                return -1;
+            }
+
+            IssuedNoc issued = issueNoc(g_chipToolStorage, nodeId);
+            if (!issued.ok) {
+                fprintf(stderr, "commission: NOC issuance failed: %s\n", issued.error.c_str());
+                return -1;
+            }
+
+            const size_t hdrSize = sizeof(commissionArgs_t);
+            const size_t certsSize =
+                g_chipToolStorage.rcacTlv.size() +
+                g_chipToolStorage.icacTlv.size() +
+                issued.nocTlv.size();
+            const size_t total = hdrSize + certsSize;
+            if (total > outCap) {
+                fprintf(stderr, "commission: payload (%zu bytes) does not fit in argBuf (%zu)\n",
+                        total, outCap);
+                return -1;
+            }
+            if (g_chipToolStorage.rcacTlv.size() > UINT16_MAX ||
+                g_chipToolStorage.icacTlv.size() > UINT16_MAX ||
+                issued.nocTlv.size()             > UINT16_MAX) {
+                fprintf(stderr, "commission: cert length exceeds uint16\n");
+                return -1;
+            }
+
+            commissionArgs_t hdr;
+            memset(&hdr, 0, sizeof(hdr));
+            hdr.nodeId   = nodeId;
+            hdr.fabricId = g_chipToolStorage.fabricId;
+            hdr.vendorId = g_chipToolStorage.vendorId;
+            memcpy(hdr.ipk,       g_chipToolStorage.ipk.data(),   MMIC_COMMISSION_IPK_LEN);
+            memcpy(hdr.opkeyPub,  issued.opKeyPub.data(),         MMIC_COMMISSION_OPKEY_PUB_LEN);
+            memcpy(hdr.opkeyPriv, issued.opKeyPriv.data(),        MMIC_COMMISSION_OPKEY_PRIV_LEN);
+            hdr.rcacLen = (uint16_t)g_chipToolStorage.rcacTlv.size();
+            hdr.icacLen = (uint16_t)g_chipToolStorage.icacTlv.size();
+            hdr.nocLen  = (uint16_t)issued.nocTlv.size();
+
+            uint8_t * cursor = out;
+            memcpy(cursor, &hdr, hdrSize);           cursor += hdrSize;
+            memcpy(cursor, g_chipToolStorage.rcacTlv.data(), hdr.rcacLen); cursor += hdr.rcacLen;
+            memcpy(cursor, g_chipToolStorage.icacTlv.data(), hdr.icacLen); cursor += hdr.icacLen;
+            memcpy(cursor, issued.nocTlv.data(),             hdr.nocLen);  cursor += hdr.nocLen;
+
+            return (int)total;
+        }
+
         default:
             return -1;
     }
 }
 
 static std::atomic<int> g_stop{0};
+
+/* Async-signal handler for SIGINT/SIGTERM. Marks the app for shutdown; the
+ * main loop's fgets() returns NULL (EINTR, no SA_RESTART) and cleanup then
+ * closes the CPC endpoint / serial fd before exiting. */
+static void handle_signal(int sig)
+{
+    (void)sig;
+    g_stop.store(1);
+}
+
+/* Install SIGINT/SIGTERM handler with SA_RESTART cleared so blocking calls
+ * (fgets, cpc_read_endpoint, read) return with EINTR on Ctrl+C. */
+static int install_signal_handlers(void)
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = handle_signal;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0; /* no SA_RESTART: we want blocking syscalls to be interrupted */
+
+    if (sigaction(SIGINT,  &sa, NULL) != 0) return -1;
+    if (sigaction(SIGTERM, &sa, NULL) != 0) return -1;
+    return 0;
+}
 
 #if MMIC_USE_CPC
 
@@ -281,6 +381,27 @@ static void *reader_thread(void *arg)
 
 int main(int argc, char **argv)
 {
+    if (install_signal_handlers() != 0) {
+        fprintf(stderr, "Failed to install signal handlers: %s\n", strerror(errno));
+        return 1;
+    }
+
+    /* Attempt to load chip-tool storage from the current working directory.
+     * If either INI file is missing or malformed, warn the user and continue
+     * with the `commission` command disabled. */
+    if (!loadChipToolStorage(g_chipToolStorage)) {
+        fprintf(stderr,
+                "Warning: chip-tool storage not available (%s).\n"
+                "         The 'commission' command is disabled.\n",
+                g_chipToolStorage.missingReason.c_str());
+    } else {
+        fprintf(stderr,
+                "chip-tool storage loaded: fabricId=0x%016llx vendorId=0x%04x. "
+                "'commission <nodeId>' is available.\n",
+                (unsigned long long)g_chipToolStorage.fabricId,
+                (unsigned)g_chipToolStorage.vendorId);
+    }
+
 #if MMIC_USE_CPC
     if (argc > 2) {
         fprintf(stderr, "Usage: %s [cpcd_instance_name]\n", argv[0]);
@@ -298,9 +419,21 @@ int main(int argc, char **argv)
                           &g_cpc_endpoint,
                           MMIC_CPC_ENDPOINT_ID,
                           MMIC_CPC_TX_WINDOW_SIZE) < 0) {
-        fprintf(stderr, "cpc_open_endpoint(%u) failed: %s\n",
+        fprintf(stderr, "cpc_open_endpoint(%u) failed: %s; attempting close + retry\n",
                 (unsigned)MMIC_CPC_ENDPOINT_ID, strerror(errno));
-        return 1;
+
+        /* Endpoint may be in a stale state (e.g. left open by a previous
+         * instance that did not shut down cleanly). Close it and retry once. */
+        (void)cpc_close_endpoint(&g_cpc_endpoint);
+
+        if (cpc_open_endpoint(g_cpc_handle,
+                              &g_cpc_endpoint,
+                              MMIC_CPC_ENDPOINT_ID,
+                              MMIC_CPC_TX_WINDOW_SIZE) < 0) {
+            fprintf(stderr, "cpc_open_endpoint(%u) retry failed: %s\n",
+                    (unsigned)MMIC_CPC_ENDPOINT_ID, strerror(errno));
+            return 1;
+        }
     }
 
     pthread_t reader;
@@ -343,12 +476,12 @@ int main(int argc, char **argv)
 #endif
 
     char line[512];
-    while (1) {
+    while (!g_stop.load()) {
         printf("> ");
         fflush(stdout);
 
         if (fgets(line, sizeof(line), stdin) == NULL) {
-            /* EOF on stdin -> treat as exit */
+            /* EOF on stdin or interrupted by SIGINT/SIGTERM -> exit */
             printf("\n");
             break;
         }

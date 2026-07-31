@@ -29,10 +29,14 @@ endif()
 option(MMIC_USE_CPC "Use Silicon Labs CPC (endpoint 90) instead of UART" OFF)
 
 find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 add_executable(mmic_host
     host_main.cpp
     mmic.cpp
+    base64.cpp
+    chip_tool_storage.cpp
+    matter_cert_issuer.cpp
 )
 
 target_include_directories(mmic_host PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -72,4 +76,4 @@ target_link_options(mmic_host PRIVATE
     $<$<CONFIG:RelWithDebInfo>:-g>
 )
 
-target_link_libraries(mmic_host PRIVATE Threads::Threads)
+target_link_libraries(mmic_host PRIVATE Threads::Threads OpenSSL::Crypto)

@@ -29,7 +29,7 @@
  ******************************************************************************/
 
 #ifndef TERMINAL_TASK_STACK_SIZE
-#define TERMINAL_TASK_STACK_SIZE      1024  // Stack size in bytes (CMSIS-OS 2)
+#define TERMINAL_TASK_STACK_SIZE      4096  // Stack size in bytes (CMSIS-OS 2)
 #endif
 
 #ifndef TERMINAL_TASK_PRIO
@@ -112,8 +112,11 @@ void mmic_task(void *pvParameters)
     }
 
     // Basic length sanity check against the MMIC framing (header + advertised length).
-    if (rxLen >= 2 && (uint16_t)rxLen >= rxBuffer[1] && rxBuffer[0] == MMIC_HEADER_CMD) {
-      parseAndRunCommand(rxBuffer, rxBuffer[1], &responseBuffer, &responseSize);
+    if (rxLen >= (int)MMIC_PACKET_OVERHEAD && rxBuffer[0] == MMIC_HEADER_CMD) {
+      const uint16_t frameLen = mmic_read_length(rxBuffer);
+      if (frameLen >= MMIC_PACKET_OVERHEAD && (uint16_t)rxLen >= frameLen) {
+        parseAndRunCommand(rxBuffer, frameLen, &responseBuffer, &responseSize);
+      }
     }
 
     sl_matter_cpc_free(rxBuffer);
