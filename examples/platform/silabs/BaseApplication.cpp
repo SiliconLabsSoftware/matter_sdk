@@ -95,6 +95,10 @@
 #include <platform/silabs/services/http_client.h>
 #endif // SLI_MATTER_ENABLE_HTTP_SERVICE
 
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+#include <platform/silabs/services/mqtt_client.h>
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+
 #endif // SLI_MATTER_ENABLE_SERVICES
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -1044,6 +1048,10 @@ void InitMatterServicesHandler(System::Layer * systemLayer, void * appState)
 #ifdef SLI_MATTER_ENABLE_HTTP_SERVICE
     VerifyOrReturn(SL_STATUS_OK == http_client_demo_start(), ChipLogError(AppServer, "http_client_demo_start failed"));
 #endif // SLI_MATTER_ENABLE_HTTP_SERVICE
+
+#ifdef SL_MATTER_ENABLE_MQTT_SERVICE
+    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_start(), ChipLogError(AppServer, "mqtt_client_demo_start failed"));
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
 }
 } // namespace
 #endif // SLI_MATTER_ENABLE_SERVICES
