@@ -340,4 +340,23 @@ TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnectThenDTIMWhenProvisio
     EXPECT_FALSE(mMock.WasBroadcastFilterEnabled());
 }
 
+TEST_F(TestWifiSleepManager, TestLitIdleModePreservedAcrossHighPerformanceCycle)
+{
+    mMock.SetIsWifiProvisioned(true);
+    WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
+
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode),
+              CHIP_NO_ERROR);
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kDeepSleep);
+
+    // HP request/remove uses kGenericEvent; that must not flip mActiveMode to true.
+    EXPECT_EQ(WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition(), CHIP_NO_ERROR);
+    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kHighPerformance);
+
+    EXPECT_EQ(WifiSleepManager::GetInstance().RemoveHighPerformanceRequest(), CHIP_NO_ERROR);
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kDeepSleep);
+}
+
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)

@@ -99,6 +99,8 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
+        // Preserve mActiveMode; HP cycles and connectivity use these events.
+        break;
     case PowerEvent::kActiveMode:
         mActiveMode = true;
         break;
