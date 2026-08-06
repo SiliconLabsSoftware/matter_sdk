@@ -54,9 +54,9 @@
 #include <crypto/RandUtils.h>
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 
-#if defined(DISPLAY_ENABLED) && DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 #include <SensorsUI.h>
-#endif
+#endif // SL_MATTER_DISPLAY_ENABLED
 
 using namespace chip;
 using namespace chip::app;
@@ -225,7 +225,7 @@ void AppTask::UpdateSensorDisplay()
         break;
     }
 }
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 
 void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 {
@@ -302,9 +302,9 @@ void AppTask::SensorAttributeUpdateEvent(AppEvent * aEvent)
     VerifyOrReturn(aEvent != nullptr);
     VerifyOrReturn(aEvent->Type == AppEvent::kEventType_SensorAttributeUpdate);
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     GetAppTask().UpdateSensorDisplay();
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 }
 
 void AppTask::OccupancyAttributeUpdateEvent(AppEvent * aEvent)
@@ -314,9 +314,9 @@ void AppTask::OccupancyAttributeUpdateEvent(AppEvent * aEvent)
 
     sOccupancyLed.Set(aEvent->OccupancyEvent.occupancyDetected);
 
-#ifdef DISPLAY_ENABLED
-    GetAppTask().UpdateSensorDisplay();
-#endif // DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
+    sAppTask.UpdateSensorDisplay();
+#endif // SL_MATTER_DISPLAY_ENABLED
 }
 
 void AppTask::TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState)
