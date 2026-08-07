@@ -315,7 +315,7 @@ void AppTask::OccupancyAttributeUpdateEvent(AppEvent * aEvent)
     sOccupancyLed.Set(aEvent->OccupancyEvent.occupancyDetected);
 
 #if SL_MATTER_DISPLAY_ENABLED
-    sAppTask.UpdateSensorDisplay();
+    GetAppTask().UpdateSensorDisplay();
 #endif // SL_MATTER_DISPLAY_ENABLED
 }
 
