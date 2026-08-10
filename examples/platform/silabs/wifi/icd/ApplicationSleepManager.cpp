@@ -134,13 +134,13 @@ bool ApplicationSleepManager::ProcessVendorIdExceptions(chip::VendorId vendorId)
 void ApplicationSleepManager::OnEnterActiveMode()
 {
     mIsInActiveMode = true;
-    TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
+    TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kActiveMode);
 }
 
 void ApplicationSleepManager::OnEnterIdleMode()
 {
     mIsInActiveMode = false;
-    TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
+    TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode);
 }
 
 void ApplicationSleepManager::OnTransitionToIdle()
