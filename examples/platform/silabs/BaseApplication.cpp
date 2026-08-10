@@ -52,7 +52,7 @@
 #endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
-#ifdef ENABLE_CHIP_SHELL
+#if ENABLE_CHIP_SHELL && CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 #include <BLEShellCommands.h>
 #endif // ENABLE_CHIP_SHELL
 
@@ -182,7 +182,9 @@ bool sHaveBLEConnections = false;
 
 constexpr uint32_t kLightTimerPeriod = static_cast<uint32_t>(pdMS_TO_TICKS(10));
 
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 constexpr System::Clock::Milliseconds32 kZbLeaveAnnouceDelay = System::Clock::Milliseconds32(1000);
+#endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 
 uint8_t sAppEventQueueBuffer[APP_EVENT_QUEUE_SIZE * sizeof(AppEvent)];
 osMessageQueue_t sAppEventQueueStruct;
@@ -531,7 +533,9 @@ CHIP_ERROR BaseApplication::BaseInit()
 #if MATTER_TRACING_ENABLED
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
+#if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
     BLEShellCommands::RegisterCommands();
+#endif // CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED

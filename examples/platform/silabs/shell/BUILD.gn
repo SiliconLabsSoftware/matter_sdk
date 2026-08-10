@@ -20,7 +20,6 @@ import("${chip_root}/third_party/silabs/silabs_board.gni")
 config("icd-shell-config") {
   include_dirs = [ "./icd/" ]
 }
-
 config("im-shell-config") {
   include_dirs = [ "./im/" ]
 }

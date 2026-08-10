@@ -193,7 +193,7 @@ void AppTask::AppTaskMain(void * pvParameter)
         osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, osWaitForever);
         while (eventReceived == osOK)
         {
-            appInstance().DispatchEvent(&event);
+            AppInstance().DispatchEvent(&event);
             eventReceived = osMessageQueueGet(sAppEventQueue, &event, nullptr, 0);
         }
     }
@@ -211,7 +211,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
         event.Type = (button ? AppEvent::kEventType_ActionButtonReleased : AppEvent::kEventType_FunctionButtonReleased);
     }
     event.Handler = &CustomerAppTask::AppEventHandler;
-    appInstance().PostEvent(&event);
+    AppInstance().PostEvent(&event);
 }
 
 void AppTask::AppEventHandler(AppEvent * aEvent)

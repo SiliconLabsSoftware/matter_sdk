@@ -144,7 +144,7 @@ public:
      */
     static CHIP_ERROR ScheduleWorkGatedOnThreadDirectLink(chip::DeviceLayer::AsyncWorkFunct work, intptr_t arg = 0);
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     /**
      * @brief Return LCD object
      */

@@ -63,18 +63,6 @@ using namespace ::chip::DeviceLayer::Silabs;
 using namespace ::chip::DeviceLayer::Internal;
 using namespace chip::TLV;
 
-namespace chip {
-namespace app {
-namespace Clusters {
-namespace ClosureControl {
-
-static chip::BitMask<Feature> sFeatureMap(Feature::kCalibration);
-
-} // namespace ClosureControl
-} // namespace Clusters
-} // namespace app
-} // namespace chip
-
 AppTask AppTask::sAppTask;
 
 CHIP_ERROR AppTask::AppInit()

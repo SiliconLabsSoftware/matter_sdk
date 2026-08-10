@@ -348,4 +348,4 @@
 	platforms = silabs
 [submodule "third_party/silabs/simplicity_sdk"]
 	path = third_party/silabs/simplicity_sdk
-    url = git@github.com:suveshpratapa/sisdk-release.git
+	url = git@github.com:suveshpratapa/sisdk-release.git
