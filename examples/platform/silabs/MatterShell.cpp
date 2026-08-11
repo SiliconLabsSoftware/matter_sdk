@@ -102,7 +102,11 @@ void cmdSilabsInit()
 
 #endif // SL_CATALOG_CLI_PRESENT
 
+#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+#include "sl_si91x_memory_manager.h"
+#else
 #include "sl_memory_manager.h"
+#endif // SLI_SI91X_MCU_INTERFACE
 
 namespace MemoryShellCommands {
 
@@ -120,8 +124,20 @@ CHIP_ERROR MemoryCommandHandler(int argc, char ** argv)
 
 CHIP_ERROR DisplayHeapUsage([[maybe_unused]] int argc, [[maybe_unused]] char ** argv)
 {
-    streamer_printf(streamer_get(), "%lu / %lu\r\n", sl_memory_get_used_heap_size(), sl_memory_get_total_heap_size());
-    streamer_printf(streamer_get(), "High Watermark: %lu\r\n", sl_memory_get_heap_high_watermark());
+    size_t used_heap_size  = 0;
+    size_t total_heap_size = 0;
+    size_t high_watermark  = 0;
+#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+    used_heap_size  = sl_si91x_memory_get_used_heap_size();
+    total_heap_size = sl_si91x_memory_get_free_heap_size() + used_heap_size;
+    high_watermark  = sl_si91x_memory_get_heap_high_watermark();
+#else
+    used_heap_size  = sl_memory_get_used_heap_size();
+    total_heap_size = sl_memory_get_total_heap_size();
+    high_watermark  = sl_memory_get_heap_high_watermark();
+#endif // SLI_SI91X_MCU_INTERFACE
+    streamer_printf(streamer_get(), "%lu / %lu\r\n", used_heap_size, total_heap_size);
+    streamer_printf(streamer_get(), "High Watermark: %lu\r\n", high_watermark);
     return CHIP_NO_ERROR;
 }
 
