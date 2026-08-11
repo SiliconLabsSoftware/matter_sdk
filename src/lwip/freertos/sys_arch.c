@@ -54,6 +54,7 @@ static StackType_t gTCPIPTaskStack[TCPIP_THREAD_STACKSIZE / sizeof(StackType_t)]
 #if LWIP_FREERTOS_USE_STATIC_TCPIP_QUEUE
 static StaticQueue_t gTCPIPMsgQueue;
 static uint8_t gTCPIPMsgQueueStorage[SYS_MESG_QUEUE_LENGTH * sizeof(void *)];
+static BaseType_t sTCPIPMsgQueueInUse = pdFALSE;
 #endif
 
 static inline u32_t TicksToMS(TickType_t ticks)
@@ -165,7 +166,19 @@ err_t sys_mbox_new(sys_mbox_t * mbox, int size)
     }
 
 #if LWIP_FREERTOS_USE_STATIC_TCPIP_QUEUE
-    *mbox = xQueueCreateStatic((UBaseType_t) size, (UBaseType_t) sizeof(void *), gTCPIPMsgQueueStorage, &gTCPIPMsgQueue);
+    /* The static storage backs the tcpip thread's mbox only. Other mboxes (notably a
+       netconn recvmbox, which has the same depth) must not reuse it: xQueueCreateStatic
+       re-initialises the queue in place, resetting xTasksWaitingToReceive while the
+       tcpip thread is blocked on it. */
+    if (sTCPIPMsgQueueInUse == pdFALSE)
+    {
+        sTCPIPMsgQueueInUse = pdTRUE;
+        *mbox = xQueueCreateStatic((UBaseType_t) size, (UBaseType_t) sizeof(void *), gTCPIPMsgQueueStorage, &gTCPIPMsgQueue);
+    }
+    else
+    {
+        *mbox = xQueueCreate((UBaseType_t) size, (UBaseType_t) sizeof(void *));
+    }
 #else
     *mbox = xQueueCreate((UBaseType_t) size, (UBaseType_t) sizeof(void *));
 #endif
