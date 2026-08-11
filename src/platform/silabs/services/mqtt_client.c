@@ -71,8 +71,8 @@ static const osThreadAttr_t mqtt_lwip_thread_attributes = {
     .cb_mem     = 0,
     .cb_size    = 0,
     .stack_mem  = 0,
-    .stack_size = (3 * 1024),
-    .priority   = osPriorityNormal,
+    .stack_size = (8 * 1024), /* mbedTLS TLS1.2 + RSA-2048/PSA: measured ~1.2KB stack free before SKE verify (3KB stack). */
+    .priority   = osPriorityAboveNormal,
     .tz_module  = 0,
 };
 
