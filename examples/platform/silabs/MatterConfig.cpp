@@ -50,6 +50,10 @@
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#include "ApplicationSleepManager.h"
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
 #if defined(PW_RPC_ENABLED) && PW_RPC_ENABLED
 #include "pigweed_rpc/Rpc.h"
 #endif
@@ -107,6 +111,17 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
 #include <app/clusters/network-commissioning/network-commissioning.h>
 #endif
+
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
+#if MATTER_TRACING_ENABLED
+#include <platform/silabs/tracing/BackendImpl.h> // nogncheck
+#include <tracing/registry.h>
+#endif // MATTER_TRACING_ENABLED
+
+#if defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
+#include <platform/silabs/tracing/SilabsPowerTracing.h> // nogncheck
+#endif                                                  // SL_TRACING_ENERGY_TRACES
+
 /**********************************************************
  * Defines
  *********************************************************/
@@ -117,6 +132,7 @@ using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::Credentials;
 using namespace chip::DeviceLayer::Silabs;
+using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
 
 #if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
 #ifdef SL_WIFI
@@ -203,6 +219,9 @@ void ApplicationStart(void * unused)
     CHIP_ERROR err = SilabsMatterConfig::InitMatter(BLE_DEV_NAME);
     if (err != CHIP_NO_ERROR)
         appError(err);
+
+    SILABS_TRACE_END(TimeTraceOperation::kMatterInit);
+    SILABS_TRACE_BEGIN(TimeTraceOperation::kAppInit);
 
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     // Initialize device attestation config
@@ -373,8 +392,35 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     gExampleDeviceInfoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
 
+    // [sl-only]: Configure Wi-Fi App Sleep Manager
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    err = app::Silabs::ApplicationSleepManager::GetInstance()
+              .SetFabricTable(&Server::GetInstance().GetFabricTable())
+              .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
+              .SetWifiSleepManager(&WifiSleepManager::GetInstance())
+              .Init();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "ApplicationSleepManager init failed"));
+
+    // Register ReadHandler::ApplicationCallback
+    app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(
+        &app::Silabs::ApplicationSleepManager::GetInstance());
+
+    // Register ICDStateObserver
+    chip::Server::GetInstance().GetICDManager().RegisterObserver(&app::Silabs::ApplicationSleepManager::GetInstance());
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
+
+#if MATTER_TRACING_ENABLED
+    static Tracing::Silabs::BackendImpl backend;
+    Tracing::Register(backend);
+#endif // MATTER_TRACING_ENABLED
+
+#if defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
+    VerifyOrDo(chip::Tracing::Silabs::SilabsPowerTracing::Instance().Init() == CHIP_NO_ERROR,
+               ChipLogError(DeviceLayer, "SilabsPowerTracing init failed"));
+#endif // defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
