@@ -1056,6 +1056,7 @@ void InitMatterServicesHandler(System::Layer * systemLayer, void * appState)
 }
 } // namespace
 #endif // SL_MATTER_ENABLE_SERVICES
+
 void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 {
     switch (event->Type)
