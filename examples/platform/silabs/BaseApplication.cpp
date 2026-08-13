@@ -1047,18 +1047,15 @@ void InitMatterServicesHandler(System::Layer * systemLayer, void * appState)
 {
 #ifdef SL_MATTER_ENABLE_HTTP_SERVICE
     VerifyOrReturn(SL_STATUS_OK == http_client_demo_start(), ChipLogError(AppServer, "http_client_demo_start failed"));
-<<<<<<< HEAD
-#endif // SLI_MATTER_ENABLE_HTTP_SERVICE
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
 #ifdef SL_MATTER_ENABLE_MQTT_SERVICE
     VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_start(), ChipLogError(AppServer, "mqtt_client_demo_start failed"));
 #endif // SL_MATTER_ENABLE_MQTT_SERVICE
-    =======
-#endif // SL_MATTER_ENABLE_HTTP_SERVICE
-        >>>>>>> origin/feature/add-matter-http-service
 }
 } // namespace
 #endif // SL_MATTER_ENABLE_SERVICES
+
 void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 {
     switch (event->Type)
