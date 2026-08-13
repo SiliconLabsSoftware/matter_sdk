@@ -153,7 +153,7 @@ const sl_wifi_device_configuration_t config = {
 #ifdef SLI_SI91X_ENABLE_IPV6
                           | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6
 #endif // defined(SLI_SI91X_ENABLE_IPV6)
-#if defined(SL_MATTER_ENABLE_SERVICES) && defined(SLI_MATTER_ENABLE_HTTP_SERVICE)
+#if defined(SL_MATTER_ENABLE_SERVICES) && defined(SL_MATTER_ENABLE_HTTP_SERVICE)
                           | SL_SI91X_TCP_IP_FEAT_HTTP_CLIENT
 #endif
                           | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),

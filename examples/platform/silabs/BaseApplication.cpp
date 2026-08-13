@@ -91,9 +91,9 @@
 
 #ifdef SL_MATTER_ENABLE_SERVICES
 
-#if defined(SLI_MATTER_ENABLE_HTTP_SERVICE) && SLI_MATTER_ENABLE_HTTP_SERVICE
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
 #include <platform/silabs/services/http_client.h>
-#endif // SLI_MATTER_ENABLE_HTTP_SERVICE
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
 #endif // SL_MATTER_ENABLE_SERVICES
 
@@ -1041,9 +1041,9 @@ void InitMatterAwsHandler(System::Layer * systemLayer, void * appState)
 namespace {
 void InitMatterServicesHandler(System::Layer * systemLayer, void * appState)
 {
-#ifdef SLI_MATTER_ENABLE_HTTP_SERVICE
+#ifdef SL_MATTER_ENABLE_HTTP_SERVICE
     VerifyOrReturn(SL_STATUS_OK == http_client_demo_start(), ChipLogError(AppServer, "http_client_demo_start failed"));
-#endif // SLI_MATTER_ENABLE_HTTP_SERVICE
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
 }
 } // namespace
 #endif // SL_MATTER_ENABLE_SERVICES
