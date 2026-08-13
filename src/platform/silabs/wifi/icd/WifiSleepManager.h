@@ -91,9 +91,6 @@ public:
      */
     CHIP_ERROR Init(PowerSaveInterface * platformInterface, WifiStateProvider * wifiStateProvider);
 
-    void HandleCommissioningSessionStarted();
-    void HandleCommissioningSessionStopped();
-
     /**
      * @brief Set the Application Callback
      *
@@ -236,7 +233,6 @@ private:
 
     PowerSaveInterface * mPowerSaveInterface = nullptr;
     WifiStateProvider * mWifiStateProvider   = nullptr;
-    bool mIsCommissioningInProgress          = false;
     uint8_t mHighPerformanceRequestCounter   = 0;
     bool mActiveMode                         = false;
 
