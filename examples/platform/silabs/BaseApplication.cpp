@@ -92,7 +92,7 @@
 #ifdef SL_MATTER_ENABLE_SERVICES
 
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-#include <platform/silabs/services/http_client.h>
+#include "https_offload_example.h"
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
 #endif // SL_MATTER_ENABLE_SERVICES
