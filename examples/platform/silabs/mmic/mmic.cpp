@@ -191,6 +191,7 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
             break; 
         case openCommissioning:
         case commission:
+        case decommission:
             printf("\r\n%s : %d\r\n", *(buffer + MMIC_OFFSET_PAYLOAD) == 0 ? "Success":"Failure", *(buffer + MMIC_OFFSET_PAYLOAD));
             break;
         case establish_subscription:
@@ -314,6 +315,9 @@ static uint8_t performCommission(const commissionArgs_t * args,
 // SubscriptionManager delegate: logs lifecycle + attribute reports to the
 // device console. Attaches lazily on the first establish_subscription call.
 namespace {
+
+mmic_subscription_cb_t gSubscriptionCallback = nullptr;
+
 class MmicSubscriptionDelegate : public chip::Silabs::SubscriptionManager::Delegate
 {
 public:
@@ -331,6 +335,34 @@ public:
                         handle, ChipLogValueX64(info.nodeId), path.mEndpointId,
                         ChipLogValueMEI(path.mClusterId), ChipLogValueMEI(path.mAttributeId),
                         static_cast<unsigned>(status.mStatus));
+        if (gSubscriptionCallback != nullptr)
+        {
+            uint64_t value = 0;
+            if (data != nullptr)
+            {
+                switch (data->GetType())
+                {
+                case chip::TLV::kTLVType_Boolean: {
+                    bool b = false;
+                    if (data->Get(b) == CHIP_NO_ERROR) { value = b ? 1u : 0u; }
+                    break;
+                }
+                case chip::TLV::kTLVType_UnsignedInteger: {
+                    uint64_t u = 0;
+                    if (data->Get(u) == CHIP_NO_ERROR) { value = u; }
+                    break;
+                }
+                case chip::TLV::kTLVType_SignedInteger: {
+                    int64_t s = 0;
+                    if (data->Get(s) == CHIP_NO_ERROR) { value = static_cast<uint64_t>(s); }
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
+            gSubscriptionCallback(path.mEndpointId, path.mClusterId, path.mAttributeId, value);
+        }
     }
     void OnSubscriptionEstablished(chip::Silabs::SubscriptionManager::Handle handle,
                                    const chip::Silabs::SubscriptionManager::Info & info,
@@ -366,6 +398,11 @@ void ensureSubscriptionDelegateInstalled()
     }
 }
 } // namespace
+
+void mmic_set_subscription_callback(mmic_subscription_cb_t cb)
+{
+    gSubscriptionCallback = cb;
+}
 
 uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, size_t * packetSize)
 {
@@ -509,6 +546,16 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
                                                    (hdr.icacLen ? icac : nullptr), hdr.icacLen,
                                                    noc, hdr.nocLen);
                 encodeResponse(commission, &status, sizeof(status), response, packetSize);
+            }
+            break;
+        case decommission:
+            {
+                chip::DeviceLayer::PlatformMgr().LockChipStack();
+                chip::Server::GetInstance().GetFabricTable().DeleteAllFabrics();
+                uint8_t remaining = chip::Server::GetInstance().GetFabricTable().FabricCount();
+                chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+                uint8_t status = (remaining == 0) ? 0 : 1;
+                encodeResponse(decommission, &status, sizeof(status), response, packetSize);
             }
             break;
         default:

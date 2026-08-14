@@ -18,7 +18,9 @@
  */
 
 #include "AppConfig.h"
+#if !SL_MATTER_CUSTOM_APPTASK
 #include "BaseApplication.h"
+#endif // !SL_MATTER_CUSTOM_APPTASK
 #include <MatterConfig.h>
 #include <access/examples/GroupAuxiliaryAccessControlDelegate.h>
 #include <cmsis_os2.h>
@@ -48,10 +50,6 @@
 
 #if defined(PW_RPC_ENABLED) && PW_RPC_ENABLED
 #include "Rpc.h"
-#endif
-
-#if SL_MATTER_MMIC_ENABLED
-#include "mmic_task.h"
 #endif
 
 #ifdef ENABLE_CHIP_SHELL
@@ -278,12 +276,6 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     CHIP_ERROR err;
     SILABS_LOG("=====%s starting=====", appName);
 
-#if SL_MATTER_MMIC_ENABLED
-    sl_status_t status = mmic_init();
-    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
-#endif
-
 #if defined(PW_RPC_ENABLED) && PW_RPC_ENABLED
     chip::rpc::Init();
 #endif
@@ -397,8 +389,10 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #else
     initParams.dataModelProvider = CodegenDataModelProviderInstance(initParams.persistentStorageDelegate);
 #endif
-    initParams.appDelegate = &BaseApplication::sAppDelegate;
 
+#if !SL_MATTER_CUSTOM_APPTASK
+    initParams.appDelegate = &BaseApplication::sAppDelegate;
+#endif // !SL_MATTER_CUSTOM_APPTASK
     // This is needed by localization configuration cluster so we set it before the initialization
     gExampleDeviceInfoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);

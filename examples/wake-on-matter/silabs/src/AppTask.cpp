@@ -47,6 +47,7 @@
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #include <em_device.h>
+#include "sl_gpio.h"
 
 // #include "matter_cpc.h"
 #include "mmic_task.h"
@@ -275,6 +276,87 @@ void UnregisterRootNodeClusters(CodeDrivenDataModelProvider & provider)
     }
 }
 
+// GPIO used to wake up the host. For now routed to the LED1 on the MG24 BRD4187c
+// Adjust port/pin as needed.
+constexpr sl_gpio_t kLightGpio         = { .port = gpioPortB, .pin = 4 };
+constexpr uint16_t kLedAutoOffTimeoutS = 5;
+
+// Matter cluster / attribute identifiers we react to.
+constexpr uint32_t kOnOffClusterId              = 0x00000006;
+constexpr uint32_t kOnOffAttributeId            = 0x00000000;
+constexpr uint32_t kOccupancySensingClusterId   = 0x00000406;
+constexpr uint32_t kOccupancyAttributeId        = 0x00000000;
+constexpr uint32_t kBooleanStateClusterId       = 0x00000045;
+constexpr uint32_t kBooleanStateValueAttributeId = 0x00000000;
+
+// Occupancy attribute is bitmap8; bit 0 set means the sensor reports "occupied".
+constexpr uint64_t kOccupancyOccupiedMask = 0x01;
+
+void EnsureLightGpioInitialized()
+{
+    static bool initialized = false;
+    if (initialized)
+    {
+        return;
+    }
+    (void) sl_gpio_set_pin_mode(&kLightGpio, SL_GPIO_MODE_PUSH_PULL, false);
+    initialized = true;
+}
+
+void SetLight(bool on)
+{
+    EnsureLightGpioInitialized();
+    (void) (on ? sl_gpio_set_pin(&kLightGpio) : sl_gpio_clear_pin(&kLightGpio));
+}
+
+void LedAutoOffTimerHandler(chip::System::Layer * /*layer*/, void * /*appState*/)
+{
+    SetLight(false);
+}
+
+// Decide, per cluster/attribute, whether the reported value should light the LED.
+bool ShouldLightForAttribute(uint32_t clusterId, uint32_t attributeId, uint64_t value)
+{
+    switch (clusterId)
+    {
+    case kOnOffClusterId:
+        // OnOff attribute is a boolean; non-zero means "on".
+        return (attributeId == kOnOffAttributeId) && (value != 0);
+
+    case kOccupancySensingClusterId:
+        // Occupancy attribute is bitmap8; bit 0 == 1 means "occupied".
+        return (attributeId == kOccupancyAttributeId) && ((value & kOccupancyOccupiedMask) != 0);
+
+    case kBooleanStateClusterId:
+        // StateValue is a boolean; non-zero means "true".
+        return (attributeId == kBooleanStateValueAttributeId) && (value != 0);
+
+    default:
+        return false;
+    }
+}
+
+void subscriptionCallback(uint16_t endpointId, uint32_t clusterId, uint32_t attributeId, uint64_t value)
+{
+    (void) endpointId;
+
+    if (!ShouldLightForAttribute(clusterId, attributeId, value))
+    {
+        return;
+    }
+
+    SetLight(true);
+    // Cancel any pending auto-off before rearming so back-to-back reports extend the window.
+    chip::DeviceLayer::SystemLayer().CancelTimer(LedAutoOffTimerHandler, nullptr);
+    CHIP_ERROR err = chip::DeviceLayer::SystemLayer().StartTimer(
+        chip::System::Clock::Seconds16(kLedAutoOffTimeoutS), LedAutoOffTimerHandler, nullptr);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "LED auto-off StartTimer failed: %" CHIP_ERROR_FORMAT, err.Format());
+        SetLight(false);
+    }
+}
+
 } // namespace
 
 AppTask AppTask::sAppTask;
@@ -301,62 +383,18 @@ DataModel::Provider * AppTask::GetDataModelProvider()
     return sDataModelProvider.get();
 }
 
-CHIP_ERROR AppTask::AppInit()
-{
-    GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
-    return CHIP_NO_ERROR;
-}
-
 CHIP_ERROR AppTask::StartAppTask()
 {
-    return BaseApplication::StartAppTask(AppTaskMain);
+    // StartAppTask name is kept for compatibility even if this sample app
+    // doesn't have an App Task. All processing is made within the mmic Task context.
+
+    sl_status_t status = mmic_init(subscriptionCallback);
+    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
+
+
+    return CHIP_NO_ERROR;
 }
-
-void AppTask::AppTaskMain(void * pvParameter)
-{
-    AppEvent event;
-    osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
-
-    // Enable configurable fault handlers so UsageFault (STKOF, etc.), MemManage
-    // and BusFault are caught directly instead of being escalated to HardFault.
-    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk | SCB_SHCSR_MEMFAULTENA_Msk | SCB_SHCSR_BUSFAULTENA_Msk;
-    __DSB();
-    __ISB();
-
-    CHIP_ERROR err = sAppTask.Init();
-    if (err != CHIP_NO_ERROR)
-    {
-        SILABS_LOG("AppTask.Init() failed");
-        appError(err);
-    }
-
-    mmic_init();
-
-    while (true)
-    {
-        osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
-        while (eventReceived == osOK)
-        {
-            if(event.Type==AppEvent::kEventType_Button && event.ButtonEvent.Action == static_cast<uint8_t>(SilabsPlatform::ButtonAction::ButtonPressed))
-            {
-                SILABS_LOG("Button pressed !!!");
-                
-
-            }
-            eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
-        }
-    }
-}
-
-void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
-{
-    AppEvent button_event           = {};
-    button_event.Type               = AppEvent::kEventType_Button;
-    button_event.ButtonEvent.Action = btnAction;
-    button_event.Handler            = BaseApplication::ButtonHandler;
-    AppTask::GetAppTask().PostEvent(&button_event);
-}
-
 
 // #include <openthread/platform/logging.h>
 
@@ -451,6 +489,7 @@ extern "C" void sl_ot_ncp_init(void)
         sl_ot_create_instance();
     }
 #if SL_OPENTHREAD_MULTI_PAN_ENABLE
+#error wazza
     // Matter Stack uses instances at index 0
     // NCP instance will be at index 1
     sInstance = otInstanceInitMultiple(1);

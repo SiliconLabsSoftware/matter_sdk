@@ -29,10 +29,11 @@ int sl_matter_cpc_read(uint8_t **read_buf);
 void sl_matter_cpc_free(void *buf);
 void sl_matter_cpc_rx_done();
 sl_status_t sl_matter_cpc_write(uint8_t *data, uint16_t len);
-int sl_matter_cpc_wait_for_new_data();
+int sl_matter_cpc_wait_for_activity();
 void sl_matter_cpc_on_connect(uint8_t endpoint_id, void *arg);
 void sl_matter_cpc_error(uint8_t endpoint_id, void *arg);
 bool sl_matter_is_cpc_connected(void);
+bool sl_matter_is_cpc_waiting(void);
 void sl_matter_reconnect_cpc(void);
 
 /**

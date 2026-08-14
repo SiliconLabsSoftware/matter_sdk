@@ -38,8 +38,6 @@
 #include "sli_cpc.h"
 #include "matter_cpc.h"
 
-#include "cpc/cpc_shell_interface.hpp"
-
 #include "Assertions.h"
 
 #define SL_MATTER_CPC_RTOS_TASK_PRIORITY osPriorityRealtime3
@@ -66,7 +64,7 @@ void sl_matter_cpc_on_transport_notify(uint8_t endpoint_id, void * arg)
 static sl_matter_cpc_state_t cpc_state = SL_MATTER_CPC_STATE_DISCONNECTED;
 static sl_cpc_endpoint_handle_t endpoint_handle;
 
-int sl_matter_cpc_wait_for_new_data()
+int sl_matter_cpc_wait_for_activity()
 {
   osSemaphoreAcquire(matter_cpc_signal_semaphore, osWaitForever);
   return 1;//CPC-RTOS calls read packet only if semaphore is set
@@ -85,7 +83,7 @@ sl_status_t sl_matter_cpc_init(void)
 {
   sl_status_t status = SL_STATUS_OK;
   // TODO remove me when we have a service endpoint
-  status = sl_cpc_open_user_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER_NCP_ID, 0, 1);
+  status = sl_cpc_init_user_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER_NCP_ID, 0);
 
   // status = sli_cpc_init_service_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER_NCP_ID, 0);
   VerifyOrReturnError(status == SL_STATUS_OK, status);
@@ -165,6 +163,12 @@ void sl_matter_cpc_free(void *buf)
   sl_cpc_free_rx_buffer((void *) buf);
 }
 
+bool sl_matter_is_cpc_waiting(void)
+{
+  // Any state other than SL_CPC_STATE_CONNECTED is a disconnected state.
+  return (cpc_state == SL_MATTER_CPC_STATE_CONNECTING);
+}
+
 bool sl_matter_is_cpc_connected(void)
 {
   // Any state other than SL_CPC_STATE_CONNECTED is a disconnected state.
@@ -185,7 +189,6 @@ void sl_matter_reconnect_cpc(void)
       break;
 
     default:
-      // Invalid state
       EFM_ASSERT(false);
   }
 }

@@ -23,6 +23,7 @@
 
 #include "matter_cpc.h"
 #include "mmic.h"
+#include "mmic_task.h"
 
 /*******************************************************************************
  *******************************   DEFINES   ***********************************
@@ -64,9 +65,10 @@ void mmic_task(void *pvParameters);
 /*******************************************************************************
  * Initialize example.
  ******************************************************************************/
-sl_status_t mmic_init(void)
+sl_status_t mmic_init(mmic_subscription_cb_t subscriptionCallback)
 {
   sl_status_t status;
+  mmic_set_subscription_callback(subscriptionCallback);
   // Initialize the matter_cpc transport that backs the MMIC protocol.
   status=sl_matter_cpc_init();
   if(status != SL_STATUS_OK)
@@ -92,14 +94,12 @@ void mmic_task(void *pvParameters)
 
   while (1) {
     // Ensure the CPC endpoint is connected before any I/O attempt.
-    if (!sl_matter_is_cpc_connected()) {
+    if (!sl_matter_is_cpc_connected() && !sl_matter_is_cpc_waiting()) {
       sl_matter_reconnect_cpc();
-      osDelay(10);
-      continue;
     }
 
     // Blocking call. 
-    sl_matter_cpc_wait_for_new_data();
+    sl_matter_cpc_wait_for_activity();
 
 
     // matter_cpc delivers a full frame per read; no byte-level state machine needed.

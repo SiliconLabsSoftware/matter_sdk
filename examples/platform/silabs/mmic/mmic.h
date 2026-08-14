@@ -44,7 +44,8 @@ static inline void mmic_write_length(uint8_t * pkt, uint16_t len)
     X(establish_subscription, "Establish subscription (usage: establish_subscription <fabricIndex> <nodeId> <endpointId> <clusterId> <attributeId>)", 5, subscriptionArgs_t)\
     X(subscription_info, "List active subscriptions", 0, uint8_t)\
     X(openCommissioning, "Open Commissioning Window", 0, uint8_t)\
-    X(commission, "Commission using chip-tool storage (usage: commission <nodeId>)", 1, uint64_t)
+    X(commission, "Commission using chip-tool storage (usage: commission <nodeId>)", 1, uint64_t)\
+    X(decommission, "Delete all fabrics on the device", 0, uint8_t)
 
 typedef enum mmic_command_id : uint8_t
 {
@@ -169,6 +170,15 @@ uint8_t encodeResponse(mmic_command_id_e id, void * response, size_t responseLen
 uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, size_t * packetSize);
 
 uint8_t encodeMatterState(matterState_t * state);
+
+// Invoked from OnAttributeData on the CHIP stack thread for every subscription report.
+// value carries the primitive attribute value decoded from the TLV payload:
+//   - boolean:          0 or 1
+//   - unsigned integer: raw value
+//   - signed integer:   reinterpreted as uint64_t (two's complement)
+//   - anything else:    0
+typedef void (*mmic_subscription_cb_t)(uint16_t endpointId, uint32_t clusterId, uint32_t attributeId, uint64_t value);
+void mmic_set_subscription_callback(mmic_subscription_cb_t cb);
 
 #endif // HOST_SIDE
 

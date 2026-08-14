@@ -72,11 +72,6 @@
 #include <platform/silabs/ThreadStackManagerImpl.h>
 #endif // CHIP_ENABLE_OPENTHREAD
 
-#if SL_MATTER_OPENTHREAD_NCP_ENABLE
-#include <openthread/message.h>
-#include <openthread/udp.h>
-#endif // SL_MATTER_OPENTHREAD_NCP_ENABLE
-
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #ifdef SL_WIFI
@@ -204,25 +199,6 @@ ObjectPool<Identify, MATTER_DM_IDENTIFY_CLUSTER_SERVER_ENDPOINT_COUNT + CHIP_DEV
 
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 
-#if SL_MATTER_OPENTHREAD_NCP_ENABLE
-constexpr uint16_t kNcpUdpListenPort = 5540;
-otUdpSocket sNcpUdpSocket;
-
-void HandleNcpUdpReceive(void * /* aContext */, otMessage * aMessage, const otMessageInfo * /* aMessageInfo */)
-{
-    char buffer[256];
-    uint16_t offset = otMessageGetOffset(aMessage);
-    uint16_t length = otMessageGetLength(aMessage) - offset;
-    if (length >= sizeof(buffer))
-    {
-        length = sizeof(buffer) - 1;
-    }
-    uint16_t read  = otMessageRead(aMessage, offset, buffer, length);
-    buffer[read]   = '\0';
-    ChipLogProgress(Inet, "NCP UDP payload (%u bytes): %s", read, buffer);
-}
-#endif // SL_MATTER_OPENTHREAD_NCP_ENABLE
-
 } // namespace
 
 bool BaseApplication::sIsProvisioned                  = false;
@@ -297,12 +273,14 @@ void BaseApplicationDelegate::OnFabricCommitted(const FabricTable & fabricTable,
 
 void BaseApplicationDelegate::OnFabricRemoved(const FabricTable & fabricTable, FabricIndex fabricIndex)
 {
+#if !SL_MATTER_OPENTHREAD_NCP_ENABLE
     if (fabricTable.FabricCount() == 0)
     {
         BaseApplication::UpdateCommissioningStatus(false);
 
         BaseApplication::DoProvisioningReset();
     }
+#endif // !SL_MATTER_OPENTHREAD_NCP_ENABLE
 }
 
 /**********************************************************
@@ -1040,49 +1018,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
-#if SL_MATTER_OPENTHREAD_NCP_ENABLE && 0
-        {
-            ChipLogProgress(Inet, "Hello refreshing port listening");
-            otInstance * otInst = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
-            if (otInst != nullptr)
-            {
-                // If the socket is already listening (e.g. previous connectivity event),
-                // close it before re-opening and re-binding to port kNcpUdpListenPort.
-                if (otUdpIsOpen(otInst, &sNcpUdpSocket))
-                {
-                    otError closeErr = otUdpClose(otInst, &sNcpUdpSocket);
-                    if (closeErr != OT_ERROR_NONE)
-                    {
-                        ChipLogError(Inet, "Failed to close socket: %s",
-                                     chip::ErrorStr(chip::DeviceLayer::Internal::MapOpenThreadError(closeErr)));
-                    }
-                }
 
-                otError otErr = otUdpOpen(otInst, &sNcpUdpSocket, HandleNcpUdpReceive, nullptr);
-                if (otErr != OT_ERROR_NONE)
-                {
-                    ChipLogError(Inet, "Failed to open socket: %s",
-                                 chip::ErrorStr(chip::DeviceLayer::Internal::MapOpenThreadError(otErr)));
-                }
-                else
-                {
-                    otSockAddr listenSockAddr;
-                    memset(&listenSockAddr, 0, sizeof(listenSockAddr));
-                    listenSockAddr.mPort = kNcpUdpListenPort;
-#if OPENTHREAD_API_VERSION >= 465
-                    otErr = otUdpBind(otInst, &sNcpUdpSocket, &listenSockAddr, OT_NETIF_THREAD_INTERNAL);
-#else
-                    otErr = otUdpBind(otInst, &sNcpUdpSocket, &listenSockAddr, OT_NETIF_THREAD);
-#endif
-                    if (otErr != OT_ERROR_NONE)
-                    {
-                        ChipLogError(Inet, "Failed to bind socket: %s",
-                                     chip::ErrorStr(chip::DeviceLayer::Internal::MapOpenThreadError(otErr)));
-                    }
-                }
-            }
-        }
-#endif // SL_MATTER_OPENTHREAD_NCP_ENABLE
 #ifdef SL_MATTER_ENABLE_AWS
         if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK

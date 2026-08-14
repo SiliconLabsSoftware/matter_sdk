@@ -26,6 +26,9 @@
 #include <unistd.h>
 
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
 
 #if MMIC_USE_CPC
 #include <sl_cpc.h>
@@ -52,6 +55,8 @@
 /* Chip-tool storage loaded at startup from the working directory.
  * When loaded == false, the `commission` command is disabled. */
 static ChipToolStorage g_chipToolStorage;
+
+static bool commissionAvailable=true;
 
 /* Split `line` in place on whitespace. Fills `tokens[]` with pointers into
  * the line buffer and returns the number of tokens (0..maxTokens). */
@@ -101,6 +106,7 @@ static int serializeArgs(mmic_command_id_e id,
         case matter_state:
         case subscription_info:
         case openCommissioning:
+        case decommission:
             if (argc != 1) {
                 fprintf(stderr, "%s takes no arguments\n", commandsString[id]);
                 return -1;
@@ -143,6 +149,12 @@ static int serializeArgs(mmic_command_id_e id,
 
         case commission:
         {
+            if(!commissionAvailable)
+            {
+                fprintf(stderr,
+                "Warning: chip-tool storage not available.\n");
+                return -1;
+            }
             /* Usage: commission <nodeId>
              * Requires chip-tool storage to have been loaded successfully at startup.
              * Builds a fresh NOC for the target nodeId, packs the commissionArgs_t
@@ -223,6 +235,101 @@ static int serializeArgs(mmic_command_id_e id,
 
 static std::atomic<int> g_stop{0};
 
+// One-shot mode state: set true when the user invokes the binary with a
+// command on argv. The reader thread then routes the first complete response
+// frame into g_resp_buf and signals main() via g_resp_cv instead of decoding
+// straight to stdout.
+static std::atomic<bool>       g_one_shot{false};
+static std::mutex              g_resp_mtx;
+static std::condition_variable g_resp_cv;
+static uint8_t                 g_resp_buf[1024];
+static size_t                  g_resp_len   = 0;
+static bool                    g_resp_ready = false;
+
+/* Response wait timeout (seconds). Sized for commission/subscription
+ * establishment, which involve CASE session setup. */
+static constexpr int kResponseTimeoutSec = 20;
+
+/* Forward declaration; defined per transport (CPC / UART) below. */
+int serial_write(const uint8_t * data, size_t len);
+
+/* Route a received chunk. In interactive mode, decode + print directly. In
+ * one-shot mode, accumulate (UART reads may split a frame) until a complete
+ * response frame is present, then signal main(). */
+static void deliverResponse(const uint8_t * buf, size_t n)
+{
+    if (!g_one_shot.load()) {
+        decodeAndPrintResponse(const_cast<uint8_t *>(buf), n);
+        return;
+    }
+
+    std::lock_guard<std::mutex> lk(g_resp_mtx);
+    if (g_resp_ready) {
+        return;
+    }
+    size_t space = sizeof(g_resp_buf) - g_resp_len;
+    size_t copy  = (n < space) ? n : space;
+    memcpy(g_resp_buf + g_resp_len, buf, copy);
+    g_resp_len += copy;
+
+    if (g_resp_len >= MMIC_PACKET_OVERHEAD && g_resp_buf[0] == MMIC_HEADER_ANS) {
+        uint16_t frameLen = mmic_read_length(g_resp_buf);
+        if (frameLen >= MMIC_PACKET_OVERHEAD && (size_t)frameLen <= g_resp_len) {
+            g_resp_ready = true;
+            g_resp_cv.notify_one();
+        }
+    }
+}
+
+/* Return index of first argv token matching a known command name, else -1. */
+static int findCommandIndex(int argc, char ** argv)
+{
+    for (int i = 1; i < argc; i++) {
+        for (uint8_t j = 0; j < INVALID_COMMAND_ID; j++) {
+            if (strcmp(argv[i], commandsString[j]) == 0) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+/* Encode + send one MMIC command. Returns 0 on success, negative on error. */
+static int sendCommandLine(int argc_cmd, char ** argv_cmd)
+{
+    if (argc_cmd < 1) {
+        return -1;
+    }
+    for (uint8_t i = 0; i < INVALID_COMMAND_ID; i++) {
+        mmic_command_id_e id = static_cast<mmic_command_id_e>(i);
+        if (strcmp(argv_cmd[0], commandsString[id]) != 0) continue;
+
+        uint8_t argBuf[MMIC_MAX_ARG_BYTES];
+        int     argLen = serializeArgs(id, argc_cmd, argv_cmd, argBuf, sizeof(argBuf));
+        if (argLen < 0) {
+            return -2;
+        }
+
+        uint8_t * cmdBuffer = NULL;
+        size_t    size      = 0;
+        void *    paramPtr  = (argLen > 0) ? argBuf : NULL;
+        int       rc        = 0;
+        if (encodeCommand(id, paramPtr, (uint16_t)argLen, &cmdBuffer, &size) != 0) {
+            fprintf(stderr, "Failed to encode %s\n", commandsString[id]);
+            rc = -3;
+        } else if (serial_write(cmdBuffer, size) < 0) {
+            fprintf(stderr, "Failed to write to serial port\n");
+            rc = -4;
+        }
+        if (cmdBuffer != NULL) {
+            free(cmdBuffer);
+        }
+        return rc;
+    }
+    fprintf(stderr, "Unknown command: %s\n", argv_cmd[0]);
+    return -1;
+}
+
 /* Async-signal handler for SIGINT/SIGTERM. Marks the app for shutdown; the
  * main loop's fgets() returns NULL (EINTR, no SA_RESTART) and cleanup then
  * closes the CPC endpoint / serial fd before exiting. */
@@ -269,7 +376,11 @@ int serial_write(const uint8_t *data, size_t len)
     return 0;
 }
 
-/* Reader thread: prints anything received on the CPC endpoint to stdout. */
+/* Reader thread: prints anything received on the CPC endpoint to stdout.
+ * Endpoint is configured with CPC_OPTION_RX_TIMEOUT so this call unblocks
+ * periodically; that lets us observe g_stop and exit before main() closes
+ * the endpoint (closing while another thread is blocked in cpc_read_endpoint
+ * makes cpc_close_endpoint hang). */
 static void *reader_thread(void *arg)
 {
     (void)arg;
@@ -281,9 +392,12 @@ static void *reader_thread(void *arg)
                                       sizeof(buf),
                                       CPC_ENDPOINT_READ_FLAG_NONE);
         if (n > 0) {
-            decodeAndPrintResponse(buf, (size_t)n);
+            deliverResponse(buf, (size_t)n);
         } else if (n < 0) {
-            if (errno == EINTR || errno == EAGAIN) {
+            /* libcpc returns negated errno on failure and may also set errno;
+             * treat both wakeup indications as transient. */
+            if (n == -EINTR || n == -EAGAIN || n == -ETIMEDOUT ||
+                errno == EINTR || errno == EAGAIN || errno == ETIMEDOUT) {
                 continue;
             }
             /* Endpoint closed by us on shutdown -> exit quietly. */
@@ -375,7 +489,7 @@ static void *reader_thread(void *arg)
     while (!g_stop.load()) {
         ssize_t n = read(g_serial_fd, buf, sizeof(buf));
         if (n > 0) {
-            decodeAndPrintResponse(buf, n);
+            deliverResponse(buf, (size_t)n);
         } else if (n < 0 && errno != EINTR && errno != EAGAIN) {
             fprintf(stderr, "\n[serial read error: %s]\n", strerror(errno));
             break;
@@ -386,7 +500,6 @@ static void *reader_thread(void *arg)
 }
 
 #endif /* MMIC_USE_CPC */
-
 int main(int argc, char **argv)
 {
     if (install_signal_handlers() != 0) {
@@ -398,24 +511,26 @@ int main(int argc, char **argv)
      * If either INI file is missing or malformed, warn the user and continue
      * with the `commission` command disabled. */
     if (!loadChipToolStorage(g_chipToolStorage)) {
-        fprintf(stderr,
-                "Warning: chip-tool storage not available (%s).\n"
-                "         The 'commission' command is disabled.\n",
-                g_chipToolStorage.missingReason.c_str());
-    } else {
-        fprintf(stderr,
-                "chip-tool storage loaded: fabricId=0x%016llx vendorId=0x%04x. "
-                "'commission <nodeId>' is available.\n",
-                (unsigned long long)g_chipToolStorage.fabricId,
-                (unsigned)g_chipToolStorage.vendorId);
+        commissionAvailable = false;
     }
 
+    /* Argv layout: [transport args...] [<cmd> <cmd-args...>].
+     * If any argv token matches a known command name, we enter one-shot mode:
+     * everything before it is transport (existing semantics), everything from
+     * it onward is the command. Otherwise, run the interactive shell. */
+    int  cmd_index      = findCommandIndex(argc, argv);
+    int  transport_argc = (cmd_index > 0) ? cmd_index : argc;
+    bool one_shot       = (cmd_index > 0);
+    g_one_shot.store(one_shot);
+
 #if MMIC_USE_CPC
-    if (argc > 2) {
-        fprintf(stderr, "Usage: %s [cpcd_instance_name]\n", argv[0]);
+    if (transport_argc > 2) {
+        fprintf(stderr,
+                "Usage: %s [cpcd_instance_name] [<command> [args...]]\n",
+                argv[0]);
         return 1;
     }
-    const char *instance = (argc == 2) ? argv[1] : NULL;// use default socket location
+    const char *instance = (transport_argc == 2) ? argv[1] : NULL;// use default socket location
 
     if (cpc_init(&g_cpc_handle, instance, false, NULL) != 0) { 
         fprintf(stderr, "cpc_init(\"%s\") failed: %s\n",
@@ -444,6 +559,22 @@ int main(int argc, char **argv)
         }
     }
 
+    /* Give cpc_read_endpoint a bounded blocking window so the reader thread
+     * can observe g_stop on shutdown. Without this, cpc_close_endpoint() will
+     * hang whenever the reader is parked in a blocking recv on the daemon
+     * socket. */
+    {
+        bool          block   = true;
+        cpc_timeval_t timeout = { .seconds = 0, .microseconds = 200000 };
+        (void)cpc_set_endpoint_option(g_cpc_endpoint, CPC_OPTION_BLOCKING,
+                                      &block, sizeof(block));
+        if (cpc_set_endpoint_option(g_cpc_endpoint, CPC_OPTION_RX_TIMEOUT,
+                                    &timeout, sizeof(timeout)) != 0) {
+            fprintf(stderr, "warning: cpc_set_endpoint_option(RX_TIMEOUT) failed: %s\n",
+                    strerror(errno));
+        }
+    }
+
     pthread_t reader;
     if (pthread_create(&reader, NULL, reader_thread, NULL) != 0) {
         fprintf(stderr, "Failed to start reader thread\n");
@@ -451,11 +582,19 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    printf("Connected to cpcd instance \"%s\" on endpoint %u. Type 'exit' to quit.\n",
-           instance, (unsigned)MMIC_CPC_ENDPOINT_ID);
+    if(!one_shot)
+    {
+        fprintf(stderr,
+                "Connected to cpcd instance \"%s\" on endpoint %u.%s\n",
+                instance ? instance : "(default)",
+                (unsigned)MMIC_CPC_ENDPOINT_ID,
+                " Type 'exit' to quit.");
+    }
 #else
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <serial_device>\n", argv[0]);
+    if (transport_argc != 2) {
+        fprintf(stderr,
+                "Usage: %s <serial_device> [<command> [args...]]\n",
+                argv[0]);
         return 1;
     }
 
@@ -480,8 +619,50 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    printf("Connected to %s @ 115200 8N1. Type 'exit' to quit.\n", device);
+    fprintf(stderr, "Connected to %s @ 115200 8N1.%s\n",
+            device, one_shot ? "" : " Type 'exit' to quit.");
 #endif
+
+    int exit_code = 0;
+
+    if (one_shot) {
+        int     cmd_argc = argc - cmd_index;
+        char ** cmd_argv = &argv[cmd_index];
+        int     send_rc  = sendCommandLine(cmd_argc, cmd_argv);
+        if (send_rc != 0) {
+            exit_code = 1;
+        } else {
+            std::unique_lock<std::mutex> lk(g_resp_mtx);
+            bool got = g_resp_cv.wait_for(lk,
+                                          std::chrono::seconds(kResponseTimeoutSec),
+                                          [] { return g_resp_ready || g_stop.load(); });
+            if (!got || !g_resp_ready) {
+                fprintf(stderr, "mmic: timeout waiting for response\n");
+                exit_code = 2;
+            } else {
+                uint8_t rc = decodeAndPrintResponse(g_resp_buf, g_resp_len);
+                if (rc != 0) {
+                    fprintf(stderr, "mmic: decode failure (rc=%u)\n", (unsigned)rc);
+                    exit_code = 4;
+                } else if (g_resp_len >= MMIC_PACKET_OVERHEAD) {
+                    /* Map op-level failure payloads to a non-zero exit code. */
+                    uint8_t         op = g_resp_buf[MMIC_OFFSET_OP];
+                    const uint8_t * pl = g_resp_buf + MMIC_OFFSET_PAYLOAD;
+                    if ((op == openCommissioning || op == commission || op == decommission) && *pl != 0) {
+                        exit_code = 3;
+                    } else if (op == establish_subscription) {
+                        subscriptionEstablishResp_t r;
+                        memcpy(&r, pl, sizeof(r));
+                        if (r.status != 0) {
+                            exit_code = 3;
+                        }
+                    }
+                }
+            }
+        }
+        g_stop.store(1);
+        goto shutdown;
+    }
 
     char line[512];
     while (!g_stop.load()) {
@@ -569,18 +750,20 @@ int main(int argc, char **argv)
 
     g_stop.store(1);
 
+shutdown:
 #if MMIC_USE_CPC
-    /* Closing the endpoint makes any in-flight cpc_read_endpoint() return
-     * with an error, which lets the reader thread observe g_stop and exit. */
-    cpc_close_endpoint(&g_cpc_endpoint);
+    /* Join first: the reader's cpc_read_endpoint unblocks on its own via the
+     * CPC_OPTION_RX_TIMEOUT set at open time. Closing before joining races
+     * with a blocked recv() inside the daemon lib and can hang cpc_close_endpoint. */
     pthread_join(reader, NULL);
+    cpc_close_endpoint(&g_cpc_endpoint);
 #else
     pthread_join(reader, NULL);
     close(g_serial_fd);
     g_serial_fd = -1;
 #endif
 
-    return 0;
+    return exit_code;
 }
 
 
