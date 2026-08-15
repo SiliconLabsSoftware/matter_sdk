@@ -38,7 +38,13 @@ namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
 
-bool HttpClient::sNwpCaLoaded = false;
+bool HttpClient::sNwpCaLoaded          = false;
+HttpClient * HttpClient::sActiveClient = nullptr;
+
+HttpClient * HttpClient::ClientFromContext(void * request_context)
+{
+    return (request_context != nullptr) ? static_cast<HttpClient *>(request_context) : sActiveClient;
+}
 
 CHIP_ERROR HttpClient::MapStatus(sl_status_t status)
 {
@@ -386,6 +392,10 @@ CHIP_ERROR HttpClient::ProcessDeinit()
     mPutActive            = false;
     memset(mAppBuffer, 0, sizeof(mAppBuffer));
     mInitialized = false;
+    if (sActiveClient == this)
+    {
+        sActiveClient = nullptr;
+    }
     ChipLogProgress(DeviceLayer, "HTTPS client deinit success");
     return CHIP_NO_ERROR;
 }
@@ -453,7 +463,9 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
     (void) client;
     (void) event;
 
-    auto * self                             = static_cast<HttpClient *>(request_context);
+    auto * self = ClientFromContext(request_context);
+    VerifyOrReturnError(self != nullptr, SL_STATUS_FAIL);
+
     sl_http_client_response_t * getResponse = static_cast<sl_http_client_response_t *>(data);
     self->mCallbackStatus                   = getResponse->status;
 
@@ -479,14 +491,21 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
 
     if (getResponse->data_length)
     {
-        if ((self->mActiveResponseBuffer != nullptr) && (self->mActiveResponseBuffer->size() > self->mAppBuffIndex))
+        if (self->mActiveResponseBuffer != nullptr)
         {
-            const size_t avail   = self->mActiveResponseBuffer->size() - self->mAppBuffIndex;
+            // Count only bytes stored in the caller buffer, so reduce_size below stays in range.
+            const size_t size    = self->mActiveResponseBuffer->size();
+            const size_t avail   = (size > self->mAppBuffIndex) ? size - self->mAppBuffIndex : 0;
             const size_t copyLen = (getResponse->data_length < avail) ? getResponse->data_length : avail;
             if (copyLen > 0)
             {
                 memcpy(self->mActiveResponseBuffer->data() + self->mAppBuffIndex, getResponse->data_buffer, copyLen);
                 self->mAppBuffIndex += static_cast<uint32_t>(copyLen);
+            }
+            if (copyLen < getResponse->data_length)
+            {
+                ChipLogError(DeviceLayer, "HTTPS GET response truncated, dropped %u bytes",
+                             static_cast<unsigned>(getResponse->data_length - copyLen));
             }
         }
         else if (kAppBufferLength > (self->mAppBuffIndex + getResponse->data_length))
@@ -520,7 +539,9 @@ sl_status_t HttpClient::PostResponseCallback(const sl_http_client_t * client, sl
     (void) client;
     (void) event;
 
-    auto * self                              = static_cast<HttpClient *>(request_context);
+    auto * self = ClientFromContext(request_context);
+    VerifyOrReturnError(self != nullptr, SL_STATUS_FAIL);
+
     sl_http_client_response_t * postResponse = static_cast<sl_http_client_response_t *>(data);
     self->mCallbackStatus                    = postResponse->status;
 
@@ -559,7 +580,9 @@ sl_status_t HttpClient::PutResponseCallback(const sl_http_client_t * client, sl_
     (void) client;
     (void) event;
 
-    auto * self                             = static_cast<HttpClient *>(request_context);
+    auto * self = ClientFromContext(request_context);
+    VerifyOrReturnError(self != nullptr, SL_STATUS_FAIL);
+
     sl_http_client_response_t * putResponse = static_cast<sl_http_client_response_t *>(data);
     self->mCallbackStatus                   = putResponse->status;
 
@@ -619,6 +642,7 @@ CHIP_ERROR HttpClient::ProcessGet()
     request.body                     = nullptr;
     request.body_length              = 0;
 
+    sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, GetResponseCallback, this);
     VerifyOrReturnError(status == SL_STATUS_OK, MapStatus(status));
 
@@ -654,6 +678,7 @@ CHIP_ERROR HttpClient::ProcessPost()
     request.body                     = const_cast<uint8_t *>(mPendingBody.data());
     request.body_length              = static_cast<uint32_t>(mPendingBody.size());
 
+    sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, PostResponseCallback, this);
     VerifyOrReturnError(status == SL_STATUS_OK, MapStatus(status));
 
@@ -690,6 +715,7 @@ CHIP_ERROR HttpClient::ProcessPut()
     request.body                     = nullptr;
     request.body_length              = static_cast<uint32_t>(mPutBody.size());
 
+    sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, PutResponseCallback, this);
     if (status != SL_STATUS_OK)
     {

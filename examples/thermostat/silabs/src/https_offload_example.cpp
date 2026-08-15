@@ -87,7 +87,8 @@ CHIP_ERROR RunHttpsOffloadExample()
     }
     ChipLogProgress(DeviceLayer, "HTTPS PUT request success");
 
-    uint8_t responseBuf[512] = { 0 };
+    // Sized for the served index.html body; a smaller buffer truncates the response.
+    uint8_t responseBuf[sizeof(sl_index)] = { 0 };
     MutableByteSpan responseSpan(responseBuf);
     err = gHttpClient.Get(host, kHttpUrl, responseSpan);
     if (err == CHIP_NO_ERROR)

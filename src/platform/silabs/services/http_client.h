@@ -230,6 +230,14 @@ private:
     static void ServiceThread(void * arg);
     static CHIP_ERROR MapStatus(sl_status_t status);
 
+    /**
+     * @brief Resolve the instance a response callback belongs to.
+     *
+     * The NWP delivers the final PUT server-response callback without the request context,
+     * so fall back to the client that owns the in-flight request.
+     */
+    static HttpClient * ClientFromContext(void * request_context);
+
     static sl_status_t GetResponseCallback(const sl_http_client_t * client, sl_http_client_event_t event, void * data,
                                            void * request_context);
     static sl_status_t PostResponseCallback(const sl_http_client_t * client, sl_http_client_event_t event, void * data,
@@ -280,6 +288,9 @@ private:
 
     bool mInitialized = false;
     static bool sNwpCaLoaded;
+
+    /** Client owning the request registered with the NWP; used when a callback carries no context. */
+    static HttpClient * sActiveClient;
 };
 
 } // namespace Silabs
