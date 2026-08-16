@@ -47,8 +47,8 @@ namespace Silabs {
  */
 struct HttpClientConfig
 {
-    uint8_t certificateIndex = 1;     ///< NWP TLS / HTTPS certificate index.
-    bool httpsEnable         = true;  ///< true = HTTPS, false = plain HTTP.
+    uint8_t certificateIndex = 1;       ///< NWP TLS / HTTPS certificate index.
+    bool httpsEnable         = true;    ///< true = HTTPS, false = plain HTTP.
     const char * username    = nullptr; ///< Optional HTTP basic-auth username; nullptr skips auth.
     const char * password    = nullptr; ///< Optional HTTP basic-auth password; nullptr skips auth.
 
@@ -71,12 +71,21 @@ struct HttpHost
 };
 
 /**
+ * @brief Completion callback for a queued HttpClient operation.
+ *
+ * Invoked on the HttpClient service thread when the operation finishes (success or failure).
+ *
+ * @param[in] result  CHIP_NO_ERROR on success; otherwise the operation error.
+ * @param[in] context User pointer passed to the operation that started this work.
+ */
+using HttpOperationCallback = void (*)(CHIP_ERROR result, void * context);
+
+/**
  * @brief SiWx917 NWP offload HTTPS client usable from Matter C++ code.
  *
- * Lifecycle: Start → Init → Get/Post/Put → WaitForResponse
- * (+ ContinuePut for PUT) → Deinit → Stop.
+ * Lifecycle: Start → Init → Get/Post/Put → Deinit → Stop.
  * One instance may target multiple hosts by passing a different @ref HttpHost on each verb.
- * Operations are queued to the service thread; the caller waits via @ref WaitForResponse.
+ * Operations are queued to the service thread and report completion via @ref HttpOperationCallback.
  */
 class HttpClient : public MatterService
 {
@@ -84,29 +93,34 @@ public:
     /**
      * @brief Queue NWP HTTP client initialization on the service thread.
      *
-     * @param[in] config Client configuration including optional CA PEM and credentials.
+     * @param[in] config  Client configuration including optional CA PEM and credentials.
+     * @param[in] callback Completion callback; may be nullptr.
+     * @param[in] context  Passed to @p callback.
      *
      * @retval CHIP_NO_ERROR              Operation queued.
      * @retval CHIP_ERROR_BUSY            Another operation is in progress.
      * @retval CHIP_ERROR_INCORRECT_STATE Service is not running or client is initialized.
      */
-    CHIP_ERROR Init(const HttpClientConfig & config);
+    CHIP_ERROR Init(const HttpClientConfig & config, HttpOperationCallback callback, void * context = nullptr);
 
     /**
      * @brief Queue NWP HTTP client deinitialization on the service thread.
+     *
+     * @param[in] callback Completion callback; may be nullptr.
+     * @param[in] context  Passed to @p callback.
      *
      * @retval CHIP_NO_ERROR              Operation queued or client already deinitialized.
      * @retval CHIP_ERROR_BUSY            Another operation is in progress.
      * @retval CHIP_ERROR_INCORRECT_STATE Service is not running.
      */
-    CHIP_ERROR Deinit();
+    CHIP_ERROR Deinit(HttpOperationCallback callback, void * context = nullptr);
 
     /**
      * @brief Spawn the CMSIS-OS2 service thread and begin waiting for operations.
      *
      * Idempotent if the thread is already running.
      *
-     * @retval CHIP_NO_ERROR              Success or already running.
+     * @retval CHIP_NO_ERROR       Success or already running.
      * @retval CHIP_ERROR_INTERNAL Event or thread creation failed.
      */
     CHIP_ERROR Start() override;
@@ -127,81 +141,67 @@ public:
     bool IsRunning() const override;
 
     /**
-     * @brief True while an HTTP exchange is outstanding (waiting on NWP and/or PUT chunks remain).
-     */
-    bool IsRequestInProgress() const;
-
-    /**
-     * @brief True while waiting for an NWP HTTP callback.
+     * @brief True while a queued operation has not yet completed.
      */
     bool IsBusy() const;
 
     /**
-     * @brief True while a PUT body upload is active (may still need @ref ContinuePut).
-     */
-    bool IsPutInProgress() const;
-
-    /**
-     * @brief Block until the queued operation completes.
+     * @brief Start an HTTPS GET.
      *
-     * Caller (e.g. demo) owns waiting. No-op with CHIP_NO_ERROR when nothing is pending.
+     * Response body is written into @p responseBuffer from the NWP callback; the buffer must
+     * remain valid until @p callback is invoked.
      *
-     * @retval CHIP_NO_ERROR       Response OK (or idle).
-     * @retval CHIP_ERROR_INTERNAL Response / NWP failure.
-     */
-    CHIP_ERROR WaitForResponse();
-
-    /**
-     * @brief Queue the next PUT body chunk after a successful @ref WaitForResponse.
+     * @param[in]     host            Target host / IP / port.
+     * @param[in]     resource        Request path (e.g. "/index.html"). Must not be nullptr.
+     * @param[in,out] responseBuffer  Buffer for response body; size reduced to bytes received.
+     * @param[in]     callback        Completion callback; may be nullptr.
+     * @param[in]     context         Passed to @p callback.
      *
-     * May set busy again when the NWP returns SL_STATUS_IN_PROGRESS; caller must WaitForResponse.
-     * When the server signals end-of-data, clears the PUT-in-progress state.
-     *
-     * @retval CHIP_NO_ERROR              Chunk accepted, PUT finished, or nothing left to write.
-     * @retval CHIP_ERROR_INCORRECT_STATE No PUT in progress, or still busy waiting.
-     * @retval CHIP_ERROR_INTERNAL        Write failure.
-     */
-    CHIP_ERROR ContinuePut();
-
-    /**
-     * @brief Start an HTTPS GET (non-blocking).
-     *
-     * Rejects if @ref IsRequestInProgress. Response body is written into @p responseBuffer
-     * from the NWP callback; buffer must stay valid until @ref WaitForResponse returns.
-     *
-     * @retval CHIP_NO_ERROR              Request started (caller must WaitForResponse if IsBusy).
+     * @retval CHIP_NO_ERROR              Request queued.
      * @retval CHIP_ERROR_BUSY            Another request is in progress.
      * @retval CHIP_ERROR_INCORRECT_STATE Client not initialized.
      * @retval CHIP_ERROR_INVALID_ARGUMENT Null host or resource.
-     * @retval CHIP_ERROR_INTERNAL        Send failure.
      */
-    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer);
+    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
+                   HttpOperationCallback callback, void * context = nullptr);
 
     /**
-     * @brief Start an HTTPS POST (non-blocking).
+     * @brief Start an HTTPS POST.
      *
-     * @p body must remain valid until @ref WaitForResponse returns.
+     * @p body must remain valid until @p callback is invoked.
      *
-     * @retval CHIP_NO_ERROR              Request started (caller must WaitForResponse if IsBusy).
+     * @param[in] host     Target host / IP / port.
+     * @param[in] resource Request path. Must not be nullptr.
+     * @param[in] body     Request body bytes (may be empty).
+     * @param[in] callback Completion callback; may be nullptr.
+     * @param[in] context  Passed to @p callback.
+     *
+     * @retval CHIP_NO_ERROR              Request queued.
      * @retval CHIP_ERROR_BUSY            Another request is in progress.
      * @retval CHIP_ERROR_INCORRECT_STATE Client not initialized.
      * @retval CHIP_ERROR_INVALID_ARGUMENT Null host or resource.
-     * @retval CHIP_ERROR_INTERNAL        Send failure.
      */
-    CHIP_ERROR Post(const HttpHost & host, const char * resource, ByteSpan body);
+    CHIP_ERROR Post(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
+                    void * context = nullptr);
 
     /**
-     * @brief Start an HTTPS PUT (non-blocking); body is uploaded via @ref ContinuePut.
+     * @brief Start an HTTPS PUT with chunked body upload handled on the service thread.
      *
-     * @p body must remain valid until PUT completes (@ref IsPutInProgress becomes false).
+     * @p body must remain valid until @p callback is invoked.
      *
-     * @retval CHIP_NO_ERROR              Request started (caller WaitForResponse + ContinuePut).
+     * @param[in] host     Target host / IP / port.
+     * @param[in] resource Request path. Must not be nullptr.
+     * @param[in] body     Full request body to upload.
+     * @param[in] callback Completion callback; may be nullptr.
+     * @param[in] context  Passed to @p callback.
+     *
+     * @retval CHIP_NO_ERROR              Request queued.
      * @retval CHIP_ERROR_BUSY            Another request is in progress.
      * @retval CHIP_ERROR_INCORRECT_STATE Client not initialized.
      * @retval CHIP_ERROR_INVALID_ARGUMENT Null host or resource.
-     * @retval CHIP_ERROR_INTERNAL        Send failure.
      */
-    CHIP_ERROR Put(const HttpHost & host, const char * resource, ByteSpan body);
+    CHIP_ERROR Put(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
+                   void * context = nullptr);
 
 private:
     static constexpr size_t kAppBufferLength        = 2000;
@@ -219,13 +219,11 @@ private:
         Get,
         Post,
         Put,
-        ContinuePut,
     };
 
     static constexpr uint32_t kEventOperation = 1u << 0;
     static constexpr uint32_t kEventResponse  = 1u << 1;
     static constexpr uint32_t kEventStop      = 1u << 2;
-    static constexpr uint32_t kEventComplete  = 1u << 3;
 
     static void ServiceThread(void * arg);
     static CHIP_ERROR MapStatus(sl_status_t status);
@@ -246,8 +244,9 @@ private:
                                            void * request_context);
 
     void ResetRequestState();
-    CHIP_ERROR QueueOperation(Operation operation);
+    CHIP_ERROR QueueOperation(Operation operation, HttpOperationCallback callback, void * context);
     void ProcessOperation();
+    void HandleNwpResponse();
     CHIP_ERROR ProcessInit();
     CHIP_ERROR ProcessDeinit();
     CHIP_ERROR ProcessGet();
@@ -280,11 +279,12 @@ private:
     const char * mPendingResource = nullptr;
     ByteSpan mPendingBody;
 
-    volatile bool mBusy              = false;
-    volatile bool mCompletionPending = false;
-    bool mPutActive                   = false;
-    Operation mPendingOperation  = Operation::None;
-    CHIP_ERROR mOperationResult  = CHIP_NO_ERROR;
+    volatile bool mBusy     = false;
+    bool mPutActive         = false;
+    Operation mPendingOperation = Operation::None;
+
+    HttpOperationCallback mUserCallback = nullptr;
+    void * mUserCallbackContext         = nullptr;
 
     bool mInitialized = false;
     static bool sNwpCaLoaded;

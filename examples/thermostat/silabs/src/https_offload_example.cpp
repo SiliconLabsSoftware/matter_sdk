@@ -21,6 +21,7 @@
 #include "http_client.h"
 
 #include "cacert.pem.h"
+#include "cmsis_os2.h"
 #include "index.html.h"
 
 #include <lib/support/CodeUtils.h>
@@ -38,7 +39,7 @@ using chip::DeviceLayer::Silabs::HttpClientConfig;
 using chip::DeviceLayer::Silabs::HttpHost;
 
 constexpr char kHttpServerIp[]   = "192.168.0.191";
-constexpr char kHttpHostname[]   = "192.168.0.191";
+constexpr char kHttpHostname[]   = "example.com";
 constexpr uint16_t kHttpPort     = 8443;
 constexpr char kHttpUrl[]        = "/index.html";
 constexpr char kHttpClientUser[] = "admin";
@@ -48,25 +49,44 @@ constexpr char kHttpPostData[] =
 
 HttpClient gHttpClient;
 
-CHIP_ERROR WaitUntilRequestDone(HttpClient & client)
+// Binary semaphore: CMSIS mutex cannot be released from another thread; NWP/HTTP
+// completion callbacks run on the HttpClient service thread.
+osSemaphoreId_t gDoneLock = nullptr;
+
+struct OperationWaitContext
 {
-    while (client.IsRequestInProgress())
+    osSemaphoreId_t lock;
+    CHIP_ERROR result;
+};
+
+void OnOperationDone(CHIP_ERROR result, void * context)
+        {
+    auto * waitCtx  = static_cast<OperationWaitContext *>(context);
+    waitCtx->result = result;
+    osSemaphoreRelease(waitCtx->lock);
+        }
+
+CHIP_ERROR WaitForCallback(OperationWaitContext & waitCtx)
+{
+    const osStatus_t status = osSemaphoreAcquire(waitCtx.lock, osWaitForever);
+    VerifyOrReturnError(status == osOK, CHIP_ERROR_INTERNAL);
+    return waitCtx.result;
+}
+
+CHIP_ERROR RunQueuedOperation(CHIP_ERROR queueResult, OperationWaitContext & waitCtx)
+{
+    if (queueResult != CHIP_NO_ERROR)
     {
-        if (client.IsBusy())
-        {
-            ReturnErrorOnFailure(client.WaitForResponse());
-        }
-        if (client.IsPutInProgress())
-        {
-            ReturnErrorOnFailure(client.ContinuePut());
-        }
+        return queueResult;
     }
-    return CHIP_NO_ERROR;
+    return WaitForCallback(waitCtx);
 }
 
 CHIP_ERROR RunHttpsOffloadExample()
 {
     ChipLogProgress(DeviceLayer, "HTTPS starting on offload stack");
+
+    OperationWaitContext waitCtx = { .lock = gDoneLock, .result = CHIP_NO_ERROR };
 
     const HttpHost host = {
         .hostName = kHttpHostname,
@@ -75,11 +95,7 @@ CHIP_ERROR RunHttpsOffloadExample()
     };
 
     const ByteSpan putBody(reinterpret_cast<const uint8_t *>(sl_index), sizeof(sl_index) - 1);
-    CHIP_ERROR err = gHttpClient.Put(host, kHttpUrl, putBody);
-    if (err == CHIP_NO_ERROR)
-    {
-        err = WaitUntilRequestDone(gHttpClient);
-    }
+    CHIP_ERROR err = RunQueuedOperation(gHttpClient.Put(host, kHttpUrl, putBody, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS PUT failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -90,11 +106,7 @@ CHIP_ERROR RunHttpsOffloadExample()
     // Sized for the served index.html body; a smaller buffer truncates the response.
     uint8_t responseBuf[sizeof(sl_index)] = { 0 };
     MutableByteSpan responseSpan(responseBuf);
-    err = gHttpClient.Get(host, kHttpUrl, responseSpan);
-    if (err == CHIP_NO_ERROR)
-    {
-        err = WaitUntilRequestDone(gHttpClient);
-    }
+    err = RunQueuedOperation(gHttpClient.Get(host, kHttpUrl, responseSpan, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS GET failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -103,11 +115,7 @@ CHIP_ERROR RunHttpsOffloadExample()
     ChipLogProgress(DeviceLayer, "HTTPS GET request success");
 
     const ByteSpan postBody(reinterpret_cast<const uint8_t *>(kHttpPostData), strlen(kHttpPostData));
-    err = gHttpClient.Post(host, kHttpUrl, postBody);
-    if (err == CHIP_NO_ERROR)
-    {
-        err = WaitUntilRequestDone(gHttpClient);
-    }
+    err = RunQueuedOperation(gHttpClient.Post(host, kHttpUrl, postBody, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS POST failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -128,6 +136,17 @@ extern "C" sl_status_t http_client_demo_start(void)
         return SL_STATUS_ALREADY_INITIALIZED;
     }
 
+    if (gDoneLock == nullptr)
+    {
+        // max_count=1, initial_count=0: Acquire blocks until completion callback Releases.
+        gDoneLock = osSemaphoreNew(1, 0, nullptr);
+        if (gDoneLock == nullptr)
+        {
+            ChipLogError(DeviceLayer, "HTTPS demo lock create failed");
+            return SL_STATUS_FAIL;
+        }
+    }
+
     const HttpClientConfig config = {
         .certificateIndex = 1,
         .httpsEnable      = true,
@@ -144,11 +163,8 @@ extern "C" sl_status_t http_client_demo_start(void)
         return SL_STATUS_FAIL;
     }
 
-    err = gHttpClient.Init(config);
-    if (err == CHIP_NO_ERROR)
-    {
-        err = gHttpClient.WaitForResponse();
-    }
+    OperationWaitContext waitCtx = { .lock = gDoneLock, .result = CHIP_NO_ERROR };
+    err                          = RunQueuedOperation(gHttpClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS Init failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -162,11 +178,7 @@ extern "C" sl_status_t http_client_demo_start(void)
 
     err = RunHttpsOffloadExample();
 
-    CHIP_ERROR deinitErr = gHttpClient.Deinit();
-    if (deinitErr == CHIP_NO_ERROR)
-    {
-        deinitErr = gHttpClient.WaitForResponse();
-    }
+    CHIP_ERROR deinitErr = RunQueuedOperation(gHttpClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
     if (deinitErr != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS deinit failed: %" CHIP_ERROR_FORMAT, deinitErr.Format());

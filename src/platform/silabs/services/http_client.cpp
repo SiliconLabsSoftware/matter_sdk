@@ -69,16 +69,6 @@ bool HttpClient::IsBusy() const
     return mBusy;
 }
 
-bool HttpClient::IsPutInProgress() const
-{
-    return mPutActive;
-}
-
-bool HttpClient::IsRequestInProgress() const
-{
-    return mBusy || mPutActive;
-}
-
 void HttpClient::ServiceThread(void * arg)
 {
     auto * self = static_cast<HttpClient *>(arg);
@@ -103,15 +93,7 @@ void HttpClient::ServiceThread(void * arg)
         }
         if ((events & kEventResponse) != 0)
         {
-            CHIP_ERROR result = (self->mHttpRspReceived == kHttpSuccessResponse) ? CHIP_NO_ERROR
-                                                                                : MapStatus(self->mCallbackStatus);
-            if (result != CHIP_NO_ERROR)
-            {
-                self->mPutActive = false;
-                self->mPutBody   = ByteSpan();
-            }
-            self->mHttpRspReceived = 0;
-            self->CompleteOperation(result);
+            self->HandleNwpResponse();
         }
     }
 
@@ -152,7 +134,7 @@ CHIP_ERROR HttpClient::Stop()
         return CHIP_NO_ERROR;
     }
 
-    VerifyOrReturnError(!IsRequestInProgress(), CHIP_ERROR_BUSY);
+    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
 
     osEventFlagsSet(static_cast<osEventFlagsId_t>(mEventFlags), kEventStop);
     while (mThreadId != nullptr)
@@ -179,49 +161,21 @@ void HttpClient::ResetRequestState()
     mPendingHost          = {};
     mPendingResource      = nullptr;
     mBusy                 = false;
-    mCompletionPending    = false;
     mPutActive            = false;
     memset(mAppBuffer, 0, sizeof(mAppBuffer));
 }
 
-CHIP_ERROR HttpClient::QueueOperation(Operation operation)
+CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
 
-    mPendingOperation = operation;
-    mOperationResult  = CHIP_NO_ERROR;
-    mCompletionPending = false;
-    mBusy             = true;
-    osEventFlagsClear(static_cast<osEventFlagsId_t>(mEventFlags), kEventComplete);
+    mPendingOperation     = operation;
+    mUserCallback         = callback;
+    mUserCallbackContext  = context;
+    mBusy                 = true;
     osEventFlagsSet(static_cast<osEventFlagsId_t>(mEventFlags), kEventOperation);
     return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR HttpClient::WaitForResponse()
-{
-    if (!mBusy)
-    {
-        if (!mCompletionPending)
-        {
-            return CHIP_NO_ERROR;
-        }
-        mCompletionPending = false;
-        return mOperationResult;
-    }
-
-    uint32_t events =
-        osEventFlagsWait(static_cast<osEventFlagsId_t>(mEventFlags), kEventComplete, osFlagsWaitAny, osWaitForever);
-    VerifyOrReturnError((events & osFlagsError) == 0, CHIP_ERROR_INTERNAL);
-    mCompletionPending = false;
-    return mOperationResult;
-}
-
-CHIP_ERROR HttpClient::ContinuePut()
-{
-    VerifyOrReturnError(mPutActive, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_INCORRECT_STATE);
-    return QueueOperation(Operation::ContinuePut);
 }
 
 CHIP_ERROR HttpClient::ProcessContinuePut()
@@ -257,11 +211,43 @@ CHIP_ERROR HttpClient::ProcessContinuePut()
     return CHIP_ERROR_IN_PROGRESS;
 }
 
-CHIP_ERROR HttpClient::Init(const HttpClientConfig & config)
+void HttpClient::HandleNwpResponse()
+{
+    CHIP_ERROR result =
+        (mHttpRspReceived == kHttpSuccessResponse) ? CHIP_NO_ERROR : MapStatus(mCallbackStatus);
+    mHttpRspReceived = 0;
+
+    if (result != CHIP_NO_ERROR)
+    {
+        CompleteOperation(result);
+        return;
+    }
+
+    if (!mPutActive)
+    {
+        CompleteOperation(CHIP_NO_ERROR);
+        return;
+    }
+
+    // Drive PUT chunking on the service thread until NWP needs another wait or upload finishes.
+    do
+    {
+        result = ProcessContinuePut();
+    } while ((result == CHIP_NO_ERROR) && mPutActive);
+
+    if (result == CHIP_ERROR_IN_PROGRESS)
+    {
+        return;
+    }
+
+    CompleteOperation(result);
+}
+
+CHIP_ERROR HttpClient::Init(const HttpClientConfig & config, HttpOperationCallback callback, void * context)
 {
     VerifyOrReturnError(!mInitialized, CHIP_ERROR_INCORRECT_STATE);
     mConfig = config;
-    return QueueOperation(Operation::Init);
+    return QueueOperation(Operation::Init, callback, context);
 }
 
 CHIP_ERROR HttpClient::ProcessInit()
@@ -350,13 +336,17 @@ CHIP_ERROR HttpClient::ProcessInit()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR HttpClient::Deinit()
+CHIP_ERROR HttpClient::Deinit(HttpOperationCallback callback, void * context)
 {
     if (!mInitialized)
     {
+        if (callback != nullptr)
+        {
+            callback(CHIP_NO_ERROR, context);
+        }
         return CHIP_NO_ERROR;
     }
-    return QueueOperation(Operation::Deinit);
+    return QueueOperation(Operation::Deinit, callback, context);
 }
 
 CHIP_ERROR HttpClient::ProcessDeinit()
@@ -407,11 +397,19 @@ void HttpClient::CompleteOperation(CHIP_ERROR error)
         mPutActive = false;
         mPutBody   = ByteSpan();
     }
-    mOperationResult  = error;
-    mPendingOperation = Operation::None;
-    mCompletionPending = true;
-    mBusy             = false;
-    osEventFlagsSet(static_cast<osEventFlagsId_t>(mEventFlags), kEventComplete);
+
+    HttpOperationCallback callback = mUserCallback;
+    void * context                 = mUserCallbackContext;
+
+    mUserCallback        = nullptr;
+    mUserCallbackContext = nullptr;
+    mPendingOperation    = Operation::None;
+    mBusy                = false;
+
+    if (callback != nullptr)
+    {
+        callback(error, context);
+    }
 }
 
 void HttpClient::SignalResponse()
@@ -442,9 +440,6 @@ void HttpClient::ProcessOperation()
         break;
     case Operation::Put:
         result = ProcessPut();
-        break;
-    case Operation::ContinuePut:
-        result = ProcessContinuePut();
         break;
     case Operation::None:
         result = CHIP_ERROR_INCORRECT_STATE;
@@ -606,17 +601,18 @@ sl_status_t HttpClient::PutResponseCallback(const sl_http_client_t * client, sl_
         self->mAppBuffIndex += putResponse->data_length;
     }
     self->mHttpRspReceived = kHttpSuccessResponse;
-    self->SignalResponse();
 
     if (putResponse->end_of_data == SL_HTTP_CLIENT_PUT_SERVER_RESPONSE_END_OF_DATA)
     {
         self->mEndOfFile = kHttpSuccessResponse;
     }
 
+    self->SignalResponse();
     return SL_STATUS_OK;
 }
 
-CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer)
+CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
+                           HttpOperationCallback callback, void * context)
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mPutActive, CHIP_ERROR_BUSY);
@@ -627,7 +623,7 @@ CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, Mutable
     mActiveResponseBuffer = &responseBuffer;
     mPendingHost          = host;
     mPendingResource      = resource;
-    return QueueOperation(Operation::Get);
+    return QueueOperation(Operation::Get, callback, context);
 }
 
 CHIP_ERROR HttpClient::ProcessGet()
@@ -652,7 +648,8 @@ CHIP_ERROR HttpClient::ProcessGet()
     return CHIP_ERROR_IN_PROGRESS;
 }
 
-CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSpan body)
+CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
+                            void * context)
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mPutActive, CHIP_ERROR_BUSY);
@@ -663,7 +660,7 @@ CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSp
     mPendingHost     = host;
     mPendingResource = resource;
     mPendingBody     = body;
-    return QueueOperation(Operation::Post);
+    return QueueOperation(Operation::Post, callback, context);
 }
 
 CHIP_ERROR HttpClient::ProcessPost()
@@ -688,7 +685,8 @@ CHIP_ERROR HttpClient::ProcessPost()
     return CHIP_ERROR_IN_PROGRESS;
 }
 
-CHIP_ERROR HttpClient::Put(const HttpHost & host, const char * resource, ByteSpan body)
+CHIP_ERROR HttpClient::Put(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
+                           void * context)
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mPutActive, CHIP_ERROR_BUSY);
@@ -700,7 +698,7 @@ CHIP_ERROR HttpClient::Put(const HttpHost & host, const char * resource, ByteSpa
     mPutActive       = true;
     mPendingHost     = host;
     mPendingResource = resource;
-    return QueueOperation(Operation::Put);
+    return QueueOperation(Operation::Put, callback, context);
 }
 
 CHIP_ERROR HttpClient::ProcessPut()
