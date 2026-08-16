@@ -76,13 +76,19 @@
 // Setting the priority of the lwip thread to osPriorityAboveNormal
 #define TCPIP_THREAD_PRIO (32)
 
+// Keep TCP_MSS at Ethernet MTU. AWS previously inflated MSS (4x) so that
+// default TCP_WND (4*MSS) and TCP_SND_BUF (2*MSS) grew; set those explicitly.
+#define TCP_MSS (1460)
+
 #ifdef SL_MATTER_ENABLE_AWS
 #define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())
-#define TCP_MSS (4 * 1152)
+#define TCP_WND (16 * TCP_MSS)     // was 4 * (4 * TCP_MSS)
+#define TCP_SND_BUF (8 * TCP_MSS)  // was 2 * (4 * TCP_MSS)
 #else
 #define LWIP_DNS 0
-#define TCP_MSS (1152)
+#define TCP_SND_BUF (2 * TCP_MSS)
+// TCP_WND: leave undefined → opt.h default (4 * TCP_MSS)
 #endif /* SL_MATTER_ENABLE_AWS */
 
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1
@@ -149,19 +155,18 @@
 #define MEMP_SEPARATE_POOLS (1)
 #define LWIP_PBUF_FROM_CUSTOM_POOLS (0)
 #define MEMP_USE_CUSTOM_POOLS (0)
-#define PBUF_POOL_SIZE (32)
-#define PBUF_POOL_BUFSIZE (1280) // IPv6 path MTU
+#define PBUF_POOL_SIZE (16)
+#define PBUF_POOL_BUFSIZE (1520) // TCP_MSS + 40 + PBUF_LINK_ENCAPSULATION_HLEN + PBUF_LINK_HLEN
 #define PBUF_CUSTOM_POOL_IDX_START (MEMP_PBUF_POOL_SMALL)
 #define PBUF_CUSTOM_POOL_IDX_END (MEMP_PBUF_POOL_LARGE)
 
-#define TCP_SND_BUF (2 * TCP_MSS)
 #define TCP_LISTEN_BACKLOG (1)
 
 #define ETH_PAD_SIZE (0)
 #define SUB_ETHERNET_HEADER_SPACE (0)
 #define PBUF_LINK_HLEN (14)
 
-#define TCPIP_THREAD_STACKSIZE (2048)
+#define TCPIP_THREAD_STACKSIZE (2 * 1024)
 
 #define NETIF_MAX_HWADDR_LEN 8U
 
