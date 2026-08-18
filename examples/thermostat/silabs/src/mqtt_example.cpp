@@ -224,8 +224,10 @@ extern "C" sl_status_t mqtt_client_demo_start(void)
     //     ChipLogError(DeviceLayer, "MQTT Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
     // }
 
-    return (err == CHIP_NO_ERROR 
-        // && deinitErr == CHIP_NO_ERROR 
-        // && stopErr == CHIP_NO_ERROR)
-         ? SL_STATUS_OK : SL_STATUS_FAIL;
+    return (err == CHIP_NO_ERROR
+            // && deinitErr == CHIP_NO_ERROR
+            // && stopErr == CHIP_NO_ERROR
+            )
+        ? SL_STATUS_OK
+        : SL_STATUS_FAIL;
 }
