@@ -195,6 +195,6 @@ extern "C" sl_status_t http_client_demo_start(void)
     */
     return (err == CHIP_NO_ERROR 
         // && deinitErr == CHIP_NO_ERROR 
-        // && stopErr == CHIP_NO_ERROR) 
-        ? SL_STATUS_OK : SL_STATUS_FAIL;
+        // && stopErr == CHIP_NO_ERROR
+        ) ? SL_STATUS_OK : SL_STATUS_FAIL;
 }
