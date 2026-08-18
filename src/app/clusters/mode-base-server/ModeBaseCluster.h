@@ -21,6 +21,7 @@
 #include <app/SafeAttributePersistenceProvider.h>
 #include <app/clusters/mode-base-server/AppDelegate.h>
 #include <app/clusters/mode-base-server/mode-base-cluster-objects.h>
+#include <app/data-model-provider/MetadataTypes.h>
 #include <app/server-cluster/DefaultServerCluster.h>
 #include <app/server-cluster/OptionalAttributeSet.h>
 #include <platform/DiagnosticDataProvider.h>
@@ -40,10 +41,9 @@ public:
         bool onOffValueForStartUp = false;
         SafeAttributePersistenceProvider & safeAttributePersistenceProvider;
         DeviceLayer::DiagnosticDataProvider & diagnosticDataProvider;
-        uint32_t clusterRevision = 0;
     };
 
-    ModeBaseCluster(EndpointId endpointId, ClusterId aClusterId, const Config & config);
+    ModeBaseCluster(EndpointId endpointId, ModeBase::ClusterEntry cluster, const Config & config);
 
     // Server cluster implementation
     DataModel::ActionReturnStatus ReadAttribute(const DataModel::ReadAttributeRequest & request,

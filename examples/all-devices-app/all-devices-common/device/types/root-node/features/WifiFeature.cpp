@@ -27,7 +27,9 @@ CHIP_ERROR WifiFeature::RegisterFeatureClusters(EndpointId endpointId, CodeDrive
                                                 RootNode::Context & rootContext,
                                                 Clusters::GeneralCommissioningCluster & generalCommissioning)
 {
-    mWifiDiagnosticsCluster.Create(endpointId, rootContext.diagnosticDataProvider,
+    ReturnErrorOnFailure(RootNode::Register(endpointId, provider, composition));
+
+    mWifiDiagnosticsCluster.Create(endpointId, mContext.diagnosticDataProvider,
                                    WiFiDiagnosticsServerCluster::OptionalAttributeSet{},
                                    BitFlags<WiFiNetworkDiagnostics::Feature>{});
     ReturnErrorOnFailure(provider.AddCluster(mWifiDiagnosticsCluster.Registration()));

@@ -86,24 +86,25 @@ RootNode::Context MakeRootNodeContext(CommonCaseDeviceServerInitParams & initPar
                                       DeviceInstanceInfoProvider & deviceInfoProvider)
 {
     return RootNode::Context{
-        .commissioningWindowManager = Server::GetInstance().GetCommissioningWindowManager(),
-        .configurationManager       = ConfigurationMgr(),
-        .deviceControlServer        = DeviceControlServer::DeviceControlSvr(),
-        .fabricTable                = Server::GetInstance().GetFabricTable(),
-        .accessControl              = Server::GetInstance().GetAccessControl(),
-        .persistentStorage          = Server::GetInstance().GetPersistentStorage(),
-        .failSafeContext            = Server::GetInstance().GetFailSafeContext(),
-        .deviceInstanceInfoProvider = deviceInfoProvider,
-        .platformManager            = PlatformMgr(),
-        .groupDataProvider          = gGroupDataProvider,
-        .sessionManager             = Server::GetInstance().GetSecureSessionManager(),
-        .dnssdServer                = DnssdServer::Instance(),
-        .deviceLoadStatusProvider   = *InteractionModelEngine::GetInstance(),
-        .diagnosticDataProvider     = GetDiagnosticDataProvider(),
-        .testEventTriggerDelegate   = initParams.testEventTriggerDelegate,
-        .dacProvider                = *Credentials::GetDeviceAttestationCredentialsProvider(),
-        .eventManagement            = EventManagement::GetInstance(),
-        .timerDelegate              = gTimerDelegate,
+        .commissioningWindowManager          = Server::GetInstance().GetCommissioningWindowManager(),
+        .configurationManager                = ConfigurationMgr(),
+        .deviceControlServer                 = DeviceControlServer::DeviceControlSvr(),
+        .fabricTable                         = Server::GetInstance().GetFabricTable(),
+        .accessControl                       = Server::GetInstance().GetAccessControl(),
+        .persistentStorage                   = Server::GetInstance().GetPersistentStorage(),
+        .failSafeContext                     = Server::GetInstance().GetFailSafeContext(),
+        .deviceInstanceInfoProvider          = deviceInfoProvider,
+        .platformManager                     = PlatformMgr(),
+        .groupDataProvider                   = gGroupDataProvider,
+        .sessionManager                      = Server::GetInstance().GetSecureSessionManager(),
+        .dnssdServer                         = DnssdServer::Instance(),
+        .deviceLoadStatusProvider            = *InteractionModelEngine::GetInstance(),
+        .diagnosticDataProvider              = GetDiagnosticDataProvider(),
+        .testEventTriggerDelegate            = initParams.testEventTriggerDelegate,
+        .dacProvider                         = *Credentials::GetDeviceAttestationCredentialsProvider(),
+        .eventManagement                     = EventManagement::GetInstance(),
+        .timerDelegate                       = gTimerDelegate,
+        .minGuaranteedSubscriptionsPerFabric = InteractionModelEngine::GetInstance()->GetMinGuaranteedSubscriptionsPerFabric(),
     };
 }
 
@@ -153,17 +154,15 @@ CHIP_ERROR PopulateAllDevicesDataModelProvider(CommonCaseDeviceServerInitParams 
     ReturnErrorOnFailure(CreateAndRegisterRootNode(initParams));
 
     DeviceFactory::GetInstance().Init(DeviceFactory::Context{
-        .groupDataProvider        = gGroupDataProvider,
-        .fabricTable              = Server::GetInstance().GetFabricTable(),
-        .timerDelegate            = gTimerDelegate,
-        .storageDelegate          = *initParams.persistentStorageDelegate,
-        .diagnosticDataProvider   = DeviceLayer::GetDiagnosticDataProvider(),
-        .platformManager          = DeviceLayer::PlatformMgr(),
-        .failSafeContext          = Server::GetInstance().GetFailSafeContext(),
-        .bindingTable             = Clusters::Binding::Table::GetInstance(),
-        .bindingManager           = Clusters::Binding::Manager::GetInstance(),
-        .testEventTriggerDelegate = *initParams.testEventTriggerDelegate,
-        .identifyDelegate         = gIdentifyDelegate,
+        .groupDataProvider      = gGroupDataProvider,
+        .fabricTable            = Server::GetInstance().GetFabricTable(),
+        .timerDelegate          = gTimerDelegate,
+        .storageDelegate        = *initParams.persistentStorageDelegate,
+        .diagnosticDataProvider = DeviceLayer::GetDiagnosticDataProvider(),
+        .platformManager        = DeviceLayer::PlatformMgr(),
+        .failSafeContext        = Server::GetInstance().GetFailSafeContext(),
+        .bindingTable           = Clusters::Binding::Table::GetInstance(),
+        .bindingManager         = Clusters::Binding::Manager::GetInstance(),
     });
 
     VerifyOrReturnError(!gDeviceType.empty(), CHIP_ERROR_INVALID_ARGUMENT);
