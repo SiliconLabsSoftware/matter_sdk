@@ -18,11 +18,12 @@
 
 #include "https_offload_example.h"
 
+#include "cacert.pem.h"
+#include "index.html.h"
+
 #include "http_client.h"
 
-#include "cacert.pem.h"
 #include "cmsis_os2.h"
-#include "index.html.h"
 
 #include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>
