@@ -37,20 +37,20 @@ using chip::DeviceLayer::Silabs::MqttClient;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
 using chip::DeviceLayer::Silabs::MqttQos;
 
-constexpr char kMqttBrokerIp[]       = "192.168.0.191";
-constexpr char kMqttTlsHostname[]    = "example.com";
-constexpr uint16_t kMqttBrokerPort   = 8883;
-constexpr uint16_t kMqttClientPort   = 5003;
-constexpr char kMqttClientId[]       = "WISECONNECT_SDK_TOPIC";
-constexpr char kMqttUsername[]       = "username";
-constexpr char kMqttPassword[]       = "password";
-constexpr char kMqttTopic[]          = "THERMOSTAT-DATA";
-constexpr char kMqttPublishMessage[] = "THIS IS MQTT CLIENT DEMO FROM APPLICATION";
+constexpr char kMqttBrokerIp[]         = "192.168.0.191";
+constexpr char kMqttTlsHostname[]      = "example.com";
+constexpr uint16_t kMqttBrokerPort     = 8883;
+constexpr uint16_t kMqttClientPort     = 5003;
+constexpr char kMqttClientId[]         = "WISECONNECT_SDK_TOPIC";
+constexpr char kMqttUsername[]         = "username";
+constexpr char kMqttPassword[]         = "password";
+constexpr char kMqttTopic[]            = "THERMOSTAT-DATA";
+constexpr char kMqttPublishMessage[]   = "THIS IS MQTT CLIENT DEMO FROM APPLICATION";
 constexpr uint32_t kMqttYieldTimeoutMs = 60000;
 
 MqttClient gMqttClient;
 
-osSemaphoreId_t gDoneLock = nullptr;
+osSemaphoreId_t gDoneLock      = nullptr;
 volatile bool gMessageReceived = false;
 
 struct OperationWaitContext
@@ -68,8 +68,8 @@ void OnOperationDone(CHIP_ERROR result, void * context)
 
 void OnMqttMessage(const char * topic, ByteSpan payload, void * /* context */)
 {
-    ChipLogProgress(DeviceLayer, "MQTT message on %s: %.*s", topic != nullptr ? topic : "(null)",
-                    static_cast<int>(payload.size()), reinterpret_cast<const char *>(payload.data()));
+    ChipLogProgress(DeviceLayer, "MQTT message on %s: %.*s", topic != nullptr ? topic : "(null)", static_cast<int>(payload.size()),
+                    reinterpret_cast<const char *>(payload.data()));
     gMessageReceived = true;
 }
 
@@ -118,8 +118,8 @@ CHIP_ERROR RunMqttExample()
     }
 
     const ByteSpan payload(reinterpret_cast<const uint8_t *>(kMqttPublishMessage), strlen(kMqttPublishMessage));
-    err = RunQueuedOperation(
-        gMqttClient.Publish(kMqttTopic, payload, MqttQos::AtLeastOnce, false, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gMqttClient.Publish(kMqttTopic, payload, MqttQos::AtLeastOnce, false, OnOperationDone, &waitCtx),
+                             waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Publish failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -212,17 +212,20 @@ extern "C" sl_status_t mqtt_client_demo_start(void)
 
     err = RunMqttExample();
 
-    CHIP_ERROR deinitErr = RunQueuedOperation(gMqttClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
-    if (deinitErr != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "MQTT Deinit failed: %" CHIP_ERROR_FORMAT, deinitErr.Format());
-    }
+    // CHIP_ERROR deinitErr = RunQueuedOperation(gMqttClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
+    // if (deinitErr != CHIP_NO_ERROR)
+    // {
+    //     ChipLogError(DeviceLayer, "MQTT Deinit failed: %" CHIP_ERROR_FORMAT, deinitErr.Format());
+    // }
 
-    CHIP_ERROR stopErr = gMqttClient.Stop();
-    if (stopErr != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "MQTT Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
-    }
+    // CHIP_ERROR stopErr = gMqttClient.Stop();
+    // if (stopErr != CHIP_NO_ERROR)
+    // {
+    //     ChipLogError(DeviceLayer, "MQTT Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
+    // }
 
-    return (err == CHIP_NO_ERROR && deinitErr == CHIP_NO_ERROR && stopErr == CHIP_NO_ERROR) ? SL_STATUS_OK : SL_STATUS_FAIL;
+    return (err == CHIP_NO_ERROR 
+        // && deinitErr == CHIP_NO_ERROR 
+        // && stopErr == CHIP_NO_ERROR)
+         ? SL_STATUS_OK : SL_STATUS_FAIL;
 }
