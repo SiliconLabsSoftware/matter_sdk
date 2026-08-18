@@ -206,8 +206,10 @@ public:
 private:
     static constexpr size_t kAppBufferLength        = 2000;
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
+    // HTTP request status codes.
     static constexpr uint8_t kHttpSuccessResponse   = 1;
     static constexpr uint8_t kHttpFailureResponse   = 2;
+    // HTTP client error codes.
     static constexpr uint16_t kHttpClientErrorMin   = 400;
     static constexpr uint16_t kHttpServerErrorMax   = 599;
 
@@ -219,6 +221,8 @@ private:
         Get,
         Post,
         Put,
+        // TODO: Add Delete operation.
+        // TODO: Add Head operation.
     };
 
     static constexpr uint32_t kEventOperation = 1u << 0;
