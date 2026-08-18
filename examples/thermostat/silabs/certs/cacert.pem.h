@@ -1,19 +1,19 @@
 /*******************************************************************************
-* @file  cacert.pem.h
-* @brief 
-*******************************************************************************
-* # License
-* <b>Copyright 2023 Silicon Laboratories Inc. www.silabs.com</b>
-*******************************************************************************
-*
-* The licensor of this software is Silicon Laboratories Inc. Your use of this
-* software is governed by the terms of Silicon Labs Master Software License
-* Agreement (MSLA) available at
-* www.silabs.com/about-us/legal/master-software-license-agreement. This
-* software is distributed to you in Source Code format and is governed by the
-* sections of the MSLA applicable to Source Code.
-*
-******************************************************************************/
+ * @file  cacert.pem.h
+ * @brief Sample (generated) CA certificate for HTTPs and MQTTs clients
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
 
 const unsigned char cacert[] = "-----BEGIN CERTIFICATE-----\r\n"
                                "MIIDhzCCAm+gAwIBAgIUYVeeRVq989QaDa3tiuhLJrxaJIMwDQYJKoZIhvcNAQEL\r\n"
