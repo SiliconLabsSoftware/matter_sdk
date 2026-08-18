@@ -165,7 +165,8 @@ extern "C" sl_status_t http_client_demo_start(void)
     }
 
     OperationWaitContext waitCtx = { .lock = gDoneLock, .result = CHIP_NO_ERROR };
-    err                          = RunQueuedOperation(gHttpClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
+
+    err = RunQueuedOperation(gHttpClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS Init failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -179,17 +180,21 @@ extern "C" sl_status_t http_client_demo_start(void)
 
     err = RunHttpsOffloadExample();
 
-    CHIP_ERROR deinitErr = RunQueuedOperation(gHttpClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
-    if (deinitErr != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "HTTPS deinit failed: %" CHIP_ERROR_FORMAT, deinitErr.Format());
-    }
+    /* NOTE: Deinit and Stop are not needed for the HTTP client.
+        CHIP_ERROR deinitErr = RunQueuedOperation(gHttpClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
+        if (deinitErr != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "HTTPS deinit failed: %" CHIP_ERROR_FORMAT, deinitErr.Format());
+        }
 
-    CHIP_ERROR stopErr = gHttpClient.Stop();
-    if (stopErr != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "HTTPS Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
-    }
-
-    return (err == CHIP_NO_ERROR && deinitErr == CHIP_NO_ERROR && stopErr == CHIP_NO_ERROR) ? SL_STATUS_OK : SL_STATUS_FAIL;
+        CHIP_ERROR stopErr = gHttpClient.Stop();
+        if (stopErr != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "HTTPS Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
+        }
+    */
+    return (err == CHIP_NO_ERROR 
+        // && deinitErr == CHIP_NO_ERROR 
+        // && stopErr == CHIP_NO_ERROR) 
+        ? SL_STATUS_OK : SL_STATUS_FAIL;
 }
