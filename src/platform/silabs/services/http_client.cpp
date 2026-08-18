@@ -149,7 +149,7 @@ CHIP_ERROR HttpClient::Stop()
 
 void HttpClient::ResetRequestState()
 {
-    mAppBuffIndex         = 0;
+    mResponseBytesWritten = 0;
     mEndOfFile            = 0;
     mHttpRspReceived      = 0;
     mCallbackStatus       = SL_STATUS_OK;
@@ -162,7 +162,6 @@ void HttpClient::ResetRequestState()
     mPendingResource      = nullptr;
     mBusy                 = false;
     mPutActive            = false;
-    memset(mAppBuffer, 0, sizeof(mAppBuffer));
 }
 
 CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback callback, void * context)
@@ -368,7 +367,7 @@ CHIP_ERROR HttpClient::ProcessDeinit()
         mCredentials = nullptr;
     }
 
-    mAppBuffIndex         = 0;
+    mResponseBytesWritten = 0;
     mEndOfFile            = 0;
     mHttpRspReceived      = 0;
     mCallbackStatus       = SL_STATUS_OK;
@@ -380,7 +379,6 @@ CHIP_ERROR HttpClient::ProcessDeinit()
     mPendingHost          = {};
     mPendingResource      = nullptr;
     mPutActive            = false;
-    memset(mAppBuffer, 0, sizeof(mAppBuffer));
     mInitialized = false;
     if (sActiveClient == this)
     {
@@ -490,12 +488,12 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
         {
             // Count only bytes stored in the caller buffer, so reduce_size below stays in range.
             const size_t size    = self->mActiveResponseBuffer->size();
-            const size_t avail   = (size > self->mAppBuffIndex) ? size - self->mAppBuffIndex : 0;
+            const size_t avail   = (size > self->mResponseBytesWritten) ? size - self->mResponseBytesWritten : 0;
             const size_t copyLen = (getResponse->data_length < avail) ? getResponse->data_length : avail;
             if (copyLen > 0)
             {
-                memcpy(self->mActiveResponseBuffer->data() + self->mAppBuffIndex, getResponse->data_buffer, copyLen);
-                self->mAppBuffIndex += static_cast<uint32_t>(copyLen);
+                memcpy(self->mActiveResponseBuffer->data() + self->mResponseBytesWritten, getResponse->data_buffer, copyLen);
+                self->mResponseBytesWritten += static_cast<uint32_t>(copyLen);
             }
             if (copyLen < getResponse->data_length)
             {
@@ -503,25 +501,16 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
                              static_cast<unsigned>(getResponse->data_length - copyLen));
             }
         }
-        else if (kAppBufferLength > (self->mAppBuffIndex + getResponse->data_length))
-        {
-            memcpy(self->mAppBuffer + self->mAppBuffIndex, getResponse->data_buffer, getResponse->data_length);
-            self->mAppBuffIndex += getResponse->data_length;
-        }
-        else
-        {
-            self->mAppBuffIndex += getResponse->data_length;
-        }
     }
 
     if (getResponse->end_of_data)
     {
         if (self->mActiveResponseBuffer != nullptr)
         {
-            self->mActiveResponseBuffer->reduce_size(self->mAppBuffIndex);
+            self->mActiveResponseBuffer->reduce_size(self->mResponseBytesWritten);
         }
-        self->mHttpRspReceived = kHttpSuccessResponse;
-        self->mAppBuffIndex    = 0;
+        self->mHttpRspReceived      = kHttpSuccessResponse;
+        self->mResponseBytesWritten = 0;
         self->SignalResponse();
     }
 
@@ -592,14 +581,7 @@ sl_status_t HttpClient::PutResponseCallback(const sl_http_client_t * client, sl_
         return putResponse->status;
     }
 
-    if (putResponse->data_length)
-    {
-        if (kAppBufferLength > (self->mAppBuffIndex + putResponse->data_length))
-        {
-            memcpy(self->mAppBuffer + self->mAppBuffIndex, putResponse->data_buffer, putResponse->data_length);
-        }
-        self->mAppBuffIndex += putResponse->data_length;
-    }
+    // PUT response body is not exposed by the public API; ignore payload bytes.
     self->mHttpRspReceived = kHttpSuccessResponse;
 
     if (putResponse->end_of_data == SL_HTTP_CLIENT_PUT_SERVER_RESPONSE_END_OF_DATA)

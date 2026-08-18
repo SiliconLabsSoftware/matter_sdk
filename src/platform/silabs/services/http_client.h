@@ -204,7 +204,6 @@ public:
                    void * context = nullptr);
 
 private:
-    static constexpr size_t kAppBufferLength        = 2000;
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
     // HTTP request status codes.
     static constexpr uint8_t kHttpSuccessResponse   = 1;
@@ -268,8 +267,7 @@ private:
 
     sl_http_client_credentials_t * mCredentials = nullptr;
 
-    uint8_t mAppBuffer[kAppBufferLength] = { 0 };
-    uint32_t mAppBuffIndex               = 0;
+    uint32_t mResponseBytesWritten = 0;
 
     volatile uint8_t mHttpRspReceived = 0;
     volatile uint8_t mEndOfFile       = 0;
