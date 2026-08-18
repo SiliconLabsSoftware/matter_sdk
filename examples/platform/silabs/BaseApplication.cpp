@@ -1046,7 +1046,7 @@ namespace {
 void InitMatterServicesHandler(System::Layer * systemLayer, void * appState)
 {
 
-#ifdef SL_MATTER_ENABLE_MQTT_SERVICE
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
     VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_start(), ChipLogError(AppServer, "mqtt_client_demo_start failed"));
 #endif // SL_MATTER_ENABLE_MQTT_SERVICE
 

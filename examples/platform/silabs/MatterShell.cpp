@@ -103,6 +103,7 @@ void cmdSilabsInit()
 #endif // SL_CATALOG_CLI_PRESENT
 
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+// NOTE: Changes for HEAP4 + redirect of malloc/free to heap4
 #include "sl_si91x_memory_manager.h"
 #else
 #include "sl_memory_manager.h"

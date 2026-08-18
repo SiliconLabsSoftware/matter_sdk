@@ -137,19 +137,19 @@ CHIP_ERROR RunMqttExample()
         }
     }
 
-    err = RunQueuedOperation(gMqttClient.Unsubscribe(kMqttTopic, OnOperationDone, &waitCtx), waitCtx);
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "MQTT Unsubscribe failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return err;
-    }
+    // err = RunQueuedOperation(gMqttClient.Unsubscribe(kMqttTopic, OnOperationDone, &waitCtx), waitCtx);
+    // if (err != CHIP_NO_ERROR)
+    // {
+    //     ChipLogError(DeviceLayer, "MQTT Unsubscribe failed: %" CHIP_ERROR_FORMAT, err.Format());
+    //     return err;
+    // }
 
-    err = RunQueuedOperation(gMqttClient.Disconnect(OnOperationDone, &waitCtx), waitCtx);
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "MQTT Disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return err;
-    }
+    // err = RunQueuedOperation(gMqttClient.Disconnect(OnOperationDone, &waitCtx), waitCtx);
+    // if (err != CHIP_NO_ERROR)
+    // {
+    //     ChipLogError(DeviceLayer, "MQTT Disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+    //     return err;
+    // }
 
     ChipLogProgress(DeviceLayer, "MQTT demo completed");
     return CHIP_NO_ERROR;
