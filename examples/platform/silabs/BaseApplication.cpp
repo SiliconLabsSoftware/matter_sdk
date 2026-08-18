@@ -96,7 +96,7 @@
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
 #if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-#include <platform/silabs/services/mqtt_client.h>
+#include "mqtt_example.h"
 #endif // SL_MATTER_ENABLE_MQTT_SERVICE
 
 #endif // SL_MATTER_ENABLE_SERVICES
