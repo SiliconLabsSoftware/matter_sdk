@@ -38,7 +38,7 @@ public:
     /**
      * @brief Start the service (e.g. spawn a worker thread or open a connection).
      *
-     * @retval CHIP_NO_ERROR Success or already started (implementation-defined).
+     * @retval CHIP_NO_ERROR Success or CHIP_ERROR as defined by the implementation.
      */
     virtual CHIP_ERROR Start() = 0;
 
@@ -47,7 +47,7 @@ public:
      *
      * Safe to call when the service is not running.
      *
-     * @retval CHIP_NO_ERROR Success or already stopped (implementation-defined).
+     * @retval CHIP_NO_ERROR Success or CHIP_ERROR as defined by the implementation.
      */
     virtual CHIP_ERROR Stop() = 0;
 
