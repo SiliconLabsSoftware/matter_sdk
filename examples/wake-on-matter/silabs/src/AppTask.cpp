@@ -49,8 +49,8 @@
 #include <em_device.h>
 #include "sl_gpio.h"
 
-// #include "matter_cpc.h"
-#include "mmic_task.h"
+// TODO uncomment once mmic is merged
+// #include "mmic_task.h"
 
 using namespace chip;
 using namespace chip::app;
@@ -388,20 +388,14 @@ CHIP_ERROR AppTask::StartAppTask()
     // StartAppTask name is kept for compatibility even if this sample app
     // doesn't have an App Task. All processing is made within the mmic Task context.
 
-    sl_status_t status = mmic_init(subscriptionCallback);
-    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
+    // TODO uncomment once mmic is merged
+    // sl_status_t status = mmic_init(subscriptionCallback);
+    //VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+    //                    ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
 
 
     return CHIP_NO_ERROR;
 }
-
-// #include <openthread/platform/logging.h>
-
-// extern "C" void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char * aFormat, ...)
-// {
-// }
-
 
 // To prevent linkage failure
 extern "C" void otAppNcpInit(otInstance * aInstance);
