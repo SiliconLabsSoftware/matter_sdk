@@ -38,19 +38,11 @@
 #include "sli_cpc.h"
 #include "matter_cpc.h"
 
-#include "Assertions.h"
-
-#define SL_MATTER_CPC_RTOS_TASK_PRIORITY osPriorityRealtime3
-#define SL_MATTER_CPC_RTOS_TASK_STACK_SIZE 1000
-
-
-#ifndef SL_CPC_ENDPOINT_MATTER_NCP_ID
-#define SL_CPC_ENDPOINT_MATTER_NCP_ID SL_CPC_ENDPOINT_USER_ID_0 // 90
-#endif
-
-void sl_matter_cpc_handle_msg(void);
+#include <lib/support/CodeUtils.h>
 
 static osSemaphoreId_t matter_cpc_signal_semaphore;
+static sl_matter_cpc_state_t cpc_state = SL_MATTER_CPC_STATE_DISCONNECTED;
+static sl_cpc_endpoint_handle_t endpoint_handle;
 
 void sl_matter_cpc_on_transport_notify(uint8_t endpoint_id, void * arg)
 {
@@ -60,36 +52,18 @@ void sl_matter_cpc_on_transport_notify(uint8_t endpoint_id, void * arg)
   osSemaphoreRelease(matter_cpc_signal_semaphore);
 }
 
-
-static sl_matter_cpc_state_t cpc_state = SL_MATTER_CPC_STATE_DISCONNECTED;
-static sl_cpc_endpoint_handle_t endpoint_handle;
-
-int sl_matter_cpc_wait_for_activity()
+void sl_matter_cpc_wait_for_activity()
 {
   osSemaphoreAcquire(matter_cpc_signal_semaphore, osWaitForever);
-  return 1;//CPC-RTOS calls read packet only if semaphore is set
-}
-
-void sl_matter_cpc_tx_callback(sl_cpc_user_endpoint_id_t endpoint_id, void *buffer, void *arg, sl_status_t status)
-{
-  (void)endpoint_id;
-  (void)buffer;
-  (void)arg;
-//   TODO MATTER specific behavior.
-//   hci_common_transport_transmit_complete(status);
 }
 
 sl_status_t sl_matter_cpc_init(void)
 {
   sl_status_t status = SL_STATUS_OK;
-  // TODO remove me when we have a service endpoint
-  status = sl_cpc_init_user_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER_NCP_ID, 0);
 
-  // status = sli_cpc_init_service_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER_NCP_ID, 0);
+  status = sli_cpc_init_service_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER, 0);
   VerifyOrReturnError(status == SL_STATUS_OK, status);
 
-  status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_IFRAME_WRITE_COMPLETED, (void *)sl_matter_cpc_tx_callback);
-  VerifyOrReturnError(status == SL_STATUS_OK, status);
   status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_IFRAME_RECEIVE, (void *)sl_matter_cpc_on_transport_notify);
   VerifyOrReturnError(status == SL_STATUS_OK, status);
   status = sl_cpc_set_endpoint_option(&endpoint_handle, SL_CPC_ENDPOINT_ON_CONNECT, (void*)sl_matter_cpc_on_connect);
@@ -110,9 +84,6 @@ void sl_matter_cpc_on_connect(uint8_t endpoint_id, void *arg)
   (void)endpoint_id;
   (void)arg;
 
-  // Endpoint is connected. Allow message transmission.
-  // TODO MATTER
-//   hci_common_transport_transmit_reconnected();
   cpc_state = SL_MATTER_CPC_STATE_CONNECTED;
 }
 
@@ -124,7 +95,7 @@ void sl_matter_cpc_error(uint8_t endpoint_id, void *arg)
 
   cpc_state = SL_MATTER_CPC_STATE_DISCONNECTED;
   status = sl_cpc_terminate_endpoint(&endpoint_handle, 0);
-  EFM_ASSERT(status == SL_STATUS_OK);
+  VerifyOrDie(status == SL_STATUS_OK);
   sl_matter_cpc_on_transport_notify(0, NULL);
 }
 
@@ -165,13 +136,11 @@ void sl_matter_cpc_free(void *buf)
 
 bool sl_matter_is_cpc_waiting(void)
 {
-  // Any state other than SL_CPC_STATE_CONNECTED is a disconnected state.
   return (cpc_state == SL_MATTER_CPC_STATE_CONNECTING);
 }
 
 bool sl_matter_is_cpc_connected(void)
 {
-  // Any state other than SL_CPC_STATE_CONNECTED is a disconnected state.
   return (cpc_state == SL_MATTER_CPC_STATE_CONNECTED);
 }
 
@@ -189,6 +158,6 @@ void sl_matter_reconnect_cpc(void)
       break;
 
     default:
-      EFM_ASSERT(false);
+      VerifyOrDie(false);
   }
 }

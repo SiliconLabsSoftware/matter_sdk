@@ -36,11 +36,19 @@ typedef enum {
 } sl_matter_cpc_state_t;
 
 sl_status_t sl_matter_cpc_init(void);
+/**
+ * @brief reads byte from CPC endpoints
+ *
+ * @param uint8_t **  a pointer of pointer that CPC will use to store the data.
+ *                    The pointer should be null as CPC stack will allocate the required space
+ *                    sl_matter_cpc_free should be called afterwards to prevent memory leak.
+ * @return Number of byte read or -1 in case of failure.
+ */
 int sl_matter_cpc_read(uint8_t **read_buf);
 void sl_matter_cpc_free(void *buf);
 void sl_matter_cpc_rx_done();
 sl_status_t sl_matter_cpc_write(uint8_t *data, uint16_t len);
-int sl_matter_cpc_wait_for_activity();
+void sl_matter_cpc_wait_for_activity();
 void sl_matter_cpc_on_connect(uint8_t endpoint_id, void *arg);
 void sl_matter_cpc_error(uint8_t endpoint_id, void *arg);
 bool sl_matter_is_cpc_connected(void);
