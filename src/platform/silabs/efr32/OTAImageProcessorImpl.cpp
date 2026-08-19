@@ -57,6 +57,7 @@ static chip::OTAImageProcessorImpl gImageProcessor;
 
 using namespace chip::DeviceLayer;
 using namespace chip::DeviceLayer::Internal;
+using chip::DeviceLayer::Silabs::LogBootloaderApiError;
 
 namespace chip {
 
