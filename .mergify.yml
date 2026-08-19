@@ -73,6 +73,18 @@ pull_request_rules:
               labels:
                   - backport-v1.6.1-branch
 
+    - name: Backport to release_2.10-1.6.1
+      conditions:
+          - merged
+          - base=main
+          - label="request-backport-release_2.10-1.6.1"
+      actions:
+          backport:
+              branches:
+                  - release_2.10-1.6.1
+              labels:
+                  - backport-release_2.10-1.6.1
+
     - name: Backport to v1.6.1-mve-branch
       conditions:
           - merged
@@ -141,6 +153,7 @@ pull_request_rules:
           - or:
                 - label="backport-v1.7-branch"
                 - label="backport-v1.6.1-branch"
+                - label="backport-release_2.10-1.6.1"
                 - label="backport-v1.6-branch"
                 - label="backport-v1.5-branch"
                 - label="backport-v1.4.2-branch"
