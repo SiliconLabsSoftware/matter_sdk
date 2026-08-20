@@ -41,15 +41,15 @@ CHIP_ERROR MqttClient::MapPahoStatus(int status)
     return (status == SUCCESS) ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
 
-enum QoS MqttClient::ToPahoQos(MqttQos qos)
+enum QoS MqttClient::ToPahoQos(MqttQoS qos)
 {
     switch (qos)
     {
-    case MqttQos::AtMostOnce:
+    case MqttQoS::QoS0:
         return QOS0;
-    case MqttQos::ExactlyOnce:
+    case MqttQoS::QoS2:
         return QOS2;
-    case MqttQos::AtLeastOnce:
+    case MqttQoS::QoS1:
     default:
         return QOS1;
     }
@@ -403,7 +403,7 @@ CHIP_ERROR MqttClient::ProcessConnect()
     connectData.willFlag               = mConfig.willEnable ? 1 : 0;
     connectData.will.topicName.cstring = const_cast<char *>(mConfig.willTopic);
     connectData.will.message.cstring   = const_cast<char *>(mConfig.willMessage);
-    connectData.will.qos               = ToPahoQos(mConfig.willQos);
+    connectData.will.qos               = ToPahoQos(mConfig.willQoS);
     connectData.will.retained          = mConfig.willRetained ? 1 : 0;
     connectData.MQTTVersion            = mConfig.mqttVersion;
     connectData.clientID.cstring       = const_cast<char *>(mConfig.clientId);
@@ -558,7 +558,7 @@ CHIP_ERROR MqttClient::Disconnect(MqttOperationCallback callback, void * context
     return QueueOperation(Operation::Disconnect, callback, context);
 }
 
-CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttQos qos, MqttOperationCallback callback, void * context)
+CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttQoS qos, MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
@@ -581,7 +581,7 @@ CHIP_ERROR MqttClient::Unsubscribe(const char * topic, MqttOperationCallback cal
     return QueueOperation(Operation::Unsubscribe, callback, context);
 }
 
-CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, MqttQos qos, bool retained,
+CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, MqttQoS qos, bool retained,
                                MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);

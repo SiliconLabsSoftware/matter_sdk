@@ -43,11 +43,11 @@ namespace Silabs {
 /**
  * @brief MQTT quality-of-service levels (maps to Paho QOS0 / QOS1 / QOS2).
  */
-enum class MqttQos : uint8_t
+enum class MqttQoS : uint8_t
 {
-    AtMostOnce  = 0,
-    AtLeastOnce = 1,
-    ExactlyOnce = 2,
+    QoS0  = 0,
+    QoS1 = 1,
+    QoS2 = 2,
 };
 
 /**
@@ -70,7 +70,7 @@ struct MqttClientConfig
     bool willEnable                 = false;
     const char * willTopic          = nullptr;
     const char * willMessage        = nullptr;
-    MqttQos willQos                 = MqttQos::AtLeastOnce;
+    MqttQoS willQoS                 = MqttQoS::QoS1;
     bool willRetained               = false;
 
     /** PEM bytes for host mbedTLS CA chain. nullptr = skip CA install. */
@@ -147,7 +147,7 @@ public:
      *
      * @p topic must remain valid until the operation completes.
      */
-    CHIP_ERROR Subscribe(const char * topic, MqttQos qos, MqttOperationCallback callback, void * context = nullptr);
+    CHIP_ERROR Subscribe(const char * topic, MqttQoS qos, MqttOperationCallback callback, void * context = nullptr);
 
     CHIP_ERROR Unsubscribe(const char * topic, MqttOperationCallback callback, void * context = nullptr);
 
@@ -156,7 +156,7 @@ public:
      *
      * @p topic and @p payload must remain valid until the operation completes.
      */
-    CHIP_ERROR Publish(const char * topic, ByteSpan payload, MqttQos qos, bool retained, MqttOperationCallback callback,
+    CHIP_ERROR Publish(const char * topic, ByteSpan payload, MqttQoS qos, bool retained, MqttOperationCallback callback,
                        void * context = nullptr);
 
     /**
@@ -188,7 +188,7 @@ private:
     static void ServiceThread(void * arg);
     static void PahoMessageHandler(MessageData * md);
     static CHIP_ERROR MapPahoStatus(int status);
-    static enum QoS ToPahoQos(MqttQos qos);
+    static enum QoS ToPahoQos(MqttQoS qos);
 
     CHIP_ERROR QueueOperation(Operation operation, MqttOperationCallback callback, void * context);
     void ProcessOperation();
@@ -217,7 +217,7 @@ private:
 
     const char * mPendingTopic = nullptr;
     ByteSpan mPendingPayload;
-    MqttQos mPendingQos = MqttQos::AtLeastOnce;
+    MqttQoS mPendingQos = MqttQoS::QoS1;
     bool mPendingRetained = false;
     uint32_t mPendingYieldTimeoutMs = 0;
 
