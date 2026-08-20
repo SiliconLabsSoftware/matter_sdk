@@ -102,7 +102,7 @@ using MqttOperationCallback = void (*)(CHIP_ERROR result, void * context);
  * Invoked on the MqttClient service thread from Yield / Subscribe delivery.
  * @p topic and @p payload are valid only for the duration of the call.
  */
-using MqttMessageCallback = void (*)(const char * topic, ByteSpan payload, void * context);
+using MqttSubscriptionCallback = void (*)(const char * topic, ByteSpan payload, void * context);
 
 /**
  * @brief Host LwIP Paho MQTT client usable from Matter C++ code.
@@ -131,7 +131,7 @@ public:
     /**
      * @brief Set handler for subscribed publishes. Safe to call before Connect.
      */
-    void SetMessageCallback(MqttMessageCallback callback, void * context = nullptr);
+    void SetSubscriptionCallback(MqttSubscriptionCallback callback, void * context = nullptr);
 
     /**
      * @brief TCP/TLS NetworkConnect + MQTT CONNECT.
@@ -143,7 +143,7 @@ public:
     CHIP_ERROR Disconnect(MqttOperationCallback callback, void * context = nullptr);
 
     /**
-     * @brief Subscribe with the instance message callback (@ref SetMessageCallback).
+     * @brief Subscribe with the instance message callback (@ref SetSubscriptionCallback).
      *
      * @p topic must remain valid until the operation completes.
      */
@@ -160,7 +160,7 @@ public:
                        void * context = nullptr);
 
     /**
-     * @brief Run MQTTYield for up to @p timeoutMs (delivers messages via @ref SetMessageCallback).
+     * @brief Run MQTTYield for up to @p timeoutMs (delivers messages via @ref SetSubscriptionCallback).
      */
     CHIP_ERROR Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context = nullptr);
 
@@ -232,7 +232,7 @@ private:
     MqttOperationCallback mUserCallback = nullptr;
     void * mUserCallbackContext         = nullptr;
 
-    MqttMessageCallback mMessageCallback = nullptr;
+    MqttSubscriptionCallback mMessageCallback = nullptr;
     void * mMessageCallbackContext       = nullptr;
 
     static MqttClient * sActiveClient;

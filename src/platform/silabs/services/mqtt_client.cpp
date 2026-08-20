@@ -65,7 +65,7 @@ bool MqttClient::IsBusy() const
     return mBusy;
 }
 
-void MqttClient::SetMessageCallback(MqttMessageCallback callback, void * context)
+void MqttClient::SetSubscriptionCallback(MqttSubscriptionCallback callback, void * context)
 {
     mMessageCallback        = callback;
     mMessageCallbackContext = context;

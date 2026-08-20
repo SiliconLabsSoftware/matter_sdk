@@ -198,7 +198,7 @@ extern "C" sl_status_t mqtt_client_demo_start(void)
         return SL_STATUS_FAIL;
     }
 
-    gMqttsClient.SetMessageCallback(OnMqttMessage, nullptr);
+    gMqttsClient.SetSubscriptionCallback(OnMqttMessage, nullptr);
 
     OperationWaitContext waitCtx = { .lock = gDoneLock, .result = CHIP_NO_ERROR };
     err                          = RunQueuedOperation(gMqttsClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
