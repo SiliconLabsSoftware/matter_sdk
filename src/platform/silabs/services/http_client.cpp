@@ -375,21 +375,22 @@ CHIP_ERROR HttpClient::ProcessDeinit()
 
 void HttpClient::CompleteOperation(CHIP_ERROR error)
 {
+    // if the operation failed, clear the chunked active flag and pending body
     if (error != CHIP_NO_ERROR)
     {
         // clear the chunked active flag and pending body
         mChunkedActive = false;
         mPendingBody   = ByteSpan();
     }
-
+    // call the callback function
     HttpOperationCallback callback = mUserCallback;
     void * context                 = mUserCallbackContext;
-
+    // clear the callback function and context
     mUserCallback        = nullptr;
     mUserCallbackContext = nullptr;
     mPendingOperation    = Operation::None;
     mBusy                = false;
-
+    // call the callback function if it is not nullptr
     if (callback != nullptr)
     {
         callback(error, context);
