@@ -54,6 +54,12 @@ public:
      */
     static void SetQueueFilter(EndpointQueueFilter * queueFilter) { sQueueFilter = queueFilter; }
 
+    /**
+     * Drain outbound UDP datagrams deferred while no operational LwIP netif was available.
+     * Must be called on the Matter chip thread. Safe to call when deferral is disabled (no-op).
+     */
+    static void FlushDeferredSendQueue();
+
 private:
     // UDPEndPoint overrides.
 #if INET_CONFIG_ENABLE_IPV4
@@ -65,6 +71,8 @@ private:
     CHIP_ERROR ListenImpl() override;
     CHIP_ERROR SendMsgImpl(const IPPacketInfo * pktInfo, chip::System::PacketBufferHandle && msg) override;
     void CloseImpl() override;
+
+    CHIP_ERROR PerformLwIPUdpSend(const IPPacketInfo * pktInfo, chip::System::PacketBufferHandle && msg);
 
     static struct netif * FindNetifFromInterfaceId(InterfaceId aInterfaceId);
     static CHIP_ERROR LwIPBindInterface(struct udp_pcb * aUDP, InterfaceId intfId);

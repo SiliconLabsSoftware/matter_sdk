@@ -17,6 +17,7 @@
 
 #include <app/icd/server/ICDConfigurationData.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
 using namespace chip::DeviceLayer::Silabs;
@@ -82,7 +83,15 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
-        // No additional processing needed for these events at the moment
+    case PowerEvent::kActiveMode:
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+        mActiveMode = true;
+#endif
+        break;
+    case PowerEvent::kIdleMode:
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+        mActiveMode = false;
+#endif
         break;
 
     default:
@@ -99,6 +108,14 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
 
     ReturnErrorOnFailure(HandlePowerEvent(event));
+
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+    if (event == PowerEvent::kActiveMode)
+    {
+        TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork(CancelLitPrecheckInTimerWork, 0);
+        ReturnErrorOnFailure(ConfigureLITConnect());
+    }
+#endif
 
     if (mHighPerformanceRequestCounter > 0)
     {
@@ -119,7 +136,14 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+        if (!mActiveMode)
+        {
+            return ConfigureLITDisconnect();
+        }
+#else
         return ConfigureLIBasedSleep();
+#endif
     }
 
     return ConfigureDTIMBasedSleep();
@@ -166,6 +190,77 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 
     return CHIP_NO_ERROR;
 }
+
+#if CHIP_CONFIG_ENABLE_ICD_LIT
+CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
+{
+    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
+    ReturnLogErrorOnFailure(
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kLITDisconnectSleep,
+                                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+
+    DoStartLitPrecheckInReconnectTimer();
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
+{
+    VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
+    ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
+    return CHIP_NO_ERROR;
+}
+
+void WifiSleepManager::ArmLitPrecheckInTimerWork(intptr_t)
+{
+    GetInstance().DoStartLitPrecheckInReconnectTimer();
+}
+
+void WifiSleepManager::CancelLitPrecheckInTimerWork(intptr_t)
+{
+    GetInstance().DoCancelLitPrecheckInReconnectTimer();
+}
+
+void WifiSleepManager::DoCancelLitPrecheckInReconnectTimer()
+{
+    DeviceLayer::SystemLayer().CancelTimer(OnLitPrecheckInReconnectTimerFired, nullptr);
+}
+
+void WifiSleepManager::DoStartLitPrecheckInReconnectTimer()
+{
+    const uint32_t idleSec   = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
+    const uint32_t activeSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
+    const uint32_t delaySec  = (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeSec - kLitPrecheckInMarginSeconds) : 1u;
+    const System::Clock::Milliseconds32 delayMs(delaySec * 1000u);
+
+    DeviceLayer::SystemLayer().CancelTimer(OnLitPrecheckInReconnectTimerFired, nullptr);
+
+    (void) DeviceLayer::SystemLayer().StartTimer(delayMs, OnLitPrecheckInReconnectTimerFired, nullptr).Handle([](CHIP_ERROR err) {
+        ChipLogDetail(DeviceLayer, "LIT precheck-in timer not started: %" CHIP_ERROR_FORMAT, err.Format());
+    });
+}
+
+void WifiSleepManager::OnLitPrecheckInReconnectTimerFired(System::Layer *, void *)
+{
+    RunLitPrecheckInReconnect(0);
+}
+
+void WifiSleepManager::RunLitPrecheckInReconnect(intptr_t)
+{
+    WifiSleepManager & self = GetInstance();
+    VerifyOrReturn(self.mWifiStateProvider != nullptr);
+    VerifyOrReturn(self.mPowerSaveInterface != nullptr);
+
+    if (!self.mWifiStateProvider->IsWifiProvisioned() || self.mWifiStateProvider->IsStationConnected())
+    {
+        return;
+    }
+
+    ChipLogProgress(DeviceLayer, "LIT precheck-in: reconnecting Wi-Fi before ICD traffic");
+    TEMPORARY_RETURN_IGNORED self.ConfigureLITConnect();
+}
+#endif
 
 } // namespace Silabs
 } // namespace DeviceLayer
