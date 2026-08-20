@@ -77,7 +77,8 @@ void HttpClient::ServiceThread(void * arg)
     auto eventFlags = static_cast<osEventFlagsId_t>(self->mEventFlags);
     while (true)
     {
-        uint32_t events = osEventFlagsWait(eventFlags, kEventOperation | kEventResponse | kEventStop, osFlagsWaitAny, osWaitForever);
+        uint32_t events =
+            osEventFlagsWait(eventFlags, kEventOperation | kEventResponse | kEventStop, osFlagsWaitAny, osWaitForever);
         if ((events & osFlagsError) != 0)
         {
             ChipLogError(DeviceLayer, "HTTPS service event wait failed: 0x%lx", static_cast<unsigned long>(events));
@@ -96,8 +97,9 @@ void HttpClient::ServiceThread(void * arg)
             self->HandleNwpResponse();
         }
     }
-
-    self->mThreadId = nullptr;
+    osEventFlagsDelete(static_cast<osEventFlagsId_t>(self->mEventFlags));
+    self->mEventFlags = nullptr;
+    self->mThreadId   = nullptr;
     osThreadTerminate(osThreadGetId());
 }
 
@@ -129,21 +131,11 @@ CHIP_ERROR HttpClient::Start()
 
 CHIP_ERROR HttpClient::Stop()
 {
-    if (mThreadId == nullptr)
-    {
-        return CHIP_NO_ERROR;
-    }
-
+    VerifyOrReturnError(mThreadId != nullptr, CHIP_NO_ERROR);
+    VerifyOrReturnError(mEventFlags != nullptr, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
 
     osEventFlagsSet(static_cast<osEventFlagsId_t>(mEventFlags), kEventStop);
-    while (mThreadId != nullptr)
-    {
-        osDelay(1);
-    }
-
-    osEventFlagsDelete(static_cast<osEventFlagsId_t>(mEventFlags));
-    mEventFlags = nullptr;
     return CHIP_NO_ERROR;
 }
 
@@ -169,10 +161,10 @@ CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
 
-    mPendingOperation     = operation;
-    mUserCallback         = callback;
-    mUserCallbackContext  = context;
-    mBusy                 = true;
+    mPendingOperation    = operation;
+    mUserCallback        = callback;
+    mUserCallbackContext = context;
+    mBusy                = true;
     osEventFlagsSet(static_cast<osEventFlagsId_t>(mEventFlags), kEventOperation);
     return CHIP_NO_ERROR;
 }
@@ -194,7 +186,7 @@ CHIP_ERROR HttpClient::ProcessContinuePut()
     if (mHttpChunkLength > 0)
     {
         sl_status_t status = sl_http_client_write_chunked_data(&mClientHandle, const_cast<uint8_t *>(mPutBody.data() + mHttpOffset),
-                                                              static_cast<uint32_t>(mHttpChunkLength), 0);
+                                                               static_cast<uint32_t>(mHttpChunkLength), 0);
         if (status == SL_STATUS_IN_PROGRESS)
         {
             mHttpOffset += mHttpChunkLength;
@@ -212,9 +204,8 @@ CHIP_ERROR HttpClient::ProcessContinuePut()
 
 void HttpClient::HandleNwpResponse()
 {
-    CHIP_ERROR result =
-        (mHttpRspReceived == kHttpSuccessResponse) ? CHIP_NO_ERROR : MapStatus(mCallbackStatus);
-    mHttpRspReceived = 0;
+    CHIP_ERROR result = (mHttpRspReceived == kHttpSuccessResponse) ? CHIP_NO_ERROR : MapStatus(mCallbackStatus);
+    mHttpRspReceived  = 0;
 
     if (result != CHIP_NO_ERROR)
     {
@@ -255,9 +246,9 @@ CHIP_ERROR HttpClient::ProcessInit()
 
     if ((mConfig.tlsCaCert != nullptr) && (mConfig.tlsCaCertLen > 0) && !sNwpCaLoaded)
     {
-        sl_status_t status = sl_net_set_credential(
-            static_cast<sl_net_credential_id_t>(SL_NET_TLS_SERVER_CREDENTIAL_ID(mConfig.certificateIndex)),
-            SL_NET_SIGNING_CERTIFICATE, mConfig.tlsCaCert, mConfig.tlsCaCertLen);
+        sl_status_t status =
+            sl_net_set_credential(static_cast<sl_net_credential_id_t>(SL_NET_TLS_SERVER_CREDENTIAL_ID(mConfig.certificateIndex)),
+                                  SL_NET_SIGNING_CERTIFICATE, mConfig.tlsCaCert, mConfig.tlsCaCertLen);
         if (status != SL_STATUS_OK)
         {
             ChipLogError(DeviceLayer, "HTTPS TLS CA load failed: 0x%lx", static_cast<unsigned long>(status));
@@ -379,7 +370,7 @@ CHIP_ERROR HttpClient::ProcessDeinit()
     mPendingHost          = {};
     mPendingResource      = nullptr;
     mPutActive            = false;
-    mInitialized = false;
+    mInitialized          = false;
     if (sActiveClient == this)
     {
         sActiveClient = nullptr;
@@ -530,8 +521,7 @@ sl_status_t HttpClient::PostResponseCallback(const sl_http_client_t * client, sl
     self->mCallbackStatus                    = postResponse->status;
 
     ChipLogProgress(DeviceLayer, "HTTPS POST response: status=0x%lX http_code=%u data_len=%u",
-                    static_cast<unsigned long>(postResponse->status), postResponse->http_response_code,
-                    postResponse->data_length);
+                    static_cast<unsigned long>(postResponse->status), postResponse->http_response_code, postResponse->data_length);
 
     if ((postResponse->status != SL_STATUS_OK) && (postResponse->status != SL_STATUS_IN_PROGRESS))
     {

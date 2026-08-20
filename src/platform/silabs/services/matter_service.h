@@ -24,6 +24,13 @@ namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
 
+namespace {
+/**
+ * @brief Delay in seconds before initializing the Matter services.
+ */
+static constexpr uint32_t kMatterServicesInitDelaySec = 10;
+} // namespace
+
 /**
  * @brief Common lifecycle for Matter platform services (HTTP, MQTT, ...).
  *

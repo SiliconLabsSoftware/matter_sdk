@@ -91,6 +91,8 @@
 
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
 
+#include <platform/silabs/services/matter_service.h>
+
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
 #include "https_offload_example.h"
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
@@ -1042,11 +1044,12 @@ namespace {
 void InitMatterServicesHandler(System::Layer * systemLayer, void * appState)
 {
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-    VerifyOrReturn(SL_STATUS_OK == http_client_demo_start(), ChipLogError(AppServer, "http_client_demo_start failed"));
+    VerifyOrReturn(SL_STATUS_OK == https_client_demo_start(), ChipLogError(AppServer, "https_client_demo_start failed"));
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 }
 } // namespace
 #endif // SL_MATTER_ENABLE_SERVICES
+
 void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 {
     switch (event->Type)
@@ -1071,18 +1074,20 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
                 chip::System::Clock::Seconds32(MATTER_AWS_INIT_DELAY_SEC), InitMatterAwsHandler, nullptr);
         }
 #endif // SL_MATTER_ENABLE_AWS
+
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
         if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
             || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
-#endif
+#endif // SL_MATTER_ENABLE_DUAL_STACK
         )
         {
             ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
-            RETURN_SAFELY_IGNORED chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(10),
+            TEMPORARY_RETURN_IGNORED chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(kMatterServicesInitDelaySec),
                                                                               InitMatterServicesHandler, nullptr);
         }
 #endif // SL_MATTER_ENABLE_SERVICES
+
 #ifdef DISPLAY_ENABLED
         SilabsLCD::Screen_e screen;
         AppTask::GetLCD().GetScreen(screen);

@@ -1,38 +1,24 @@
-/*******************************************************************************
+/*
+ *
+ *    Copyright (c) 2026 Project CHIP Authors
+ *    All rights reserved.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+/**
  * @file  cacert.pem.h
  * @brief Sample (generated) CA certificate for HTTPs and MQTTs clients
- *******************************************************************************
- * # License
- * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
- *******************************************************************************
- *
- * The licensor of this software is Silicon Laboratories Inc. Your use of this
- * software is governed by the terms of Silicon Labs Master Software License
- * Agreement (MSLA) available at
- * www.silabs.com/about-us/legal/master-software-license-agreement. This
- * software is distributed to you in Source Code format and is governed by the
- * sections of the MSLA applicable to Source Code.
- *
- ******************************************************************************/
+ */
 
-const unsigned char cacert[] = "-----BEGIN CERTIFICATE-----\r\n"
-                               "MIIDhzCCAm+gAwIBAgIUYVeeRVq989QaDa3tiuhLJrxaJIMwDQYJKoZIhvcNAQEL\r\n"
-                               "BQAwUzELMAkGA1UEBhMCVVMxDTALBgNVBAgMBFRlc3QxDjAMBgNVBAcMBUxvY2Fs\r\n"
-                               "MRAwDgYDVQQKDAdFeGFtcGxlMRMwEQYDVQQDDAptcXR0LmxvY2FsMB4XDTI2MDcy\r\n"
-                               "NDA4MDIyNloXDTI3MDcyNDA4MDIyNlowUzELMAkGA1UEBhMCVVMxDTALBgNVBAgM\r\n"
-                               "BFRlc3QxDjAMBgNVBAcMBUxvY2FsMRAwDgYDVQQKDAdFeGFtcGxlMRMwEQYDVQQD\r\n"
-                               "DAptcXR0LmxvY2FsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkgJg\r\n"
-                               "NadeNJ10TnYssMHG9SG+imJinJtvqDj2JuDYswfugN8pF3oZBEfEhvf229U1IRXL\r\n"
-                               "itpnB6WKD+Gc3iVn1WuS32CWi5XPH3OrESW83Kt5l3yPLcCKynRBpBiaY67qBeX/\r\n"
-                               "Af3G4Xd23o08OLSpolcJ170iNfMtm0thFVFHhVd5zX+SH9cxZHDUsgRjmr6OCNT0\r\n"
-                               "P9NB/dzOm8ObbU8x5AsM6Ouoe+9tQV5/xO9Av9FbwIr+vOp+2OppqGaGaK05FGfV\r\n"
-                               "yR1TaX4qXigk1S14XW549dOMKbJITGCBeqEwfo48We4NvN/ji03ao21pIsXSLy3N\r\n"
-                               "0YFLcq55Vq7p/nCUeQIDAQABo1MwUTAdBgNVHQ4EFgQUjao54VQdrjTCSHQYKlLS\r\n"
-                               "egFm1H8wHwYDVR0jBBgwFoAUjao54VQdrjTCSHQYKlLSegFm1H8wDwYDVR0TAQH/\r\n"
-                               "BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEALB7VBQNVyaNExgpCHOpHZyVv41N/\r\n"
-                               "kCTrxK8sCBpGbkgs0VKLdNOGubG43/F6JthQdGWKnN2E8Ivv52jX7fMTmhxfpTKX\r\n"
-                               "lIZTOV78qNMp3NBDumeHVi5dBg8m4GsNeRgKDmBizqCK8oPQ4RUl404hThF38os8\r\n"
-                               "q20diby0caLPYsvLDNK4I47xjjs4fVu7cT2jouxDk4sHL4zXO1KHRkaM1wUilC0f\r\n"
-                               "JLkyGNGWlgpmBhN+C2LTCv6nf2VZ5/s/tu3nj68P5gVF5PGbA9uHQD4Cmz0xAEEQ\r\n"
-                               "8hgBXwR+DIIulBU9R49FDbDlG2KlHxw5eXpCR2NfNx6Ztmn2PUg5w56efQ==\r\n"
-                               "-----END CERTIFICATE-----\r\n";
+const unsigned char kCaCertExample[] = "";
