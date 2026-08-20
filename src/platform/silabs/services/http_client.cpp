@@ -527,7 +527,7 @@ sl_status_t HttpClient::PostResponseCallback(const sl_http_client_t * client, sl
     }
 
     if ((postResponse->http_response_code >= kHttpClientErrorMin) && (postResponse->http_response_code <= kHttpServerErrorMax) &&
-        (postResponse->http_response_code != 0))
+        (postResponse->http_response_code != SL_STATUS_OK))
     {
         self->mHttpRspReceived = kHttpFailureResponse;
         self->mCallbackStatus  = SL_STATUS_FAIL;
