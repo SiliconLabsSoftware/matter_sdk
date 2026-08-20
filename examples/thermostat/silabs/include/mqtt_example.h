@@ -28,13 +28,5 @@
 
 #include "sl_status.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /** Load config + run MQTT demo on the MqttClient service thread (idempotent). */
 sl_status_t mqtt_client_demo_start(void);
-
-#ifdef __cplusplus
-}
-#endif
