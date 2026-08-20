@@ -148,12 +148,11 @@ void HttpClient::ResetRequestState()
     mHttpOffset           = 0;
     mHttpChunkLength      = 0;
     mActiveResponseBuffer = nullptr;
-    mPutBody              = ByteSpan();
     mPendingBody          = ByteSpan();
     mPendingHost          = {};
     mPendingResource      = nullptr;
     mBusy                 = false;
-    mPutActive            = false;
+    mChunkedActive        = false;
 }
 
 CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback callback, void * context)
@@ -169,24 +168,29 @@ CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR HttpClient::ProcessContinuePut()
+bool HttpClient::NeedsChunkedBody() const
+{
+    return mPendingBody.size() > SL_HTTP_CLIENT_MAX_WRITE_BUFFER_LENGTH;
+}
+
+CHIP_ERROR HttpClient::ProcessContinueChunkedBody()
 {
     if (mEndOfFile == kHttpSuccessResponse)
     {
-        mPutActive = false;
-        mPutBody   = ByteSpan();
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
         return CHIP_NO_ERROR;
     }
 
-    const int32_t totalPutDataLen = static_cast<int32_t>(mPutBody.size());
-    mHttpChunkLength              = ((totalPutDataLen - mHttpOffset) > SL_HTTP_CLIENT_MAX_WRITE_BUFFER_LENGTH)
-                     ? SL_HTTP_CLIENT_MAX_WRITE_BUFFER_LENGTH
-                     : (totalPutDataLen - mHttpOffset);
+    const int32_t totalBodyLen = static_cast<int32_t>(mPendingBody.size());
+    mHttpChunkLength           = ((totalBodyLen - mHttpOffset) > SL_HTTP_CLIENT_MAX_WRITE_BUFFER_LENGTH)
+                  ? SL_HTTP_CLIENT_MAX_WRITE_BUFFER_LENGTH
+                  : (totalBodyLen - mHttpOffset);
 
     if (mHttpChunkLength > 0)
     {
-        sl_status_t status = sl_http_client_write_chunked_data(&mClientHandle, const_cast<uint8_t *>(mPutBody.data() + mHttpOffset),
-                                                               static_cast<uint32_t>(mHttpChunkLength), 0);
+        sl_status_t status = sl_http_client_write_chunked_data(
+            &mClientHandle, const_cast<uint8_t *>(mPendingBody.data() + mHttpOffset), static_cast<uint32_t>(mHttpChunkLength), 0);
         if (status == SL_STATUS_IN_PROGRESS)
         {
             mHttpOffset += mHttpChunkLength;
@@ -213,17 +217,17 @@ void HttpClient::HandleNwpResponse()
         return;
     }
 
-    if (!mPutActive)
+    if (!mChunkedActive)
     {
         CompleteOperation(CHIP_NO_ERROR);
         return;
     }
 
-    // Drive PUT chunking on the service thread until NWP needs another wait or upload finishes.
+    // Drive POST/PUT chunking on the service thread until NWP needs another wait or upload finishes.
     do
     {
-        result = ProcessContinuePut();
-    } while ((result == CHIP_NO_ERROR) && mPutActive);
+        result = ProcessContinueChunkedBody();
+    } while ((result == CHIP_NO_ERROR) && mChunkedActive);
 
     if (result == CHIP_ERROR_IN_PROGRESS)
     {
@@ -358,19 +362,9 @@ CHIP_ERROR HttpClient::ProcessDeinit()
         mCredentials = nullptr;
     }
 
-    mResponseBytesWritten = 0;
-    mEndOfFile            = 0;
-    mHttpRspReceived      = 0;
-    mCallbackStatus       = SL_STATUS_OK;
-    mHttpOffset           = 0;
-    mHttpChunkLength      = 0;
-    mActiveResponseBuffer = nullptr;
-    mPutBody              = ByteSpan();
-    mPendingBody          = ByteSpan();
-    mPendingHost          = {};
-    mPendingResource      = nullptr;
-    mPutActive            = false;
-    mInitialized          = false;
+    ResetRequestState();
+    mInitialized = false;
+
     if (sActiveClient == this)
     {
         sActiveClient = nullptr;
@@ -383,8 +377,8 @@ void HttpClient::CompleteOperation(CHIP_ERROR error)
 {
     if (error != CHIP_NO_ERROR)
     {
-        mPutActive = false;
-        mPutBody   = ByteSpan();
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
     }
 
     HttpOperationCallback callback = mUserCallback;
@@ -539,6 +533,17 @@ sl_status_t HttpClient::PostResponseCallback(const sl_http_client_t * client, sl
         return postResponse->status;
     }
 
+    if (self->mChunkedActive)
+    {
+        self->mHttpRspReceived = kHttpSuccessResponse;
+        if (postResponse->end_of_data)
+        {
+            self->mEndOfFile = kHttpSuccessResponse;
+        }
+        self->SignalResponse();
+        return SL_STATUS_OK;
+    }
+
     if (postResponse->end_of_data)
     {
         self->mHttpRspReceived = kHttpSuccessResponse;
@@ -587,7 +592,7 @@ CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, Mutable
                            HttpOperationCallback callback, void * context)
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy && !mPutActive, CHIP_ERROR_BUSY);
+    VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
     VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
                         CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -624,7 +629,7 @@ CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSp
                             void * context)
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy && !mPutActive, CHIP_ERROR_BUSY);
+    VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
     VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
                         CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -644,15 +649,34 @@ CHIP_ERROR HttpClient::ProcessPost()
     request.resource                 = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
     request.extended_header          = nullptr;
     request.http_method_type         = SL_HTTP_POST;
-    request.body                     = const_cast<uint8_t *>(mPendingBody.data());
     request.body_length              = static_cast<uint32_t>(mPendingBody.size());
+
+    if (NeedsChunkedBody())
+    {
+        request.body   = nullptr;
+        mChunkedActive = true;
+    }
+    else
+    {
+        request.body = const_cast<uint8_t *>(mPendingBody.data());
+    }
 
     sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, PostResponseCallback, this);
-    VerifyOrReturnError(status == SL_STATUS_OK, MapStatus(status));
+    if (status != SL_STATUS_OK)
+    {
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
+        return MapStatus(status);
+    }
 
     status = sl_http_client_send_request(&mClientHandle, &request);
-    VerifyOrReturnError((status == SL_STATUS_OK) || (status == SL_STATUS_IN_PROGRESS), MapStatus(status));
+    if ((status != SL_STATUS_OK) && (status != SL_STATUS_IN_PROGRESS))
+    {
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
+        return MapStatus(status);
+    }
 
     return CHIP_ERROR_IN_PROGRESS;
 }
@@ -661,13 +685,13 @@ CHIP_ERROR HttpClient::Put(const HttpHost & host, const char * resource, ByteSpa
                            void * context)
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy && !mPutActive, CHIP_ERROR_BUSY);
+    VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
     VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
                         CHIP_ERROR_INVALID_ARGUMENT);
 
     ResetRequestState();
-    mPutBody         = body;
-    mPutActive       = true;
+    mPendingBody     = body;
+    mChunkedActive   = true;
     mPendingHost     = host;
     mPendingResource = resource;
     return QueueOperation(Operation::Put, callback, context);
@@ -683,22 +707,22 @@ CHIP_ERROR HttpClient::ProcessPut()
     request.extended_header          = nullptr;
     request.http_method_type         = SL_HTTP_PUT;
     request.body                     = nullptr;
-    request.body_length              = static_cast<uint32_t>(mPutBody.size());
+    request.body_length              = static_cast<uint32_t>(mPendingBody.size());
 
     sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, PutResponseCallback, this);
     if (status != SL_STATUS_OK)
     {
-        mPutActive = false;
-        mPutBody   = ByteSpan();
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
         return MapStatus(status);
     }
 
     status = sl_http_client_send_request(&mClientHandle, &request);
     if ((status != SL_STATUS_OK) && (status != SL_STATUS_IN_PROGRESS))
     {
-        mPutActive = false;
-        mPutBody   = ByteSpan();
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
         return MapStatus(status);
     }
 

@@ -168,7 +168,8 @@ public:
     /**
      * @brief Start an HTTPS POST.
      *
-     * @p body must remain valid until @p callback is invoked.
+     * @p body must remain valid until @p callback is invoked. Bodies larger than
+     * @c SL_HTTP_CLIENT_MAX_WRITE_BUFFER_LENGTH are uploaded in 900-byte chunks.
      *
      * @param[in] host     Target host / IP / port.
      * @param[in] resource Request path. Must not be nullptr.
@@ -255,7 +256,8 @@ private:
     CHIP_ERROR ProcessGet();
     CHIP_ERROR ProcessPost();
     CHIP_ERROR ProcessPut();
-    CHIP_ERROR ProcessContinuePut();
+    CHIP_ERROR ProcessContinueChunkedBody();
+    bool NeedsChunkedBody() const;
     void CompleteOperation(CHIP_ERROR error);
     void SignalResponse();
 
@@ -276,13 +278,12 @@ private:
     int32_t mHttpChunkLength          = 0;
 
     MutableByteSpan * mActiveResponseBuffer = nullptr;
-    ByteSpan mPutBody;
     HttpHost mPendingHost{};
     const char * mPendingResource = nullptr;
     ByteSpan mPendingBody;
 
     volatile bool mBusy     = false;
-    bool mPutActive         = false;
+    bool mChunkedActive     = false;
     Operation mPendingOperation = Operation::None;
 
     HttpOperationCallback mUserCallback = nullptr;
