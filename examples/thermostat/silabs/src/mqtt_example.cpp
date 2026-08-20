@@ -49,7 +49,8 @@ constexpr char kMqttTopic[]            = "THERMOSTAT-DATA";
 constexpr char kMqttPublishMessage[]   = "THIS IS MQTT CLIENT DEMO FROM APPLICATION";
 constexpr uint32_t kMqttYieldTimeoutMs = 60000;
 
-MqttClient gMqttClient;
+// MQTTs client for Matter SDK
+MqttClient gMqttsClient;
 
 osSemaphoreId_t gDoneLock      = nullptr;
 volatile bool gMessageReceived = false;
@@ -104,14 +105,14 @@ CHIP_ERROR RunMqttExample()
         .clientPort  = kMqttClientPort,
     };
 
-    CHIP_ERROR err = RunQueuedOperation(gMqttClient.Connect(broker, OnOperationDone, &waitCtx), waitCtx);
+    CHIP_ERROR err = RunQueuedOperation(gMqttsClient.Connect(broker, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Connect failed: %" CHIP_ERROR_FORMAT, err.Format());
         return err;
     }
 
-    err = RunQueuedOperation(gMqttClient.Subscribe(kMqttTopic, MqttQos::AtLeastOnce, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gMqttsClient.Subscribe(kMqttTopic, MqttQos::AtLeastOnce, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Subscribe failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -119,7 +120,7 @@ CHIP_ERROR RunMqttExample()
     }
 
     const ByteSpan payload(reinterpret_cast<const uint8_t *>(kMqttPublishMessage), strlen(kMqttPublishMessage));
-    err = RunQueuedOperation(gMqttClient.Publish(kMqttTopic, payload, MqttQos::AtLeastOnce, false, OnOperationDone, &waitCtx),
+    err = RunQueuedOperation(gMqttsClient.Publish(kMqttTopic, payload, MqttQos::AtLeastOnce, false, OnOperationDone, &waitCtx),
                              waitCtx);
     if (err != CHIP_NO_ERROR)
     {
@@ -130,7 +131,7 @@ CHIP_ERROR RunMqttExample()
     ChipLogProgress(DeviceLayer, "MQTT waiting for message on topic %s", kMqttTopic);
     while (!gMessageReceived)
     {
-        err = RunQueuedOperation(gMqttClient.Yield(kMqttYieldTimeoutMs, OnOperationDone, &waitCtx), waitCtx);
+        err = RunQueuedOperation(gMqttsClient.Yield(kMqttYieldTimeoutMs, OnOperationDone, &waitCtx), waitCtx);
         if (err != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "MQTT Yield failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -138,14 +139,14 @@ CHIP_ERROR RunMqttExample()
         }
     }
 
-    // err = RunQueuedOperation(gMqttClient.Unsubscribe(kMqttTopic, OnOperationDone, &waitCtx), waitCtx);
+    // err = RunQueuedOperation(gMqttsClient.Unsubscribe(kMqttTopic, OnOperationDone, &waitCtx), waitCtx);
     // if (err != CHIP_NO_ERROR)
     // {
     //     ChipLogError(DeviceLayer, "MQTT Unsubscribe failed: %" CHIP_ERROR_FORMAT, err.Format());
     //     return err;
     // }
 
-    // err = RunQueuedOperation(gMqttClient.Disconnect(OnOperationDone, &waitCtx), waitCtx);
+    // err = RunQueuedOperation(gMqttsClient.Disconnect(OnOperationDone, &waitCtx), waitCtx);
     // if (err != CHIP_NO_ERROR)
     // {
     //     ChipLogError(DeviceLayer, "MQTT Disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -160,7 +161,7 @@ CHIP_ERROR RunMqttExample()
 
 extern "C" sl_status_t mqtt_client_demo_start(void)
 {
-    if (gMqttClient.IsRunning())
+    if (gMqttsClient.IsRunning())
     {
         return SL_STATUS_ALREADY_INITIALIZED;
     }
@@ -189,21 +190,21 @@ extern "C" sl_status_t mqtt_client_demo_start(void)
         .tlsCaCertLen         = sizeof(kCaCertExample),
     };
 
-    CHIP_ERROR err = gMqttClient.Start();
+    CHIP_ERROR err = gMqttsClient.Start();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Start failed: %" CHIP_ERROR_FORMAT, err.Format());
         return SL_STATUS_FAIL;
     }
 
-    gMqttClient.SetMessageCallback(OnMqttMessage, nullptr);
+    gMqttsClient.SetMessageCallback(OnMqttMessage, nullptr);
 
     OperationWaitContext waitCtx = { .lock = gDoneLock, .result = CHIP_NO_ERROR };
-    err                          = RunQueuedOperation(gMqttClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
+    err                          = RunQueuedOperation(gMqttsClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Init failed: %" CHIP_ERROR_FORMAT, err.Format());
-        CHIP_ERROR stopErr = gMqttClient.Stop();
+        CHIP_ERROR stopErr = gMqttsClient.Stop();
         if (stopErr != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "MQTT Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
@@ -213,13 +214,13 @@ extern "C" sl_status_t mqtt_client_demo_start(void)
 
     err = RunMqttExample();
 
-    // CHIP_ERROR deinitErr = RunQueuedOperation(gMqttClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
+    // CHIP_ERROR deinitErr = RunQueuedOperation(gMqttsClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
     // if (deinitErr != CHIP_NO_ERROR)
     // {
     //     ChipLogError(DeviceLayer, "MQTT Deinit failed: %" CHIP_ERROR_FORMAT, deinitErr.Format());
     // }
 
-    // CHIP_ERROR stopErr = gMqttClient.Stop();
+    // CHIP_ERROR stopErr = gMqttsClient.Stop();
     // if (stopErr != CHIP_NO_ERROR)
     // {
     //     ChipLogError(DeviceLayer, "MQTT Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
