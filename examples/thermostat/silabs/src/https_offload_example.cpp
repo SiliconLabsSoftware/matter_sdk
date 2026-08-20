@@ -16,6 +16,21 @@
  *    limitations under the License.
  */
 
+/**
+ *
+ * @brief The example code is used to demonstrate the usage of the HTTPS client.
+ * The steps are as follows:
+ * 1. Start the HTTPS client
+ * 2. Initialize the HTTPS client
+ * 3. Run the HTTPS offload example
+ * 4. Run the HTTPS PUT request to send the index.html file to the server
+ * 5. Run the HTTPS GET request to get the index.html file from the server
+ * 6. Run the HTTPS POST request to send the post data to the server
+ * 7. Complete the HTTPS offload example and return the result
+ * 8. Deinitialize the HTTPS client (optional, disabled)
+ * 9. Stop the HTTPS client (optional, disabled)
+ */
+
 #include "https_offload_example.h"
 
 #include "cacert.pem.h"
@@ -39,8 +54,9 @@ using chip::DeviceLayer::Silabs::HttpClient;
 using chip::DeviceLayer::Silabs::HttpClientConfig;
 using chip::DeviceLayer::Silabs::HttpHost;
 
-constexpr char kHttpServerIp[]   = "192.168.0.191";
-constexpr char kHttpHostname[]   = "example.com";
+// TODO: Update the below values to the correct values for your server.
+constexpr char kHttpServerIp[]   = "";
+constexpr char kHttpHostname[]   = ""; // used for SNI validation
 constexpr uint16_t kHttpPort     = 8443;
 constexpr char kHttpUrl[]        = "/index.html";
 constexpr char kHttpClientUser[] = "admin";
@@ -48,7 +64,8 @@ constexpr char kHttpClientPass[] = "admin";
 constexpr char kHttpPostData[] =
     "employee_name=MR.REDDY&employee_id=RSXYZ123&designation=Engineer&company=SILABS&location=Hyderabad";
 
-HttpClient gHttpClient;
+// HTTPS client instance.
+HttpClient gHttpsClient;
 
 // Binary semaphore: CMSIS mutex cannot be released from another thread; NWP/HTTP
 // completion callbacks run on the HttpClient service thread.
@@ -96,7 +113,7 @@ CHIP_ERROR RunHttpsOffloadExample()
     };
 
     const ByteSpan putBody(reinterpret_cast<const uint8_t *>(sl_index), sizeof(sl_index) - 1);
-    CHIP_ERROR err = RunQueuedOperation(gHttpClient.Put(host, kHttpUrl, putBody, OnOperationDone, &waitCtx), waitCtx);
+    CHIP_ERROR err = RunQueuedOperation(gHttpsClient.Put(host, kHttpUrl, putBody, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS PUT failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -107,7 +124,7 @@ CHIP_ERROR RunHttpsOffloadExample()
     // Sized for the served index.html body; a smaller buffer truncates the response.
     uint8_t responseBuf[sizeof(sl_index)] = { 0 };
     MutableByteSpan responseSpan(responseBuf);
-    err = RunQueuedOperation(gHttpClient.Get(host, kHttpUrl, responseSpan, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gHttpsClient.Get(host, kHttpUrl, responseSpan, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS GET failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -116,7 +133,7 @@ CHIP_ERROR RunHttpsOffloadExample()
     ChipLogProgress(DeviceLayer, "HTTPS GET request success");
 
     const ByteSpan postBody(reinterpret_cast<const uint8_t *>(kHttpPostData), strlen(kHttpPostData));
-    err = RunQueuedOperation(gHttpClient.Post(host, kHttpUrl, postBody, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gHttpsClient.Post(host, kHttpUrl, postBody, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS POST failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -130,9 +147,9 @@ CHIP_ERROR RunHttpsOffloadExample()
 
 } // namespace
 
-extern "C" sl_status_t http_client_demo_start(void)
+sl_status_t https_client_demo_start(void)
 {
-    if (gHttpClient.IsRunning())
+    if (gHttpsClient.IsRunning())
     {
         return SL_STATUS_ALREADY_INITIALIZED;
     }
@@ -150,14 +167,15 @@ extern "C" sl_status_t http_client_demo_start(void)
 
     const HttpClientConfig config = {
         .certificateIndex = 1,
-        .httpsEnable      = true,
-        .username         = kHttpClientUser,
-        .password         = kHttpClientPass,
-        .tlsCaCert        = reinterpret_cast<const uint8_t *>(cacert),
-        .tlsCaCertLen     = sizeof(cacert) - 1,
+        // Enable HTTPS client.
+        .httpsEnable  = true,
+        .username     = kHttpClientUser,
+        .password     = kHttpClientPass,
+        .tlsCaCert    = reinterpret_cast<const uint8_t *>(kCaCertExample),
+        .tlsCaCertLen = sizeof(kCaCertExample) - 1,
     };
 
-    CHIP_ERROR err = gHttpClient.Start();
+    CHIP_ERROR err = gHttpsClient.Start();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS Start failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -166,11 +184,11 @@ extern "C" sl_status_t http_client_demo_start(void)
 
     OperationWaitContext waitCtx = { .lock = gDoneLock, .result = CHIP_NO_ERROR };
 
-    err = RunQueuedOperation(gHttpClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gHttpsClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS Init failed: %" CHIP_ERROR_FORMAT, err.Format());
-        CHIP_ERROR stopErr = gHttpClient.Stop();
+        CHIP_ERROR stopErr = gHttpsClient.Stop();
         if (stopErr != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "HTTPS Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
@@ -181,20 +199,22 @@ extern "C" sl_status_t http_client_demo_start(void)
     err = RunHttpsOffloadExample();
 
     /* NOTE: Deinit and Stop are not needed for the HTTP client.
-        CHIP_ERROR deinitErr = RunQueuedOperation(gHttpClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
+        CHIP_ERROR deinitErr = RunQueuedOperation(gHttpsClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
         if (deinitErr != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "HTTPS deinit failed: %" CHIP_ERROR_FORMAT, deinitErr.Format());
         }
 
-        CHIP_ERROR stopErr = gHttpClient.Stop();
+        CHIP_ERROR stopErr = gHttpsClient.Stop();
         if (stopErr != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "HTTPS Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
         }
     */
     return (err == CHIP_NO_ERROR
-        // && deinitErr == CHIP_NO_ERROR
-        // && stopErr == CHIP_NO_ERROR
-        ) ? SL_STATUS_OK : SL_STATUS_FAIL;
+            // && deinitErr == CHIP_NO_ERROR
+            // && stopErr == CHIP_NO_ERROR
+            )
+        ? SL_STATUS_OK
+        : SL_STATUS_FAIL;
 }

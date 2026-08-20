@@ -162,13 +162,14 @@ public:
      * @retval CHIP_ERROR_INCORRECT_STATE Client not initialized.
      * @retval CHIP_ERROR_INVALID_ARGUMENT Null host or resource.
      */
-    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
-                   HttpOperationCallback callback, void * context = nullptr);
+    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer, HttpOperationCallback callback,
+                   void * context = nullptr);
 
     /**
      * @brief Start an HTTPS POST.
      *
-     * @p body must remain valid until @p callback is invoked.
+     * @p body must remain valid until @p callback is invoked. Bodies larger than
+     * @c SL_HTTP_CLIENT_MAX_WRITE_BUFFER_LENGTH are uploaded in 900-byte chunks.
      *
      * @param[in] host     Target host / IP / port.
      * @param[in] resource Request path. Must not be nullptr.
@@ -206,11 +207,33 @@ public:
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
     // HTTP request status codes.
-    static constexpr uint8_t kHttpSuccessResponse   = 1;
-    static constexpr uint8_t kHttpFailureResponse   = 2;
+    static constexpr uint8_t kHttpSuccessResponse = 1;
+    static constexpr uint8_t kHttpFailureResponse = 2;
     // HTTP client error codes.
-    static constexpr uint16_t kHttpClientErrorMin   = 400;
-    static constexpr uint16_t kHttpServerErrorMax   = 599;
+    static constexpr uint16_t kHttpClientErrorMin = 400;
+    static constexpr uint16_t kHttpServerErrorMax = 599;
+    // HTTP server indicators for NWP HTTP client end_of_data
+    // GET/POST (indications from server):
+    //   0: More response data is expected.
+    //   1: This is the final chunk of the response.
+    // PUT:
+    //   Acknowledgment for transmitted data (notification from NWP):
+    //     0: Further data transmission is expected.
+    //     1: Data transmission is complete.
+    //   Server response (data received from server after transmission):
+    //     8: More response data is expected.
+    //     9: This is the final chunk of the response. See @ref SL_HTTP_CLIENT_PUT_SERVER_RESPONSE_END_OF_DATA.
+
+    /**
+     * @brief HTTP server indicators for NWP HTTP client end_of_data
+     */
+    enum class EndOfData : uint8_t
+    {
+        MoreData        = 0,
+        EndOfData       = 1,
+        MoreDataServer  = 8,
+        EndOfDataServer = SL_HTTP_CLIENT_PUT_SERVER_RESPONSE_END_OF_DATA,
+    };
 
     enum class Operation : uint8_t
     {
@@ -223,12 +246,27 @@ private:
         // TODO: Add Delete operation.
         // TODO: Add Head operation.
     };
-
+    // event flags for the service thread
     static constexpr uint32_t kEventOperation = 1u << 0;
     static constexpr uint32_t kEventResponse  = 1u << 1;
     static constexpr uint32_t kEventStop      = 1u << 2;
-
+    /**
+     * @brief Service thread function.
+     *
+     * This function is the entry point for the service thread.
+     * It is used to process operations and handle responses.
+     *
+     * @param[in] arg The argument.
+     */
     static void ServiceThread(void * arg);
+    /*
+     * @brief Map the NWP status to a CHIP_ERROR.
+     *
+     * @param[in] status The NWP status.
+     *
+     * @retval CHIP_NO_ERROR The status is OK.
+     * @retval CHIP_ERROR_INTERNAL The status is not OK.
+     */
     static CHIP_ERROR MapStatus(sl_status_t status);
 
     /**
@@ -255,8 +293,27 @@ private:
     CHIP_ERROR ProcessGet();
     CHIP_ERROR ProcessPost();
     CHIP_ERROR ProcessPut();
-    CHIP_ERROR ProcessContinuePut();
+    CHIP_ERROR ProcessContinueChunkedBody();
+    bool NeedsChunkedBody() const;
+
+    /**
+     * @brief Complete an operation.
+     *
+     * This function is called when an operation is completed.
+     * It is used to clear the chunked active flag and pending body
+     * and to call the callback function.
+     *
+     * @param[in] error The error code.
+     */
     void CompleteOperation(CHIP_ERROR error);
+    /**
+     * @brief Signal a response.
+     *
+     * This function is called when a response is received.
+     * It is used to signal the response to the service thread.
+     *
+     * @param[in] response The response.
+     */
     void SignalResponse();
 
     sl_http_client_t mClientHandle = 0;
@@ -270,19 +327,18 @@ private:
     uint32_t mResponseBytesWritten = 0;
 
     volatile uint8_t mHttpRspReceived = 0;
-    volatile uint8_t mEndOfFile       = 0;
+    volatile EndOfData mEndOfData     = EndOfData::EndOfData;
     sl_status_t mCallbackStatus       = SL_STATUS_OK;
     int32_t mHttpOffset               = 0;
     int32_t mHttpChunkLength          = 0;
 
     MutableByteSpan * mActiveResponseBuffer = nullptr;
-    ByteSpan mPutBody;
     HttpHost mPendingHost{};
     const char * mPendingResource = nullptr;
     ByteSpan mPendingBody;
 
-    volatile bool mBusy     = false;
-    bool mPutActive         = false;
+    volatile bool mBusy         = false;
+    bool mChunkedActive         = false;
     Operation mPendingOperation = Operation::None;
 
     HttpOperationCallback mUserCallback = nullptr;

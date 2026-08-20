@@ -37,8 +37,9 @@ using chip::DeviceLayer::Silabs::MqttClient;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
 using chip::DeviceLayer::Silabs::MqttQos;
 
-constexpr char kMqttBrokerIp[]         = "192.168.0.191";
-constexpr char kMqttTlsHostname[]      = "example.com";
+// Please fill in the details for your own MQTT broker.
+constexpr char kMqttBrokerIp[]         = ""; // The IP address of your MQTT broker
+constexpr char kMqttTlsHostname[]      = ""; // The TLS hostname of your MQTT broker
 constexpr uint16_t kMqttBrokerPort     = 8883;
 constexpr uint16_t kMqttClientPort     = 5003;
 constexpr char kMqttClientId[]         = "WISECONNECT_SDK_TOPIC";
@@ -184,8 +185,8 @@ extern "C" sl_status_t mqtt_client_demo_start(void)
         .mqttVersion          = 4,
         .cleanSession         = true,
         .willEnable           = false,
-        .tlsCaCert            = reinterpret_cast<const uint8_t *>(cacert),
-        .tlsCaCertLen         = sizeof(cacert),
+        .tlsCaCert            = reinterpret_cast<const uint8_t *>(kCaCertExample),
+        .tlsCaCertLen         = sizeof(kCaCertExample),
     };
 
     CHIP_ERROR err = gMqttClient.Start();
