@@ -142,7 +142,7 @@ CHIP_ERROR HttpClient::Stop()
 void HttpClient::ResetRequestState()
 {
     mResponseBytesWritten = 0;
-    mEndOfFile            = 0;
+    mEndOfData            = EndOfData::MoreData;
     mHttpRspReceived      = 0;
     mCallbackStatus       = SL_STATUS_OK;
     mHttpOffset           = 0;
@@ -175,7 +175,7 @@ bool HttpClient::NeedsChunkedBody() const
 
 CHIP_ERROR HttpClient::ProcessContinueChunkedBody()
 {
-    if (mEndOfFile == kHttpSuccessResponse)
+    if (mEndOfData == EndOfData::EndOfDataServer)
     {
         mChunkedActive = false;
         mPendingBody   = ByteSpan();
@@ -533,19 +533,9 @@ sl_status_t HttpClient::PostResponseCallback(const sl_http_client_t * client, sl
         self->SignalResponse();
         return postResponse->status;
     }
+    self->mEndOfData = static_cast<EndOfData>(postResponse->end_of_data);
 
-    if (self->mChunkedActive)
-    {
-        self->mHttpRspReceived = kHttpSuccessResponse;
-        if (postResponse->end_of_data)
-        {
-            self->mEndOfFile = kHttpSuccessResponse;
-        }
-        self->SignalResponse();
-        return SL_STATUS_OK;
-    }
-
-    if (postResponse->end_of_data)
+    if (self->mChunkedActive || self->mEndOfData == EndOfData::EndOfData)
     {
         self->mHttpRspReceived = kHttpSuccessResponse;
         self->SignalResponse();
@@ -579,11 +569,7 @@ sl_status_t HttpClient::PutResponseCallback(const sl_http_client_t * client, sl_
 
     // PUT response body is not exposed by the public API; ignore payload bytes.
     self->mHttpRspReceived = kHttpSuccessResponse;
-
-    if (putResponse->end_of_data == SL_HTTP_CLIENT_PUT_SERVER_RESPONSE_END_OF_DATA)
-    {
-        self->mEndOfFile = kHttpSuccessResponse;
-    }
+    self->mEndOfData       = static_cast<EndOfData>(putResponse->end_of_data);
 
     self->SignalResponse();
     return SL_STATUS_OK;

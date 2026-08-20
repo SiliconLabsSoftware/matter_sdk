@@ -207,11 +207,33 @@ public:
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
     // HTTP request status codes.
-    static constexpr uint8_t kHttpSuccessResponse   = 1;
-    static constexpr uint8_t kHttpFailureResponse   = 2;
+    static constexpr uint8_t kHttpSuccessResponse = 1;
+    static constexpr uint8_t kHttpFailureResponse = 2;
     // HTTP client error codes.
-    static constexpr uint16_t kHttpClientErrorMin   = 400;
-    static constexpr uint16_t kHttpServerErrorMax   = 599;
+    static constexpr uint16_t kHttpClientErrorMin = 400;
+    static constexpr uint16_t kHttpServerErrorMax = 599;
+    // HTTP server indicators for NWP HTTP client end_of_data
+    // GET/POST (indications from server):
+    //   0: More response data is expected.
+    //   1: This is the final chunk of the response.
+    // PUT:
+    //   Acknowledgment for transmitted data (notification from NWP):
+    //     0: Further data transmission is expected.
+    //     1: Data transmission is complete.
+    //   Server response (data received from server after transmission):
+    //     8: More response data is expected.
+    //     9: This is the final chunk of the response. See @ref SL_HTTP_CLIENT_PUT_SERVER_RESPONSE_END_OF_DATA.
+
+    /**
+     * @brief HTTP server indicators for NWP HTTP client end_of_data
+     */
+    enum class EndOfData : uint8_t
+    {
+        MoreData        = 0,
+        EndOfData       = 1,
+        MoreDataServer  = 8,
+        EndOfDataServer = SL_HTTP_CLIENT_PUT_SERVER_RESPONSE_END_OF_DATA,
+    };
 
     enum class Operation : uint8_t
     {
@@ -297,7 +319,7 @@ private:
     uint32_t mResponseBytesWritten = 0;
 
     volatile uint8_t mHttpRspReceived = 0;
-    volatile uint8_t mEndOfFile       = 0;
+    volatile EndOfData mEndOfData     = EndOfData::EndOfData;
     sl_status_t mCallbackStatus       = SL_STATUS_OK;
     int32_t mHttpOffset               = 0;
     int32_t mHttpChunkLength          = 0;
