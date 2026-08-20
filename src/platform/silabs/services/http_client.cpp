@@ -79,20 +79,20 @@ void HttpClient::ServiceThread(void * arg)
     {
         uint32_t events =
             osEventFlagsWait(eventFlags, kEventOperation | kEventResponse | kEventStop, osFlagsWaitAny, osWaitForever);
-        if ((events & osFlagsError) != 0)
+        if (events & osFlagsError)
         {
             ChipLogError(DeviceLayer, "HTTPS service event wait failed: 0x%lx", static_cast<unsigned long>(events));
             break;
         }
-        if ((events & kEventStop) != 0)
+        if (events & kEventStop)
         {
             break;
         }
-        if ((events & kEventOperation) != 0)
+        if (events & kEventOperation)
         {
             self->ProcessOperation();
         }
-        if ((events & kEventResponse) != 0)
+        if (events & kEventResponse)
         {
             self->HandleNwpResponse();
         }
@@ -377,6 +377,7 @@ void HttpClient::CompleteOperation(CHIP_ERROR error)
 {
     if (error != CHIP_NO_ERROR)
     {
+        // clear the chunked active flag and pending body
         mChunkedActive = false;
         mPendingBody   = ByteSpan();
     }

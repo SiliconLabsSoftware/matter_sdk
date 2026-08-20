@@ -162,8 +162,8 @@ public:
      * @retval CHIP_ERROR_INCORRECT_STATE Client not initialized.
      * @retval CHIP_ERROR_INVALID_ARGUMENT Null host or resource.
      */
-    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
-                   HttpOperationCallback callback, void * context = nullptr);
+    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer, HttpOperationCallback callback,
+                   void * context = nullptr);
 
     /**
      * @brief Start an HTTPS POST.
@@ -224,11 +224,18 @@ private:
         // TODO: Add Delete operation.
         // TODO: Add Head operation.
     };
-
+    // event flags for the service thread
     static constexpr uint32_t kEventOperation = 1u << 0;
     static constexpr uint32_t kEventResponse  = 1u << 1;
     static constexpr uint32_t kEventStop      = 1u << 2;
-
+    /**
+     * @brief Service thread function.
+     *
+     * This function is the entry point for the service thread.
+     * It is used to process operations and handle responses.
+     *
+     * @param[in] arg The argument.
+     */
     static void ServiceThread(void * arg);
     static CHIP_ERROR MapStatus(sl_status_t status);
 
@@ -258,7 +265,25 @@ private:
     CHIP_ERROR ProcessPut();
     CHIP_ERROR ProcessContinueChunkedBody();
     bool NeedsChunkedBody() const;
+
+    /**
+     * @brief Complete an operation.
+     *
+     * This function is called when an operation is completed.
+     * It is used to clear the chunked active flag and pending body
+     * and to call the callback function.
+     *
+     * @param[in] error The error code.
+     */
     void CompleteOperation(CHIP_ERROR error);
+    /**
+     * @brief Signal a response.
+     *
+     * This function is called when a response is received.
+     * It is used to signal the response to the service thread.
+     *
+     * @param[in] response The response.
+     */
     void SignalResponse();
 
     sl_http_client_t mClientHandle = 0;
@@ -282,8 +307,8 @@ private:
     const char * mPendingResource = nullptr;
     ByteSpan mPendingBody;
 
-    volatile bool mBusy     = false;
-    bool mChunkedActive     = false;
+    volatile bool mBusy         = false;
+    bool mChunkedActive         = false;
     Operation mPendingOperation = Operation::None;
 
     HttpOperationCallback mUserCallback = nullptr;
