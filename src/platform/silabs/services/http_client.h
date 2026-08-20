@@ -259,6 +259,14 @@ private:
      * @param[in] arg The argument.
      */
     static void ServiceThread(void * arg);
+    /*
+     * @brief Map the NWP status to a CHIP_ERROR.
+     *
+     * @param[in] status The NWP status.
+     *
+     * @retval CHIP_NO_ERROR The status is OK.
+     * @retval CHIP_ERROR_INTERNAL The status is not OK.
+     */
     static CHIP_ERROR MapStatus(sl_status_t status);
 
     /**
