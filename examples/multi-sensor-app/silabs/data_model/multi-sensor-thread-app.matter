@@ -2238,6 +2238,8 @@ endpoint 0 {
     callback attribute channelPage0Mask;
     callback attribute operationalDatasetComponents;
     callback attribute activeNetworkFaultsList;
+    callback attribute extAddress;
+    callback attribute rloc16;
     ram      attribute featureMap default = 0x000F;
     callback attribute clusterRevision;
 
@@ -2280,6 +2282,8 @@ endpoint 0 {
     handle command UpdateFabricLabel;
     handle command RemoveFabric;
     handle command AddTrustedRootCertificate;
+    handle command SetVIDVerificationStatement;
+    handle command SignVIDVerificationRequest;
   }
 
   server cluster GroupKeyManagement {
