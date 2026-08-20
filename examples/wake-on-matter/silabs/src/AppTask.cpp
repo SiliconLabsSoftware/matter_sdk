@@ -336,7 +336,7 @@ bool ShouldLightForAttribute(uint32_t clusterId, uint32_t attributeId, uint64_t 
     }
 }
 
-void subscriptionCallback(uint16_t endpointId, uint32_t clusterId, uint32_t attributeId, uint64_t value)
+[[maybe_unused]] void subscriptionCallback(uint16_t endpointId, uint32_t clusterId, uint32_t attributeId, uint64_t value)
 {
     (void) endpointId;
 

@@ -33,6 +33,7 @@ declare_args() {
 
   # OTA timeout in seconds
   ota_periodic_query_timeout_sec = 86400
+  sl_use_base_application = true
 }
 
 import("${silabs_common_plat_dir}/args.gni")
@@ -164,7 +165,6 @@ source_set("efr32-common") {
   include_dirs = [ "." ]
 
   sources = [
-    "${silabs_common_plat_dir}/BaseApplication.cpp",
     "${silabs_common_plat_dir}/LEDWidget.cpp",
     "${silabs_common_plat_dir}/MatterConfig.cpp",
     "${silabs_common_plat_dir}/SoftwareFaultReports.cpp",
@@ -172,6 +172,10 @@ source_set("efr32-common") {
     "${silabs_common_plat_dir}/silabs_utils.cpp",
     "${silabs_common_plat_dir}/syscalls_stubs.cpp",
   ]
+
+  if (sl_use_base_application) {
+    sources += [ "${silabs_common_plat_dir}/BaseApplication.cpp" ]
+  }
 
   # FreeRTOS runtime statistics support
   if (matter_enable_tracing_support) {

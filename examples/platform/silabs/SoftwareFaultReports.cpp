@@ -29,6 +29,10 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/DiagnosticDataProvider.h>
 
+// Needed for vApplicationStackOverflowHook
+#include <FreeRTOS.h>
+#include <task.h>
+
 // Macro to flush UART TX queue if enabled
 #if SILABS_LOG_OUT_UART
 #include <uart.h>
