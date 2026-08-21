@@ -17,8 +17,10 @@
  */
 
 /**
- * @file  cacert.pem.h
+ * @file  cacert.h
  * @brief Sample (generated) CA certificate for HTTPs and MQTTs clients
  */
+
+#pragma once
 
 const unsigned char kCaCertExample[] = "";
