@@ -33,8 +33,8 @@
 
 #include "https_offload_example.h"
 
-#include "cacert.pem.h"
-#include "index.html.h"
+#include "cacert.h"
+#include "index_html.h"
 
 #include "http_client.h"
 
@@ -55,21 +55,20 @@ using chip::DeviceLayer::Silabs::HttpClientConfig;
 using chip::DeviceLayer::Silabs::HttpHost;
 
 // TODO: Update the below values to the correct values for your server.
-constexpr char kHttpServerIp[]   = "";
-constexpr char kHttpHostname[]   = ""; // used for SNI validation
-constexpr uint16_t kHttpPort     = 8443;
-constexpr char kHttpUrl[]        = "/index.html";
-constexpr char kHttpClientUser[] = "admin";
-constexpr char kHttpClientPass[] = "admin";
-constexpr char kHttpPostData[] =
-    "employee_name=MR.REDDY&employee_id=RSXYZ123&designation=Engineer&company=SILABS&location=Hyderabad";
+constexpr char kHttpServerIp[]   = HTTP_SERVER_IP;
+constexpr char kHttpHostname[]   = HTTP_HOSTNAME; // used for SNI validation
+constexpr uint16_t kHttpPort     = HTTP_PORT;
+constexpr char kHttpUrl[]        = HTTP_URL;
+constexpr char kHttpClientUser[] = HTTP_USER;
+constexpr char kHttpClientPass[] = HTTP_PASS;
+constexpr char kHttpPostData[]   = HTTP_POST_DATA;
 
 // HTTPS client instance.
 HttpClient gHttpsClient;
 
 // Binary semaphore: CMSIS mutex cannot be released from another thread; NWP/HTTP
 // completion callbacks run on the HttpClient service thread.
-osSemaphoreId_t gDoneLock = nullptr;
+osSemaphoreId_t gHttpsTaskLock = nullptr;
 
 struct OperationWaitContext
 {
@@ -104,7 +103,7 @@ CHIP_ERROR RunHttpsOffloadExample()
 {
     ChipLogProgress(DeviceLayer, "HTTPS starting on offload stack");
 
-    OperationWaitContext waitCtx = { .lock = gDoneLock, .result = CHIP_NO_ERROR };
+    OperationWaitContext waitCtx = { .lock = gHttpsTaskLock, .result = CHIP_NO_ERROR };
 
     const HttpHost host = {
         .hostName = kHttpHostname,
@@ -154,16 +153,18 @@ sl_status_t https_client_demo_start(void)
         return SL_STATUS_ALREADY_INITIALIZED;
     }
 
-    if (gDoneLock == nullptr)
+    if (gHttpsTaskLock == nullptr)
     {
         // max_count=1, initial_count=0: Acquire blocks until completion callback Releases.
-        gDoneLock = osSemaphoreNew(1, 0, nullptr);
-        if (gDoneLock == nullptr)
+        gHttpsTaskLock = osSemaphoreNew(1, 0, nullptr);
+        if (gHttpsTaskLock == nullptr)
         {
             ChipLogError(DeviceLayer, "HTTPS demo lock create failed");
             return SL_STATUS_FAIL;
         }
     }
+
+    VerifyOrReturnError(sizeof(kCaCertExample) > 0, SL_STATUS_FAIL, ChipLogError(DeviceLayer, "CA certificate is not set"));
 
     const HttpClientConfig config = {
         .certificateIndex = 1,
@@ -182,7 +183,7 @@ sl_status_t https_client_demo_start(void)
         return SL_STATUS_FAIL;
     }
 
-    OperationWaitContext waitCtx = { .lock = gDoneLock, .result = CHIP_NO_ERROR };
+    OperationWaitContext waitCtx = { .lock = gHttpsTaskLock, .result = CHIP_NO_ERROR };
 
     err = RunQueuedOperation(gHttpsClient.Init(config, OnOperationDone, &waitCtx), waitCtx);
     if (err != CHIP_NO_ERROR)
