@@ -32,35 +32,35 @@
 #error "MQTT_BROKER_IP is not defined"
 #endif
 
-#ifndef MQTT_TLS_HOSTNAME   // The TLS hostname of your MQTT broker
+#ifndef MQTT_TLS_HOSTNAME // The TLS hostname of your MQTT broker
 #error "MQTT_TLS_HOSTNAME is not defined"
 #endif
 
-#ifndef MQTT_BROKER_PORT   // The port of your MQTT broker
+#ifndef MQTT_BROKER_PORT // The port of your MQTT broker
 #error "MQTT_BROKER_PORT is not defined"
 #endif
 
-#ifndef MQTT_CLIENT_PORT   // The port of your MQTT client
+#ifndef MQTT_CLIENT_PORT // The port of your MQTT client
 #define MQTT_CLIENT_PORT 5003
 #endif
 
-#ifndef MQTT_CLIENT_ID   // The ID of your MQTT client
+#ifndef MQTT_CLIENT_ID // The ID of your MQTT client
 #define MQTT_CLIENT_ID "WISECONNECT_SDK_TOPIC"
 #endif
 
-#ifndef MQTT_USERNAME   // The username of your MQTT client
+#ifndef MQTT_USERNAME // The username of your MQTT client
 #define MQTT_USERNAME "john"
 #endif
 
-#ifndef MQTT_PASSWORD   // The password of your MQTT client
+#ifndef MQTT_PASSWORD // The password of your MQTT client
 #define MQTT_PASSWORD "doe"
 #endif
 
-#ifndef MQTT_TOPIC   // The topic of your MQTT client
+#ifndef MQTT_TOPIC // The topic of your MQTT client
 #define MQTT_TOPIC "THERMOSTAT-DATA"
 #endif
 
-#ifndef MQTT_PUBLISH_MESSAGE   // The message to publish to the MQTT broker
+#ifndef MQTT_PUBLISH_MESSAGE // The message to publish to the MQTT broker
 #define MQTT_PUBLISH_MESSAGE "THIS IS MQTT CLIENT DEMO FROM APPLICATION"
 #endif
 

@@ -26,12 +26,13 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "sl_status.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "MQTTClient.h"
 #include "sl_net.h"
-#include "sl_status.h"
 #ifdef __cplusplus
 }
 #endif
@@ -45,7 +46,7 @@ namespace Silabs {
  */
 enum class MqttQoS : uint8_t
 {
-    QoS0  = 0,
+    QoS0 = 0,
     QoS1 = 1,
     QoS2 = 2,
 };
@@ -58,20 +59,20 @@ enum class MqttQoS : uint8_t
  */
 struct MqttClientConfig
 {
-    bool useTls                     = true;
-    const char * clientId           = nullptr;
-    const char * username           = nullptr;
-    const char * password           = nullptr;
-    uint16_t keepAliveIntervalSec   = 100;
-    unsigned int commandTimeoutMs   = 20000;
-    uint8_t mqttVersion             = 4;
-    bool cleanSession               = true;
+    bool useTls                   = true;
+    const char * clientId         = nullptr;
+    const char * username         = nullptr;
+    const char * password         = nullptr;
+    uint16_t keepAliveIntervalSec = 100;
+    unsigned int commandTimeoutMs = 20000;
+    uint8_t mqttVersion           = 4;
+    bool cleanSession             = true;
 
-    bool willEnable                 = false;
-    const char * willTopic          = nullptr;
-    const char * willMessage        = nullptr;
-    MqttQoS willQoS                 = MqttQoS::QoS1;
-    bool willRetained               = false;
+    bool willEnable          = false;
+    const char * willTopic   = nullptr;
+    const char * willMessage = nullptr;
+    MqttQoS willQoS          = MqttQoS::QoS1;
+    bool willRetained        = false;
 
     /** PEM bytes for host mbedTLS CA chain. nullptr = skip CA install. */
     const uint8_t * tlsCaCert = nullptr;
@@ -83,10 +84,10 @@ struct MqttClientConfig
  */
 struct MqttBroker
 {
-    const char * brokerIp     = nullptr; ///< IPv4 string for sl_net_inet_addr. Must not be nullptr.
-    const char * tlsHostname  = nullptr; ///< SNI / cert verify name when TLS is enabled.
-    uint16_t brokerPort       = 0;       ///< Broker port (1883 or 8883 typical).
-    uint16_t clientPort       = 0;       ///< Local source port.
+    const char * brokerIp    = nullptr; ///< IPv4 string for sl_net_inet_addr. Must not be nullptr.
+    const char * tlsHostname = nullptr; ///< SNI / cert verify name when TLS is enabled.
+    uint16_t brokerPort      = 0;       ///< Broker port (1883 or 8883 typical).
+    uint16_t clientPort      = 0;       ///< Local source port.
 };
 
 /**
@@ -217,8 +218,8 @@ private:
 
     const char * mPendingTopic = nullptr;
     ByteSpan mPendingPayload;
-    MqttQoS mPendingQos = MqttQoS::QoS1;
-    bool mPendingRetained = false;
+    MqttQoS mPendingQos             = MqttQoS::QoS1;
+    bool mPendingRetained           = false;
     uint32_t mPendingYieldTimeoutMs = 0;
 
     void * mThreadId   = nullptr; // osThreadId_t
@@ -233,7 +234,7 @@ private:
     void * mUserCallbackContext         = nullptr;
 
     MqttSubscriptionCallback mMessageCallback = nullptr;
-    void * mMessageCallbackContext       = nullptr;
+    void * mMessageCallbackContext            = nullptr;
 
     static MqttClient * sActiveClient;
 };
