@@ -71,7 +71,14 @@
 #define ARP_QUEUEING (0)
 #define TCPIP_THREAD_NAME "LWIP"
 
+#if defined(SL_MATTER_ENABLE_MQTT_OVER_LWIP_SOCKETS) && SL_MATTER_ENABLE_MQTT_OVER_LWIP_SOCKETS
+#define LWIP_SOCKET 1
+#define MEMP_NUM_NETCONN (1)
+#define LWIP_FREERTOS_USE_STATIC_TCPIP_QUEUE (0)
+#else
 #define LWIP_SOCKET 0
+#define MEMP_NUM_NETCONN (0)
+#endif // SL_MATTER_ENABLE_MQTT_OVER_LWIP_SOCKETS
 
 // Setting the priority of the lwip thread to osPriorityAboveNormal
 #define TCPIP_THREAD_PRIO (32)
@@ -96,8 +103,6 @@
 
 // TODO: not sure why this is disabled
 #define LWIP_NETIF_LOOPBACK (0)
-
-#define MEMP_NUM_NETCONN (0)
 
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
 #define LWIP_IPV4 1

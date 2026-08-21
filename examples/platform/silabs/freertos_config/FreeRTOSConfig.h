@@ -282,6 +282,12 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define EXTRA_HEAP_k 0
 #endif
 
+#ifdef MQTT_USE_HOST_LWIP_TLS
+#define MQTT_EXTRA_HEAP_k 28
+#else
+#define MQTT_EXTRA_HEAP_k 0
+#endif // MQTT_USE_HOST_LWIP_TLS
+
 #ifndef configTOTAL_HEAP_SIZE
 #ifdef SL_WIFI
 #ifdef SL_MATTER_ENABLE_AWS
@@ -291,7 +297,10 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define configTOTAL_HEAP_SIZE ((size_t) ((68 + EXTRA_HEAP_k) * 1024))
 #endif // SLI_SI91X_MCU_INTERFACE
 #else
-#define configTOTAL_HEAP_SIZE ((size_t) ((42 + EXTRA_HEAP_k) * 1024))
+// NOTE: Changes for HEAP4 + redirect of malloc/free to heap4
+// NOTE: 42KB heap size is required for HEAP4 and 30KB heap is required for the redirect of malloc/free to heap4
+// NOTE: HEAP watermark was 64KB, additional 8KB is overhead provided to the application
+#define configTOTAL_HEAP_SIZE ((size_t) ((72 + EXTRA_HEAP_k + MQTT_EXTRA_HEAP_k) * 1024))
 #endif // SL_MATTER_ENABLE_AWS
 #else  // SL_WIFI
 #if SL_CONFIG_OPENTHREAD_LIB == 1

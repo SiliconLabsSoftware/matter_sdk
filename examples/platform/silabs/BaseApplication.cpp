@@ -97,6 +97,10 @@
 #include "https_offload_example.h"
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+#include "mqtt_example.h"
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+
 #endif // SL_MATTER_ENABLE_SERVICES
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -1043,6 +1047,11 @@ void InitMatterAwsHandler(System::Layer * systemLayer, void * appState)
 namespace {
 void InitMatterServicesHandler(System::Layer * systemLayer, void * appState)
 {
+
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_start(), ChipLogError(AppServer, "mqtt_client_demo_start failed"));
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
     VerifyOrReturn(SL_STATUS_OK == https_client_demo_start(), ChipLogError(AppServer, "https_client_demo_start failed"));
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
