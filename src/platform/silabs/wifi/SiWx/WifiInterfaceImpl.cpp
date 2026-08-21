@@ -43,6 +43,7 @@
 #include <platform/NetworkCommissioning.h>
 #include <platform/silabs/wifi/SiWx/WifiInterfaceImpl.h>
 #include <sl_cmsis_os2_common.h>
+#include <sl_mbedtls_config.h>
 
 extern "C" {
 #include "sl_si91x_driver.h"
@@ -56,9 +57,11 @@ extern "C" {
 #if SL_MBEDTLS_USE_TINYCRYPT
 #include "sl_si91x_constants.h"
 #include "sl_si91x_trng.h"
-#else
-#include <psa/crypto.h>
 #endif // SL_MBEDTLS_USE_TINYCRYPT
+
+#ifdef MBEDTLS_PSA_CRYPTO_C
+#include <psa/crypto.h>
+#endif // MBEDTLS_PSA_CRYPTO_C
 
 #include <sl_net.h>
 #include <sl_net_constants.h>
@@ -578,11 +581,11 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiPlatformEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, CHIP_ERROR_NO_MEMORY);
 
-#ifndef SL_MBEDTLS_USE_TINYCRYPT
+#ifdef MBEDTLS_PSA_CRYPTO_C
     // PSA Crypto initialization
     VerifyOrReturnError(psa_crypto_init() == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "psa_crypto_init failed: 0x%" PRIx32, static_cast<uint32_t>(status)));
-#endif // SL_MBEDTLS_USE_TINYCRYPT
+#endif // MBEDTLS_PSA_CRYPTO_C
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     status = ApplyNeutralLessSwitchProfile();
