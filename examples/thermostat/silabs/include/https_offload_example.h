@@ -20,16 +20,16 @@
 
 #include "sl_status.h"
 
-#ifndef HTTP_SERVER_IP
-#define HTTP_SERVER_IP "" // IP address of the HTTP server
+#ifndef HTTP_SERVER_IP // IP address of the HTTP server
+#error "HTTP_SERVER_IP is not defined"
 #endif
 
-#ifndef HTTP_HOSTNAME
-#define HTTP_HOSTNAME "" // used for SNI validation
+#ifndef HTTP_HOSTNAME // used for SNI validation
+#error "HTTP_HOSTNAME is not defined"
 #endif
 
-#ifndef HTTP_PORT
-#define HTTP_PORT 443 // port of the HTTP server
+#ifndef HTTP_PORT // port of the HTTP server
+#error "HTTP_PORT is not defined"
 #endif
 
 #ifndef HTTP_URL
