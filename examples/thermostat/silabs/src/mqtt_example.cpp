@@ -20,7 +20,7 @@
 
 #include "mqtt_client.h"
 
-#include "cacert.pem.h"
+#include "cacert.h"
 #include "cmsis_os2.h"
 
 #include <lib/support/Span.h>
@@ -37,15 +37,15 @@ using chip::DeviceLayer::Silabs::MqttClientConfig;
 using chip::DeviceLayer::Silabs::MqttQoS;
 
 // Please fill in the details for your own MQTT broker.
-constexpr char kMqttBrokerIp[]       = ""; // The IP address of your MQTT broker
-constexpr char kMqttTlsHostname[]    = ""; // The TLS hostname of your MQTT broker
-constexpr uint16_t kMqttBrokerPort   = 8883;
-constexpr uint16_t kMqttClientPort   = 5003;
-constexpr char kMqttClientId[]       = "WISECONNECT_SDK_TOPIC";
-constexpr char kMqttUsername[]       = "username";
-constexpr char kMqttPassword[]       = "password";
-constexpr char kMqttTopic[]          = "THERMOSTAT-DATA";
-constexpr char kMqttPublishMessage[] = "THIS IS MQTT CLIENT DEMO FROM APPLICATION";
+constexpr char kMqttBrokerIp[]       = MQTT_BROKER_IP;    // The IP address of your MQTT broker
+constexpr char kMqttTlsHostname[]    = MQTT_TLS_HOSTNAME; // The TLS hostname of your MQTT broker
+constexpr uint16_t kMqttBrokerPort   = MQTT_BROKER_PORT;
+constexpr uint16_t kMqttClientPort   = MQTT_CLIENT_PORT;
+constexpr char kMqttClientId[]       = MQTT_CLIENT_ID;
+constexpr char kMqttUsername[]       = MQTT_USERNAME;
+constexpr char kMqttPassword[]       = MQTT_PASSWORD;
+constexpr char kMqttTopic[]          = MQTT_TOPIC;
+constexpr char kMqttPublishMessage[] = MQTT_PUBLISH_MESSAGE;
 
 MqttClient gMqttsClient;
 volatile bool gOpDone = false;
