@@ -29,11 +29,11 @@
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include <platform/OpenThread/GenericThreadStackManagerImpl_OpenThread.h>
 #endif
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+#if defined(SL_SI91X_FREERTOS_HEAP_4_REDIRECT) && SL_SI91X_FREERTOS_HEAP_4_REDIRECT
 #include "sl_si91x_memory_manager.h"
 #else
 #include "sl_memory_manager.h"
-#endif // SLI_SI91X_MCU_INTERFACE
+#endif // SL_SI91X_FREERTOS_HEAP_4_REDIRECT
 #include <cmsis_os2.h>
 #include <inet/IPAddress.h>
 #include <inet/InetInterface.h>
@@ -61,33 +61,33 @@ DiagnosticDataProviderImpl & DiagnosticDataProviderImpl::GetDefaultInstance()
  */
 CHIP_ERROR DiagnosticDataProviderImpl::GetCurrentHeapFree(uint64_t & currentHeapFree)
 {
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+#if defined(SL_SI91X_FREERTOS_HEAP_4_REDIRECT) && SL_SI91X_FREERTOS_HEAP_4_REDIRECT
     size_t freeHeapSize = sl_si91x_memory_get_free_heap_size();
 #else
     size_t freeHeapSize = sl_memory_get_free_heap_size();
-#endif // SLI_SI91X_MCU_INTERFACE
+#endif // SL_SI91X_FREERTOS_HEAP_4_REDIRECT
     currentHeapFree     = static_cast<uint64_t>(freeHeapSize);
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetCurrentHeapUsed(uint64_t & currentHeapUsed)
 {
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+#if defined(SL_SI91X_FREERTOS_HEAP_4_REDIRECT) && SL_SI91X_FREERTOS_HEAP_4_REDIRECT
     size_t heapUsed = sl_si91x_memory_get_used_heap_size();
 #else
     size_t heapUsed = sl_memory_get_used_heap_size();
-#endif // SLI_SI91X_MCU_INTERFACE
+#endif // SL_SI91X_FREERTOS_HEAP_4_REDIRECT
     currentHeapUsed = static_cast<uint64_t>(heapUsed);
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetCurrentHeapHighWatermark(uint64_t & currentHeapHighWatermark)
 {
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+#if defined(SL_SI91X_FREERTOS_HEAP_4_REDIRECT) && SL_SI91X_FREERTOS_HEAP_4_REDIRECT
     size_t HighestHeapUsageRecorded = sl_si91x_memory_get_heap_high_watermark();
 #else
     size_t HighestHeapUsageRecorded = sl_memory_get_heap_high_watermark();
-#endif // SLI_SI91X_MCU_INTERFACE
+#endif // SL_SI91X_FREERTOS_HEAP_4_REDIRECT
     currentHeapHighWatermark        = static_cast<uint64_t>(HighestHeapUsageRecorded);
 
     return CHIP_NO_ERROR;
@@ -97,11 +97,11 @@ CHIP_ERROR DiagnosticDataProviderImpl::ResetWatermarks()
 {
     // If implemented, the server SHALL set the value of the CurrentHeapHighWatermark attribute to the
     // value of the CurrentHeapUsed.
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+#if defined(SL_SI91X_FREERTOS_HEAP_4_REDIRECT) && SL_SI91X_FREERTOS_HEAP_4_REDIRECT
     sl_si91x_memory_reset_heap_high_watermark();
 #else
     sl_memory_reset_heap_high_watermark();
-#endif // SLI_SI91X_MCU_INTERFACE
+#endif // SL_SI91X_FREERTOS_HEAP_4_REDIRECT
     return CHIP_NO_ERROR;
 }
 
