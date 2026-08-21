@@ -54,6 +54,13 @@ extern "C" {
 #endif // SL_SI91X_BOARD_INIT
 #include "rsi_debug.h"
 #include "rsi_rom_egpio.h"
+
+#if defined(SL_ICD_ENABLED)
+#include "sl_si91x_power_manager.h"
+#endif
+#ifdef SL_CATALOG_KERNEL_PRESENT
+extern osMutexId_t si91x_prints_mutex;
+#endif
 #else // For EFR32
 #if (_SILICON_LABS_32B_SERIES < 3)
 #include "em_core.h"
@@ -152,15 +159,11 @@ typedef struct
     uint16_t MaxSize;
 } Fifo_t;
 
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-#define UART_MAX_QUEUE_SIZE 125
-#else
 static constexpr uint32_t kUartTxCompleteFlag = 1;
 #if CHIP_DETAIL_LOGGING
 #define UART_MAX_QUEUE_SIZE 60
 #else
 #define UART_MAX_QUEUE_SIZE 25
-#endif
 #endif
 
 #define UART_TX_MAX_BUF_LEN 100 // Just enough for the QR code
@@ -178,12 +181,8 @@ constexpr osThreadAttr_t kUartTaskAttr = {
     .cb_size    = osThreadCbSize,
     .stack_mem  = uartStack,
     .stack_size = kUartTaskSize,
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-    .priority = osPriorityBelowNormal, // for SOC, must be below Matter Task priority
-#else
-    .priority = osPriorityRealtime6, // Must be above Matter Task priority
-#endif // SLI_SI91X_MCU_INTERFACE
-};     // Must be above Matter Task priority
+    .priority   = osPriorityRealtime6, // Must be above Matter Task priority
+};
 
 static uint32_t sMissedLogCount = 0; // Count of logs that were not sent to the UART due to queue full
 
@@ -222,6 +221,13 @@ void sendLogImmediately(bool force)
 }
 
 static int16_t formatAndSendLog(UartTxStruct_t & logStruct, bool forceTransmit);
+
+#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+static void si91xUartTransmitAsync(const uint8_t * data, uint16_t length);
+static void Si91xUartTxCompleteNotify(void);
+static void Si91xUartAcquireTxMutex(void);
+static void Si91xUartReleaseTxMutex(void);
+#endif // SLI_SI91X_MCU_INTERFACE
 
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 0
 static void UART_rx_callback(UARTDRV_Handle_t handle, Ecode_t transferStatus, uint8_t * data, UARTDRV_Count_t transferCount);
@@ -369,6 +375,11 @@ void uartConsoleInit(void)
     VerifyOrDie(sUartTaskHandle != nullptr);
     VerifyOrDie(sUartTxQueue != nullptr);
 
+#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+    // Register callback to wake UART task on DMA/block TX complete (same pattern as EFR UARTDRV callback).
+    Board_UARTRegisterTxCompleteNotify(Si91xUartTxCompleteNotify);
+#endif // SLI_SI91X_MCU_INTERFACE
+
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 0
 #ifdef SL_BOARD_NAME
     sl_board_enable_vcom();
@@ -408,6 +419,83 @@ void cache_uart_rx_data(char character)
 #ifdef ENABLE_CHIP_SHELL
     chip::NotifyShellProcess();
 #endif // ENABLE_CHIP_SHELL
+}
+
+namespace {
+constexpr uint16_t kSi91xUartTxBufferSize = kHeaderSize + SilabsCoreLogs::kTimeStampStringSize + SilabsCoreLogs::kMaxCategoryStrLen +
+                                            UART_TX_MAX_BUF_LEN + kEndOfLineSize + kFooterSize;
+static uint8_t sSi91xUartTxBuffer[kSi91xUartTxBufferSize];
+} // namespace
+
+static void Si91xUartTxCompleteNotify(void)
+{
+    // May run from UDMA/USART IRQ context.
+    osThreadFlagsSet(sUartTaskHandle, kUartTxCompleteFlag);
+}
+
+static void Si91xUartAcquireTxMutex(void)
+{
+#ifdef SL_CATALOG_KERNEL_PRESENT
+    if (osKernelGetState() == osKernelRunning && si91x_prints_mutex != nullptr)
+    {
+        osMutexAcquire(si91x_prints_mutex, osWaitForever);
+    }
+#endif
+}
+
+static void Si91xUartReleaseTxMutex(void)
+{
+#ifdef SL_CATALOG_KERNEL_PRESENT
+    if (osKernelGetState() == osKernelRunning && si91x_prints_mutex != nullptr)
+    {
+        osMutexRelease(si91x_prints_mutex);
+    }
+#endif
+}
+
+static void si91xUartTransmitAsync(const uint8_t * data, uint16_t length)
+{
+    if (data == nullptr || length == 0 || length > kSi91xUartTxBufferSize)
+    {
+        return;
+    }
+
+    VerifyOrReturn(osThreadGetId() == sUartTaskHandle);
+
+    Si91xUartAcquireTxMutex();
+    memcpy(sSi91xUartTxBuffer, data, length);
+
+#if defined(SL_ICD_ENABLED) && SL_ICD_ENABLED
+    // Keep MCU out of sleep while ULP UART / UDMA TX is active.
+    sl_si91x_power_manager_add_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    int32_t status;
+    do
+    {
+        // Drop any stale complete flag before starting a new transfer.
+        osThreadFlagsClear(kUartTxCompleteFlag);
+        status = Board_UARTStartSend(sSi91xUartTxBuffer, static_cast<uint32_t>(length));
+        if (status == ARM_DRIVER_ERROR_BUSY)
+        {
+            // Another client (e.g. printf/PutChar) owns the UART; poll until idle.
+            Board_UARTWaitForAnySendComplete();
+            Board_UARTWaitForTxIdle();
+        }
+    } while (status == ARM_DRIVER_ERROR_BUSY);
+
+    if (status == ARM_DRIVER_OK)
+    {
+        // Block until DMA fed THR, then until shift register empty (TEMT).
+        // SEND_COMPLETE alone is not enough; starting the next DMA early overlaps.
+        osThreadFlagsWait(kUartTxCompleteFlag, osFlagsWaitAny, osWaitForever);
+        Board_UARTWaitForTxIdle();
+    }
+
+#if defined(SL_ICD_ENABLED) && SL_ICD_ENABLED
+    sl_si91x_power_manager_remove_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+    Si91xUartReleaseTxMutex();
 }
 #endif // SLI_SI91X_MCU_INTERFACE
 
@@ -604,17 +692,27 @@ static int16_t formatAndSendLog(UartTxStruct_t & logStruct, bool forceTransmit)
                  SilabsCoreLogs::GetCategoryString(logStruct.category), logStruct.length, logStruct.data, kLogFooter);
     if (len > 0)
     {
+        // snprintf returns the untruncated length; never TX past the real buffer.
+        uint16_t sendLen = static_cast<uint16_t>(len);
+        if (static_cast<size_t>(len) >= sizeof(logWorkBuffer))
+        {
+            sendLen = static_cast<uint16_t>(sizeof(logWorkBuffer) - 1);
+        }
         if (forceTransmit)
         {
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+            // Serialize force path with SDK printf to avoid mixed output.
+            Si91xUartAcquireTxMutex();
+            Board_UARTWaitForAsyncSendComplete();
             Board_UARTPutSTR(logWorkBuffer);
+            Si91xUartReleaseTxMutex();
 #else
-            UARTDRV_ForceTransmit(vcom_handle, logWorkBuffer, static_cast<uint16_t>(len));
-#endif
+            UARTDRV_ForceTransmit(vcom_handle, logWorkBuffer, sendLen);
+#endif // SLI_SI91X_MCU_INTERFACE
         }
         else
         {
-            uartSendBytes(logWorkBuffer, static_cast<uint16_t>(len));
+            uartSendBytes(logWorkBuffer, sendLen);
         }
     }
     return static_cast<int16_t>(len);
@@ -656,9 +754,7 @@ void uartMainLoop(void * args)
 }
 
 /**
- * @brief Send Bytes to UART. This blocks the UART task.
- *
- * @param bufferStruct reference to the UartTxStruct_t containing the data
+ * @brief Send Bytes to UART. Async DMA TX; UART task blocks on TX-complete thread flag.
  */
 void uartSendBytes(uint8_t * data, uint16_t length)
 {
@@ -667,14 +763,7 @@ void uartSendBytes(uint8_t * data, uint16_t length)
         return;
     }
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-    // Not optimal, waiting for a more efficient way to send logs over UART on SI91x
-    //
-    // Board_UARTPutSTR(data) does the exact same thing and is not compatible with
-    // the Silabs Matter console.
-    for (uint8_t i = 0; i < length; i++)
-    {
-        Board_UARTPutChar(data[i]);
-    }
+    si91xUartTransmitAsync(data, length);
 #else
 #if defined(SL_CATALOG_POWER_MANAGER_PRESENT)
     sl_power_manager_add_em_requirement(SL_POWER_MANAGER_EM1);
@@ -717,7 +806,9 @@ void uartFlushTxQueue(void)
     {
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
         ensureNullTermination(workBuffer);
+        Si91xUartAcquireTxMutex();
         Board_UARTPutSTR(workBuffer.data);
+        Si91xUartReleaseTxMutex();
 #else
         UARTDRV_ForceTransmit(vcom_handle, workBuffer.data, workBuffer.length);
 #endif
