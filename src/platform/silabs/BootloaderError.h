@@ -24,8 +24,6 @@ namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
 
-const char * BootloaderErrorCodeName(int32_t errorCode);
-
 void LogBootloaderApiError(const char * apiName, int32_t errorCode);
 
 } // namespace Silabs

@@ -20,13 +20,12 @@
 
 #include <lib/support/logging/CHIPLogging.h>
 
+#if CHIP_ERROR_LOGGING
 extern "C" {
 #include "btl_errorcode.h"
 }
 
-namespace chip {
-namespace DeviceLayer {
-namespace Silabs {
+namespace {
 
 const char * BootloaderErrorCodeName(int32_t errorCode)
 {
@@ -51,8 +50,16 @@ const char * BootloaderErrorCodeName(int32_t errorCode)
     }
 }
 
-void LogBootloaderApiError(const char * apiName, int32_t errorCode)
+} // namespace
+#endif // CHIP_ERROR_LOGGING
+
+namespace chip {
+namespace DeviceLayer {
+namespace Silabs {
+
+void LogBootloaderApiError([[maybe_unused]] const char * apiName, [[maybe_unused]] int32_t errorCode)
 {
+#if CHIP_ERROR_LOGGING
     const char * errorName = BootloaderErrorCodeName(errorCode);
     if (errorName != nullptr)
     {
@@ -62,6 +69,7 @@ void LogBootloaderApiError(const char * apiName, int32_t errorCode)
     {
         ChipLogError(SoftwareUpdate, "%s() error: %ld", apiName, errorCode);
     }
+#endif // CHIP_ERROR_LOGGING
 }
 
 } // namespace Silabs
