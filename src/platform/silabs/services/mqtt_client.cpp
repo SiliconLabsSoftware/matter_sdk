@@ -26,10 +26,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#ifndef MQTT_USE_HOST_LWIP_TLS
-#define MQTT_USE_HOST_LWIP_TLS 0
-#endif
-
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {

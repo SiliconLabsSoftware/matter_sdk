@@ -37,6 +37,12 @@ extern "C" {
 }
 #endif
 
+// MQTT_USE_HOST_LWIP_TLS to use the host LwIP TLS context
+// making it MQTTs client else it will be a MQTT client
+#ifndef MQTT_USE_HOST_LWIP_TLS
+#define MQTT_USE_HOST_LWIP_TLS 0
+#endif // MQTT_USE_HOST_LWIP_TLS
+
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
