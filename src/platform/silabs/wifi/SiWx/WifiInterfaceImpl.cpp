@@ -156,11 +156,13 @@ const sl_wifi_device_configuration_t config = {
 #ifdef SLI_SI91X_ENABLE_IPV6
                           | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6
 #endif // defined(SLI_SI91X_ENABLE_IPV6)
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
                           | SL_SI91X_TCP_IP_FEAT_HTTP_CLIENT
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 #endif // SL_MATTER_ENABLE_SERVICES
+#endif // SL_MATTER_ENABLE_DUAL_STACK
                           | SL_SI91X_TCP_IP_FEAT_ICMP | SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID),
                      .custom_feature_bit_map = (SL_SI91X_CUSTOM_FEAT_EXTENTION_VALID
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
@@ -185,7 +187,7 @@ const sl_wifi_device_configuration_t config = {
 #endif                                                                         // RSI_BT_GATT_ON_CLASSIC
                                             ),
 #else
-                     .bt_feature_bit_map      = 0,
+                     .bt_feature_bit_map = 0,
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
                      .ext_tcp_ip_feature_bit_map =
                          (SL_SI91X_CONFIG_FEAT_EXTENTION_VALID
