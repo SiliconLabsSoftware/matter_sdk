@@ -105,4 +105,9 @@ protected:
 
     /** Bring up the thermostat app: sensor timer, sensor driver, first UI paint. */
     CHIP_ERROR InitThermostat();
+
+#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
+    /** Schedule MQTT/HTTP service demos after internet connectivity is established. */
+    static void MatterServicesEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
+#endif // SL_MATTER_ENABLE_SERVICES
 };
