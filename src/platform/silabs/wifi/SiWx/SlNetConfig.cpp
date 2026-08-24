@@ -36,9 +36,9 @@ sl_wifi_device_configuration_t GetDefaultDeviceConfiguration(void)
              .boot_config = { .oper_mode = SL_SI91X_CLIENT_MODE,
                               .coex_mode = SL_WIFI_SYSTEM_WLAN_ONLY_MODE,
                               .feature_bit_map =
-                                  SL_SI91X_FEAT_SECURITY_OPEN | /*SL_SI91X_FEAT_AGGREGATION |*/ SL_SI91X_FEAT_WPS_DISABLE
-#if defined(NEUTRAL_LESS_TEST) && NEUTRAL_LESS_TEST
-                                //   | SL_SI91X_FEAT_DISABLE_11AX_SUPPORT
+                                  SL_SI91X_FEAT_SECURITY_OPEN | SL_SI91X_FEAT_AGGREGATION | SL_SI91X_FEAT_WPS_DISABLE
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+                                  | SL_SI91X_FEAT_DISABLE_11AX_SUPPORT
 #endif
                               ,
                               .tcp_ip_feature_bit_map     = SL_SI91X_TCP_IP_FEAT_EXTENSION_VALID,

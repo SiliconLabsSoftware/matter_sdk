@@ -393,7 +393,7 @@ sl_status_t SetWifiConfigurations()
             .security = security,
             .encryption = SL_WIFI_DEFAULT_ENCRYPTION,
             .client_options = SL_WIFI_JOIN_WITH_SCAN,
-            .credential_id = SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID,
+            .credential_id = (security == SL_WIFI_OPEN) ? SL_NET_NO_CREDENTIAL_ID : SL_NET_DEFAULT_WIFI_CLIENT_CREDENTIAL_ID,
             .channel_bitmap = {
                 .channel_bitmap_2_4 = SL_WIFI_DEFAULT_CHANNEL_BITMAP
             },
@@ -420,14 +420,14 @@ sl_status_t SetWifiConfigurations()
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
         profile.config.channel.channel                   = wfx_rsi.ap_chan;
-        profile.config.channel_bitmap.channel_bitmap_2_4 = (1UL << (wfx_rsi.ap_chan - 1));
+        // profile.config.channel_bitmap.channel_bitmap_2_4 = (1UL << (wfx_rsi.ap_chan - 1));
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWiFiBSSIDLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWiFiBSSIDLength);
         TEMPORARY_RETURN_IGNORED chip::CopySpanToMutableSpan(inBssid, bssidSpan);
         // Enabling quick-join since we have the channel and BSSID
         // TODO: Uncomment this once the quick-join issue is fixed
-        join_feature_bitmap |= SL_SI91X_JOIN_FEAT_QUICK_JOIN;
+        // join_feature_bitmap |= SL_SI91X_JOIN_FEAT_QUICK_JOIN;
     }
 
     status = sl_wifi_set_join_configuration(SL_WIFI_CLIENT_INTERFACE, join_feature_bitmap);
@@ -552,8 +552,7 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
                         ChipLogError(DeviceLayer, "psa_crypto_init failed: %lx", static_cast<uint32_t>(status)));
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 
-#if defined(NEUTRAL_LESS_TEST) && NEUTRAL_LESS_TEST
-#error
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     status = sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
     if (status != SL_STATUS_OK)
     {
@@ -565,7 +564,7 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     {
         ChipLogProgress(DeviceLayer, "Application profile applied");
     }
-#endif // NEUTRAL_LESS_TEST
+#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     return CHIP_NO_ERROR;
 }
@@ -613,6 +612,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
 
     case WifiPlatformEvent::kConnectionComplete:
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kConnectionComplete");
+        osDelay(1000);
         NotifySuccessfulConnection();
 
     default:
@@ -663,8 +663,8 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     status = sl_wifi_set_join_callback(JoinCallback, nullptr);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
+    mCurrentPowerSaveConfiguration = PowerSaveInterface::PowerSaveConfiguration::kHighPerformance;
     // resetting the power save configuration since after connect, the power save configuration is set to high performance
-    // mCurrentPowerSaveConfiguration = PowerSaveInterface::PowerSaveConfiguration::kHighPerformance;
     osDelay(200);
     status = sl_net_up(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
 
@@ -691,6 +691,20 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     // failure only happens when the firmware returns an error
     ChipLogError(DeviceLayer, "sl_net_up failed: 0x%lx", static_cast<uint32_t>(status));
 
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    status = sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
+    if (status != SL_STATUS_OK)
+    {
+        // Do not return from this FreeRTOS task — that triggers prvTaskExitError
+        // (FREERTOS ASSERT uxCriticalNesting == ~0UL).
+        ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status));
+    }
+    else
+    {
+        ChipLogProgress(DeviceLayer, "Application profile applied");
+    }
+#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     ScheduleConnectionAttempt();
 
@@ -702,6 +716,21 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
     sl_status_t status = SL_STATUS_OK;
     // If the failed event is encountered when sl_net_up is in-progress,
     // we ignore it and wait for the sl_net_up to complete.
+
+    // set application profile again after the join fails
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    status = sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
+    if (status != SL_STATUS_OK)
+    {
+        // Do not return from this FreeRTOS task — that triggers prvTaskExitError
+        // (FREERTOS ASSERT uxCriticalNesting == ~0UL).
+        ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status));
+    }
+    else
+    {
+        ChipLogProgress(DeviceLayer, "Application profile applied");
+    }
+#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     if (wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
     {
         wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
@@ -920,7 +949,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
 {
     // Power save configuration is already set, nothing to do
     ChipLogProgress(DeviceLayer, "ConfigurePowerSave: Configuration: %d", configuration);
-    // VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
+    VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
 
     ChipLogProgress(DeviceLayer, "ConfigurePowerSave: Setting power save configuration");
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
@@ -931,7 +960,8 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
 
     sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
                                                       .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
-                                                      .listen_interval   = listenInterval };
+                                                      .listen_interval   = listenInterval,
+                                                      .monitor_interval  = 30 };
 
     sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
