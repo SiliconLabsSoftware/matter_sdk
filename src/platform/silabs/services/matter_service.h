@@ -27,6 +27,7 @@ namespace Silabs {
 namespace {
 /**
  * @brief Delay in seconds before initializing the Matter services.
+ * This delay is used to ensure that the network is fully established before initializing the Matter services.
  */
 static constexpr uint32_t kMatterServicesInitDelaySec = 10;
 } // namespace
