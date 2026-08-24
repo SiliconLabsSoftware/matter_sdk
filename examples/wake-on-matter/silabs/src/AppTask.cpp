@@ -46,6 +46,12 @@
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
+#include <em_device.h>
+#include "sl_gpio.h"
+
+// TODO uncomment once mmic is merged
+// #include "mmic_task.h"
+
 using namespace chip;
 using namespace chip::app;
 using namespace chip::app::Clusters;
@@ -270,6 +276,87 @@ void UnregisterRootNodeClusters(CodeDrivenDataModelProvider & provider)
     }
 }
 
+// GPIO used to wake up the host. For now routed to the LED1 on the MG24 BRD4187c
+// Adjust port/pin as needed.
+constexpr sl_gpio_t kLightGpio         = { .port = gpioPortB, .pin = 4 };
+constexpr uint16_t kLedAutoOffTimeoutS = 5;
+
+// Matter cluster / attribute identifiers we react to.
+constexpr uint32_t kOnOffClusterId              = 0x00000006;
+constexpr uint32_t kOnOffAttributeId            = 0x00000000;
+constexpr uint32_t kOccupancySensingClusterId   = 0x00000406;
+constexpr uint32_t kOccupancyAttributeId        = 0x00000000;
+constexpr uint32_t kBooleanStateClusterId       = 0x00000045;
+constexpr uint32_t kBooleanStateValueAttributeId = 0x00000000;
+
+// Occupancy attribute is bitmap8; bit 0 set means the sensor reports "occupied".
+constexpr uint64_t kOccupancyOccupiedMask = 0x01;
+
+void EnsureLightGpioInitialized()
+{
+    static bool initialized = false;
+    if (initialized)
+    {
+        return;
+    }
+    (void) sl_gpio_set_pin_mode(&kLightGpio, SL_GPIO_MODE_PUSH_PULL, false);
+    initialized = true;
+}
+
+void SetLight(bool on)
+{
+    EnsureLightGpioInitialized();
+    (void) (on ? sl_gpio_set_pin(&kLightGpio) : sl_gpio_clear_pin(&kLightGpio));
+}
+
+void LedAutoOffTimerHandler(chip::System::Layer * /*layer*/, void * /*appState*/)
+{
+    SetLight(false);
+}
+
+// Decide, per cluster/attribute, whether the reported value should light the LED.
+bool ShouldLightForAttribute(uint32_t clusterId, uint32_t attributeId, uint64_t value)
+{
+    switch (clusterId)
+    {
+    case kOnOffClusterId:
+        // OnOff attribute is a boolean; non-zero means "on".
+        return (attributeId == kOnOffAttributeId) && (value != 0);
+
+    case kOccupancySensingClusterId:
+        // Occupancy attribute is bitmap8; bit 0 == 1 means "occupied".
+        return (attributeId == kOccupancyAttributeId) && ((value & kOccupancyOccupiedMask) != 0);
+
+    case kBooleanStateClusterId:
+        // StateValue is a boolean; non-zero means "true".
+        return (attributeId == kBooleanStateValueAttributeId) && (value != 0);
+
+    default:
+        return false;
+    }
+}
+
+[[maybe_unused]] void subscriptionCallback(uint16_t endpointId, uint32_t clusterId, uint32_t attributeId, uint64_t value)
+{
+    (void) endpointId;
+
+    if (!ShouldLightForAttribute(clusterId, attributeId, value))
+    {
+        return;
+    }
+
+    SetLight(true);
+    // Cancel any pending auto-off before rearming so back-to-back reports extend the window.
+    chip::DeviceLayer::SystemLayer().CancelTimer(LedAutoOffTimerHandler, nullptr);
+    CHIP_ERROR err = chip::DeviceLayer::SystemLayer().StartTimer(
+        chip::System::Clock::Seconds16(kLedAutoOffTimeoutS), LedAutoOffTimerHandler, nullptr);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "LED auto-off StartTimer failed: %" CHIP_ERROR_FORMAT, err.Format());
+        SetLight(false);
+    }
+}
+
 } // namespace
 
 AppTask AppTask::sAppTask;
@@ -296,64 +383,110 @@ DataModel::Provider * AppTask::GetDataModelProvider()
     return sDataModelProvider.get();
 }
 
-CHIP_ERROR AppTask::AppInit()
+CHIP_ERROR AppTask::StartAppTask()
 {
-    GetPlatform().SetButtonsCb(AppTask::ButtonEventHandler);
+    // StartAppTask name is kept for compatibility even if this sample app
+    // doesn't have an App Task. All processing is made within the mmic Task context.
+
+    // TODO uncomment once mmic is merged
+    // sl_status_t status = mmic_init(subscriptionCallback);
+    //VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+    //                    ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
+
+
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR AppTask::StartAppTask()
-{
-    return BaseApplication::StartAppTask(AppTaskMain);
-}
+// To prevent linkage failure
+extern "C" void otAppNcpInit(otInstance * aInstance);
+extern "C" otInstance * otGetInstance(void);
+extern "C" void sl_ot_create_instance(void);
+extern "C" void efr32LogInit(void) {};
 
-void AppTask::AppTaskMain(void * pvParameter)
-{
-    AppEvent event;
-    osMessageQueueId_t sAppEventQueue = *(static_cast<osMessageQueueId_t *>(pvParameter));
+#include <openthread/dataset.h>
+#include <openthread/instance.h>
+#include <openthread/ip6.h>
+#include <openthread/thread.h>
 
-    CHIP_ERROR err = sAppTask.Init();
+#include <platform/ThreadStackManager.h>
+
+extern "C" void AppTaskThreadStateChangedHandler(otChangedFlags aFlags, void * aContext)
+{
+    if ((aFlags & OT_CHANGED_THREAD_ROLE) == 0)
+    {
+        return;
+    }
+
+    otInstance * instance = static_cast<otInstance *>(aContext);
+    otDeviceRole role     = otThreadGetDeviceRole(instance);
+    if (role != OT_DEVICE_ROLE_LEADER || !otIp6IsEnabled(instance))
+    {
+        return;
+    }
+
+    // Pull the active operational dataset from the NCP instance and push it to
+    // the Matter ThreadStackManager so both instances share the same network.
+    otOperationalDatasetTlvs datasetTlvs;
+    otError otErr = otDatasetGetActiveTlvs(instance, &datasetTlvs);
+    if (otErr != OT_ERROR_NONE)
+    {
+        SILABS_LOG("otDatasetGetActiveTlvs failed: %d", otErr);
+        return;
+    }
+
+    ByteSpan dataset(datasetTlvs.mTlvs, datasetTlvs.mLength);
+    CHIP_ERROR err = ThreadStackMgr().SetThreadProvision(dataset);
     if (err != CHIP_NO_ERROR)
     {
-        SILABS_LOG("AppTask.Init() failed");
-        appError(err);
+        SILABS_LOG("SetThreadProvision failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return;
     }
 
-    SILABS_LOG("App Task started");
-
-    while (true)
+    err = ThreadStackMgr().SetThreadEnabled(true);
+    if (err != CHIP_NO_ERROR)
     {
-        osStatus_t eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, osWaitForever);
-        while (eventReceived == osOK)
+        SILABS_LOG("SetThreadEnabled failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return;
+    }
+
+    // Kick the Matter DNS-SD advertiser so records get (re)published now that
+    // the Thread interface is available.
+    const bool isCommissioned = (Server::GetInstance().GetFabricTable().FabricCount() > 0);
+
+    PlatformMgr().LockChipStack();
+    if (isCommissioned)
+    {
+        SILABS_LOG("Commissioned: restarting operational DNS-SD advertisement");
+        CHIP_ERROR advErr = DnssdServer::Instance().AdvertiseOperational();
+        if (advErr != CHIP_NO_ERROR)
         {
-            sAppTask.DispatchEvent(&event);
-            eventReceived = osMessageQueueGet(sAppEventQueue, &event, NULL, 0);
+            SILABS_LOG("AdvertiseOperational failed: %" CHIP_ERROR_FORMAT, advErr.Format());
         }
     }
+    else
+    {
+        SILABS_LOG("Not commissioned: restarting commissionable DNS-SD advertisement");
+        DnssdServer::Instance().StartServer(Dnssd::CommissioningMode::kEnabledBasic);
+    }
+    PlatformMgr().UnlockChipStack();
 }
-
-void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
-{
-    AppEvent button_event           = {};
-    button_event.Type               = AppEvent::kEventType_Button;
-    button_event.ButtonEvent.Action = btnAction;
-    button_event.Handler            = BaseApplication::ButtonHandler;
-    AppTask::GetAppTask().PostEvent(&button_event);
-}
-
-// To prevent linkage failure
 #if SL_OPENTHREAD_MULTI_PAN_ENABLE
-extern "C" void otAppNcpInit(otInstance * aInstance);
-
 static otInstance * sInstance = NULL;
+extern "C" otInstance * otInstanceInitSingle(void) {}
 #endif
-
 extern "C" void sl_ot_ncp_init(void)
 {
+    if(otGetInstance() == nullptr)
+    {
+        sl_ot_create_instance();
+    }
 #if SL_OPENTHREAD_MULTI_PAN_ENABLE
     // Matter Stack uses instances at index 0
     // NCP instance will be at index 1
     sInstance = otInstanceInitMultiple(1);
     otAppNcpInit(sInstance);
-#endif
+    otSetStateChangedCallback(sInstance, AppTaskThreadStateChangedHandler, sInstance);
+#else
+    otAppNcpInit(otGetInstance());
+#endif // SL_OPENTHREAD_MULTI_PAN_ENABLE
 }
