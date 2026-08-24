@@ -81,10 +81,9 @@
 #define TCP_MSS (1460)
 
 #ifdef SL_MATTER_ENABLE_AWS
-#define LWIP_DNS 1
 #define DNS_RAND_TXID() ((u32_t) rand())
-#define TCP_WND (16 * TCP_MSS)     // was 4 * (4 * TCP_MSS)
-#define TCP_SND_BUF (8 * TCP_MSS)  // was 2 * (4 * TCP_MSS)
+#define TCP_WND (12 * TCP_MSS)
+#define TCP_SND_BUF (8 * TCP_MSS)
 #else
 #define LWIP_DNS 0
 #define TCP_SND_BUF (2 * TCP_MSS)
