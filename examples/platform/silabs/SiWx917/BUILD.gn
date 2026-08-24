@@ -169,8 +169,9 @@ source_set("siwx917-common") {
     if (chip_enable_read_client) {
       deps += [ "${silabs_common_plat_dir}/shell:im" ]
     }
-
-    deps += [ "${silabs_common_plat_dir}/shell:ble" ]
+    if (chip_config_network_layer_ble) {
+      deps += [ "${silabs_common_plat_dir}/shell:ble" ]
+    }
   }
 
   # MATTER_AWS
