@@ -283,7 +283,7 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #endif
 
 #ifdef MQTT_USE_HOST_LWIP_TLS
-#define MQTT_EXTRA_HEAP_k 60
+#define MQTT_EXTRA_HEAP_k 28
 #else
 #define MQTT_EXTRA_HEAP_k 0
 #endif // MQTT_USE_HOST_LWIP_TLS
