@@ -73,6 +73,7 @@ struct MqttClientConfig
     unsigned int commandTimeoutMs = 20000;
     uint8_t mqttVersion           = 4;
     bool cleanSession             = true;
+    uint32_t idleYieldTimeoutMs   = 1000;
 
     bool willEnable          = false;
     const char * willTopic   = nullptr;
@@ -114,8 +115,9 @@ using MqttSubscriptionCallback = void (*)(const char * topic, ByteSpan payload, 
 /**
  * @brief Host LwIP Paho MQTT client usable from Matter C++ code.
  *
- * Lifecycle: Start → Init → Connect → Subscribe/Publish/Yield → Disconnect → Deinit → Stop.
+ * Lifecycle: Start → Init → Connect → Subscribe/Publish → Disconnect → Deinit → Stop.
  * Operations are queued to the service thread and report completion via @ref MqttOperationCallback.
+ * While connected and idle, the service thread auto-runs MQTTYield for keepalive and inbound publishes.
  */
 class MqttClient : public MatterService
 {
@@ -167,7 +169,7 @@ public:
                        void * context = nullptr);
 
     /**
-     * @brief Run MQTTYield for up to @p timeoutMs (delivers messages via @ref SetSubscriptionCallback).
+     * @brief Queue a one-shot MQTTYield (optional; idle auto-yield covers keepalive/receive).
      */
     CHIP_ERROR Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context = nullptr);
 
@@ -200,6 +202,8 @@ private:
     CHIP_ERROR QueueOperation(Operation operation, MqttOperationCallback callback, void * context);
     void ProcessOperation();
     void CompleteOperation(CHIP_ERROR error);
+    void IdleYield();
+    uint32_t GetIdleYieldTimeoutMs();
 
     CHIP_ERROR ProcessInit();
     CHIP_ERROR ProcessDeinit();

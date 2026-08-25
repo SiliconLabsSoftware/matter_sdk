@@ -57,8 +57,13 @@ void OnOperationDone(CHIP_ERROR result, void * /* context */)
     gOpDone   = true;
 }
 
-// Must yield: demo runs on the CHIP task (osPriorityHigh), which is above the
-// mqtt_client service thread (osPriorityAboveNormal). A tight spin deadlocks.
+void OnMqttMessage(const char * topic, ByteSpan payload, void * /* context */)
+{
+    ChipLogProgress(DeviceLayer, "MQTT demo message on %s: %.*s", topic != nullptr ? topic : "(null)",
+                    static_cast<int>(payload.size()), reinterpret_cast<const char *>(payload.data()));
+}
+
+// Must yield: demo may run above mqtt_client priority; osDelay lets the service thread run.
 CHIP_ERROR RunOperation(CHIP_ERROR queueResult)
 {
     if (queueResult != CHIP_NO_ERROR)
@@ -111,6 +116,8 @@ sl_status_t mqtt_client_demo_start(void)
         return SL_STATUS_FAIL;
     }
 
+    gMqttsClient.SetSubscriptionCallback(OnMqttMessage, nullptr);
+
     ChipLogProgress(DeviceLayer, "MQTT demo starting");
 
     gOpDone = false;
@@ -146,6 +153,6 @@ sl_status_t mqtt_client_demo_start(void)
         return SL_STATUS_FAIL;
     }
 
-    ChipLogProgress(DeviceLayer, "MQTT demo completed");
+    ChipLogProgress(DeviceLayer, "MQTT demo completed (auto-yield keeps session alive)");
     return SL_STATUS_OK;
 }

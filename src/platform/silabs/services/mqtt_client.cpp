@@ -150,7 +150,15 @@ void MqttClient::ServiceThread(void * arg)
     auto eventFlags = static_cast<osEventFlagsId_t>(self->mEventFlags);
     while (true)
     {
-        uint32_t events = osEventFlagsWait(eventFlags, kEventOperation | kEventStop, osFlagsWaitAny, osWaitForever);
+        const uint32_t waitMs = (self->mConnected && !self->mBusy) ? self->GetIdleYieldTimeoutMs() : osWaitForever;
+        uint32_t events       = osEventFlagsWait(eventFlags, kEventOperation | kEventStop, osFlagsWaitAny, waitMs);
+
+        if (events == osFlagsErrorTimeout)
+        {
+            self->IdleYield();
+            continue;
+        }
+
         if (events & osFlagsError)
         {
             ChipLogError(DeviceLayer, "MQTT service event wait failed: 0x%lx", static_cast<unsigned long>(events));
@@ -170,6 +178,39 @@ void MqttClient::ServiceThread(void * arg)
     self->mEventFlags = nullptr;
     self->mThreadId   = nullptr;
     osThreadTerminate(osThreadGetId());
+}
+
+uint32_t MqttClient::GetIdleYieldTimeoutMs()
+{
+    if (mConfig.idleYieldTimeoutMs == 0)
+    {
+        ChipLogError(DeviceLayer, "MQTT idleYieldTimeoutMs is 0 (ignored); using default 1000 ms");
+        mConfig.idleYieldTimeoutMs = 1000;
+    }
+
+    const uint32_t configuredMs = mConfig.idleYieldTimeoutMs;
+
+    // MQTTYield timeout_ms must be <= keepAliveInterval * 1000 so PINGREQ can fire in time.
+    if (mConfig.keepAliveIntervalSec == 0)
+    {
+        return configuredMs;
+    }
+
+    const uint32_t keepAliveMs = static_cast<uint32_t>(mConfig.keepAliveIntervalSec) * 1000u;
+    return (configuredMs < keepAliveMs) ? configuredMs : keepAliveMs;
+}
+
+void MqttClient::IdleYield()
+{
+    VerifyOrReturn(mConnected && !mBusy);
+
+    const uint32_t yieldMs = GetIdleYieldTimeoutMs();
+    const int status       = MQTTYield(&mClient, static_cast<int>(yieldMs));
+    if (status != SUCCESS)
+    {
+        ChipLogError(DeviceLayer, "MQTT idle Yield failed: %d (session marked disconnected)", status);
+        mConnected = false;
+    }
 }
 
 CHIP_ERROR MqttClient::Start()
@@ -483,6 +524,7 @@ CHIP_ERROR MqttClient::ProcessYield()
     if (status != SUCCESS)
     {
         ChipLogError(DeviceLayer, "MQTT Yield failed: %d", status);
+        mConnected = false;
         return MapPahoStatus(status);
     }
     return CHIP_NO_ERROR;
