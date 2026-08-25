@@ -418,10 +418,9 @@ sl_status_t SetWifiConfigurations()
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
         profile.config.channel.channel                   = wfx_rsi.ap_chan;
-#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-        // for neutral-less switch, scan all the channels again to reduce the deauth issues
+#if !(defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI)
         profile.config.channel_bitmap.channel_bitmap_2_4 = (1UL << (wfx_rsi.ap_chan - 1));
-#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+#endif // !(defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI)
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWiFiBSSIDLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWiFiBSSIDLength);
