@@ -165,7 +165,6 @@ private:
     void NotifySuccessfulConnection();
 
     bool mHasNotifiedWifiConnectivity = false;
-    bool mUseQuickJoin                = false;
     static WifiInterfaceImpl mInstance;
 };
 
