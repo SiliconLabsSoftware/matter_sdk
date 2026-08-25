@@ -73,7 +73,7 @@ void SLApplyWiFiDeviceConfiguration(sl_wifi_device_configuration_t * configurati
 #endif // !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    configuration->boot_config.ext_custom_feature_bit_map |= SL_SI91X_EXT_FEAT_DISABLE_11AX_SUPPORT;
+    configuration->boot_config.feature_bit_map |= SL_SI91X_FEAT_DISABLE_11AX_SUPPORT;
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 }
 

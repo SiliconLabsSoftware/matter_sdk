@@ -331,6 +331,10 @@ sl_status_t InitiateScan()
 
     osMutexAcquire(sScanInProgressSemaphore, osWaitForever);
 
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    // wait for 1 second to ensure the device goes to deep sleep before starting the scan
+    osDelay(1000);
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // This is an odd success code?
     status = sl_wifi_start_scan(SL_WIFI_CLIENT_2_4GHZ_INTERFACE, &ssid, &wifi_scan_configuration);
     if (status == SL_STATUS_IN_PROGRESS)
@@ -420,9 +424,7 @@ sl_status_t SetWifiConfigurations()
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
         profile.config.channel.channel                   = wfx_rsi.ap_chan;
-#if !(defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI)
         profile.config.channel_bitmap.channel_bitmap_2_4 = (1UL << (wfx_rsi.ap_chan - 1));
-#endif // !(defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI)
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWiFiBSSIDLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWiFiBSSIDLength);
@@ -449,7 +451,7 @@ void SetApplicationProfile()
 {
     sl_status_t status =
         sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
-    VerifyOrReturn(status == SL_STATUS_OK, ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status)));+
+    VerifyOrReturn(status == SL_STATUS_OK, ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status)));
 }
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
@@ -660,6 +662,7 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // resetting the power save configuration since after connect, the power save configuration is set to high performance by default
     mCurrentPowerSaveConfiguration = PowerSaveInterface::PowerSaveConfiguration::kHighPerformance;
+    // wait for 200ms to ensure there is a delay between scan and join
     osDelay(200);
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
