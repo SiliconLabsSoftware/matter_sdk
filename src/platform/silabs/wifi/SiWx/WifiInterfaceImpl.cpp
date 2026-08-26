@@ -137,8 +137,8 @@ constexpr uint8_t kWfxQueueSize = 10;
 constexpr uint16_t kWifiScanTimeoutTicks = 10000;
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-// Customer requirement for neutral-less switch power should not exceed 30 mA for any 250ms window
-// between scan/join operations to allow power-save state to settle.
+// Settle delay before scan and between scan/join so the NWP can return to power save.
+// Neutral-less switch products requirement is   to stay within 30 mA over any 250 ms window.
 constexpr uint32_t kNeutralLessSwitchSettleDelayMs = 250;
 // Time after the last received packet before the NWP enters sleep (ASSOCIATED_POWER_SAVE_LOW_LATENCY).
 // Shorter than the SDK default (50 ms) to meet the neutral-less switch power budget.
