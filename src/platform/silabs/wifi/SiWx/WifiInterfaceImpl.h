@@ -55,6 +55,7 @@ public:
     CHIP_ERROR StartWifiTask() override;
     void ConfigureStationMode() override;
     bool IsStationConnected() override;
+    bool IsStationConnecting() override;
     bool IsStationModeEnabled() override;
     bool IsStationReady() override;
     void TriggerDisconnection() override;

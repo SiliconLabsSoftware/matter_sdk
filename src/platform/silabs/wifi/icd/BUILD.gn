@@ -14,6 +14,7 @@
 # TODO: Once the WifiInterface refactor is done and becomes a class, we will inject an interface instead of having them in same source_set
 
 import("//build_overrides/chip.gni")
+import("${chip_root}/src/app/icd/icd.gni")
 
 source_set("power-save-interface") {
   sources = [ "${chip_root}/src/platform/silabs/wifi/icd/PowerSaveInterface.h" ]
@@ -22,6 +23,10 @@ source_set("power-save-interface") {
 }
 
 source_set("wifi-sleep-manager") {
+  if (chip_enable_icd_lit) {
+    defines = [ "CHIP_CONFIG_ENABLE_ICD_LIT=1" ]
+  }
+
   sources = [
     "${chip_root}/src/platform/silabs/wifi/icd/WifiSleepManager.cpp",
     "${chip_root}/src/platform/silabs/wifi/icd/WifiSleepManager.h",

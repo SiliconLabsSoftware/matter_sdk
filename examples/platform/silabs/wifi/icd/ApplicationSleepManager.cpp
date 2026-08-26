@@ -92,11 +92,6 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
         ChipLogProgress(AppServer, "Commissioning Window is Open - Cannot go to LI based sleep");
         canGoToLIBasedSleep = false;
     }
-    else if (mIsInActiveMode)
-    {
-        ChipLogProgress(AppServer, "Device is in active mode - Cannot go to LI based sleep");
-        canGoToLIBasedSleep = false;
-    }
     else
     {
         for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)
@@ -133,13 +128,11 @@ bool ApplicationSleepManager::ProcessVendorIdExceptions(chip::VendorId vendorId)
 
 void ApplicationSleepManager::OnEnterActiveMode()
 {
-    mIsInActiveMode = true;
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kActiveMode);
 }
 
 void ApplicationSleepManager::OnEnterIdleMode()
 {
-    mIsInActiveMode = false;
     TEMPORARY_RETURN_IGNORED mWifiSleepManager->VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode);
 }
 

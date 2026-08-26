@@ -147,14 +147,13 @@ public:
      *
      *        State machine logic:
      *        1. If there are high performance requests, configure high performance mode.
-<<<<<<< HEAD
      *        2. If the device is unprovisioned, configure deep sleep.
      *        3. Otherwise, configure DTIM based sleep.
-=======
-     *        2. If commissioning is in progress, configure DTIM based sleep.
-     *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
-     *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
->>>>>>> origin/release_2.10-1.6.1
+     *        4. If the application callback allows LI based sleep and the event is kIdleMode, configure LIT
+     *           disconnect sleep once per idle period (CHIP_CONFIG_ENABLE_ICD_LIT only).
+     *        5. If the station is joining an AP, keep the current power configuration. The transition is re-run on the
+     *           connectivity change event once the station is connected.
+     *        6. If the application callback allows LI based sleep, configure LI based sleep; otherwise, DTIM based sleep.
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
      *
@@ -216,12 +215,13 @@ private:
 
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     /**
-     * @brief LIT path: intentional STA disconnect only (see PowerSaveInterface::ConfigureLITDisconnect).
+     * @brief LIT path: intentional STA disconnect on kIdleMode only (see PowerSaveInterface::ConfigureLITDisconnect).
+     *        No-op if LIT disconnect sleep is already configured for the current idle period.
      */
     CHIP_ERROR ConfigureLITDisconnect();
 
     CHIP_ERROR ConfigureLITConnect();
-    #endif // CHIP_CONFIG_ENABLE_ICD_LIT
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
 
     /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
@@ -239,7 +239,12 @@ private:
     PowerSaveInterface * mPowerSaveInterface = nullptr;
     WifiStateProvider * mWifiStateProvider   = nullptr;
     uint8_t mHighPerformanceRequestCounter   = 0;
-    bool mActiveMode                         = false;
+    bool mIdleMode                           = false;
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    // Set after ConfigureLITDisconnect until the device enters active mode again.
+    bool mIsInLITDisconnectSleep = false;
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
 
     ApplicationCallback * mCallback = nullptr;
 };

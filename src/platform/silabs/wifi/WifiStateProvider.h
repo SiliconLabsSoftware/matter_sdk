@@ -40,6 +40,14 @@ public:
     virtual bool IsStationConnected() = 0;
 
     /**
+     * @brief Returns whether the Wi-Fi station is joining an access point
+     *
+     * @return true, if a join operation is in progress
+     *         false, otherwise
+     */
+    virtual bool IsStationConnecting() = 0;
+
+    /**
      * @brief Returns the state of the Wi-Fi Station configuration of the Wi-Fi device
      *
      * @return true, if the Wi-Fi Station mode is enabled

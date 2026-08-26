@@ -82,13 +82,13 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
-        // Preserve mActiveMode; HP cycles and connectivity use these events.
+        // Preserve mIdleMode; HP cycles and connectivity use these events.
         break;
     case PowerEvent::kActiveMode:
-        mActiveMode = true;
+        mIdleMode = false;
         break;
     case PowerEvent::kIdleMode:
-        mActiveMode = false;
+        mIdleMode = true;
         break;
 
     default:
@@ -124,16 +124,23 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
         return ConfigureDeepSleep();
     }
 
-    if (mCallback && mCallback->CanGoToLIBasedSleep())
+    // Do not change the power profile while the station is joining an AP. The connectivity change
+    // event re-runs this transition once the join completes.
+    if (mWifiStateProvider->IsStationConnecting())
+    {
+        return CHIP_NO_ERROR;
+    }
+
+    if ((mCallback != nullptr) && mCallback->CanGoToLIBasedSleep())
     {
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-        if (!mActiveMode)
+        if (event == PowerEvent::kIdleMode)
         {
             return ConfigureLITDisconnect();
         }
-#else  // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-        return ConfigureLIBasedSleep();
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
+        return ConfigureLIBasedSleep();
     }
 
     return ConfigureDTIMBasedSleep();
@@ -185,6 +192,8 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
 {
+    VerifyOrReturnError(!mIsInLITDisconnectSleep, CHIP_NO_ERROR);
+
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
     ReturnLogErrorOnFailure(
@@ -192,11 +201,14 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
                                                 chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
 
     mPowerSaveInterface->StartLitPrecheckInReconnectTimer();
+    mIsInLITDisconnectSleep = true;
+
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
 {
+    mIsInLITDisconnectSleep = false;
     ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
     return CHIP_NO_ERROR;
 }

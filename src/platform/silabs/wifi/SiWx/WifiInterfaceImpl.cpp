@@ -1097,6 +1097,11 @@ bool WifiInterfaceImpl::IsStationConnected()
     return wfx_rsi.dev_state.Has(WifiState::kStationConnected);
 }
 
+bool WifiInterfaceImpl::IsStationConnecting()
+{
+    return wfx_rsi.dev_state.Has(WifiState::kStationConnecting);
+}
+
 bool WifiInterfaceImpl::IsStationReady()
 {
     return wfx_rsi.dev_state.Has(WifiState::kStationInit);
