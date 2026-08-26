@@ -160,12 +160,12 @@ void UpdateFanControlLED()
     }
 }
 
-#if SL_MATTER_DISPLAY_ENABLED
+#ifdef DISPLAY_ENABLED
 void UpdateFanControlLCD()
 {
     BaseApplication::GetLCD().WriteDemoUI(false);
 }
-#endif // SL_MATTER_DISPLAY_ENABLED
+#endif // DISPLAY_ENABLED
 
 void PostFanUiUpdateEvent()
 {
@@ -197,7 +197,7 @@ CHIP_ERROR AppTask::AppInit()
     }
 
     // Update the LCD with the Stored value. Show QR Code if not provisioned.
-#if SL_MATTER_DISPLAY_ENABLED
+#ifdef DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
 #if SL_MATTER_QR_CODE_ENABLED
     if (!BaseApplication::GetProvisionStatus())
@@ -205,7 +205,7 @@ CHIP_ERROR AppTask::AppInit()
         GetLCD().ShowQRCode(true);
     }
 #endif // SL_MATTER_QR_CODE_ENABLED
-#endif // SL_MATTER_DISPLAY_ENABLED
+#endif // DISPLAY_ENABLED
 
     return CHIP_NO_ERROR;
 }
@@ -548,7 +548,7 @@ void AppTask::FanUiUpdateEventHandler(AppEvent * aEvent)
     }
 
     UpdateFanControlLED();
-#if SL_MATTER_DISPLAY_ENABLED
+#ifdef DISPLAY_ENABLED
     UpdateFanControlLCD();
-#endif // SL_MATTER_DISPLAY_ENABLED
+#endif // DISPLAY_ENABLED
 }
