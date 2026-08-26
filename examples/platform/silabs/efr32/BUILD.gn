@@ -124,6 +124,10 @@ config("efr32-common-config") {
     defines += [ "SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL=0" ]
   }
 
+  if (!sl_use_base_application) {
+    defines += [ "SL_MATTER_CUSTOM_APPTASK=1" ]
+  }
+
   ldflags = [ "-fno-lto" ]
   if (!is_clang) {
     ldflags += [ "-Wl,--no-warn-rwx-segment" ]
