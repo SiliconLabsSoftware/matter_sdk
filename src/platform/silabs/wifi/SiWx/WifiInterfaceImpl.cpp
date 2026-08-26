@@ -136,6 +136,12 @@ constexpr uint8_t kWfxQueueSize = 10;
 // TODO: Figure out why we actually need this, we are already handling failure and retries somewhere else.
 constexpr uint16_t kWifiScanTimeoutTicks = 10000;
 
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+// Customer requirement for neutral-less switch power should not exceed 30 mA for any 250ms window
+// between scan/join operations to allow power-save state to settle.
+constexpr uint32_t kNeutralLessSwitchSettleDelayMs = 250;
+#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+
 // Convert sl_wifi_security_t to Matter WiFiSecurityBitmap flags
 static chip::BitFlags<WiFiSecurityBitmap> ConvertSlWifiSecurityToBitmap(const sl_wifi_security_t security)
 {
@@ -332,8 +338,8 @@ sl_status_t InitiateScan()
     osMutexAcquire(sScanInProgressSemaphore, osWaitForever);
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    // wait for 1 second to ensure the device goes to deep sleep before starting the scan
-    osDelay(1000);
+    // Allow power-save state to settle before starting the scan.
+    osDelay(kNeutralLessSwitchSettleDelayMs);
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // This is an odd success code?
     status = sl_wifi_start_scan(SL_WIFI_CLIENT_2_4GHZ_INTERFACE, &ssid, &wifi_scan_configuration);
@@ -447,7 +453,7 @@ sl_status_t SetWifiConfigurations()
  *
  * Failures are logged and do not abort the caller.
  */
-void SetApplicationProfile()
+void ApplyNeutralLessSwitchProfile()
 {
     sl_status_t status =
         sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
@@ -568,7 +574,7 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    SetApplicationProfile();
+    ApplyNeutralLessSwitchProfile();
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     return CHIP_NO_ERROR;
@@ -662,8 +668,8 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // resetting the power save configuration since after connect, the power save configuration is set to high performance by default
     mCurrentPowerSaveConfiguration = PowerSaveInterface::PowerSaveConfiguration::kHighPerformance;
-    // wait for 200ms to ensure there is a delay between scan and join
-    osDelay(200);
+    // Ensure a delay between scan and join.
+    osDelay(kNeutralLessSwitchSettleDelayMs);
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     status = sl_net_up(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
@@ -693,7 +699,7 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Re-apply after join failure.
-    SetApplicationProfile();
+    ApplyNeutralLessSwitchProfile();
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
@@ -710,7 +716,7 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Re-apply the application profile after a join failure.
-    SetApplicationProfile();
+    ApplyNeutralLessSwitchProfile();
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     if (wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
     {
