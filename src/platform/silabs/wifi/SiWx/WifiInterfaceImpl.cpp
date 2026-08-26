@@ -140,6 +140,9 @@ constexpr uint16_t kWifiScanTimeoutTicks = 10000;
 // Customer requirement for neutral-less switch power should not exceed 30 mA for any 250ms window
 // between scan/join operations to allow power-save state to settle.
 constexpr uint32_t kNeutralLessSwitchSettleDelayMs = 250;
+// Time after the last received packet before the NWP enters sleep (ASSOCIATED_POWER_SAVE_LOW_LATENCY).
+// Shorter than the SDK default (50 ms) to meet the neutral-less switch power budget.
+constexpr uint8_t kWifiMonitorIntervalMs = 30;
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
 // Convert sl_wifi_security_t to Matter WiFiSecurityBitmap flags
@@ -947,7 +950,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
                                                       .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
                                                       .listen_interval   = listenInterval };
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    wifi_profile.monitor_interval = 30;
+    wifi_profile.monitor_interval = kWifiMonitorIntervalMs;
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
