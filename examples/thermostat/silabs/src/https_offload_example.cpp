@@ -40,6 +40,14 @@
 
 #include "cmsis_os2.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "sl_net_dns.h"
+#ifdef __cplusplus
+}
+#endif
+
 #include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -99,9 +107,30 @@ CHIP_ERROR RunQueuedOperation(CHIP_ERROR queueResult, OperationWaitContext & wai
     return WaitForCallback(waitCtx);
 }
 
+// DNS demo only: resolve google.com and print the IPv4 address. Does not affect HTTPS.
+void ResolveAndPrintGoogleIp()
+{
+    constexpr char kDnsHostname[] = "google.com";
+    sl_ip_address_t resolved      = {};
+
+    const sl_status_t status =
+        sl_net_dns_resolve_hostname_v2(kDnsHostname, /*timeout_sec*/ 5, /*retry_count*/ 2, SL_NET_DNS_TYPE_IPV4, &resolved);
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(DeviceLayer, "DNS resolve %s failed: 0x%lx", kDnsHostname, static_cast<unsigned long>(status));
+        return;
+    }
+
+    ChipLogProgress(DeviceLayer, "DNS %s -> %u.%u.%u.%u", kDnsHostname, static_cast<unsigned>(resolved.ip.v4.bytes[0]),
+                    static_cast<unsigned>(resolved.ip.v4.bytes[1]), static_cast<unsigned>(resolved.ip.v4.bytes[2]),
+                    static_cast<unsigned>(resolved.ip.v4.bytes[3]));
+}
+
 CHIP_ERROR RunHttpsOffloadExample()
 {
     ChipLogProgress(DeviceLayer, "HTTPS starting on offload stack");
+
+    ResolveAndPrintGoogleIp();
 
     OperationWaitContext waitCtx = { .lock = gHttpsTaskLock, .result = CHIP_NO_ERROR };
 

@@ -291,7 +291,7 @@ CHIP_ERROR HttpClient::ProcessInit()
     clientConfiguration.ip_version                     = SL_IPV4;
     clientConfiguration.http_version                   = SL_HTTP_V_1_1;
     clientConfiguration.https_enable                   = mConfig.httpsEnable;
-    clientConfiguration.tls_version                    = SL_TLS_V_1_2;
+    clientConfiguration.tls_version                    = SL_TLS_V_1_3;
     clientConfiguration.certificate_index              = mConfig.certificateIndex;
 
     sl_status_t status = sl_http_client_init(&clientConfiguration, &mClientHandle);
