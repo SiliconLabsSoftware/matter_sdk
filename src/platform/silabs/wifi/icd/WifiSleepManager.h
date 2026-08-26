@@ -91,9 +91,6 @@ public:
      */
     CHIP_ERROR Init(PowerSaveInterface * platformInterface, WifiStateProvider * wifiStateProvider);
 
-    void HandleCommissioningSessionStarted();
-    void HandleCommissioningSessionStopped();
-
     /**
      * @brief Set the Application Callback
      *

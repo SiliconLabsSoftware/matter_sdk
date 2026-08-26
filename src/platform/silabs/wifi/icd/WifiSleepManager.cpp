@@ -43,20 +43,6 @@ CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiSt
     return VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent);
 }
 
-void WifiSleepManager::HandleCommissioningSessionStarted()
-{
-    VerifyOrReturn(!mIsCommissioningInProgress);
-    mIsCommissioningInProgress = true;
-    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
-}
-
-void WifiSleepManager::HandleCommissioningSessionStopped()
-{
-    VerifyOrReturn(mIsCommissioningInProgress);
-    mIsCommissioningInProgress = false;
-    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-}
-
 CHIP_ERROR WifiSleepManager::RequestHighPerformance(bool triggerTransition)
 {
     VerifyOrReturnError(mHighPerformanceRequestCounter < std::numeric_limits<uint8_t>::max(), CHIP_ERROR_INTERNAL,
