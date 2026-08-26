@@ -43,20 +43,6 @@ CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiSt
     return VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent);
 }
 
-void WifiSleepManager::HandleCommissioningSessionStarted()
-{
-    VerifyOrReturn(!mIsCommissioningInProgress);
-    mIsCommissioningInProgress = true;
-    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
-}
-
-void WifiSleepManager::HandleCommissioningSessionStopped()
-{
-    VerifyOrReturn(mIsCommissioningInProgress);
-    mIsCommissioningInProgress = false;
-    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-}
-
 CHIP_ERROR WifiSleepManager::RequestHighPerformance(bool triggerTransition)
 {
     VerifyOrReturnError(mHighPerformanceRequestCounter < std::numeric_limits<uint8_t>::max(), CHIP_ERROR_INTERNAL,
@@ -92,9 +78,6 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     {
     case PowerEvent::kCommissioningComplete:
         ChipLogProgress(AppServer, "WifiSleepManager: Handling Commissioning Complete Event");
-
-        // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-        HandleCommissioningSessionStopped();
         break;
 
     case PowerEvent::kConnectivityChange:
@@ -136,13 +119,6 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
         return ConfigureHighPerformance();
     }
 
-    if (mIsCommissioningInProgress)
-    {
-        // During commissioning, don't let the device go to sleep
-        // This is needed to interrupt the sleep and retry joining the network
-        return CHIP_NO_ERROR;
-    }
-
     if (!mWifiStateProvider->IsWifiProvisioned())
     {
         return ConfigureDeepSleep();
@@ -167,6 +143,7 @@ CHIP_ERROR WifiSleepManager::ConfigureDTIMBasedSleep()
 {
     VerifyOrDieWithMsg(mPowerSaveInterface != nullptr, DeviceLayer, "PowerSaveInterface is not initialized");
 
+    // Filter disabled: Matter mDNS (ff02::fb) remains allowlisted.
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(false));
 
     // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
