@@ -454,13 +454,15 @@ sl_status_t SetWifiConfigurations()
 /**
  * @brief Applies the Matter neutral-less switch application profile.
  *
- * Failures are logged and do not abort the caller.
+ * @return SL_STATUS_OK on success, or the sl_status_t error code from sl_net_set_application_profile on failure.
  */
-void ApplyNeutralLessSwitchProfile()
+sl_status_t ApplyNeutralLessSwitchProfile()
 {
     sl_status_t status =
         sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
-    VerifyOrReturn(status == SL_STATUS_OK, ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status)));
+    VerifyOrReturnError(status == SL_STATUS_OK, status,
+                        ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status)));
+    return status;
 }
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
@@ -577,7 +579,8 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    ApplyNeutralLessSwitchProfile();
+    status = ApplyNeutralLessSwitchProfile();
+    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     return CHIP_NO_ERROR;
@@ -700,7 +703,7 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Re-apply after join failure.
-    ApplyNeutralLessSwitchProfile();
+    TEMPORARY_RETURN_IGNORED ApplyNeutralLessSwitchProfile();
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
@@ -717,7 +720,7 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Re-apply the application profile after a join failure.
-    ApplyNeutralLessSwitchProfile();
+    TEMPORARY_RETURN_IGNORED ApplyNeutralLessSwitchProfile();
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     if (wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
     {
