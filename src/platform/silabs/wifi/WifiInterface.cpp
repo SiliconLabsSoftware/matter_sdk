@@ -159,8 +159,16 @@ void WifiInterface::ScheduleConnectionAttempt()
             ChipLogError(DeviceLayer, "ConnectToAccessPoint() failed.");
         }
 
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        //  Remove High performance request before giving up due to a timer start error to save battery life
+        WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         return;
     }
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
     ChipLogProgress(DeviceLayer, "ScheduleConnectionAttempt : Next attempt after %d Seconds", retryInterval);
     retryInterval += retryInterval;

@@ -329,6 +329,7 @@ sl_status_t InitiateScan()
 
     sl_wifi_set_scan_callback(ScanCallback, NULL);
 
+    osDelay(1000);
     osMutexAcquire(sScanInProgressSemaphore, osWaitForever);
 
     // This is an odd success code?
@@ -342,6 +343,7 @@ sl_status_t InitiateScan()
     osMutexRelease(sScanInProgressSemaphore);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogProgress(DeviceLayer, "sl_wifi_start_scan failed: 0x%lx", status));
 
+    ChipLogProgress(DeviceLayer, "Scan completed");
     return status;
 }
 
@@ -420,7 +422,7 @@ sl_status_t SetWifiConfigurations()
         // AP channel is known - This indicates that the network scan was done for a specific SSID.
         // Providing the channel and BSSID in the profile avoids scanning all channels again.
         profile.config.channel.channel                   = wfx_rsi.ap_chan;
-        profile.config.channel_bitmap.channel_bitmap_2_4 = (1UL << (wfx_rsi.ap_chan - 1));
+        // profile.config.channel_bitmap.channel_bitmap_2_4 = (1UL << (wfx_rsi.ap_chan - 1));
 
         chip::MutableByteSpan bssidSpan(profile.config.bssid.octet, kWiFiBSSIDLength);
         chip::ByteSpan inBssid(wfx_rsi.ap_bssid.data(), kWiFiBSSIDLength);
@@ -548,6 +550,21 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     VerifyOrReturnError(psa_crypto_init() == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "psa_crypto_init failed: %lx", static_cast<uint32_t>(status)));
 #endif // SL_MBEDTLS_USE_TINYCRYPT
+
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    status = sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
+    if (status != SL_STATUS_OK)
+    {
+        // Do not return from this FreeRTOS task — that triggers prvTaskExitError
+        // (FREERTOS ASSERT uxCriticalNesting == ~0UL).
+        ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status));
+    }
+    else
+    {
+        ChipLogProgress(DeviceLayer, "Application profile applied");
+    }
+#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+
     return CHIP_NO_ERROR;
 }
 
@@ -576,9 +593,9 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
     case WifiPlatformEvent::kStationStartScan:
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kStationStartScan");
         // To avoid IOP issues, enable high-performance mode before scan/join. TODO: Remove once IOP fix is in Wi-Fi SDK.
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+// #if CHIP_CONFIG_ENABLE_ICD_SERVER
+//         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
+// #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         InitiateScan();
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
         // Remove High performance request that might have been added during the connect/retry process
@@ -594,6 +611,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
 
     case WifiPlatformEvent::kConnectionComplete:
         ChipLogDetail(DeviceLayer, "WifiPlatformEvent::kConnectionComplete");
+        osDelay(1000);
         NotifySuccessfulConnection();
 
     default:
@@ -644,6 +662,9 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     status = sl_wifi_set_join_callback(JoinCallback, nullptr);
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
+    mCurrentPowerSaveConfiguration = PowerSaveInterface::PowerSaveConfiguration::kHighPerformance;
+    // resetting the power save configuration since after connect, the power save configuration is set to high performance
+    osDelay(200);
     status = sl_net_up(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
 
     if (!(wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting)))
@@ -669,6 +690,20 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     // failure only happens when the firmware returns an error
     ChipLogError(DeviceLayer, "sl_net_up failed: 0x%lx", static_cast<uint32_t>(status));
 
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    status = sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
+    if (status != SL_STATUS_OK)
+    {
+        // Do not return from this FreeRTOS task — that triggers prvTaskExitError
+        // (FREERTOS ASSERT uxCriticalNesting == ~0UL).
+        ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status));
+    }
+    else
+    {
+        ChipLogProgress(DeviceLayer, "Application profile applied");
+    }
+#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     ScheduleConnectionAttempt();
 
@@ -680,6 +715,21 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
     sl_status_t status = SL_STATUS_OK;
     // If the failed event is encountered when sl_net_up is in-progress,
     // we ignore it and wait for the sl_net_up to complete.
+
+    // set application profile again after the join fails
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    status = sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
+    if (status != SL_STATUS_OK)
+    {
+        // Do not return from this FreeRTOS task — that triggers prvTaskExitError
+        // (FREERTOS ASSERT uxCriticalNesting == ~0UL).
+        ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status));
+    }
+    else
+    {
+        ChipLogProgress(DeviceLayer, "Application profile applied");
+    }
+#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     if (wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
     {
         wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
@@ -897,8 +947,10 @@ void WifiInterfaceImpl::StartLitPrecheckInReconnectTimer()
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
     // Power save configuration is already set, nothing to do
+    ChipLogProgress(DeviceLayer, "ConfigurePowerSave: Configuration: %d", configuration);
     VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
 
+    ChipLogProgress(DeviceLayer, "ConfigurePowerSave: Setting power save configuration");
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
     int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
     VerifyOrReturnError(error == RSI_SUCCESS, CHIP_ERROR_INTERNAL,
@@ -907,7 +959,8 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
 
     sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
                                                       .dtim_aligned_type = SL_SI91X_ALIGN_WITH_BEACON,
-                                                      .listen_interval   = listenInterval };
+                                                      .listen_interval   = listenInterval,
+                                                      .monitor_interval  = 30 };
 
     sl_status_t status = sl_wifi_set_performance_profile_v2(&wifi_profile);
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
