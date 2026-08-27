@@ -669,8 +669,6 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     VerifyOrReturnError(status == SL_STATUS_OK, status);
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    // resetting the power save configuration since after connect, the power save configuration is set to high performance by default
-    mCurrentPowerSaveConfiguration = PowerSaveInterface::PowerSaveConfiguration::kHighPerformance;
     // Ensure a delay between scan and join.
     osDelay(kNeutralLessSwitchSettleDelayMs);
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
