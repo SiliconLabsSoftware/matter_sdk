@@ -34,7 +34,8 @@
 #include <inet/InetConfig.h>
 #if SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <inet/UDPEndPointImplLwIP.h>
-#include <platform/CHIPDeviceLayer.h>
+// TODO: Remove nogncheck once we have a proper way to include this file.
+#include <platform/CHIPDeviceLayer.h> // nogncheck
 #endif // SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPMemString.h>
