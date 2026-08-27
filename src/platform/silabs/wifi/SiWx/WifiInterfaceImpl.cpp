@@ -825,7 +825,7 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 namespace {
 osTimerId_t sLitPrecheckInReconnectTimer       = nullptr;
-constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
+constexpr uint32_t kLitPrecheckInMarginSeconds = 15;
 
 void OnLitPrecheckInReconnectOsTimer(void *)
 {
