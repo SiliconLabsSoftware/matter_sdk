@@ -71,6 +71,11 @@ void SLApplyWiFiDeviceConfiguration(sl_wifi_device_configuration_t * configurati
 #if !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
     configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_TCP_IP_FEAT_BYPASS;
 #endif // !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
+
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    // Neutral Less Switch doesn't work with 11ax, only 11n is supported
+    configuration->boot_config.feature_bit_map |= SL_SI91X_FEAT_DISABLE_11AX_SUPPORT;
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 }
 
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
