@@ -38,5 +38,7 @@ public:
 private:
     friend class AppTaskImpl<CustomerAppTask>;
 
+    CHIP_ERROR AppInitImpl();
+
     static CustomerAppTask sAppTask;
 };

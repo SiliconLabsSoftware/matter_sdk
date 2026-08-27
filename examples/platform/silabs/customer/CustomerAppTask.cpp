@@ -30,9 +30,62 @@
 
 #include "CustomerAppTask.h"
 
+#include <lib/support/CodeUtils.h>
+#include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/wifi/WifiInterface.h>
+
+using namespace chip;
+using namespace chip::DeviceLayer;
+using namespace chip::DeviceLayer::Silabs;
+
 CustomerAppTask CustomerAppTask::sAppTask;
+
+static void sWifiEventHandler(const ChipDeviceEvent * aEvent, intptr_t)
+{
+    if (aEvent->Type != DeviceEventType::kWFXSystemEvent)
+    {
+        return;
+    }
+
+    switch (aEvent->Platform.event.WFXSystemEvent.data.genericMsgEvent.header.id)
+    {
+    case to_underlying(WifiInterface::WifiEvent::kStartUp):
+        ChipLogProgress(DeviceLayer, "Wi-Fi startup");
+        break;
+
+    case to_underlying(WifiInterface::WifiEvent::kConnect):
+        ChipLogProgress(DeviceLayer, "Wi-Fi connected to AP");
+        break;
+
+    case to_underlying(WifiInterface::WifiEvent::kDisconnect):
+        ChipLogProgress(DeviceLayer, "Wi-Fi disconnected from AP");
+        break;
+
+    case to_underlying(WifiInterface::WifiEvent::kGotIPv4):
+        ChipLogProgress(DeviceLayer, "Wi-Fi got IPv4 address");
+        break;
+
+    case to_underlying(WifiInterface::WifiEvent::kLostIP):
+        ChipLogProgress(DeviceLayer, "Wi-Fi lost IP address");
+        break;
+
+    default:
+        break;
+    }
+}
 
 AppTask & AppTask::GetAppTask()
 {
     return CustomerAppTask::GetAppTask();
+}
+
+CHIP_ERROR CustomerAppTask::AppInitImpl()
+{
+    ReturnErrorOnFailure(AppTask::AppInit());
+
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
+    ReturnErrorOnFailure(PlatformMgr().AddEventHandler(sWifiEventHandler, 0));
+#endif
+
+    return CHIP_NO_ERROR;
 }
