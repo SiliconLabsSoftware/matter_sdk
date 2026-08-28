@@ -32,9 +32,11 @@
 #include <cmsis_os2.h>
 #include <inet/IPAddress.h>
 #include <inet/InetConfig.h>
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <inet/UDPEndPointImplLwIP.h>
-#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+// TODO: Remove nogncheck once we have a proper way to include this file.
+#include <platform/CHIPDeviceLayer.h> // nogncheck
+#endif // SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -643,7 +645,7 @@ void WifiInterfaceImpl::NotifySuccessfulConnection(void)
     NotifyIPv6Change(true);
     NotifyConnectivity();
 
-#if INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#if SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
     {
         CHIP_ERROR flushErr =
             chip::DeviceLayer::SystemLayer().ScheduleLambda([]() { chip::Inet::UDPEndPointImplLwIP::FlushDeferredSendQueue(); });
@@ -652,7 +654,7 @@ void WifiInterfaceImpl::NotifySuccessfulConnection(void)
             ChipLogError(DeviceLayer, "ScheduleLambda(FlushDeferredSendQueue) failed: %" CHIP_ERROR_FORMAT, flushErr.Format());
         }
     }
-#endif // INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif // SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 }
 
 sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
@@ -866,7 +868,7 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 namespace {
 osTimerId_t sLitPrecheckInReconnectTimer       = nullptr;
-constexpr uint32_t kLitPrecheckInMarginSeconds = 10;
+constexpr uint32_t kLitPrecheckInMarginSeconds = 15;
 
 void OnLitPrecheckInReconnectOsTimer(void *)
 {
