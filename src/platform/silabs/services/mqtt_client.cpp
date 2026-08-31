@@ -154,6 +154,10 @@ void MqttClient::ServiceThread(void * arg)
         // Otherwise, wait forever for an event.
         // This is to publish PINGREQ messages in the background to keep the connection alive.
         // idleYieldTimeoutMs cannot be greater than keepAliveIntervalSec * 1000 so PINGREQ can fire in time.
+
+        // TODO: revist this logic, since most of the calculations are done in the MQTTYield function.
+        // so just invoking MQTTYield function here with (keepAliveIntervalSec *1000u - idleYieldTimeoutMs) value.
+        // should be enough to keep the connection alive.
         const uint32_t waitMs = (self->mConnected && !self->mBusy) ? self->GetIdleYieldTimeoutMs() : osWaitForever;
         uint32_t events       = osEventFlagsWait(eventFlags, kEventOperation | kEventStop, osFlagsWaitAny, waitMs);
 
