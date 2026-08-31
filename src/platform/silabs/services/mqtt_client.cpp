@@ -216,7 +216,11 @@ void MqttClient::IdleYield()
     if (status != SUCCESS)
     {
         ChipLogError(DeviceLayer, "MQTT idle Yield failed: %d (session marked disconnected)", status);
-        ProcessDisconnect();
+        CHIP_ERROR err = ProcessDisconnect();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT idle Yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        }
     }
 }
 
@@ -531,7 +535,11 @@ CHIP_ERROR MqttClient::ProcessYield()
     if (status != SUCCESS)
     {
         ChipLogError(DeviceLayer, "MQTT Yield failed: %d", status);
-        ProcessDisconnect();
+        CHIP_ERROR err = ProcessDisconnect();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT Yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        }
         return MapPahoStatus(status);
     }
     return CHIP_NO_ERROR;
