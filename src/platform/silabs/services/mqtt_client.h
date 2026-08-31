@@ -73,7 +73,7 @@ struct MqttClientConfig
     unsigned int commandTimeoutMs = 20000;
     uint8_t mqttVersion           = 4;
     bool cleanSession             = true;
-    uint32_t idleYieldTimeoutMs   = 1000;
+    uint32_t idleYieldTimeoutMs   = 1000; // This is the timeout for the idle yield operation.
 
     bool willEnable          = false;
     const char * willTopic   = nullptr;

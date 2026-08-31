@@ -150,6 +150,10 @@ void MqttClient::ServiceThread(void * arg)
     auto eventFlags = static_cast<osEventFlagsId_t>(self->mEventFlags);
     while (true)
     {
+        // If the client is connected and not busy, wait for the idle yield timeout.
+        // Otherwise, wait forever for an event.
+        // This is to publish PINGREQ messages in the background to keep the connection alive.
+        // idleYieldTimeoutMs cannot be greater than keepAliveIntervalSec * 1000 so PINGREQ can fire in time.
         const uint32_t waitMs = (self->mConnected && !self->mBusy) ? self->GetIdleYieldTimeoutMs() : osWaitForever;
         uint32_t events       = osEventFlagsWait(eventFlags, kEventOperation | kEventStop, osFlagsWaitAny, waitMs);
 
@@ -182,6 +186,8 @@ void MqttClient::ServiceThread(void * arg)
 
 uint32_t MqttClient::GetIdleYieldTimeoutMs()
 {
+    // If the idle yield timeout is not set, use the default value of 1000 ms. 
+    // Though this is set in the constructor, it is possible to change the value later.
     if (mConfig.idleYieldTimeoutMs == 0)
     {
         ChipLogError(DeviceLayer, "MQTT idleYieldTimeoutMs is 0 (ignored); using default 1000 ms");
@@ -191,10 +197,7 @@ uint32_t MqttClient::GetIdleYieldTimeoutMs()
     const uint32_t configuredMs = mConfig.idleYieldTimeoutMs;
 
     // MQTTYield timeout_ms must be <= keepAliveInterval * 1000 so PINGREQ can fire in time.
-    if (mConfig.keepAliveIntervalSec == 0)
-    {
-        return configuredMs;
-    }
+    VerifyOrReturnValue(mConfig.keepAliveIntervalSec > 0, configuredMs);
 
     const uint32_t keepAliveMs = static_cast<uint32_t>(mConfig.keepAliveIntervalSec) * 1000u;
     return (configuredMs < keepAliveMs) ? configuredMs : keepAliveMs;
