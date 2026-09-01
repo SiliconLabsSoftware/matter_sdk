@@ -32,6 +32,7 @@
 #include "em_burtc.h"
 #include "em_cmu.h"
 #include "em_emu.h"
+
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
@@ -451,12 +452,14 @@ void OnEM4Trigger(uint32_t duration)
     BURTC_CounterReset();
     BURTC_CompareSet(0, duration);
 
-    BURTC_IntEnable(BURTC_IEN_COMP); // compare match
-    NVIC_EnableIRQ(BURTC_IRQn);
     BURTC_Enable(true);
     EMU_EM4Init_TypeDef em4Init = EMU_EM4INIT_DEFAULT;
     EMU_EM4Init(&em4Init);
     BURTC_CounterReset();
+
+    BURTC_IntClear(BURTC_IF_COMP);
+    BURTC_IntEnable(BURTC_IEN_COMP); // compare match
+    NVIC_EnableIRQ(BURTC_IRQn);
     EMU_EnterEM4();
 }
 
