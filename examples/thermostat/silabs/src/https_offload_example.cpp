@@ -167,7 +167,6 @@ sl_status_t https_client_demo_start(void)
     VerifyOrReturnError(sizeof(kCaCertExample) > 0, SL_STATUS_FAIL, ChipLogError(DeviceLayer, "CA certificate is not set"));
 
     const HttpClientConfig config = {
-        .certificateIndex = 1,
         // Enable HTTPS client.
         .httpsEnable  = true,
         .username     = kHttpClientUser,
