@@ -98,7 +98,7 @@ void mmic_task(void *pvParameters)
       sl_matter_reconnect_cpc();
     }
 
-    // Blocking call. 
+    // Blocking call.
     sl_matter_cpc_wait_for_activity();
 
 

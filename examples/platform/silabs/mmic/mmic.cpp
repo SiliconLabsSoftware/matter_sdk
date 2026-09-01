@@ -35,7 +35,7 @@ const char commandsString[][255] = {
 
 uint8_t encodeCommand(mmic_command_id_e id, void * parameter, uint16_t size, uint8_t ** encodedPacket, size_t * packetSize)
 {
-    if(id >= INVALID_COMMAND_ID) 
+    if(id >= INVALID_COMMAND_ID)
     {
         return 1;
     }
@@ -188,7 +188,7 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
                    state.threadExtendedPanId[2], state.threadExtendedPanId[3],
                    state.threadExtendedPanId[4], state.threadExtendedPanId[5],
                    state.threadExtendedPanId[6], state.threadExtendedPanId[7]);
-            break; 
+            break;
         case openCommissioning:
         case commission:
         case decommission:
@@ -241,7 +241,7 @@ void printHelp(void)
 {
     #define X(a,b,c, d) fprintf(stderr, #a " :\t" b "\r\n");
     COMMAND_LIST
-    #undef X   
+    #undef X
 }
 #else
 #include "../subscription/SubscriptionManager.h"
@@ -271,12 +271,12 @@ extern "C" otInstance * otGetInstance(void);
 
 uint8_t encodeResponse(mmic_command_id_e id, void * response, size_t responseLen, uint8_t ** encodedPacket, size_t * packetSize)
 {
-    if(id >= INVALID_COMMAND_ID) 
+    if(id >= INVALID_COMMAND_ID)
     {
         return 1;
     }
 
-    if(packetSize == NULL) 
+    if(packetSize == NULL)
     {
         return 1;
     }

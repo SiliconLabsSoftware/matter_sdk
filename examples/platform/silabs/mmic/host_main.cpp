@@ -532,7 +532,7 @@ int main(int argc, char **argv)
     }
     const char *instance = (transport_argc == 2) ? argv[1] : NULL;// use default socket location
 
-    if (cpc_init(&g_cpc_handle, instance, false, NULL) != 0) { 
+    if (cpc_init(&g_cpc_handle, instance, false, NULL) != 0) {
         fprintf(stderr, "cpc_init(\"%s\") failed: %s\n",
                 instance, strerror(errno));
         return 1;
@@ -765,5 +765,3 @@ shutdown:
 
     return exit_code;
 }
-
-
