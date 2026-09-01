@@ -449,8 +449,9 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
     sl_http_client_response_t * getResponse = static_cast<sl_http_client_response_t *>(data);
     self->mCallbackStatus                   = getResponse->status;
 
-    ChipLogProgress(DeviceLayer, "HTTPS GET response: status=0x%lX http_code=%u data_len=%u",
-                    static_cast<unsigned long>(getResponse->status), getResponse->http_response_code, getResponse->data_length);
+    ChipLogProgress(DeviceLayer, "HTTPS GET response: status=0x%lX http_code=%u data_len=%u end_of_data=%lu",
+                    static_cast<unsigned long>(getResponse->status), getResponse->http_response_code, getResponse->data_length,
+                    static_cast<unsigned long>(getResponse->end_of_data));
 
     if ((getResponse->status != SL_STATUS_OK) && (getResponse->status != SL_STATUS_IN_PROGRESS))
     {
@@ -468,6 +469,8 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
         self->SignalResponse();
         return getResponse->status;
     }
+
+    self->mEndOfData = static_cast<EndOfData>(getResponse->end_of_data);
 
     if (getResponse->data_length)
     {
@@ -490,7 +493,7 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
         }
     }
 
-    if (getResponse->end_of_data)
+    if (self->mEndOfData == EndOfData::EndOfData)
     {
         if (self->mActiveResponseBuffer != nullptr)
         {
