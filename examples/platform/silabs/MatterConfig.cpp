@@ -32,7 +32,6 @@
 #include "em_burtc.h"
 #include "em_cmu.h"
 #include "em_emu.h"
-
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
