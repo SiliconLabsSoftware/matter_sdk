@@ -47,8 +47,8 @@ namespace Silabs {
  */
 struct HttpClientConfig
 {
-    uint8_t certificateIndex = 1;       ///< NWP TLS / HTTPS certificate index.
-    bool httpsEnable         = true;    ///< true = HTTPS, false = plain HTTP.
+    uint8_t certificateIndex = SL_HTTPS_CLIENT_DEFAULT_CERTIFICATE_INDEX; ///< NWP TLS / HTTPS certificate index.
+    bool httpsEnable         = true;                                      ///< true = HTTPS, false = plain HTTP.
     const char * username    = nullptr; ///< Optional HTTP basic-auth username; nullptr skips auth.
     const char * password    = nullptr; ///< Optional HTTP basic-auth password; nullptr skips auth.
 

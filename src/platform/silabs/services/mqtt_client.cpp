@@ -26,10 +26,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#ifndef MQTT_USE_HOST_LWIP_TLS
-#define MQTT_USE_HOST_LWIP_TLS 0
-#endif
-
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -154,7 +150,23 @@ void MqttClient::ServiceThread(void * arg)
     auto eventFlags = static_cast<osEventFlagsId_t>(self->mEventFlags);
     while (true)
     {
-        uint32_t events = osEventFlagsWait(eventFlags, kEventOperation | kEventStop, osFlagsWaitAny, osWaitForever);
+        // If the client is connected and not busy, wait for the idle yield timeout.
+        // Otherwise, wait forever for an event.
+        // This is to publish PINGREQ messages in the background to keep the connection alive.
+        // idleYieldTimeoutMs cannot be greater than keepAliveIntervalSec * 1000 so PINGREQ can fire in time.
+
+        // TODO: revist this logic, since most of the calculations are done in the MQTTYield function.
+        // so just invoking MQTTYield function here with (keepAliveIntervalSec *1000u - idleYieldTimeoutMs) value.
+        // should be enough to keep the connection alive.
+        const uint32_t waitMs = (self->mConnected && !self->mBusy) ? self->GetIdleYieldTimeoutMs() : osWaitForever;
+        uint32_t events       = osEventFlagsWait(eventFlags, kEventOperation | kEventStop, osFlagsWaitAny, waitMs);
+
+        if (events == osFlagsErrorTimeout)
+        {
+            self->IdleYield();
+            continue;
+        }
+
         if (events & osFlagsError)
         {
             ChipLogError(DeviceLayer, "MQTT service event wait failed: 0x%lx", static_cast<unsigned long>(events));
@@ -174,6 +186,42 @@ void MqttClient::ServiceThread(void * arg)
     self->mEventFlags = nullptr;
     self->mThreadId   = nullptr;
     osThreadTerminate(osThreadGetId());
+}
+
+uint32_t MqttClient::GetIdleYieldTimeoutMs()
+{
+    // If the idle yield timeout is not set, use the default value of 1000 ms.
+    // Though this is set in the constructor, it is possible to change the value later.
+    if (mConfig.idleYieldTimeoutMs == 0)
+    {
+        ChipLogError(DeviceLayer, "MQTT idleYieldTimeoutMs is 0 (ignored); using default 1000 ms");
+        mConfig.idleYieldTimeoutMs = 1000;
+    }
+
+    const uint32_t configuredMs = mConfig.idleYieldTimeoutMs;
+
+    // MQTTYield timeout_ms must be <= keepAliveInterval * 1000 so PINGREQ can fire in time.
+    VerifyOrReturnValue(mConfig.keepAliveIntervalSec > 0, configuredMs);
+
+    const uint32_t keepAliveMs = static_cast<uint32_t>(mConfig.keepAliveIntervalSec) * 1000u;
+    return (configuredMs < keepAliveMs) ? configuredMs : keepAliveMs;
+}
+
+void MqttClient::IdleYield()
+{
+    VerifyOrReturn(mConnected && !mBusy);
+
+    const uint32_t yieldMs = GetIdleYieldTimeoutMs();
+    const int status       = MQTTYield(&mClient, static_cast<int>(yieldMs));
+    if (status != SUCCESS)
+    {
+        ChipLogError(DeviceLayer, "MQTT idle Yield failed: %d (session marked disconnected)", status);
+        CHIP_ERROR err = ProcessDisconnect();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT idle Yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        }
+    }
 }
 
 CHIP_ERROR MqttClient::Start()
@@ -487,6 +535,11 @@ CHIP_ERROR MqttClient::ProcessYield()
     if (status != SUCCESS)
     {
         ChipLogError(DeviceLayer, "MQTT Yield failed: %d", status);
+        CHIP_ERROR err = ProcessDisconnect();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT Yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        }
         return MapPahoStatus(status);
     }
     return CHIP_NO_ERROR;
