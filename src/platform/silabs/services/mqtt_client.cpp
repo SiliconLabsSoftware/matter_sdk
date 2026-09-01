@@ -190,7 +190,7 @@ void MqttClient::ServiceThread(void * arg)
 
 uint32_t MqttClient::GetIdleYieldTimeoutMs()
 {
-    // If the idle yield timeout is not set, use the default value of 1000 ms. 
+    // If the idle yield timeout is not set, use the default value of 1000 ms.
     // Though this is set in the constructor, it is possible to change the value later.
     if (mConfig.idleYieldTimeoutMs == 0)
     {
