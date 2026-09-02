@@ -112,7 +112,7 @@ CHIP_ERROR AppTask::AppInit()
     sOnOffLED.Set(sPlugOn);
 
 // Update the LCD with the Stored value. Show QR Code if not provisioned
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     GetLCD().WriteDemoUI(sPlugOn);
 #if SL_MATTER_QR_CODE_ENABLED
 #ifdef SL_WIFI
@@ -124,7 +124,7 @@ CHIP_ERROR AppTask::AppInit()
         GetLCD().ShowQRCode(true);
     }
 #endif // SL_MATTER_QR_CODE_ENABLED
-#endif
+#endif // SL_MATTER_DISPLAY_ENABLED
 
     return err;
 }
@@ -173,7 +173,7 @@ void AppTask::OnOffActionEventHandler(AppEvent * aEvent)
     sPlugOn = !sPlugOn;
     sOnOffLED.Set(sPlugOn);
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     BaseApplication::GetLCD().WriteDemoUI(sPlugOn);
 #endif
 
@@ -220,7 +220,7 @@ void AppTask::DMPostAttributeChangeCallback(const ConcreteAttributePath & attrib
 
             sPlugOn = plugOn;
             sOnOffLED.Set(sPlugOn);
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
             BaseApplication::GetLCD().WriteDemoUI(sPlugOn);
 #endif
         }

@@ -314,7 +314,7 @@ CHIP_ERROR AppTask::InitLock()
         GetLCD().ShowQRCode(true);
     }
 #endif // SL_MATTER_QR_CODE_ENABLED
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 
     return CHIP_NO_ERROR;
 }
