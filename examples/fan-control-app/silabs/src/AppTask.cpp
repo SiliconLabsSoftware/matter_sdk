@@ -24,13 +24,13 @@
 #include "FanControlConfig.h"
 #include "LEDWidget.h"
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 #include "FanControlUI.h"
 #include "lcd.h"
 #if SL_MATTER_QR_CODE_ENABLED
 #include "qrcodegen.h"
 #endif // SL_MATTER_QR_CODE_ENABLED
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 
 #include <app-common/zap-generated/attribute-type.h>
 #include <app-common/zap-generated/attributes/Accessors.h>
@@ -160,12 +160,12 @@ void UpdateFanControlLED()
     }
 }
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
 void UpdateFanControlLCD()
 {
     BaseApplication::GetLCD().WriteDemoUI(false);
 }
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 
 void PostFanUiUpdateEvent()
 {
@@ -185,7 +185,7 @@ CHIP_ERROR AppTask::AppInit()
 {
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&CustomerAppTask::ButtonEventHandler);
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     GetLCD().SetCustomUI(FanControlUI::DrawUI);
 #endif
 
@@ -197,7 +197,7 @@ CHIP_ERROR AppTask::AppInit()
     }
 
     // Update the LCD with the Stored value. Show QR Code if not provisioned.
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     GetLCD().WriteDemoUI(false);
 #if SL_MATTER_QR_CODE_ENABLED
     if (!BaseApplication::GetProvisionStatus())
@@ -205,7 +205,7 @@ CHIP_ERROR AppTask::AppInit()
         GetLCD().ShowQRCode(true);
     }
 #endif // SL_MATTER_QR_CODE_ENABLED
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 
     return CHIP_NO_ERROR;
 }
@@ -548,7 +548,7 @@ void AppTask::FanUiUpdateEventHandler(AppEvent * aEvent)
     }
 
     UpdateFanControlLED();
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     UpdateFanControlLCD();
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
 }
