@@ -45,6 +45,36 @@ public:
     };
 
     /**
+     * @brief Class implements the callbacks that the application can implement
+     *        to alter the WifiSleepManager behaviors.
+     */
+    class ApplicationCallback
+    {
+    public:
+        virtual ~ApplicationCallback() = default;
+
+        /**
+         * @brief Function informs the WifiSleepManager in which Low Power mode the device can go to.
+         *        The two supported sleep modes are DTIM based sleep and LI based sleep.
+         *
+         *        When the function is called, the WifiSleepManager is about to go to sleep and using this function to make decision
+         *        as too wether it can go LI based sleep, lowest power mode, or DTIM based sleep.
+         *
+         *        DTIM based sleep requires the Wi-Fi devices to be synced with the DTIM beacon.
+         *        In this mode, the broadcast filter is disabled and the device will process multicast and
+         *        broadcast messages.
+         *
+         *        LI based sleep allows the Wi-Fi devices to sleep for configurable amounts of time without needing to be synced
+         *        with the DTIM beacon. The sleep time is configurable trough the ICD Manager feature-set.
+         *        In the LI based sleep, the broadcast filter is enabled.
+         *
+         * @return true The Wi-Fi Sleep Manager can go to LI based sleep
+         * @return false The Wi-Fi Sleep Manager cannot go to LI based sleep or an error occured in the processing.
+         */
+        virtual bool CanGoToLIBasedSleep() = 0;
+    };
+
+    /**
      * @brief Init function that configure the SleepManager APIs based on the type of ICD.
      *        Function validates that the SleepManager configuration were correctly set as well.
      *
@@ -58,6 +88,14 @@ public:
      *                    CHIP_ERROR_INTERNAL if an error occured
      */
     CHIP_ERROR Init(PowerSaveInterface * platformInterface, WifiStateProvider * wifiStateProvider);
+
+    /**
+     * @brief Set the Application Callback
+     *
+     * @param callbacks pointer to the application callbacks.
+     *                  The callback can be set to nullptr if the application wants to remove its callback
+     */
+    void SetApplicationCallback(ApplicationCallback * callback) { mCallback = callback; }
 
     /**
      * @brief Public API to request the Wi-Fi chip to transition to High Performance.
@@ -107,8 +145,9 @@ public:
      *
      *        State machine logic:
      *        1. If there are high performance requests, configure high performance mode.
-     *        2. If the device is unprovisioned, configure deep sleep.
-     *        3. Otherwise, configure DTIM based sleep.
+     *        2. If commissioning is in progress, configure DTIM based sleep.
+     *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
+     *        4. If the application callback allows, configure LI based sleep; otherwise, configure DTIM based sleep.
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
      *
@@ -161,6 +200,14 @@ private:
     CHIP_ERROR ConfigureDTIMBasedSleep();
 
     /**
+     * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+     *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+     */
+    CHIP_ERROR ConfigureLIBasedSleep();
+
+    /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
      *
      * @param triggerTransition true, triggers the transition to High Performance
@@ -176,6 +223,8 @@ private:
     PowerSaveInterface * mPowerSaveInterface = nullptr;
     WifiStateProvider * mWifiStateProvider   = nullptr;
     uint8_t mHighPerformanceRequestCounter   = 0;
+
+    ApplicationCallback * mCallback = nullptr;
 };
 
 } // namespace Silabs
