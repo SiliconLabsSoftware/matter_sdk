@@ -89,30 +89,6 @@ public:
      */
     CHIP_ERROR Init(PowerSaveInterface * platformInterface, WifiStateProvider * wifiStateProvider);
 
-    inline void HandleCommissioningSessionStarted()
-    {
-        bool wasCommissioningInProgress = mIsCommissioningInProgress;
-        mIsCommissioningInProgress      = true;
-
-        if (!wasCommissioningInProgress)
-        {
-            // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-            TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
-        }
-    }
-
-    inline void HandleCommissioningSessionStopped()
-    {
-        bool wasCommissioningInProgress = mIsCommissioningInProgress;
-        mIsCommissioningInProgress      = false;
-
-        if (wasCommissioningInProgress)
-        {
-            // TODO: Remove High Performance Req during commissioning when sleep issues are resolved
-            TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-        }
-    }
-
     /**
      * @brief Set the Application Callback
      *
@@ -246,7 +222,6 @@ private:
 
     PowerSaveInterface * mPowerSaveInterface = nullptr;
     WifiStateProvider * mWifiStateProvider   = nullptr;
-    bool mIsCommissioningInProgress          = false;
     uint8_t mHighPerformanceRequestCounter   = 0;
 
     ApplicationCallback * mCallback = nullptr;
