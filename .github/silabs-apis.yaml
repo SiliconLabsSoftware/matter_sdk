@@ -126,6 +126,8 @@ apps:
           signature: static void FanUiUpdateEventHandler(AppEvent *aEvent)
         - name: HandleFanModeChange
           signature: void HandleFanModeChange(FanModeEnum aNewFanMode)
+        - name: DeriveFanModeFromPercent
+          signature: FanModeEnum DeriveFanModeFromPercent(Percent percent)
         - name: HandlePercentSettingChange
           signature: void HandlePercentSettingChange(uint8_t aNewPercentSetting)
         - name: HandleSpeedSettingChange
