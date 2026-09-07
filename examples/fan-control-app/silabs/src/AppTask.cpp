@@ -234,7 +234,8 @@ DataModel::Nullable<Percent> AppTask::GetPercentSetting()
 Status AppTask::SetPercentSetting(Percent aNewPercentSetting)
 {
     DataModel::Nullable<Percent> percentSettingNullable = GetPercentSetting();
-    VerifyOrReturnValue(!percentSettingNullable.IsNull() && percentSettingNullable.Value() == aNewPercentSetting, Status::Success);
+    // Skip write only when the stored value already matches the requested one.
+    VerifyOrReturnValue(percentSettingNullable.IsNull() || percentSettingNullable.Value() != aNewPercentSetting, Status::Success);
 
     AttributeUpdateInfo * data = chip::Platform::New<AttributeUpdateInfo>();
     data->percentSetting       = aNewPercentSetting;
@@ -255,7 +256,8 @@ Status AppTask::SetSpeedSetting(uint8_t aNewSpeedSetting)
     VerifyOrReturnValue(sSupportsMultiSpeed, Status::Success);
 
     DataModel::Nullable<uint8_t> speedSettingNullable = GetSpeedSetting();
-    VerifyOrReturnValue(!speedSettingNullable.IsNull() && speedSettingNullable.Value() == aNewSpeedSetting, Status::Success);
+    // Skip write only when the stored value already matches the requested one.
+    VerifyOrReturnValue(speedSettingNullable.IsNull() || speedSettingNullable.Value() != aNewSpeedSetting, Status::Success);
 
     Status status = Attributes::SpeedSetting::Set(kFanEndpoint, aNewSpeedSetting);
     VerifyOrReturnValue(status == Status::Success, status, ChipLogError(NotSpecified, "SetSpeedSetting: failed to set SpeedSetting attribute: %d", to_underlying(status)));
