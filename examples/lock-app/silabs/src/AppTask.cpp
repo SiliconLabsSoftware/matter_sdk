@@ -1394,7 +1394,7 @@ bool AppTask::ValidatePin(EndpointId endpointId, const Optional<ByteSpan> & pin,
         user.credentials = Span<CredentialStruct>(credentialsBuffer);
         VerifyOrReturnValue(
             DMDoorLockGetUser(endpointId, userIndex, user), false,
-            ChipLogError(Zcl, "Unable to get the user - internal error [endpointId=%d,userIndex=%lu]", endpointId, userIndex));
+            ChipLogError(Zcl, "Unable to get the user - internal error [endpointId=%d,userIndex=%" PRIu32 "]", endpointId, userIndex));
         if (user.userStatus != UserStatusEnum::kOccupiedEnabled)
         {
             continue;
