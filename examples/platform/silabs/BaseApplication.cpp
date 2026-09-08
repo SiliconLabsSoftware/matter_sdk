@@ -175,7 +175,9 @@ bool sHaveBLEConnections = false;
 
 constexpr uint32_t kLightTimerPeriod = static_cast<uint32_t>(pdMS_TO_TICKS(10));
 
+#if SL_MATTER_ZIGBEE_SEQUENTIAL
 constexpr System::Clock::Milliseconds32 kZbLeaveAnnouceDelay = System::Clock::Milliseconds32(1000);
+#endif
 
 uint8_t sAppEventQueueBuffer[APP_EVENT_QUEUE_SIZE * sizeof(AppEvent)];
 osMessageQueue_t sAppEventQueueStruct;
