@@ -1,0 +1,47 @@
+name: Validate Gitmodules Branches
+
+on:
+  push:
+    branches:
+      - main
+      - "release_*"
+  pull_request:
+    branches:
+      - main
+      - "release_*"
+
+concurrency:
+  group: validate-gitmodules-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-gitmodules-branches:
+    name: Validate matter_support branch entry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      - name: Validate .gitmodules branch entry
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            target_branch="${{ github.base_ref }}"
+          else
+            target_branch="${{ github.ref_name }}"
+          fi
+
+          submodule="third_party/silabs/matter_support"
+          branch=$(git config -f .gitmodules --get "submodule.${submodule}.branch" || true)
+          if [ -z "$branch" ]; then
+            echo "${submodule}: missing branch entry in .gitmodules"
+            exit 1
+          elif [ "$branch" != "$target_branch" ]; then
+            echo "${submodule}: branch is '${branch}', expected '${target_branch}'"
+            exit 1
+          fi
+          echo "gitmodules branch validation passed for target branch '${target_branch}'"
