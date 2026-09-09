@@ -61,6 +61,7 @@
 #include <pigweed/rpc_services/AccessInterceptorRegistry.h>
 #endif // PW_RPC_ENABLED
 #include <device/api/SingleEndpoint.h>
+#include <device/capabilities/identify/LoggingIdentifyDelegate.h>
 #include <device/types/boolean-state-sensor/BooleanStateSensor.h>
 #include <device/types/occupancy-sensor/OccupancySensor.h>
 #include <device/types/on-off-light/impl/LoggingOnOffLight.h>
@@ -80,6 +81,7 @@ AppMainLoopImplementation * gMainLoopImplementation = nullptr;
 Credentials::GroupDataProviderImpl gGroupDataProvider;
 chip::app::DefaultSafeAttributePersistenceProvider gSafeAttributePersistenceProvider;
 DefaultTimerDelegate gTimerDelegate;
+LoggingIdentifyDelegate gIdentifyDelegate;
 chip::app::PosixAudioManager gAudioManager;
 
 // To hold SPAKE2+ verifier, discriminator, passcode
@@ -302,10 +304,17 @@ void RunApplication(AppMainLoopImplementation * mainLoop = nullptr)
     SuccessOrDie(initParams.InitializeStaticResourcesBeforeServerInit());
 
     DeviceFactory::GetInstance().Init(DeviceFactory::Context{
-        .groupDataProvider = gGroupDataProvider,                     //
-        .fabricTable       = Server::GetInstance().GetFabricTable(), //
-        .timerDelegate     = gTimerDelegate,                         //
-        .storageDelegate   = *initParams.persistentStorageDelegate,  //
+        .groupDataProvider        = gGroupDataProvider,                     //
+        .fabricTable              = Server::GetInstance().GetFabricTable(), //
+        .timerDelegate            = gTimerDelegate,                         //
+        .storageDelegate          = *initParams.persistentStorageDelegate,  //
+        .diagnosticDataProvider   = DeviceLayer::GetDiagnosticDataProvider(),
+        .platformManager          = DeviceLayer::PlatformMgr(),
+        .failSafeContext          = Server::GetInstance().GetFailSafeContext(),
+        .bindingTable             = Binding::Table::GetInstance(),
+        .bindingManager           = Binding::Manager::GetInstance(),
+        .testEventTriggerDelegate = *initParams.testEventTriggerDelegate,
+        .identifyDelegate         = gIdentifyDelegate,
     });
 
     RegisterDeviceFactoryOverrides(gTimerDelegate, initParams.persistentStorageDelegate, gAudioManager);
