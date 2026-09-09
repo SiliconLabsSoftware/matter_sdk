@@ -281,6 +281,39 @@ void SetupNamedPipe(CodeDrivenDataModelDevices & devices, const char * namedPipe
             gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
                 .RegisterClusterInstance<chip::app::Clusters::OnOffCluster>(&lightDevice->OnOffCluster());
         }
+        else if (config.type == "ambient-context-sensor")
+        {
+            auto * ambientContextSensorDevice = static_cast<AmbientContextSensor *>(device);
+            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
+                .RegisterClusterInstance<chip::app::Clusters::AmbientContextSensingCluster>(
+                    &ambientContextSensorDevice->AmbientContextSensingCluster());
+        }
+        else if (config.type == "robotic-vacuum-cleaner")
+        {
+            auto * rvcDevice = static_cast<SimulatedRoboticVacuumCleaner *>(device);
+            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
+                .RegisterClusterInstance<chip::app::Clusters::RvcOperationalState::RvcOperationalStateCluster>(
+                    &rvcDevice->OperationalState());
+            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
+                .RegisterClusterInstance<chip::app::Clusters::ServiceArea::ServiceAreaCluster>(&rvcDevice->GetServiceAreaCluster());
+            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry().RegisterClusterInstance<RvcRunModeType>(
+                &rvcDevice->RunMode());
+            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry().RegisterClusterInstance<RvcCleanModeType>(
+                &rvcDevice->CleanMode());
+        }
+        else if (config.type == "electrical-sensor")
+        {
+            auto * electricalSensorDevice = static_cast<ElectricalSensor *>(device);
+            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
+                .RegisterClusterInstance<chip::app::Clusters::ElectricalEnergyMeasurement::ElectricalEnergyMeasurementCluster>(
+                    &electricalSensorDevice->ElectricalEnergyMeasurementCluster());
+        }
+        else if (config.type == "mode-select")
+        {
+            auto * modeSelectDevice = static_cast<chip::app::ModeSelect *>(device);
+            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
+                .RegisterClusterInstance<chip::app::Clusters::ModeSelectCluster>(&modeSelectDevice->ModeSelectCluster());
+        }
     }
 
     gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
