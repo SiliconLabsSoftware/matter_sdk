@@ -25,11 +25,13 @@ env:
 jobs:
     build_pr:
         name: Build and publish PR image
-        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        if:
+            github.event_name == 'pull_request' && github.event.action !=
+            'closed'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+              uses: actions/checkout@v7
 
             - name: Log in to ghcr.io
               env:
@@ -55,7 +57,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout merged commit
-              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.merge_commit_sha }}
 
