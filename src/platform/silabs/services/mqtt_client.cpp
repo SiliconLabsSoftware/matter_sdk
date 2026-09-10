@@ -588,7 +588,7 @@ CHIP_ERROR MqttClient::Disconnect(MqttOperationCallback callback, void * context
     return QueueOperation(Operation::Disconnect, callback, context);
 }
 
-CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttQoS qos, MqttOperationCallback callback, void * context)
+CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
@@ -596,7 +596,7 @@ CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttQoS qos, MqttOperationC
     VerifyOrReturnError(topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
     mPendingTopic = topic;
-    mPendingQos   = qos;
+    mPendingQos   = mConfig.qos;
     return QueueOperation(Operation::Subscribe, callback, context);
 }
 
@@ -611,8 +611,7 @@ CHIP_ERROR MqttClient::Unsubscribe(const char * topic, MqttOperationCallback cal
     return QueueOperation(Operation::Unsubscribe, callback, context);
 }
 
-CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, MqttQoS qos, bool retained, MqttOperationCallback callback,
-                               void * context)
+CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, bool retained, MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
@@ -621,7 +620,7 @@ CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, MqttQoS qos
 
     mPendingTopic    = topic;
     mPendingPayload  = payload;
-    mPendingQos      = qos;
+    mPendingQos      = mConfig.qos;
     mPendingRetained = retained;
     return QueueOperation(Operation::Publish, callback, context);
 }
