@@ -707,7 +707,10 @@ static uint8_t performCommission(const commissionArgs_t * args,
     memcpy(serialized.Bytes(), args->opkeyPub, MMIC_COMMISSION_OPKEY_PUB_LEN);
     memcpy(serialized.Bytes() + MMIC_COMMISSION_OPKEY_PUB_LEN,
            args->opkeyPriv, MMIC_COMMISSION_OPKEY_PRIV_LEN);
-    serialized.SetLength(MMIC_COMMISSION_OPKEY_PUB_LEN + MMIC_COMMISSION_OPKEY_PRIV_LEN);
+    if (CHIP_NO_ERROR != serialized.SetLength(MMIC_COMMISSION_OPKEY_PUB_LEN + MMIC_COMMISSION_OPKEY_PRIV_LEN))
+    {
+        return 3;
+    }
 
     P256Keypair opKey;
     if (opKey.Deserialize(serialized) != CHIP_NO_ERROR)

@@ -32,6 +32,7 @@ chip_access_control_policy_logging_verbosity = 2
 
 sl_use_base_application = false
 sl_matter_use_code_driven_dm = true
+sl_cpc_enabled = true
 
 # Disable BLE advertisement since Thread credentials are already present
 chip_config_network_layer_ble = false
