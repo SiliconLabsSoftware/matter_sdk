@@ -34,7 +34,6 @@ using chip::ByteSpan;
 using chip::DeviceLayer::Silabs::MqttBroker;
 using chip::DeviceLayer::Silabs::MqttClient;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
-using chip::DeviceLayer::Silabs::MqttQoS;
 
 // Please fill in the details for your own MQTT broker.
 constexpr char kMqttBrokerIp[]       = MQTT_BROKER_IP;    // The IP address of your MQTT broker
@@ -88,6 +87,7 @@ sl_status_t mqtt_client_demo_start(void)
         return SL_STATUS_ALREADY_INITIALIZED;
     }
 
+    // QoS defaults come from MqttClientConfig in mqtt_client.h (.qos / .willQoS).
     const MqttClientConfig config = {
         .useTls               = true,
         .clientId             = kMqttClientId,
@@ -137,7 +137,7 @@ sl_status_t mqtt_client_demo_start(void)
     }
 
     gOpDone = false;
-    err     = RunOperation(gMqttsClient.Subscribe(kMqttTopic, MqttQoS::QoS1, OnOperationDone));
+    err     = RunOperation(gMqttsClient.Subscribe(kMqttTopic, OnOperationDone));
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Subscribe failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -146,7 +146,7 @@ sl_status_t mqtt_client_demo_start(void)
 
     const ByteSpan payload(reinterpret_cast<const uint8_t *>(kMqttPublishMessage), strlen(kMqttPublishMessage));
     gOpDone = false;
-    err     = RunOperation(gMqttsClient.Publish(kMqttTopic, payload, MqttQoS::QoS1, false, OnOperationDone));
+    err     = RunOperation(gMqttsClient.Publish(kMqttTopic, payload, false, OnOperationDone));
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Publish failed: %" CHIP_ERROR_FORMAT, err.Format());

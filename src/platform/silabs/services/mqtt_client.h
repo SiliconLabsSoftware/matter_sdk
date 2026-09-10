@@ -78,8 +78,10 @@ struct MqttClientConfig
     bool willEnable          = false;
     const char * willTopic   = nullptr;
     const char * willMessage = nullptr;
-    MqttQoS willQoS          = MqttQoS::QoS1;
+    // Change only these defaults to select QoS0 / QoS1 (no need to set them in the app).
+    MqttQoS willQoS          = MqttQoS::QoS1; ///< Last Will QoS when willEnable is true.
     bool willRetained        = false;
+    MqttQoS qos              = MqttQoS::QoS1; ///< Subscribe / Publish QoS.
 
     /** PEM bytes for host mbedTLS CA chain. nullptr = skip CA install. */
     const uint8_t * tlsCaCert = nullptr;
@@ -154,18 +156,20 @@ public:
     /**
      * @brief Subscribe with the instance message callback (@ref SetSubscriptionCallback).
      *
+     * Uses @ref MqttClientConfig::qos from Init.
      * @p topic must remain valid until the operation completes.
      */
-    CHIP_ERROR Subscribe(const char * topic, MqttQoS qos, MqttOperationCallback callback, void * context = nullptr);
+    CHIP_ERROR Subscribe(const char * topic, MqttOperationCallback callback, void * context = nullptr);
 
     CHIP_ERROR Unsubscribe(const char * topic, MqttOperationCallback callback, void * context = nullptr);
 
     /**
      * @brief Publish @p payload to @p topic.
      *
+     * Uses @ref MqttClientConfig::qos from Init.
      * @p topic and @p payload must remain valid until the operation completes.
      */
-    CHIP_ERROR Publish(const char * topic, ByteSpan payload, MqttQoS qos, bool retained, MqttOperationCallback callback,
+    CHIP_ERROR Publish(const char * topic, ByteSpan payload, bool retained, MqttOperationCallback callback,
                        void * context = nullptr);
 
     /**
@@ -228,7 +232,7 @@ private:
 
     const char * mPendingTopic = nullptr;
     ByteSpan mPendingPayload;
-    MqttQoS mPendingQos             = MqttQoS::QoS1;
+    MqttQoS mPendingQos             = MqttQoS::QoS0;
     bool mPendingRetained           = false;
     uint32_t mPendingYieldTimeoutMs = 0;
 
