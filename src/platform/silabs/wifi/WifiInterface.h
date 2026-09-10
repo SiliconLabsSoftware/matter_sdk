@@ -220,9 +220,12 @@ public:
     virtual CHIP_ERROR StartWifiTask() = 0;
 
     /**
-     * @brief Configures the Wi-Fi devices as a Wi-Fi station
+     * @brief Enables the Wi-Fi station mode
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the station mode was successfully enabled
+     *                    CHIP_ERROR_INTERNAL if the station mode could not be enabled
      */
-    virtual void ConfigureStationMode() = 0;
+    virtual CHIP_ERROR EnableStationMode() = 0;
 
     /**
      * @brief Triggers the device to disconnect from the connected Wi-Fi network

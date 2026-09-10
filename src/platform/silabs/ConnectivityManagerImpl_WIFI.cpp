@@ -56,7 +56,6 @@ ConnectivityManagerImpl ConnectivityManagerImpl::sInstance;
 CHIP_ERROR ConnectivityManagerImpl::_Init()
 {
     CHIP_ERROR err;
-    // Queue work items to bootstrap the AP and station state machines once the Chip event loop is running.
     mWiFiStationMode              = kWiFiStationMode_Disabled;
     mWiFiStationState             = kWiFiStationState_NotConnected;
     mLastStationConnectFailTime   = System::Clock::kZero;
@@ -66,8 +65,10 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     // TODO Initialize the Chip Addressing and Routing Module.
 
     // Ensure that station mode is enabled.
-    WifiInterface::GetInstance().ConfigureStationMode();
+    err = WifiInterface::GetInstance().EnableStationMode();
+    SuccessOrExit(err);
 
+    // Queue work items to bootstrap the AP and station state machines once the Chip event loop is running.
     err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
 
     SuccessOrExit(err);
@@ -152,35 +153,34 @@ bool ConnectivityManagerImpl::_IsWiFiStationEnabled(void)
     return WifiInterface::GetInstance().IsStationModeEnabled();
 }
 
-CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiFiStationMode val)
+CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiFiStationMode newWiFiStationMode)
 {
+    // If the new WiFi station mode is the same as the current WiFi station mode, return success.
+    VerifyOrReturnError(newWiFiStationMode != mWiFiStationMode, CHIP_NO_ERROR);
+
+    ChipLogProgress(DeviceLayer, "WiFi station mode change: %s -> %s", WiFiStationModeToStr(mWiFiStationMode),
+                    WiFiStationModeToStr(newWiFiStationMode));
+
+    mWiFiStationMode = newWiFiStationMode;
+    VerifyOrReturnError(WifiInterface::GetInstance().EnableStationMode() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
     TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
-
-    if (mWiFiStationMode != val)
-    {
-        ChipLogProgress(DeviceLayer, "WiFi station mode change: %s -> %s", WiFiStationModeToStr(mWiFiStationMode),
-                        WiFiStationModeToStr(val));
-    }
-
-    mWiFiStationMode = val;
-
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationReconnectInterval(System::Clock::Timeout val)
+CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationReconnectInterval(System::Clock::Timeout timeoutMs)
 {
-    mWiFiStationReconnectInterval = val;
+    mWiFiStationReconnectInterval = timeoutMs;
     return CHIP_NO_ERROR;
 }
 
 void ConnectivityManagerImpl::_ClearWiFiStationProvision(void)
 {
-    if (mWiFiStationMode != kWiFiStationMode_ApplicationControlled)
-    {
-        WifiInterface::GetInstance().ClearWifiCredentials();
+    // If the WiFi station mode is application controlled, do not clear the WiFi credentials.
+    VerifyOrReturn(mWiFiStationMode != kWiFiStationMode_ApplicationControlled,
+                   ChipLogError(DeviceLayer, "kWiFiStationMode_ApplicationControlled enabled"));
 
-        TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
-    }
+    WifiInterface::GetInstance().ClearWifiCredentials();
+    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
 }
 
 CHIP_ERROR ConnectivityManagerImpl::_GetAndLogWifiStatsCounters(void)
@@ -214,21 +214,24 @@ CHIP_ERROR ConnectivityManagerImpl::_SetPollingInterval(System::Clock::Milliseco
 
 void ConnectivityManagerImpl::DriveStationState()
 {
+    CHIP_ERROR error      = CHIP_NO_ERROR;
     bool stationConnected = false;
 
-    // Refresh the current station mode.
+    // Refresh the current state and store it in `mWiFiStationMode`
     GetWiFiStationMode();
 
     // If the station interface is NOT under application control...
     if (mWiFiStationMode != kWiFiStationMode_ApplicationControlled)
     {
         // Ensure that the Wifi task is started.
-        CHIP_ERROR error = WifiInterface::GetInstance().StartWifiTask();
+        error = WifiInterface::GetInstance().StartWifiTask();
         VerifyOrReturn(error == CHIP_NO_ERROR,
                        ChipLogError(DeviceLayer, "StartWifiTask() failed: %" CHIP_ERROR_FORMAT, error.Format()));
 
-        // Ensure that station mode is enabled in the WiFi layer.
-        WifiInterface::GetInstance().ConfigureStationMode();
+        error = SetWiFiStationMode(kWiFiStationMode_Enabled);
+        VerifyOrReturn(
+            error == CHIP_NO_ERROR,
+            ChipLogError(DeviceLayer, "SetStationMode(kWiFiStationMode_Enabled) failed: %" CHIP_ERROR_FORMAT, error.Format()));
     }
 
     stationConnected = WifiInterface::GetInstance().IsStationConnected();

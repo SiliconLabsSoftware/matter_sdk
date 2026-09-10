@@ -53,7 +53,7 @@ public:
     CHIP_ERROR GetMacAddress(sl_wfx_interface_t interface, chip::MutableByteSpan & addr) override;
     CHIP_ERROR StartNetworkScan(chip::ByteSpan ssid, ScanCallback callback) override;
     CHIP_ERROR StartWifiTask() override;
-    void ConfigureStationMode() override;
+    CHIP_ERROR EnableStationMode() override;
     bool IsStationConnected() override;
     bool IsStationModeEnabled() override;
     bool IsStationReady() override;

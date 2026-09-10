@@ -100,17 +100,19 @@ Status SlWiFiDriver::AddOrUpdateNetwork(ByteSpan ssid, ByteSpan credentials, Mut
                                         uint8_t & outNetworkIndex)
 {
     outDebugText.reduce_size(0);
+    // since we only support one network, we always return 0
     outNetworkIndex = 0;
+    // using ssid as the networkId
     VerifyOrReturnError(mStagingNetwork.ssidLen == 0 || NetworkMatch(mStagingNetwork, ssid), Status::kBoundsExceeded);
     VerifyOrReturnError(credentials.size() <= sizeof(mStagingNetwork.key), Status::kOutOfRange);
     VerifyOrReturnError(ssid.size() <= sizeof(mStagingNetwork.ssid), Status::kOutOfRange);
 
-    VerifyOrReturnError(ssid.data() != nullptr, Status::kNetworkNotFound);
+    VerifyOrReturnError(ssid.data() != nullptr, Status::kNetworkIDNotFound);
     MutableByteSpan ssidSpan(mStagingNetwork.ssid, sizeof(mStagingNetwork.ssid));
     VerifyOrReturnError(CopySpanToMutableSpan(ssid, ssidSpan) == CHIP_NO_ERROR, Status::kBoundsExceeded);
     mStagingNetwork.ssidLen = ssid.size();
 
-    VerifyOrReturnError(credentials.data() != nullptr, Status::kNetworkNotFound);
+    VerifyOrReturnError(credentials.data() != nullptr, Status::kNetworkIDNotFound);
     MutableByteSpan keySpan(mStagingNetwork.key, sizeof(mStagingNetwork.key));
     VerifyOrReturnError(CopySpanToMutableSpan(credentials, keySpan) == CHIP_NO_ERROR, Status::kBoundsExceeded);
     mStagingNetwork.keyLen = credentials.size();
