@@ -73,6 +73,8 @@ declare_args() {
 
   silabs_log_enabled = true
 
+  sl_cpc_enabled = false
+
   # Enable Synchronized Sleepy End Device
   enable_synchronized_sed = false
 
@@ -783,6 +785,14 @@ template("efr32_sdk") {
         "${efr32_sdk_root}/platform_core/platform/emdrv/uartdrv/config",
       ]
 
+      if (sl_cpc_enabled) {
+        _include_dirs += [
+          "${efr32_sdk_root}/cpc/inc",
+        ]
+        defines += ["SL_CATALOG_CPC_SECONDARY_PRESENT",
+          "SL_CATALOG_CPC_DRIVER_UART_PRESENT",]
+      }
+
       # memlcd SPI backend differs by series (USART on S2, EUSART on S3).
       if (is_series_3) {
         _include_dirs += [
@@ -1003,6 +1013,22 @@ template("efr32_sdk") {
       }
     }
 
+    if (sl_cpc_enabled) {
+      sources += [
+        "${efr32_sdk_root}/cpc/src/sl_cpc_system_secondary_efr.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_crc.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_security.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_memory.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_system_secondary.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_dispatcher.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_hdlc.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_drv_uart.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_instance.c",
+        "${efr32_sdk_root}/cpc/src/sli_cpc_assert.c",
+        ]
+    }
+
     if (enable_matter_aws) {
       sources += [
         "${chip_root}/third_party/silabs/mqtt/stack/mqtt.c",
@@ -1055,7 +1081,11 @@ template("efr32_sdk") {
         "${efr32_sdk_root}/segger/systemview/profiles/freertos_v11/SEGGER_SYSVIEW_FreeRTOS.c",
       ]
     }
-
+    if (sl_cpc_enabled) {
+      sources +=[
+        "${silabs_gen_folder}/autogen/sl_cpc_instance_handles.c",
+      ]
+    }
     if (use_wstk_leds) {
       sources += [
         "${efr32_sdk_root}/platform_core/platform/driver/leddrv/src/sl_led.c",
