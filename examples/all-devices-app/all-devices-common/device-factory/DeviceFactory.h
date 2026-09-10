@@ -28,11 +28,14 @@
 #include <device/types/boolean-state-sensor/BooleanStateSensor.h>
 #include <device/types/bridged-node/BridgedNode.h>
 #include <device/types/chime/Chime.h>
+#include <device/types/color-temperature-light/impl/LoggingColorTemperatureLight.h>
 #include <device/types/cooktop/impl/LoggingCooktop.h>
 #include <device/types/device-energy-management/EnergyManagement.h>
 #include <device/types/dimmable-light/impl/LoggingDimmableLight.h>
 #include <device/types/dimmable-plug-in-unit/DimmablePlugInUnit.h>
-#include <device/types/dishwasher/Dishwasher.h>
+#include <device/types/dishwasher/impl/EmulatedDishwasher.h>
+#include <device/types/electrical-sensor/impl/SimulatedElectricalSensor.h>
+#include <device/types/extended-color-light/impl/LoggingExtendedColorLight.h>
 #include <device/types/extractor-hood/ExtractorHood.h>
 #include <device/types/fan/impl/LoggingFan.h>
 #include <device/types/flow-sensor/impl/IncreasingFlowSensor.h>
@@ -232,6 +235,17 @@ private:
                                                      "bridged-node-unique-id-" + std::to_string(sBridgedNodeCount), label);
             });
         }
+        if constexpr (ALL_DEVICES_ENABLE_COLOR_TEMPERATURE_LIGHT)
+        {
+            RegisterCreator("color-temperature-light", [this]() {
+                VerifyOrDie(mContext.has_value());
+                return MakeDevice<LoggingColorTemperatureLight>(LoggingColorTemperatureLight::Context{
+                    .groupDataProvider = mContext->groupDataProvider,
+                    .fabricTable       = mContext->fabricTable,
+                    .timerDelegate     = mContext->timerDelegate,
+                });
+            });
+        }
         if constexpr (ALL_DEVICES_ENABLE_CONTACT_SENSOR)
         {
             RegisterCreator("contact-sensor", [this]() {
@@ -318,6 +332,17 @@ private:
         if constexpr (ALL_DEVICES_ENABLE_DISHWASHER)
         {
             RegisterCreator("dishwasher", []() { return std::make_unique<Dishwasher>(); });
+        }
+        if constexpr (ALL_DEVICES_ENABLE_EXTENDED_COLOR_LIGHT)
+        {
+            RegisterCreator("extended-color-light", [this]() {
+                VerifyOrDie(mContext.has_value());
+                return MakeDevice<LoggingExtendedColorLight>(LoggingExtendedColorLight::Context{
+                    .groupDataProvider = mContext->groupDataProvider,
+                    .fabricTable       = mContext->fabricTable,
+                    .timerDelegate     = mContext->timerDelegate,
+                });
+            });
         }
         if constexpr (ALL_DEVICES_ENABLE_MOUNTED_DIMMABLE_LOAD_CONTROL)
         {

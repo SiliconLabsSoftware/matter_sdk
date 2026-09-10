@@ -23,15 +23,15 @@ namespace chip {
 namespace app {
 
 /**
- * Color Temperature Light (device type 0x010C) whose output side only logs, so the device can be
+ * Extended Color Light (device type 0x010D) whose output side only logs, so the device can be
  * exercised without anything behind it. See LoggingLightDriver for the delegate implementations;
  * this class only supplies the device type and its Conformance.
  */
-class LoggingColorTemperatureLight : public LoggingLightDriver
+class LoggingExtendedColorLight : public LoggingLightDriver
 {
 public:
-    explicit LoggingColorTemperatureLight(const Context & context);
-    ~LoggingColorTemperatureLight() override = default;
+    explicit LoggingExtendedColorLight(const Context & context);
+    ~LoggingExtendedColorLight() override = default;
 };
 
 } // namespace app

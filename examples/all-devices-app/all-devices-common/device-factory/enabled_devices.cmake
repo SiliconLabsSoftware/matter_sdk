@@ -44,6 +44,8 @@ set(ALL_DEVICES_DEVICE_SOURCES
     "${ALL_DEVICES_COMMON_DIR}/device/types/boolean-state-sensor/BooleanStateSensor.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/bridged-node/BridgedNode.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/chime/Chime.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/types/color-temperature-light/ColorTemperatureLight.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/types/color-temperature-light/impl/LoggingColorTemperatureLight.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/cooktop/Cooktop.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/cooktop/impl/LoggingCooktop.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/device-energy-management/EnergyManagement.cpp"
@@ -51,6 +53,12 @@ set(ALL_DEVICES_DEVICE_SOURCES
     "${ALL_DEVICES_COMMON_DIR}/device/types/dimmable-light/impl/LoggingDimmableLight.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/dimmable-plug-in-unit/DimmablePlugInUnit.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/dishwasher/Dishwasher.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/types/dishwasher/impl/EmulatedDishwasher.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/types/electrical-sensor/ElectricalSensor.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/types/electrical-sensor/impl/SimulatedElectricalSensor.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/types/electrical-sensor/impl/FakeReadings.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/types/extended-color-light/ExtendedColorLight.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/types/extended-color-light/impl/LoggingExtendedColorLight.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/extractor-hood/ExtractorHood.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/fan/Fan.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/types/fan/impl/LoggingFan.cpp"
@@ -101,6 +109,9 @@ set(ALL_DEVICES_DEVICE_SOURCES
 
     # Baseline for devices (not real device types)
     # keep-sorted: start
+    "${ALL_DEVICES_COMMON_DIR}/device/capabilities/color-light/ColorLight.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/capabilities/color-light/impl/LoggingLightDriver.cpp"
+    "${ALL_DEVICES_COMMON_DIR}/device/capabilities/color-light/impl/ColorConverter.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/capabilities/dimmable-load/DimmableLoad.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/capabilities/dimmable-load/impl/LoggingDimmableDelegate.cpp"
     "${ALL_DEVICES_COMMON_DIR}/device/capabilities/fan-load/FanLoad.cpp"
@@ -157,12 +168,16 @@ foreach(_key
         air-quality-sensor
         bridged-node
         chime
+        color-temperature-light
+        commissioning-proxy
         contact-sensor
         cooktop
         device-energy-management
         dimmable-light
         dimmable-plug-in-unit
         dishwasher
+        electrical-sensor
+        extended-color-light
         extractor-hood
         fan
         flow-sensor
