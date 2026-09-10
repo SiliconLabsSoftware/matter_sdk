@@ -24,7 +24,7 @@ env:
 
 jobs:
     build_pr:
-        name: Build and publish PR image
+        name: Build image in PR
         if:
             github.event_name == 'pull_request' && github.event.action !=
             'closed'
@@ -33,23 +33,15 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v7
 
-            - name: Log in to ghcr.io
-              env:
-                  GHCR_TOKEN: ${{ github.token }}
-              run:
-                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor
-                  }}" --password-stdin
-
-            - name: Build and publish PR image
+            - name: Build PR image
               run: |
                   docker build \
                     --file "$DOCKERFILE" \
                     --tag "$IMAGE:pr-${{ github.event.pull_request.number }}" \
                     "$CONTEXT"
-                  docker push "$IMAGE:pr-${{ github.event.pull_request.number }}"
 
     publish_main:
-        name: Publish merged image
+        name: Publish on merged
         if: >-
             github.event_name == 'pull_request' && github.event.action ==
             'closed' && github.event.pull_request.merged == true &&
