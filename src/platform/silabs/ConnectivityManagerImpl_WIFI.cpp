@@ -116,7 +116,7 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         case to_underlying(WifiInterface::WifiEvent::kGotIPv4):
         case to_underlying(WifiInterface::WifiEvent::kLostIP):
         case to_underlying(WifiInterface::WifiEvent::kGotIPv6):
-            ChipLogProgress(DeviceLayer, "IP Change Event");
+            ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_IP_CHANGE");
             UpdateInternetConnectivityState();
             break;
         default:
