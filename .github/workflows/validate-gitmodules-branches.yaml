@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   validate-gitmodules-branches:
-    name: Validate matter_support branch entry
+    name: Validate submodule branch entries
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -27,21 +27,7 @@ jobs:
         with:
           submodules: false
 
-      - name: Validate .gitmodules branch entry
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            target_branch="${{ github.base_ref }}"
-          else
-            target_branch="${{ github.ref_name }}"
-          fi
-
-          submodule="third_party/silabs/matter_support"
-          branch=$(git config -f .gitmodules --get "submodule.${submodule}.branch" || true)
-          if [ -z "$branch" ]; then
-            echo "${submodule}: missing branch entry in .gitmodules"
-            exit 1
-          elif [ "$branch" != "$target_branch" ]; then
-            echo "${submodule}: branch is '${branch}', expected '${target_branch}'"
-            exit 1
-          fi
-          echo "gitmodules branch validation passed for target branch '${target_branch}'"
+      - name: Validate Gitmodules Branches
+        uses: SiliconLabsSoftware/action-gitmodule-validation@v1
+        with:
+          submodules: third_party/matter_support
