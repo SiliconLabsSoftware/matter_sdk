@@ -153,7 +153,7 @@ CHIP_ERROR PopulateAllDevicesDataModelProvider(CommonCaseDeviceServerInitParams 
 
     ReturnErrorOnFailure(CreateAndRegisterRootNode(initParams));
 
-    DeviceFactory::GetInstance().Init(DeviceFactory::Context{
+    NoHooksDeviceFactory::GetInstance().Init(NoHooksDeviceFactory::Context{
         .groupDataProvider        = gGroupDataProvider,
         .fabricTable              = Server::GetInstance().GetFabricTable(),
         .timerDelegate            = gTimerDelegate,
@@ -169,7 +169,7 @@ CHIP_ERROR PopulateAllDevicesDataModelProvider(CommonCaseDeviceServerInitParams 
 
     VerifyOrReturnError(!gDeviceType.empty(), CHIP_ERROR_INVALID_ARGUMENT);
 
-    auto & deviceFactory = DeviceFactory::GetInstance();
+    auto & deviceFactory = NoHooksDeviceFactory::GetInstance();
 
     if (!deviceFactory.IsValidDevice(gDeviceType))
     {
@@ -177,11 +177,16 @@ CHIP_ERROR PopulateAllDevicesDataModelProvider(CommonCaseDeviceServerInitParams 
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
-    gConstructedDevice = deviceFactory.Create(gDeviceType);
-    VerifyOrReturnError(gConstructedDevice != nullptr, CHIP_ERROR_NO_MEMORY);
+    auto created = deviceFactory.Create(gDeviceType);
+    VerifyOrReturnError(created.device != nullptr, CHIP_ERROR_NO_MEMORY);
 
     ConsecutiveEndpointIdAllocator allocator(kDeviceEndpointId);
-    ReturnErrorOnFailure(gConstructedDevice->Register(allocator, *gDataModelProvider));
+    ReturnErrorOnFailure(created.device->Register(allocator, *gDataModelProvider));
+    if (created.onDeviceRegistered)
+    {
+        created.onDeviceRegistered();
+    }
+    gConstructedDevice = std::move(created.device);
 
     initParams.dataModelProvider = gDataModelProvider.get();
 

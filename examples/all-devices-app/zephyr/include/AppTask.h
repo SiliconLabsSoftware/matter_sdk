@@ -1,5 +1,4 @@
 /*
- *
  *    Copyright (c) 2026 Project CHIP Authors
  *    All rights reserved.
  *
@@ -18,29 +17,11 @@
 
 #pragma once
 
-#include "AppTaskBase.h"
+#include <device/types/ambient-context-sensor/AmbientContextSensor.h>
+#include <posix/named_pipe/Dispatcher.h>
 
-#ifdef APP_TASK_IMPL_HEADER
-#include APP_TASK_IMPL_HEADER
-#else
+namespace chip::app {
 
-namespace chip::app::AllDevices {
+void RegisterNamedPipeTranslators(AmbientContextSensor & device, NamedPipe::Dispatcher & dispatcher);
 
-class AppTask final : public AppTaskBase<AppTask>
-{
-};
-
-} // namespace chip::app::AllDevices
-
-#endif // APP_TASK_IMPL_HEADER
-
-namespace chip::app::AllDevices {
-
-inline AppTask gAppTask;
-
-inline AppTask & GetAppTask()
-{
-    return gAppTask;
-}
-
-} // namespace chip::app::AllDevices
+} // namespace chip::app

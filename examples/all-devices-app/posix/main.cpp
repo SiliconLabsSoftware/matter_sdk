@@ -42,17 +42,19 @@
 #include <app_options/DeviceTypeParser.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
 #include <device-factory/DeviceFactory.h>
+#include <device/api/SingleEndpoint.h>
 #include <device/api/allocator/DynamicEndpointIdAllocator.h>
-#include <oob-accessors/OOBAccessor.h>
+#include <oob-accessors/OOBAccessorHook.h>
 #include <oob-accessors/OOBAccessorRegistry.h>
 #include <platform/CommissionableDataProvider.h>
 #include <platform/DeviceInstanceInfoProvider.h>
 #include <platform/DiagnosticDataProvider.h>
 #include <platform/PlatformManager.h>
+#include <posix/named_pipe/Dispatcher.h>
+#include <posix/named_pipe/Hook.h>
 #include <setup_payload/OnboardingCodesUtil.h>
 #include <system/SystemLayer.h>
 
-#include <AppCommandDelegate.h>
 #include <BleInit.h>
 #include <TermHandling.h>
 #if PW_RPC_ENABLED
@@ -60,11 +62,11 @@
 #include <oob-accessors/pigweed/PigweedAttributeAccessor.h>
 #include <pigweed/rpc_services/AccessInterceptorRegistry.h>
 #endif // PW_RPC_ENABLED
-#include <device/api/SingleEndpoint.h>
 #include <device/capabilities/identify/LoggingIdentifyDelegate.h>
-#include <device/types/boolean-state-sensor/BooleanStateSensor.h>
-#include <device/types/occupancy-sensor/OccupancySensor.h>
-#include <device/types/on-off-light/impl/LoggingOnOffLight.h>
+
+#include <algorithm>
+#include <memory>
+#include <vector>
 
 using namespace chip;
 using namespace chip::app;
@@ -72,6 +74,8 @@ using namespace chip::Platform;
 using namespace chip::DeviceLayer;
 using namespace chip::app::Clusters;
 using namespace chip::ArgParser;
+
+using PosixDeviceFactory = DeviceFactory<OOBAccessorHook, NamedPipe::Hook>;
 
 void ApplicationShutdown();
 
@@ -86,9 +90,6 @@ chip::app::PosixAudioManager gAudioManager;
 
 // To hold SPAKE2+ verifier, discriminator, passcode
 LinuxCommissionableDataProvider gCommissionableDataProvider;
-
-AllDevicesAppCommandDelegate gAllDevicesAppCommandDelegate;
-NamedPipeCommands gNamedPipeCommands;
 
 void StopSignalHandler(int /* signal */)
 {
@@ -194,12 +195,13 @@ public:
         DynamicEndpointIdAllocator endpointIdAllocator(GetReservedEndpointIds());
         endpointIdAllocator.ForceNext(kRootEndpointId);
         ReturnErrorOnFailure(mRootNode.RootDevice().Register(endpointIdAllocator, mDataModelProvider));
+        PosixDeviceFactory::ExecuteHooks(mRootNode.RootDevice());
 
         for (const auto & entry : AppOptions::GetDeviceTypeEntries())
         {
-            auto device = DeviceFactory::GetInstance().Create(entry.type, entry.label);
+            auto created = PosixDeviceFactory::GetInstance().Create(entry.type, entry.label);
 
-            VerifyOrReturnError(device, CHIP_ERROR_NO_MEMORY);
+            VerifyOrReturnError(created.device != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             ChipLogProgress(AppServer, "Registering device %s on endpoint %u with parent 0x%04X", entry.type.c_str(),
                             entry.endpoint, entry.parentId);
             if (entry.endpoint != kInvalidEndpointId)
@@ -207,14 +209,12 @@ public:
                 endpointIdAllocator.ForceNext(entry.endpoint);
             }
             ReturnErrorOnFailure(
-                device->Register(endpointIdAllocator, mDataModelProvider, EndpointComposition::WithParent(entry.parentId)));
-            auto oobAccessor = DeviceFactory::GetInstance().CreateAccessor(entry.type, *device);
-            if (oobAccessor)
+                created.device->Register(endpointIdAllocator, mDataModelProvider, EndpointComposition::WithParent(entry.parentId)));
+            if (created.onDeviceRegistered)
             {
-                OOBAccessorRegistry::Instance().Register(*oobAccessor);
-                mConstructedAccessors.push_back(std::move(oobAccessor));
+                created.onDeviceRegistered();
             }
-            mConstructedDevices.push_back(std::move(device));
+            mConstructedDevices.push_back(std::move(created.device));
         }
 
         return CHIP_NO_ERROR;
@@ -222,7 +222,7 @@ public:
 
     void Shutdown()
     {
-        mConstructedAccessors.clear();
+        OOBAccessorRegistry::Instance().Clear();
         for (auto & device : mConstructedDevices)
         {
             device->Unregister(mDataModelProvider);
@@ -244,90 +244,15 @@ private:
 
     AppRootNode mRootNode;
     std::vector<std::unique_ptr<DeviceInterface>> mConstructedDevices;
-
-    std::vector<std::unique_ptr<chip::app::OOBAccessor>> mConstructedAccessors;
 };
 
-void SetupNamedPipe(CodeDrivenDataModelDevices & devices, const char * namedPipePath)
+void SetupNamedPipe(const char * namedPipePath)
 {
-    auto deviceConfigs              = AppOptions::GetDeviceTypeEntries();
-    const auto & constructedDevices = devices.GetConstructedDevices();
-
-    // Calling code already checked that deviceConfigs.size() == constructedDevices.size().
-    VerifyOrDie(deviceConfigs.size() == constructedDevices.size());
-
-    // TODO(#72638): The hardcoded type references to specific device implementations below prevent those
-    // classes from being selectively compiled out or stripped by LTO when they are disabled.
-    // A more generic and pluggable registration mechanism (e.g., via DeviceFactory or an interface)
-    // should be developed to allow true conditional compilation of devices.
-    for (size_t i = 0; i < deviceConfigs.size(); i++)
-    {
-        const auto & config = deviceConfigs[i];
-        auto * device       = constructedDevices[i].get();
-
-        if (config.type == "occupancy-sensor")
-        {
-            auto * occupancyDevice = static_cast<OccupancySensor *>(device);
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-                .RegisterClusterInstance<chip::app::Clusters::OccupancySensingCluster>(&occupancyDevice->OccupancySensingCluster());
-        }
-        else if (config.type == "contact-sensor" || config.type == "water-leak-detector")
-        {
-            auto * booleanStateDevice = static_cast<BooleanStateSensor *>(device);
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-                .RegisterClusterInstance<chip::app::Clusters::BooleanStateCluster>(&booleanStateDevice->BooleanState());
-        }
-        else if (config.type == "on-off-light")
-        {
-            auto * lightDevice = static_cast<LoggingOnOffLight *>(device);
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-                .RegisterClusterInstance<chip::app::Clusters::OnOffCluster>(&lightDevice->OnOffCluster());
-        }
-        else if (config.type == "ambient-context-sensor")
-        {
-            auto * ambientContextSensorDevice = static_cast<AmbientContextSensor *>(device);
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-                .RegisterClusterInstance<chip::app::Clusters::AmbientContextSensingCluster>(
-                    &ambientContextSensorDevice->AmbientContextSensingCluster());
-        }
-        else if (config.type == "robotic-vacuum-cleaner")
-        {
-            auto * rvcDevice = static_cast<SimulatedRoboticVacuumCleaner *>(device);
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-                .RegisterClusterInstance<chip::app::Clusters::RvcOperationalState::RvcOperationalStateCluster>(
-                    &rvcDevice->OperationalState());
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-                .RegisterClusterInstance<chip::app::Clusters::ServiceArea::ServiceAreaCluster>(&rvcDevice->GetServiceAreaCluster());
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry().RegisterClusterInstance<RvcRunModeType>(
-                &rvcDevice->RunMode());
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry().RegisterClusterInstance<RvcCleanModeType>(
-                &rvcDevice->CleanMode());
-        }
-        else if (config.type == "electrical-sensor")
-        {
-            auto * electricalSensorDevice = static_cast<ElectricalSensor *>(device);
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-                .RegisterClusterInstance<chip::app::Clusters::ElectricalEnergyMeasurement::ElectricalEnergyMeasurementCluster>(
-                    &electricalSensorDevice->ElectricalEnergyMeasurementCluster());
-        }
-        else if (config.type == "mode-select")
-        {
-            auto * modeSelectDevice = static_cast<chip::app::ModeSelect *>(device);
-            gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-                .RegisterClusterInstance<chip::app::Clusters::ModeSelectCluster>(&modeSelectDevice->ModeSelectCluster());
-        }
-    }
-
-    gAllDevicesAppCommandDelegate.GetClusterImplementationRegistry()
-        .RegisterClusterInstance<chip::app::Clusters::BasicInformationCluster>(
-            &devices.RootNode().GetRootNode().BasicInformation());
-    gAllDevicesAppCommandDelegate.RegisterCommandHandlers();
-
-    CHIP_ERROR err = gNamedPipeCommands.Start(namedPipePath, &gAllDevicesAppCommandDelegate);
+    CHIP_ERROR err = NamedPipe::Dispatcher::Instance().Start(namedPipePath);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "Failed to start named pipe at %s: %" CHIP_ERROR_FORMAT, namedPipePath, err.Format());
-        LogErrorOnFailure(gNamedPipeCommands.Stop());
+        LogErrorOnFailure(NamedPipe::Dispatcher::Instance().Stop());
     }
 }
 
@@ -338,7 +263,12 @@ void RunApplication(AppMainLoopImplementation * mainLoop = nullptr)
     static chip::CommonCaseDeviceServerInitParams initParams;
     SuccessOrDie(initParams.InitializeStaticResourcesBeforeServerInit());
 
-    DeviceFactory::GetInstance().Init(DeviceFactory::Context{
+    // Initialize the test event trigger delegate, and add a handler
+    static SimpleTestEventTriggerDelegate sTestEventTriggerDelegate;
+    SuccessOrDie(sTestEventTriggerDelegate.Init(ByteSpan(AppOptions::GetConfig().testEventTriggerEnableKey)));
+    initParams.testEventTriggerDelegate = &sTestEventTriggerDelegate;
+
+    PosixDeviceFactory::GetInstance().Init(PosixDeviceFactory::Context{
         .groupDataProvider        = gGroupDataProvider,                     //
         .fabricTable              = Server::GetInstance().GetFabricTable(), //
         .timerDelegate            = gTimerDelegate,                         //
@@ -352,7 +282,8 @@ void RunApplication(AppMainLoopImplementation * mainLoop = nullptr)
         .identifyDelegate         = gIdentifyDelegate,
     });
 
-    RegisterDeviceFactoryOverrides(gTimerDelegate, initParams.persistentStorageDelegate, gAudioManager);
+    RegisterDeviceFactoryOverrides(PosixDeviceFactory::GetInstance(), gTimerDelegate, Server::GetInstance().GetFabricTable(),
+                                   initParams.persistentStorageDelegate, gAudioManager);
 
 #if CHIP_CONFIG_ENABLE_GROUPCAST
     // TODO(#72056): Once groupcast is enabled by default, this should not be dependent on the app argument.
@@ -425,7 +356,7 @@ void RunApplication(AppMainLoopImplementation * mainLoop = nullptr)
     const std::string & namedPipePath = AppOptions::GetConfig().appPipePath;
     if (!namedPipePath.empty())
     {
-        SetupNamedPipe(devices, namedPipePath.c_str());
+        SetupNamedPipe(namedPipePath.c_str());
     }
 
     initParams.dataModelProvider      = &devices.DataModelProvider();
@@ -517,8 +448,9 @@ void RunApplication(AppMainLoopImplementation * mainLoop = nullptr)
     }
     gMainLoopImplementation = nullptr;
 
-    LogErrorOnFailure(gNamedPipeCommands.Stop());
+    LogErrorOnFailure(NamedPipe::Dispatcher::Instance().Stop());
     devices.Shutdown();
+
     Server::GetInstance().Shutdown();
     DeviceLayer::PlatformMgr().Shutdown();
 
