@@ -40,7 +40,7 @@ namespace DeviceEventType {
  */
 enum PublicPlatformSpecificEventTypes
 {
-    /* None currently defined */
+    kSLSystemEvent = kRange_PublicPlatformSpecific,
 };
 
 /**
