@@ -19,6 +19,8 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/icd/WifiSleepManager.h>
 
+using namespace chip::DeviceLayer::Silabs;
+
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -33,6 +35,10 @@ CHIP_ERROR WifiSleepManager::Init(PowerSaveInterface * platformInterface, WifiSt
 
     mPowerSaveInterface = platformInterface;
     mWifiStateProvider  = wifiStateProvider;
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    ReturnErrorOnFailure(mPowerSaveInterface->InitLitPrecheckInReconnectTimer());
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
     return VerifyAndTransitionToLowPowerMode(PowerEvent::kGenericEvent);
 }
@@ -76,7 +82,13 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
-        // No additional processing needed for these events at the moment
+        // Preserve mActiveMode; HP cycles and connectivity use these events.
+        break;
+    case PowerEvent::kActiveMode:
+        mActiveMode = true;
+        break;
+    case PowerEvent::kIdleMode:
+        mActiveMode = false;
         break;
 
     default:
@@ -94,6 +106,14 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 
     ReturnErrorOnFailure(HandlePowerEvent(event));
 
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    if (event == PowerEvent::kActiveMode)
+    {
+        mPowerSaveInterface->CancelLitPrecheckInReconnectTimer();
+        ReturnErrorOnFailure(ConfigureLITConnect());
+    }
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
     if (mHighPerformanceRequestCounter > 0)
     {
         return ConfigureHighPerformance();
@@ -102,6 +122,18 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     if (!mWifiStateProvider->IsWifiProvisioned())
     {
         return ConfigureDeepSleep();
+    }
+
+    if (mCallback && mCallback->CanGoToLIBasedSleep())
+    {
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+        if (!mActiveMode)
+        {
+            return ConfigureLITDisconnect();
+        }
+#else  // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+        return ConfigureLIBasedSleep();
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
 
     return ConfigureDTIMBasedSleep();
@@ -137,6 +169,38 @@ CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
         mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kHighPerformance, 0));
     return CHIP_NO_ERROR;
 }
+
+CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
+{
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
+
+    // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
+    ReturnLogErrorOnFailure(
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kLIConnectedSleep,
+                                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+
+    return CHIP_NO_ERROR;
+}
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
+{
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
+    ReturnLogErrorOnFailure(
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep,
+                                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+
+    mPowerSaveInterface->StartLitPrecheckInReconnectTimer();
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
+{
+    ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
+    return CHIP_NO_ERROR;
+}
+#endif
 
 } // namespace Silabs
 } // namespace DeviceLayer

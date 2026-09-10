@@ -42,6 +42,38 @@ public:
         kGenericEvent          = 0,
         kCommissioningComplete = 1,
         kConnectivityChange    = 2,
+        kActiveMode            = 3,
+        kIdleMode              = 4,
+    };
+
+    /**
+     * @brief Class implements the callbacks that the application can implement
+     *        to alter the WifiSleepManager behaviors.
+     */
+    class ApplicationCallback
+    {
+    public:
+        virtual ~ApplicationCallback() = default;
+
+        /**
+         * @brief Function informs the WifiSleepManager in which Low Power mode the device can go to.
+         *        The two supported sleep modes are DTIM based sleep and LI based sleep.
+         *
+         *        When the function is called, the WifiSleepManager is about to go to sleep and uses this to choose LI sleep
+         *        (or LIT disconnect sleep when CHIP_CONFIG_ENABLE_ICD_LIT is enabled) versus DTIM based sleep.
+         *
+         *        DTIM based sleep requires the Wi-Fi devices to be synced with the DTIM beacon.
+         *        In this mode, the broadcast filter is disabled and the device will process multicast and
+         *        broadcast messages.
+         *
+         *        LI based sleep allows the Wi-Fi devices to sleep for configurable amounts of time without needing to be synced
+         *        with the DTIM beacon. The sleep time is configurable trough the ICD Manager feature-set.
+         *        In the LI based sleep, the broadcast filter is enabled.
+         *
+         * @return true The Wi-Fi Sleep Manager can go to LI based sleep
+         * @return false The Wi-Fi Sleep Manager cannot go to LI based sleep or an error occured in the processing.
+         */
+        virtual bool CanGoToLIBasedSleep() = 0;
     };
 
     /**
@@ -58,6 +90,14 @@ public:
      *                    CHIP_ERROR_INTERNAL if an error occured
      */
     CHIP_ERROR Init(PowerSaveInterface * platformInterface, WifiStateProvider * wifiStateProvider);
+
+    /**
+     * @brief Set the Application Callback
+     *
+     * @param callbacks pointer to the application callbacks.
+     *                  The callback can be set to nullptr if the application wants to remove its callback
+     */
+    void SetApplicationCallback(ApplicationCallback * callback) { mCallback = callback; }
 
     /**
      * @brief Public API to request the Wi-Fi chip to transition to High Performance.
@@ -107,8 +147,14 @@ public:
      *
      *        State machine logic:
      *        1. If there are high performance requests, configure high performance mode.
+<<<<<<< HEAD
      *        2. If the device is unprovisioned, configure deep sleep.
      *        3. Otherwise, configure DTIM based sleep.
+=======
+     *        2. If commissioning is in progress, configure DTIM based sleep.
+     *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
+     *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
+>>>>>>> origin/release_2.10-1.6.1
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
      *
@@ -161,6 +207,23 @@ private:
     CHIP_ERROR ConfigureDTIMBasedSleep();
 
     /**
+     * @brief Configures the Wi-Fi Chip to go to LI based sleep.
+     *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
+     */
+    CHIP_ERROR ConfigureLIBasedSleep();
+
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+    /**
+     * @brief LIT path: intentional STA disconnect only (see PowerSaveInterface::ConfigureLITDisconnect).
+     */
+    CHIP_ERROR ConfigureLITDisconnect();
+
+    CHIP_ERROR ConfigureLITConnect();
+    #endif // CHIP_CONFIG_ENABLE_ICD_LIT
+
+    /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
      *
      * @param triggerTransition true, triggers the transition to High Performance
@@ -176,6 +239,9 @@ private:
     PowerSaveInterface * mPowerSaveInterface = nullptr;
     WifiStateProvider * mWifiStateProvider   = nullptr;
     uint8_t mHighPerformanceRequestCounter   = 0;
+    bool mActiveMode                         = false;
+
+    ApplicationCallback * mCallback = nullptr;
 };
 
 } // namespace Silabs
