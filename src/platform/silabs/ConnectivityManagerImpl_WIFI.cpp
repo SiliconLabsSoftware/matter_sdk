@@ -80,7 +80,7 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
 {
     // Forward the event to the generic base classes as needed.
     // Handle Wfx wifi events...
-    if (event->Type == DeviceEventType::kWFXSystemEvent)
+    if (event->Type == DeviceEventType::kPlatformSLEvent)
     {
 
         switch (event->Platform.event.WFXSystemEvent.data.genericMsgEvent.header.id)

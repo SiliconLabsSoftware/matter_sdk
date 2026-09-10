@@ -48,7 +48,7 @@ enum PublicPlatformSpecificEventTypes
  */
 enum InternalPlatformSpecificEventTypes
 {
-    kWFXSystemEvent = kRange_InternalPlatformSpecific,
+    kPlatformSLEvent = kRange_InternalPlatformSpecific,
 };
 
 } // namespace DeviceEventType
