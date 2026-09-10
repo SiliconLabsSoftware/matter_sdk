@@ -30,4 +30,4 @@ jobs:
       - name: Validate Gitmodules Branches
         uses: SiliconLabsSoftware/action-gitmodule-validation@v1
         with:
-          submodules: third_party/matter_support
+          submodules: third_party/silabs/matter_support
