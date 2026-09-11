@@ -151,15 +151,15 @@ bool ConnectivityManagerImpl::_IsWiFiStationEnabled(void)
     return WifiInterface::GetInstance().IsStationModeEnabled();
 }
 
-CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiFiStationMode newWiFiStationMode)
+CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiFiStationMode val)
 {
     // If the new WiFi station mode is the same as the current WiFi station mode, return success.
-    VerifyOrReturnError(newWiFiStationMode != mWiFiStationMode, CHIP_NO_ERROR);
+    VerifyOrReturnError(val != mWiFiStationMode, CHIP_NO_ERROR);
 
     ChipLogProgress(DeviceLayer, "WiFi station mode change: %s -> %s", WiFiStationModeToStr(mWiFiStationMode),
-                    WiFiStationModeToStr(newWiFiStationMode));
+                    WiFiStationModeToStr(val));
 
-    mWiFiStationMode = newWiFiStationMode;
+    mWiFiStationMode = val;
     VerifyOrReturnError(WifiInterface::GetInstance().EnableStationMode() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
     TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
     return CHIP_NO_ERROR;
