@@ -1129,7 +1129,7 @@ CHIP_ERROR WifiInterfaceImpl::StartWifiTask()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR WifiInterfaceImpl::ConfigureStationMode()
+CHIP_ERROR WifiInterfaceImpl::EnableStationMode()
 {
     wfx_rsi.dev_state.Set(WifiState::kStationMode);
     return CHIP_NO_ERROR;
