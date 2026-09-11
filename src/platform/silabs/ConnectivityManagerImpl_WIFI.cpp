@@ -250,7 +250,6 @@ void ConnectivityManagerImpl::DriveStationState()
         // If the WiFi station interface is no longer enabled, or no longer provisioned,
         // disconnect the station from the AP, unless the WiFi station mode is currently
         // under application control.
-#ifndef SL_ONNETWORK_PAIRING
         // Incase of station interface disabled & provisioned, wifi_station should not be disconnected.
         // Device will try to reconnect.
         if (mWiFiStationMode != kWiFiStationMode_ApplicationControlled &&
@@ -261,7 +260,6 @@ void ConnectivityManagerImpl::DriveStationState()
             WifiInterface::GetInstance().TriggerDisconnection();
             ChangeWiFiStationState(kWiFiStationState_Disconnecting);
         }
-#endif
     }
     // Otherwise the station interface is NOT connected to an AP, so...
     else

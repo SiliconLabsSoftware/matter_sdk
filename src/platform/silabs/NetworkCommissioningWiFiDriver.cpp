@@ -45,24 +45,30 @@ CHIP_ERROR SlWiFiDriver::Init(NetworkStatusChangeCallback * networkStatusChangeC
     mpConnectCallback      = nullptr;
     mpStatusChangeCallback = networkStatusChangeCallback;
     mDriver                = this;
-    // TODO: default to SL_WIFI_SSID and SL_WIFI_PSK if not defined
-#ifdef SL_ONNETWORK_PAIRING
-    memcpy(&mSavedNetwork.ssid[0], SL_WIFI_SSID, sizeof(SL_WIFI_SSID));
-    memcpy(&mSavedNetwork.key[0], SL_WIFI_PSK, sizeof(SL_WIFI_PSK));
-    mSavedNetwork.keyLen  = sizeof(SL_WIFI_PSK);
-    mSavedNetwork.ssidLen = sizeof(SL_WIFI_SSID);
-    err                   = CHIP_NO_ERROR;
-#else
     // If reading fails, wifi is not provisioned, no need to go further.
     err = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_WiFiSSID, mSavedNetwork.ssid, sizeof(mSavedNetwork.ssid),
                                            mSavedNetwork.ssidLen);
+    if (err != CHIP_NO_ERROR)
+    {
+#if defined(SL_ONNETWORK_PAIRING) && SL_ONNETWORK_PAIRING
+        memcpy(&mSavedNetwork.ssid, SL_WIFI_SSID, sizeof(SL_WIFI_SSID));
+        mSavedNetwork.ssidLen = sizeof(SL_WIFI_SSID);
+        err = CHIP_NO_ERROR;
+#endif // SL_ONNETWORK_PAIRING
+    }
     VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_NO_ERROR);
 
     err = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_WiFiPSK, mSavedNetwork.key, sizeof(mSavedNetwork.key),
                                            mSavedNetwork.keyLen);
-    VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_NO_ERROR);
-
+if (err != CHIP_NO_ERROR)
+{
+#if defined(SL_ONNETWORK_PAIRING) && SL_ONNETWORK_PAIRING
+    memcpy(&mSavedNetwork.key, SL_WIFI_PSK, sizeof(SL_WIFI_PSK));
+    mSavedNetwork.keyLen = sizeof(SL_WIFI_PSK);
+    err = CHIP_NO_ERROR;
 #endif // SL_ONNETWORK_PAIRING
+}
+    VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_NO_ERROR);
     mStagingNetwork = mSavedNetwork;
     err             = ConnectWiFiNetwork(reinterpret_cast<const char *>(mSavedNetwork.ssid), mSavedNetwork.ssidLen,
                                          reinterpret_cast<const char *>(mSavedNetwork.key), mSavedNetwork.keyLen);
