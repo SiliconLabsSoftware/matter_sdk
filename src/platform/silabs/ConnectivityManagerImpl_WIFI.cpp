@@ -65,16 +65,14 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     // TODO Initialize the Chip Addressing and Routing Module.
 
     // Ensure that station mode is enabled.
-    err = WifiInterface::GetInstance().EnableStationMode();
-    SuccessOrExit(err);
+    err = SetWiFiStationMode(kWiFiStationMode_Enabled);
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
 
     // Queue work items to bootstrap the AP and station state machines once the Chip event loop is running.
     err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
 
-    SuccessOrExit(err);
-
-exit:
-    return err;
+    return CHIP_NO_ERROR;
 }
 
 void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
