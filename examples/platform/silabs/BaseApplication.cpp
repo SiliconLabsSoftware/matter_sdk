@@ -140,9 +140,13 @@
 #endif
 #define EXAMPLE_VENDOR_ID 0xcafe
 
-#if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
+// Status LED is LED0 and app light is LED1. RGB mode remaps both to one LED, so
+// disable status LED patterns when RGB is enabled or On/Off will be overridden.
+#if (defined(ENABLE_WSTK_LEDS) && defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT) &&                                                    \
+     !(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1))
+#define SL_MATTER_STATUS_LED_ENABLED 1
 #define SYSTEM_STATE_LED 0
-#endif // ENABLE_WSTK_LEDS
+#endif
 #define APP_FUNCTION_BUTTON 0
 
 using namespace chip;
@@ -162,9 +166,9 @@ osTimerId_t sLightTimer;
 osThreadId_t sAppTaskHandle;
 osMessageQueueId_t sAppEventQueue;
 
-#if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
+#if defined(SL_MATTER_STATUS_LED_ENABLED)
 LEDWidget sStatusLED;
-#endif // ENABLE_WSTK_LEDS
+#endif // SL_MATTER_STATUS_LED_ENABLED
 
 bool sIsEnabled  = false;
 bool sIsAttached = false;
@@ -422,9 +426,11 @@ CHIP_ERROR BaseApplication::BaseInit()
     // ConfigurationMgr().LogDeviceConfig();
 
     OutputQrCode(true /*refreshLCD at init*/);
-#if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
+#if defined(ENABLE_WSTK_LEDS)
     LEDWidget::InitGpio();
+#if defined(SL_MATTER_STATUS_LED_ENABLED)
     sStatusLED.Init(SYSTEM_STATE_LED);
+#endif // SL_MATTER_STATUS_LED_ENABLED
 #endif // ENABLE_WSTK_LEDS
 
 #ifdef ENABLE_CHIP_SHELL
@@ -492,7 +498,7 @@ void BaseApplication::FunctionEventHandler(AppEvent * aEvent)
 bool BaseApplication::ActivateStatusLedPatterns()
 {
     bool isPatternSet = false;
-#if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
+#if defined(SL_MATTER_STATUS_LED_ENABLED)
 #ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
     bool isIdentifyActive = false;
     for (const auto & obj : IdentifyPool)
@@ -575,7 +581,7 @@ bool BaseApplication::ActivateStatusLedPatterns()
         isPatternSet = true;
     }
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-#endif // ENABLE_WSTK_LEDS) && SL_CATALOG_SIMPLE_LED_LED1_PRESENT
+#endif // SL_MATTER_STATUS_LED_ENABLED
     return isPatternSet;
 }
 
@@ -624,7 +630,7 @@ void BaseApplication::LightEventHandler()
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #if defined(ENABLE_WSTK_LEDS)
-#ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
+#if defined(SL_MATTER_STATUS_LED_ENABLED)
     // Update the status LED if factory reset has not been initiated.
     //
     // If system has "full connectivity", keep the LED On constantly.
@@ -643,7 +649,7 @@ void BaseApplication::LightEventHandler()
     }
 
     sStatusLED.Animate();
-#endif // SL_CATALOG_SIMPLE_LED_LED1_PRESENT
+#endif // SL_MATTER_STATUS_LED_ENABLED
     if (sAppActionLed)
     {
         sAppActionLed->Animate();
@@ -746,12 +752,12 @@ void BaseApplication::StartFactoryResetSequence()
     StartStatusLEDTimer();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
-#if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
+#if defined(SL_MATTER_STATUS_LED_ENABLED)
     // Turn off all LEDs before starting blink to make sure blink is
     // co-ordinated.
     sStatusLED.Set(false);
     sStatusLED.Blink(500);
-#endif // ENABLE_WSTK_LEDS
+#endif // SL_MATTER_STATUS_LED_ENABLED
 }
 
 void BaseApplication::CancelFactoryResetSequence()
@@ -779,9 +785,9 @@ void BaseApplication::StartStatusLEDTimer()
 
 void BaseApplication::StopStatusLEDTimer()
 {
-#if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
+#if defined(SL_MATTER_STATUS_LED_ENABLED)
     sStatusLED.Set(false);
-#endif // ENABLE_WSTK_LEDS
+#endif // SL_MATTER_STATUS_LED_ENABLED
 
     if (osTimerStop(sLightTimer) == osError)
     {

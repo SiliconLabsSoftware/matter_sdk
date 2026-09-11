@@ -65,7 +65,11 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/tracing/SilabsTracingMacros.h>
 
-#ifdef SL_CATALOG_SIMPLE_LED_LED1_PRESENT
+// RGB mode remaps to a single LED instance with SL_SIMPLE_LED_COUNT == 1
+// (see GsdkSpam / WiseMcuSpam). Prefer index 0 so SetLed is not rejected.
+#if (defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
+#define LIGHT_LED 0
+#elif defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)
 #define LIGHT_LED 1
 #else
 #define LIGHT_LED 0
