@@ -174,8 +174,7 @@ CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
     wifiConfig.security.Set(chip::app::Clusters::NetworkCommissioning::WiFiSecurityBitmap::kWpa2Personal);
 
     ChipLogProgress(NetworkProvisioning, "Setting up connection for WiFi SSID: %s", NullTerminated(ssid, ssidLen).c_str());
-    // Resetting the retry connection state machine for a new access point connection
-    WifiInterface::GetInstance().ResetConnectionRetryInterval();
+
     ReturnErrorOnFailure(WifiInterface::GetInstance().SetWifiCredentials(wifiConfig));
     ReturnErrorOnFailure(ConnectivityMgr().SetWiFiStationMode(ConnectivityManager::kWiFiStationMode_Disabled));
     ReturnErrorOnFailure(ConnectivityMgr().SetWiFiStationMode(ConnectivityManager::kWiFiStationMode_Enabled));
@@ -192,6 +191,7 @@ void SlWiFiDriver::UpdateNetworkingStatus()
     if (!WifiInterface::GetInstance().IsStationConnected())
     {
         // TODO: https://github.com/project-chip/connectedhomeip/issues/26861
+        // TODO: use the mLastDisconnectionReason to set the networking status
         mpStatusChangeCallback->OnNetworkingStatusChange(Status::kUnknownError, MakeOptional(networkId),
                                                          MakeOptional(static_cast<int32_t>(SL_STATUS_FAIL)));
         return;
@@ -229,6 +229,7 @@ exit:
     {
         ChipLogError(NetworkProvisioning, "Failed to connect to WiFi network: %" CHIP_ERROR_FORMAT, err.Format());
         mpConnectCallback = nullptr;
+        // TODO: use the mLastDisconnectionReason to set the networking status
         callback->OnResult(networkingStatus, CharSpan(), 0);
     }
 }

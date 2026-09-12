@@ -328,11 +328,6 @@ public:
     }
 
     /**
-     * @brief Function resets reconnection attempt interval back to the minimum value
-     */
-    void ResetConnectionRetryInterval();
-
-    /**
      * @brief Function returns the last disconnection reason
      *
      * @param[out] reason last disconnection reason
@@ -391,29 +386,12 @@ protected:
      */
     void NotifyWifiTaskInitialized(void);
 
-    /**
-     * @brief Function schedules a reconnection attempt with the Access Point
-     *
-     * @note The retry interval increases exponentially with each attempt, starting from a minimum value and doubling each time,
-     *       up to a maximum value. For example, if the initial retry interval is 1 second, the subsequent intervals will be 2
-     * seconds, 4 seconds, 8 seconds, and so on, until the maximum retry interval is reached.
-     */
-    void ScheduleConnectionAttempt();
-
-    /**
-     * @brief Function cancels the on-going reconnection attempts
-     */
-    void CancelConnectionAttempt();
-
     WifiDisconnectionReasons mLastDisconnectionReason = WifiDisconnectionReasons::kUnknownError;
 
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
     bool mHasNotifiedIPv4 = false;
 #endif // CHIP_DEVICE_CONFIG_ENABLE_IPV4
-
-private:
-    osTimerId_t mRetryTimer;
 };
 
 } // namespace Silabs

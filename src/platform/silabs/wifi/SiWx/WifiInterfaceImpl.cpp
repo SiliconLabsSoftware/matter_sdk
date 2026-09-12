@@ -709,7 +709,22 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
-    ScheduleConnectionAttempt();
+    switch (status)
+    {
+    case SL_STATUS_SI91X_JOIN_AUTHENTICATION_FAILED:
+        mLastDisconnectionReason = WifiDisconnectionReasons::kWPACouterMeasures;
+        break;
+    case SL_STATUS_SI91X_NO_AP_FOUND:
+        mLastDisconnectionReason = WifiDisconnectionReasons::kAccessPointLost;
+        break;
+    case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_FROM_AP:
+        mLastDisconnectionReason = WifiDisconnectionReasons::kAccessPoint;
+        break;
+    default:
+        mLastDisconnectionReason = WifiDisconnectionReasons::kUnknownError;
+        break;
+    }
+    WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
 
     return status;
 }
@@ -742,7 +757,22 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%lx", status);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
-        mInstance.ScheduleConnectionAttempt();
+        WifiDisconnectionReasons reason = WifiDisconnectionReasons::kUnknownError;
+        switch (status)
+        {
+        case SL_STATUS_SI91X_JOIN_AUTHENTICATION_FAILED:
+            reason = WifiDisconnectionReasons::kWPACouterMeasures;
+            break;
+        case SL_STATUS_SI91X_NO_AP_FOUND:
+            reason = WifiDisconnectionReasons::kAccessPointLost;
+            break;
+        default:
+            break;
+        }
+
+        WifiInterfaceImpl & self      = WifiInterfaceImpl::GetInstance();
+        self.mLastDisconnectionReason = reason;
+        self.NotifyDisconnection(reason);
     }
 
     return status;
@@ -848,6 +878,8 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
     sl_status_t status = sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_down failed: 0x%lx", status));
 
+    mLastDisconnectionReason = WifiDisconnectionReasons::kApplication;
+    WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
     return SL_STATUS_OK;
 }
 
@@ -893,8 +925,6 @@ CHIP_ERROR WifiInterfaceImpl::InitLitPrecheckInReconnectTimer()
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
-    ResetConnectionRetryInterval();
-
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
 
     VerifyOrReturnError(!IsStationConnected(), CHIP_NO_ERROR);
