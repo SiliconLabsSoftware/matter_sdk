@@ -117,10 +117,14 @@ private:
 
     // ===== Private members reserved for use by this class only.
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-    System::Clock::Timestamp mLastStationConnectFailTime;
+    // variables for tracking the station mode and state
     WiFiStationMode mWiFiStationMode;
     WiFiStationState mWiFiStationState;
+    // variables for tracking the last connection failure time and reconnect interval
+    System::Clock::Timestamp mLastStationConnectFailTime;
     System::Clock::Timeout mWiFiStationReconnectInterval;
+    uint8_t mWiFiStationReconnectCount;
+    // flags for tracking the internet connectivity state
     BitFlags<Flags> mFlags;
 
     void DriveStationState(void);

@@ -220,9 +220,12 @@ public:
     virtual CHIP_ERROR StartWifiTask() = 0;
 
     /**
-     * @brief Configures the Wi-Fi devices as a Wi-Fi station
+     * @brief Enables the Wi-Fi station mode
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the station mode was successfully enabled
+     *                    CHIP_ERROR_INTERNAL if the station mode could not be enabled
      */
-    virtual void ConfigureStationMode() = 0;
+    virtual CHIP_ERROR EnableStationMode() = 0;
 
     /**
      * @brief Triggers the device to disconnect from the connected Wi-Fi network
@@ -325,9 +328,13 @@ public:
     }
 
     /**
-     * @brief Function resets reconnection attempt interval back to the minimum value
+     * @brief Function returns the last disconnection reason
+     *
+     * @param[out] reason last disconnection reason
      */
-    void ResetConnectionRetryInterval();
+    virtual void GetLastDisconnectionReason(WifiDisconnectionReasons & reason) {
+        reason = mLastDisconnectionReason;
+    };
 
 protected:
     /**
@@ -379,27 +386,12 @@ protected:
      */
     void NotifyWifiTaskInitialized(void);
 
-    /**
-     * @brief Function schedules a reconnection attempt with the Access Point
-     *
-     * @note The retry interval increases exponentially with each attempt, starting from a minimum value and doubling each time,
-     *       up to a maximum value. For example, if the initial retry interval is 1 second, the subsequent intervals will be 2
-     * seconds, 4 seconds, 8 seconds, and so on, until the maximum retry interval is reached.
-     */
-    void ScheduleConnectionAttempt();
-
-    /**
-     * @brief Function cancels the on-going reconnection attempts
-     */
-    void CancelConnectionAttempt();
+    WifiDisconnectionReasons mLastDisconnectionReason = WifiDisconnectionReasons::kUnknownError;
 
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
     bool mHasNotifiedIPv4 = false;
 #endif // CHIP_DEVICE_CONFIG_ENABLE_IPV4
-
-private:
-    osTimerId_t mRetryTimer;
 };
 
 } // namespace Silabs
