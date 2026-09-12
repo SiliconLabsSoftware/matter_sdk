@@ -231,9 +231,6 @@ void ConnectivityManagerImpl::DriveStationState()
     switch (mWiFiStationState)
     {
     case kWiFiStationState_NotConnected: {
-        // reset the last connection failure time and reconnect interval
-        mLastStationConnectFailTime   = System::Clock::kZero;
-        mWiFiStationReconnectInterval = System::Clock::Milliseconds32(CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL);
         // connect the station to the access point using the credentials from the staging network
         err = WifiInterface::GetInstance().ConnectToAccessPoint(); // using the credentials from the staging network
         VerifyOrReturn(err == CHIP_NO_ERROR,
@@ -242,12 +239,9 @@ void ConnectivityManagerImpl::DriveStationState()
         // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of ConnectWiFiNetwork()
     }
     break;
-    case kWiFiStationState_Connected:
-    case kWiFiStationState_Connecting_Succeeded: {
-        // if the station is connected or connecting succeeded,
-        // reset the last connection failure time and reconnect interval
-        mLastStationConnectFailTime   = System::Clock::kZero;
-        mWiFiStationReconnectInterval = System::Clock::Milliseconds32(CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL);
+    case kWiFiStationState_Connecting: {
+        // Connection attempt already in progress; wait for connect/disconnect platform events.
+        return;
     }
     break;
     case kWiFiStationState_Connecting_Failed: {
@@ -314,12 +308,25 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
     mWiFiStationState = newState;
     switch (newState)
     {
+    case kWiFiStationState_Connecting_Succeeded:
+        // if the station is connected or connecting succeeded,
+        // reset the last connection failure time and reconnect interval
+        mLastStationConnectFailTime = System::Clock::kZero;
+        mWiFiStationReconnectCount  = 0;
+        // intentionally fall through to the connected state
     case kWiFiStationState_Connected:
         OnStationConnected(); // alert other components of the new state
         break;
+
     case kWiFiStationState_NotConnected:
+        // reset the last connection failure time and reconnect interval
+        mLastStationConnectFailTime = System::Clock::kZero;
+        mWiFiStationReconnectCount  = 0;
+        // intentionally fall through to the failed state
+    case kWiFiStationState_Connecting_Failed:
         OnStationDisconnected(); // alert other components of the new state
         break;
+
     default:
         ChipLogDetail(DeviceLayer, "WiFi station state not notifying: %s", WiFiStationStateToStr(newState));
         break;
