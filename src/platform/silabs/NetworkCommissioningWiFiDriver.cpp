@@ -53,6 +53,7 @@ CHIP_ERROR SlWiFiDriver::Init(NetworkStatusChangeCallback * networkStatusChangeC
 #if defined(SL_ONNETWORK_PAIRING) && SL_ONNETWORK_PAIRING
         memcpy(&mSavedNetwork.ssid, SL_WIFI_SSID, sizeof(SL_WIFI_SSID));
         mSavedNetwork.ssidLen = sizeof(SL_WIFI_SSID);
+
         err = CHIP_NO_ERROR;
 #endif // SL_ONNETWORK_PAIRING
     }
@@ -60,14 +61,15 @@ CHIP_ERROR SlWiFiDriver::Init(NetworkStatusChangeCallback * networkStatusChangeC
 
     err = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_WiFiPSK, mSavedNetwork.key, sizeof(mSavedNetwork.key),
                                            mSavedNetwork.keyLen);
-if (err != CHIP_NO_ERROR)
-{
+    if (err != CHIP_NO_ERROR)
+    {
 #if defined(SL_ONNETWORK_PAIRING) && SL_ONNETWORK_PAIRING
-    memcpy(&mSavedNetwork.key, SL_WIFI_PSK, sizeof(SL_WIFI_PSK));
-    mSavedNetwork.keyLen = sizeof(SL_WIFI_PSK);
-    err = CHIP_NO_ERROR;
+        memcpy(&mSavedNetwork.key, SL_WIFI_PSK, sizeof(SL_WIFI_PSK));
+        mSavedNetwork.keyLen = sizeof(SL_WIFI_PSK);
+
+        err = CHIP_NO_ERROR;
 #endif // SL_ONNETWORK_PAIRING
-}
+    }
     VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_NO_ERROR);
     mStagingNetwork = mSavedNetwork;
     err             = ConnectWiFiNetwork(reinterpret_cast<const char *>(mSavedNetwork.ssid), mSavedNetwork.ssidLen,
@@ -183,17 +185,8 @@ CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
 // TODO: Re-write implementation with proper driver based callback
 void SlWiFiDriver::UpdateNetworkingStatus()
 {
-    if (mpStatusChangeCallback == nullptr)
-    {
-        ChipLogError(NetworkProvisioning, "networkStatusChangeCallback is nil");
-        return;
-    }
-
-    if (mStagingNetwork.ssidLen == 0)
-    {
-        ChipLogError(NetworkProvisioning, "ssidLen is 0");
-        return;
-    }
+    VerifyOrReturn(mpStatusChangeCallback != nullptr);
+    VerifyOrReturn(mStagingNetwork.ssidLen != 0);
 
     ByteSpan networkId = ByteSpan((const unsigned char *) mStagingNetwork.ssid, mStagingNetwork.ssidLen);
     if (!WifiInterface::GetInstance().IsStationConnected())
