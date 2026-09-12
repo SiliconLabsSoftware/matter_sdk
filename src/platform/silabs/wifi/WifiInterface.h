@@ -332,6 +332,15 @@ public:
      */
     void ResetConnectionRetryInterval();
 
+    /**
+     * @brief Function returns the last disconnection reason
+     *
+     * @param[out] reason last disconnection reason
+     */
+    virtual void GetLastDisconnectionReason(WifiDisconnectionReasons & reason) {
+        reason = mLastDisconnectionReason;
+    };
+
 protected:
     /**
      * @brief Function notifies the PlatformManager that an IPv6 event occured on the WiFi interface.
@@ -395,6 +404,8 @@ protected:
      * @brief Function cancels the on-going reconnection attempts
      */
     void CancelConnectionAttempt();
+
+    WifiDisconnectionReasons mLastDisconnectionReason = WifiDisconnectionReasons::kUnknownError;
 
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
