@@ -207,7 +207,6 @@ void SlWiFiDriver::OnConnectWiFiNetwork()
 {
     if (mpConnectCallback)
     {
-        TEMPORARY_RETURN_IGNORED CommitConfiguration();
         mpConnectCallback->OnResult(Status::kSuccess, CharSpan(), 0);
         mpConnectCallback = nullptr;
     }
