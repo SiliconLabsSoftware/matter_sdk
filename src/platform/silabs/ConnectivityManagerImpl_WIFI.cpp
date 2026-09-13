@@ -140,8 +140,7 @@ bool ConnectivityManagerImpl::_IsWiFiStationEnabled(void)
 CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiFiStationMode val)
 {
     // If the new WiFi station mode is the same as the current WiFi station mode, return success.
-    VerifyOrReturnError(val != mWiFiStationMode, CHIP_NO_ERROR,
-                        ChipLogDetail(DeviceLayer, "WiFi station mode is already %s", WiFiStationModeToStr(val)));
+    VerifyOrReturnError(val != mWiFiStationMode, CHIP_NO_ERROR);
 
     ChipLogProgress(DeviceLayer, "WiFi station mode change: %s -> %s", WiFiStationModeToStr(mWiFiStationMode),
                     WiFiStationModeToStr(val));
@@ -237,7 +236,6 @@ void ConnectivityManagerImpl::DriveStationState()
     System::Clock::Timestamp now               = System::SystemClock().GetMonotonicTimestamp();
     System::Clock::Timestamp timeToNextConnect = System::Clock::kZero;
 
-    ChipLogDetail(DeviceLayer, "WiFi station state: %s", WiFiStationStateToStr(mWiFiStationState));
     switch (mWiFiStationState)
     {
     case kWiFiStationState_NotConnected: {
@@ -321,8 +319,7 @@ void ConnectivityManagerImpl::DriveStationState(::chip::System::Layer * aLayer, 
 
 void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
 {
-    VerifyOrReturn(mWiFiStationState != newState,
-                   ChipLogDetail(DeviceLayer, "WiFi station state is already %s", WiFiStationStateToStr(newState)));
+    VerifyOrReturn(mWiFiStationState != newState);
     ChipLogProgress(DeviceLayer, "WiFi station state change: %s -> %s", WiFiStationStateToStr(mWiFiStationState),
                     WiFiStationStateToStr(newState));
     // Commit the state before notifying. OnStationConnected() calls
@@ -350,7 +347,7 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
         break;
 
     default:
-        ChipLogDetail(DeviceLayer, "WiFi station state not notifying: %s", WiFiStationStateToStr(newState));
+        ChipLogDetail(DeviceLayer, "WiFi station state not driving: %s", WiFiStationStateToStr(newState));
         break;
     }
     TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
