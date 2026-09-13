@@ -146,7 +146,26 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
                     WiFiStationModeToStr(val));
 
     mWiFiStationMode = val;
-    VerifyOrReturnError(WifiInterface::GetInstance().EnableStationMode() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
+    switch (mWiFiStationMode)
+    {
+    case kWiFiStationMode_Disabled: {
+        // disconnect if wifi is provisioned
+        if (IsWiFiStationProvisioned())
+        {
+            WifiInterface::GetInstance().TriggerDisconnection();
+            ChangeWiFiStationState(kWiFiStationState_Disconnecting);
+        }
+        // TODO: add logic for disabling WiFi station
+    }
+    break;
+    case kWiFiStationMode_Enabled: {
+        VerifyOrReturnError(WifiInterface::GetInstance().EnableStationMode() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
+    }
+    break;
+    default:
+        // kWiFiStationMode_Application
+        break;
+    }
     TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
     return CHIP_NO_ERROR;
 }
