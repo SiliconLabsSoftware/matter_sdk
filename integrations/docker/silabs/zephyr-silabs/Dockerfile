@@ -1,5 +1,4 @@
-ARG VERSION=211
-FROM ghcr.io/project-chip/chip-build:${VERSION} AS build
+FROM ghcr.io/project-chip/chip-build:211 AS build
 LABEL org.opencontainers.image.source=https://github.com/SiliconLabsSoftware/matter_sdk
 
 WORKDIR /opt/silabs/
