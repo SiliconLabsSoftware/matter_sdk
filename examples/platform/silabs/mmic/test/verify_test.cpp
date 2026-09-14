@@ -11,7 +11,7 @@
 int main() {
     ChipToolStorage s;
     if (!loadChipToolStorage(s)) { fprintf(stderr, "storage load: %s\n", s.missingReason.c_str()); return 1; }
-    auto issued = issueNoc(s, 0x000000000001B669ULL);
+    auto issued = issueNoc(s, 0x000000000001B669ULL); // Test NOC
     if (!issued.ok) { fprintf(stderr, "issueNoc: %s\n", issued.error.c_str()); return 2; }
 
     // Find ctx11 signature (30 0B 40) in the TLV NOC.

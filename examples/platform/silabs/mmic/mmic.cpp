@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * @file
+ * @brief MMIC task using the matter_cpc transport.
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
 #include "mmic.h"
 #include "string.h"
 #include "stdlib.h"
@@ -14,6 +30,89 @@ uint16_t crc16(const uint8_t * buffer, uint16_t size)
         }
     }
     return crc;
+}
+
+uint8_t mmic_serialize_packet(uint8_t header, mmic_command_id_e id,
+                              const void * payload, size_t payloadLen,
+                              uint8_t ** encodedPacket, size_t * packetSize)
+{
+    if (id >= INVALID_COMMAND_ID || encodedPacket == NULL || packetSize == NULL)
+    {
+        return MMIC_ERROR_INVALID_ARG;
+    }
+
+    const size_t frameSize = (size_t) MMIC_PACKET_OVERHEAD + payloadLen;
+    if (frameSize > UINT16_MAX)
+    {
+        return MMIC_ERROR_INVALID_ARG;
+    }
+
+    uint8_t * workbuffer = (uint8_t *) malloc(frameSize);
+    if (workbuffer == NULL)
+    {
+        return MMIC_ERROR_NO_MEMORY;
+    }
+
+    workbuffer[0] = header;
+    uint8_t err   = mmic_write_length(workbuffer, (uint16_t) frameSize);
+    if (err != MMIC_ERROR_OK)
+    {
+        free(workbuffer);
+        return err;
+    }
+    workbuffer[MMIC_OFFSET_OP] = (uint8_t) id;
+
+    if (payloadLen > 0 && payload != NULL)
+    {
+        memcpy(workbuffer + MMIC_OFFSET_PAYLOAD, payload, payloadLen);
+    }
+
+    const uint16_t crc = crc16(workbuffer, (uint16_t) (frameSize - 2));
+    memcpy(workbuffer + frameSize - 2, &crc, 2);
+
+    *encodedPacket = workbuffer; // Warning: must be freed by the caller
+    *packetSize    = frameSize;
+    return MMIC_ERROR_OK;
+}
+
+uint8_t mmic_deserialize_packet(const uint8_t * buffer, size_t len, uint8_t expectedHeader,
+                                mmic_command_id_e * outOpCode,
+                                const uint8_t ** outPayload, uint16_t * outPayloadLen)
+{
+    if (buffer == NULL || len == 0)
+    {
+        return MMIC_ERROR_INVALID_ARG;
+    }
+
+    const uint16_t frameLen = mmic_read_length(buffer);
+    if (buffer[0] != expectedHeader
+        || buffer[MMIC_OFFSET_OP] >= INVALID_COMMAND_ID
+        || frameLen < MMIC_PACKET_OVERHEAD
+        || frameLen > len)
+    {
+        return MMIC_ERROR_INVALID_PACKET;
+    }
+
+    uint16_t crc = 0;
+    memcpy(&crc, buffer + (frameLen - 2), 2);
+    if (crc != crc16(buffer, (uint16_t) (frameLen - 2)))
+    {
+        return MMIC_ERROR_INVALID_PACKET;
+    }
+
+    if (outOpCode != NULL)
+    {
+        *outOpCode = (mmic_command_id_e) buffer[MMIC_OFFSET_OP];
+    }
+    if (outPayload != NULL)
+    {
+        *outPayload = buffer + MMIC_OFFSET_PAYLOAD;
+    }
+    if (outPayloadLen != NULL)
+    {
+        *outPayloadLen = (uint16_t) (frameLen - MMIC_PACKET_OVERHEAD);
+    }
+    return MMIC_ERROR_OK;
 }
 
 #if HOST_SIDE
@@ -35,26 +134,26 @@ const char commandsString[][255] = {
 
 uint8_t encodeCommand(mmic_command_id_e id, void * parameter, uint16_t size, uint8_t ** encodedPacket, size_t * packetSize)
 {
-    if(id >= INVALID_COMMAND_ID)
+    if (id >= INVALID_COMMAND_ID)
     {
-        return 1;
+        return MMIC_ERROR_INVALID_ARG;
     }
 
     // For fixed-args commands defined via COMMAND_LIST, argsCnt/argsSize drive the wire size.
     // For variable-length commands (establish_subscription, commission) the caller passes size.
     const bool isVariableLen = (id == establish_subscription) || (id == commission);
 
-    if(!isVariableLen && (commands[id].argsCnt == 0 && parameter != NULL))
+    if (!isVariableLen && (commands[id].argsCnt == 0 && parameter != NULL))
     {
-        return 1;
+        return MMIC_ERROR_INVALID_ARG;
     }
-    if(!isVariableLen && (commands[id].argsCnt != 0 && parameter == NULL))
+    if (!isVariableLen && (commands[id].argsCnt != 0 && parameter == NULL))
     {
-        return 1;
+        return MMIC_ERROR_INVALID_ARG;
     }
-    if(isVariableLen && (parameter == NULL || size == 0))
+    if (isVariableLen && (parameter == NULL || size == 0))
     {
-        return 1;
+        return MMIC_ERROR_INVALID_ARG;
     }
 
     // Determine payload size for this frame.
@@ -69,75 +168,36 @@ uint8_t encodeCommand(mmic_command_id_e id, void * parameter, uint16_t size, uin
     }
     else
     {
-        payloadSize = (uint16_t)(commands[id].argsSize);
+        payloadSize = (uint16_t) (commands[id].argsSize);
     }
 
-    const size_t frameSize = (size_t)MMIC_PACKET_OVERHEAD + payloadSize;
-    if (frameSize > UINT16_MAX)
-    {
-        return 1;
-    }
-
-    uint8_t * workbuffer = (uint8_t *) malloc(frameSize);
-    if (workbuffer == NULL)
-    {
-        return 2;
-    }
-
-    workbuffer[0] = MMIC_HEADER_CMD;
-    mmic_write_length(workbuffer, (uint16_t)frameSize);
-    workbuffer[MMIC_OFFSET_OP] = (uint8_t)id;
-
-    if (payloadSize > 0)
-    {
-        memcpy(workbuffer + MMIC_OFFSET_PAYLOAD, parameter, payloadSize);
-    }
-
-    const uint16_t crc = crc16(workbuffer, (uint16_t)(frameSize - 2));
-    memcpy(workbuffer + frameSize - 2, &crc, 2);
-
-    *encodedPacket = workbuffer; // Warning must be freed by the caller
-    *packetSize    = frameSize;
-    return 0;
+    return mmic_serialize_packet(MMIC_HEADER_CMD, id,
+                                 (payloadSize > 0) ? parameter : NULL, payloadSize,
+                                 encodedPacket, packetSize);
 }
 
 uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
 {
-
-    if(buffer == NULL || len == 0 )
+    mmic_command_id_e opcode = INVALID_COMMAND_ID;
+    const uint8_t * payload  = NULL;
+    uint16_t payloadLen      = 0;
+    uint8_t err = mmic_deserialize_packet(buffer, len, MMIC_HEADER_ANS, &opcode, &payload, &payloadLen);
+    if (err != MMIC_ERROR_OK)
     {
-        return 1;
+        return err;
     }
 
-    // Packet Integrity validation
-    const uint16_t frameLen = mmic_read_length(buffer);
-    if (buffer[0] != MMIC_HEADER_ANS
-        || buffer[MMIC_OFFSET_OP] >= INVALID_COMMAND_ID
-        || frameLen > len
-        || frameLen < MMIC_PACKET_OVERHEAD)
-    {
-        return 2;
-    }
-
-    // CRC validation
-    uint16_t crc=0;
-    memcpy(&crc, buffer + (frameLen - 2), 2);
-    if (crc != crc16(buffer, (uint16_t)(frameLen - 2)))
-    {
-        return 2;
-    }
-
-    switch(buffer[MMIC_OFFSET_OP])
+    switch (opcode)
     {
         case ping:
-            printf("\r\n%s\r\n",(char *)buffer + MMIC_OFFSET_PAYLOAD );
+            printf("\r\n%s\r\n", (const char *) payload);
             break;
         case version:
-            printf("\r\n%s\r\n",(char *)buffer + MMIC_OFFSET_PAYLOAD );
+            printf("\r\n%s\r\n", (const char *) payload);
             break;
         case matter_state:
             matterState_t state;
-            memcpy(&state, buffer + MMIC_OFFSET_PAYLOAD, sizeof(matterState_t));
+            memcpy(&state, payload, sizeof(matterState_t));
             printf("\r\nNumber of Fabrics: %d\r\nCommisionning Window Open:  %s\r\n",state.nbOfFabric, (state.commissioningWindowOpen)? "true" : "false" );
             printf("mDNS Operational Advertising: %s\r\n", state.mdnsOperationalAdvertising ? "true" : "false");
             if (state.nbOfFabric > 0)
@@ -192,17 +252,16 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
         case openCommissioning:
         case commission:
         case decommission:
-            printf("\r\n%s : %d\r\n", *(buffer + MMIC_OFFSET_PAYLOAD) == 0 ? "Success":"Failure", *(buffer + MMIC_OFFSET_PAYLOAD));
+            printf("\r\n%s : %d\r\n", payload[0] == 0 ? "Success" : "Failure", payload[0]);
             break;
         case establish_subscription:
         {
-            const uint16_t payloadLen = frameLen - MMIC_PACKET_OVERHEAD;
             if (payloadLen < sizeof(subscriptionEstablishResp_t)) {
                 printf("\r\nestablish_subscription: truncated response\r\n");
                 break;
             }
             subscriptionEstablishResp_t r;
-            memcpy(&r, buffer + MMIC_OFFSET_PAYLOAD, sizeof(r));
+            memcpy(&r, payload, sizeof(r));
             if (r.status == 0) {
                 printf("\r\nestablish_subscription: Success (handle=%u)\r\n", (unsigned) r.handle);
             } else {
@@ -212,13 +271,12 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
         }
         case subscription_info:
         {
-            const uint16_t payloadLen = frameLen - MMIC_PACKET_OVERHEAD;
             if (payloadLen < 1) { printf("\r\nsubscription_info: empty payload\r\n"); break; }
-            uint8_t count = buffer[MMIC_OFFSET_PAYLOAD];
+            uint8_t count = payload[0];
             const size_t expected = 1 + (size_t) count * sizeof(subscriptionEntry_t);
             if (payloadLen < expected) { printf("\r\nsubscription_info: truncated\r\n"); break; }
             printf("\r\nActive subscriptions (%u):\r\n", (unsigned) count);
-            const uint8_t * p = buffer + MMIC_OFFSET_PAYLOAD + 1;
+            const uint8_t * p = payload + 1;
             for (uint8_t i = 0; i < count; ++i)
             {
                 subscriptionEntry_t e;
@@ -231,10 +289,10 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
             break;
         }
         default:
-            return 3; //Not implemented
+            return MMIC_ERROR_NOT_IMPLEMENTED;
     };
     fflush(stdout);
-    return 0;
+    return MMIC_ERROR_OK;
 }
 
 void printHelp(void)
@@ -252,6 +310,7 @@ void printHelp(void)
 #include <credentials/GroupDataProvider.h>
 #include <crypto/CHIPCryptoPAL.h>
 #include <lib/core/CHIPError.h>
+#include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -271,38 +330,7 @@ extern "C" otInstance * otGetInstance(void);
 
 uint8_t encodeResponse(mmic_command_id_e id, void * response, size_t responseLen, uint8_t ** encodedPacket, size_t * packetSize)
 {
-    if(id >= INVALID_COMMAND_ID)
-    {
-        return 1;
-    }
-
-    if(packetSize == NULL)
-    {
-        return 1;
-    }
-    const size_t frameSize = (size_t)MMIC_PACKET_OVERHEAD + responseLen;
-    if (frameSize > UINT16_MAX)
-    {
-        return 1;
-    }
-
-    uint8_t * workbuffer = (uint8_t *) malloc(frameSize);
-    if (workbuffer == NULL)
-    {
-        return 2;
-    }
-    workbuffer[0]              = MMIC_HEADER_ANS;
-    workbuffer[MMIC_OFFSET_OP] = (uint8_t)id;
-    mmic_write_length(workbuffer, (uint16_t)frameSize);
-    if (responseLen != 0)
-    {
-        memcpy(workbuffer + MMIC_OFFSET_PAYLOAD, response, responseLen);
-    }
-    const uint16_t crc = crc16(workbuffer, (uint16_t)(frameSize - 2));
-    memcpy(workbuffer + frameSize - 2, &crc, 2);
-    *encodedPacket = workbuffer;
-    *packetSize    = frameSize;
-    return 0;
+    return mmic_serialize_packet(MMIC_HEADER_ANS, id, response, responseLen, encodedPacket, packetSize);
 }
 
 // Local helper: perform local fabric injection using cert/key material supplied
@@ -406,61 +434,38 @@ void mmic_set_subscription_callback(mmic_subscription_cb_t cb)
 
 uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, size_t * packetSize)
 {
-    if (buffer == NULL || len == 0 || response == NULL || packetSize == NULL)
-    {
-        return 1;
-    }
+    VerifyOrReturnError(buffer != NULL && len != 0, MMIC_ERROR_INVALID_ARG);
+    VerifyOrReturnError(response != NULL && packetSize != NULL, MMIC_ERROR_INVALID_ARG);
 
-    const uint16_t frameLen = mmic_read_length(buffer);
-    if (frameLen > len || frameLen < MMIC_PACKET_OVERHEAD)
-    {
-        return 2;
-    }
+    mmic_command_id_e opcode = INVALID_COMMAND_ID;
+    const uint8_t * payload  = NULL;
+    uint16_t payloadLen      = 0;
+    uint8_t derr = mmic_deserialize_packet(buffer, len, MMIC_HEADER_CMD, &opcode, &payload, &payloadLen);
+    VerifyOrReturnError(derr == MMIC_ERROR_OK, derr);
 
-    uint16_t crc = 0;
-    memcpy(&crc, buffer + (frameLen - 2), 2);
-    // Packet Integrity validation
-    if (buffer[0] != MMIC_HEADER_CMD
-        || buffer[MMIC_OFFSET_OP] >= INVALID_COMMAND_ID
-        || crc != crc16(buffer, (uint16_t)(frameLen - 2)))
-    {
-        return 2;
-    }
-
-    switch(buffer[MMIC_OFFSET_OP])
+    switch (opcode)
     {
         case ping:
             encodeResponse(ping, const_cast<char *>("pong"), sizeof("pong"), response, packetSize);
             break;
         case version:
-            encodeResponse(ping, const_cast<char *>(MMIC_VERSION_STRING), sizeof(MMIC_VERSION_STRING), response, packetSize);
+            encodeResponse(version, const_cast<char *>(MMIC_VERSION_STRING), sizeof(MMIC_VERSION_STRING), response, packetSize);
             break;
         case matter_state: // To verify commissioning
             {
                 matterState_t state;
-                if (encodeMatterState(&state) == 0)
+                if (encodeMatterState(&state) == MMIC_ERROR_OK)
                 {
                     encodeResponse(matter_state, &state, sizeof(matterState_t), response, packetSize);
                 }
             }
             break;
-        case openCommissioning:
-            {
-                CHIP_ERROR err = chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow();
-                uint8_t status = err == CHIP_NO_ERROR ? 0 : 1;
-                encodeResponse(establish_subscription, &status, sizeof(status), response, packetSize);
-            }
-            break;
         case establish_subscription:
             {
-                const uint16_t payloadLen = (uint16_t)(frameLen - MMIC_PACKET_OVERHEAD);
-                if (payloadLen < sizeof(subscriptionArgs_t))
-                {
-                    return 2;
-                }
+                VerifyOrReturnError(payloadLen >= sizeof(subscriptionArgs_t), MMIC_ERROR_INVALID_PACKET);
 
                 subscriptionArgs_t args;
-                memcpy(&args, buffer + MMIC_OFFSET_PAYLOAD, sizeof(args));
+                memcpy(&args, payload, sizeof(args));
 
                 chip::Silabs::SubscriptionManager::Info info;
                 info.fabricIndex = args.fabricIndex;
@@ -509,35 +514,28 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
                 }
                 chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-                uint8_t payload[1 + MMIC_SUBSCRIPTION_MAX_ENTRIES * sizeof(subscriptionEntry_t)];
-                payload[0] = count;
+                uint8_t payloadBuf[1 + MMIC_SUBSCRIPTION_MAX_ENTRIES * sizeof(subscriptionEntry_t)];
+                payloadBuf[0] = count;
                 if (count > 0)
                 {
-                    memcpy(&payload[1], entries, (size_t) count * sizeof(subscriptionEntry_t));
+                    memcpy(&payloadBuf[1], entries, (size_t) count * sizeof(subscriptionEntry_t));
                 }
-                encodeResponse(subscription_info, payload,
+                encodeResponse(subscription_info, payloadBuf,
                                1 + (size_t) count * sizeof(subscriptionEntry_t),
                                response, packetSize);
             }
             break;
         case commission:
             {
-                const uint16_t payloadLen = (uint16_t)(frameLen - MMIC_PACKET_OVERHEAD);
-                if (payloadLen < sizeof(commissionArgs_t))
-                {
-                    return 2;
-                }
+                VerifyOrReturnError(payloadLen >= sizeof(commissionArgs_t), MMIC_ERROR_INVALID_PACKET);
 
                 commissionArgs_t hdr;
-                memcpy(&hdr, buffer + MMIC_OFFSET_PAYLOAD, sizeof(hdr));
+                memcpy(&hdr, payload, sizeof(hdr));
 
-                const uint32_t certsTotal = (uint32_t)hdr.rcacLen + (uint32_t)hdr.icacLen + (uint32_t)hdr.nocLen;
-                if (payloadLen != sizeof(commissionArgs_t) + certsTotal)
-                {
-                    return 2;
-                }
+                const uint32_t certsTotal = (uint32_t) hdr.rcacLen + (uint32_t) hdr.icacLen + (uint32_t) hdr.nocLen;
+                VerifyOrReturnError(payloadLen == sizeof(commissionArgs_t) + certsTotal, MMIC_ERROR_INVALID_PACKET);
 
-                const uint8_t * certs = buffer + MMIC_OFFSET_PAYLOAD + sizeof(commissionArgs_t);
+                const uint8_t * certs = payload + sizeof(commissionArgs_t);
                 const uint8_t * rcac  = certs;
                 const uint8_t * icac  = certs + hdr.rcacLen;
                 const uint8_t * noc   = icac + hdr.icacLen;
@@ -559,21 +557,18 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
             }
             break;
         default:
-            return 3; //Not implemented
+            return MMIC_ERROR_NOT_IMPLEMENTED;
     };
 
 
-    return 0;
+    return MMIC_ERROR_OK;
 }
 
 
 
 uint8_t encodeMatterState(matterState_t * state)
 {
-    if(state == nullptr)
-    {
-        return 1;
-    }
+    VerifyOrReturnError(state != nullptr, MMIC_ERROR_INVALID_ARG);
 
     memset(state, 0, sizeof(*state));
 
@@ -667,15 +662,15 @@ uint8_t encodeMatterState(matterState_t * state)
     }
 #endif // CHIP_DEVICE_CONFIG_ENABLE_THREAD
 
-    return 0;
+    return MMIC_ERROR_OK;
 }
 uint8_t establishSubscription()
 {
-    return 0;
+    return MMIC_ERROR_OK;
 }
 uint8_t getSubscriptionsInfo()
 {
-    return 0;
+    return MMIC_ERROR_OK;
 }
 
 // Inject a fabric into the device using pre-built certs, opkey and IPK
@@ -691,32 +686,24 @@ static uint8_t performCommission(const commissionArgs_t * args,
     using namespace chip::Credentials;
     using namespace chip::Crypto;
 
-    if (args == nullptr || rcac == nullptr || rcacLen == 0 || noc == nullptr || nocLen == 0)
-    {
-        return 1;
-    }
+    VerifyOrReturnError(args != nullptr, 1);
+    VerifyOrReturnError(rcac != nullptr && rcacLen != 0, 1);
+    VerifyOrReturnError(noc != nullptr && nocLen != 0, 1);
 
     // Rebuild the operational keypair from the wire material (uncompressed pub
     // point 0x04||X||Y then the private scalar) into a P256SerializedKeypair
     // and Deserialize() into a P256Keypair suitable for FabricTable.
     P256SerializedKeypair serialized;
-    if (serialized.Capacity() < (MMIC_COMMISSION_OPKEY_PUB_LEN + MMIC_COMMISSION_OPKEY_PRIV_LEN))
-    {
-        return 2;
-    }
+    VerifyOrReturnError(serialized.Capacity() >= (MMIC_COMMISSION_OPKEY_PUB_LEN + MMIC_COMMISSION_OPKEY_PRIV_LEN), 2);
     memcpy(serialized.Bytes(), args->opkeyPub, MMIC_COMMISSION_OPKEY_PUB_LEN);
     memcpy(serialized.Bytes() + MMIC_COMMISSION_OPKEY_PUB_LEN,
            args->opkeyPriv, MMIC_COMMISSION_OPKEY_PRIV_LEN);
-    if (CHIP_NO_ERROR != serialized.SetLength(MMIC_COMMISSION_OPKEY_PUB_LEN + MMIC_COMMISSION_OPKEY_PRIV_LEN))
-    {
-        return 3;
-    }
+    VerifyOrReturnError(CHIP_NO_ERROR ==
+                            serialized.SetLength(MMIC_COMMISSION_OPKEY_PUB_LEN + MMIC_COMMISSION_OPKEY_PRIV_LEN),
+                        3);
 
     P256Keypair opKey;
-    if (opKey.Deserialize(serialized) != CHIP_NO_ERROR)
-    {
-        return 3;
-    }
+    VerifyOrReturnError(opKey.Deserialize(serialized) == CHIP_NO_ERROR, 3);
 
     DeviceLayer::PlatformMgr().LockChipStack();
 
@@ -732,68 +719,40 @@ static uint8_t performCommission(const commissionArgs_t * args,
 
     FabricIndex newFabricIndex = kUndefinedFabricIndex;
     CHIP_ERROR err = fabricTable.AddNewPendingTrustedRootCert(rcacSpan);
-    if (err != CHIP_NO_ERROR)
-    {
-        DeviceLayer::PlatformMgr().UnlockChipStack();
-        return 4;
-    }
+    VerifyOrReturnError(err == CHIP_NO_ERROR, 4, DeviceLayer::PlatformMgr().UnlockChipStack());
 
     err = fabricTable.AddNewPendingFabricWithProvidedOpKey(nocSpan, icacSpan, args->vendorId,
                                                            &opKey, /*isExistingOpKeyExternallyOwned=*/false,
                                                            &newFabricIndex);
-    if (err != CHIP_NO_ERROR)
-    {
-        fabricTable.RevertPendingFabricData();
-        DeviceLayer::PlatformMgr().UnlockChipStack();
-        return 5;
-    }
+    VerifyOrReturnError(err == CHIP_NO_ERROR, 5,
+                        fabricTable.RevertPendingFabricData(); DeviceLayer::PlatformMgr().UnlockChipStack());
 
     err = fabricTable.CommitPendingFabricData();
-    if (err != CHIP_NO_ERROR)
-    {
-        fabricTable.RevertPendingFabricData();
-        DeviceLayer::PlatformMgr().UnlockChipStack();
-        return 6;
-    }
+    VerifyOrReturnError(err == CHIP_NO_ERROR, 6,
+                        fabricTable.RevertPendingFabricData(); DeviceLayer::PlatformMgr().UnlockChipStack());
 
     // Install the IPK for the newly committed fabric. Compressed fabric ID
     // is needed as the group key context; the FabricTable computes it from
     // the committed root cert.
     const FabricInfo * fabricInfo = fabricTable.FindFabricWithIndex(newFabricIndex);
-    if (fabricInfo == nullptr)
-    {
-        DeviceLayer::PlatformMgr().UnlockChipStack();
-        return 7;
-    }
+    VerifyOrReturnError(fabricInfo != nullptr, 7, DeviceLayer::PlatformMgr().UnlockChipStack());
 
     uint8_t compressedFabricIdBuf[sizeof(uint64_t)];
     MutableByteSpan compressedFabricIdSpan(compressedFabricIdBuf);
     err = fabricInfo->GetCompressedFabricIdBytes(compressedFabricIdSpan);
-    if (err != CHIP_NO_ERROR)
-    {
-        DeviceLayer::PlatformMgr().UnlockChipStack();
-        return 8;
-    }
+    VerifyOrReturnError(err == CHIP_NO_ERROR, 8, DeviceLayer::PlatformMgr().UnlockChipStack());
 
     GroupDataProvider * groupDataProvider = GetGroupDataProvider();
-    if (groupDataProvider == nullptr)
-    {
-        DeviceLayer::PlatformMgr().UnlockChipStack();
-        return 9;
-    }
+    VerifyOrReturnError(groupDataProvider != nullptr, 9, DeviceLayer::PlatformMgr().UnlockChipStack());
 
     ByteSpan ipkSpan(args->ipk, MMIC_COMMISSION_IPK_LEN);
     err = SetSingleIpkEpochKey(groupDataProvider, newFabricIndex, ipkSpan, compressedFabricIdSpan);
-    if (err != CHIP_NO_ERROR)
-    {
-        DeviceLayer::PlatformMgr().UnlockChipStack();
-        return 10;
-    }
+    VerifyOrReturnError(err == CHIP_NO_ERROR, 10, DeviceLayer::PlatformMgr().UnlockChipStack());
 
     // Restart operational DNS-SD so the new fabric shows up on the network.
     (void) app::DnssdServer::Instance().AdvertiseOperational();
 
     DeviceLayer::PlatformMgr().UnlockChipStack();
-    return 0;
+    return MMIC_ERROR_OK;
 }
 #endif // HOST_SIDE

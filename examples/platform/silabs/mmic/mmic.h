@@ -1,3 +1,20 @@
+/*******************************************************************************
+ * @file
+ * @brief MMIC task using the matter_cpc transport.
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
+
 #pragma once
 
 #include "stdint.h"
@@ -8,6 +25,21 @@
 #else
 #define HOST_SIDE 0
 #endif
+
+#if !HOST_SIDE
+#include <crypto/CHIPCryptoPAL.h>
+#endif
+
+/* Error codes returned by the MMIC packet APIs. Kept as uint8_t so that these
+ * values can also be forwarded on the wire as command status bytes. */
+typedef enum mmic_error : uint8_t
+{
+    MMIC_ERROR_OK              = 0,
+    MMIC_ERROR_INVALID_ARG     = 1,
+    MMIC_ERROR_NO_MEMORY       = 2,
+    MMIC_ERROR_INVALID_PACKET  = 3,
+    MMIC_ERROR_NOT_IMPLEMENTED = 4,
+} mmic_error_t;
 
 #define MMIC_VERSION_STRING "0.0.0.2"
 
@@ -31,10 +63,15 @@ static inline uint16_t mmic_read_length(const uint8_t * pkt)
     return (uint16_t)((uint16_t)pkt[MMIC_OFFSET_LEN_LO] | ((uint16_t)pkt[MMIC_OFFSET_LEN_HI] << 8));
 }
 
-static inline void mmic_write_length(uint8_t * pkt, uint16_t len)
+static inline uint8_t mmic_write_length(uint8_t * pkt, uint16_t len)
 {
+    if (pkt == NULL)
+    {
+        return MMIC_ERROR_INVALID_ARG;
+    }
     pkt[MMIC_OFFSET_LEN_LO] = (uint8_t)(len & 0xFF);
     pkt[MMIC_OFFSET_LEN_HI] = (uint8_t)((len >> 8) & 0xFF);
+    return MMIC_ERROR_OK;
 }
 
 #define COMMAND_LIST \
@@ -128,8 +165,15 @@ typedef struct matterState
     // peer must see the same fabricId + compressedFabricId + rootPublicKey.
     uint8_t fabricIndex;
     uint64_t fabricId;
+#if HOST_SIDE
     uint8_t compressedFabricId[8];  // Big-endian, matches Matter spec.
     uint8_t rootPublicKey[65];      // Uncompressed SEC1 point (0x04 || X || Y).
+#else
+    // Embedded side: prefer Matter constexpr sizes so the wire layout stays
+    // in lockstep with the SDK definitions used elsewhere in the codebase.
+    uint8_t compressedFabricId[sizeof(uint64_t)];               // Big-endian.
+    uint8_t rootPublicKey[chip::Crypto::kP256_PublicKey_Length]; // SEC1 point.
+#endif
 
     // mDNS advertisement. DnssdServer has no public "is advertising" getter, so
     // this is inferred: operational records are advertised whenever the device
@@ -153,8 +197,26 @@ typedef struct matterState
     char threadNetworkName[17];     // OT network name (16) + null
 } matterState_t;
 
+#if !HOST_SIDE
+// Ensure the embedded matter-derived sizes match the fixed host wire layout.
+static_assert(sizeof(((matterState_t *) 0)->compressedFabricId) == 8,
+              "compressedFabricId wire size must be 8 bytes");
+static_assert(sizeof(((matterState_t *) 0)->rootPublicKey) == 65,
+              "rootPublicKey wire size must be 65 bytes");
+#endif
+
 /* CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF, no reflect, no xorout). */
 uint16_t crc16(const uint8_t * buffer, uint16_t size);
+
+/* Shared packet (de)serializers. Build an MMIC frame from an opcode + payload,
+ * or validate one and locate its opcode + payload span. Kept out of the
+ * HOST_SIDE split so both sides share a single implementation. */
+uint8_t mmic_serialize_packet(uint8_t header, mmic_command_id_e id,
+                              const void * payload, size_t payloadLen,
+                              uint8_t ** encodedPacket, size_t * packetSize);
+uint8_t mmic_deserialize_packet(const uint8_t * buffer, size_t len, uint8_t expectedHeader,
+                                mmic_command_id_e * outOpCode,
+                                const uint8_t ** outPayload, uint16_t * outPayloadLen);
 
 
 #if HOST_SIDE
