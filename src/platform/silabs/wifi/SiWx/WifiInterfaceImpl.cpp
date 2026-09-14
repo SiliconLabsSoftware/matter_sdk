@@ -709,21 +709,7 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
-    switch (status)
-    {
-    case SL_STATUS_SI91X_JOIN_AUTHENTICATION_FAILED:
-        mLastDisconnectionReason = WifiDisconnectionReasons::kWPACouterMeasures;
-        break;
-    case SL_STATUS_SI91X_NO_AP_FOUND:
-        mLastDisconnectionReason = WifiDisconnectionReasons::kAccessPointLost;
-        break;
-    case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_FROM_AP:
-        mLastDisconnectionReason = WifiDisconnectionReasons::kAccessPoint;
-        break;
-    default:
-        mLastDisconnectionReason = WifiDisconnectionReasons::kUnknownError;
-        break;
-    }
+    mLastDisconnectionReason = static_cast<uint16_t>(status);
     WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
 
     return status;
@@ -757,22 +743,10 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%lx", status);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
-        WifiDisconnectionReasons reason = WifiDisconnectionReasons::kUnknownError;
-        switch (status)
-        {
-        case SL_STATUS_SI91X_JOIN_AUTHENTICATION_FAILED:
-            reason = WifiDisconnectionReasons::kWPACouterMeasures;
-            break;
-        case SL_STATUS_SI91X_NO_AP_FOUND:
-            reason = WifiDisconnectionReasons::kAccessPointLost;
-            break;
-        default:
-            break;
-        }
-
+        uint16_t reason               = static_cast<uint16_t>(status);
         WifiInterfaceImpl & self      = WifiInterfaceImpl::GetInstance();
         self.mLastDisconnectionReason = reason;
-        self.NotifyDisconnection(reason);
+        self.NotifyDisconnection(self.mLastDisconnectionReason);
     }
 
     return status;
@@ -878,7 +852,7 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
     sl_status_t status = sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_down failed: 0x%lx", status));
 
-    mLastDisconnectionReason = WifiDisconnectionReasons::kApplication;
+    mLastDisconnectionReason = static_cast<uint16_t>(status);
     WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
     return SL_STATUS_OK;
 }
@@ -1258,6 +1232,55 @@ CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
 
     PostWifiPlatformEvent(WifiPlatformEvent::kStationStartScan);
     return CHIP_NO_ERROR;
+}
+
+chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum
+WifiInterfaceImpl::MapToNetworkCommissioningStatusEnum(uint32_t reason)
+{
+    /*
+    kSuccess
+    kOutOfRange
+    kBoundsExceeded
+    kNetworkIDNotFound
+    kDuplicateNetworkID
+    kNetworkNotFound
+    kRegulatoryError
+    kAuthFailure
+    kUnsupportedSecurity
+    kOtherConnectionFailure
+    kIPV6Failed
+    kIPBindFailed
+    kUnknownError
+    */
+    using Status = chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum;
+
+    switch (reason)
+    {
+    case SL_STATUS_OK:
+        return Status::kSuccess;
+    case SL_STATUS_SI91X_NO_AP_FOUND:
+    case SL_STATUS_SI91X_BEACON_MISSED_FROM_AP_DURING_JOIN:
+    case SL_STATUS_SI91X_REJOIN_FAILURE:
+        return Status::kNetworkNotFound;
+    case SL_STATUS_SI91X_INVALID_CHANNEL:
+        return Status::kRegulatoryError;
+    case SL_STATUS_SI91X_INVALID_PSK_IN_WEP_SECURITY:
+    case SL_STATUS_SI91X_DEAUTHENTICATION_RECEIVED_FROM_AP:
+    case SL_STATUS_SI91X_ASSOCIATION_FAILED:
+    case SL_STATUS_SI91X_JOIN_AUTHENTICATION_FAILED:
+    case SL_STATUS_SI91X_MAX_BEACON_MISCOUNT:
+    case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_SUPPLICANT:
+    case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_FROM_AP:
+    case SL_STATUS_SI91X_AUTHENTICATION_TIMEOUT:
+        return Status::kAuthFailure;
+    case SL_STATUS_SI91X_INVALID_SECURITY_MODE_IN_JOIN_COMMAND:
+        return Status::kUnsupportedSecurity;
+    case SL_STATUS_SI91X_ASSOCIATION_TIMEOUT:
+    case SL_STATUS_SI91X_FOUR_WAY_HANDSHAKE_FAILED:
+        return Status::kOtherConnectionFailure;
+    default:
+        return Status::kUnknownError;
+    }
 }
 
 bool WifiInterfaceImpl::HasAnIPv4Address()

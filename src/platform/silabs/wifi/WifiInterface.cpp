@@ -65,12 +65,14 @@ void WifiInterface::NotifyIPv4Change(bool gotIPv4Addr)
 }
 #endif // CHIP_DEVICE_CONFIG_ENABLE_IPV4
 
-void WifiInterface::NotifyDisconnection(WifiDisconnectionReasons reason)
+void WifiInterface::NotifyDisconnection(uint32_t reason)
 {
     sl_wfx_disconnect_ind_t evt = {};
     evt.header.id               = to_underlying(WifiEvent::kDisconnect);
     evt.header.length           = sizeof evt;
-    evt.body.reason             = to_underlying(reason);
+    evt.body.reason             = static_cast<uint16_t>(mLastDisconnectionReason);
+
+    ChipLogDetail(DeviceLayer, "WiFi disconnection reason: 0x%lx", MapToNetworkCommissioningStatusEnum(mLastDisconnectionReason));
 
     HandleWFXSystemEvent((sl_wfx_generic_message_t *) &evt);
 }
@@ -109,6 +111,11 @@ void WifiInterface::NotifyWifiTaskInitialized(void)
     TEMPORARY_RETURN_IGNORED GetMacAddress(SL_WFX_STA_INTERFACE, macSpan);
 
     HandleWFXSystemEvent((sl_wfx_generic_message_t *) &evt);
+}
+
+chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum WifiInterface::GetLastDisconnectionReason()
+{
+    return MapToNetworkCommissioningStatusEnum(mLastDisconnectionReason);
 }
 } // namespace Silabs
 } // namespace DeviceLayer

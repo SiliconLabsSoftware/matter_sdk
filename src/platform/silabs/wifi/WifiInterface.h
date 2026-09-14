@@ -328,13 +328,11 @@ public:
     }
 
     /**
-     * @brief Function returns the last disconnection reason
-     *
-     * @param[out] reason last disconnection reason
+     * @brief Function returns the last disconnection reason by mapping platform error codes
+     *        to the NetworkCommissioningStatusEnum value
+     * @return NetworkCommissioningStatusEnum value for the last disconnection reason
      */
-    virtual void GetLastDisconnectionReason(WifiDisconnectionReasons & reason) {
-        reason = mLastDisconnectionReason;
-    };
+    chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum GetLastDisconnectionReason();
 
 protected:
     /**
@@ -363,10 +361,12 @@ protected:
 
     /**
      * @brief Function notifies the PlatformManager that a disconnection event occurred
+     *        The function will use the `GetLastDisconnectionReason()` function to determine
+     *        the reason for the disconnection and notify the PlatformManager.
      *
-     * @param reason reason for the disconnection
+     * @return void
      */
-    void NotifyDisconnection(WifiDisconnectionReasons reason);
+    void NotifyDisconnection(uint32_t reason);
 
     /**
      * @brief Function notifies the PlatformManager that a connection event occurred
@@ -386,12 +386,23 @@ protected:
      */
     void NotifyWifiTaskInitialized(void);
 
-    WifiDisconnectionReasons mLastDisconnectionReason = WifiDisconnectionReasons::kUnknownError;
+    /**
+     * @brief Function maps the disconnection reason to the NetworkCommissioningStatusEnum value
+     *
+     * @param reason disconnection reason
+     * @return NetworkCommissioningStatusEnum value for the disconnection reason
+     */
+    virtual chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum
+    MapToNetworkCommissioningStatusEnum(uint32_t reason)
+    {
+        return chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum::kUnknownError;
+    }
 
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
     bool mHasNotifiedIPv4 = false;
 #endif // CHIP_DEVICE_CONFIG_ENABLE_IPV4
+    uint32_t mLastDisconnectionReason = 0;
 };
 
 } // namespace Silabs
