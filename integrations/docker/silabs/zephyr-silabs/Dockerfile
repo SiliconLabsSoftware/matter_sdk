@@ -1,4 +1,5 @@
-FROM ghcr.io/project-chip/chip-build:211 AS build
+ARG CHIP_VERSION=211
+FROM ghcr.io/project-chip/chip-build:${CHIP_VERSION} AS build
 LABEL org.opencontainers.image.source=https://github.com/SiliconLabsSoftware/matter_sdk
 
 WORKDIR /opt/silabs/
@@ -31,7 +32,7 @@ RUN set -x \
     && west zephyr-export \
     && : # last line
 
-FROM ghcr.io/project-chip/chip-build:${VERSION}
+FROM ghcr.io/project-chip/chip-build:${CHIP_VERSION}
 
 COPY --from=build /opt/silabs/ /opt/silabs/
 
