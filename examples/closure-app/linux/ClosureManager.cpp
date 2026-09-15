@@ -230,9 +230,18 @@ CHIP_ERROR ClosureManager::SetClosurePanelInitialState(ClosureDimensionEndpoint 
 
     if (conformance.HasFeature(ClosureDimension::Feature::kUnit))
     {
+        if (conformance.HasFeature(ClosureDimension::Feature::kRotation))
+        {
+            ReturnErrorOnFailure(
+                closurePanelEndpoint.GetClusterInstance().SetUnitRange(ClosureDimension::Structs::UnitRangeStruct::Type{
+                    .min = static_cast<int16_t>(0), .max = static_cast<int16_t>(360) })); //degree
+        }
+        else
+        {
         ReturnErrorOnFailure(
-            closurePanelEndpoint.GetClusterInstance().SetUnitRange(ClosureDimension::Structs::UnitRangeStruct::Type{
-                .min = static_cast<int16_t>(0), .max = static_cast<int16_t>(10000) }));
+                closurePanelEndpoint.GetClusterInstance().SetUnitRange(ClosureDimension::Structs::UnitRangeStruct::Type{
+                    .min = static_cast<int16_t>(0), .max = static_cast<int16_t>(10000) })); //millimeter
+        }
     }
     if (conformance.HasFeature(ClosureDimension::Feature::kLimitation))
     {
