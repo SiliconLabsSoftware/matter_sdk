@@ -228,6 +228,14 @@ public:
     virtual CHIP_ERROR EnableStationMode() = 0;
 
     /**
+     * @brief Disables the Wi-Fi station mode
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the station mode was successfully disabled
+     *                    CHIP_ERROR_INTERNAL if the station mode could not be disabled
+     */
+    virtual CHIP_ERROR DisableStationMode() { return CHIP_ERROR_NOT_IMPLEMENTED; }
+
+    /**
      * @brief Triggers the device to disconnect from the connected Wi-Fi network
      *
      * @note The disconnection is not immediate. It can take a certain amount of time for the device to be in a disconnected state

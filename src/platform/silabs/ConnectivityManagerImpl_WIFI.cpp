@@ -146,6 +146,7 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
                     WiFiStationModeToStr(val));
 
     mWiFiStationMode = val;
+    CHIP_ERROR err   = CHIP_NO_ERROR;
     switch (mWiFiStationMode)
     {
     case kWiFiStationMode_Disabled: {
@@ -154,20 +155,23 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
         {
             WifiInterface::GetInstance().TriggerDisconnection();
             ChangeWiFiStationState(kWiFiStationState_Disconnecting);
+            // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
         }
-        // TODO: add logic for disabling WiFi station
+        err = WifiInterface::GetInstance().DisableStationMode();
+        VerifyOrReturnError(err == CHIP_NO_ERROR || err == CHIP_ERROR_NOT_IMPLEMENTED, err);
     }
     break;
     case kWiFiStationMode_Enabled: {
-        VerifyOrReturnError(WifiInterface::GetInstance().EnableStationMode() == CHIP_NO_ERROR, CHIP_ERROR_INTERNAL);
+        err = WifiInterface::GetInstance().EnableStationMode();
+        VerifyOrReturnError(err == CHIP_NO_ERROR, err);
     }
     break;
     default:
         // kWiFiStationMode_Application
         break;
     }
-    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
-    return CHIP_NO_ERROR;
+    err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
+    return err;
 }
 
 CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationReconnectInterval(System::Clock::Timeout timeoutMs)
