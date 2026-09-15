@@ -1231,36 +1231,19 @@ CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
     return CHIP_NO_ERROR;
 }
 
-chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum
-WifiInterfaceImpl::MapToNetworkCommissioningStatusEnum(uint32_t reason)
+NetworkCommissioningStatusEnum WifiInterfaceImpl::MapToNetworkCommissioningStatusEnum(uint32_t reason)
 {
-    /*
-    kSuccess
-    kOutOfRange
-    kBoundsExceeded
-    kNetworkIDNotFound
-    kDuplicateNetworkID
-    kNetworkNotFound
-    kRegulatoryError
-    kAuthFailure
-    kUnsupportedSecurity
-    kOtherConnectionFailure
-    kIPV6Failed
-    kIPBindFailed
-    kUnknownError
-    */
-    using Status = chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum;
 
     switch (reason)
     {
     case SL_STATUS_OK:
-        return Status::kSuccess;
+        return NetworkCommissioningStatusEnum::kSuccess;
     case SL_STATUS_SI91X_NO_AP_FOUND:
     case SL_STATUS_SI91X_BEACON_MISSED_FROM_AP_DURING_JOIN:
     case SL_STATUS_SI91X_REJOIN_FAILURE:
-        return Status::kNetworkNotFound;
+        return NetworkCommissioningStatusEnum::kNetworkNotFound;
     case SL_STATUS_SI91X_INVALID_CHANNEL:
-        return Status::kRegulatoryError;
+        return NetworkCommissioningStatusEnum::kRegulatoryError;
     case SL_STATUS_SI91X_INVALID_PSK_IN_WEP_SECURITY:
     case SL_STATUS_SI91X_DEAUTHENTICATION_RECEIVED_FROM_AP:
     case SL_STATUS_SI91X_ASSOCIATION_FAILED:
@@ -1269,14 +1252,14 @@ WifiInterfaceImpl::MapToNetworkCommissioningStatusEnum(uint32_t reason)
     case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_SUPPLICANT:
     case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_FROM_AP:
     case SL_STATUS_SI91X_AUTHENTICATION_TIMEOUT:
-        return Status::kAuthFailure;
+        return NetworkCommissioningStatusEnum::kAuthFailure;
     case SL_STATUS_SI91X_INVALID_SECURITY_MODE_IN_JOIN_COMMAND:
-        return Status::kUnsupportedSecurity;
+        return NetworkCommissioningStatusEnum::kUnsupportedSecurity;
     case SL_STATUS_SI91X_ASSOCIATION_TIMEOUT:
     case SL_STATUS_SI91X_FOUR_WAY_HANDSHAKE_FAILED:
-        return Status::kOtherConnectionFailure;
+        return NetworkCommissioningStatusEnum::kOtherConnectionFailure;
     default:
-        return Status::kUnknownError;
+        return NetworkCommissioningStatusEnum::kUnknownError;
     }
 }
 
