@@ -4100,8 +4100,8 @@ cluster RvcOperationalState = 97 {
 }
 
 /** Attributes and commands for scene configuration and manipulation. */
-provisional cluster ScenesManagement = 98 {
-  revision 1;
+cluster ScenesManagement = 98 {
+  revision 2;
 
   bitmap CopyModeBitmap : bitmap8 {
     kCopyAllScenes = 0x1;
@@ -4235,17 +4235,17 @@ provisional cluster ScenesManagement = 98 {
     int8u sceneIdentifierFrom = 2;
   }
 
-  /** Add a scene to the scene table. Extension field sets are input as '{"ClusterID": VALUE, "AttributeValueList":[{"AttributeID": VALUE, "Value*": VALUE}]}'. */
+  /** This command is used to add a new scene. */
   fabric command access(invoke: manage) AddScene(AddSceneRequest): AddSceneResponse = 0;
-  /** Retrieves the requested scene entry from its Scene table. */
+  /** This command returns the details for the requested scene. */
   fabric command ViewScene(ViewSceneRequest): ViewSceneResponse = 1;
-  /** Removes the requested scene entry, corresponding to the value of the GroupID field, from its Scene Table */
+  /** This command removes the specified scene. */
   fabric command access(invoke: manage) RemoveScene(RemoveSceneRequest): RemoveSceneResponse = 2;
-  /** Remove all scenes, corresponding to the value of the GroupID field, from its Scene Table */
+  /** This command removes all scenes for the specified GroupID. */
   fabric command access(invoke: manage) RemoveAllScenes(RemoveAllScenesRequest): RemoveAllScenesResponse = 3;
-  /** Adds the scene entry into its Scene Table along with all extension field sets corresponding to the current state of other clusters on the same endpoint */
+  /** This command will create a new entry for the requested scene. */
   fabric command access(invoke: manage) StoreScene(StoreSceneRequest): StoreSceneResponse = 4;
-  /** Set the attributes and corresponding state for each other cluster implemented on the endpoint accordingly to the resquested scene entry in the Scene Table */
+  /** This command will cause the specified scene to be recalled. */
   fabric command RecallScene(RecallSceneRequest): DefaultSuccess = 5;
   /** This command can be used to get the used scene identifiers within a certain group, for the endpoint that implements this cluster. */
   fabric command GetSceneMembership(GetSceneMembershipRequest): GetSceneMembershipResponse = 6;
@@ -5671,7 +5671,7 @@ cluster PumpConfigurationAndControl = 512 {
 
 /** An interface for configuring and controlling the functionality of a thermostat. */
 cluster Thermostat = 513 {
-  revision 11;
+  revision 12;
 
   enum ACCapacityFormatEnum : enum8 {
     kBTUh = 0;
@@ -5791,6 +5791,7 @@ cluster Thermostat = 513 {
     kPresets = 0x100;
     kEvents = 0x200;
     kThermostatSuggestions = 0x400;
+    kThermostatSensors = 0x800;
   }
 
   bitmap HVACSystemTypeBitmap : bitmap8 {
@@ -5902,6 +5903,21 @@ cluster Thermostat = 513 {
     SystemModeEnum systemMode = 0;
     int8u numberOfSchedules = 1;
     ScheduleTypeFeaturesBitmap scheduleTypeFeatures = 2;
+  }
+
+  struct SensorScheduleTransitionStruct {
+    ScheduleDayOfWeekBitmap dayOfWeek = 0;
+    int16u transitionTime = 1;
+    octet_string enabledSensors[] = 2;
+  }
+
+  struct ThermostatSensorStruct {
+    char_string<64> name = 0;
+    octet_string<16> sensorHandle = 1;
+    cluster_id cluster = 2;
+    optional endpoint_no endpoint = 3;
+    optional node_id node = 4;
+    optional fabric_idx fabricIndex = 5;
   }
 
   struct ThermostatSuggestionStruct {
@@ -6018,10 +6034,17 @@ cluster Thermostat = 513 {
   attribute access(write: manage) optional PresetStruct presets[] = 80;
   attribute access(write: manage) optional ScheduleStruct schedules[] = 81;
   readonly attribute optional nullable epoch_s setpointHoldExpiryTimestamp = 82;
-  provisional readonly attribute optional int8u maxThermostatSuggestions = 83;
-  provisional readonly attribute optional ThermostatSuggestionStruct thermostatSuggestions[] = 84;
-  provisional readonly attribute optional nullable ThermostatSuggestionStruct currentThermostatSuggestion = 85;
-  provisional readonly attribute optional nullable ThermostatSuggestionNotFollowingReasonBitmap thermostatSuggestionNotFollowingReason = 86;
+  readonly attribute optional int8u maxThermostatSuggestions = 83;
+  readonly attribute optional ThermostatSuggestionStruct thermostatSuggestions[] = 84;
+  readonly attribute optional nullable ThermostatSuggestionStruct currentThermostatSuggestion = 85;
+  readonly attribute optional nullable ThermostatSuggestionNotFollowingReasonBitmap thermostatSuggestionNotFollowingReason = 86;
+  provisional readonly attribute optional boolean criticalFreezeProtection = 87;
+  provisional readonly attribute optional boolean criticalOverheatProtection = 88;
+  provisional readonly attribute optional ThermostatSensorStruct sensors[] = 89;
+  provisional attribute access(write: manage) optional octet_string availableSensors[] = 90;
+  provisional attribute access(write: manage) optional octet_string enabledSensors[] = 91;
+  provisional readonly attribute optional int8u numberOfSensorScheduleTransitions = 92;
+  provisional attribute access(write: manage) optional SensorScheduleTransitionStruct sensorSchedule[] = 93;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
   readonly attribute attrib_id attributeList[] = 65531;
@@ -8012,7 +8035,7 @@ endpoint 0 {
   }
 
   server cluster LocalizationConfiguration {
-    ram      attribute activeLocale default = "en-US";
+    callback attribute activeLocale default = "en-US";
     callback attribute supportedLocales;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
@@ -8498,8 +8521,8 @@ endpoint 1 {
     callback attribute actionList;
     callback attribute endpointLists;
     callback attribute setupURL;
-    ram      attribute featureMap default = 0;
-    callback attribute clusterRevision default = 1;
+    callback attribute featureMap default = 0;
+    callback attribute clusterRevision;
   }
 
   server cluster PowerSource {
@@ -8675,13 +8698,13 @@ endpoint 1 {
 
   server cluster RefrigeratorAlarm {
     emits event Notify;
-    ram      attribute mask default = 1;
-    ram      attribute state default = 0;
-    ram      attribute supported default = 1;
+    callback attribute mask default = 1;
+    callback attribute state default = 0;
+    callback attribute supported default = 1;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 0;
+    callback attribute featureMap default = 0;
     callback attribute clusterRevision;
   }
 
@@ -8718,36 +8741,36 @@ endpoint 1 {
     emits event InterconnectSmokeAlarm;
     emits event InterconnectCOAlarm;
     emits event AllClear;
-    persist  attribute expressedState default = 0;
-    persist  attribute smokeState default = 0;
-    persist  attribute COState default = 0;
-    persist  attribute batteryAlert default = 0;
-    persist  attribute deviceMuted default = 0;
-    ram      attribute testInProgress default = 0;
-    persist  attribute hardwareFaultAlert default = 0;
-    persist  attribute endOfServiceAlert default = 0;
-    ram      attribute interconnectSmokeAlarm default = 0;
-    ram      attribute interconnectCOAlarm default = 0;
-    ram      attribute contaminationState default = 0;
-    ram      attribute smokeSensitivityLevel default = 1;
-    ram      attribute expiryDate default = 0;
-    ram      attribute unmounted default = 0;
-    ram      attribute featureMap default = 3;
-    ram      attribute clusterRevision default = 0x0002;
+    callback attribute expressedState;
+    callback attribute smokeState;
+    callback attribute COState;
+    callback attribute batteryAlert;
+    callback attribute deviceMuted;
+    callback attribute testInProgress default = 0;
+    callback attribute hardwareFaultAlert;
+    callback attribute endOfServiceAlert;
+    callback attribute interconnectSmokeAlarm default = 0;
+    callback attribute interconnectCOAlarm default = 0;
+    callback attribute contaminationState default = 0;
+    callback attribute smokeSensitivityLevel default = 1;
+    callback attribute expiryDate default = 0;
+    callback attribute unmounted default = 0;
+    callback attribute featureMap default = 3;
+    callback attribute clusterRevision;
 
     handle command SelfTestRequest;
   }
 
   server cluster DishwasherAlarm {
     emits event Notify;
-    ram      attribute mask default = 1;
-    ram      attribute latch default = 1;
-    ram      attribute state default = 0;
-    ram      attribute supported default = 15;
+    callback attribute mask default = 1;
+    callback attribute latch default = 1;
+    callback attribute state default = 0;
+    callback attribute supported default = 15;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 1;
+    callback attribute featureMap default = 1;
     callback attribute clusterRevision;
 
     handle command Reset;
@@ -8881,20 +8904,20 @@ endpoint 1 {
     emits event ValveStateChanged;
     emits event ValveFault;
     callback attribute openDuration;
-    persist  attribute defaultOpenDuration;
+    callback attribute defaultOpenDuration;
     callback attribute autoCloseTime;
     callback attribute remainingDuration;
     callback attribute currentState;
     callback attribute targetState;
     callback attribute currentLevel;
     callback attribute targetLevel;
-    persist  attribute defaultOpenLevel default = 100;
-    callback attribute valveFault;
-    ram      attribute levelStep default = 1;
+    callback attribute defaultOpenLevel default = 100;
+    callback attribute valveFault default = 0;
+    callback attribute levelStep default = 1;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 3;
+    callback attribute featureMap default = 3;
     callback attribute clusterRevision;
 
     handle command Open;
@@ -9216,8 +9239,8 @@ endpoint 1 {
     ram      attribute temperatureDisplayMode default = 0x00;
     ram      attribute keypadLockout default = 0x00;
     ram      attribute scheduleProgrammingVisibility;
-    ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 2;
+    callback attribute featureMap;
+    callback attribute clusterRevision;
   }
 
   server cluster ColorControl {
