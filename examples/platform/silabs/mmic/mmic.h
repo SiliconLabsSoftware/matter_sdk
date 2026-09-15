@@ -82,7 +82,10 @@ static inline uint8_t mmic_write_length(uint8_t * pkt, uint16_t len)
     X(subscription_info, "List active subscriptions", 0, uint8_t)\
     X(openCommissioning, "Open Commissioning Window", 0, uint8_t)\
     X(commission, "Commission using chip-tool storage (usage: commission <nodeId>)", 1, uint64_t)\
-    X(decommission, "Delete all fabrics on the device", 0, uint8_t)
+    X(decommission, "Delete all fabrics on the device", 0, uint8_t)\
+    X(addWakeUp, "Install a wake-up trigger (usage: addWakeUp <clusterId> <attributeId> <mode:0=Bool,1=Bitmask,2=Equal> <operand>)", 1, wakeUpEntry_t)\
+    X(removeWakeUp, "Remove a wake-up trigger (usage: removeWakeUp <clusterId> <attributeId>)", 1, wakeUpRemoveArgs_t)\
+    X(wakeUpList, "List active wake-up triggers", 0, uint8_t)
 
 typedef enum mmic_command_id : uint8_t
 {
@@ -145,6 +148,27 @@ struct __attribute__((packed)) commissionArgs_t
     uint16_t nocLen;
     // Followed inline by: rcac[rcacLen] || icac[icacLen] || noc[nocLen]
 };
+
+// Wire layout for the addWakeUp command payload (little-endian, packed).
+// Also used as the entry format in the wakeUpList response.
+// mode: 0 = Boolean, 1 = Bitmask, 2 = Equal (see WakeUpMgr::WakeUpMatchMode).
+struct __attribute__((packed)) wakeUpEntry_t
+{
+    uint32_t clusterId;
+    uint32_t attributeId;
+    uint64_t operand;
+    uint8_t  mode;
+};
+
+// Wire layout for the removeWakeUp command payload (little-endian, packed).
+struct __attribute__((packed)) wakeUpRemoveArgs_t
+{
+    uint32_t clusterId;
+    uint32_t attributeId;
+};
+
+// Cap for wire encoding of wakeUpList. Must match WakeUpMgr::kMaxTriggers.
+#define MMIC_WAKEUP_MAX_ENTRIES 25
 
 typedef struct mmic
 {

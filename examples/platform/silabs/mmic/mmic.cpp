@@ -252,6 +252,8 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
         case openCommissioning:
         case commission:
         case decommission:
+        case addWakeUp:
+        case removeWakeUp:
             printf("\r\n%s : %d\r\n", payload[0] == 0 ? "Success" : "Failure", payload[0]);
             break;
         case establish_subscription:
@@ -288,6 +290,26 @@ uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len)
             }
             break;
         }
+        case wakeUpList:
+        {
+            if (payloadLen < 1) { printf("\r\nwakeUpList: empty payload\r\n"); break; }
+            uint8_t count = payload[0];
+            const size_t expected = 1 + (size_t) count * sizeof(wakeUpEntry_t);
+            if (payloadLen < expected) { printf("\r\nwakeUpList: truncated\r\n"); break; }
+            static const char * const kModeName[] = { "Boolean", "Bitmask", "Equal" };
+            printf("\r\nActive wake-up triggers (%u):\r\n", (unsigned) count);
+            const uint8_t * p = payload + 1;
+            for (uint8_t i = 0; i < count; ++i)
+            {
+                wakeUpEntry_t e;
+                memcpy(&e, p + i * sizeof(wakeUpEntry_t), sizeof(e));
+                const char * modeStr = (e.mode < (sizeof(kModeName) / sizeof(kModeName[0]))) ? kModeName[e.mode] : "?";
+                printf("  cluster=0x%08x attribute=0x%08x mode=%s(%u) operand=0x%016llx\r\n",
+                       (unsigned) e.clusterId, (unsigned) e.attributeId,
+                       modeStr, (unsigned) e.mode, (unsigned long long) e.operand);
+            }
+            break;
+        }
         default:
             return MMIC_ERROR_NOT_IMPLEMENTED;
     };
@@ -303,6 +325,7 @@ void printHelp(void)
 }
 #else
 #include "../subscription/SubscriptionManager.h"
+#include "WakeUpMgr.h"
 #include <app/server/CommissioningWindowManager.h>
 #include <app/server/Dnssd.h>
 #include <app/server/Server.h>
@@ -554,6 +577,60 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
                 chip::DeviceLayer::PlatformMgr().UnlockChipStack();
                 uint8_t status = (remaining == 0) ? 0 : 1;
                 encodeResponse(decommission, &status, sizeof(status), response, packetSize);
+            }
+            break;
+        case addWakeUp:
+            {
+                VerifyOrReturnError(payloadLen >= sizeof(wakeUpEntry_t), MMIC_ERROR_INVALID_PACKET);
+
+                wakeUpEntry_t entry;
+                memcpy(&entry, payload, sizeof(entry));
+
+                CHIP_ERROR err = chip::Silabs::WakeUpMgr::Instance().SetWakeUpTrigger(
+                    entry.clusterId, entry.attributeId,
+                    static_cast<chip::Silabs::WakeUpMatchMode>(entry.mode), entry.operand);
+                uint8_t status = (err == CHIP_NO_ERROR) ? MMIC_ERROR_OK : MMIC_ERROR_INVALID_ARG;
+                encodeResponse(addWakeUp, &status, sizeof(status), response, packetSize);
+            }
+            break;
+        case removeWakeUp:
+            {
+                VerifyOrReturnError(payloadLen >= sizeof(wakeUpRemoveArgs_t), MMIC_ERROR_INVALID_PACKET);
+
+                wakeUpRemoveArgs_t args;
+                memcpy(&args, payload, sizeof(args));
+
+                CHIP_ERROR err = chip::Silabs::WakeUpMgr::Instance().RemoveWakeUpTrigger(args.clusterId, args.attributeId);
+                uint8_t status = (err == CHIP_NO_ERROR) ? MMIC_ERROR_OK : MMIC_ERROR_INVALID_ARG;
+                encodeResponse(removeWakeUp, &status, sizeof(status), response, packetSize);
+            }
+            break;
+        case wakeUpList:
+            {
+                // Enforce shared upper bound between manager and wire format at compile time.
+                static_assert(chip::Silabs::WakeUpMgr::kMaxTriggers <= MMIC_WAKEUP_MAX_ENTRIES,
+                              "MMIC_WAKEUP_MAX_ENTRIES must cover WakeUpMgr::kMaxTriggers");
+                static_assert(sizeof(wakeUpEntry_t) == sizeof(chip::Silabs::WakeUpTrigger),
+                              "wire wakeUpEntry_t must match WakeUpTrigger layout");
+
+                auto triggers = chip::Silabs::WakeUpMgr::Instance().GetWakeUpTriggers();
+                const uint8_t count = static_cast<uint8_t>(
+                    (triggers.size() > MMIC_WAKEUP_MAX_ENTRIES) ? MMIC_WAKEUP_MAX_ENTRIES : triggers.size());
+
+                uint8_t payloadBuf[1 + MMIC_WAKEUP_MAX_ENTRIES * sizeof(wakeUpEntry_t)];
+                payloadBuf[0] = count;
+                for (uint8_t i = 0; i < count; ++i)
+                {
+                    wakeUpEntry_t entry;
+                    entry.clusterId   = triggers[i].clusterId;
+                    entry.attributeId = triggers[i].attributeId;
+                    entry.operand     = triggers[i].operand;
+                    entry.mode        = triggers[i].mode;
+                    memcpy(&payloadBuf[1 + i * sizeof(wakeUpEntry_t)], &entry, sizeof(entry));
+                }
+                encodeResponse(wakeUpList, payloadBuf,
+                               1 + static_cast<size_t>(count) * sizeof(wakeUpEntry_t),
+                               response, packetSize);
             }
             break;
         default:

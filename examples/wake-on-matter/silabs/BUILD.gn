@@ -98,6 +98,7 @@ silabs_executable("wake-on-matter") {
 
   sources = [
     "src/AppTask.cpp",
+    "src/WakeUpMgr.cpp",
     "${chip_root}/examples/platform/silabs/mmic/mmic_task.cpp",
     "${chip_root}/examples/platform/silabs/mmic/mmic.cpp",
     "${chip_root}/examples/platform/silabs/matter_cpc.cpp",
