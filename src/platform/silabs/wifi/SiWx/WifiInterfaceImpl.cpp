@@ -912,9 +912,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
 {
-    CancelConnectionAttempt();
-    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
-    TriggerPlatformWifiDisconnection();
+    TriggerDisconnection();
     return CHIP_NO_ERROR;
 }
 
