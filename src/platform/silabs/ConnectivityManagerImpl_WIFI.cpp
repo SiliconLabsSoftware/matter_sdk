@@ -331,6 +331,12 @@ void ConnectivityManagerImpl::OnStationDisconnected()
     (void) PlatformMgr().PostEvent(&event);
 }
 
+void ConnectivityManagerImpl::ResetReconnectionWiFiStationState()
+{
+    mLastStationConnectFailTime = System::Clock::kZero;
+    mWiFiStationReconnectCount  = 1;
+}
+
 void ConnectivityManagerImpl::DriveStationState(::chip::System::Layer * aLayer, void * aAppState)
 {
     sInstance.DriveStationState();
@@ -347,20 +353,19 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
     switch (newState)
     {
     case kWiFiStationState_Connecting_Succeeded:
-        // if the station is connected or connecting succeeded,
-        // reset the last connection failure time and reconnect interval
-        mLastStationConnectFailTime = System::Clock::kZero;
-        mWiFiStationReconnectCount  = 1;
-        // intentionally fall through to the connected state
+        ResetReconnectionWiFiStationState();
+        OnStationConnected();
+        break;
+
     case kWiFiStationState_Connected:
         OnStationConnected(); // alert other components of the new state
         break;
 
     case kWiFiStationState_NotConnected:
-        // reset the last connection failure time and reconnect interval
-        mLastStationConnectFailTime = System::Clock::kZero;
-        mWiFiStationReconnectCount  = 1;
-        // intentionally fall through to the failed state
+        ResetReconnectionWiFiStationState();
+        OnStationDisconnected();
+        break;
+
     case kWiFiStationState_Connecting_Failed:
         OnStationDisconnected(); // alert other components of the new state
         break;

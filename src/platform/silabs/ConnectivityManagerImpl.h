@@ -132,6 +132,7 @@ private:
     void OnStationDisconnected(void);
     void ChangeWiFiStationState(WiFiStationState newState);
     static void DriveStationState(::chip::System::Layer * aLayer, void * aAppState);
+    void ResetReconnectionWiFiStationState(void);
 
     void UpdateInternetConnectivityState(void);
 #endif
