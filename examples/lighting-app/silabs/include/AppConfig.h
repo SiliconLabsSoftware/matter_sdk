@@ -23,8 +23,15 @@
 
 // ---- Lighting Example App Config ----
 
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include "sl_cmp_config.h"
+#ifdef SL_MATTER_ZIGBEE_CMP
+#include "ZigbeeCMPConfig.h"
+#elif defined(SL_MATTER_ZIGBEE_SEQUENTIAL)
+#include "ZigbeeSequentialConfig.h"
+#endif // SL_MATTER_ZIGBEE_CMP
+#else
 #define APP_TASK_NAME "Light"
-
 #define BLE_DEV_NAME "SL-" APP_TASK_NAME
 
 // Time it takes in ms for the simulated actuator to move from one
@@ -96,3 +103,11 @@
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x80, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03, 0xc0, 0xff, 0xff, 0xff, 0xff,    \
         0xff, 0xff, 0x3f, 0xfc, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,    \
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
+// Must match with Matter Light endpoint
+#define LIGHT_ENDPOINT 1
+
+// Time it takes in ms for the simulated actuator to move from one
+// state to another.
+#define ACTUATOR_MOVEMENT_PERIOD_MS 10
