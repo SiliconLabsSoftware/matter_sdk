@@ -150,10 +150,9 @@ Status SlWiFiDriver::ReorderNetwork(ByteSpan networkId, uint8_t index, MutableCh
 
 CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, const char * key, uint8_t keyLen)
 {
-    // if the WiFi station is provisioned, disconnect it and clear the credentials
+    // if the WiFi station is provisioned, disconnect it
     if (ConnectivityMgr().IsWiFiStationProvisioned())
     {
-        ConnectivityMgr().ClearWiFiStationProvision();
         ChipLogProgress(DeviceLayer, "Disconnecting for current wifi");
         WifiInterface::GetInstance().TriggerDisconnection();
     }
