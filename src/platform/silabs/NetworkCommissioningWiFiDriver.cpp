@@ -250,12 +250,8 @@ bool SlWiFiDriver::StartScanWiFiNetworks(ByteSpan ssid)
     ChipLogDetail(DeviceLayer, "Start Scan WiFi Networks");
     CHIP_ERROR err = WifiInterface::GetInstance().StartNetworkScan(ssid, OnScanWiFiNetworkDone);
 
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "StartNetworkScan failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return false;
-    }
-
+    VerifyOrReturnValue(err == CHIP_NO_ERROR, false,
+                        ChipLogError(DeviceLayer, "StartNetworkScan failed: %" CHIP_ERROR_FORMAT, err.Format()));
     return true;
 }
 
@@ -265,26 +261,26 @@ void SlWiFiDriver::OnScanWiFiNetworkDone(NetworkCommissioning::WiFiScanResponse 
     // Cannot use the driver if the instance is not initialized.
     VerifyOrDie(nwDriver != nullptr); // should never be null
 
-    if (!aScanResult)
+    // If the scan result is null, it means the scan completed.
+    if (aScanResult == nullptr)
     {
         ChipLogProgress(DeviceLayer, "OnScanWiFiNetworkDone: Receive all scanned networks information.");
+        VerifyOrReturn(nwDriver->mpScanCallback != nullptr);
 
-        if (nwDriver->mpScanCallback != nullptr)
+        if (mScanResponseIter.Count() == 0)
         {
-            if (mScanResponseIter.Count() == 0)
-            {
-                // if there is no network found, return kNetworkNotFound
-                TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([nwDriver]() {
-                    nwDriver->mpScanCallback->OnFinished(NetworkCommissioning::Status::kNetworkNotFound, CharSpan(), nullptr);
-                    nwDriver->mpScanCallback = nullptr;
-                });
-                return;
-            }
+            // if there is no network found, return kNetworkNotFound
             TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([nwDriver]() {
-                nwDriver->mpScanCallback->OnFinished(NetworkCommissioning::Status::kSuccess, CharSpan(), &mScanResponseIter);
+                nwDriver->mpScanCallback->OnFinished(NetworkCommissioning::Status::kNetworkNotFound, CharSpan(), nullptr);
                 nwDriver->mpScanCallback = nullptr;
             });
+            return;
         }
+
+        TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([nwDriver]() {
+            nwDriver->mpScanCallback->OnFinished(NetworkCommissioning::Status::kSuccess, CharSpan(), &mScanResponseIter);
+            nwDriver->mpScanCallback = nullptr;
+        });
     }
     else
     {
@@ -294,16 +290,14 @@ void SlWiFiDriver::OnScanWiFiNetworkDone(NetworkCommissioning::WiFiScanResponse 
 
 void SlWiFiDriver::ScanNetworks(ByteSpan ssid, WiFiDriver::ScanCallback * callback)
 {
-    if (callback != nullptr)
-    {
-        mpScanCallback = callback;
-        if (!StartScanWiFiNetworks(ssid))
-        {
-            ChipLogError(DeviceLayer, "ScanWiFiNetworks failed to start");
-            mpScanCallback = nullptr;
-            callback->OnFinished(Status::kUnknownError, CharSpan(), nullptr);
-        }
-    }
+    VerifyOrReturn(callback != nullptr);
+    mpScanCallback = callback;
+
+    // If the scan fails, return an error to the callback.
+    VerifyOrReturn(!StartScanWiFiNetworks(ssid));
+    ChipLogError(DeviceLayer, "ScanWiFiNetworks failed to start");
+    mpScanCallback = nullptr;
+    callback->OnFinished(Status::kUnknownError, CharSpan(), nullptr);
 }
 
 CHIP_ERROR GetConnectedNetwork(Network & network)
