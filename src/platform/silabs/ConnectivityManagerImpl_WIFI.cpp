@@ -86,17 +86,17 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         switch (event->Platform.event.WFXSystemEvent.data.genericMsgEvent.header.id)
         {
         case to_underlying(WifiInterface::WifiEvent::kStartUp):
-            ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_STARTED");
+            ChipLogProgress(DeviceLayer, "STARTUP EVENT");
             DriveStationState();
             break;
 
         case to_underlying(WifiInterface::WifiEvent::kConnect):
-            ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_CONNECTED");
+            ChipLogProgress(DeviceLayer, "CONNECT EVENT");
             ChangeWiFiStationState(kWiFiStationState_Connected);
             break;
 
         case to_underlying(WifiInterface::WifiEvent::kDisconnect):
-            ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_DISCONNECTED");
+            ChipLogProgress(DeviceLayer, "DISCONNECT EVENT");
             switch (WifiInterface::GetInstance().GetLastDisconnectionReason())
             {
             // User initiated disconnection
@@ -112,7 +112,7 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         case to_underlying(WifiInterface::WifiEvent::kGotIPv4):
         case to_underlying(WifiInterface::WifiEvent::kGotIPv6):
         case to_underlying(WifiInterface::WifiEvent::kLostIP):
-            ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_IP_CHANGE");
+            ChipLogProgress(DeviceLayer, "IP CHANGE EVENT");
             UpdateInternetConnectivityState();
             break;
         default:
