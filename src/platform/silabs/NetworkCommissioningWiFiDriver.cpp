@@ -180,58 +180,62 @@ CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
     return CHIP_NO_ERROR;
 }
 
-// TODO: Re-write implementation with proper driver based callback
 void SlWiFiDriver::UpdateNetworkingStatus()
 {
     VerifyOrReturn(mpStatusChangeCallback != nullptr);
     VerifyOrReturn(mStagingNetwork.ssidLen != 0);
 
-    ByteSpan networkId = ByteSpan((const unsigned char *) mStagingNetwork.ssid, mStagingNetwork.ssidLen);
-    if (!WifiInterface::GetInstance().IsStationConnected())
-    {
-        // TODO: https://github.com/project-chip/connectedhomeip/issues/26861
-        // TODO: use the mLastDisconnectionReason to set the networking status
-        mpStatusChangeCallback->OnNetworkingStatusChange(Status::kUnknownError, MakeOptional(networkId),
-                                                         MakeOptional(static_cast<int32_t>(SL_STATUS_FAIL)));
-        return;
-    }
-    mpStatusChangeCallback->OnNetworkingStatusChange(Status::kSuccess, MakeOptional(networkId), NullOptional);
+    bool isStationConnected = WifiInterface::GetInstance().IsStationConnected();
+
+    Status commissioningError = isStationConnected ? Status::kSuccess : WifiInterface::GetInstance().GetLastDisconnectionReason();
+    ByteSpan networkId        = ByteSpan((const unsigned char *) mStagingNetwork.ssid, mStagingNetwork.ssidLen);
+    int32_t connectStatus     = (isStationConnected ? SL_STATUS_OK : SL_STATUS_FAIL);
+
+    ChipLogDetail(NetworkProvisioning, "UpdateNetworkingStatus: commissioningError: 0x%02X",
+                  static_cast<uint8_t>(commissioningError));
+
+    mpStatusChangeCallback->OnNetworkingStatusChange(commissioningError, MakeOptional(networkId), MakeOptional(connectStatus));
 }
 
 void SlWiFiDriver::OnConnectWiFiNetwork()
 {
-    if (mpConnectCallback)
-    {
-        // TODO: use the mLastDisconnectionReason to set the networking status
-        mpConnectCallback->OnResult(Status::kSuccess, CharSpan(), 0);
-        mpConnectCallback = nullptr;
-    }
+    VerifyOrReturn(mpConnectCallback != nullptr);
+
+    bool isStationConnected = WifiInterface::GetInstance().IsStationConnected();
+
+    Status commissioningError = isStationConnected ? Status::kSuccess : WifiInterface::GetInstance().GetLastDisconnectionReason();
+    int32_t connectStatus     = (isStationConnected ? SL_STATUS_OK : SL_STATUS_FAIL);
+
+    ChipLogDetail(NetworkProvisioning, "OnConnectWiFiNetwork: commissioningError: 0x%02X",
+                  static_cast<uint8_t>(commissioningError));
+
+    mpConnectCallback->OnResult(commissioningError, // commissioning error
+                                CharSpan(),         // debug text
+                                connectStatus       // connect status
+    );
+    mpConnectCallback = nullptr;
 }
 
 void SlWiFiDriver::ConnectNetwork(ByteSpan networkId, ConnectCallback * callback)
 {
-    CHIP_ERROR err          = CHIP_NO_ERROR;
-    Status networkingStatus = Status::kUnknownError;
+    CHIP_ERROR err            = CHIP_NO_ERROR;
+    Status commissioningError = Status::kSuccess;
 
-    VerifyOrExit(NetworkMatch(mStagingNetwork, networkId), networkingStatus = Status::kNetworkIDNotFound);
-    VerifyOrExit(mpConnectCallback == nullptr, networkingStatus = Status::kUnknownError);
+    VerifyOrExit(NetworkMatch(mStagingNetwork, networkId), commissioningError = Status::kNetworkIDNotFound);
+    VerifyOrExit(mpConnectCallback == nullptr, commissioningError = Status::kUnknownError);
 
     err = ConnectWiFiNetwork(reinterpret_cast<const char *>(mStagingNetwork.ssid), mStagingNetwork.ssidLen,
                              reinterpret_cast<const char *>(mStagingNetwork.key), mStagingNetwork.keyLen);
-    if (err == CHIP_NO_ERROR)
-    {
-        mpConnectCallback = callback;
-        networkingStatus  = Status::kSuccess;
-    }
 
+    VerifyOrExit(err == CHIP_NO_ERROR, commissioningError = Status::kUnknownError);
+    mpConnectCallback = callback;
 exit:
-    if (networkingStatus != Status::kSuccess)
-    {
-        ChipLogError(NetworkProvisioning, "Failed to connect to WiFi network: %" CHIP_ERROR_FORMAT, err.Format());
-        mpConnectCallback = nullptr;
-        // TODO: use the mLastDisconnectionReason to set the networking status
-        callback->OnResult(networkingStatus, CharSpan(), 0);
-    }
+    VerifyOrReturn(commissioningError != Status::kSuccess);
+    ChipLogError(NetworkProvisioning, "Failed to connect to WiFi network: %" CHIP_ERROR_FORMAT, err.Format());
+    callback->OnResult(commissioningError, // commissioning error
+                       CharSpan(),         // debug text
+                       SL_STATUS_FAIL      // connect status
+    );
 }
 
 uint32_t SlWiFiDriver::GetSupportedWiFiBandsMask() const
