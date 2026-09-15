@@ -709,8 +709,8 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
-    mLastDisconnectionReason = static_cast<uint16_t>(status);
-    WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
+    mLastDisconnectionReason = status;
+    WifiInterface::NotifyDisconnection(status);
 
     return status;
 }
@@ -743,10 +743,9 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%lx", status);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
-        uint16_t reason               = static_cast<uint16_t>(status);
         WifiInterfaceImpl & self      = WifiInterfaceImpl::GetInstance();
-        self.mLastDisconnectionReason = reason;
-        self.NotifyDisconnection(self.mLastDisconnectionReason);
+        self.mLastDisconnectionReason = status;
+        self.NotifyDisconnection(status);
     }
 
     return status;
@@ -852,8 +851,8 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
     sl_status_t status = sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_down failed: 0x%lx", status));
 
-    mLastDisconnectionReason = static_cast<uint16_t>(status);
-    WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
+    mLastDisconnectionReason = status;
+    WifiInterface::NotifyDisconnection(status);
     return SL_STATUS_OK;
 }
 

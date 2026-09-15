@@ -70,9 +70,7 @@ void WifiInterface::NotifyDisconnection(uint32_t reason)
     sl_wfx_disconnect_ind_t evt = {};
     evt.header.id               = to_underlying(WifiEvent::kDisconnect);
     evt.header.length           = sizeof evt;
-    evt.body.reason             = static_cast<uint16_t>(mLastDisconnectionReason);
-
-    ChipLogDetail(DeviceLayer, "WiFi disconnection reason: 0x%lx", MapToNetworkCommissioningStatusEnum(mLastDisconnectionReason));
+    evt.body.reason             = static_cast<uint16_t>(reason);
 
     HandleWFXSystemEvent((sl_wfx_generic_message_t *) &evt);
 }

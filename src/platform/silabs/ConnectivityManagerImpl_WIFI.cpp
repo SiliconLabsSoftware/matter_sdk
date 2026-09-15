@@ -97,10 +97,10 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
 
         case to_underlying(WifiInterface::WifiEvent::kDisconnect):
             ChipLogProgress(DeviceLayer, "WIFI_EVENT_STA_DISCONNECTED");
-            switch (event->Platform.event.WFXSystemEvent.data.disconnectEvent.body.reason)
+            switch (WifiInterface::GetInstance().GetLastDisconnectionReason())
             {
             // User initiated disconnection
-            case to_underlying(WifiInterface::WifiDisconnectionReasons::kApplication):
+            case NetworkCommissioning::Status::kSuccess:
                 ChangeWiFiStationState(kWiFiStationState_NotConnected);
                 break;
             default:
