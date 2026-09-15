@@ -73,7 +73,7 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
     VerifyOrReturnError(err == CHIP_NO_ERROR, err);
 
-    return CHIP_NO_ERROR;
+    return err;
 }
 
 void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
