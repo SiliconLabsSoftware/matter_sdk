@@ -169,9 +169,6 @@ CHIP_ERROR SlWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
     memcpy(wifiConfig.key, key, keyLen);
     wifiConfig.keyLen = keyLen;
 
-    // dummy value which is overridden by the actual security value when connecting to the access point
-    wifiConfig.security.Set(chip::app::Clusters::NetworkCommissioning::WiFiSecurityBitmap::kWpa2Personal);
-
     ChipLogProgress(NetworkProvisioning, "Setting up connection for WiFi SSID: %s", NullTerminated(ssid, ssidLen).c_str());
 
     ReturnErrorOnFailure(WifiInterface::GetInstance().SetWifiCredentials(wifiConfig));
