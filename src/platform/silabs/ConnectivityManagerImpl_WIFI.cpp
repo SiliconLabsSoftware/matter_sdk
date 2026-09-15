@@ -281,15 +281,10 @@ void ConnectivityManagerImpl::DriveStationState()
         mLastStationConnectFailTime = now;
 
         // TODO: Revisit this logic
-        // increase the reconnect interval by the previous interval, for telescoping effect and reduce the frequency of reconnect
-        // attempts thus saving power
+        // increase the reconnect interval by the previous interval, for telescoping effect and reduce the frequency of
+        // reconnect attempts thus saving power
         // TODO: Guard this with commissioning mode flag
         // mWiFiStationReconnectCount++;
-        // if ((mWiFiStationReconnectInterval * mWiFiStationReconnectCount) >
-        // CHIP_DEVICE_CONFIG_WIFI_STATION_MAX_RECONNECT_INTERVAL)
-        // {
-        //     mWiFiStationReconnectCount--;
-        // }
 
         // Reset the station state to NotConnected to start a new connection attempt
         mWiFiStationState = kWiFiStationState_NotConnected;
