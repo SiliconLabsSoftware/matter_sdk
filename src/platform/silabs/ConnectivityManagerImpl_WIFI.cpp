@@ -184,7 +184,7 @@ void ConnectivityManagerImpl::_ClearWiFiStationProvision(void)
 {
     // If the WiFi station mode is application controlled, do not clear the WiFi credentials.
     VerifyOrReturn(mWiFiStationMode != kWiFiStationMode_ApplicationControlled,
-                   ChipLogError(DeviceLayer, "kWiFiStationMode_ApplicationControlled enabled"));
+                   ChipLogProgress(DeviceLayer, "WiFi station is application controlled"));
 
     WifiInterface::GetInstance().ClearWifiCredentials();
     TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
@@ -226,8 +226,8 @@ void ConnectivityManagerImpl::DriveStationState()
 
     // if the station mode is application controlled or disabled, return
     VerifyOrReturn(stationMode != kWiFiStationMode_ApplicationControlled,
-                   ChipLogError(DeviceLayer, "WiFi station mode is application controlled"));
-    VerifyOrReturn(stationMode != kWiFiStationMode_Disabled, ChipLogError(DeviceLayer, "WiFi station mode is disabled"));
+                   ChipLogProgress(DeviceLayer, "WiFi station is application controlled"));
+    VerifyOrReturn(stationMode != kWiFiStationMode_Disabled, ChipLogProgress(DeviceLayer, "WiFi station is disabled"));
 
     CHIP_ERROR err = CHIP_NO_ERROR;
 
