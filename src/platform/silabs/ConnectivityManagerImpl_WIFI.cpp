@@ -153,9 +153,8 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
         // disconnect if wifi is provisioned
         if (IsWiFiStationProvisioned())
         {
-            WifiInterface::GetInstance().TriggerDisconnection();
-            ChangeWiFiStationState(kWiFiStationState_Disconnecting);
-            // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
+            err = DisconnectNetwork();
+            VerifyOrReturnError(err == CHIP_NO_ERROR, err);
         }
         err = WifiInterface::GetInstance().DisableStationMode();
         VerifyOrReturnError(err == CHIP_NO_ERROR || err == CHIP_ERROR_NOT_IMPLEMENTED, err);
@@ -207,6 +206,15 @@ void ConnectivityManagerImpl::_OnWiFiStationProvisionChange()
     TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
 }
 
+CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
+{
+    WifiInterface::GetInstance().TriggerDisconnection();
+    ChangeWiFiStationState(kWiFiStationState_Disconnecting);
+    // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
+    // next time DriveStationState() will be called, the station will be in the NotConnected state
+    return CHIP_NO_ERROR;
+}
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 CHIP_ERROR ConnectivityManagerImpl::_SetPollingInterval(System::Clock::Milliseconds32 pollingInterval)
 {
@@ -244,10 +252,9 @@ void ConnectivityManagerImpl::DriveStationState()
     if (!IsWiFiStationProvisioned() && IsWiFiStationConnected())
     {
         ChipLogDetail(DeviceLayer, "WiFi station is not provisioned and is connected, disconnecting");
-        WifiInterface::GetInstance().TriggerDisconnection();
-        ChangeWiFiStationState(kWiFiStationState_Disconnecting);
-        // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
-        // next time DriveStationState() will be called, the station will be in the NotConnected state
+        err = DisconnectNetwork();
+        VerifyOrReturn(err == CHIP_NO_ERROR,
+                       ChipLogError(DeviceLayer, "DisconnectNetwork failed: %" CHIP_ERROR_FORMAT, err.Format()));
         return;
     }
 
