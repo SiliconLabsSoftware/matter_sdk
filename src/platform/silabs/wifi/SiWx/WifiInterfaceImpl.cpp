@@ -1161,9 +1161,6 @@ void WifiInterfaceImpl::ResetConnectivityNotificationFlags(void)
 {
     ResetIPNotificationStates();
     mHasNotifiedWifiConnectivity = false;
-
-    WifiPlatformEvent event = WifiPlatformEvent::kConnectionComplete;
-    PostWifiPlatformEvent(event);
 }
 
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
