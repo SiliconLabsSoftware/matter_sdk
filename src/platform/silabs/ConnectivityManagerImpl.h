@@ -121,6 +121,7 @@ private:
     // variables for tracking the station mode and state
     WiFiStationMode mWiFiStationMode;
     WiFiStationState mWiFiStationState;
+    bool mWiFiStationAutoReconnect;
     // variables for tracking the last connection failure time and reconnect interval
     System::Clock::Timestamp mLastStationConnectFailTime;
     System::Clock::Timeout mWiFiStationReconnectInterval;
