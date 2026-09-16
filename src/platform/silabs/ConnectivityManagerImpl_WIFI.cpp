@@ -88,7 +88,7 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         {
         case to_underlying(WifiInterface::WifiEvent::kStartUp):
             ChipLogProgress(DeviceLayer, "STARTUP EVENT");
-            DriveStationState();
+            ChangeWiFiStationState(kWiFiStationState_NotConnected);
             break;
 
         case to_underlying(WifiInterface::WifiEvent::kConnect):
@@ -102,12 +102,10 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
             {
             // User initiated disconnection outside of the ConnectivityManager
             case NetworkCommissioning::Status::kSuccess:
-                mWiFiStationAutoReconnect = false;
                 ChangeWiFiStationState(kWiFiStationState_NotConnected);
                 break;
             // Disconnection due to WiFi connectivity error
             default:
-                mWiFiStationAutoReconnect = true;
                 ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
                 break;
             }
@@ -214,8 +212,6 @@ void ConnectivityManagerImpl::_OnWiFiStationProvisionChange()
 
 CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
 {
-    mWiFiStationAutoReconnect = false;
-
     // if the station is not connected, return success
     VerifyOrReturnError(mWiFiStationState != kWiFiStationState_NotConnected, CHIP_NO_ERROR);
 
@@ -304,11 +300,11 @@ void ConnectivityManagerImpl::DriveStationState()
         // TODO: Verify why `mLastStationConnectFailTime` is not assigned the value of `now`
         mLastStationConnectFailTime = now;
         // Reset the station state to NotConnected to start a new connection attempt
-        ChangeWiFiStationState(kWiFiStationState_NotConnected, false);
         timeToNextConnect = (mWiFiStationReconnectInterval * mWiFiStationReconnectCount);
         // DriveStationState() will be called again to start a new connection attempt
         ChipLogProgress(DeviceLayer, "Next WiFi station reconnect in %" PRIu32 " ms",
                         System::Clock::Milliseconds32(timeToNextConnect).count());
+        ChangeWiFiStationState(kWiFiStationState_NotConnected, false);
         ReturnOnFailure(DeviceLayer::SystemLayer().StartTimer(timeToNextConnect, DriveStationState, NULL));
 
         // TODO: Revisit this logic
@@ -371,7 +367,8 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
                     WiFiStationStateToStr(newState));
     // Commit the state before notifying. OnStationConnected() calls
     // UpdateInternetConnectivityState(), which only reports IPv6 when already Connected.
-    mWiFiStationState = newState;
+    WiFiStationState prevState = mWiFiStationState;
+    mWiFiStationState          = newState;
     switch (newState)
     {
     case kWiFiStationState_Connecting_Succeeded:
@@ -384,7 +381,12 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
         break;
 
     case kWiFiStationState_NotConnected:
-        ResetReconnectionWiFiStationState();
+        mWiFiStationAutoReconnect = true;
+        if (prevState == kWiFiStationState_Disconnecting)
+        {
+            mWiFiStationAutoReconnect = false;
+            ResetReconnectionWiFiStationState();
+        }
         OnStationDisconnected();
         break;
 
@@ -393,7 +395,7 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
         break;
 
     default:
-        ChipLogDetail(DeviceLayer, "WiFi station state not driving: %s", WiFiStationStateToStr(newState));
+        // do nothing
         break;
     }
     if (driveState)
