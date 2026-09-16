@@ -1,0 +1,75 @@
+name: Silabs Zephyr Docker image
+
+on:
+    pull_request:
+        types:
+            - opened
+            - synchronize
+            - reopened
+            - closed
+        branches:
+            - main
+        paths:
+            - integrations/docker/silabs/zephyr-silabs/Dockerfile
+            - .github/workflows/silabs-zephyr-docker.yaml
+
+permissions:
+    contents: read
+    packages: write
+
+env:
+    IMAGE: ghcr.io/siliconlabssoftware/matter-sdk-zephyr-silabs
+    DOCKERFILE: integrations/docker/silabs/zephyr-silabs/Dockerfile
+    CONTEXT: integrations/docker/silabs/zephyr-silabs
+
+jobs:
+    build_pr:
+        name: Build image in PR
+        if:
+            github.event_name == 'pull_request' && github.event.action !=
+            'closed'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Build PR image
+              run: |
+                  docker build \
+                    --file "$DOCKERFILE" \
+                    --tag "$IMAGE:pr-${{ github.event.pull_request.number }}" \
+                    "$CONTEXT"
+
+    publish_main:
+        name: Publish on merged
+        if: >-
+            github.event_name == 'pull_request' && github.event.action ==
+            'closed' && github.event.pull_request.merged == true &&
+            github.event.pull_request.base.ref == 'main'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout merged commit
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+            - name: Log in to ghcr.io
+              env:
+                  GHCR_TOKEN: ${{ github.token }}
+              run:
+                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor
+                  }}" --password-stdin
+
+            - name: Build merged image
+              run: |
+                  docker build \
+                    --file "$DOCKERFILE" \
+                    --tag "$IMAGE:latest" \
+                    "$CONTEXT"
+
+            - name: Tag and publish merged image
+              run: |
+                  image_date="$(date -u +%Y%m%d)"
+                  docker tag "$IMAGE:latest" "$IMAGE:$image_date"
+                  docker push "$IMAGE:latest"
+                  docker push "$IMAGE:$image_date"
