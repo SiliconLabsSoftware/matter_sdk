@@ -48,6 +48,9 @@
 
 #ifdef ENABLE_CHIP_SHELL
 #include "MatterShell.h"
+#ifdef SL_WIFI
+#include <lib/shell/commands/WiFi.h>
+#endif // SL_WIFI
 #endif
 
 #ifdef HEAP_MONITORING
@@ -433,7 +436,12 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 
 #ifdef ENABLE_CHIP_SHELL
     chip::startShellTask();
-#endif
+
+#ifdef SL_WIFI
+    chip::Shell::SetWiFiDriver(chip::DeviceLayer::NetworkCommissioning::SlWiFiDriver::GetInstance());
+#endif // SL_WIFI
+
+#endif // ENABLE_CHIP_SHELL
 
     return CHIP_NO_ERROR;
 }
