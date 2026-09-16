@@ -659,14 +659,9 @@ void WifiInterfaceImpl::NotifySuccessfulConnection(void)
 
 sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 {
-    VerifyOrReturnError(
-        !wfx_rsi.dev_state.HasAny(WifiInterface::WifiState::kStationConnecting, WifiInterface::WifiState::kStationConnected),
-        SL_STATUS_IN_PROGRESS);
     sl_status_t status = SL_STATUS_OK;
 
     // Start Join Network
-    wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnecting);
-
     status = SetWifiConfigurations();
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failure to set the Wifi Configurations!"));
 
@@ -902,10 +897,8 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 
     VerifyOrReturnError(!IsStationConnected(), CHIP_NO_ERROR);
 
-    if (!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
-    {
-        return ConnectToAccessPoint();
-    }
+    CHIP_ERROR err = ConnectToAccessPoint();
+    VerifyOrReturnError(err == CHIP_NO_ERROR || err == CHIP_ERROR_IN_PROGRESS, err);
 
     return CHIP_NO_ERROR;
 }
@@ -1224,9 +1217,13 @@ CHIP_ERROR WifiInterfaceImpl::SetWifiCredentials(const WiFiCredentials & credent
 CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
 {
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_ERROR_INCORRECT_STATE);
-
+    VerifyOrReturnError(
+        !wfx_rsi.dev_state.HasAny(WifiInterface::WifiState::kStationConnecting, WifiInterface::WifiState::kStationConnected),
+        CHIP_ERROR_IN_PROGRESS);
+    wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnecting);
+    
     ChipLogProgress(DeviceLayer, "connect to access point: %s", wfx_rsi.credentials.ssid);
-
+    
     PostWifiPlatformEvent(WifiPlatformEvent::kStationStartScan);
     return CHIP_NO_ERROR;
 }
