@@ -1219,9 +1219,9 @@ CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
         !wfx_rsi.dev_state.HasAny(WifiInterface::WifiState::kStationConnecting, WifiInterface::WifiState::kStationConnected),
         CHIP_ERROR_IN_PROGRESS);
     wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnecting);
-    
+
     ChipLogProgress(DeviceLayer, "connect to access point: %s", wfx_rsi.credentials.ssid);
-    
+
     PostWifiPlatformEvent(WifiPlatformEvent::kStationStartScan);
     return CHIP_NO_ERROR;
 }

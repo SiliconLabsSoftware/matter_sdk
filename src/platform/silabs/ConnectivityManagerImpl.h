@@ -121,7 +121,7 @@ private:
     // variables for tracking the station mode and state
     WiFiStationMode mWiFiStationMode;
     WiFiStationState mWiFiStationState;
-    bool mWiFiStationAutoReconnect;
+    bool mWiFiStationAutoConnect;
     // variables for tracking the last connection failure time and reconnect interval
     System::Clock::Timestamp mLastStationConnectFailTime;
     System::Clock::Timeout mWiFiStationReconnectInterval;
@@ -132,7 +132,7 @@ private:
     void DriveStationState(void);
     void OnStationConnected(void);
     void OnStationDisconnected(void);
-    void ChangeWiFiStationState(WiFiStationState newState, bool driveState = true);
+    void ChangeWiFiStationState(WiFiStationState newState);
     static void DriveStationState(::chip::System::Layer * aLayer, void * aAppState);
     void ResetReconnectionWiFiStationState(void);
 
