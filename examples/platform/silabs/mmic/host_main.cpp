@@ -42,7 +42,7 @@
 
 #if MMIC_USE_CPC
 /* CPC endpoint the device-side mmic task exposes. */
-#define MMIC_CPC_ENDPOINT_ID     ((uint8_t)90)
+#define MMIC_CPC_ENDPOINT_ID     ((uint8_t)18)
 /* TX window size for the endpoint; 1 matches the cpcd examples. */
 #define MMIC_CPC_TX_WINDOW_SIZE  ((uint8_t)1)
 #endif

@@ -59,7 +59,7 @@ void sl_matter_cpc_wait_for_activity()
 
 sl_status_t sl_matter_cpc_init(void)
 {
-#ifdef SL_CPC_ENDPOINT_MATTER // Temp fix for 26q4 dev
+#ifdef SL_CATALOG_MATTER_NCP_PRESENT // Temp fix for 26q4 dev
   sl_status_t status = SL_STATUS_OK;
 
   status = sli_cpc_init_service_endpoint(&endpoint_handle, SL_CPC_ENDPOINT_MATTER, 0);

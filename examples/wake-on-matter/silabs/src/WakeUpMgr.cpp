@@ -28,10 +28,6 @@ namespace Silabs {
 
 namespace {
 
-// GPIO used to signal the host that a wake-up event occurred. Mirrors the LED
-// pin used by the AppTask sample wiring on the MG24 BRD4187c.
-constexpr sl_gpio_t kWakeUpGpio = { .port = gpioPortB, .pin = 4 };
-
 WakeUpTrigger MakeTrigger(ClusterId clusterId, AttributeId attributeId, uint64_t operand, WakeUpMatchMode mode)
 {
     WakeUpTrigger t{};
@@ -57,8 +53,10 @@ CHIP_ERROR WakeUpMgr::Init()
         return CHIP_NO_ERROR;
     }
 
-    sl_status_t status = sl_gpio_set_pin_mode(&kWakeUpGpio, SL_GPIO_MODE_PUSH_PULL, /*initialValue=*/false);
-    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
+    /*
+        Place relevant Init Here.
+        e.g. Preconfigure Wake uo triggers
+    */
 
     mInitialized = true;
     return CHIP_NO_ERROR;
