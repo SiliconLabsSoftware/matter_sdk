@@ -597,6 +597,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnected);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting);
         ResetConnectivityNotificationFlags();
+        NotifySuccessfulConnection();
         break;
 
     case WifiPlatformEvent::kStationDisconnect: {

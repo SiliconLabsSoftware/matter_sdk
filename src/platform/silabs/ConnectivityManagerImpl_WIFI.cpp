@@ -154,27 +154,29 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
     switch (mWiFiStationMode)
     {
     case kWiFiStationMode_Disabled: {
-        // disconnect if wifi is provisioned
-        if (IsWiFiStationProvisioned())
+        // disconnect if wifi is connected
+        if (IsWiFiStationConnected())
         {
             err = DisconnectNetwork();
             VerifyOrReturnError(err == CHIP_NO_ERROR, err);
         }
         err = WifiInterface::GetInstance().DisableStationMode();
         VerifyOrReturnError(err == CHIP_NO_ERROR || err == CHIP_ERROR_NOT_IMPLEMENTED, err);
+        mWiFiStationAutoReconnect = false;
     }
     break;
     case kWiFiStationMode_Enabled: {
         err = WifiInterface::GetInstance().EnableStationMode();
         VerifyOrReturnError(err == CHIP_NO_ERROR, err);
+        mWiFiStationAutoReconnect = true;
     }
     break;
     default:
         // kWiFiStationMode_Application
         break;
     }
-    err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
-    return err;
+    ChangeWiFiStationState(kWiFiStationState_NotConnected);
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationReconnectInterval(System::Clock::Timeout timeoutMs)
@@ -213,6 +215,10 @@ void ConnectivityManagerImpl::_OnWiFiStationProvisionChange()
 CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
 {
     mWiFiStationAutoReconnect = false;
+
+    // if the station is not connected, return success
+    VerifyOrReturnError(mWiFiStationState != kWiFiStationState_NotConnected, CHIP_NO_ERROR);
+
     WifiInterface::GetInstance().TriggerDisconnection();
     ChangeWiFiStationState(kWiFiStationState_Disconnecting);
     // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
@@ -267,11 +273,12 @@ void ConnectivityManagerImpl::DriveStationState()
     // connect it to the access point using the credentials from the staging
     // network
     VerifyOrReturn(IsWiFiStationProvisioned(), ChipLogDetail(DeviceLayer, "WiFi station is not provisioned"));
-    mWiFiStationState = IsWiFiStationConnected() ? kWiFiStationState_Connected : kWiFiStationState_NotConnected;
 
+    // TODO: Verify why `now` is always the same value
     System::Clock::Timestamp now               = System::SystemClock().GetMonotonicTimestamp();
     System::Clock::Timestamp timeToNextConnect = System::Clock::kZero;
 
+    ChipLogDetail(DeviceLayer, "DriveStationState: %s", WiFiStationStateToStr(mWiFiStationState));
     switch (mWiFiStationState)
     {
     case kWiFiStationState_NotConnected: {
@@ -279,9 +286,9 @@ void ConnectivityManagerImpl::DriveStationState()
         {
             // connect the station to the access point using the credentials from the staging network
             err = WifiInterface::GetInstance().ConnectToAccessPoint(); // using the credentials from the staging network
-            VerifyOrReturn(err == CHIP_NO_ERROR,
+            VerifyOrReturn(err == CHIP_NO_ERROR || err == CHIP_ERROR_IN_PROGRESS,
                            ChipLogError(DeviceLayer, "ConnectToAccessPoint failed: %" CHIP_ERROR_FORMAT, err.Format()));
-            mWiFiStationState = kWiFiStationState_Connecting;
+            ChangeWiFiStationState(kWiFiStationState_Connecting, false);
             // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of ConnectWiFiNetwork()
         }
     }
@@ -294,10 +301,11 @@ void ConnectivityManagerImpl::DriveStationState()
     case kWiFiStationState_Connecting_Failed: {
         // if the station is connecting failed,
         // arrange another connection attempt at a suitable point in the future
+        // TODO: Verify why `mLastStationConnectFailTime` is not assigned the value of `now`
         mLastStationConnectFailTime = now;
         // Reset the station state to NotConnected to start a new connection attempt
-        mWiFiStationState = kWiFiStationState_NotConnected;
-        timeToNextConnect = (mLastStationConnectFailTime + mWiFiStationReconnectInterval * mWiFiStationReconnectCount) - now;
+        ChangeWiFiStationState(kWiFiStationState_NotConnected, false);
+        timeToNextConnect = (mWiFiStationReconnectInterval * mWiFiStationReconnectCount);
         // DriveStationState() will be called again to start a new connection attempt
         ChipLogProgress(DeviceLayer, "Next WiFi station reconnect in %" PRIu32 " ms",
                         System::Clock::Milliseconds32(timeToNextConnect).count());
@@ -311,7 +319,7 @@ void ConnectivityManagerImpl::DriveStationState()
     }
     break;
     default: {
-        ChipLogDetail(DeviceLayer, "drive station state not handled: %s", WiFiStationStateToStr(mWiFiStationState));
+        // do nothing
     }
     break;
     }
@@ -356,7 +364,7 @@ void ConnectivityManagerImpl::DriveStationState(::chip::System::Layer * aLayer, 
     sInstance.DriveStationState();
 }
 
-void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
+void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, bool driveState)
 {
     VerifyOrReturn(mWiFiStationState != newState);
     ChipLogProgress(DeviceLayer, "WiFi station state change: %s -> %s", WiFiStationStateToStr(mWiFiStationState),
@@ -388,7 +396,10 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
         ChipLogDetail(DeviceLayer, "WiFi station state not driving: %s", WiFiStationStateToStr(newState));
         break;
     }
-    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
+    if (driveState)
+    {
+        TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
+    }
 
     // TODO: Remove this once the WiFi driver is updated to use the new state machine
     NetworkCommissioning::SlWiFiDriver * nwDriver = NetworkCommissioning::SlWiFiDriver::GetInstance();
