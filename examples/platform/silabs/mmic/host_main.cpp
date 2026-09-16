@@ -42,7 +42,7 @@
 
 #if MMIC_USE_CPC
 /* CPC endpoint the device-side mmic task exposes. */
-#define MMIC_CPC_ENDPOINT_ID     ((uint8_t)90)
+#define MMIC_CPC_ENDPOINT_ID     ((uint8_t)18)
 /* TX window size for the endpoint; 1 matches the cpcd examples. */
 #define MMIC_CPC_TX_WINDOW_SIZE  ((uint8_t)1)
 #endif
@@ -107,6 +107,7 @@ static int serializeArgs(mmic_command_id_e id,
         case subscription_info:
         case openCommissioning:
         case decommission:
+        case wakeUpList:
             if (argc != 1) {
                 fprintf(stderr, "%s takes no arguments\n", commandsString[id]);
                 return -1;
@@ -145,6 +146,63 @@ static int serializeArgs(mmic_command_id_e id,
 
             memcpy(out, &args, sizeof(args));
             return (int)sizeof(args);
+        }
+
+        case addWakeUp:
+        {
+            /* Usage: addWakeUp <clusterId> <attributeId> <mode> <operand>
+             * mode: 0 = Boolean, 1 = Bitmask, 2 = Equal */
+            if (argc != 5) {
+                fprintf(stderr,
+                        "Usage: %s <clusterId> <attributeId> <mode> <operand>\n",
+                        commandsString[id]);
+                return -1;
+            }
+            if (outCap < sizeof(wakeUpEntry_t)) {
+                fprintf(stderr, "Buffer too small for %s arguments\n", commandsString[id]);
+                return -1;
+            }
+
+            uint64_t v;
+            wakeUpEntry_t entry;
+
+            if (parseU64(argv[1], UINT32_MAX, &v) != 0) { fprintf(stderr, "bad clusterId\n");   return -1; }
+            entry.clusterId = (uint32_t) v;
+            if (parseU64(argv[2], UINT32_MAX, &v) != 0) { fprintf(stderr, "bad attributeId\n"); return -1; }
+            entry.attributeId = (uint32_t) v;
+            if (parseU64(argv[3], 2,          &v) != 0) { fprintf(stderr, "bad mode (0..2)\n"); return -1; }
+            entry.mode = (uint8_t) v;
+            if (parseU64(argv[4], UINT64_MAX, &v) != 0) { fprintf(stderr, "bad operand\n");     return -1; }
+            entry.operand = v;
+
+            memcpy(out, &entry, sizeof(entry));
+            return (int) sizeof(entry);
+        }
+
+        case removeWakeUp:
+        {
+            /* Usage: removeWakeUp <clusterId> <attributeId> */
+            if (argc != 3) {
+                fprintf(stderr,
+                        "Usage: %s <clusterId> <attributeId>\n",
+                        commandsString[id]);
+                return -1;
+            }
+            if (outCap < sizeof(wakeUpRemoveArgs_t)) {
+                fprintf(stderr, "Buffer too small for %s arguments\n", commandsString[id]);
+                return -1;
+            }
+
+            uint64_t v;
+            wakeUpRemoveArgs_t args;
+
+            if (parseU64(argv[1], UINT32_MAX, &v) != 0) { fprintf(stderr, "bad clusterId\n");   return -1; }
+            args.clusterId = (uint32_t) v;
+            if (parseU64(argv[2], UINT32_MAX, &v) != 0) { fprintf(stderr, "bad attributeId\n"); return -1; }
+            args.attributeId = (uint32_t) v;
+
+            memcpy(out, &args, sizeof(args));
+            return (int) sizeof(args);
         }
 
         case commission:
