@@ -267,6 +267,7 @@ void ConnectivityManagerImpl::DriveStationState()
     // connect it to the access point using the credentials from the staging
     // network
     VerifyOrReturn(IsWiFiStationProvisioned(), ChipLogDetail(DeviceLayer, "WiFi station is not provisioned"));
+    mWiFiStationState = IsWiFiStationConnected() ? kWiFiStationState_Connected : kWiFiStationState_NotConnected;
 
     System::Clock::Timestamp now               = System::SystemClock().GetMonotonicTimestamp();
     System::Clock::Timestamp timeToNextConnect = System::Clock::kZero;
