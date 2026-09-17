@@ -338,7 +338,8 @@ public:
     /**
      * @brief Function returns the last disconnection reason by mapping platform error codes
      *        to the NetworkCommissioningStatusEnum value
-     * @return NetworkCommissioningStatusEnum value for the last disconnection reason
+     * @return NetworkCommissioningStatusEnum value for the last disconnection reason,
+     *         kSuccess if the disconnection was user initiated otherwise the reason for the disconnection
      */
     chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum GetLastDisconnectionReason();
 
