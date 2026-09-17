@@ -16,9 +16,9 @@
  */
 #include <algorithm>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
-#include <headers/AttestationKey.h>
-#include <headers/ProvisionEncoder.h>
-#include <headers/ProvisionStorage.h>
+#include <silabs/AttestationKey.h>
+#include <silabs/ProvisionEncoder.h>
+#include <silabs/ProvisionStorage.h>
 #include <lib/core/CHIPEncoding.h>
 #include <lib/support/BytesToHex.h>
 #include <lib/support/CHIPMemString.h>

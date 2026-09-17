@@ -52,7 +52,7 @@ source_set("storage") {
 
   public_deps = [
     "${chip_root}/src/app:test-event-trigger",
-    "${sl_provision_root}:headers",
+    "${sl_provision_root}:include",
   ]
 
   if (sl_enable_test_event_trigger) {

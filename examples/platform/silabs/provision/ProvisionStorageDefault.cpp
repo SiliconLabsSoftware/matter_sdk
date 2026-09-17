@@ -15,8 +15,8 @@
  *    limitations under the License.
  */
 #include <credentials/examples/DeviceAttestationCredsExample.h>
-#include <headers/AttestationKey.h>
-#include <headers/ProvisionStorage.h>
+#include <silabs/AttestationKey.h>
+#include <silabs/ProvisionStorage.h>
 #include <lib/support/BytesToHex.h>
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/CodeUtils.h>
@@ -41,7 +41,19 @@
 #endif
 
 #ifdef SL_PROVISION_GENERATOR
+#if defined(SL_TRUSTZONE_NONSECURE)
+#include <silabs/gfw_tz_secure.h>
+#define INIT_FLASH() CHIP_ERROR(GFW_Flash_Init())
+#define ERASE_PAGE(addr) CHIP_ERROR(GFW_Flash_ErasePage(addr))
+#define WRITE_PAGE(addr, data, size) CHIP_ERROR(GFW_Flash_WriteWord(addr, data, size))
+#define SET_NVM3_END(addr)
+#else
+#define INIT_FLASH() chip::DeviceLayer::Silabs::GetPlatform().FlashInit()
+#define ERASE_PAGE(addr) ErasePage(addr)
+#define WRITE_PAGE(addr, data, size) WritePage(addr, data, size)
+#define SET_NVM3_END(addr) setNvm3End(addr)
 extern void setNvm3End(uint32_t addr);
+#endif
 #elif !SL_MATTER_GN_BUILD
 #include <sl_matter_provision_config.h>
 #endif
@@ -66,7 +78,7 @@ size_t sCredentialsOffset     = 0;
 
 CHIP_ERROR ErasePage(uint32_t addr)
 {
-    return chip::DeviceLayer::Silabs::GetPlatform().FlashErasePage(addr);
+    return ERASE_PAGE(addr);
 }
 
 size_t RoundNearest(size_t n, size_t multiple)
@@ -81,11 +93,12 @@ size_t RoundNearest(size_t n, size_t multiple)
 CHIP_ERROR WritePage(uint32_t addr, const uint8_t * data, size_t size)
 {
     // The flash driver fails if the size is not a multiple of 4 (32-bits)
+    CHIP_ERROR err = CHIP_NO_ERROR;
     size_t size_32 = RoundNearest(size, 4);
     if (size_32 == size)
     {
         // The given data is already aligned to 32-bit
-        return chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(addr, data, size);
+        err = WRITE_PAGE(addr, data, size);
     }
     else
     {
@@ -94,10 +107,10 @@ CHIP_ERROR WritePage(uint32_t addr, const uint8_t * data, size_t size)
         VerifyOrReturnError(p != nullptr, CHIP_ERROR_INTERNAL);
         memcpy(p, data, size);
         memset(p + size, 0xff, size_32 - size);
-        CHIP_ERROR err = chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(addr, p, size_32);
+        err = WRITE_PAGE(addr, p, size_32);
         Platform::MemoryFree(p);
-        return err;
     }
+    return err;
 }
 
 CHIP_ERROR WriteFile(Storage & store, SilabsConfig::Key offset_key, SilabsConfig::Key size_key, const ByteSpan & value)
@@ -164,9 +177,9 @@ CHIP_ERROR Storage::Initialize(uint32_t flash_addr, uint32_t flash_size)
 #ifndef SLI_SI91X_MCU_INTERFACE
         base_addr = (flash_addr + flash_size - FLASH_PAGE_SIZE);
 #endif // SLI_SI91X_MCU_INTERFACE
-        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::GetPlatform().FlashInit();
+        TEMPORARY_RETURN_IGNORED INIT_FLASH();
 #ifdef SL_PROVISION_GENERATOR
-        setNvm3End(base_addr);
+        SET_NVM3_END(base_addr);
 #endif
     }
     return SetCredentialsBaseAddress(base_addr);

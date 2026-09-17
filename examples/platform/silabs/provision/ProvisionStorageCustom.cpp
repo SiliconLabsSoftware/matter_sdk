@@ -15,7 +15,7 @@
  *    limitations under the License.
  */
 #include <algorithm>
-#include <headers/ProvisionStorage.h>
+#include <silabs/ProvisionStorage.h>
 #include <lib/support/CodeUtils.h>
 #include <string.h>
 
