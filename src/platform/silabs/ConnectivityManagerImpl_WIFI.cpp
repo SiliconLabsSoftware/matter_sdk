@@ -406,7 +406,7 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
             // illegal state transition
             // disconnect the station to avoid further attempts to connect
             // done to align out of bound disconnection during connection attempt
-            DisconnectNetwork();
+            SuccessOrLog(DisconnectNetwork(), DeviceLayer);
             return;
         }
 
