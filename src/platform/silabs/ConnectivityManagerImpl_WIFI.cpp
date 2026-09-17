@@ -100,10 +100,13 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
             {
             // User initiated disconnection outside of the ConnectivityManager
             case NetworkCommissioning::Status::kSuccess:
-                ChangeWiFiStationState(kWiFiStationState_NotConnected);
+                DriveStationState();
+                // ChangeWiFiStationState(kWiFiStationState_NotConnected);
                 break;
             // Disconnection due to WiFi connectivity error
             default:
+                VerifyOrReturn(mWiFiStationState != kWiFiStationState_NotConnected,
+                               ChipLogDetail(DeviceLayer, "Discard disconnect event as WiFi station is not connected"));
                 ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
                 break;
             }
@@ -169,8 +172,7 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
         // kWiFiStationMode_Application
         break;
     }
-    mWiFiStationState = kWiFiStationState_NotConnected;
-
+    mWiFiStationAutoConnect = true;
     // do not schedule the DriveStationState if the station is not ready to be driven once the START UP EVENT is received
     VerifyOrReturnError(WifiInterface::GetInstance().IsStationReady(), CHIP_NO_ERROR,
                         ChipLogDetail(DeviceLayer, "WiFi station is not ready"));
@@ -241,6 +243,9 @@ void ConnectivityManagerImpl::DriveStationState()
     // Refresh the current state and store it in `mWiFiStationMode`
     WiFiStationMode stationMode = GetWiFiStationMode();
     CHIP_ERROR err              = CHIP_NO_ERROR;
+    bool isStationConnected     = WifiInterface::GetInstance().IsStationConnected();
+    bool isStationProvisioned   = WifiInterface::GetInstance().IsWifiProvisioned();
+
     // if the station mode is application controlled or disabled, return
     VerifyOrReturn(stationMode != kWiFiStationMode_ApplicationControlled,
                    ChipLogProgress(DeviceLayer, "WiFi station is application controlled"));
@@ -253,7 +258,7 @@ void ConnectivityManagerImpl::DriveStationState()
     VerifyOrReturn(stationMode != kWiFiStationMode_Disabled, ChipLogProgress(DeviceLayer, "WiFi station is disabled"));
 
     // if the station is not provisioned but connected, disconnect it
-    if (!IsWiFiStationProvisioned() && IsWiFiStationConnected())
+    if (!isStationProvisioned && isStationConnected)
     {
         ChipLogDetail(DeviceLayer, "WiFi station is not provisioned and is connected, disconnecting");
         err = DisconnectNetwork();
@@ -264,9 +269,13 @@ void ConnectivityManagerImpl::DriveStationState()
 
     // if the station is provisioned and auto connect is enabled and the station is not connected,
     // connect it to the access point using the credentials from the staging network
-    if (IsWiFiStationProvisioned() && mWiFiStationAutoConnect && (mWiFiStationState == kWiFiStationState_NotConnected))
+    if (isStationProvisioned && mWiFiStationAutoConnect && !isStationConnected)
     {
-        mWiFiStationState = kWiFiStationState_Connecting;
+        // if the station is not connected, set the state to connecting
+        if (mWiFiStationState == kWiFiStationState_NotConnected)
+        {
+            mWiFiStationState = kWiFiStationState_Connecting;
+        }
     }
 
     // TODO: Verify why `now` is always the same value
@@ -277,33 +286,21 @@ void ConnectivityManagerImpl::DriveStationState()
     switch (mWiFiStationState)
     {
     case kWiFiStationState_NotConnected: {
-        ChipLogDetail(DeviceLayer, "mWiFiStationAutoConnect: %d", mWiFiStationAutoConnect);
-        ChipLogDetail(DeviceLayer, "IsWiFiStationProvisioned: %d", IsWiFiStationProvisioned());
-        ChipLogDetail(DeviceLayer, "IsWiFiStationConnected: %d", IsWiFiStationConnected());
-        mWiFiStationAutoConnect = true;
-        ResetReconnectionWiFiStationState();
-        break;
     }
+    break;
     case kWiFiStationState_Connected: {
-        mWiFiStationAutoConnect = true;
-        ResetReconnectionWiFiStationState();
     }
     break;
     case kWiFiStationState_Connecting_Succeeded: {
-        mWiFiStationAutoConnect = true;
-        ResetReconnectionWiFiStationState();
     }
     break;
     case kWiFiStationState_Connecting: {
-        if (mWiFiStationAutoConnect)
-        {
-            // connect the station to the access point using the credentials from the staging network
-            err = WifiInterface::GetInstance().ConnectToAccessPoint(); // using the credentials from the staging network
-            VerifyOrReturn(err == CHIP_NO_ERROR || err == CHIP_ERROR_IN_PROGRESS,
-                           ChipLogError(DeviceLayer, "ConnectToAccessPoint failed: %" CHIP_ERROR_FORMAT, err.Format()));
-            // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of ConnectWiFiNetwork()
-            return;
-        }
+        // connect the station to the access point using the credentials from the staging network
+        err = WifiInterface::GetInstance().ConnectToAccessPoint(); // using the credentials from the staging network
+        VerifyOrReturn(err == CHIP_NO_ERROR || err == CHIP_ERROR_IN_PROGRESS,
+                       ChipLogError(DeviceLayer, "ConnectToAccessPoint failed: %" CHIP_ERROR_FORMAT, err.Format()));
+        // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of ConnectWiFiNetwork()
+        return;
     }
     break;
     case kWiFiStationState_Connecting_Failed: {
@@ -327,10 +324,10 @@ void ConnectivityManagerImpl::DriveStationState()
     }
     break;
     case kWiFiStationState_Disconnecting: {
-        mWiFiStationAutoConnect = false;
-        if (!IsWiFiStationConnected())
+        if (!isStationConnected)
         {
             mWiFiStationState = kWiFiStationState_NotConnected;
+            TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
         }
     }
     break;
@@ -373,6 +370,7 @@ void ConnectivityManagerImpl::ResetReconnectionWiFiStationState()
 {
     mLastStationConnectFailTime = System::Clock::kZero;
     mWiFiStationReconnectCount  = 1;
+    DeviceLayer::SystemLayer().CancelTimer(DriveStationState, NULL);
 }
 
 void ConnectivityManagerImpl::DriveStationState(::chip::System::Layer * aLayer, void * aAppState)
@@ -388,12 +386,12 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
                     WiFiStationStateToStr(newState));
     // Commit the state before notifying. OnStationConnected() calls
     // UpdateInternetConnectivityState(), which only reports IPv6 when already Connected.
-    mWiFiStationState = newState;
+    WiFiStationState prevState = mWiFiStationState;
+    mWiFiStationState          = newState;
     switch (newState)
     {
     case kWiFiStationState_NotConnected:
-        // mWiFiStationAutoConnect = true;
-        // ResetReconnectionWiFiStationState();
+        ResetReconnectionWiFiStationState();
         OnStationDisconnected();
         break;
 
@@ -402,17 +400,23 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
         break;
 
     case kWiFiStationState_Connecting_Succeeded:
-        // ResetReconnectionWiFiStationState();
-        OnStationConnected();
-        break;
-
     case kWiFiStationState_Connected:
-        // ResetReconnectionWiFiStationState();
+        if (prevState != kWiFiStationState_Connecting)
+        {
+            // illegal state transition
+            // disconnect the station to avoid further attempts to connect
+            // done to align out of bound disconnection during connection attempt
+            DisconnectNetwork();
+            return;
+        }
+
+        ResetReconnectionWiFiStationState();
         OnStationConnected();
         break;
 
     case kWiFiStationState_Disconnecting:
-        // mWiFiStationAutoConnect = false;
+        ResetReconnectionWiFiStationState();
+        mWiFiStationAutoConnect = false;
         break;
 
     default:
@@ -438,7 +442,7 @@ void ConnectivityManagerImpl::UpdateInternetConnectivityState(void)
     IPAddress addr;
 
     // If the WiFi station is currently in the connected state...
-    if (mWiFiStationState == kWiFiStationState_Connected)
+    if (IsWiFiStationConnected())
     {
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
         haveIPv4Conn = WifiInterface::GetInstance().HasAnIPv4Address();

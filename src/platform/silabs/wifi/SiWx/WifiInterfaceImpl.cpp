@@ -846,9 +846,6 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
 {
     sl_status_t status = sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_down failed: 0x%lx", status));
-
-    mLastDisconnectionReason = status;
-    WifiInterface::NotifyDisconnection(status);
     return SL_STATUS_OK;
 }
 
@@ -863,6 +860,8 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
     NotifyIPv4Change(false);
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
     NotifyIPv6Change(false);
+    mLastDisconnectionReason = SL_STATUS_OK;
+    WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
 }
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
