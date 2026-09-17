@@ -10,6 +10,9 @@ config CHIP_WIFI
 	default y if BOARD_SIWX917_RB4338A
 	default y if BOARD_SIWX917_RB4342A
 
+config NET_BUF_DATA_SIZE
+	default 512 if CHIP_WIFI
+
 # ==============================================================================
 # Logging configuration
 # ==============================================================================
