@@ -20,7 +20,7 @@
 namespace mdns {
 namespace Minimal {
 
-bool IPResourceRecord::WriteData(RecordWriter & out) const
+void RegisterNamedPipeTranslators(OnOffLight & device, NamedPipe::Dispatcher & dispatcher)
 {
     // IP address is already stored in network byte order, hence raw bytes put
     if (mIPAddress.IsIPv6())

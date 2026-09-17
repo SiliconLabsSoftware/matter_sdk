@@ -18,14 +18,16 @@
 
 #pragma once
 
-#include <device/capabilities/on-off-load/OnOffLoad.h>
-#include <device/capabilities/on-off-load/impl/LoggingOnOffDelegate.h>
-#include <zephyr/devicetree.h>
+#include <device/capabilities/color-light/impl/LoggingLightDriver.h>
+#include <device/types/extended-color-light/ExtendedColorLight.h>
 
 namespace chip::app::AllDevices {
 
-/// On/Off Light that drives the board's led0 alias for normal On/Off state.
-class ZephyrOnOffLight : private LoggingOnOffDelegate, public OnOffLoad
+/**
+ * Extended Color Light (device type 0x010D) whose output side only logs, so the device can be
+ * exercised without anything behind it.
+ */
+class LoggingExtendedColorLight : private LoggingLightDriver, public ExtendedColorLight
 {
 public:
     explicit ZephyrOnOffLight(const OnOffLoad::Context & context);

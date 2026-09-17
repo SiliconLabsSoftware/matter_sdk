@@ -19,10 +19,11 @@
 
 #pragma once
 
-#include "silabs_utils.h"
+#include <device/types/on-off-light/OnOffLight.h>
+#include <posix/named_pipe/Dispatcher.h>
 
 // ---- RangeHood Example App Config ----
 
-#define APP_TASK_NAME "RangeHood"
+void RegisterNamedPipeTranslators(OnOffLight & device, NamedPipe::Dispatcher & dispatcher);
 
 #define BLE_DEV_NAME "SL-" APP_TASK_NAME

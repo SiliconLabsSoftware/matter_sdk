@@ -19,10 +19,11 @@
 
 #pragma once
 
-#include "silabs_utils.h"
+#include <device/types/on-off-light/OnOffLight.h>
+#include <oob-accessors/OOBAccessorRegistry.h>
 
 // ---- Oven Example App Config ----
 
-#define APP_TASK_NAME "Oven"
+void RegisterOOBAccessors(OnOffLight & device, OOBAccessorRegistry & registry);
 
 #define BLE_DEV_NAME "SL-" APP_TASK_NAME

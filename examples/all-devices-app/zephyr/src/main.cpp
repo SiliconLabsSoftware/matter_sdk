@@ -21,9 +21,7 @@
 #include <lib/core/CHIPError.h>
 #include <zephyr/kernel.h>
 
-#include <cstdlib>
-
-int main()
+void RegisterNamedPipeTranslators(DimmableLight & device, NamedPipe::Dispatcher & dispatcher)
 {
     const CHIP_ERROR err = chip::app::AllDevices::GetAppTask().Run();
     if (err != CHIP_NO_ERROR)

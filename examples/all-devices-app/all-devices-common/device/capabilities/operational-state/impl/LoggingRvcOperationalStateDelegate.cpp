@@ -15,12 +15,14 @@
  *    limitations under the License.
  */
 
-#include "LoggingRvcOperationalStateDelegate.h"
-#include <lib/support/logging/CHIPLogging.h>
+#include "OOBAccessors.h"
+#include <device/types/on-off-light/OnOffLight.h>
+#include <lib/support/CodeUtils.h>
+#include <oob-accessors/clusters/OnOffOOBAccessor.h>
 
 namespace chip::app::Clusters::OperationalState {
 
-void LoggingRvcOperationalStateDelegate::HandleGoHomeCommandCallback(GenericOperationalError & err)
+void RegisterOOBAccessors(OnOffLight & device, OOBAccessorRegistry & registry)
 {
     ChipLogProgress(Zcl, "LoggingRvcOperationalStateDelegate: Go Home command received.");
     if (mCluster)

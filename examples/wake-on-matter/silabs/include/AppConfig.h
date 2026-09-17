@@ -19,10 +19,11 @@
 
 #pragma once
 
-#include "silabs_utils.h"
+#include <device/types/dimmable-light/DimmableLight.h>
+#include <posix/named_pipe/Dispatcher.h>
 
 // ---- WoM Example App Config ----
 
-#define APP_TASK_NAME "WoM"
+void RegisterNamedPipeTranslators(DimmableLight & device, NamedPipe::Dispatcher & dispatcher);
 
 #define BLE_DEV_NAME "SL-" APP_TASK_NAME

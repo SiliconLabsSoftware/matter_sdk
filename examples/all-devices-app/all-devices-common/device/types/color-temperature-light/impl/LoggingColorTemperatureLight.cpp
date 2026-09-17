@@ -1,5 +1,6 @@
 /*
  *    Copyright (c) 2026 Project CHIP Authors
+ *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -14,18 +15,14 @@
  *    limitations under the License.
  */
 
-#include <device/types/air-purifier/impl/LoggingAirPurifier.h>
-#include <devices/Types.h>
+#include <device/types/color-temperature-light/impl/LoggingColorTemperatureLight.h>
 
 namespace chip {
 namespace app {
 
-LoggingAirPurifier::LoggingAirPurifier(const Context & context) :
-    AirPurifier(static_cast<Clusters::FanControl::Delegate &>(*this),
-                context.includeOnOffCluster ? static_cast<Clusters::OnOffDelegate *>(this) : nullptr, context)
-{
-    SetFanLoad(this);
-}
+LoggingColorTemperatureLight::LoggingColorTemperatureLight(const Context & context) :
+    ColorTemperatureLight(LoggingLightDriver::GetDelegates(), context)
+{}
 
 } // namespace app
 } // namespace chip

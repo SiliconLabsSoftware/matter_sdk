@@ -14,18 +14,16 @@
  *    limitations under the License.
  */
 
-#include <device/types/air-purifier/impl/LoggingAirPurifier.h>
-#include <devices/Types.h>
+#include "OOBAccessors.h"
+#include <device/types/dimmable-light/DimmableLight.h>
+#include <lib/support/CodeUtils.h>
+#include <oob-accessors/clusters/OnOffOOBAccessor.h>
 
-namespace chip {
-namespace app {
+namespace chip::app {
 
-LoggingAirPurifier::LoggingAirPurifier(const Context & context) :
-    AirPurifier(static_cast<Clusters::FanControl::Delegate &>(*this),
-                context.includeOnOffCluster ? static_cast<Clusters::OnOffDelegate *>(this) : nullptr, context)
+void RegisterOOBAccessors(DimmableLight & device, OOBAccessorRegistry & registry)
 {
-    SetFanLoad(this);
+    LogErrorOnFailure(registry.Register(std::make_unique<OnOffOOBAccessor>(device.OnOffCluster(), device.GetEndpointId())));
 }
 
-} // namespace app
-} // namespace chip
+} // namespace chip::app

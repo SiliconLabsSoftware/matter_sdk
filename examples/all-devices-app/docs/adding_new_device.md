@@ -136,6 +136,14 @@ public:
     Clusters::IdentifyCluster & IdentifyCluster() { return mIdentifyCluster.Cluster(); }
     Clusters::MySensorCluster & MySensorCluster() { return mMySensorCluster.Cluster(); }
 
+protected:
+    // Optional cluster extension hooks for subclasses (impl/ or hardware targets)
+    virtual CHIP_ERROR RegisterAdditionalClusters(chip::EndpointId endpoint, CodeDrivenDataModelProvider & provider)
+    {
+        return CHIP_NO_ERROR;
+    }
+    virtual void UnregisterAdditionalClusters(CodeDrivenDataModelProvider & provider) {}
+
 private:
     TimerDelegate & mTimerDelegate;
     Clusters::IdentifyDelegate & mIdentifyDelegate;
@@ -149,8 +157,10 @@ private:
 
 ### The Source (`MySensorDevice.cpp`)
 
-In `Register()`, wire up your mandatory delegates using the `.WithDelegate()`
-helper when creating the cluster instances:
+In `Register()`, wire up mandatory clusters and invoke
+`RegisterAdditionalClusters()` **before** calling `provider.AddEndpoint()` so
+subclasses can attach optional clusters within the atomic registration
+transaction:
 
 ```cpp
 #include "MySensorDevice.h"
@@ -180,6 +190,9 @@ CHIP_ERROR MySensorDevice::Register(chip::EndpointId endpoint, CodeDrivenDataMod
     mMySensorCluster.Create(endpoint);
     ReturnErrorOnFailure(provider.AddCluster(mMySensorCluster.Registration()));
 
+    // Allow subclasses to register optional clusters before committing the endpoint
+    ReturnErrorOnFailure(RegisterAdditionalClusters(endpoint, provider));
+
     ReturnErrorOnFailure(provider.AddEndpoint(mEndpointRegistration));
     transaction.Commit();
     return CHIP_NO_ERROR;
@@ -188,6 +201,7 @@ CHIP_ERROR MySensorDevice::Register(chip::EndpointId endpoint, CodeDrivenDataMod
 void MySensorDevice::Unregister(CodeDrivenDataModelProvider & provider)
 {
     UnregisterDescriptor(provider);
+    UnregisterAdditionalClusters(provider);
     if (mMySensorCluster.IsConstructed())
     {
         LogErrorOnFailure(provider.RemoveCluster(&mMySensorCluster.Cluster()));
@@ -206,7 +220,12 @@ void MySensorDevice::Unregister(CodeDrivenDataModelProvider & provider)
 ### The Symmetrical Logging Mock (`impl/LoggingMySensorDevice.h` & `.cpp`)
 
 To provide a self-contained simulator variant ready for `DeviceFactory`,
-implement the self-delegate logging mock under the `impl/` subfolder:
+implement the logging subclass under `impl/`.
+
+Note the inheritance order: delegate base classes
+(`private Clusters::IdentifyDelegate`) are listed **before** `public MySensor`
+so the delegate subobject is constructed before being passed as `*this` to
+`MySensor`:
 
 #### Header (`impl/LoggingMySensorDevice.h`)
 
@@ -218,7 +237,7 @@ implement the self-delegate logging mock under the `impl/` subfolder:
 
 namespace chip::app {
 
-class LoggingMySensorDevice : public MySensorDevice, public Clusters::IdentifyDelegate
+class LoggingMySensor : private Clusters::IdentifyDelegate, public MySensor
 {
 public:
     explicit LoggingMySensorDevice(TimerDelegate & timerDelegate) :

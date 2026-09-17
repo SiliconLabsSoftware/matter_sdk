@@ -1,5 +1,6 @@
 /*
  *    Copyright (c) 2026 Project CHIP Authors
+ *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -14,18 +15,24 @@
  *    limitations under the License.
  */
 
-#include <device/types/air-purifier/impl/LoggingAirPurifier.h>
-#include <devices/Types.h>
+#pragma once
+
+#include <device/capabilities/color-light/impl/LoggingLightDriver.h>
+#include <device/types/color-temperature-light/ColorTemperatureLight.h>
 
 namespace chip {
 namespace app {
 
-LoggingAirPurifier::LoggingAirPurifier(const Context & context) :
-    AirPurifier(static_cast<Clusters::FanControl::Delegate &>(*this),
-                context.includeOnOffCluster ? static_cast<Clusters::OnOffDelegate *>(this) : nullptr, context)
+/**
+ * Color Temperature Light (device type 0x010C) whose output side only logs, so the device can be
+ * exercised without anything behind it.
+ */
+class LoggingColorTemperatureLight : private LoggingLightDriver, public ColorTemperatureLight
 {
-    SetFanLoad(this);
-}
+public:
+    explicit LoggingColorTemperatureLight(const Context & context);
+    ~LoggingColorTemperatureLight() override = default;
+};
 
 } // namespace app
 } // namespace chip

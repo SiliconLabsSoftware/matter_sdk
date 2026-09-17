@@ -19,10 +19,11 @@
 
 #pragma once
 
-#include "silabs_utils.h"
+#include <device/types/dimmable-light/DimmableLight.h>
+#include <oob-accessors/OOBAccessorRegistry.h>
 
 // ---- Platform Example App Config ----
 
-#define APP_TASK_NAME "Platform"
+void RegisterOOBAccessors(DimmableLight & device, OOBAccessorRegistry & registry);
 
 #define BLE_DEV_NAME "SL-" APP_TASK_NAME
