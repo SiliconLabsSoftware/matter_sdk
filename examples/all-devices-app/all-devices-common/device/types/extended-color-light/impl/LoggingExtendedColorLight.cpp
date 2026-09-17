@@ -1,5 +1,6 @@
 /*
  *    Copyright (c) 2026 Project CHIP Authors
+ *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -14,14 +15,14 @@
  *    limitations under the License.
  */
 
-#include "NamedPipeTranslators.h"
-#include <posix/named_pipe/translators/OnOffTranslator.h>
+#include <device/types/extended-color-light/impl/LoggingExtendedColorLight.h>
 
-namespace chip::app {
+namespace chip {
+namespace app {
 
-void RegisterNamedPipeTranslators(OnOffLight & device, NamedPipe::Dispatcher & dispatcher)
-{
-    LogErrorOnFailure(dispatcher.EnsureTranslatorRegistered<NamedPipe::OnOffTranslator>());
-}
+LoggingExtendedColorLight::LoggingExtendedColorLight(const Context & context) :
+    ExtendedColorLight(LoggingLightDriver::GetDelegates(), context)
+{}
 
-} // namespace chip::app
+} // namespace app
+} // namespace chip

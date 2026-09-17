@@ -18,18 +18,23 @@
 
 #pragma once
 
-#include <lib/core/CHIPError.h>
-#include <zephyr/devicetree.h>
+#include <device/capabilities/color-light/impl/LoggingLightDriver.h>
+#include <device/types/extended-color-light/ExtendedColorLight.h>
 
 #if DT_NODE_EXISTS(DT_ALIAS(sw0))
 #define ALL_DEVICES_FACTORY_RESET_SW_NODE DT_ALIAS(sw0)
 #endif
 
-#if defined(ALL_DEVICES_FACTORY_RESET_SW_NODE)
-#define ALL_DEVICES_HAS_FACTORY_RESET_SW 1
-#else
-#define ALL_DEVICES_HAS_FACTORY_RESET_SW 0
-#endif
+/**
+ * Extended Color Light (device type 0x010D) whose output side only logs, so the device can be
+ * exercised without anything behind it.
+ */
+class LoggingExtendedColorLight : private LoggingLightDriver, public ExtendedColorLight
+{
+public:
+    explicit LoggingExtendedColorLight(const Context & context);
+    ~LoggingExtendedColorLight() override = default;
+};
 
 namespace chip::app::AllDevices::Button {
 
