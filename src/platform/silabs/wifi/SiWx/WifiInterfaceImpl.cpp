@@ -846,6 +846,7 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
 {
     sl_status_t status = sl_net_down(SL_NET_WIFI_CLIENT_INTERFACE);
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "sl_net_down failed: 0x%lx", status));
+
     return SL_STATUS_OK;
 }
 

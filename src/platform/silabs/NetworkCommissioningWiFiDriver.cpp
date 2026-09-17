@@ -119,7 +119,7 @@ Status SlWiFiDriver::AddOrUpdateNetwork(ByteSpan ssid, ByteSpan credentials, Mut
     // using ssid as the networkId
     VerifyOrReturnError(ssid.size() <= sizeof(mStagingNetwork.ssid), Status::kOutOfRange);
     VerifyOrReturnError(credentials.size() <= sizeof(mStagingNetwork.key), Status::kOutOfRange);
-    
+
     VerifyOrReturnError(ssid.data() != nullptr, Status::kNetworkIDNotFound);
     MutableByteSpan ssidSpan(mStagingNetwork.ssid, sizeof(mStagingNetwork.ssid));
     VerifyOrReturnError(CopySpanToMutableSpan(ssid, ssidSpan) == CHIP_NO_ERROR, Status::kBoundsExceeded);
