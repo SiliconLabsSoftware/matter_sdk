@@ -406,8 +406,7 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
             // illegal state transition
             // disconnect the station to avoid further attempts to connect
             // done to align out of bound disconnection during connection attempt
-            VerifyOrReturn(DisconnectNetwork() == CHIP_NO_ERROR,
-                           ChipLogError(DeviceLayer, "DisconnectNetwork failed: %" CHIP_ERROR_FORMAT, err.Format()));
+            VerifyOrReturn(DisconnectNetwork() == CHIP_NO_ERROR);
             return;
         }
 
