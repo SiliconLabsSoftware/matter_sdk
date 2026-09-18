@@ -546,6 +546,84 @@ CHIP_ERROR Storage::GetDeviceAttestationCert(MutableByteSpan & value)
     return err;
 }
 
+CHIP_ERROR Storage::GetDeviceAttestationCertForProfile(DeviceAttestationCertProfile profile, MutableByteSpan & out_dac_buffer)
+{
+    // Silabs storage only tracks the legacy Matter chain today; any other profile is served
+    // via the example provider so callers keep a defined error path.
+    if (profile == DeviceAttestationCertProfile::kEcdsaMatterLegacy)
+    {
+        CHIP_ERROR err = GetDeviceAttestationCert(out_dac_buffer);
+        if (err != CHIP_ERROR_NOT_FOUND)
+        {
+            return err;
+        }
+    }
+#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+    return Examples::GetExampleDACProvider()->GetDeviceAttestationCertForProfile(profile, out_dac_buffer);
+#else
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+CHIP_ERROR Storage::GetProductAttestationIntermediateCertForProfile(DeviceAttestationCertProfile profile,
+                                                                    MutableByteSpan & out_pai_buffer)
+{
+    if (profile == DeviceAttestationCertProfile::kEcdsaMatterLegacy)
+    {
+        CHIP_ERROR err = GetProductAttestationIntermediateCert(out_pai_buffer);
+        if (err != CHIP_ERROR_NOT_FOUND)
+        {
+            return err;
+        }
+    }
+#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+    return Examples::GetExampleDACProvider()->GetProductAttestationIntermediateCertForProfile(profile, out_pai_buffer);
+#else
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+DeviceAttestationProfileSupport Storage::GetDeviceAttestationProfileSupport() const
+{
+    const auto legacy = BitMask<DeviceAttestationCertProfileBitmap>(DeviceAttestationCertProfileBitmap::kSupportsEcdsaMatterLegacy);
+    return { legacy, legacy, legacy };
+}
+
+CHIP_ERROR Storage::GetDeviceAttestationDocumentSegment(DeviceAttestationDocumentType documentType,
+                                                        DeviceAttestationCertProfile profile, size_t offset,
+                                                        MutableByteSpan & out_document_buffer, size_t & out_document_size)
+{
+    // Silabs storage returns whole documents from NVM3, so only offset 0 on the legacy chain
+    // maps onto an actual read; every other request is delegated to the example provider.
+    if (profile == DeviceAttestationCertProfile::kEcdsaMatterLegacy && offset == 0)
+    {
+        CHIP_ERROR err = CHIP_ERROR_NOT_FOUND;
+        switch (documentType)
+        {
+        case DeviceAttestationDocumentType::kDACCertificate:
+            err = GetDeviceAttestationCert(out_document_buffer);
+            break;
+        case DeviceAttestationDocumentType::kPAICertificate:
+            err = GetProductAttestationIntermediateCert(out_document_buffer);
+            break;
+        default:
+            return CHIP_ERROR_INVALID_ARGUMENT;
+        }
+        if (err != CHIP_ERROR_NOT_FOUND)
+        {
+            ReturnErrorOnFailure(err);
+            out_document_size = out_document_buffer.size();
+            return CHIP_NO_ERROR;
+        }
+    }
+#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+    return Examples::GetExampleDACProvider()->GetDeviceAttestationDocumentSegment(documentType, profile, offset,
+                                                                                   out_document_buffer, out_document_size);
+#else
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
 #if defined(SLI_SI91X_MCU_INTERFACE) && defined(SL_MBEDTLS_USE_TINYCRYPT)
 CHIP_ERROR Storage::SetDeviceAttestationKey(const ByteSpan & value)
 {
