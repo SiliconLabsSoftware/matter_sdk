@@ -274,7 +274,7 @@ void ConnectivityManagerImpl::DriveStationState()
         // if the station is not connected, set the state to connecting
         if (mWiFiStationState == kWiFiStationState_NotConnected)
         {
-            mWiFiStationState = kWiFiStationState_Connecting;
+            ChangeWiFiStationState(kWiFiStationState_Connecting, false);
         }
     }
 
@@ -313,7 +313,7 @@ void ConnectivityManagerImpl::DriveStationState()
         // DriveStationState() will be called again to start a new connection attempt
         ChipLogProgress(DeviceLayer, "Next WiFi station reconnect in %" PRIu32 " ms",
                         System::Clock::Milliseconds32(timeToNextConnect).count());
-        mWiFiStationState = kWiFiStationState_Connecting;
+        ChangeWiFiStationState(kWiFiStationState_Connecting, false);
         ReturnOnFailure(DeviceLayer::SystemLayer().StartTimer(timeToNextConnect, DriveStationState, NULL));
 
         // TODO: Revisit this logic
@@ -326,7 +326,7 @@ void ConnectivityManagerImpl::DriveStationState()
     case kWiFiStationState_Disconnecting: {
         if (!isStationConnected)
         {
-            mWiFiStationState = kWiFiStationState_NotConnected;
+            ChangeWiFiStationState(kWiFiStationState_NotConnected, false);
             TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
         }
     }
@@ -378,7 +378,7 @@ void ConnectivityManagerImpl::DriveStationState(::chip::System::Layer * aLayer, 
     sInstance.DriveStationState();
 }
 
-void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
+void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, bool driveStationState)
 {
     VerifyOrReturn(mWiFiStationState != newState,
                    ChipLogDetail(DeviceLayer, "ChangeWiFiStationState ignored: %s", WiFiStationStateToStr(newState)));
@@ -424,7 +424,10 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState)
         break;
     }
 
-    DriveStationState();
+    if (driveStationState)
+    {
+        DriveStationState();
+    }
 
     // TODO: Remove this once the WiFi driver is updated to use the new state machine
     NetworkCommissioning::SlWiFiDriver * nwDriver = NetworkCommissioning::SlWiFiDriver::GetInstance();
