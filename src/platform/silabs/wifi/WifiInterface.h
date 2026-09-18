@@ -31,7 +31,9 @@
 #include <sl_status.h>
 
 #if (SLI_SI91X_MCU_INTERFACE | EXP_BOARD)
+#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "rsi_common_apis.h"
+#endif // (SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "sl_si91x_types.h"
 #include "sl_wifi_constants.h"
 #include "sl_wifi_device.h"
@@ -385,6 +387,11 @@ protected:
      * seconds, 4 seconds, 8 seconds, and so on, until the maximum retry interval is reached.
      */
     void ScheduleConnectionAttempt();
+
+    /**
+     * @brief Function cancels the on-going reconnection attempts
+     */
+    void CancelConnectionAttempt();
 
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
