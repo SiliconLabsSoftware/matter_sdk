@@ -37,13 +37,13 @@
 #define SILABS_UART_FLUSH() ((void) 0)
 #endif
 
-#if !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
+#if (!defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)) && !defined(EXP_BOARD)
 #include "rail_types.h"
 
 #ifdef RAIL_ASSERT_DEBUG_STRING
 #include "rail_assert_error_codes.h"
 #endif
-#endif // !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
+#endif // (!defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)) && !defined(EXP_BOARD)
 
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
 
@@ -326,7 +326,7 @@ extern "C" void vApplicationGetTimerTaskMemory(StaticTask_t ** ppxTimerTaskTCBBu
     *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
 }
 
-#if !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
+#if (!defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)) && !defined(EXP_BOARD)
 #ifndef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 extern "C" void RAILCb_AssertFailed(RAIL_Handle_t railHandle, uint32_t errorCode)
 {
@@ -353,5 +353,5 @@ extern "C" void RAILCb_AssertFailed(RAIL_Handle_t railHandle, uint32_t errorCode
     chipAbort();
 }
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
-#endif // !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
+#endif // (!defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)) && !defined(EXP_BOARD)
 #endif // HARD_FAULT_LOG_ENABLE
