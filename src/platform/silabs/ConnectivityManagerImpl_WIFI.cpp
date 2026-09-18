@@ -320,7 +320,7 @@ void ConnectivityManagerImpl::DriveStationState()
         // DriveStationState() will be called again to start a new connection attempt
         ChipLogProgress(DeviceLayer, "Next WiFi station reconnect in %" PRIu32 " ms",
                         System::Clock::Milliseconds32(timeToNextConnect).count());
-        
+
         // drive the station state to connecting
         ChangeWiFiStationState(kWiFiStationState_Connecting, false);
         ReturnOnFailure(DeviceLayer::SystemLayer().StartTimer(timeToNextConnect, DriveStationState, NULL));
