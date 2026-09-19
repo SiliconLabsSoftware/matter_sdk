@@ -172,7 +172,7 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
     // do not schedule the DriveStationState if the station is not ready to be driven once the START UP EVENT is received
     VerifyOrReturnError(WifiInterface::GetInstance().IsStationReady(), CHIP_NO_ERROR,
                         ChipLogDetail(DeviceLayer, "WiFi station is not ready"));
-    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
+    ReturnErrorOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
 
     return CHIP_NO_ERROR;
 }
@@ -190,7 +190,7 @@ void ConnectivityManagerImpl::_ClearWiFiStationProvision(void)
                    ChipLogProgress(DeviceLayer, "WiFi station is application controlled"));
 
     WifiInterface::GetInstance().ClearWifiCredentials();
-    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
+    ReturnOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
 }
 
 CHIP_ERROR ConnectivityManagerImpl::_GetAndLogWifiStatsCounters(void)
@@ -207,7 +207,7 @@ void ConnectivityManagerImpl::_OnWiFiStationProvisionChange()
 {
     // Schedule a call to the DriveStationState method to adjust the station state as needed.
     ChipLogProgress(DeviceLayer, "_ON WIFI PROVISION CHANGE");
-    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
+    ReturnOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
 }
 
 CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
@@ -270,7 +270,7 @@ void ConnectivityManagerImpl::DriveStationState()
         if (!isStationProvisioned)
         {
             ChipLogDetail(DeviceLayer, "WiFi station is not provisioned and is connected, disconnecting");
-            ReturnAndLogOnFailure(DisconnectNetwork(), DeviceLayer, "DisconnectNetwork failed: %" CHIP_ERROR_FORMAT, err.Format());
+            ReturnOnFailure(DisconnectNetwork());
         }
     }
 
