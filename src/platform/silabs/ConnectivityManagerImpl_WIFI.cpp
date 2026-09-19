@@ -55,7 +55,6 @@ ConnectivityManagerImpl ConnectivityManagerImpl::sInstance;
 
 CHIP_ERROR ConnectivityManagerImpl::_Init()
 {
-    CHIP_ERROR err;
     mWiFiStationMode              = kWiFiStationMode_Disabled;
     mWiFiStationState             = kWiFiStationState_NotConnected;
     mWiFiStationAutoConnect       = true;
@@ -67,12 +66,11 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     // TODO Initialize the Chip Addressing and Routing Module.
 
     // Ensure that station mode is enabled.
-    err = SetWiFiStationMode(kWiFiStationMode_Enabled);
-    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
+    ReturnErrorOnFailure(SetWiFiStationMode(kWiFiStationMode_Enabled));
 
     // Queue work items to bootstrap the AP and station state machines once the Chip event loop is running.
-    err = DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL);
-    return err;
+    ReturnErrorOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
+    return CHIP_NO_ERROR;
 }
 
 void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
@@ -156,16 +154,14 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
         // disconnect if wifi is connected
         if (IsWiFiStationConnected())
         {
-            err = DisconnectNetwork();
-            VerifyOrReturnError(err == CHIP_NO_ERROR, err);
+            ReturnErrorOnFailure(DisconnectNetwork());
         }
         err = WifiInterface::GetInstance().DisableStationMode();
         VerifyOrReturnError(err == CHIP_NO_ERROR || err == CHIP_ERROR_NOT_IMPLEMENTED, err);
     }
     break;
     case kWiFiStationMode_Enabled: {
-        err = WifiInterface::GetInstance().EnableStationMode();
-        VerifyOrReturnError(err == CHIP_NO_ERROR, err);
+        ReturnErrorOnFailure(WifiInterface::GetInstance().EnableStationMode());
     }
     break;
     default:
@@ -274,9 +270,7 @@ void ConnectivityManagerImpl::DriveStationState()
         if (!isStationProvisioned)
         {
             ChipLogDetail(DeviceLayer, "WiFi station is not provisioned and is connected, disconnecting");
-            err = DisconnectNetwork();
-            VerifyOrReturn(err == CHIP_NO_ERROR,
-                           ChipLogError(DeviceLayer, "DisconnectNetwork failed: %" CHIP_ERROR_FORMAT, err.Format()));
+            ReturnAndLogOnFailure(DisconnectNetwork(), DeviceLayer, "DisconnectNetwork failed: %" CHIP_ERROR_FORMAT, err.Format());
         }
     }
 
@@ -413,7 +407,7 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
             // illegal state transition
             // disconnect the station to avoid further attempts to connect
             // done to align out of bound disconnection during connection attempt
-            VerifyOrReturn(DisconnectNetwork() == CHIP_NO_ERROR);
+            ReturnAndLogOnFailure(DisconnectNetwork(), DeviceLayer, "DisconnectNetwork failed");
             return;
         }
 
