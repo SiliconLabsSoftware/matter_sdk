@@ -220,9 +220,20 @@ public:
     virtual CHIP_ERROR StartWifiTask() = 0;
 
     /**
-     * @brief Configures the Wi-Fi devices as a Wi-Fi station
+     * @brief Enables the Wi-Fi station mode
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the station mode was successfully enabled
+     *                    CHIP_ERROR_INTERNAL if the station mode could not be enabled
      */
-    virtual void ConfigureStationMode() = 0;
+    virtual CHIP_ERROR EnableStationMode() = 0;
+
+    /**
+     * @brief Disables the Wi-Fi station mode
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR if the station mode was successfully disabled
+     *                    CHIP_ERROR_INTERNAL if the station mode could not be disabled
+     */
+    virtual CHIP_ERROR DisableStationMode() { return CHIP_ERROR_NOT_IMPLEMENTED; }
 
     /**
      * @brief Triggers the device to disconnect from the connected Wi-Fi network
@@ -325,9 +336,12 @@ public:
     }
 
     /**
-     * @brief Function resets reconnection attempt interval back to the minimum value
+     * @brief Function returns the last disconnection reason by mapping platform error codes
+     *        to the NetworkCommissioningStatusEnum value
+     * @return NetworkCommissioningStatusEnum value for the last disconnection reason,
+     *         kSuccess if the disconnection was user initiated otherwise the reason for the disconnection
      */
-    void ResetConnectionRetryInterval();
+    chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum GetLastDisconnectionReason();
 
 protected:
     /**
@@ -356,10 +370,12 @@ protected:
 
     /**
      * @brief Function notifies the PlatformManager that a disconnection event occurred
+     *        The function will use the `GetLastDisconnectionReason()` function to determine
+     *        the reason for the disconnection and notify the PlatformManager.
      *
-     * @param reason reason for the disconnection
+     * @return void
      */
-    void NotifyDisconnection(WifiDisconnectionReasons reason);
+    void NotifyDisconnection(uint32_t reason);
 
     /**
      * @brief Function notifies the PlatformManager that a connection event occurred
@@ -380,26 +396,22 @@ protected:
     void NotifyWifiTaskInitialized(void);
 
     /**
-     * @brief Function schedules a reconnection attempt with the Access Point
+     * @brief Function maps the disconnection reason to the NetworkCommissioningStatusEnum value
      *
-     * @note The retry interval increases exponentially with each attempt, starting from a minimum value and doubling each time,
-     *       up to a maximum value. For example, if the initial retry interval is 1 second, the subsequent intervals will be 2
-     * seconds, 4 seconds, 8 seconds, and so on, until the maximum retry interval is reached.
+     * @param reason disconnection reason
+     * @return NetworkCommissioningStatusEnum value for the disconnection reason
      */
-    void ScheduleConnectionAttempt();
-
-    /**
-     * @brief Function cancels the on-going reconnection attempts
-     */
-    void CancelConnectionAttempt();
+    virtual chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum
+    MapToNetworkCommissioningStatusEnum(uint32_t reason)
+    {
+        return chip::app::Clusters::NetworkCommissioning::NetworkCommissioningStatusEnum::kUnknownError;
+    }
 
     bool mHasNotifiedIPv6 = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
     bool mHasNotifiedIPv4 = false;
 #endif // CHIP_DEVICE_CONFIG_ENABLE_IPV4
-
-private:
-    osTimerId_t mRetryTimer;
+    uint32_t mLastDisconnectionReason = 0;
 };
 
 } // namespace Silabs
