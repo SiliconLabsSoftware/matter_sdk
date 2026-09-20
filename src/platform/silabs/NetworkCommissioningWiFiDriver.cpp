@@ -270,17 +270,17 @@ void SlWiFiDriver::OnScanWiFiNetworkDone(NetworkCommissioning::WiFiScanResponse 
         if (mScanResponseIter.Count() == 0)
         {
             // if there is no network found, return kNetworkNotFound
-            TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([nwDriver]() {
+            LogErrorOnFailure(DeviceLayer::SystemLayer().ScheduleLambda([nwDriver]() {
                 nwDriver->mpScanCallback->OnFinished(NetworkCommissioning::Status::kNetworkNotFound, CharSpan(), nullptr);
                 nwDriver->mpScanCallback = nullptr;
-            });
+            }));
             return;
         }
 
-        TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([nwDriver]() {
+        LogErrorOnFailure(DeviceLayer::SystemLayer().ScheduleLambda([nwDriver]() {
             nwDriver->mpScanCallback->OnFinished(NetworkCommissioning::Status::kSuccess, CharSpan(), &mScanResponseIter);
             nwDriver->mpScanCallback = nullptr;
-        });
+        }));
     }
     else
     {

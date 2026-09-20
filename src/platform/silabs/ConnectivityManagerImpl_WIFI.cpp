@@ -190,7 +190,7 @@ void ConnectivityManagerImpl::_ClearWiFiStationProvision(void)
                    ChipLogProgress(DeviceLayer, "WiFi station is application controlled"));
 
     WifiInterface::GetInstance().ClearWifiCredentials();
-    ReturnOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
+    LogErrorOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
 }
 
 CHIP_ERROR ConnectivityManagerImpl::_GetAndLogWifiStatsCounters(void)
@@ -207,7 +207,7 @@ void ConnectivityManagerImpl::_OnWiFiStationProvisionChange()
 {
     // Schedule a call to the DriveStationState method to adjust the station state as needed.
     ChipLogProgress(DeviceLayer, "_ON WIFI PROVISION CHANGE");
-    ReturnOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
+    LogErrorOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
 }
 
 CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
@@ -317,7 +317,7 @@ void ConnectivityManagerImpl::DriveStationState()
 
         // drive the station state to connecting
         ChangeWiFiStationState(kWiFiStationState_Connecting, false);
-        ReturnOnFailure(DeviceLayer::SystemLayer().StartTimer(timeToNextConnect, DriveStationState, NULL));
+        LogErrorOnFailure(DeviceLayer::SystemLayer().StartTimer(timeToNextConnect, DriveStationState, NULL));
 
         // TODO: Revisit this logic
         // increase the reconnect interval by the previous interval, for telescoping effect and reduce the frequency of
