@@ -77,28 +77,28 @@ CHIP_ERROR SlWiFiDriver::RevertConfiguration()
     // If reading fails, wifi is not provisioned, no need to go further.
     err = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_WiFiSSID, mSavedNetwork.ssid, sizeof(mSavedNetwork.ssid),
                                            mSavedNetwork.ssidLen);
+#if defined(SL_ONNETWORK_PAIRING) && SL_ONNETWORK_PAIRING
     if (err == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND)
     {
-#if defined(SL_ONNETWORK_PAIRING) && SL_ONNETWORK_PAIRING
         memcpy(&mSavedNetwork.ssid, SL_WIFI_SSID, sizeof(SL_WIFI_SSID));
         mSavedNetwork.ssidLen = sizeof(SL_WIFI_SSID);
 
         err = CHIP_NO_ERROR;
-#endif // SL_ONNETWORK_PAIRING
     }
+#endif // SL_ONNETWORK_PAIRING
     VerifyOrReturnError(err == CHIP_NO_ERROR, err);
 
     err = SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_WiFiPSK, mSavedNetwork.key, sizeof(mSavedNetwork.key),
                                            mSavedNetwork.keyLen);
+#if defined(SL_ONNETWORK_PAIRING) && SL_ONNETWORK_PAIRING
     if (err == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND)
     {
-#if defined(SL_ONNETWORK_PAIRING) && SL_ONNETWORK_PAIRING
         memcpy(&mSavedNetwork.key, SL_WIFI_PSK, sizeof(SL_WIFI_PSK));
         mSavedNetwork.keyLen = sizeof(SL_WIFI_PSK);
 
         err = CHIP_NO_ERROR;
-#endif // SL_ONNETWORK_PAIRING
     }
+#endif // SL_ONNETWORK_PAIRING
     VerifyOrReturnError(err == CHIP_NO_ERROR, err);
     mStagingNetwork = mSavedNetwork;
     return err;
