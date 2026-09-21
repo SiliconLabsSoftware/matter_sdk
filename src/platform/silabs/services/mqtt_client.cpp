@@ -461,7 +461,8 @@ CHIP_ERROR MqttClient::ProcessDisconnect()
         const int status = MQTTDisconnect(&mClient);
         if (status != SUCCESS)
         {
-            ChipLogError(DeviceLayer, "MQTT DISCONNECT failed: %d", status);
+            // Common when Wi-Fi already dropped: broker DISCONNECT cannot be sent.
+            ChipLogProgress(DeviceLayer, "MQTT DISCONNECT skipped/failed: %d (forcing local teardown)", status);
         }
         mConnected = false;
     }

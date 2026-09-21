@@ -38,6 +38,9 @@
 
 #include <sl_mbedtls_config.h>
 
+// Optional app override (e.g. thermostat MQTT demo). Default is a no-op.
+extern "C" __attribute__((weak)) void MatterWifiOnStationLinkDown(void) {}
+
 #ifdef MBEDTLS_PSA_CRYPTO_C
 #include <psa/crypto.h>
 #endif // MBEDTLS_PSA_CRYPTO_C
@@ -479,14 +482,6 @@ sl_status_t SetWifiConfigurations()
     sl_status_t status = SL_STATUS_OK;
 
     uint8_t join_feature_bitmap = SL_SI91X_JOIN_FEAT_LISTEN_INTERVAL_VALID; // initialize with default value
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-    sl_wifi_listen_interval_v2_t sleep_interval = {
-        .listen_interval = chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()
-    };
-    status = sl_wifi_set_listen_interval_v2(SL_WIFI_CLIENT_INTERFACE, sleep_interval);
-    VerifyOrReturnError(status == SL_STATUS_OK, status,
-                        ChipLogError(DeviceLayer, "sl_wifi_set_listen_interval_v2 failed: 0x%" PRIx32, status));
-
     // This is be triggered on the disconnect use case, providing the amount of TA tries
     // Setting the TA retry to 1 and giving the control to the M4 for improved power efficiency
     // When max_retry_attempts is set to 0, TA will retry indefinitely.
@@ -494,6 +489,13 @@ sl_status_t SetWifiConfigurations()
     status = sl_wifi_set_advanced_client_configuration(SL_WIFI_CLIENT_INTERFACE, &client_config);
     VerifyOrReturnError(status == SL_STATUS_OK, status,
                         ChipLogError(DeviceLayer, "sl_wifi_set_advanced_client_configuration failed: 0x%" PRIx32, status));
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    sl_wifi_listen_interval_v2_t sleep_interval = {
+        .listen_interval = chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()
+    };
+    status = sl_wifi_set_listen_interval_v2(SL_WIFI_CLIENT_INTERFACE, sleep_interval);
+    VerifyOrReturnError(status == SL_STATUS_OK, status,
+                        ChipLogError(DeviceLayer, "sl_wifi_set_listen_interval_v2 failed: 0x%" PRIx32, status));
     join_feature_bitmap |= SL_SI91X_JOIN_FEAT_PS_CMD_LISTEN_INTERVAL_VALID;
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
@@ -699,7 +701,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
             .Clear(WifiInterface::WifiState::kStationConnecting)
             .Clear(WifiInterface::WifiState::kStationConnected);
 
-        // TODO: Implement disconnect notify
+        MatterWifiOnStationLinkDown();
         ResetConnectivityNotificationFlags();
 #if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
         NotifyIPv4Change(false);
@@ -827,6 +829,17 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
     {
         status = *reinterpret_cast<sl_status_t *>(result);
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%" PRIx32, status);
+
+        // Notify IP lost so AppTask can restart services after join; do not post
+        // kStationDisconnect (sl_net_down / ResetConnectivityNotificationFlags).
+        if (wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnected))
+        {
+            MatterWifiOnStationLinkDown();
+#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
+            mInstance.NotifyIPv4Change(false);
+#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
+            mInstance.NotifyIPv6Change(false);
+        }
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
         mInstance.mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);

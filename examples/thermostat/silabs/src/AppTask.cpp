@@ -398,6 +398,13 @@ void InitMatterServicesHandler(System::Layer * /* systemLayer */, void * /* appS
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 }
 
+void StopMatterServicesHandler(System::Layer * /* systemLayer */, void * /* appState */)
+{
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_stop(), ChipLogError(AppServer, "mqtt_client_demo_stop failed"));
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+}
+
 } // namespace
 
 void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t)
@@ -406,6 +413,15 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
 
     if (event->Type != DeviceEventType::kInternetConnectivityChange)
     {
+        return;
+    }
+
+    const bool ipv4Lost = (event->InternetConnectivityChange.IPv4 == kConnectivity_Lost);
+
+    if (ipv4Lost)
+    {
+        // Defer stop off the connectivity-event dispatch path (stop can block on MQTT teardown).
+        TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(System::Clock::Seconds32(0), StopMatterServicesHandler, nullptr);
         return;
     }
 

@@ -25,6 +25,7 @@
 
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceLayer.h>
 
 #include <cstring>
 
@@ -34,6 +35,7 @@ using chip::ByteSpan;
 using chip::DeviceLayer::Silabs::MqttBroker;
 using chip::DeviceLayer::Silabs::MqttClient;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
+using chip::DeviceLayer::PlatformMgr;
 
 // Please fill in the details for your own MQTT broker.
 constexpr char kMqttBrokerIp[]       = MQTT_BROKER_IP;    // The IP address of your MQTT broker
@@ -78,62 +80,14 @@ CHIP_ERROR RunOperation(CHIP_ERROR queueResult)
     return gOpResult;
 }
 
-} // namespace
-
-sl_status_t mqtt_client_demo_start(void)
+CHIP_ERROR ConnectSubscribePublish(const MqttBroker & broker)
 {
-    if (gMqttsClient.IsRunning())
-    {
-        return SL_STATUS_ALREADY_INITIALIZED;
-    }
-
-    // QoS defaults come from MqttClientConfig in mqtt_client.h (.qos / .willQoS).
-    const MqttClientConfig config = {
-        .useTls               = true,
-        .clientId             = kMqttClientId,
-        .username             = kMqttUsername,
-        .password             = kMqttPassword,
-        .keepAliveIntervalSec = 100,
-        .commandTimeoutMs     = 20000,
-        .mqttVersion          = 4,
-        .cleanSession         = true,
-        .willEnable           = false,
-        .tlsCaCert            = reinterpret_cast<const uint8_t *>(kCaCertExample),
-        .tlsCaCertLen         = sizeof(kCaCertExample),
-    };
-
-    const MqttBroker broker = {
-        .brokerIp    = kMqttBrokerIp,
-        .tlsHostname = kMqttTlsHostname,
-        .brokerPort  = kMqttBrokerPort,
-        .clientPort  = kMqttClientPort,
-    };
-
-    CHIP_ERROR err = gMqttsClient.Start();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "MQTT Start failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return SL_STATUS_FAIL;
-    }
-
-    gMqttsClient.SetSubscriptionCallback(OnMqttMessage, nullptr);
-
-    ChipLogProgress(DeviceLayer, "MQTT demo starting");
-
-    gOpDone = false;
-    err     = RunOperation(gMqttsClient.Init(config, OnOperationDone));
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "MQTT Init failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return SL_STATUS_FAIL;
-    }
-
-    gOpDone = false;
-    err     = RunOperation(gMqttsClient.Connect(broker, OnOperationDone));
+    gOpDone        = false;
+    CHIP_ERROR err = RunOperation(gMqttsClient.Connect(broker, OnOperationDone));
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Connect failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return SL_STATUS_FAIL;
+        return err;
     }
 
     gOpDone = false;
@@ -141,7 +95,7 @@ sl_status_t mqtt_client_demo_start(void)
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Subscribe failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return SL_STATUS_FAIL;
+        return err;
     }
 
     const ByteSpan payload(reinterpret_cast<const uint8_t *>(kMqttPublishMessage), strlen(kMqttPublishMessage));
@@ -150,9 +104,140 @@ sl_status_t mqtt_client_demo_start(void)
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "MQTT Publish failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return err;
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+void DisconnectMqttDemoWork(intptr_t /* arg */)
+{
+    const sl_status_t status = mqtt_client_demo_stop();
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(DeviceLayer, "mqtt_client_demo_stop failed: 0x%lx", static_cast<unsigned long>(status));
+    }
+}
+
+} // namespace
+
+
+// This is a weak hook that is called when the Wi-Fi station link is down.
+// This will be changed once the app refactors the Wi-Fi connection handling.
+// TODO: Remove this once the app refactors the Wi-Fi connection handling.
+extern "C" void MatterWifiOnStationLinkDown(void)
+{
+    // JoinCallback / Wi-Fi task context: disconnect MQTT on the Matter work queue.
+    CHIP_ERROR err = PlatformMgr().ScheduleWork(DisconnectMqttDemoWork, 0);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "Schedule MQTT disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+}
+
+sl_status_t mqtt_client_demo_start(void)
+{
+    const MqttBroker broker = {
+        .brokerIp    = kMqttBrokerIp,
+        .tlsHostname = kMqttTlsHostname,
+        .brokerPort  = kMqttBrokerPort,
+        .clientPort  = kMqttClientPort,
+    };
+
+    if (gMqttsClient.IsConnected())
+    {
+        ChipLogProgress(DeviceLayer, "MQTT demo already connected");
+        return SL_STATUS_OK;
+    }
+
+    CHIP_ERROR err = CHIP_NO_ERROR;
+
+    if (!gMqttsClient.IsRunning())
+    {
+        err = gMqttsClient.Start();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT Start failed: %" CHIP_ERROR_FORMAT, err.Format());
+            return SL_STATUS_FAIL;
+        }
+        gMqttsClient.SetSubscriptionCallback(OnMqttMessage, nullptr);
+    }
+
+    if (!gMqttsClient.IsInitialized())
+    {
+        // QoS defaults come from MqttClientConfig in mqtt_client.h (.qos / .willQoS).
+        const MqttClientConfig config = {
+            .useTls               = true,
+            .clientId             = kMqttClientId,
+            .username             = kMqttUsername,
+            .password             = kMqttPassword,
+            .keepAliveIntervalSec = 100,
+            .commandTimeoutMs     = 20000,
+            .mqttVersion          = 4,
+            .cleanSession         = true,
+            .willEnable           = false,
+            .tlsCaCert            = reinterpret_cast<const uint8_t *>(kCaCertExample),
+            .tlsCaCertLen         = sizeof(kCaCertExample),
+        };
+
+        ChipLogProgress(DeviceLayer, "MQTT demo starting");
+
+        gOpDone = false;
+        err     = RunOperation(gMqttsClient.Init(config, OnOperationDone));
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT Init failed: %" CHIP_ERROR_FORMAT, err.Format());
+            return SL_STATUS_FAIL;
+        }
+    }
+    else
+    {
+        ChipLogProgress(DeviceLayer, "MQTT demo reconnecting");
+    }
+
+    err = ConnectSubscribePublish(broker);
+    if (err != CHIP_NO_ERROR)
+    {
         return SL_STATUS_FAIL;
     }
 
     ChipLogProgress(DeviceLayer, "MQTT demo completed (auto-yield keeps session alive)");
+    return SL_STATUS_OK;
+}
+
+sl_status_t mqtt_client_demo_stop(void)
+{
+    if (!gMqttsClient.IsRunning() || !gMqttsClient.IsInitialized())
+    {
+        return SL_STATUS_OK;
+    }
+
+    if (!gMqttsClient.IsConnected())
+    {
+        // IdleYield may already have torn the session down after link loss.
+        ChipLogProgress(DeviceLayer, "MQTT demo already disconnected");
+        return SL_STATUS_OK;
+    }
+
+    ChipLogProgress(DeviceLayer, "MQTT demo disconnecting");
+
+    gOpDone        = false;
+    CHIP_ERROR err = gMqttsClient.Disconnect(OnOperationDone);
+    if (err == CHIP_NO_ERROR)
+    {
+        while (!gOpDone)
+        {
+            osDelay(10);
+        }
+        err = gOpResult;
+    }
+
+    if (err != CHIP_NO_ERROR && err != CHIP_ERROR_INCORRECT_STATE && err != CHIP_ERROR_BUSY)
+    {
+        ChipLogError(DeviceLayer, "MQTT Disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return SL_STATUS_FAIL;
+    }
+
+    ChipLogProgress(DeviceLayer, "MQTT demo disconnected");
     return SL_STATUS_OK;
 }

@@ -16,12 +16,11 @@
  *    limitations under the License.
  *
  * @brief Host LwIP Paho MQTT/MQTTS demo entry point
- * 1. Init the MqttClient
+ * 1. Start + Init the MqttClient (skipped if already running/initialized)
  * 2. Connect to the MQTT broker
  * 3. Subscribe to the topic
  * 4. Publish the message
- * 5. Disconnect from the MQTT broker (optional)
- * 6. Deinit the MqttClient (optional)
+ * On AP/link loss: Disconnect only; Connect/Subscribe/Publish again on reconnect.
  */
 
 #pragma once
@@ -64,5 +63,20 @@
 #define MQTT_PUBLISH_MESSAGE "THIS IS MQTT CLIENT DEMO FROM APPLICATION"
 #endif
 
-/** Load config + run MQTT demo on the MqttClient service thread (idempotent). */
+/** Start/Init if needed, then Connect + Subscribe + Publish (reconnect-safe). */
 sl_status_t mqtt_client_demo_start(void);
+
+/** Disconnect the MQTT session; keeps Init and the service thread for a later reconnect. */
+sl_status_t mqtt_client_demo_stop(void);
+
+/**
+ * Strong override of the Wi-Fi weak hook: schedule mqtt_client_demo_stop() on link down.
+ * Declared weak in WifiInterfaceImpl; provided here when the MQTT demo is linked.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+void MatterWifiOnStationLinkDown(void);
+#ifdef __cplusplus
+}
+#endif

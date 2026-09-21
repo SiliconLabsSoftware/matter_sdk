@@ -138,6 +138,8 @@ public:
     CHIP_ERROR Stop() override;
     bool IsRunning() const override;
     bool IsBusy() const;
+    bool IsInitialized() const { return mInitialized; }
+    bool IsConnected() const { return mConnected; }
 
     /**
      * @brief Set handler for subscribed publishes. Safe to call before Connect.
