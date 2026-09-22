@@ -219,12 +219,13 @@ void ConnectivityManagerImpl::_OnWiFiStationProvisionChange()
 CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
 {
     // if the station is not connected, return success
-    VerifyOrReturnError(mWiFiStationState == kWiFiStationState_Connected, CHIP_NO_ERROR);
+    VerifyOrReturnError(mWiFiStationState != kWiFiStationState_NotConnected, CHIP_NO_ERROR);
+    mWiFiStationAutoConnect = false;
 
-    WifiInterface::GetInstance().TriggerDisconnection();
     ChangeWiFiStationState(kWiFiStationState_Disconnecting);
     // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
     // next time DriveStationState() will be called, the station will be in the NotConnected state
+    WifiInterface::GetInstance().TriggerDisconnection();
     return CHIP_NO_ERROR;
 }
 
@@ -259,7 +260,8 @@ void ConnectivityManagerImpl::DriveStationState()
     // if the station mode is disabled, return
     VerifyOrReturn(stationMode != kWiFiStationMode_Disabled, ChipLogProgress(DeviceLayer, "WiFi station is disabled"));
     ChipLogDetail(DeviceLayer, "DriveStationState: %s", WiFiStationStateToStr(mWiFiStationState));
-    ChipLogDetail(DeviceLayer, "isStationConnected: %d, isStationProvisioned: %d, mWiFiStationAutoConnect: %d", isStationConnected, isStationProvisioned, mWiFiStationAutoConnect);
+    ChipLogDetail(DeviceLayer, "isStationConnected: %d, isStationProvisioned: %d, mWiFiStationAutoConnect: %d", isStationConnected,
+                  isStationProvisioned, mWiFiStationAutoConnect);
     if (isStationConnected)
     {
         // sync the station state with the actual state
@@ -299,7 +301,6 @@ void ConnectivityManagerImpl::DriveStationState()
     System::Clock::Timestamp now               = System::SystemClock().GetMonotonicTimestamp();
     System::Clock::Timestamp timeToNextConnect = System::Clock::kZero;
 
-    ChipLogDetail(DeviceLayer, "DriveStationState: %s", WiFiStationStateToStr(mWiFiStationState));
     switch (mWiFiStationState)
     {
     case kWiFiStationState_Connecting: {
@@ -432,7 +433,6 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
         break;
 
     case kWiFiStationState_Disconnecting:
-        mWiFiStationAutoConnect = false;
         ResetReconnectionWiFiStationState();
         break;
 
