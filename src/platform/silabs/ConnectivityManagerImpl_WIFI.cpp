@@ -98,6 +98,9 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
             {
             // User initiated disconnection outside of the ConnectivityManager
             case NetworkCommissioning::Status::kSuccess:
+                // TODO: Remove this once the LIT connect is managed by the ConnectivityManager
+                // and the LIT disconnect is handled by the ConnectivityManager
+                mWiFiStationAutoConnect = false;
                 ChangeWiFiStationState(kWiFiStationState_NotConnected);
                 break;
             // Disconnection due to WiFi connectivity error
@@ -170,8 +173,8 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
         // kWiFiStationMode_Application
         break;
     }
+    ChangeWiFiStationState(kWiFiStationState_NotConnected, false);
     mWiFiStationAutoConnect = true;
-    ResetReconnectionWiFiStationState();
     // do not schedule the DriveStationState if the station is not ready to be driven once the START UP EVENT is received
     VerifyOrReturnError(WifiInterface::GetInstance().IsStationReady(), CHIP_NO_ERROR,
                         ChipLogDetail(DeviceLayer, "WiFi station is not ready"));
@@ -216,7 +219,7 @@ void ConnectivityManagerImpl::_OnWiFiStationProvisionChange()
 CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
 {
     // if the station is not connected, return success
-    VerifyOrReturnError(mWiFiStationState != kWiFiStationState_NotConnected, CHIP_NO_ERROR);
+    VerifyOrReturnError(mWiFiStationState == kWiFiStationState_Connected, CHIP_NO_ERROR);
 
     WifiInterface::GetInstance().TriggerDisconnection();
     ChangeWiFiStationState(kWiFiStationState_Disconnecting);
@@ -256,7 +259,7 @@ void ConnectivityManagerImpl::DriveStationState()
     // if the station mode is disabled, return
     VerifyOrReturn(stationMode != kWiFiStationMode_Disabled, ChipLogProgress(DeviceLayer, "WiFi station is disabled"));
     ChipLogDetail(DeviceLayer, "DriveStationState: %s", WiFiStationStateToStr(mWiFiStationState));
-    ChipLogDetail(DeviceLayer, "isStationConnected: %d, isStationProvisioned: %d", isStationConnected, isStationProvisioned);
+    ChipLogDetail(DeviceLayer, "isStationConnected: %d, isStationProvisioned: %d, mWiFiStationAutoConnect: %d", isStationConnected, isStationProvisioned, mWiFiStationAutoConnect);
     if (isStationConnected)
     {
         // sync the station state with the actual state
