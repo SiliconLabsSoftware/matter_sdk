@@ -397,6 +397,7 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
                     WiFiStationStateToStr(newState));
     // Commit the state before notifying. OnStationConnected() calls
     // UpdateInternetConnectivityState(), which only reports IPv6 when already Connected.
+    WiFiStationState prevState = mWiFiStationState;
     mWiFiStationState          = newState;
     switch (newState)
     {
@@ -406,20 +407,30 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
         break;
 
     case kWiFiStationState_Connecting_Failed:
+        // TODO: Currently, `ConfigureLITConnect` is not managed by the ConnectivityManager.
+        // Once it is managed by the ConnectivityManager, this check can be removed.
+        if (prevState == kWiFiStationState_NotConnected)
+        {
+            mWiFiStationAutoConnect = true;
+        }
         OnStationDisconnected();
         break;
 
     case kWiFiStationState_Connecting_Succeeded:
     case kWiFiStationState_Connected:
+        // TODO: Currently, `ConfigureLITConnect` is not managed by the ConnectivityManager.
+        // Once it is managed by the ConnectivityManager, this check can be removed.
+        if (prevState == kWiFiStationState_NotConnected)
+        {
+            mWiFiStationAutoConnect = true;
+        }
         ResetReconnectionWiFiStationState();
         OnStationConnected();
         break;
 
     case kWiFiStationState_Disconnecting:
-        // TODO: Currently, `ConfigureLITConnect` is not managed by the ConnectivityManager.
-        // Once it is managed by the ConnectivityManager, this check can be enabled.
-        // mWiFiStationAutoConnect = false;
-        // ResetReconnectionWiFiStationState();
+        mWiFiStationAutoConnect = false;
+        ResetReconnectionWiFiStationState();
         break;
 
     default:
