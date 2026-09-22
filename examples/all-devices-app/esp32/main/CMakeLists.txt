@@ -39,6 +39,12 @@ set(APP_TOPLEVEL_EXTRA_SRCS
     "${CHIP_ROOT}/src/app/StorageDelegateWrapper.cpp"
 )
 
+if (CONFIG_ENABLE_MATTER_OVER_THREAD)
+    list(APPEND APP_TOPLEVEL_EXTRA_SRCS "${ALL_DEVICES_COMMON_DIR}/device/types/root-node/features/ThreadFeature.cpp")
+else()
+    list(APPEND APP_TOPLEVEL_EXTRA_SRCS "${ALL_DEVICES_COMMON_DIR}/device/types/root-node/features/WifiFeature.cpp")
+endif()
+
 set(SRC_DIRS_LIST
     "${CMAKE_CURRENT_LIST_DIR}"
     "${CHIP_ROOT}/examples/providers"
