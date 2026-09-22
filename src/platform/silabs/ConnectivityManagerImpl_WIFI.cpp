@@ -346,6 +346,7 @@ void ConnectivityManagerImpl::OnStationConnected()
     NetworkCommissioning::SlWiFiDriver * nwDriver = NetworkCommissioning::SlWiFiDriver::GetInstance();
     // Cannot use the driver if the instance is not initialized.
     VerifyOrDie(nwDriver != nullptr); // should never be null
+    nwDriver->UpdateNetworkingStatus();
     nwDriver->OnConnectWiFiNetwork();
 
     UpdateInternetConnectivityState();
@@ -358,6 +359,11 @@ void ConnectivityManagerImpl::OnStationConnected()
 
 void ConnectivityManagerImpl::OnStationDisconnected()
 {
+    NetworkCommissioning::SlWiFiDriver * nwDriver = NetworkCommissioning::SlWiFiDriver::GetInstance();
+    // Cannot use the driver if the instance is not initialized.
+    VerifyOrDie(nwDriver != nullptr); // should never be null
+    nwDriver->UpdateNetworkingStatus();
+
     // TODO: Invoke WARM to perform actions that occur when the WiFi station interface goes down.
     UpdateInternetConnectivityState();
     // Alert other components of the new state.
@@ -429,12 +435,6 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
     {
         DriveStationState();
     }
-
-    // TODO: Remove this once the WiFi driver is updated to use the new state machine
-    NetworkCommissioning::SlWiFiDriver * nwDriver = NetworkCommissioning::SlWiFiDriver::GetInstance();
-    // Cannot use the driver if the instance is not initialized.
-    VerifyOrDie(nwDriver != nullptr); // should never be null
-    nwDriver->UpdateNetworkingStatus();
 }
 
 void ConnectivityManagerImpl::UpdateInternetConnectivityState(void)
