@@ -98,13 +98,15 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
             {
             // User initiated disconnection outside of the ConnectivityManager
             case NetworkCommissioning::Status::kSuccess:
-                DriveStationState();
-                // ChangeWiFiStationState(kWiFiStationState_NotConnected);
+                ChangeWiFiStationState(kWiFiStationState_NotConnected);
                 break;
             // Disconnection due to WiFi connectivity error
             default:
-                VerifyOrReturn(mWiFiStationState != kWiFiStationState_NotConnected,
-                               ChipLogDetail(DeviceLayer, "Discard disconnect event as WiFi station is not connected"));
+                VerifyOrReturn(
+                    mWiFiStationState == kWiFiStationState_Connecting ||
+                        mWiFiStationState == kWiFiStationState_Connecting_Succeeded ||
+                        mWiFiStationState == kWiFiStationState_Connected,
+                    ChipLogDetail(DeviceLayer, "Discard disconnect event as WiFi station was not connecting or connected"));
                 ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
                 break;
             }
@@ -169,6 +171,7 @@ CHIP_ERROR ConnectivityManagerImpl::_SetWiFiStationMode(ConnectivityManager::WiF
         break;
     }
     mWiFiStationAutoConnect = true;
+    ResetReconnectionWiFiStationState();
     // do not schedule the DriveStationState if the station is not ready to be driven once the START UP EVENT is received
     VerifyOrReturnError(WifiInterface::GetInstance().IsStationReady(), CHIP_NO_ERROR,
                         ChipLogDetail(DeviceLayer, "WiFi station is not ready"));
@@ -393,7 +396,6 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
                     WiFiStationStateToStr(newState));
     // Commit the state before notifying. OnStationConnected() calls
     // UpdateInternetConnectivityState(), which only reports IPv6 when already Connected.
-    WiFiStationState prevState = mWiFiStationState;
     mWiFiStationState          = newState;
     switch (newState)
     {
@@ -408,22 +410,15 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
 
     case kWiFiStationState_Connecting_Succeeded:
     case kWiFiStationState_Connected:
-        if (prevState != kWiFiStationState_Connecting)
-        {
-            // illegal state transition
-            // disconnect the station to avoid further attempts to connect
-            // done to align out of bound disconnection during connection attempt
-            ReturnAndLogOnFailure(DisconnectNetwork(), DeviceLayer, "DisconnectNetwork failed");
-            return;
-        }
-
         ResetReconnectionWiFiStationState();
         OnStationConnected();
         break;
 
     case kWiFiStationState_Disconnecting:
-        ResetReconnectionWiFiStationState();
-        mWiFiStationAutoConnect = false;
+        // TODO: Currently, `ConfigureLITConnect` is not managed by the ConnectivityManager.
+        // Once it is managed by the ConnectivityManager, this check can be enabled.
+        // mWiFiStationAutoConnect = false;
+        // ResetReconnectionWiFiStationState();
         break;
 
     default:
