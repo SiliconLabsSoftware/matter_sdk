@@ -589,6 +589,12 @@ DeviceAttestationProfileSupport Storage::GetDeviceAttestationProfileSupport() co
     return { legacy, legacy, legacy };
 }
 
+DeviceAttestationCertProfile Storage::GetPreferredDeviceAttestationChainProfile() const
+{
+    // Silabs storage only tracks the legacy Matter chain.
+    return DeviceAttestationCertProfile::kEcdsaMatterLegacy;
+}
+
 CHIP_ERROR Storage::GetDeviceAttestationDocumentSegment(DeviceAttestationDocumentType documentType,
                                                         DeviceAttestationCertProfile profile, size_t offset,
                                                         MutableByteSpan & out_document_buffer, size_t & out_document_size)
