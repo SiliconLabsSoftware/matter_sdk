@@ -255,7 +255,8 @@ void ConnectivityManagerImpl::DriveStationState()
     VerifyOrReturn(err == CHIP_NO_ERROR, ChipLogError(DeviceLayer, "StartWifiTask failed: %" CHIP_ERROR_FORMAT, err.Format()));
     // if the station mode is disabled, return
     VerifyOrReturn(stationMode != kWiFiStationMode_Disabled, ChipLogProgress(DeviceLayer, "WiFi station is disabled"));
-
+    ChipLogDetail(DeviceLayer, "DriveStationState: %s", WiFiStationStateToStr(mWiFiStationState));
+    ChipLogDetail(DeviceLayer, "isStationConnected: %d, isStationProvisioned: %d", isStationConnected, isStationProvisioned);
     if (isStationConnected)
     {
         // sync the station state with the actual state
