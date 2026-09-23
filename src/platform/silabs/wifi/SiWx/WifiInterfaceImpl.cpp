@@ -597,6 +597,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnected);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting);
         ResetConnectivityNotificationFlags();
+        NotifySuccessfulConnection();
         break;
 
     case WifiPlatformEvent::kStationDisconnect: {
@@ -659,14 +660,9 @@ void WifiInterfaceImpl::NotifySuccessfulConnection(void)
 
 sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 {
-    VerifyOrReturnError(
-        !wfx_rsi.dev_state.HasAny(WifiInterface::WifiState::kStationConnecting, WifiInterface::WifiState::kStationConnected),
-        SL_STATUS_IN_PROGRESS);
     sl_status_t status = SL_STATUS_OK;
 
     // Start Join Network
-    wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnecting);
-
     status = SetWifiConfigurations();
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failure to set the Wifi Configurations!"));
 
@@ -709,7 +705,8 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
-    ScheduleConnectionAttempt();
+    mLastDisconnectionReason = status;
+    WifiInterface::NotifyDisconnection(status);
 
     return status;
 }
@@ -742,7 +739,9 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%lx", status);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
-        mInstance.ScheduleConnectionAttempt();
+        WifiInterfaceImpl & self      = WifiInterfaceImpl::GetInstance();
+        self.mLastDisconnectionReason = status;
+        self.NotifyDisconnection(status);
     }
 
     return status;
@@ -862,6 +861,8 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
     NotifyIPv4Change(false);
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
     NotifyIPv6Change(false);
+    mLastDisconnectionReason = SL_STATUS_OK;
+    WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
 }
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
@@ -893,25 +894,19 @@ CHIP_ERROR WifiInterfaceImpl::InitLitPrecheckInReconnectTimer()
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
-    ResetConnectionRetryInterval();
-
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
 
     VerifyOrReturnError(!IsStationConnected(), CHIP_NO_ERROR);
 
-    if (!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
-    {
-        return ConnectToAccessPoint();
-    }
+    CHIP_ERROR err = ConnectToAccessPoint();
+    VerifyOrReturnError(err == CHIP_NO_ERROR || err == CHIP_ERROR_IN_PROGRESS, err);
 
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
 {
-    CancelConnectionAttempt();
-    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
-    TriggerPlatformWifiDisconnection();
+    TriggerDisconnection();
     return CHIP_NO_ERROR;
 }
 
@@ -1129,9 +1124,10 @@ CHIP_ERROR WifiInterfaceImpl::StartWifiTask()
     return CHIP_NO_ERROR;
 }
 
-void WifiInterfaceImpl::ConfigureStationMode()
+CHIP_ERROR WifiInterfaceImpl::EnableStationMode()
 {
     wfx_rsi.dev_state.Set(WifiState::kStationMode);
+    return CHIP_NO_ERROR;
 }
 
 bool WifiInterfaceImpl::IsStationModeEnabled()
@@ -1166,9 +1162,6 @@ void WifiInterfaceImpl::ResetConnectivityNotificationFlags(void)
 {
     ResetIPNotificationStates();
     mHasNotifiedWifiConnectivity = false;
-
-    WifiPlatformEvent event = WifiPlatformEvent::kConnectionComplete;
-    PostWifiPlatformEvent(event);
 }
 
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
@@ -1222,11 +1215,47 @@ CHIP_ERROR WifiInterfaceImpl::SetWifiCredentials(const WiFiCredentials & credent
 CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
 {
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(
+        !wfx_rsi.dev_state.HasAny(WifiInterface::WifiState::kStationConnecting, WifiInterface::WifiState::kStationConnected),
+        CHIP_ERROR_IN_PROGRESS);
+    wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnecting);
 
     ChipLogProgress(DeviceLayer, "connect to access point: %s", wfx_rsi.credentials.ssid);
 
     PostWifiPlatformEvent(WifiPlatformEvent::kStationStartScan);
     return CHIP_NO_ERROR;
+}
+
+NetworkCommissioningStatusEnum WifiInterfaceImpl::MapToNetworkCommissioningStatusEnum(uint32_t reason)
+{
+
+    switch (reason)
+    {
+    case SL_STATUS_OK:
+        return NetworkCommissioningStatusEnum::kSuccess;
+    case SL_STATUS_SI91X_NO_AP_FOUND:
+    case SL_STATUS_SI91X_BEACON_MISSED_FROM_AP_DURING_JOIN:
+    case SL_STATUS_SI91X_REJOIN_FAILURE:
+        return NetworkCommissioningStatusEnum::kNetworkNotFound;
+    case SL_STATUS_SI91X_INVALID_CHANNEL:
+        return NetworkCommissioningStatusEnum::kRegulatoryError;
+    case SL_STATUS_SI91X_INVALID_PSK_IN_WEP_SECURITY:
+    case SL_STATUS_SI91X_DEAUTHENTICATION_RECEIVED_FROM_AP:
+    case SL_STATUS_SI91X_ASSOCIATION_FAILED:
+    case SL_STATUS_SI91X_JOIN_AUTHENTICATION_FAILED:
+    case SL_STATUS_SI91X_MAX_BEACON_MISCOUNT:
+    case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_SUPPLICANT:
+    case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_FROM_AP:
+    case SL_STATUS_SI91X_AUTHENTICATION_TIMEOUT:
+        return NetworkCommissioningStatusEnum::kAuthFailure;
+    case SL_STATUS_SI91X_INVALID_SECURITY_MODE_IN_JOIN_COMMAND:
+        return NetworkCommissioningStatusEnum::kUnsupportedSecurity;
+    case SL_STATUS_SI91X_ASSOCIATION_TIMEOUT:
+    case SL_STATUS_SI91X_FOUR_WAY_HANDSHAKE_FAILED:
+        return NetworkCommissioningStatusEnum::kOtherConnectionFailure;
+    default:
+        return NetworkCommissioningStatusEnum::kUnknownError;
+    }
 }
 
 bool WifiInterfaceImpl::HasAnIPv4Address()
