@@ -689,6 +689,7 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnected);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting);
         ResetConnectivityNotificationFlags();
+        NotifySuccessfulConnection();
         break;
 
     case WifiPlatformEvent::kStationDisconnect: {
@@ -755,14 +756,9 @@ void WifiInterfaceImpl::NotifySuccessfulConnection(void)
 
 sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 {
-    VerifyOrReturnError(
-        !wfx_rsi.dev_state.HasAny(WifiInterface::WifiState::kStationConnecting, WifiInterface::WifiState::kStationConnected),
-        SL_STATUS_IN_PROGRESS);
     sl_status_t status = SL_STATUS_OK;
 
     // Start Join Network
-    wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnecting);
-
     status = SetWifiConfigurations();
     VerifyOrReturnError(status == SL_STATUS_OK, status, ChipLogError(DeviceLayer, "Failure to set the Wifi Configurations!"));
 
@@ -800,8 +796,8 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     ChipLogError(DeviceLayer, "sl_net_up failed: 0x%" PRIx32, static_cast<uint32_t>(status));
 
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
-    mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-    ScheduleConnectionAttempt();
+    mLastDisconnectionReason = status;
+    WifiInterface::NotifyDisconnection(status);
 
     return status;
 }
@@ -829,8 +825,9 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
         ChipLogError(DeviceLayer, "JoinCallback: failed: 0x%" PRIx32, status);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnected);
 
-        mInstance.mUseQuickJoin = !(status == SL_STATUS_SI91X_NO_AP_FOUND);
-        mInstance.ScheduleConnectionAttempt();
+        WifiInterfaceImpl & self      = WifiInterfaceImpl::GetInstance();
+        self.mLastDisconnectionReason = status;
+        self.NotifyDisconnection(status);
     }
 
     return status;
@@ -939,7 +936,89 @@ sl_status_t WifiInterfaceImpl::TriggerPlatformWifiDisconnection()
     return SL_STATUS_OK;
 }
 
+void WifiInterfaceImpl::ClearWifiDisconnectedState()
+{
+    wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationReady)
+        .Clear(WifiInterface::WifiState::kStationConnecting)
+        .Clear(WifiInterface::WifiState::kStationConnected);
+
+    ResetConnectivityNotificationFlags();
+#if (CHIP_DEVICE_CONFIG_ENABLE_IPV4)
+    NotifyIPv4Change(false);
+#endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
+    NotifyIPv6Change(false);
+    mLastDisconnectionReason = SL_STATUS_OK;
+    WifiInterface::NotifyDisconnection(mLastDisconnectionReason);
+}
+
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
+#if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+namespace {
+osTimerId_t sLitPrecheckInReconnectTimer       = nullptr;
+constexpr uint32_t kLitPrecheckInMarginSeconds = 15;
+
+void OnLitPrecheckInReconnectOsTimer(void *)
+{
+    WifiInterfaceImpl & self = WifiInterfaceImpl::GetInstance();
+    VerifyOrReturn(self.IsWifiProvisioned() && !self.IsStationConnected());
+
+    ChipLogProgress(DeviceLayer, "LIT precheck-in: reconnecting Wi-Fi before ICD traffic");
+    VerifyOrReturn(self.ConfigureLITConnect() == CHIP_NO_ERROR, ChipLogError(DeviceLayer, "LIT precheck-in reconnect failed"));
+}
+} // namespace
+
+CHIP_ERROR WifiInterfaceImpl::InitLitPrecheckInReconnectTimer()
+{
+    VerifyOrReturnError(sLitPrecheckInReconnectTimer == nullptr, CHIP_NO_ERROR);
+
+    sLitPrecheckInReconnectTimer = osTimerNew(OnLitPrecheckInReconnectOsTimer, osTimerOnce, nullptr, nullptr);
+    VerifyOrReturnError(sLitPrecheckInReconnectTimer != nullptr, CHIP_ERROR_INTERNAL,
+                        ChipLogDetail(DeviceLayer, "LIT precheck-in osTimerNew failed"));
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
+{
+    VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
+
+    VerifyOrReturnError(!IsStationConnected(), CHIP_NO_ERROR);
+
+    CHIP_ERROR err = ConnectToAccessPoint();
+    VerifyOrReturnError(err == CHIP_NO_ERROR || err == CHIP_ERROR_IN_PROGRESS, err);
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
+{
+    TriggerDisconnection();
+    return CHIP_NO_ERROR;
+}
+
+void WifiInterfaceImpl::CancelLitPrecheckInReconnectTimer()
+{
+    VerifyOrReturn(sLitPrecheckInReconnectTimer != nullptr);
+    (void) osTimerStop(sLitPrecheckInReconnectTimer);
+}
+
+void WifiInterfaceImpl::StartLitPrecheckInReconnectTimer()
+{
+    VerifyOrReturn(sLitPrecheckInReconnectTimer != nullptr);
+    const uint32_t idleSec            = chip::ICDConfigurationData::GetInstance().GetModeBasedIdleModeDuration().count();
+    const uint32_t activeThresholdSec = chip::ICDConfigurationData::GetInstance().GetActiveModeThreshold().count() / 1000;
+    const uint32_t delaySec =
+        (idleSec > kLitPrecheckInMarginSeconds) ? (idleSec - activeThresholdSec - kLitPrecheckInMarginSeconds) : 1u;
+    const uint32_t delayMs = delaySec * 1000u;
+
+    (void) osTimerStop(sLitPrecheckInReconnectTimer);
+    if (osTimerStart(sLitPrecheckInReconnectTimer, pdMS_TO_TICKS(delayMs)) != osOK)
+    {
+        ChipLogDetail(DeviceLayer, "LIT precheck-in osTimerStart failed (delay ms=%u)", static_cast<unsigned>(delayMs));
+    }
+}
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
     // Power save configuration is already set, nothing to do
@@ -1091,9 +1170,10 @@ CHIP_ERROR WifiInterfaceImpl::StartWifiTask()
     return CHIP_NO_ERROR;
 }
 
-void WifiInterfaceImpl::ConfigureStationMode()
+CHIP_ERROR WifiInterfaceImpl::EnableStationMode()
 {
     wfx_rsi.dev_state.Set(WifiState::kStationMode);
+    return CHIP_NO_ERROR;
 }
 
 bool WifiInterfaceImpl::IsStationModeEnabled()
@@ -1128,9 +1208,6 @@ void WifiInterfaceImpl::ResetConnectivityNotificationFlags(void)
 {
     ResetIPNotificationStates();
     mHasNotifiedWifiConnectivity = false;
-
-    WifiPlatformEvent event = WifiPlatformEvent::kConnectionComplete;
-    PostWifiPlatformEvent(event);
 }
 
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
@@ -1184,11 +1261,47 @@ CHIP_ERROR WifiInterfaceImpl::SetWifiCredentials(const WiFiCredentials & credent
 CHIP_ERROR WifiInterfaceImpl::ConnectToAccessPoint()
 {
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(
+        !wfx_rsi.dev_state.HasAny(WifiInterface::WifiState::kStationConnecting, WifiInterface::WifiState::kStationConnected),
+        CHIP_ERROR_IN_PROGRESS);
+    wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnecting);
 
     ChipLogProgress(DeviceLayer, "%s to access point: %s", mUseQuickJoin ? "quick join" : "connect", wfx_rsi.credentials.ssid);
 
     PostWifiPlatformEvent(mUseQuickJoin ? WifiPlatformEvent::kStationStartJoin : WifiPlatformEvent::kStationStartScan);
     return CHIP_NO_ERROR;
+}
+
+NetworkCommissioningStatusEnum WifiInterfaceImpl::MapToNetworkCommissioningStatusEnum(uint32_t reason)
+{
+
+    switch (reason)
+    {
+    case SL_STATUS_OK:
+        return NetworkCommissioningStatusEnum::kSuccess;
+    case SL_STATUS_SI91X_NO_AP_FOUND:
+    case SL_STATUS_SI91X_BEACON_MISSED_FROM_AP_DURING_JOIN:
+    case SL_STATUS_SI91X_REJOIN_FAILURE:
+        return NetworkCommissioningStatusEnum::kNetworkNotFound;
+    case SL_STATUS_SI91X_INVALID_CHANNEL:
+        return NetworkCommissioningStatusEnum::kRegulatoryError;
+    case SL_STATUS_SI91X_INVALID_PSK_IN_WEP_SECURITY:
+    case SL_STATUS_SI91X_DEAUTHENTICATION_RECEIVED_FROM_AP:
+    case SL_STATUS_SI91X_ASSOCIATION_FAILED:
+    case SL_STATUS_SI91X_JOIN_AUTHENTICATION_FAILED:
+    case SL_STATUS_SI91X_MAX_BEACON_MISCOUNT:
+    case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_SUPPLICANT:
+    case SL_STATUS_SI91X_DEAUTH_REQUEST_FROM_FROM_AP:
+    case SL_STATUS_SI91X_AUTHENTICATION_TIMEOUT:
+        return NetworkCommissioningStatusEnum::kAuthFailure;
+    case SL_STATUS_SI91X_INVALID_SECURITY_MODE_IN_JOIN_COMMAND:
+        return NetworkCommissioningStatusEnum::kUnsupportedSecurity;
+    case SL_STATUS_SI91X_ASSOCIATION_TIMEOUT:
+    case SL_STATUS_SI91X_FOUR_WAY_HANDSHAKE_FAILED:
+        return NetworkCommissioningStatusEnum::kOtherConnectionFailure;
+    default:
+        return NetworkCommissioningStatusEnum::kUnknownError;
+    }
 }
 
 bool WifiInterfaceImpl::HasAnIPv4Address()

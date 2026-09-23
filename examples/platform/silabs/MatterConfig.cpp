@@ -431,7 +431,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 
 #ifdef ENABLE_CHIP_SHELL
     chip::startShellTask();
-#endif
+#endif // ENABLE_CHIP_SHELL
 
     return CHIP_NO_ERROR;
 }
