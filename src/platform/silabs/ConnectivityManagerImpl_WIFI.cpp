@@ -98,9 +98,6 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
             {
             // User initiated disconnection outside of the ConnectivityManager
             case NetworkCommissioning::Status::kSuccess:
-                // TODO: Remove this once the LIT connect is managed by the ConnectivityManager
-                // and the LIT disconnect is handled by the ConnectivityManager
-                mWiFiStationAutoConnect = false;
                 ChangeWiFiStationState(kWiFiStationState_NotConnected);
                 break;
             // Disconnection due to WiFi connectivity error
