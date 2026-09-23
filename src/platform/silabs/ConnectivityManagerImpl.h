@@ -122,6 +122,8 @@ private:
     WiFiStationMode mWiFiStationMode;
     WiFiStationState mWiFiStationState;
     bool mWiFiStationAutoConnect;
+    // TODO: Remove this once the LIT disconnect is managed by the ConnectivityManager
+    bool mWiFiStationDisconnectPending;
     // variables for tracking the last connection failure time and reconnect interval
     System::Clock::Timestamp mLastStationConnectFailTime;
     System::Clock::Timeout mWiFiStationReconnectInterval;

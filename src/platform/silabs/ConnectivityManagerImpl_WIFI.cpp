@@ -58,6 +58,7 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     mWiFiStationMode              = kWiFiStationMode_Disabled;
     mWiFiStationState             = kWiFiStationState_NotConnected;
     mWiFiStationAutoConnect       = true;
+    mWiFiStationDisconnectPending = false;
     mLastStationConnectFailTime   = System::Clock::kZero;
     mWiFiStationReconnectInterval = System::Clock::Milliseconds32(CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL);
     mWiFiStationReconnectCount    = 1;
@@ -98,7 +99,19 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
             {
             // User initiated disconnection outside of the ConnectivityManager
             case NetworkCommissioning::Status::kSuccess:
-                ChangeWiFiStationState(kWiFiStationState_NotConnected);
+                if (mWiFiStationDisconnectPending)
+                {
+                    mWiFiStationDisconnectPending = false;
+                    ChangeWiFiStationState(kWiFiStationState_NotConnected);
+                }
+                else
+                {
+                    // out of bound disconnect event, since WifiInterface::TriggerDisconnection() is not called
+                    // from the ConnectivityManager, so we need to set the auto connect flag to false
+                    // and drive the station state to not connected
+                    mWiFiStationAutoConnect = false;
+                    DriveStationState();
+                }
                 break;
             // Disconnection due to WiFi connectivity error
             default:
@@ -217,7 +230,8 @@ CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
 {
     // if the station is not connected, return success
     VerifyOrReturnError(mWiFiStationState != kWiFiStationState_NotConnected, CHIP_NO_ERROR);
-    mWiFiStationAutoConnect = false;
+    mWiFiStationAutoConnect       = false;
+    mWiFiStationDisconnectPending = true;
 
     ChangeWiFiStationState(kWiFiStationState_Disconnecting);
     // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
