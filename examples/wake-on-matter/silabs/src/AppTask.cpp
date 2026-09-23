@@ -19,6 +19,7 @@
 
 #include "AppTask.h"
 #include "AppConfig.h"
+#include "WakeUpMgr.h"
 
 #include <app/InteractionModelEngine.h>
 #include <app/clusters/access-control-server/access-control-cluster.h>
@@ -39,24 +40,20 @@
 
 #include <data-model-providers/codedriven/CodeDrivenDataModelProvider.h>
 #include <data-model-providers/codedriven/endpoint/EndpointInterfaceRegistry.h>
-
-#if CHIP_ENABLE_OPENTHREAD
 #include <platform/OpenThread/GenericNetworkCommissioningThreadDriver.h>
-#endif
-
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 #include <em_device.h>
 #include "sl_gpio.h"
 
-// TODO uncomment once mmic is merged
-// #include "mmic_task.h"
+#include "mmic_task.h"
 
 using namespace chip;
 using namespace chip::app;
 using namespace chip::app::Clusters;
 using namespace chip::DeviceLayer;
 using namespace chip::DeviceLayer::Silabs;
+using chip::Silabs::WakeUpMgr;
 
 namespace {
 
@@ -90,9 +87,7 @@ private:
     EndpointInterfaceRegistration mEndpointRegistration;
 };
 
-#if CHIP_ENABLE_OPENTHREAD
 DeviceLayer::NetworkCommissioning::GenericThreadDriver sThreadDriver;
-#endif
 
 // Code-driven data model infrastructure
 DefaultAttributePersistenceProvider sAttributePersistence;
@@ -108,9 +103,7 @@ LazyRegisteredServerCluster<GeneralDiagnosticsCluster> sGeneralDiagnosticsCluste
 LazyRegisteredServerCluster<GroupKeyManagementCluster> sGroupKeyManagementCluster;
 LazyRegisteredServerCluster<AccessControlCluster> sAccessControlCluster;
 LazyRegisteredServerCluster<OperationalCredentialsCluster> sOperationalCredentialsCluster;
-#if CHIP_ENABLE_OPENTHREAD
 LazyRegisteredServerCluster<NetworkCommissioningCluster> sNetworkCommissioningCluster;
-#endif
 
 CHIP_ERROR RegisterRootNodeClusters(CodeDrivenDataModelProvider & provider, Credentials::GroupDataProvider * groupDataProvider)
 {
@@ -150,7 +143,6 @@ CHIP_ERROR RegisterRootNodeClusters(CodeDrivenDataModelProvider & provider, Cred
         GeneralCommissioningCluster::OptionalAttributes());
     ReturnErrorOnFailure(provider.AddCluster(sGeneralCommissioningCluster.Registration()));
 
-#if CHIP_ENABLE_OPENTHREAD
     // NetworkCommissioning (Thread)
     sNetworkCommissioningCluster.Create(kRootEndpointId, &sThreadDriver,
                                         NetworkCommissioningCluster::Context{
@@ -161,7 +153,6 @@ CHIP_ERROR RegisterRootNodeClusters(CodeDrivenDataModelProvider & provider, Cred
                                         });
     ReturnErrorOnFailure(sNetworkCommissioningCluster.Cluster().Init());
     ReturnErrorOnFailure(provider.AddCluster(sNetworkCommissioningCluster.Registration()));
-#endif
 
     // GeneralDiagnostics
     sGeneralDiagnosticsCluster.Create(GeneralDiagnosticsCluster::OptionalAttributeSet{}, BitFlags<GeneralDiagnostics::Feature>{},
@@ -251,14 +242,14 @@ void UnregisterRootNodeClusters(CodeDrivenDataModelProvider & provider)
         LogErrorOnFailure(provider.RemoveCluster(&sGeneralDiagnosticsCluster.Cluster()));
         sGeneralDiagnosticsCluster.Destroy();
     }
-#if CHIP_ENABLE_OPENTHREAD
+
     if (sNetworkCommissioningCluster.IsConstructed())
     {
         sNetworkCommissioningCluster.Cluster().Deinit();
         LogErrorOnFailure(provider.RemoveCluster(&sNetworkCommissioningCluster.Cluster()));
         sNetworkCommissioningCluster.Destroy();
     }
-#endif
+
     if (sGeneralCommissioningCluster.IsConstructed())
     {
         LogErrorOnFailure(provider.RemoveCluster(&sGeneralCommissioningCluster.Cluster()));
@@ -280,17 +271,6 @@ void UnregisterRootNodeClusters(CodeDrivenDataModelProvider & provider)
 // Adjust port/pin as needed.
 constexpr sl_gpio_t kLightGpio         = { .port = gpioPortB, .pin = 4 };
 constexpr uint16_t kLedAutoOffTimeoutS = 5;
-
-// Matter cluster / attribute identifiers we react to.
-constexpr uint32_t kOnOffClusterId              = 0x00000006;
-constexpr uint32_t kOnOffAttributeId            = 0x00000000;
-constexpr uint32_t kOccupancySensingClusterId   = 0x00000406;
-constexpr uint32_t kOccupancyAttributeId        = 0x00000000;
-constexpr uint32_t kBooleanStateClusterId       = 0x00000045;
-constexpr uint32_t kBooleanStateValueAttributeId = 0x00000000;
-
-// Occupancy attribute is bitmap8; bit 0 set means the sensor reports "occupied".
-constexpr uint64_t kOccupancyOccupiedMask = 0x01;
 
 void EnsureLightGpioInitialized()
 {
@@ -314,34 +294,13 @@ void LedAutoOffTimerHandler(chip::System::Layer * /*layer*/, void * /*appState*/
     SetLight(false);
 }
 
-// Decide, per cluster/attribute, whether the reported value should light the LED.
-bool ShouldLightForAttribute(uint32_t clusterId, uint32_t attributeId, uint64_t value)
-{
-    switch (clusterId)
-    {
-    case kOnOffClusterId:
-        // OnOff attribute is a boolean; non-zero means "on".
-        return (attributeId == kOnOffAttributeId) && (value != 0);
-
-    case kOccupancySensingClusterId:
-        // Occupancy attribute is bitmap8; bit 0 == 1 means "occupied".
-        return (attributeId == kOccupancyAttributeId) && ((value & kOccupancyOccupiedMask) != 0);
-
-    case kBooleanStateClusterId:
-        // StateValue is a boolean; non-zero means "true".
-        return (attributeId == kBooleanStateValueAttributeId) && (value != 0);
-
-    default:
-        return false;
-    }
-}
-
 [[maybe_unused]] void subscriptionCallback(uint16_t endpointId, uint32_t clusterId, uint32_t attributeId, uint64_t value)
 {
     (void) endpointId;
 
-    if (!ShouldLightForAttribute(clusterId, attributeId, value))
+    if (!WakeUpMgr::Instance().IsWakeUpNeeded(clusterId, attributeId, value))
     {
+        ChipLogProgress(DeviceLayer, "Wake Up Not needed");
         return;
     }
 
@@ -388,10 +347,11 @@ CHIP_ERROR AppTask::StartAppTask()
     // StartAppTask name is kept for compatibility even if this sample app
     // doesn't have an App Task. All processing is made within the mmic Task context.
 
-    // TODO uncomment once mmic is merged
-    // sl_status_t status = mmic_init(subscriptionCallback);
-    //VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
-    //                    ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
+    ReturnErrorOnFailure(WakeUpMgr::Instance().Init());
+
+    sl_status_t status = mmic_init(subscriptionCallback);
+    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                       ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
 
 
     return CHIP_NO_ERROR;

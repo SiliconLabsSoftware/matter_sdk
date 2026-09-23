@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * @file
+ * @brief Chip-tool storage parser for matter ncp.
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
 #include "chip_tool_storage.h"
 
 #include <cstdio>
@@ -67,7 +83,7 @@ static bool base64Decode(const char * input, size_t inputLen, std::vector<uint8_
 }
 
 // Trim ASCII whitespace both sides.
-static void trim(std::string & s)
+static void trimWhiteSpaces(std::string & s)
 {
     size_t i = 0;
     while (i < s.size() && (s[i] == ' ' || s[i] == '\t' || s[i] == '\r' || s[i] == '\n')) ++i;
@@ -91,7 +107,7 @@ static bool loadIni(const std::string & path, std::unordered_map<std::string, st
     std::string line;
     while (std::getline(f, line))
     {
-        trim(line);
+        trimWhiteSpaces(line);
         if (line.empty() || line[0] == '#' || line[0] == ';')
         {
             continue;
@@ -108,8 +124,8 @@ static bool loadIni(const std::string & path, std::unordered_map<std::string, st
         }
         std::string key = line.substr(0, eq);
         std::string val = line.substr(eq + 1);
-        trim(key);
-        trim(val);
+        trimWhiteSpaces(key);
+        trimWhiteSpaces(val);
         if (section == "Default" || section.empty())
         {
             out.emplace(std::move(key), std::move(val));
@@ -121,6 +137,10 @@ static bool loadIni(const std::string & path, std::unordered_map<std::string, st
 static bool decodeKey(const std::unordered_map<std::string, std::string> & m,
                       const char * key, std::vector<uint8_t> & out)
 {
+    if (key == nullptr)
+    {
+        return false;
+    }
     auto it = m.find(key);
     if (it == m.end())
     {
