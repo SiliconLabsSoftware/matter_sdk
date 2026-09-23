@@ -230,13 +230,29 @@ CHIP_ERROR ConnectivityManagerImpl::_DisconnectNetwork(void)
 {
     // if the station is not connected, return success
     VerifyOrReturnError(mWiFiStationState != kWiFiStationState_NotConnected, CHIP_NO_ERROR);
-    mWiFiStationAutoConnect       = false;
-    mWiFiStationDisconnectPending = true;
 
-    ChangeWiFiStationState(kWiFiStationState_Disconnecting);
-    // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
-    // next time DriveStationState() will be called, the station will be in the NotConnected state
-    WifiInterface::GetInstance().TriggerDisconnection();
+    mWiFiStationAutoConnect = false;
+
+    if (mWiFiStationState == kWiFiStationState_Connecting)
+    {
+        // user requested to disconnect the network, while the device in connecting state
+        // reset the reconnection state to avoid the device to reconnect to the network
+        // if the on going connection attempt failed, the station will be in the NotConnected state.
+        // if the on going connection attempt succeeded, the station will be in the Connected state,
+        // driven by the OnPlatformEvent() callback
+        ChangeWiFiStationState(kWiFiStationState_NotConnected, false);
+    }
+    else if (mWiFiStationState == kWiFiStationState_Connected || mWiFiStationState == kWiFiStationState_Connecting_Succeeded)
+    {
+        VerifyOrReturnError(!mWiFiStationDisconnectPending, CHIP_ERROR_IN_PROGRESS);
+
+        mWiFiStationDisconnectPending = true;
+        ChangeWiFiStationState(kWiFiStationState_Disconnecting, false);
+        // ChangeWiFiStationState() is called in the OnPlatformEvent() callback as per result of TriggerDisconnection()
+        // next time DriveStationState() will be called, the station will be in the NotConnected state
+        WifiInterface::GetInstance().TriggerDisconnection();
+    }
+    LogErrorOnFailure(DeviceLayer::SystemLayer().ScheduleWork(DriveStationState, NULL));
     return CHIP_NO_ERROR;
 }
 
@@ -346,7 +362,21 @@ void ConnectivityManagerImpl::DriveStationState()
     }
     break;
     case kWiFiStationState_Connected:
-    case kWiFiStationState_Connecting_Succeeded:
+    case kWiFiStationState_Connecting_Succeeded: {
+        // Unexpected radio-down while still Connected/Connecting_Succeeded.
+        // Prefer Connecting_Failed so reconnect is scheduled (same as error
+        // kDisconnect). Going straight to NotConnected resets the retry timer
+        // and skips a new join; a later kDisconnect is then discarded.
+        if (mWiFiStationAutoConnect && isStationProvisioned)
+        {
+            ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
+        }
+        else
+        {
+            ChangeWiFiStationState(kWiFiStationState_NotConnected, false);
+        }
+    }
+    break;
     case kWiFiStationState_Disconnecting: {
         ChangeWiFiStationState(kWiFiStationState_NotConnected, false);
     }
@@ -428,7 +458,12 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
         {
             mWiFiStationAutoConnect = true;
         }
-        OnStationDisconnected();
+        // Only notify link loss when an established (or succeeded) link dropped.
+        // Connecting -> Connecting_Failed is a failed join/retry, not a drop.
+        if (prevState == kWiFiStationState_Connected || prevState == kWiFiStationState_Connecting_Succeeded)
+        {
+            OnStationDisconnected();
+        }
         break;
 
     case kWiFiStationState_Connecting_Succeeded:
