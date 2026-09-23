@@ -153,11 +153,11 @@ CHIP_ERROR Storage::GetSpake2pSalt(MutableByteSpan & value)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR Storage::GetDeviceAttestationCertForProfile(DeviceAttestationCertProfile profile, MutableByteSpan & out_dac_buffer)
+CHIP_ERROR Storage::GetDeviceAttestationCertForProfile(chip::Credentials::DeviceAttestationCertProfile profile, MutableByteSpan & out_dac_buffer)
 {
     // Silabs storage only tracks the legacy Matter chain today; any other profile is served
     // via the example provider so callers keep a defined error path.
-    if (profile == DeviceAttestationCertProfile::kEcdsaMatterLegacy)
+    if (profile == chip::Credentials::DeviceAttestationCertProfile::kEcdsaMatterLegacy)
     {
         CHIP_ERROR err = GetDeviceAttestationCert(out_dac_buffer);
         if (err != CHIP_ERROR_NOT_FOUND)
@@ -172,10 +172,10 @@ CHIP_ERROR Storage::GetDeviceAttestationCertForProfile(DeviceAttestationCertProf
 #endif
 }
 
-CHIP_ERROR Storage::GetProductAttestationIntermediateCertForProfile(DeviceAttestationCertProfile profile,
+CHIP_ERROR Storage::GetProductAttestationIntermediateCertForProfile(chip::Credentials::DeviceAttestationCertProfile profile,
                                                                     MutableByteSpan & out_pai_buffer)
 {
-    if (profile == DeviceAttestationCertProfile::kEcdsaMatterLegacy)
+    if (profile == chip::Credentials::DeviceAttestationCertProfile::kEcdsaMatterLegacy)
     {
         CHIP_ERROR err = GetProductAttestationIntermediateCert(out_pai_buffer);
         if (err != CHIP_ERROR_NOT_FOUND)
@@ -190,33 +190,33 @@ CHIP_ERROR Storage::GetProductAttestationIntermediateCertForProfile(DeviceAttest
 #endif
 }
 
-DeviceAttestationProfileSupport Storage::GetDeviceAttestationProfileSupport() const
+chip::Credentials::DeviceAttestationProfileSupport Storage::GetDeviceAttestationProfileSupport() const
 {
-    const auto legacy = BitMask<DeviceAttestationCertProfileBitmap>(DeviceAttestationCertProfileBitmap::kSupportsEcdsaMatterLegacy);
+    const auto legacy = BitMask<chip::Credentials::DeviceAttestationCertProfileBitmap>(chip::Credentials::DeviceAttestationCertProfileBitmap::kSupportsEcdsaMatterLegacy);
     return { legacy, legacy, legacy };
 }
 
-DeviceAttestationCertProfile Storage::GetPreferredDeviceAttestationChainProfile() const
+chip::Credentials::DeviceAttestationCertProfile Storage::GetPreferredDeviceAttestationChainProfile() const
 {
     // Silabs storage only tracks the legacy Matter chain.
-    return DeviceAttestationCertProfile::kEcdsaMatterLegacy;
+    return chip::Credentials::DeviceAttestationCertProfile::kEcdsaMatterLegacy;
 }
 
-CHIP_ERROR Storage::GetDeviceAttestationDocumentSegment(DeviceAttestationDocumentType documentType,
-                                                        DeviceAttestationCertProfile profile, size_t offset,
+CHIP_ERROR Storage::GetDeviceAttestationDocumentSegment(chip::Credentials::DeviceAttestationDocumentType documentType,
+                                                        chip::Credentials::DeviceAttestationCertProfile profile, size_t offset,
                                                         MutableByteSpan & out_document_buffer, size_t & out_document_size)
 {
     // Silabs storage returns whole documents from NVM3, so only offset 0 on the legacy chain
     // maps onto an actual read; every other request is delegated to the example provider.
-    if (profile == DeviceAttestationCertProfile::kEcdsaMatterLegacy && offset == 0)
+    if (profile == chip::Credentials::DeviceAttestationCertProfile::kEcdsaMatterLegacy && offset == 0)
     {
         CHIP_ERROR err = CHIP_ERROR_NOT_FOUND;
         switch (documentType)
         {
-        case DeviceAttestationDocumentType::kDACCertificate:
+        case chip::Credentials::DeviceAttestationDocumentType::kDACCertificate:
             err = GetDeviceAttestationCert(out_document_buffer);
             break;
-        case DeviceAttestationDocumentType::kPAICertificate:
+        case chip::Credentials::DeviceAttestationDocumentType::kPAICertificate:
             err = GetProductAttestationIntermediateCert(out_document_buffer);
             break;
         default:
