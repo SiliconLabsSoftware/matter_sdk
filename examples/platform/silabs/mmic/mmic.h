@@ -63,7 +63,7 @@ static inline uint16_t mmic_read_length(const uint8_t * pkt)
     return (uint16_t)((uint16_t)pkt[MMIC_OFFSET_LEN_LO] | ((uint16_t)pkt[MMIC_OFFSET_LEN_HI] << 8));
 }
 
-static inline uint8_t mmic_write_length(uint8_t * pkt, uint16_t len)
+static inline mmic_error_t mmic_write_length(uint8_t * pkt, uint16_t len)
 {
     if (pkt == NULL)
     {

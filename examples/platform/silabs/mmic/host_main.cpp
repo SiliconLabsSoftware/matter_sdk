@@ -1,19 +1,19 @@
-
-
-
-/*
- * Minimal serial shell.
+/*******************************************************************************
+ * @file
+ * @brief main loop for the host side of the mmic
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
  *
- * Usage: host_main <serial_device>
- *   e.g. host_main /dev/ttyUSB0                (Linux)
- *        host_main /dev/cu.usbserial-XXXX      (macOS)
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
  *
- * Opens the port at 115200 8N1, spawns a thread that prints bytes received
- * from the port to stdout, and reads lines from stdin. The only built-in
- * command is "exit", which closes the port and returns 0.
- *
- * Build: cc -std=c11 -Wall -Wextra -pthread host_main.c -o host_main
- */
+ ******************************************************************************/
 
 #include <errno.h>
 #include <fcntl.h>
