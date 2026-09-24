@@ -73,6 +73,8 @@ declare_args() {
 
   silabs_log_enabled = true
 
+  sl_cpc_enabled = false
+
   # Enable Synchronized Sleepy End Device
   enable_synchronized_sed = false
 
@@ -101,6 +103,13 @@ declare_args() {
 
   # Use/Enable a sl_watchdog_manager features to catch software hangs
   sl_config_watchdog_manager_enable = false
+
+  # Enables Silabs BLE Side Channel implementation for internal testing
+  # Setting this to true automatically enables sl_enable_ble_side_channel
+  sl_use_internal_ble_side_channel = false
+
+  # Delay before the deferred attribute are stored in nvm, default 2000 when the feature is supported
+  sl_deferred_attribute_store_delay_ms = 2000
 }
 
 examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
@@ -124,6 +133,15 @@ declare_args() {
 
   # Extra ICD configuration parameter. Defaults to previously set sl_idle_mode_duration_s
   sl_short_idle_mode_duration_s = sl_idle_mode_duration_s
+
+  # BLE Side Channel
+  sl_enable_ble_side_channel = sl_use_internal_ble_side_channel
+}
+
+if (sl_use_internal_ble_side_channel) {
+  assert(
+      sl_enable_ble_side_channel,
+      "sl_enable_ble_side_channel must be true when sl_use_internal_ble_side_channel is true")
 }
 
 declare_args() {
@@ -532,7 +550,7 @@ template("efr32_sdk") {
     }
 
     if (invoker.enable_matter_aws) {
-      _include_dirs += [ "${chip_root}/third_party/silabs/mqtt/stack" ]
+      _include_dirs += [ "${chip_root}/src/platform/silabs/mqtt/stack" ]
     }
 
     if (sl_enable_si70xx_sensor) {
@@ -563,6 +581,7 @@ template("efr32_sdk") {
       "NVM3_DEFAULT_NVM_SIZE=${sl_nvm3_nvm_size}",
       "NVM3_DEFAULT_MAX_OBJECT_SIZE=${sl_nvm3_max_object_size}",
       "KVS_MAX_ENTRIES=${kvs_max_entries}",
+      "SL_MATTER_DEFERRED_ATTRIBUTE_STORE_DELAY_MS=${sl_deferred_attribute_store_delay_ms}",
       "CORTEXM3=1",
       "MICRO=EMBER_MICRO_CORTEXM3_EFR32",
       "PLAT=EMBER_PLATFORM_CORTEXM3",
@@ -646,8 +665,10 @@ template("efr32_sdk") {
 
     if (defined(invoker.chip_enable_wifi) && invoker.chip_enable_wifi) {
       if (enable_matter_aws) {
-        assert(chip_enable_wifi_ipv4, "enable chip_enable_wifi_ipv4")
         defines += [ "SL_MATTER_ENABLE_AWS=1" ]
+      }
+      if (enable_matter_dual_stack) {
+        defines += [ "SL_MATTER_ENABLE_DUAL_STACK=1" ]
       }
       if (aws_sdk_ota) {
         defines += [ "SL_MATTER_ENABLE_AWS_OTA_FEAT=1" ]
@@ -709,6 +730,29 @@ template("efr32_sdk") {
       defines += [ "SL_CONFIG_WATCHDOG_MANAGER_ENABLE=0" ]
     }
 
+    if (sl_enable_ble_side_channel) {
+      defines += [ "SL_BLE_SIDE_CHANNEL_ENABLED=1" ]
+    } else {
+      defines += [ "SL_BLE_SIDE_CHANNEL_ENABLED=0" ]
+    }
+
+    if (sl_use_internal_ble_side_channel) {
+      defines += [ "SL_USE_INTERNAL_BLE_SIDE_CHANNEL=1" ]
+    } else {
+      defines += [ "SL_USE_INTERNAL_BLE_SIDE_CHANNEL=0" ]
+    }
+
+    if (sl_enable_ble_side_channel) {
+      # additional defines and lib if BLE side channel is enabled
+      defines += [
+        "SL_BT_ADVERTISER_CONFIG_H",
+        "SL_BT_CONFIG_USER_ADVERTISERS=2",
+      ]
+
+      libs += [ "${efr32_sdk_root}/bluetooth_le_host/build/gcc/cortex-m33/ble_bgapi/release/libble_bgapi_gatt_client.a" ]
+    } else if (!sl_matter_enable_siwx_ble) {
+      libs += [ "${efr32_sdk_root}/bluetooth_le_host/build/gcc/cortex-m33/ble_bgapi/release/libble_bgapi_stub_gatt_client.a" ]
+    }
     if (chip_build_libshell) {  # matter shell
       defines += [
         "ENABLE_CHIP_SHELL",
@@ -740,6 +784,14 @@ template("efr32_sdk") {
         "${efr32_sdk_root}/platform_core/platform/emdrv/uartdrv/inc",
         "${efr32_sdk_root}/platform_core/platform/emdrv/uartdrv/config",
       ]
+
+      if (sl_cpc_enabled) {
+        _include_dirs += [ "${efr32_sdk_root}/cpc/inc" ]
+        defines += [
+          "SL_CATALOG_CPC_SECONDARY_PRESENT",
+          "SL_CATALOG_CPC_DRIVER_UART_PRESENT",
+        ]
+      }
 
       # memlcd SPI backend differs by series (USART on S2, EUSART on S3).
       if (is_series_3) {
@@ -961,6 +1013,22 @@ template("efr32_sdk") {
       }
     }
 
+    if (sl_cpc_enabled) {
+      sources += [
+        "${efr32_sdk_root}/cpc/src/sl_cpc.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_crc.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_dispatcher.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_drv_uart.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_hdlc.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_instance.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_memory.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_security.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_system_secondary.c",
+        "${efr32_sdk_root}/cpc/src/sl_cpc_system_secondary_efr.c",
+        "${efr32_sdk_root}/cpc/src/sli_cpc_assert.c",
+      ]
+    }
+
     if (enable_matter_aws) {
       sources += [
         "${chip_root}/third_party/silabs/mqtt/stack/mqtt.c",
@@ -1013,7 +1081,9 @@ template("efr32_sdk") {
         "${efr32_sdk_root}/segger/systemview/profiles/freertos_v11/SEGGER_SYSVIEW_FreeRTOS.c",
       ]
     }
-
+    if (sl_cpc_enabled) {
+      sources += [ "${silabs_gen_folder}/autogen/sl_cpc_instance_handles.c" ]
+    }
     if (use_wstk_leds) {
       sources += [
         "${efr32_sdk_root}/platform_core/platform/driver/leddrv/src/sl_led.c",
@@ -1318,6 +1388,7 @@ template("efr32_sdk") {
 
     public_deps = [
       ":efr32_mbedtls_config",
+      "${chip_root}/src/platform/silabs/tracing:silabs_tracing_config",
       "${segger_rtt_root}:segger_rtt",
       "${segger_rtt_root}:segger_rtt_printf",
     ]
