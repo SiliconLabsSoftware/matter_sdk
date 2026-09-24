@@ -98,7 +98,7 @@ void WifiInterface::ResetIPNotificationStates()
 
 void WifiInterface::NotifyWifiTaskInitialized(void)
 {
-    sl_wfx_startup_ind_t evt = { 0 };
+    sl_wfx_startup_ind_t evt = { { 0 } };
 
     evt.header.id     = to_underlying(WifiEvent::kStartUp);
     evt.header.length = sizeof evt;
