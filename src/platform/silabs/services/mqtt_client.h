@@ -139,6 +139,8 @@ public:
     CHIP_ERROR Stop() override;
     bool IsRunning() const override;
     bool IsBusy() const;
+    bool IsInitialized() const { return mInitialized; }
+    bool IsConnected() const { return mConnected; }
 
     /**
      * @brief Set handler for subscribed publishes. Safe to call before Connect.
@@ -157,9 +159,10 @@ public:
     /**
      * @brief Subscribe with the instance message callback (@ref SetSubscriptionCallback).
      *
+     * Uses @ref MqttClientConfig::qos from Init.
      * @p topic must remain valid until the operation completes.
      */
-    CHIP_ERROR Subscribe(const char * topic, MqttQoS qos, MqttOperationCallback callback, void * context = nullptr);
+    CHIP_ERROR Subscribe(const char * topic, MqttOperationCallback callback, void * context = nullptr);
 
     /**
      * @brief Subscribe using @ref MqttClientConfig::subQoS from Init.
@@ -171,9 +174,10 @@ public:
     /**
      * @brief Publish @p payload to @p topic.
      *
+     * Uses @ref MqttClientConfig::qos from Init.
      * @p topic and @p payload must remain valid until the operation completes.
      */
-    CHIP_ERROR Publish(const char * topic, ByteSpan payload, MqttQoS qos, bool retained, MqttOperationCallback callback,
+    CHIP_ERROR Publish(const char * topic, ByteSpan payload, bool retained, MqttOperationCallback callback,
                        void * context = nullptr);
 
     /**
@@ -249,13 +253,16 @@ private:
     void * mThreadId   = nullptr; // osThreadId_t
     void * mEventFlags = nullptr; // osEventFlagsId_t
 
-    volatile bool mBusy         = false;
-    bool mInitialized           = false;
-    bool mConnected             = false;
-    Operation mPendingOperation = Operation::None;
+    volatile bool mBusy                = false;
+    bool mInitialized                  = false;
+    volatile bool mConnected           = false; // also cleared from Disconnect() callers
+    volatile bool mDisconnectRequested = false;
+    Operation mPendingOperation        = Operation::None;
 
-    MqttOperationCallback mUserCallback = nullptr;
-    void * mUserCallbackContext         = nullptr;
+    MqttOperationCallback mUserCallback               = nullptr;
+    void * mUserCallbackContext                       = nullptr;
+    MqttOperationCallback mDeferredDisconnectCallback = nullptr;
+    void * mDeferredDisconnectContext                 = nullptr;
 
     MqttSubscriptionCallback mMessageCallback = nullptr;
     void * mMessageCallbackContext            = nullptr;
