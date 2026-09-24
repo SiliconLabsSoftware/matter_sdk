@@ -25,7 +25,6 @@
 
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include <platform/CHIPDeviceLayer.h>
 
 #include <cstring>
 
@@ -35,7 +34,6 @@ using chip::ByteSpan;
 using chip::DeviceLayer::Silabs::MqttBroker;
 using chip::DeviceLayer::Silabs::MqttClient;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
-using chip::DeviceLayer::PlatformMgr;
 
 // Please fill in the details for your own MQTT broker.
 constexpr char kMqttBrokerIp[]       = MQTT_BROKER_IP;    // The IP address of your MQTT broker
@@ -58,13 +56,23 @@ void OnOperationDone(CHIP_ERROR result, void * /* context */)
     gOpDone   = true;
 }
 
+void OnDisconnectDone(CHIP_ERROR result, void * /* context */)
+{
+    if (result != CHIP_NO_ERROR && result != CHIP_ERROR_INCORRECT_STATE && result != CHIP_ERROR_BUSY)
+    {
+        ChipLogError(DeviceLayer, "MQTT Disconnect failed: %" CHIP_ERROR_FORMAT, result.Format());
+        return;
+    }
+    ChipLogProgress(DeviceLayer, "MQTT demo disconnected");
+}
+
 void OnMqttMessage(const char * topic, ByteSpan payload, void * /* context */)
 {
     ChipLogProgress(DeviceLayer, "MQTT demo message on %s: %.*s", topic != nullptr ? topic : "(null)",
                     static_cast<int>(payload.size()), reinterpret_cast<const char *>(payload.data()));
 }
 
-// Must yield: demo may run above mqtt_client priority; osDelay lets the service thread run.
+// Must not run on the CHIP event-loop thread: osDelay would starve the platform queue.
 CHIP_ERROR RunOperation(CHIP_ERROR queueResult)
 {
     if (queueResult != CHIP_NO_ERROR)
@@ -110,28 +118,15 @@ CHIP_ERROR ConnectSubscribePublish(const MqttBroker & broker)
     return CHIP_NO_ERROR;
 }
 
-void DisconnectMqttDemoWork(intptr_t /* arg */)
+} // namespace
+
+// Wi-Fi callback / MatterWifiTask: must stay non-blocking (no ScheduleWork + wait).
+extern "C" void MatterWifiOnStationLinkDown(void)
 {
     const sl_status_t status = mqtt_client_demo_stop();
     if (status != SL_STATUS_OK)
     {
-        ChipLogError(DeviceLayer, "mqtt_client_demo_stop failed: 0x%lx", static_cast<unsigned long>(status));
-    }
-}
-
-} // namespace
-
-
-// This is a weak hook that is called when the Wi-Fi station link is down.
-// This will be changed once the app refactors the Wi-Fi connection handling.
-// TODO: Remove this once the app refactors the Wi-Fi connection handling.
-extern "C" void MatterWifiOnStationLinkDown(void)
-{
-    // JoinCallback / Wi-Fi task context: disconnect MQTT on the Matter work queue.
-    CHIP_ERROR err = PlatformMgr().ScheduleWork(DisconnectMqttDemoWork, 0);
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "Schedule MQTT disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(DeviceLayer, "mqtt_client_demo_stop on link down failed: 0x%lx", static_cast<unsigned long>(status));
     }
 }
 
@@ -174,7 +169,7 @@ sl_status_t mqtt_client_demo_start(void)
             .keepAliveIntervalSec = 100,
             .commandTimeoutMs     = 20000,
             .mqttVersion          = 4,
-            .cleanSession         = true,
+            .cleanSession         = mConfig.cleanSession ? 1 : 0;,
             .willEnable           = false,
             .tlsCaCert            = reinterpret_cast<const uint8_t *>(kCaCertExample),
             .tlsCaCertLen         = sizeof(kCaCertExample),
@@ -219,25 +214,14 @@ sl_status_t mqtt_client_demo_stop(void)
         return SL_STATUS_OK;
     }
 
+    // Non-blocking: safe from Wi-Fi / CHIP paths. Completion logged in OnDisconnectDone.
     ChipLogProgress(DeviceLayer, "MQTT demo disconnecting");
-
-    gOpDone        = false;
-    CHIP_ERROR err = gMqttsClient.Disconnect(OnOperationDone);
-    if (err == CHIP_NO_ERROR)
-    {
-        while (!gOpDone)
-        {
-            osDelay(10);
-        }
-        err = gOpResult;
-    }
-
+    CHIP_ERROR err = gMqttsClient.Disconnect(OnDisconnectDone);
     if (err != CHIP_NO_ERROR && err != CHIP_ERROR_INCORRECT_STATE && err != CHIP_ERROR_BUSY)
     {
-        ChipLogError(DeviceLayer, "MQTT Disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(DeviceLayer, "MQTT Disconnect queue failed: %" CHIP_ERROR_FORMAT, err.Format());
         return SL_STATUS_FAIL;
     }
 
-    ChipLogProgress(DeviceLayer, "MQTT demo disconnected");
     return SL_STATUS_OK;
 }

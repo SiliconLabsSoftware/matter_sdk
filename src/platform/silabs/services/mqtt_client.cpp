@@ -342,6 +342,8 @@ CHIP_ERROR MqttClient::ProcessInit()
     NetworkInit(&mNetwork);
 
     MQTTClient(&mClient, &mNetwork, mConfig.commandTimeoutMs, mTxBuffer, sizeof(mTxBuffer), mRxBuffer, sizeof(mRxBuffer));
+    // Paho delivers unmatched publishes here (e.g. session-resume queue before Subscribe installs a topic handler).
+    mClient.defaultMessageHandler = PahoMessageHandler;
 
     mInitialized  = true;
     mConnected    = false;
@@ -449,6 +451,24 @@ CHIP_ERROR MqttClient::ProcessConnect()
 
     mConnected = true;
     ChipLogProgress(DeviceLayer, "MQTT connected");
+
+    // With cleanSession=false, queued publishes may already be waiting; drain via defaultMessageHandler
+    // before Subscribe (topic handlers are not installed until SUBACK).
+    if (!mConfig.cleanSession)
+    {
+        const int yieldStatus = MQTTYield(&mClient, static_cast<int>(GetIdleYieldTimeoutMs()));
+        if (yieldStatus != SUCCESS)
+        {
+            ChipLogError(DeviceLayer, "MQTT post-connect Yield failed: %d", yieldStatus);
+            CHIP_ERROR err = ProcessDisconnect();
+            if (err != CHIP_NO_ERROR)
+            {
+                ChipLogError(DeviceLayer, "MQTT post-connect disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+            }
+            return MapPahoStatus(yieldStatus);
+        }
+    }
+
     return CHIP_NO_ERROR;
 }
 
@@ -456,16 +476,14 @@ CHIP_ERROR MqttClient::ProcessDisconnect()
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
 
-    if (mConnected)
+    // mConnected may already be false (cleared when Disconnect was queued); still tear down.
+    const int status = MQTTDisconnect(&mClient);
+    if (status != SUCCESS)
     {
-        const int status = MQTTDisconnect(&mClient);
-        if (status != SUCCESS)
-        {
-            // Common when Wi-Fi already dropped: broker DISCONNECT cannot be sent.
-            ChipLogProgress(DeviceLayer, "MQTT DISCONNECT skipped/failed: %d (forcing local teardown)", status);
-        }
-        mConnected = false;
+        // Common when Wi-Fi already dropped: broker DISCONNECT cannot be sent.
+        ChipLogProgress(DeviceLayer, "MQTT DISCONNECT skipped/failed: %d (forcing local teardown)", status);
     }
+    mConnected = false;
 
     NetworkDisconnect(&mNetwork);
     FreeTlsContext();
@@ -586,7 +604,11 @@ CHIP_ERROR MqttClient::Disconnect(MqttOperationCallback callback, void * context
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    return QueueOperation(Operation::Disconnect, callback, context);
+
+    ReturnErrorOnFailure(QueueOperation(Operation::Disconnect, callback, context));
+    // Clear before the service thread finishes teardown so IsConnected() is not stale across link-down → start.
+    mConnected = false;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttOperationCallback callback, void * context)

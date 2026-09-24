@@ -63,14 +63,20 @@
 #define MQTT_PUBLISH_MESSAGE "THIS IS MQTT CLIENT DEMO FROM APPLICATION"
 #endif
 
-/** Start/Init if needed, then Connect + Subscribe + Publish (reconnect-safe). */
+/**
+ * Start/Init if needed, then Connect + Subscribe + Publish (blocking wait).
+ * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
+ */
 sl_status_t mqtt_client_demo_start(void);
 
-/** Disconnect the MQTT session; keeps Init and the service thread for a later reconnect. */
+/**
+ * Queue Disconnect without waiting (non-blocking). Safe from CHIP / Wi-Fi callbacks.
+ * Keeps Init and the service thread for a later reconnect.
+ */
 sl_status_t mqtt_client_demo_stop(void);
 
 /**
- * Strong override of the Wi-Fi weak hook: schedule mqtt_client_demo_stop() on link down.
+ * Strong override of the Wi-Fi weak hook: non-blocking mqtt_client_demo_stop() on link down.
  * Declared weak in WifiInterfaceImpl; provided here when the MQTT demo is linked.
  */
 #ifdef __cplusplus

@@ -387,7 +387,8 @@ namespace {
 
 using chip::DeviceLayer::Silabs::kMatterServicesInitDelaySec;
 
-void InitMatterServicesHandler(System::Layer * /* systemLayer */, void * /* appState */)
+// Runs on AppTask thread so blocking MQTT connect/wait does not starve the CHIP queue.
+void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
 {
 #if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
     VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_start(), ChipLogError(AppServer, "mqtt_client_demo_start failed"));
@@ -398,11 +399,12 @@ void InitMatterServicesHandler(System::Layer * /* systemLayer */, void * /* appS
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 }
 
-void StopMatterServicesHandler(System::Layer * /* systemLayer */, void * /* appState */)
+void PostStartMatterServices(System::Layer * /* systemLayer */, void * /* appState */)
 {
-#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_stop(), ChipLogError(AppServer, "mqtt_client_demo_stop failed"));
-#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+    AppEvent event  = {};
+    event.Type      = AppEvent::kEventType_Timer;
+    event.Handler   = StartMatterServicesAppEvent;
+    CustomerAppTask::GetAppTask().PostEvent(&event);
 }
 
 } // namespace
@@ -420,8 +422,10 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
 
     if (ipv4Lost)
     {
-        // Defer stop off the connectivity-event dispatch path (stop can block on MQTT teardown).
-        TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(System::Clock::Seconds32(0), StopMatterServicesHandler, nullptr);
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+        // Non-blocking enqueue of Disconnect; safe on the CHIP event path.
+        VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_stop(), ChipLogError(AppServer, "mqtt_client_demo_stop failed"));
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
         return;
     }
 
@@ -436,7 +440,7 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
 
     ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
     TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(System::Clock::Seconds32(kMatterServicesInitDelaySec),
-                                                      InitMatterServicesHandler, nullptr);
+                                                      PostStartMatterServices, nullptr);
 }
 #endif // SL_MATTER_ENABLE_SERVICES
 

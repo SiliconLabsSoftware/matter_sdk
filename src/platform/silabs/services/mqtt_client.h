@@ -243,7 +243,7 @@ private:
 
     volatile bool mBusy         = false;
     bool mInitialized           = false;
-    bool mConnected             = false;
+    volatile bool mConnected    = false; // written from Disconnect() callers and the service thread
     Operation mPendingOperation = Operation::None;
 
     MqttOperationCallback mUserCallback = nullptr;
