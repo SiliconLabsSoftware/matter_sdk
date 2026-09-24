@@ -241,13 +241,16 @@ private:
     void * mThreadId   = nullptr; // osThreadId_t
     void * mEventFlags = nullptr; // osEventFlagsId_t
 
-    volatile bool mBusy         = false;
-    bool mInitialized           = false;
-    volatile bool mConnected    = false; // written from Disconnect() callers and the service thread
-    Operation mPendingOperation = Operation::None;
+    volatile bool mBusy                = false;
+    bool mInitialized                  = false;
+    volatile bool mConnected           = false; // also cleared from Disconnect() callers
+    volatile bool mDisconnectRequested = false;
+    Operation mPendingOperation        = Operation::None;
 
-    MqttOperationCallback mUserCallback = nullptr;
-    void * mUserCallbackContext         = nullptr;
+    MqttOperationCallback mUserCallback               = nullptr;
+    void * mUserCallbackContext                       = nullptr;
+    MqttOperationCallback mDeferredDisconnectCallback = nullptr;
+    void * mDeferredDisconnectContext                 = nullptr;
 
     MqttSubscriptionCallback mMessageCallback = nullptr;
     void * mMessageCallbackContext            = nullptr;
