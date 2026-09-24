@@ -422,8 +422,10 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
 
     if (ipv4Lost)
     {
+        // Drop any pending delayed start so it cannot run after the link is gone.
+        SystemLayer().CancelTimer(PostStartMatterServices, nullptr);
 #if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-        // Non-blocking enqueue of Disconnect; safe on the CHIP event path.
+        // Non-blocking Disconnect request; safe on the CHIP event path.
         VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_stop(), ChipLogError(AppServer, "mqtt_client_demo_stop failed"));
 #endif // SL_MATTER_ENABLE_MQTT_SERVICE
         return;
@@ -439,6 +441,8 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
     }
 
     ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
+    // Replace any prior pending start (e.g. flap within the delay window).
+    SystemLayer().CancelTimer(PostStartMatterServices, nullptr);
     TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(System::Clock::Seconds32(kMatterServicesInitDelaySec),
                                                       PostStartMatterServices, nullptr);
 }

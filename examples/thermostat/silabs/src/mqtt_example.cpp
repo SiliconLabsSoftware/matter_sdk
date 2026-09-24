@@ -169,7 +169,7 @@ sl_status_t mqtt_client_demo_start(void)
             .keepAliveIntervalSec = 100,
             .commandTimeoutMs     = 20000,
             .mqttVersion          = 4,
-            .cleanSession         = mConfig.cleanSession ? 1 : 0;,
+            .cleanSession         = true,
             .willEnable           = false,
             .tlsCaCert            = reinterpret_cast<const uint8_t *>(kCaCertExample),
             .tlsCaCertLen         = sizeof(kCaCertExample),
@@ -207,17 +207,11 @@ sl_status_t mqtt_client_demo_stop(void)
         return SL_STATUS_OK;
     }
 
-    if (!gMqttsClient.IsConnected())
-    {
-        // IdleYield may already have torn the session down after link loss.
-        ChipLogProgress(DeviceLayer, "MQTT demo already disconnected");
-        return SL_STATUS_OK;
-    }
-
-    // Non-blocking: safe from Wi-Fi / CHIP paths. Completion logged in OnDisconnectDone.
+    // Always request Disconnect: clears IsConnected immediately and tears down even if a
+    // Connect/Subscribe/Publish is in flight (deferred via mDisconnectRequested when BUSY).
     ChipLogProgress(DeviceLayer, "MQTT demo disconnecting");
     CHIP_ERROR err = gMqttsClient.Disconnect(OnDisconnectDone);
-    if (err != CHIP_NO_ERROR && err != CHIP_ERROR_INCORRECT_STATE && err != CHIP_ERROR_BUSY)
+    if (err != CHIP_NO_ERROR && err != CHIP_ERROR_INCORRECT_STATE)
     {
         ChipLogError(DeviceLayer, "MQTT Disconnect queue failed: %" CHIP_ERROR_FORMAT, err.Format());
         return SL_STATUS_FAIL;

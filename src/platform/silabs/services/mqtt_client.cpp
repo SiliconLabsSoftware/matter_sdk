@@ -274,6 +274,7 @@ void MqttClient::CompleteOperation(CHIP_ERROR error)
 {
     MqttOperationCallback callback = mUserCallback;
     void * context                 = mUserCallbackContext;
+    const Operation finished       = mPendingOperation;
 
     mPendingOperation    = Operation::None;
     mUserCallback        = nullptr;
@@ -285,6 +286,21 @@ void MqttClient::CompleteOperation(CHIP_ERROR error)
     if (callback != nullptr)
     {
         callback(error, context);
+    }
+
+    // Link-down Disconnect() may have arrived while Connect/Subscribe/Publish was in flight.
+    if (finished != Operation::Disconnect && mDisconnectRequested)
+    {
+        MqttOperationCallback discCb = mDeferredDisconnectCallback;
+        void * discCtx               = mDeferredDisconnectContext;
+        mDeferredDisconnectCallback  = nullptr;
+        mDeferredDisconnectContext   = nullptr;
+
+        const CHIP_ERROR discErr = ProcessDisconnect();
+        if (discCb != nullptr)
+        {
+            discCb(discErr, discCtx);
+        }
     }
 }
 
@@ -345,9 +361,12 @@ CHIP_ERROR MqttClient::ProcessInit()
     // Paho delivers unmatched publishes here (e.g. session-resume queue before Subscribe installs a topic handler).
     mClient.defaultMessageHandler = PahoMessageHandler;
 
-    mInitialized  = true;
-    mConnected    = false;
-    sActiveClient = this;
+    mInitialized                = true;
+    mConnected                  = false;
+    mDisconnectRequested        = false;
+    mDeferredDisconnectCallback = nullptr;
+    mDeferredDisconnectContext  = nullptr;
+    sActiveClient               = this;
     ChipLogProgress(DeviceLayer, "MQTT client initialized");
     return CHIP_NO_ERROR;
 }
@@ -378,6 +397,7 @@ CHIP_ERROR MqttClient::ProcessDeinit()
 CHIP_ERROR MqttClient::ProcessConnect()
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(!mDisconnectRequested, CHIP_ERROR_CONNECTION_ABORTED);
     VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mPendingBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(mPendingBroker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
@@ -449,6 +469,13 @@ CHIP_ERROR MqttClient::ProcessConnect()
         return MapPahoStatus(mqttStatus);
     }
 
+    if (mDisconnectRequested)
+    {
+        NetworkDisconnect(&mNetwork);
+        FreeTlsContext();
+        return CHIP_ERROR_CONNECTION_ABORTED;
+    }
+
     mConnected = true;
     ChipLogProgress(DeviceLayer, "MQTT connected");
 
@@ -475,6 +502,8 @@ CHIP_ERROR MqttClient::ProcessConnect()
 CHIP_ERROR MqttClient::ProcessDisconnect()
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
+
+    mDisconnectRequested = false;
 
     // mConnected may already be false (cleared when Disconnect was queued); still tear down.
     const int status = MQTTDisconnect(&mClient);
@@ -596,6 +625,11 @@ CHIP_ERROR MqttClient::Connect(const MqttBroker & broker, MqttOperationCallback 
     VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
     VerifyOrReturnError(broker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
+    // A new Connect supersedes a prior link-down Disconnect request.
+    mDisconnectRequested        = false;
+    mDeferredDisconnectCallback = nullptr;
+    mDeferredDisconnectContext  = nullptr;
+
     mPendingBroker = broker;
     return QueueOperation(Operation::Connect, callback, context);
 }
@@ -605,16 +639,26 @@ CHIP_ERROR MqttClient::Disconnect(MqttOperationCallback callback, void * context
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
 
-    ReturnErrorOnFailure(QueueOperation(Operation::Disconnect, callback, context));
-    // Clear before the service thread finishes teardown so IsConnected() is not stale across link-down → start.
-    mConnected = false;
-    return CHIP_NO_ERROR;
+    // Visible immediately to IsConnected() / start(); teardown may still be pending.
+    mDisconnectRequested = true;
+    mConnected           = false;
+
+    const CHIP_ERROR err = QueueOperation(Operation::Disconnect, callback, context);
+    if (err == CHIP_ERROR_BUSY)
+    {
+        // Finish the in-flight op, then CompleteOperation runs ProcessDisconnect.
+        mDeferredDisconnectCallback = callback;
+        mDeferredDisconnectContext  = context;
+        return CHIP_NO_ERROR;
+    }
+    return err;
 }
 
 CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(!mDisconnectRequested, CHIP_ERROR_CONNECTION_ABORTED);
     VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
     VerifyOrReturnError(topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -638,6 +682,7 @@ CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, bool retain
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(!mDisconnectRequested, CHIP_ERROR_CONNECTION_ABORTED);
     VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
     VerifyOrReturnError(topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
