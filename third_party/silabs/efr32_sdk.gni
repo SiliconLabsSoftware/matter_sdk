@@ -826,7 +826,7 @@ template("efr32_sdk") {
       defines += [ "SL_MATTER_USE_SI70XX_SENSOR=0" ]
     }
 
-    cflags = [ "-Wno-format" ]
+    cflags = []
     foreach(include_dir, _include_dirs) {
       cflags += [ "-isystem" + rebase_path(include_dir, root_build_dir) ]
     }
