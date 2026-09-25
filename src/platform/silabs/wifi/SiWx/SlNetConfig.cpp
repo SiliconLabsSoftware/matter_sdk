@@ -67,7 +67,7 @@ void SLApplyWiFiDeviceConfiguration(sl_wifi_device_configuration_t * configurati
 
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
     // Enable dual mode support for dual stack
-    configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE;
+    configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE;
 
     // Enable DHCPv4 client, DNS client, and ICMP support for dual stack (required for IPv4)
     configuration->boot_config.tcp_ip_feature_bit_map |=
@@ -77,7 +77,8 @@ void SLApplyWiFiDeviceConfiguration(sl_wifi_device_configuration_t * configurati
     configuration->boot_config.tcp_ip_feature_bit_map |= (SL_SI91X_TCP_IP_FEAT_IPV6 | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT);
 
     // Enable basic SSL and SSL memory cloud support with more RAM for certificate storage
-    configuration->boot_config.ext_tcp_ip_feature_bit_map |= (SL_SI91X_TCP_IP_FEAT_SSL | SL_SI91X_EXT_TCP_IP_FEAT_SSL_MEMORY_CLOUD);
+    configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_TCP_IP_FEAT_SSL;
+    configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_IP_FEAT_SSL_MEMORY_CLOUD;
 #endif // SL_MATTER_ENABLE_DUAL_STACK
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
