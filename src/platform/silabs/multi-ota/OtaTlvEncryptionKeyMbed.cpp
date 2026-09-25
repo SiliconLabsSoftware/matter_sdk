@@ -22,6 +22,8 @@
 
 #include <string.h>
 
+#error RJ2
+
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
