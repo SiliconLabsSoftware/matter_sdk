@@ -212,7 +212,7 @@ ObjectPool<Identify,
 
 int sCodeDrivenIdentifyActiveCount                                 = 0;
 Clusters::Identify::EffectIdentifierEnum sCodeDrivenIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
-[[maybe_unused]] Clusters::Identify::EffectVariantEnum sCodeDrivenIdentifyVariant   = Clusters::Identify::EffectVariantEnum::kDefault;
+[[maybe_unused]] Clusters::Identify::EffectVariantEnum sCodeDrivenIdentifyVariant = Clusters::Identify::EffectVariantEnum::kDefault;
 
 // Protects the three sCodeDrivenIdentify* variables above.
 osSemaphoreId_t sCodeDrivenIdentifyLock = nullptr;
