@@ -36,7 +36,7 @@
 #include <inet/UDPEndPointImplLwIP.h>
 // TODO: Remove nogncheck once we have a proper way to include this file.
 #include <platform/CHIPDeviceLayer.h> // nogncheck
-#endif // SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif                                // SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -414,17 +414,17 @@ sl_status_t SetWifiConfigurations()
             },
         },
         .ip = {
-#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-            .mode = SL_IP_MANAGEMENT_DHCP_IPV4_LINK_LOCAL_IPV6,
-            .type = static_cast<sl_ip_address_type_t>(SL_IPV4 | SL_IPV6),
-#else
             .mode     = SL_IP_MANAGEMENT_DHCP,
             .type     = SL_IPV6,
-#endif // defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
             .host_name = NULL,
             .ip = {{{0}}},
         }
     };
+
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+    profile.ip.mode = SL_IP_MANAGEMENT_DHCP_IPV4_LINK_LOCAL_IPV6;
+    profile.ip.type = static_cast<sl_ip_address_type_t>(SL_IPV4 | SL_IPV6);
+#endif // SL_MATTER_ENABLE_DUAL_STACK
 
     chip::MutableByteSpan output(profile.config.ssid.value, kMaxWiFiSSIDLength);
     chip::ByteSpan input(wfx_rsi.credentials.ssid, wfx_rsi.credentials.ssidLen);
