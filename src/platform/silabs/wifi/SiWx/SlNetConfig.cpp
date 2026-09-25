@@ -56,21 +56,30 @@ void SLApplyWiFiDeviceConfiguration(sl_wifi_device_configuration_t * configurati
     configuration->boot_config.config_feature_bit_map |= SL_SI91X_FEAT_SLEEP_GPIO_SEL_BITMAP;
 #endif // SLI_SI91X_MCU_INTERFACE
 
-#ifdef ipv6_FEATURE_REQUIRED
-    configuration->boot_config.tcp_ip_feature_bit_map |= (SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT | SL_SI91X_TCP_IP_FEAT_IPV6);
-#endif // ipv6_FEATURE_REQUIRED
-
 #ifdef RSI_PROCESS_MAX_RX_DATA
     configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_MAX_RECV_LENGTH;
 #endif // RSI_PROCESS_MAX_RX_DATA
 
-#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-    configuration->boot_config.ext_tcp_ip_feature_bit_map |= (SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE | SL_SI91X_EXT_TCP_IP_FEAT_SSL_MEMORY_CLOUD);
-#endif // defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-
 #if !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
+    // Disable TCP/IP bypass for single stack (LwIP)
     configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_TCP_IP_FEAT_BYPASS;
-#endif // !(defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK)
+#endif // !(SL_MATTER_ENABLE_DUAL_STACK)
+
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+    // Enable dual mode support for dual stack
+    configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_IP_DUAL_MODE_ENABLE;
+
+    // Enable DHCPv4 client, DNS client, and ICMP support for dual stack (required for IPv4)
+    configuration->boot_config.tcp_ip_feature_bit_map |=
+        (SL_SI91X_TCP_IP_FEAT_DHCPV4_CLIENT | SL_SI91X_TCP_IP_FEAT_DNS_CLIENT | SL_SI91X_TCP_IP_FEAT_ICMP);
+
+    // Enable IPv6 and DHCPv6 client support for dual stack
+    configuration->boot_config.tcp_ip_feature_bit_map |= (SL_SI91X_TCP_IP_FEAT_IPV6 | SL_SI91X_TCP_IP_FEAT_DHCPV6_CLIENT);
+
+    // Enable basic SSL and SSL memory cloud support with more RAM for certificate storage
+    configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_TCP_IP_FEAT_SSL;
+    configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_IP_FEAT_SSL_MEMORY_CLOUD;
+#endif // SL_MATTER_ENABLE_DUAL_STACK
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Neutral Less Switch doesn't work with 11ax, only 11n is supported
