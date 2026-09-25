@@ -1,11 +1,14 @@
 name: Silabs Labeler
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
       - release_*
     types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
 
 jobs:
   check-sl-prefix:
