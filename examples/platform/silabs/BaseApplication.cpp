@@ -175,7 +175,9 @@ bool sHaveBLEConnections = false;
 
 constexpr uint32_t kLightTimerPeriod = static_cast<uint32_t>(pdMS_TO_TICKS(10));
 
+#if SL_MATTER_ZIGBEE_SEQUENTIAL
 constexpr System::Clock::Milliseconds32 kZbLeaveAnnouceDelay = System::Clock::Milliseconds32(1000);
+#endif
 
 uint8_t sAppEventQueueBuffer[APP_EVENT_QUEUE_SIZE * sizeof(AppEvent)];
 osMessageQueue_t sAppEventQueueStruct;
@@ -210,7 +212,7 @@ ObjectPool<Identify,
 
 int sCodeDrivenIdentifyActiveCount                                 = 0;
 Clusters::Identify::EffectIdentifierEnum sCodeDrivenIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
-Clusters::Identify::EffectVariantEnum sCodeDrivenIdentifyVariant   = Clusters::Identify::EffectVariantEnum::kDefault;
+[[maybe_unused]] Clusters::Identify::EffectVariantEnum sCodeDrivenIdentifyVariant   = Clusters::Identify::EffectVariantEnum::kDefault;
 
 // Protects the three sCodeDrivenIdentify* variables above.
 osSemaphoreId_t sCodeDrivenIdentifyLock = nullptr;
