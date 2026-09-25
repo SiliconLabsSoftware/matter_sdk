@@ -21,6 +21,7 @@
 #include <lib/support/BufferReader.h>
 #include <platform/DiagnosticDataProvider.h>
 #include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
+#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 
 using namespace chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Internal;
@@ -31,7 +32,6 @@ extern "C" {
 #ifdef SLI_SI91X_MCU_INTERFACE
 #include "sl_si91x_driver.h"
 #include "sl_si91x_hal_soc_soft_reset.h"
-#include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #else // This is not needed for the 917 SoC; it is required for EFR host applications
 #include "btl_interface.h"
 #include "sl_core.h" // For CORE_CRITICAL_SECTION
