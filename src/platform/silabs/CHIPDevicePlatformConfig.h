@@ -117,11 +117,6 @@
 #define CHIP_DEVICE_CONFIG_ENABLE_IPV4 0
 #endif /* CHIP_DEVICE_CONFIG_ENABLE_IPV4 */
 
-#if SL_ICD_ENABLED
-#define CHIP_DEVICE_CONFIG_ICD_SLOW_POLL_INTERVAL chip::System::Clock::Milliseconds32(300)
-#define CHIP_DEVICE_CONFIG_ICD_FAST_POLL_INTERVAL chip::System::Clock::Milliseconds32(10)
-#endif /* SL_ICD_ENABLED */
-
 #endif /* SL_WIFI */
 
 // ========== Platform-specific Configuration =========

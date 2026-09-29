@@ -1,0 +1,12 @@
+{
+    "standard": {
+        "default": [
+            {
+                "boards": [
+                    "BRD4407A"
+                ],
+                "arguments": ["--docker"]
+            }
+        ]
+    }
+}
