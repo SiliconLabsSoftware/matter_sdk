@@ -69,3 +69,9 @@
  * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
  */
 sl_status_t mqtt_client_demo_start(void);
+
+/**
+ * Disconnect the MQTT session on link loss; leave Start/Init intact for reconnect.
+ * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
+ */
+sl_status_t mqtt_client_demo_stop(void);

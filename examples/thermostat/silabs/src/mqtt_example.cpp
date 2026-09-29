@@ -185,3 +185,23 @@ sl_status_t mqtt_client_demo_start(void)
     ChipLogProgress(DeviceLayer, "MQTT demo completed (auto-yield keeps session alive)");
     return SL_STATUS_OK;
 }
+
+sl_status_t mqtt_client_demo_stop(void)
+{
+    // Keep Start/Init state so a later connectivity event only needs Connect+Subscribe+Publish.
+    if (!gMqttsClient.IsRunning() || !gMqttsClient.IsConnected())
+    {
+        return SL_STATUS_OK;
+    }
+
+    gOpDone          = false;
+    const CHIP_ERROR err = RunOperation(gMqttsClient.Disconnect(OnOperationDone));
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "MQTT Disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return SL_STATUS_FAIL;
+    }
+
+    ChipLogProgress(DeviceLayer, "MQTT demo disconnected");
+    return SL_STATUS_OK;
+}

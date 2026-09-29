@@ -399,11 +399,20 @@ void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 }
 
-void PostStartMatterServices(System::Layer * /* systemLayer */, void * /* appState */)
+void StopMatterServicesAppEvent(AppEvent * /* aEvent */)
 {
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_stop(), ChipLogError(AppServer, "mqtt_client_demo_stop failed"));
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+}
+
+// appState is the AppEvent handler to run on the AppTask thread (start or stop).
+void PostMatterServices(System::Layer * /* systemLayer */, void * appState)
+{
+    VerifyOrReturn(appState != nullptr);
     AppEvent event = {};
     event.Type     = AppEvent::kEventType_Timer;
-    event.Handler  = StartMatterServicesAppEvent;
+    event.Handler  = reinterpret_cast<EventHandler>(appState);
     CustomerAppTask::GetAppTask().PostEvent(&event);
 }
 
@@ -413,23 +422,32 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
 {
     VerifyOrReturn(event != nullptr);
 
-    if (event->Type != DeviceEventType::kInternetConnectivityChange)
+    switch (event->Type)
     {
-        return;
-    }
-
-    if (event->InternetConnectivityChange.IPv4 != kConnectivity_Established
+    case DeviceEventType::kInternetConnectivityChange:
+        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-        && event->InternetConnectivityChange.IPv6 != kConnectivity_Established
+            || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
 #endif // SL_MATTER_ENABLE_DUAL_STACK
-    )
-    {
-        return;
-    }
+        )
+        {
+            TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(
+                System::Clock::Seconds32(kMatterServicesInitDelaySec), PostMatterServices,
+                reinterpret_cast<void *>(StartMatterServicesAppEvent));
+        }
+        break;
 
-    ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
-    TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(System::Clock::Seconds32(kMatterServicesInitDelaySec),
-                                                      PostStartMatterServices, nullptr);
+    case DeviceEventType::kWiFiConnectivityChange:
+        if (event->WiFiConnectivityChange.Result == kConnectivity_Lost)
+        {
+            SystemLayer().CancelTimer(PostMatterServices, reinterpret_cast<void *>(StartMatterServicesAppEvent));
+            PostMatterServices(nullptr, reinterpret_cast<void *>(StopMatterServicesAppEvent));
+        }
+        break;
+
+    default:
+        break;
+    }
 }
 #endif // SL_MATTER_ENABLE_SERVICES
 
