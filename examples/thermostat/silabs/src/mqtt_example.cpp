@@ -194,7 +194,7 @@ sl_status_t mqtt_client_demo_stop(void)
         return SL_STATUS_OK;
     }
 
-    gOpDone          = false;
+    gOpDone              = false;
     const CHIP_ERROR err = RunOperation(gMqttsClient.Disconnect(OnOperationDone));
     if (err != CHIP_NO_ERROR)
     {
