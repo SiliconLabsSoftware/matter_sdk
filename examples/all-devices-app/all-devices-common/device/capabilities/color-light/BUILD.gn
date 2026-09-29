@@ -26,7 +26,6 @@ source_set("color-light") {
   public_deps = [
     "${chip_root}/examples/all-devices-app/all-devices-common/device/api:single-endpoint-device",
     "${chip_root}/src/app/clusters/color-control-server",
-    "${chip_root}/src/app/clusters/dynamic-lighting-server",
     "${chip_root}/src/app/clusters/groups-server",
     "${chip_root}/src/app/clusters/identify-server",
     "${chip_root}/src/app/clusters/level-control",
