@@ -55,8 +55,6 @@
 #endif // SL_MATTER_ENABLE_AWS
 
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
-#include <platform/silabs/services/matter_service.h>
-
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
 #include "https_offload_example.h"
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
@@ -385,8 +383,6 @@ void AppTask::DMThermostatClusterInit(chip::EndpointId endpoint)
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
 namespace {
 
-using chip::DeviceLayer::Silabs::kMatterServicesInitDelaySec;
-
 // Runs on AppTask thread so blocking MQTT connect/wait does not starve the CHIP queue.
 void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
 {
@@ -397,14 +393,6 @@ void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
     VerifyOrReturn(SL_STATUS_OK == https_client_demo_start(), ChipLogError(AppServer, "https_client_demo_start failed"));
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
-}
-
-void PostStartMatterServices(System::Layer * /* systemLayer */, void * /* appState */)
-{
-    AppEvent event = {};
-    event.Type     = AppEvent::kEventType_Timer;
-    event.Handler  = StartMatterServicesAppEvent;
-    CustomerAppTask::GetAppTask().PostEvent(&event);
 }
 
 } // namespace
@@ -427,9 +415,12 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
         return;
     }
 
+    // Post directly to AppTask; avoid SystemLayer timer re-entering the Matter queue just to PostEvent.
     ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
-    TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(System::Clock::Seconds32(kMatterServicesInitDelaySec),
-                                                      PostStartMatterServices, nullptr);
+    AppEvent appEvent = {};
+    appEvent.Type     = AppEvent::kEventType_Timer;
+    appEvent.Handler  = StartMatterServicesAppEvent;
+    CustomerAppTask::GetAppTask().PostEvent(&appEvent);
 }
 #endif // SL_MATTER_ENABLE_SERVICES
 
