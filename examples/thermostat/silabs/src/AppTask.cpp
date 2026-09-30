@@ -55,8 +55,6 @@
 #endif // SL_MATTER_ENABLE_AWS
 
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
-#include <platform/silabs/services/matter_service.h>
-
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
 #include "https_offload_example.h"
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
@@ -385,9 +383,7 @@ void AppTask::DMThermostatClusterInit(chip::EndpointId endpoint)
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
 namespace {
 
-using chip::DeviceLayer::Silabs::kMatterServicesInitDelaySec;
-
-// Runs on AppTask thread so blocking MQTT connect/wait does not starve the CHIP queue.
+// Runs on AppTask thread so blocking MQTT connect/wait does not starve the CHIP stack.
 void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
 {
 #if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
@@ -406,16 +402,6 @@ void StopMatterServicesAppEvent(AppEvent * /* aEvent */)
 #endif // SL_MATTER_ENABLE_MQTT_SERVICE
 }
 
-// appState is the AppEvent handler to run on the AppTask thread (start or stop).
-void PostMatterServices(System::Layer * /* systemLayer */, void * appState)
-{
-    VerifyOrReturn(appState != nullptr);
-    AppEvent event = {};
-    event.Type     = AppEvent::kEventType_Timer;
-    event.Handler  = reinterpret_cast<EventHandler>(appState);
-    CustomerAppTask::GetAppTask().PostEvent(&event);
-}
-
 } // namespace
 
 void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t)
@@ -431,17 +417,23 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
 #endif // SL_MATTER_ENABLE_DUAL_STACK
         )
         {
-            TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(
-                System::Clock::Seconds32(kMatterServicesInitDelaySec), PostMatterServices,
-                reinterpret_cast<void *>(StartMatterServicesAppEvent));
+            // Post directly to AppTask; avoid SystemLayer timer re-entering the Matter stack just to PostEvent.
+            ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
+            AppEvent appEvent = {};
+            appEvent.Type     = AppEvent::kEventType_Timer;
+            appEvent.Handler  = StartMatterServicesAppEvent;
+            CustomerAppTask::GetAppTask().PostEvent(&appEvent);
         }
         break;
 
     case DeviceEventType::kWiFiConnectivityChange:
         if (event->WiFiConnectivityChange.Result == kConnectivity_Lost)
         {
-            SystemLayer().CancelTimer(PostMatterServices, reinterpret_cast<void *>(StartMatterServicesAppEvent));
-            PostMatterServices(nullptr, reinterpret_cast<void *>(StopMatterServicesAppEvent));
+            ChipLogProgress(AppServer, "Scheduling Matter Services teardown on Wi-Fi loss");
+            AppEvent appEvent = {};
+            appEvent.Type     = AppEvent::kEventType_Timer;
+            appEvent.Handler  = StopMatterServicesAppEvent;
+            CustomerAppTask::GetAppTask().PostEvent(&appEvent);
         }
         break;
 
