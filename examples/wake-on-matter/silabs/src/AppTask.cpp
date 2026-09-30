@@ -274,11 +274,12 @@ void UnregisterRootNodeClusters(CodeDrivenDataModelProvider & provider)
 
 AppTask AppTask::sAppTask;
 
-CHIP_ERROR AppTask::InitCodeDrivenDataModel(PersistentStorageDelegate & storageDelegate,
-                                            chip::Credentials::GroupDataProvider * groupDataProvider)
+CHIP_ERROR AppTask::InitCodeDrivenDataModel(chip::PersistentStorageDelegate & storage,
+                                            chip::Credentials::GroupDataProvider * groupDataProvider,
+                                            chip::Crypto::SessionKeystore * /* sessionKeyStore */)
 {
-    ReturnErrorOnFailure(sAttributePersistence.Init(&storageDelegate));
-    sDataModelProvider = std::make_unique<CodeDrivenDataModelProvider>(storageDelegate, sAttributePersistence);
+    ReturnErrorOnFailure(sAttributePersistence.Init(&storage));
+    sDataModelProvider = std::make_unique<CodeDrivenDataModelProvider>(storage, sAttributePersistence);
     return RegisterRootNodeClusters(*sDataModelProvider, groupDataProvider);
 }
 
