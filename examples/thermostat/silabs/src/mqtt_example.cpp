@@ -131,20 +131,21 @@ sl_status_t mqtt_client_demo_start(void)
         .clientPort  = kMqttClientPort,
     };
 
-    if (!gMqttsClient.IsRunning())
-    {
-        err = gMqttsClient.Start();
-        if (err != CHIP_NO_ERROR)
-        {
-            ChipLogError(DeviceLayer, "MQTT Start failed: %" CHIP_ERROR_FORMAT, err.Format());
-            return SL_STATUS_FAIL;
-        }
-
-        gMqttsClient.SetSubscriptionCallback(OnMqttMessage, nullptr);
-    }
-
     if (!gMqttsClient.IsInitialized())
     {
+        // Init is queued to the service thread, so Start must happen first when needed.
+        if (!gMqttsClient.IsRunning())
+        {
+            err = gMqttsClient.Start();
+            if (err != CHIP_NO_ERROR)
+            {
+                ChipLogError(DeviceLayer, "MQTT Start failed: %" CHIP_ERROR_FORMAT, err.Format());
+                return SL_STATUS_FAIL;
+            }
+
+            gMqttsClient.SetSubscriptionCallback(OnMqttMessage, nullptr);
+        }
+
         // QoS defaults come from MqttClientConfig in mqtt_client.h (.qos / .willQoS).
         const MqttClientConfig config = {
             .useTls               = true,
