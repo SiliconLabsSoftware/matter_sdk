@@ -56,7 +56,6 @@
 #include <device/types/proximity-ranger/ProximityRanger.h>
 #include <device/types/proximity-ranger/impl/LoggingProximityRanger.h>
 #include <device/types/refrigerator/impl/LoggingRefrigerator.h>
-#include <device/types/robotic-vacuum-cleaner/RoboticVacuumCleaner.h>
 #include <device/types/smoke-co-alarm/impl/LoggingOnlySmokeCoAlarm.h>
 #include <device/types/soil-sensor/impl/IncreasingMoistureSoilSensor.h>
 #include <device/types/speaker/impl/LoggingSpeaker.h>
@@ -328,13 +327,6 @@ private:
                     });
             });
         }
-        if constexpr (ALL_DEVICES_ENABLE_AMBIENT_CONTEXT_SENSOR)
-        {
-            RegisterCreator("ambient-context-sensor", [this]() {
-                VerifyOrDie(mContext.has_value());
-                return MakeDevice<Clusters::AmbientContextSensing::LoggingAmbientContextSensor>(mContext->timerDelegate);
-            });
-        }
         if constexpr (ALL_DEVICES_ENABLE_BRIDGED_NODE)
         {
             RegisterCreator("bridged-node", [this](const std::string & nodeLabel) {
@@ -528,13 +520,6 @@ private:
         {
             RegisterCreator("temperature-sensor", []() { return MakeDevice<IncreasingTemperatureSensor>(); });
         }
-        if constexpr (ALL_DEVICES_ENABLE_ELECTRICAL_SENSOR)
-        {
-            RegisterCreator("electrical-sensor", [this]() {
-                VerifyOrDie(mContext.has_value());
-                return MakeDevice<SimulatedElectricalSensor>(mContext->timerDelegate, mContext->testEventTriggerDelegate);
-            });
-        }
         if constexpr (ALL_DEVICES_ENABLE_EXTRACTOR_HOOD)
         {
             RegisterCreator("extractor-hood", [this]() {
@@ -692,16 +677,6 @@ private:
             RegisterCreator("flow-sensor", [this]() {
                 VerifyOrDie(mContext.has_value());
                 return MakeDevice<IncreasingFlowSensor>(mContext->timerDelegate);
-            });
-        }
-        if constexpr (ALL_DEVICES_ENABLE_ROBOTIC_VACUUM_CLEANER)
-        {
-            RegisterCreator("robotic-vacuum-cleaner", [this]() {
-                VerifyOrDie(mContext.has_value());
-                return MakeDevice<SimulatedRoboticVacuumCleaner>(SimulatedRoboticVacuumCleaner::Context{
-                    .timerDelegate          = mContext->timerDelegate,
-                    .diagnosticDataProvider = mContext->diagnosticDataProvider,
-                });
             });
         }
 

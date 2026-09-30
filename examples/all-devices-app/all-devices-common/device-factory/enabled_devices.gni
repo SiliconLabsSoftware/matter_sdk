@@ -179,10 +179,6 @@ _available_devices = [
     "REFRIGERATOR",
   ],
   [
-    "robotic-vacuum-cleaner",
-    "ROBOTIC_VACUUM_CLEANER",
-  ],
-  [
     "smoke-co-alarm",
     "SMOKE_CO_ALARM",
   ],
