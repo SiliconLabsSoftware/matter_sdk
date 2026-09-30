@@ -17,20 +17,29 @@
 
 #pragma once
 
-#include <device/capabilities/color-light/impl/LoggingLightDriver.h>
-#include <device/types/color-temperature-light/ColorTemperatureLight.h>
+#include "AppTaskBase.h"
 
-namespace chip::app {
+#ifdef APP_TASK_IMPL_HEADER
+#include APP_TASK_IMPL_HEADER
+#else
 
-/**
- * Color Temperature Light (device type 0x010C) whose output side only logs, so the device can be
- * exercised without anything behind it.
- */
-class LoggingColorTemperatureLight : private LoggingLightDriver, public ColorTemperatureLight
+namespace chip::app::AllDevices {
+
+class AppTask final : public AppTaskBase<AppTask>
 {
-public:
-    explicit LoggingColorTemperatureLight(const Context & context);
-    ~LoggingColorTemperatureLight() override = default;
 };
 
-} // namespace chip::app
+} // namespace chip::app::AllDevices
+
+#endif // APP_TASK_IMPL_HEADER
+
+namespace chip::app::AllDevices {
+
+inline AppTask gAppTask;
+
+inline AppTask & GetAppTask()
+{
+    return gAppTask;
+}
+
+} // namespace chip::app::AllDevices
