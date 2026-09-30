@@ -19,7 +19,6 @@
 #include <pw_unit_test/framework.h>
 
 #include <SilabsTestEventTriggerDelegate.h>
-#include <headers/ProvisionedDataProvider.h>
 #include <lib/support/Span.h>
 
 using namespace chip;

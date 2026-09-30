@@ -19,7 +19,6 @@
 #pragma once
 
 #include <app/TestEventTriggerDelegate.h>
-#include <headers/ProvisionedDataProvider.h>
 #include <lib/core/CHIPError.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>

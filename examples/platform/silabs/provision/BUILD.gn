@@ -16,54 +16,79 @@ import("//build_overrides/chip.gni")
 import("//build_overrides/efr32_sdk.gni")
 import("${silabs_sdk_build_root}/silabs_board.gni")
 
+declare_args() {
+  sl_use_provision_channel = false
+}
+
 if (wifi_soc) {
   import("${silabs_sdk_build_root}/SiWx917_sdk.gni")
 } else {
   import("${silabs_sdk_build_root}/efr32_sdk.gni")
 }
 
-# Seperate import since the matter_support_root is defined in the ef32_sdk.gni / SiWx917_sdk.gni
+# Separate import since matter_support_root is defined in the EFR32/SiWx917 SDK imports.
 import("${matter_support_root}/provision/args.gni")
+config("storage-config") {
+  include_dirs = [ ".." ]
+}
+
 source_set("storage") {
   sources = [
-    "ProvisionStorageCommon.cpp",
-    "ProvisionStorageCustom.cpp",
+    "ProvisionCrypto.h",
+    "ProvisionStorageReader.h",
+    "ProvisionStorageReaderCommon.cpp",
   ]
 
-  if (use_provision_flash_storage) {
-    sources += [ "ProvisionStorageFlash.cpp" ]
-  } else {
-    sources += [ "ProvisionStorageDefault.cpp" ]
-  }
-
   if (wifi_soc) {
-    if (sl_si91x_crypto_flavor == "psa") {
-      if (is_clang) {
-        libs = [ "${sl_provision_root}/libs/libProvisionPSA-si917-clang.a" ]
-      } else {
-        libs = [ "${sl_provision_root}/libs/libProvisionPSA-si917.a" ]
-      }
-    } else if (is_clang) {
-      libs = [ "${sl_provision_root}/libs/libProvision-si917-clang.a" ]
+    if (sl_si91x_crypto_flavor != "psa") {
+      sources += [ "ProvisionCryptoMbed.cpp" ]
     } else {
-      libs = [ "${sl_provision_root}/libs/libProvision-si917.a" ]
+      sources += [ "ProvisionCryptoPSA.cpp" ]
     }
   } else {
-    if (use_provision_flash_storage) {
-      if (is_clang) {
-        libs = [ "${sl_provision_root}/libs/libProvisionFlash-${silabs_family}-clang.a" ]
-      } else {
-        libs =
-            [ "${sl_provision_root}/libs/libProvisionFlash-${silabs_family}.a" ]
-      }
+    sources += [ "ProvisionCryptoPSA.cpp" ]
+  }
+
+  if (use_provision_flash_storage) {
+    sources += [
+      "flash/ProvisionStorageFlash.cpp",
+      "flash/ProvisionStorageFlash.h",
+      "flash/ProvisionStorageReader.cpp",
+    ]
+  } else {
+    sources += [ "default/ProvisionStorageReader.cpp" ]
+  }
+
+  if (sl_use_provision_channel) {
+    sources += [
+      "ProvisionStorageCustom.cpp",
+      "ProvisionStorageWriter.h",
+      "ProvisionTransport.h",
+    ]
+    if (!use_provision_flash_storage) {
+      sources += [ "default/ProvisionStorageWriter.cpp" ]
     } else {
-      if (is_clang) {
-        libs = [
-          "${sl_provision_root}/libs/libProvision-${silabs_family}-clang.a",
-        ]
-      } else {
-        libs = [ "${sl_provision_root}/libs/libProvision-${silabs_family}.a" ]
-      }
+      sources += [ "flash/ProvisionStorageWriter.cpp" ]
+    }
+    if (wifi_soc) {
+      sources += [ "ProvisionTransportSi917BLE.cpp" ]
+    } else {
+      sources += [ "ProvisionTransportEFR32BLE.cpp" ]
+    }
+  }
+
+  if (sl_use_provision_channel) {
+    if (wifi_soc) {
+      _provision_abi = "m4-softfp"
+    } else {
+      _provision_abi = "m33-hard"
+    }
+
+    if (is_clang) {
+      libs =
+          [ "${sl_provision_root}/libs/libProvision-${_provision_abi}-clang.a" ]
+    } else {
+      libs = [ "${sl_provision_root}/libs/libProvision-${_provision_abi}.a" ]
     }
   }
 
@@ -74,7 +99,8 @@ source_set("storage") {
     "${sl_provision_root}:headers",
   ]
 
+  public_configs = [ ":storage-config" ]
   if (sl_enable_test_event_trigger) {
-    public_configs = [ "${chip_root}/examples/platform/silabs/test-event-trigger:test-event-trigger-config" ]
+    public_configs += [ "${chip_root}/examples/platform/silabs/test-event-trigger:test-event-trigger-config" ]
   }
 }
