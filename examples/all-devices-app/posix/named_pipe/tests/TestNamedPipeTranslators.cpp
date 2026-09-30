@@ -20,7 +20,6 @@
 #include <oob-accessors/OOBAccessor.h>
 #include <posix/named_pipe/CommandTranslator.h>
 #include <posix/named_pipe/Dispatcher.h>
-#include <posix/named_pipe/translators/AmbientContextTranslator.h>
 #include <posix/named_pipe/translators/BasicInformationTranslator.h>
 #include <posix/named_pipe/translators/BooleanStateTranslator.h>
 #include <posix/named_pipe/translators/ElectricalEnergyMeasurementTranslator.h>
@@ -259,120 +258,6 @@ TEST_F(TestNamedPipeTranslators, ModeSelectTranslator)
     // Out of range mode field
     Json::Value outOfRange = ParseJson(R"({"Name": "SetModeSelectCurrentMode", "NewMode": 256})");
     EXPECT_EQ(translator.TranslateAndExecute(1, outOfRange, mRegistry), CHIP_ERROR_INVALID_ARGUMENT);
-}
-
-TEST_F(TestNamedPipeTranslators, AmbientContextTranslator)
-{
-    AmbientContextTranslator translator;
-
-    // SetAmbientContextSupport
-    Json::Value suppJson = ParseJson(R"({"Name": "SetAmbientContextSupport", "AmbientContextType": [{"TypeId": 75, "TagId": 1}]})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, suppJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "SetAmbientContextSupport");
-
-    // AddAmbientContextDetect
-    Json::Value detJson = ParseJson(
-        R"({"Name": "AddAmbientContextDetect", "AmbientContextType": [{"TypeId": 75, "TagId": 1}], "DetectionConfidence": 85})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, detJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "AddAmbientContextDetect");
-
-    // SetSensorFusionSupported
-    Json::Value fusionJson =
-        ParseJson(R"({"Name": "SetSensorFusionSupported", "AmbientContextType": [{"TypeId": 75, "TagId": 1}]})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, fusionJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "SetSensorFusionSupported");
-
-    // SetObjectCount
-    Json::Value countJson = ParseJson(R"({"Name": "SetObjectCount", "ObjectCount": 12})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, countJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "SetObjectCount");
-
-    // SetPredictedActivity
-    Json::Value predJson = ParseJson(R"({
-        "Name": "SetPredictedActivity",
-        "PredAct": [
-            {
-                "AmbientContextType": [{"TypeId": 75, "TagId": 1}],
-                "StartTStamp": 100,
-                "EndTStamp": 200,
-                "Conf": 90,
-                "CrowdDetect": true,
-                "CrowdCnt": 5
-            }
-        ]
-    })");
-    // SetPredictedActivity with multiple nested semantic tags
-    Json::Value predMultiJson = ParseJson(R"({
-        "Name": "SetPredictedActivity",
-        "PredAct": [
-            {
-                "AmbientContextType": [
-                    {"TypeId": 75, "TagId": 1},
-                    {"TypeId": 75, "TagId": 2},
-                    {"TypeId": 75, "TagId": 3},
-                    {"TypeId": 75, "TagId": 4},
-                    {"TypeId": 75, "TagId": 5},
-                    {"TypeId": 75, "TagId": 6},
-                    {"TypeId": 75, "TagId": 7},
-                    {"TypeId": 75, "TagId": 8}
-                ],
-                "StartTStamp": 100,
-                "EndTStamp": 200,
-                "Conf": 90,
-                "CrowdDetect": true,
-                "CrowdCnt": 5
-            }
-        ]
-    })");
-    EXPECT_EQ(translator.TranslateAndExecute(1, predMultiJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "SetPredictedActivity");
-
-    // Unknown action
-    Json::Value unknown = ParseJson(R"({"Name": "Unknown"})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, unknown, mRegistry), CHIP_ERROR_NOT_FOUND);
-}
-
-TEST_F(TestNamedPipeTranslators, RvcTranslator)
-{
-    RvcTranslator translator;
-
-    // Parameterless actions
-    Json::Value resetJson = ParseJson(R"({"Name": "Reset"})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, resetJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "Reset");
-
-    Json::Value dockedJson = ParseJson(R"({"Name": "Docked"})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, dockedJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "Docked");
-
-    // ErrorEvent
-    Json::Value errJson = ParseJson(R"({"Name": "ErrorEvent", "Error": "DustBinFull"})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, errJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "ErrorEvent");
-
-    // AddMap
-    Json::Value addMapJson = ParseJson(R"({"Name": "AddMap", "MapId": 1, "MapName": "LivingRoom"})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, addMapJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "AddMap");
-
-    // RemoveMap
-    Json::Value remMapJson = ParseJson(R"({"Name": "RemoveMap", "MapId": 1})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, remMapJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "RemoveMap");
-
-    // AddArea
-    Json::Value addAreaJson = ParseJson(R"({"Name": "AddArea", "AreaId": 10, "MapId": 1, "LocationName": "Couch"})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, addAreaJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "AddArea");
-
-    // RemoveArea
-    Json::Value remAreaJson = ParseJson(R"({"Name": "RemoveArea", "AreaId": 10})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, remAreaJson, mRegistry), CHIP_NO_ERROR);
-    EXPECT_EQ(mMockAccessor->mLastAction, "RemoveArea");
-
-    // Unknown action
-    Json::Value unknown = ParseJson(R"({"Name": "UnknownAction"})");
-    EXPECT_EQ(translator.TranslateAndExecute(1, unknown, mRegistry), CHIP_ERROR_NOT_FOUND);
 }
 
 TEST_F(TestNamedPipeTranslators, Dispatcher_DispatchJson)

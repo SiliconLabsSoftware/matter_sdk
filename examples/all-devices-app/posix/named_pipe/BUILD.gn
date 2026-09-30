@@ -21,8 +21,6 @@ source_set("named_pipe") {
     "CommandTranslator.h",
     "Dispatcher.cpp",
     "Dispatcher.h",
-    "translators/AmbientContextTranslator.cpp",
-    "translators/AmbientContextTranslator.h",
     "translators/BasicInformationTranslator.cpp",
     "translators/BasicInformationTranslator.h",
     "translators/BooleanStateTranslator.cpp",

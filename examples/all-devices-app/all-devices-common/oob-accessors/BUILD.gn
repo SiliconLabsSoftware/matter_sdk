@@ -36,8 +36,6 @@ source_set("oob-accessors") {
     "OOBAccessorRegistry.h",
     "OOBDataSerializer.cpp",
     "OOBDataSerializer.h",
-    "clusters/AmbientContextOOBAccessor.cpp",
-    "clusters/AmbientContextOOBAccessor.h",
     "clusters/BasicInformationOOBAccessor.cpp",
     "clusters/BasicInformationOOBAccessor.h",
     "clusters/BooleanStateOOBAccessor.cpp",
@@ -57,7 +55,6 @@ source_set("oob-accessors") {
   public_deps = [
     ":all_devices_config_buildconfig",
     "${chip_root}/src/app:paths",
-    "${chip_root}/src/app/clusters/ambient-context-sensing-server",
     "${chip_root}/src/app/clusters/basic-information",
     "${chip_root}/src/app/clusters/boolean-state-server",
     "${chip_root}/src/app/clusters/electrical-energy-measurement-server",

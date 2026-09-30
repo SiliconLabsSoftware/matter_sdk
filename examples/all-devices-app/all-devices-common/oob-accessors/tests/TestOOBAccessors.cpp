@@ -15,7 +15,6 @@
  *    limitations under the License.
  */
 
-#include <app/clusters/ambient-context-sensing-server/AmbientContextSensingCluster.h>
 #include <app/clusters/basic-information/BasicInformationCluster.h>
 #include <app/clusters/boolean-state-server/BooleanStateCluster.h>
 #include <app/clusters/electrical-energy-measurement-server/ElectricalEnergyMeasurementCluster.h>
@@ -26,7 +25,6 @@
 #include <lib/core/TLV.h>
 #include <oob-accessors/InMemoryOOBAccessorRegistry.h>
 #include <oob-accessors/NoopOOBAccessorRegistry.h>
-#include <oob-accessors/clusters/AmbientContextOOBAccessor.h>
 #include <oob-accessors/clusters/BasicInformationOOBAccessor.h>
 #include <oob-accessors/clusters/BooleanStateOOBAccessor.h>
 #include <oob-accessors/clusters/ElectricalEnergyMeasurementOOBAccessor.h>
@@ -185,136 +183,6 @@ TEST_F(TestOOBAccessors, BooleanStateOOBAccessor)
 
     EXPECT_EQ(registry.HandleAction("SetBooleanState"_span, ByteSpan(buffer, writer.GetLengthWritten())), CHIP_NO_ERROR);
     EXPECT_TRUE(cluster.GetStateValue());
-
-    cluster.Shutdown(ClusterShutdownType::kClusterShutdown);
-}
-
-class FakeAmbientContextDelegate : public Clusters::AmbientContextSensing::AmbientContextSensingDelegate
-{
-public:
-    Clusters::AmbientContextSensing::SemanticTagType * GetAmbientContextTypeSupportedBuf(size_t size) override
-    {
-        return mTypeSupportedBuf;
-    }
-    CHIP_ERROR SetPredictedActivity(const Span<Clusters::AmbientContextSensing::PredictedActivityType> & list) override
-    {
-        return CHIP_NO_ERROR;
-    }
-    Clusters::AmbientContextSensing::PredictActivity * GetPredictedActivityBuf() override { return mPredictedActivityBuf; }
-    Clusters::AmbientContextSensing::SemanticTagType * GetSensorFusionSupportedBuf(size_t size) override
-    {
-        return mSensorFusionBuf;
-    }
-    Clusters::AmbientContextSensing::AmbientContextSensed * AllocDetection() override { return &mSensed; }
-    CHIP_ERROR DelDetection(Clusters::AmbientContextSensing::AmbientContextSensed * pitem) override { return CHIP_NO_ERROR; }
-    uint64_t GetEpochNow() override { return 1000; }
-
-private:
-    Clusters::AmbientContextSensing::SemanticTagType mTypeSupportedBuf[10];
-    Clusters::AmbientContextSensing::PredictActivity mPredictedActivityBuf[10];
-    Clusters::AmbientContextSensing::SemanticTagType mSensorFusionBuf[10];
-    Clusters::AmbientContextSensing::AmbientContextSensed mSensed;
-};
-
-TEST_F(TestOOBAccessors, AmbientContextOOBAccessor)
-{
-    InMemoryOOBAccessorRegistry registry;
-    FakeAmbientContextDelegate delegate;
-    Clusters::AmbientContextSensingCluster::Config config(mTimerDelegate);
-    config.WithFeatures(BitFlags<Clusters::AmbientContextSensing::Feature>(
-        Clusters::AmbientContextSensing::Feature::kHumanActivity, Clusters::AmbientContextSensing::Feature::kObjectIdentification,
-        Clusters::AmbientContextSensing::Feature::kSoundIdentification, Clusters::AmbientContextSensing::Feature::kObjectCounting,
-        Clusters::AmbientContextSensing::Feature::kPredictedActivity, Clusters::AmbientContextSensing::Feature::kSensorFusion));
-    Clusters::AmbientContextSensingCluster cluster(1, config);
-    cluster.SetDelegate(&delegate);
-    EXPECT_EQ(cluster.Startup(mClusterContext.Get()), CHIP_NO_ERROR);
-
-    auto accessor = std::make_unique<AmbientContextOOBAccessor>(cluster, 1);
-    EXPECT_EQ(registry.Register(std::move(accessor)), CHIP_NO_ERROR);
-
-    uint8_t buffer[256];
-    TLV::TLVWriter writer;
-    TLV::TLVType outer;
-    TLV::TLVType arrayOuter;
-    TLV::TLVType structOuter;
-
-    // 1. SetSensorFusionSupported with empty tag list
-    writer.Init(buffer);
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint16_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.StartContainer(TLV::ContextTag(2), TLV::kTLVType_Array, arrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(arrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Finalize(), CHIP_NO_ERROR);
-
-    EXPECT_EQ(registry.HandleAction("SetSensorFusionSupported"_span, ByteSpan(buffer, writer.GetLengthWritten())), CHIP_NO_ERROR);
-
-    // 2. SetAmbientContextSupport: Namespace 0x4B (HumanActivity), Tag 1 (Fall)
-    writer.Init(buffer);
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint16_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.StartContainer(TLV::ContextTag(2), TLV::kTLVType_Array, arrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, structOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint8_t>(0x4B)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(2), static_cast<uint8_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(structOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(arrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Finalize(), CHIP_NO_ERROR);
-
-    EXPECT_EQ(registry.HandleAction("SetAmbientContextSupport"_span, ByteSpan(buffer, writer.GetLengthWritten())), CHIP_NO_ERROR);
-
-    // 3. AddAmbientContextDetect: Namespace 0x4B, Tag 1, Confidence 80
-    writer.Init(buffer);
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint16_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.StartContainer(TLV::ContextTag(2), TLV::kTLVType_Array, arrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, structOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint8_t>(0x4B)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(2), static_cast<uint8_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(structOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(arrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(3), static_cast<uint8_t>(80)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Finalize(), CHIP_NO_ERROR);
-
-    EXPECT_EQ(registry.HandleAction("AddAmbientContextDetect"_span, ByteSpan(buffer, writer.GetLengthWritten())), CHIP_NO_ERROR);
-
-    // 4. SetPredictedActivity: Namespace 0x4B, Tag 1
-    writer.Init(buffer);
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint16_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.StartContainer(TLV::ContextTag(2), TLV::kTLVType_Array, arrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, structOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint32_t>(1000)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(2), static_cast<uint32_t>(2000)), CHIP_NO_ERROR);
-    TLV::TLVType tagArrayOuter;
-    EXPECT_EQ(writer.StartContainer(TLV::ContextTag(3), TLV::kTLVType_Array, tagArrayOuter), CHIP_NO_ERROR);
-    TLV::TLVType tagStructOuter;
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, tagStructOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint8_t>(0x4B)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(2), static_cast<uint8_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(tagStructOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(tagArrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(4), false), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(5), static_cast<uint8_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(6), static_cast<uint8_t>(90)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(structOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(arrayOuter), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Finalize(), CHIP_NO_ERROR);
-
-    EXPECT_EQ(registry.HandleAction("SetPredictedActivity"_span, ByteSpan(buffer, writer.GetLengthWritten())), CHIP_NO_ERROR);
-
-    // 5. SetObjectCount
-    writer.Init(buffer);
-    EXPECT_EQ(writer.StartContainer(TLV::AnonymousTag(), TLV::kTLVType_Structure, outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(1), static_cast<uint16_t>(1)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Put(TLV::ContextTag(2), static_cast<uint16_t>(5)), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.EndContainer(outer), CHIP_NO_ERROR);
-    EXPECT_EQ(writer.Finalize(), CHIP_NO_ERROR);
-
-    EXPECT_EQ(registry.HandleAction("SetObjectCount"_span, ByteSpan(buffer, writer.GetLengthWritten())), CHIP_NO_ERROR);
 
     cluster.Shutdown(ClusterShutdownType::kClusterShutdown);
 }
