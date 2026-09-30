@@ -429,7 +429,7 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
 
     ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
     TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(System::Clock::Seconds32(kMatterServicesInitDelaySec),
-                                                        PostStartMatterServices, nullptr);
+                                                      PostStartMatterServices, nullptr);
 }
 #endif // SL_MATTER_ENABLE_SERVICES
 

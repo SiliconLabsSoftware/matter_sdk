@@ -146,7 +146,7 @@ sl_status_t mqtt_client_demo_start(void)
             gMqttsClient.SetSubscriptionCallback(OnMqttMessage, nullptr);
         }
 
-        // QoS defaults come from MqttClientConfig in mqtt_client.h (.qos / .willQoS).
+        // Subscribe/Publish without an explicit QoS use MqttClientConfig::subQoS / pubQoS.
         const MqttClientConfig config = {
             .useTls               = true,
             .clientId             = kMqttClientId,
