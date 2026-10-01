@@ -79,25 +79,9 @@ CHIP_ERROR RunOperation(CHIP_ERROR queueResult)
     return gOpResult;
 }
 
-CHIP_ERROR ConnectSubscribePublish(const MqttBroker & broker)
+CHIP_ERROR SubscribePublish()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-
-    // Prior attempt may have connected then failed on subscribe/publish; skip reconnect.
-    if (!gMqttsClient.IsConnected())
-    {
-        gOpDone = false;
-        err     = RunOperation(gMqttsClient.Connect(broker, OnOperationDone));
-        if (err != CHIP_NO_ERROR)
-        {
-            ChipLogError(DeviceLayer, "MQTT Connect failed: %" CHIP_ERROR_FORMAT, err.Format());
-            return err;
-        }
-    }
-    else
-    {
-        ChipLogProgress(DeviceLayer, "MQTT already connected, continuing subscribe/publish");
-    }
 
     gOpDone = false;
     err     = RunOperation(gMqttsClient.Subscribe(kMqttTopic, OnOperationDone));
@@ -177,7 +161,22 @@ sl_status_t mqtt_client_demo_start(void)
         ChipLogProgress(DeviceLayer, "MQTT demo already initialized");
     }
 
-    ChipLogProgress(DeviceLayer, "MQTT ready (use demo mqtt for connect/subscribe/publish)");
+    ChipLogProgress(DeviceLayer, "MQTT ready (use demo mqtt for subscribe/publish)");
+    // Prior attempt may have connected then failed on subscribe/publish; skip reconnect.
+    if (!gMqttsClient.IsConnected())
+    {
+        gOpDone = false;
+        err     = RunOperation(gMqttsClient.Connect(broker, OnOperationDone));
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT Connect failed: %" CHIP_ERROR_FORMAT, err.Format());
+            return SL_STATUS_FAIL;
+        }
+    }
+    else
+    {
+        ChipLogProgress(DeviceLayer, "MQTT already connected.");
+    }
     return SL_STATUS_OK;
 }
 
@@ -189,14 +188,7 @@ sl_status_t mqtt_client_demo_run(void)
         return SL_STATUS_NOT_INITIALIZED;
     }
 
-    const MqttBroker broker = {
-        .brokerIp    = kMqttBrokerIp,
-        .tlsHostname = kMqttTlsHostname,
-        .brokerPort  = kMqttBrokerPort,
-        .clientPort  = kMqttClientPort,
-    };
-
-    const CHIP_ERROR err = ConnectSubscribePublish(broker);
+    const CHIP_ERROR err = SubscribePublish();
     if (err != CHIP_NO_ERROR)
     {
         return SL_STATUS_FAIL;
