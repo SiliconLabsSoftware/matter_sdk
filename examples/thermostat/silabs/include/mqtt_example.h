@@ -17,11 +17,8 @@
  *
  * @brief Host LwIP Paho MQTT/MQTTS demo entry point
  * 1. Start + Init the MqttClient (skipped if already running/initialized)
- * 2. Connect to the MQTT broker
- * 3. Subscribe to the topic
- * 4. Publish the message
- * 5. Disconnect from the MQTT broker (optional)
- * 6. Deinit the MqttClient (optional)
+ * 2. Connect + Subscribe + Publish via Matter shell (`demo mqtt`)
+ * 3. Disconnect from the MQTT broker on link loss
  */
 
 #pragma once
@@ -65,8 +62,7 @@
 #endif
 
 /**
- * Start/Init if needed, then Connect + Subscribe + Publish (blocking wait).
- * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
+ * Start/Init if needed. Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
  */
 sl_status_t mqtt_client_demo_start(void);
 
@@ -75,3 +71,14 @@ sl_status_t mqtt_client_demo_start(void);
  * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
  */
 sl_status_t mqtt_client_demo_stop(void);
+
+/**
+ * Connect + Subscribe + Publish (blocking wait).
+ * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop or shell thread.
+ */
+sl_status_t mqtt_client_demo_run(void);
+
+struct AppEvent;
+
+/** AppTask-queue handler that runs mqtt_client_demo_run(). */
+void MqttRunAppEvent(AppEvent * aEvent);

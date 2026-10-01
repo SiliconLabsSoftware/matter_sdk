@@ -23,6 +23,7 @@
 #include "cacert.h"
 #include "cmsis_os2.h"
 
+#include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
 
@@ -176,7 +177,26 @@ sl_status_t mqtt_client_demo_start(void)
         ChipLogProgress(DeviceLayer, "MQTT demo already initialized");
     }
 
-    err = ConnectSubscribePublish(broker);
+    ChipLogProgress(DeviceLayer, "MQTT ready (use demo mqtt for connect/subscribe/publish)");
+    return SL_STATUS_OK;
+}
+
+sl_status_t mqtt_client_demo_run(void)
+{
+    if (!gMqttsClient.IsRunning() || !gMqttsClient.IsInitialized())
+    {
+        ChipLogError(DeviceLayer, "MQTT not ready; wait for connectivity start first");
+        return SL_STATUS_NOT_INITIALIZED;
+    }
+
+    const MqttBroker broker = {
+        .brokerIp    = kMqttBrokerIp,
+        .tlsHostname = kMqttTlsHostname,
+        .brokerPort  = kMqttBrokerPort,
+        .clientPort  = kMqttClientPort,
+    };
+
+    const CHIP_ERROR err = ConnectSubscribePublish(broker);
     if (err != CHIP_NO_ERROR)
     {
         return SL_STATUS_FAIL;
@@ -204,4 +224,9 @@ sl_status_t mqtt_client_demo_stop(void)
 
     ChipLogProgress(DeviceLayer, "MQTT demo disconnected");
     return SL_STATUS_OK;
+}
+
+void MqttRunAppEvent(AppEvent * /* aEvent */)
+{
+    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_run(), ChipLogError(DeviceLayer, "mqtt_client_demo_run failed"));
 }
