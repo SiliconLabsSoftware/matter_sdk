@@ -17,9 +17,9 @@
  *    limitations under the License.
  */
 
+#include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
-#include "AppTask.h"
 #include "CustomerAppTask.h"
 #include "ThermostatConfig.h"
 
@@ -35,6 +35,7 @@
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/clusters/thermostat-server/ThermostatCluster.h>
 #include <app/server/Server.h>
+#include <thermostat-delegate-impl.h>
 #include <app/util/attribute-storage.h>
 #include <cmsis_os2.h>
 #include <lib/support/CodeUtils.h>
@@ -44,7 +45,6 @@
 #include <platform/PlatformError.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
 #include <sl_cmsis_os2_common.h>
-#include <thermostat-delegate-impl.h>
 
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 #include "Si70xxSensor.h"
