@@ -50,5 +50,16 @@
                                                                                                          // // server
 #endif
 
-/** Load config + start HTTPS offload client demo. */
+/** Load config + start HTTPS offload client (Init only). Call from AppTask. */
 sl_status_t https_client_demo_start(void);
+
+/**
+ * Run HTTPS PUT / GET / POST against the configured server.
+ * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop or shell thread.
+ */
+sl_status_t https_client_demo_run(void);
+
+struct AppEvent;
+
+/** AppTask-queue handler that runs https_client_demo_run(). */
+void HttpsRunAppEvent(AppEvent * aEvent);

@@ -17,11 +17,8 @@
  *
  * @brief Host LwIP Paho MQTT/MQTTS demo entry point
  * 1. Start + Init the MqttClient (skipped if already running/initialized)
- * 2. Connect to the MQTT broker
- * 3. Subscribe to the topic
- * 4. Publish the message
- * 5. Disconnect from the MQTT broker (optional)
- * 6. Deinit the MqttClient (optional)
+ * 2. Connect + Subscribe + Publish via Matter shell (`demo mqtt`)
+ * 3. Disconnect from the MQTT broker on link loss
  */
 
 #pragma once
@@ -45,7 +42,7 @@
 #endif
 
 #ifndef MQTT_CLIENT_ID // The ID of your MQTT client
-#define MQTT_CLIENT_ID "WISECONNECT_SDK_TOPIC"
+#define MQTT_CLIENT_ID "MQTT_CLIENT_ID"
 #endif
 
 #ifndef MQTT_USERNAME // The username of your MQTT client
@@ -57,16 +54,15 @@
 #endif
 
 #ifndef MQTT_TOPIC // The topic of your MQTT client
-#define MQTT_TOPIC "THERMOSTAT-DATA"
+#define MQTT_TOPIC "MQTT_TOPIC"
 #endif
 
 #ifndef MQTT_PUBLISH_MESSAGE // The message to publish to the MQTT broker
-#define MQTT_PUBLISH_MESSAGE "THIS IS MQTT CLIENT DEMO FROM APPLICATION"
+#define MQTT_PUBLISH_MESSAGE "MQTT_PUBLISH_MESSAGE"
 #endif
 
 /**
- * Start/Init if needed, then Connect + Subscribe + Publish (blocking wait).
- * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
+ * Start/Init if needed. Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
  */
 sl_status_t mqtt_client_demo_start(void);
 
@@ -75,3 +71,14 @@ sl_status_t mqtt_client_demo_start(void);
  * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
  */
 sl_status_t mqtt_client_demo_stop(void);
+
+/**
+ * Connect + Subscribe + Publish (blocking wait).
+ * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop or shell thread.
+ */
+sl_status_t mqtt_client_demo_run(void);
+
+struct AppEvent;
+
+/** AppTask-queue handler that runs mqtt_client_demo_run(). */
+void MqttRunAppEvent(AppEvent * aEvent);
