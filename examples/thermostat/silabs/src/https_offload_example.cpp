@@ -101,6 +101,11 @@ CHIP_ERROR RunQueuedOperation(CHIP_ERROR queueResult, OperationWaitContext & wai
 
 CHIP_ERROR RunHttpsOffloadExample()
 {
+    if (!gHttpsClient.IsRunning())
+    {
+        return CHIP_ERROR_INCORRECT_STATE;
+    }
+
     ChipLogProgress(DeviceLayer, "HTTPS starting on offload stack");
 
     OperationWaitContext waitCtx = { .lock = gHttpsTaskLock, .result = CHIP_NO_ERROR };
@@ -145,6 +150,11 @@ CHIP_ERROR RunHttpsOffloadExample()
 }
 
 } // namespace
+
+void HttpsRunAppEvent(AppEvent * /* aEvent */)
+{
+    VerifyOrReturn(SL_STATUS_OK == https_client_demo_run(), ChipLogError(DeviceLayer, "https_client_demo_run failed"));
+}
 
 sl_status_t https_client_demo_start(void)
 {
@@ -196,8 +206,6 @@ sl_status_t https_client_demo_start(void)
         return SL_STATUS_FAIL;
     }
 
-    err = RunHttpsOffloadExample();
-
     /* NOTE: Deinit and Stop are not needed for the HTTP client.
         CHIP_ERROR deinitErr = RunQueuedOperation(gHttpsClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
         if (deinitErr != CHIP_NO_ERROR)
@@ -217,4 +225,14 @@ sl_status_t https_client_demo_start(void)
             )
         ? SL_STATUS_OK
         : SL_STATUS_FAIL;
+}
+
+sl_status_t https_client_demo_run(void)
+{
+    CHIP_ERROR err = RunHttpsOffloadExample();
+    if (err != CHIP_NO_ERROR)
+    {
+        return SL_STATUS_FAIL;
+    }
+    return SL_STATUS_OK;
 }

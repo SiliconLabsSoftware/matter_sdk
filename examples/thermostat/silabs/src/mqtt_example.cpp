@@ -23,6 +23,7 @@
 #include "cacert.h"
 #include "cmsis_os2.h"
 
+#include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
 
@@ -78,25 +79,9 @@ CHIP_ERROR RunOperation(CHIP_ERROR queueResult)
     return gOpResult;
 }
 
-CHIP_ERROR ConnectSubscribePublish(const MqttBroker & broker)
+CHIP_ERROR SubscribePublish()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-
-    // Prior attempt may have connected then failed on subscribe/publish; skip reconnect.
-    if (!gMqttsClient.IsConnected())
-    {
-        gOpDone = false;
-        err     = RunOperation(gMqttsClient.Connect(broker, OnOperationDone));
-        if (err != CHIP_NO_ERROR)
-        {
-            ChipLogError(DeviceLayer, "MQTT Connect failed: %" CHIP_ERROR_FORMAT, err.Format());
-            return err;
-        }
-    }
-    else
-    {
-        ChipLogProgress(DeviceLayer, "MQTT already connected, continuing subscribe/publish");
-    }
 
     gOpDone = false;
     err     = RunOperation(gMqttsClient.Subscribe(kMqttTopic, OnOperationDone));
@@ -176,7 +161,34 @@ sl_status_t mqtt_client_demo_start(void)
         ChipLogProgress(DeviceLayer, "MQTT demo already initialized");
     }
 
-    err = ConnectSubscribePublish(broker);
+    ChipLogProgress(DeviceLayer, "MQTT ready (use demo mqtt for subscribe/publish)");
+    // Prior attempt may have connected then failed on subscribe/publish; skip reconnect.
+    if (!gMqttsClient.IsConnected())
+    {
+        gOpDone = false;
+        err     = RunOperation(gMqttsClient.Connect(broker, OnOperationDone));
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT Connect failed: %" CHIP_ERROR_FORMAT, err.Format());
+            return SL_STATUS_FAIL;
+        }
+    }
+    else
+    {
+        ChipLogProgress(DeviceLayer, "MQTT already connected.");
+    }
+    return SL_STATUS_OK;
+}
+
+sl_status_t mqtt_client_demo_run(void)
+{
+    if (!gMqttsClient.IsRunning() || !gMqttsClient.IsInitialized())
+    {
+        ChipLogError(DeviceLayer, "MQTT not ready; wait for connectivity start first");
+        return SL_STATUS_NOT_INITIALIZED;
+    }
+
+    const CHIP_ERROR err = SubscribePublish();
     if (err != CHIP_NO_ERROR)
     {
         return SL_STATUS_FAIL;
@@ -194,7 +206,7 @@ sl_status_t mqtt_client_demo_stop(void)
         return SL_STATUS_OK;
     }
 
-    gOpDone          = false;
+    gOpDone              = false;
     const CHIP_ERROR err = RunOperation(gMqttsClient.Disconnect(OnOperationDone));
     if (err != CHIP_NO_ERROR)
     {
@@ -204,4 +216,9 @@ sl_status_t mqtt_client_demo_stop(void)
 
     ChipLogProgress(DeviceLayer, "MQTT demo disconnected");
     return SL_STATUS_OK;
+}
+
+void MqttRunAppEvent(AppEvent * /* aEvent */)
+{
+    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_run(), ChipLogError(DeviceLayer, "mqtt_client_demo_run failed"));
 }
