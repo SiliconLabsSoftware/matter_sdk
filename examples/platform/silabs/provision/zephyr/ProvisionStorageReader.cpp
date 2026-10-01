@@ -183,14 +183,15 @@ CHIP_ERROR ProvisionStorageReader::GetDeviceAttestationCert(MutableByteSpan & va
 
 CHIP_ERROR ProvisionStorageReader::SignWithDeviceAttestationKey(const ByteSpan & message, MutableByteSpan & signature)
 {
+    const uint32_t keyId = ZephyrStorage::GetDacPsaKeyId();
     VerifyOrReturnError(ZephyrStorage::DacPsaKeyExists(), CHIP_ERROR_NOT_FOUND,
-                        ChipLogError(DeviceLayer, "DAC PSA key id %u missing", ZephyrStorage::kDacPsaKeyId));
+                        ChipLogError(DeviceLayer, "DAC PSA key id %u missing", keyId));
 
     Crypto::P256ECDSASignature rawSignature;
     VerifyOrReturnError(signature.size() >= rawSignature.Capacity(), CHIP_ERROR_BUFFER_TOO_SMALL);
 
     size_t outputLen          = 0;
-    const psa_status_t status = psa_sign_message(ZephyrStorage::kDacPsaKeyId, PSA_ALG_ECDSA(PSA_ALG_SHA_256), message.data(),
+    const psa_status_t status = psa_sign_message(static_cast<psa_key_id_t>(keyId), PSA_ALG_ECDSA(PSA_ALG_SHA_256), message.data(),
                                                  message.size(), rawSignature.Bytes(), rawSignature.Capacity(), &outputLen);
     VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "psa_sign_message failed: %" PRId32, status));

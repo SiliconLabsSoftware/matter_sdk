@@ -198,23 +198,20 @@ CHIP_ERROR ProvisionStorageWriter::SetFirmwareInformation(const ByteSpan & value
 
 CHIP_ERROR ProvisionStorageWriter::SetCertificationDeclaration(const ByteSpan & value)
 {
-    ReturnErrorOnFailure(WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_CD_Offset,
-                                   SilabsConfig::kConfigKey_Creds_CD_Size, value));
-    return CHIP_NO_ERROR;
+    return WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_CD_Offset, SilabsConfig::kConfigKey_Creds_CD_Size,
+                     value);
 }
 
 CHIP_ERROR ProvisionStorageWriter::SetProductAttestationIntermediateCert(const ByteSpan & value)
 {
-    ReturnErrorOnFailure(WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_PAI_Offset,
-                                   SilabsConfig::kConfigKey_Creds_PAI_Size, value));
-    return CHIP_NO_ERROR;
+    return WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_PAI_Offset, SilabsConfig::kConfigKey_Creds_PAI_Size,
+                     value);
 }
 
 CHIP_ERROR ProvisionStorageWriter::SetDeviceAttestationCert(const ByteSpan & value)
 {
-    ReturnErrorOnFailure(WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_DAC_Offset,
-                                   SilabsConfig::kConfigKey_Creds_DAC_Size, value));
-    return CHIP_NO_ERROR;
+    return WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_DAC_Offset, SilabsConfig::kConfigKey_Creds_DAC_Size,
+                     value);
 }
 
 CHIP_ERROR ProvisionStorageWriter::SetProvisionVersion(const char * value, size_t size)

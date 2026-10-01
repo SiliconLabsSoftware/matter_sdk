@@ -18,6 +18,7 @@
 #pragma once
 
 #include <platform/Zephyr/CHIPDevicePlatformConfig.h>
+#include <platform/Zephyr/ZephyrConfig.h>
 #include <psa/crypto.h>
 #include <zephyr/settings/settings.h>
 
@@ -42,15 +43,27 @@ DEFINE_CONFIG_KEY(kConfigKeyHardwareVersionString, "hardware-ver-str");
 DEFINE_CONFIG_KEY(kConfigKeySetupPayload, "setup-payload");
 DEFINE_CONFIG_KEY(kConfigKeyProvisionRequest, "provision-req");
 DEFINE_CONFIG_KEY(kConfigKeyProvisionVersion, "provision-ver");
+DEFINE_CONFIG_KEY(kConfigKeyDacKeyId, "dac-key-id");
 
 #undef DEFINE_CONFIG_KEY
 
 inline constexpr psa_key_id_t kDacPsaKeyId = 2;
 
+// Stored id when one was provisioned, otherwise the default id.
+inline uint32_t GetDacPsaKeyId()
+{
+    uint32_t keyId = 0;
+    if (chip::DeviceLayer::Internal::ZephyrConfig::ReadConfigValue(kConfigKeyDacKeyId, keyId) == CHIP_NO_ERROR && keyId != 0)
+    {
+        return keyId;
+    }
+    return kDacPsaKeyId;
+}
+
 inline bool DacPsaKeyExists()
 {
     psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
-    const psa_status_t status       = psa_get_key_attributes(kDacPsaKeyId, &attributes);
+    const psa_status_t status       = psa_get_key_attributes(static_cast<psa_key_id_t>(GetDacPsaKeyId()), &attributes);
     psa_reset_key_attributes(&attributes);
     return status == PSA_SUCCESS;
 }

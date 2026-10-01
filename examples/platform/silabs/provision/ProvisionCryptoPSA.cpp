@@ -11,6 +11,16 @@
 #include <mbedtls/x509_csr.h>
 #include <psa/crypto.h>
 #include <sl_psa_crypto.h>
+#if defined(__ZEPHYR__)
+#include <platform/Zephyr/ZephyrConfig.h>
+#include <provision/zephyr/ProvisionStorageZephyr.h>
+#else
+#include <platform/silabs/SilabsConfig.h>
+#endif
+
+#if defined(SLI_SI91X_MCU_INTERFACE) && !defined(__ZEPHYR__)
+#include <sl_si91x_psa_wrap.h>
+#endif
 
 #include <cstdio>
 #include <cstring>
@@ -21,8 +31,42 @@ namespace Silabs {
 namespace Provision {
 
 namespace {
-constexpr uint32_t kDeviceAttestationKeyId = 2;
-constexpr size_t kSubjectNameLengthMax     = 160;
+#if defined(__ZEPHYR__)
+using ConfigStore = chip::DeviceLayer::Internal::ZephyrConfig;
+#else
+using ConfigStore = chip::DeviceLayer::Internal::SilabsConfig;
+#endif
+
+constexpr uint32_t kDefaultDeviceAttestationKeyId = 2;
+constexpr size_t kSubjectNameLengthMax            = 160;
+
+#if defined(__ZEPHYR__)
+const char * DeviceAttestationKeyIdKey()
+{
+    return ZephyrStorage::kConfigKeyDacKeyId;
+}
+#else
+ConfigStore::Key DeviceAttestationKeyIdKey()
+{
+    return ConfigStore::kConfigKey_Creds_KeyId;
+}
+#endif
+
+// Key id used for import and CSR generation: the id already stored in config, or the default.
+uint32_t ResolveDeviceAttestationKeyId()
+{
+    uint32_t keyId = 0;
+    if (ConfigStore::ReadConfigValue(DeviceAttestationKeyIdKey(), keyId) == CHIP_NO_ERROR && keyId != 0)
+    {
+        return keyId;
+    }
+    return kDefaultDeviceAttestationKeyId;
+}
+
+CHIP_ERROR StoreDeviceAttestationKeyId(uint32_t keyId)
+{
+    return ConfigStore::WriteConfigValue(DeviceAttestationKeyIdKey(), keyId);
+}
 
 CHIP_ERROR FormatMatterOidUtf8DerHex(char * destination, size_t destinationSize, uint16_t value)
 {
@@ -34,16 +78,16 @@ CHIP_ERROR FormatMatterOidUtf8DerHex(char * destination, size_t destinationSize,
     return written == 13 ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
 
-psa_status_t ConfigureKeyAttributes(psa_key_attributes_t & attributes)
+void ConfigureKeyAttributes(psa_key_attributes_t & attributes, uint32_t keyId)
 {
-    psa_set_key_id(&attributes, kDeviceAttestationKeyId);
+    psa_set_key_id(&attributes, keyId);
     psa_set_key_type(&attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
     psa_set_key_bits(&attributes, 256);
     psa_set_key_algorithm(&attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
     psa_set_key_usage_flags(&attributes,
                             PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH | PSA_KEY_USAGE_SIGN_MESSAGE |
                                 PSA_KEY_USAGE_VERIFY_MESSAGE);
-#if defined(SLI_SI91X_MCU_INTERFACE)
+#if defined(SLI_SI91X_MCU_INTERFACE) && !defined(__ZEPHYR__)
     psa_set_key_lifetime(
         &attributes,
         PSA_KEY_LIFETIME_FROM_PERSISTENCE_AND_LOCATION(PSA_KEY_LIFETIME_PERSISTENT, PSA_KEY_VOLATILE_PERSISTENT_WRAPPED));
@@ -52,30 +96,35 @@ psa_status_t ConfigureKeyAttributes(psa_key_attributes_t & attributes)
         &attributes,
         PSA_KEY_LIFETIME_FROM_PERSISTENCE_AND_LOCATION(PSA_KEY_LIFETIME_PERSISTENT, sl_psa_get_most_secure_key_location()));
 #endif
-    return PSA_SUCCESS;
 }
 
-psa_status_t GenerateKey()
+psa_status_t GenerateKey(uint32_t keyId)
 {
-    (void) psa_destroy_key(static_cast<psa_key_id_t>(kDeviceAttestationKeyId));
+    (void) psa_destroy_key(static_cast<psa_key_id_t>(keyId));
     psa_key_attributes_t attributes = psa_key_attributes_init();
-    ConfigureKeyAttributes(attributes);
-    psa_key_id_t keyId       = 0;
-    const psa_status_t error = psa_generate_key(&attributes, &keyId);
+    ConfigureKeyAttributes(attributes, keyId);
+    psa_key_id_t generatedId = 0;
+    const psa_status_t error = psa_generate_key(&attributes, &generatedId);
     psa_reset_key_attributes(&attributes);
     return error;
 }
 
-psa_status_t ImportKey(const uint8_t * value, size_t size)
+psa_status_t ImportKey(uint32_t keyId, const uint8_t * value, size_t size)
 {
-    (void) psa_destroy_key(static_cast<psa_key_id_t>(kDeviceAttestationKeyId));
+    (void) psa_destroy_key(static_cast<psa_key_id_t>(keyId));
     psa_key_attributes_t attributes = psa_key_attributes_init();
-    ConfigureKeyAttributes(attributes);
-    psa_key_id_t keyId       = 0;
-    const psa_status_t error = psa_import_key(&attributes, value, size, &keyId);
+    ConfigureKeyAttributes(attributes, keyId);
+    psa_key_id_t importedId  = 0;
+    const psa_status_t error = psa_import_key(&attributes, value, size, &importedId);
     psa_reset_key_attributes(&attributes);
     return error;
 }
+
+struct ImportKeyContext
+{
+    uint32_t keyId;
+    bool imported;
+};
 
 int ImportKeyCallback(void * context, int tag, unsigned char * value, size_t size)
 {
@@ -83,8 +132,9 @@ int ImportKeyCallback(void * context, int tag, unsigned char * value, size_t siz
     {
         return 0;
     }
-    const psa_status_t status = ImportKey(value, size);
-    *static_cast<bool *>(context) = status == PSA_SUCCESS;
+    auto * importContext      = static_cast<ImportKeyContext *>(context);
+    const psa_status_t status = ImportKey(importContext->keyId, value, size);
+    importContext->imported   = status == PSA_SUCCESS;
     return static_cast<int>(status);
 }
 } // namespace
@@ -113,9 +163,10 @@ CHIP_ERROR ProvisionCrypto::ImportDeviceAttestationKey(const ByteSpan & key)
     VerifyOrReturnError(!key.empty(), CHIP_ERROR_INVALID_ARGUMENT);
     uint8_t * current = const_cast<uint8_t *>(key.data());
     uint8_t * end     = current + key.size();
-    bool imported     = false;
-    const int error   = mbedtls_asn1_traverse_sequence_of(&current, end, 0, 0, 0, 0, ImportKeyCallback, &imported);
-    return error == 0 && imported ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
+    ImportKeyContext context{ ResolveDeviceAttestationKeyId(), false };
+    const int error = mbedtls_asn1_traverse_sequence_of(&current, end, 0, 0, 0, 0, ImportKeyCallback, &context);
+    VerifyOrReturnError(error == 0 && context.imported, CHIP_ERROR_INTERNAL);
+    return StoreDeviceAttestationKeyId(context.keyId);
 }
 
 CHIP_ERROR ProvisionCrypto::GenerateDeviceAttestationCSR(uint16_t vid, uint16_t pid, const CharSpan & commonName,
@@ -145,6 +196,8 @@ CHIP_ERROR ProvisionCrypto::GenerateDeviceAttestationCSR(uint16_t vid, uint16_t 
                  vidDer, pidDer);
     VerifyOrReturnError(subjectLength > 0 && static_cast<size_t>(subjectLength) < sizeof(subjectName), CHIP_ERROR_INTERNAL);
 
+    const uint32_t keyId = ResolveDeviceAttestationKeyId();
+
     mbedtls_pk_context keyContext;
     mbedtls_x509write_csr csrContext;
     mbedtls_pk_init(&keyContext);
@@ -155,11 +208,11 @@ CHIP_ERROR ProvisionCrypto::GenerateDeviceAttestationCSR(uint16_t vid, uint16_t 
     VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
     mbedtls_x509write_csr_set_md_alg(&csrContext, MBEDTLS_MD_SHA256);
 
-    VerifyOrExit(GenerateKey() == PSA_SUCCESS, result = CHIP_ERROR_INTERNAL);
+    VerifyOrExit(GenerateKey(keyId) == PSA_SUCCESS, result = CHIP_ERROR_INTERNAL);
 #if MBEDTLS_VERSION_MAJOR >= 4
-    error = mbedtls_pk_wrap_psa(&keyContext, static_cast<mbedtls_svc_key_id_t>(kDeviceAttestationKeyId));
+    error = mbedtls_pk_wrap_psa(&keyContext, static_cast<mbedtls_svc_key_id_t>(keyId));
 #else
-    error = mbedtls_pk_setup_opaque(&keyContext, kDeviceAttestationKeyId);
+    error = mbedtls_pk_setup_opaque(&keyContext, keyId);
 #endif
     VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
     mbedtls_x509write_csr_set_key(&csrContext, &keyContext);
@@ -171,7 +224,7 @@ CHIP_ERROR ProvisionCrypto::GenerateDeviceAttestationCSR(uint16_t vid, uint16_t 
 #endif
     VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
     csr.reduce_size(strlen(csr.data()) + 1);
-    result = CHIP_NO_ERROR;
+    result = StoreDeviceAttestationKeyId(keyId);
 
 exit:
     mbedtls_x509write_csr_free(&csrContext);
@@ -182,10 +235,15 @@ exit:
 CHIP_ERROR ProvisionCrypto::SignWithDeviceAttestationKey(const ByteSpan & message, MutableByteSpan & signature)
 {
     VerifyOrReturnError(signature.size() >= 64, CHIP_ERROR_BUFFER_TOO_SMALL);
-    size_t signatureSize = 0;
-    const psa_status_t status =
-        psa_sign_message(static_cast<psa_key_id_t>(kDeviceAttestationKeyId), PSA_ALG_ECDSA(PSA_ALG_SHA_256), message.data(),
-                         message.size(), signature.data(), signature.size(), &signatureSize);
+
+    // No stored key id means no provisioned DAC key; callers fall back to example credentials on NOT_FOUND.
+    VerifyOrReturnError(ConfigStore::ConfigValueExists(DeviceAttestationKeyIdKey()), CHIP_ERROR_NOT_FOUND);
+    uint32_t keyId = 0;
+    ReturnErrorOnFailure(ConfigStore::ReadConfigValue(DeviceAttestationKeyIdKey(), keyId));
+
+    size_t signatureSize      = 0;
+    const psa_status_t status = psa_sign_message(static_cast<psa_key_id_t>(keyId), PSA_ALG_ECDSA(PSA_ALG_SHA_256), message.data(),
+                                                 message.size(), signature.data(), signature.size(), &signatureSize);
     if (status == PSA_ERROR_INVALID_HANDLE || status == PSA_ERROR_DOES_NOT_EXIST)
     {
         return CHIP_ERROR_NOT_FOUND;

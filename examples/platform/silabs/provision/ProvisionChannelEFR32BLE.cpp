@@ -9,6 +9,7 @@
 #include <sl_bt_api.h>
 
 #include <cstring>
+#include <provision/headers/ProvisionProtocol.h>
 
 namespace chip {
 namespace DeviceLayer {
@@ -16,8 +17,7 @@ namespace Silabs {
 namespace Provision {
 
 namespace {
-constexpr size_t kReceiveBufferSize = 512;
-uint8_t sReceiveBuffer[kReceiveBufferSize];
+uint8_t sReceiveBuffer[Protocol2::kPackageSizeMax];
 size_t sReceiveSize = 0;
 } // namespace
 
@@ -53,8 +53,8 @@ CHIP_ERROR ProvisionChannel::Write(const uint8_t * buffer, size_t bufferLength)
 
 CHIP_ERROR ProvisionChannel::OnDataAvailable()
 {
-    const sl_status_t status =
-        sl_bt_gatt_server_read_attribute_value(gattdb_CHIPoBLEChar_Rx, 0, kReceiveBufferSize, &sReceiveSize, sReceiveBuffer);
+    const sl_status_t status = sl_bt_gatt_server_read_attribute_value(gattdb_CHIPoBLEChar_Rx, 0, Protocol2::kPackageSizeMax,
+                                                                      &sReceiveSize, sReceiveBuffer);
     return status == SL_STATUS_OK ? CHIP_NO_ERROR : CHIP_ERROR_READ_FAILED;
 }
 

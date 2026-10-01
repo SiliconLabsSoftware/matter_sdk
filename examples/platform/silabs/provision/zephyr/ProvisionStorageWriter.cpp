@@ -50,7 +50,7 @@ CHIP_ERROR ProvisionStorageWriter::Initialize(uint32_t flashAddress, uint32_t fl
     (void) flashSize;
     ReturnErrorOnFailure(ZephyrConfig::Init());
     VerifyOrDo(ZephyrStorage::DacPsaKeyExists(),
-               ChipLogError(DeviceLayer, "DAC PSA key id %u missing", ZephyrStorage::kDacPsaKeyId));
+               ChipLogError(DeviceLayer, "DAC PSA key id %u missing", ZephyrStorage::GetDacPsaKeyId()));
 #endif
     sInitialized = true;
     return CHIP_NO_ERROR;

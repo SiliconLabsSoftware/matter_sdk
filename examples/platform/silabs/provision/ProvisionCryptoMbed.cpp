@@ -29,6 +29,21 @@ namespace {
 using SilabsConfig = chip::DeviceLayer::Internal::SilabsConfig;
 
 constexpr size_t kDeviceAttestationKeySizeMax = 128;
+
+struct ScopedPkContext
+{
+    ScopedPkContext() { mbedtls_pk_init(&context); }
+    ~ScopedPkContext() { mbedtls_pk_free(&context); }
+    mbedtls_pk_context context;
+};
+
+struct ScopedCsrContext
+{
+    ScopedCsrContext() { mbedtls_x509write_csr_init(&context); }
+    ~ScopedCsrContext() { mbedtls_x509write_csr_free(&context); }
+    mbedtls_x509write_csr context;
+};
+
 #ifndef SLI_SI91X_MCU_INTERFACE
 constexpr size_t kSubjectNameLengthMax = 160;
 int GetRandom(void *, unsigned char * output, size_t size)
@@ -167,36 +182,27 @@ CHIP_ERROR ProvisionCrypto::GenerateDeviceAttestationCSR(uint16_t vid, uint16_t 
                  vidDer, pidDer);
     VerifyOrReturnError(subjectLength > 0 && static_cast<size_t>(subjectLength) < sizeof(subjectName), CHIP_ERROR_INTERNAL);
 
-    mbedtls_pk_context keyContext;
-    mbedtls_x509write_csr csrContext;
-    mbedtls_pk_init(&keyContext);
-    mbedtls_x509write_csr_init(&csrContext);
-    CHIP_ERROR result = CHIP_ERROR_INTERNAL;
+    // Declared before csrWriter so the key outlives the CSR writer that references it.
+    ScopedPkContext key;
+    ScopedCsrContext csrWriter;
 
-    int error = mbedtls_pk_setup(&keyContext, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY));
-    VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
-    error = mbedtls_ecdsa_genkey(mbedtls_pk_ec(keyContext), MBEDTLS_ECP_DP_SECP256R1, GetRandom, nullptr);
-    VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
-    error = mbedtls_x509write_csr_set_subject_name(&csrContext, subjectName);
-    VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
-    mbedtls_x509write_csr_set_md_alg(&csrContext, MBEDTLS_MD_SHA256);
-    mbedtls_x509write_csr_set_key(&csrContext, &keyContext);
-    error = mbedtls_x509write_csr_pem(&csrContext, reinterpret_cast<uint8_t *>(csr.data()), csr.size(), GetRandom, nullptr);
-    VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(mbedtls_pk_setup(&key.context, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY)) == 0, CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(mbedtls_ecdsa_genkey(mbedtls_pk_ec(key.context), MBEDTLS_ECP_DP_SECP256R1, GetRandom, nullptr) == 0,
+                        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(mbedtls_x509write_csr_set_subject_name(&csrWriter.context, subjectName) == 0, CHIP_ERROR_INTERNAL);
+    mbedtls_x509write_csr_set_md_alg(&csrWriter.context, MBEDTLS_MD_SHA256);
+
+    mbedtls_x509write_csr_set_key(&csrWriter.context, &key.context);
+    VerifyOrReturnError(
+        mbedtls_x509write_csr_pem(&csrWriter.context, reinterpret_cast<uint8_t *>(csr.data()), csr.size(), GetRandom, nullptr) == 0,
+        CHIP_ERROR_INTERNAL);
     csr.reduce_size(strlen(csr.data()) + 1);
 
-    {
-        uint8_t encodedKey[kDeviceAttestationKeySizeMax] = { 0 };
-        const int encodedSize                            = mbedtls_pk_write_key_der(&keyContext, encodedKey, sizeof(encodedKey));
-        VerifyOrExit(encodedSize > 0 && static_cast<size_t>(encodedSize) <= sizeof(encodedKey), result = CHIP_ERROR_INTERNAL);
-        result = SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Creds_KeyId,
-                                                   encodedKey + sizeof(encodedKey) - encodedSize, encodedSize);
-    }
-
-exit:
-    mbedtls_x509write_csr_free(&csrContext);
-    mbedtls_pk_free(&keyContext);
-    return result;
+    uint8_t encodedKey[kDeviceAttestationKeySizeMax] = { 0 };
+    const int encodedSize                            = mbedtls_pk_write_key_der(&key.context, encodedKey, sizeof(encodedKey));
+    VerifyOrReturnError(encodedSize > 0 && static_cast<size_t>(encodedSize) <= sizeof(encodedKey), CHIP_ERROR_INTERNAL);
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Creds_KeyId, encodedKey + sizeof(encodedKey) - encodedSize,
+                                             encodedSize);
 #endif
 }
 
@@ -224,19 +230,14 @@ CHIP_ERROR ProvisionCrypto::SignWithDeviceAttestationKey(const ByteSpan & messag
     size_t encodedSignatureSize                                         = 0;
     VerifyOrReturnError(mbedtls_sha256(message.data(), message.size(), hash, 0) == 0, CHIP_ERROR_INTERNAL);
 
-    mbedtls_pk_context keyContext;
-    mbedtls_pk_init(&keyContext);
-    CHIP_ERROR result = CHIP_ERROR_INTERNAL;
-    int error = mbedtls_pk_parse_key(&keyContext, encodedKeySpan.data(), encodedKeySpan.size(), nullptr, 0, GetRandom, nullptr);
-    VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
-    error = mbedtls_pk_sign(&keyContext, MBEDTLS_MD_SHA256, hash, sizeof(hash), encodedSignature, sizeof(encodedSignature),
-                            &encodedSignatureSize, GetRandom, nullptr);
-    VerifyOrExit(error == 0, result = CHIP_ERROR_INTERNAL);
-    result = ConvertAsn1Signature(ByteSpan(encodedSignature, encodedSignatureSize), signature);
-
-exit:
-    mbedtls_pk_free(&keyContext);
-    return result;
+    ScopedPkContext key;
+    VerifyOrReturnError(
+        mbedtls_pk_parse_key(&key.context, encodedKeySpan.data(), encodedKeySpan.size(), nullptr, 0, GetRandom, nullptr) == 0,
+        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(mbedtls_pk_sign(&key.context, MBEDTLS_MD_SHA256, hash, sizeof(hash), encodedSignature,
+                                        sizeof(encodedSignature), &encodedSignatureSize, GetRandom, nullptr) == 0,
+                        CHIP_ERROR_INTERNAL);
+    return ConvertAsn1Signature(ByteSpan(encodedSignature, encodedSignatureSize), signature);
 #endif
 }
 

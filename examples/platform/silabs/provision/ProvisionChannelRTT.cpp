@@ -29,9 +29,11 @@ CHIP_ERROR ProvisionChannel::Init()
 CHIP_ERROR ProvisionChannel::Read(uint8_t * buffer, size_t bufferLength, size_t & bytesRead)
 {
     VerifyOrReturnError(buffer != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
     bytesRead                     = 0;
     const unsigned bytesAvailable = SEGGER_RTT_HasData(0);
     VerifyOrReturnError(bytesAvailable > 0, CHIP_ERROR_READ_FAILED);
+
     const unsigned toRead = bytesAvailable < bufferLength ? bytesAvailable : static_cast<unsigned>(bufferLength);
     bytesRead             = SEGGER_RTT_Read(0, buffer, toRead);
     return CHIP_NO_ERROR;
