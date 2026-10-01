@@ -371,7 +371,7 @@ sl_status_t SetWifiConfigurations()
     sl_status_t status = SL_STATUS_OK;
 
     uint8_t join_feature_bitmap = SL_SI91X_JOIN_FEAT_LISTEN_INTERVAL_VALID; // initialize with default value
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    #if CHIP_CONFIG_ENABLE_ICD_SERVER
     sl_wifi_listen_interval_v2_t sleep_interval = {
         .listen_interval = chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()
     };

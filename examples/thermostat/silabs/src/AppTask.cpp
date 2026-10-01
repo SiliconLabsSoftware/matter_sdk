@@ -55,8 +55,6 @@
 #endif // SL_MATTER_ENABLE_AWS
 
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
-#include <platform/silabs/services/matter_service.h>
-
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
 #include "https_offload_example.h"
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
@@ -385,9 +383,8 @@ void AppTask::DMThermostatClusterInit(chip::EndpointId endpoint)
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
 namespace {
 
-using chip::DeviceLayer::Silabs::kMatterServicesInitDelaySec;
-
-void InitMatterServicesHandler(System::Layer * /* systemLayer */, void * /* appState */)
+// Runs on AppTask thread so blocking MQTT connect/wait does not starve the CHIP stack.
+void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
 {
 #if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
     VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_start(), ChipLogError(AppServer, "mqtt_client_demo_start failed"));
@@ -398,29 +395,51 @@ void InitMatterServicesHandler(System::Layer * /* systemLayer */, void * /* appS
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 }
 
+void StopMatterServicesAppEvent(AppEvent * /* aEvent */)
+{
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_stop(), ChipLogError(AppServer, "mqtt_client_demo_stop failed"));
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+}
+
 } // namespace
 
 void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t)
 {
     VerifyOrReturn(event != nullptr);
 
-    if (event->Type != DeviceEventType::kInternetConnectivityChange)
+    switch (event->Type)
     {
-        return;
-    }
-
-    if (event->InternetConnectivityChange.IPv4 != kConnectivity_Established
+    case DeviceEventType::kInternetConnectivityChange:
+        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-        && event->InternetConnectivityChange.IPv6 != kConnectivity_Established
+            || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
 #endif // SL_MATTER_ENABLE_DUAL_STACK
-    )
-    {
-        return;
-    }
+        )
+        {
+            // Post directly to AppTask; avoid SystemLayer timer re-entering the Matter stack just to PostEvent.
+            ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
+            AppEvent appEvent = {};
+            appEvent.Type     = AppEvent::kEventType_Timer;
+            appEvent.Handler  = StartMatterServicesAppEvent;
+            CustomerAppTask::GetAppTask().PostEvent(&appEvent);
+        }
+        break;
 
-    ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
-    TEMPORARY_RETURN_IGNORED SystemLayer().StartTimer(System::Clock::Seconds32(kMatterServicesInitDelaySec),
-                                                      InitMatterServicesHandler, nullptr);
+    case DeviceEventType::kWiFiConnectivityChange:
+        if (event->WiFiConnectivityChange.Result == kConnectivity_Lost)
+        {
+            ChipLogProgress(AppServer, "Scheduling Matter Services teardown on Wi-Fi loss");
+            AppEvent appEvent = {};
+            appEvent.Type     = AppEvent::kEventType_Timer;
+            appEvent.Handler  = StopMatterServicesAppEvent;
+            CustomerAppTask::GetAppTask().PostEvent(&appEvent);
+        }
+        break;
+
+    default:
+        break;
+    }
 }
 #endif // SL_MATTER_ENABLE_SERVICES
 
