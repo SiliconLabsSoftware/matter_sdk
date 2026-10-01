@@ -17,6 +17,7 @@
  *    limitations under the License.
  */
 
+#include "silabs_utils.h"
 #include "AppConfig.h"
 #if !defined(SL_MATTER_CUSTOM_APPTASK) || !SL_MATTER_CUSTOM_APPTASK
 #include "BaseApplication.h"
