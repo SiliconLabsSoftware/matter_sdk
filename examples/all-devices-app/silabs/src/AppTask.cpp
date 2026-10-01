@@ -314,20 +314,13 @@ CHIP_ERROR AppTask::InitCodeDrivenDataModel(chip::PersistentStorageDelegate & st
         deviceType = std::string(storedDeviceType, strnlen(storedDeviceType, storedLen));
     }
 
-    auto & deviceFactory = chip::app::DeviceFactory::GetInstance();
     if (!deviceFactory.IsValidDevice(deviceType))
     {
         ChipLogError(AppServer, "Invalid device type: %s, falling back to default", deviceType.c_str());
         deviceType = deviceFactory.GetDefaultDevice();
     }
 
-    sConstructedDevice = deviceFactory.Create(deviceType);
-    VerifyOrReturnError(sConstructedDevice != nullptr, CHIP_ERROR_NO_MEMORY);
-
-    ConsecutiveEndpointIdAllocator allocator(kDeviceEndpointId);
-    ReturnErrorOnFailure(sConstructedDevice->Register(allocator, *sDataModelProvider));
-
-    return CHIP_NO_ERROR;
+    return instantiateDevice(deviceType);
 }
 
 chip::app::CodeDrivenDataModelProvider * AppTask::GetDataModelProvider()
