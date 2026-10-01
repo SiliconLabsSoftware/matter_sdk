@@ -73,7 +73,8 @@ void MqttClient::PahoMessageHandler(MessageData * md)
     VerifyOrReturn(self != nullptr);
     VerifyOrReturn(md != nullptr && md->message != nullptr);
 
-    char * topic = nullptr;
+    char * topic        = nullptr;
+    bool topicAllocated = false;
     if (md->topicName != nullptr)
     {
         if (md->topicName->cstring != nullptr)
@@ -87,6 +88,7 @@ void MqttClient::PahoMessageHandler(MessageData * md)
             {
                 memcpy(topic, md->topicName->lenstring.data, md->topicName->lenstring.len);
                 topic[md->topicName->lenstring.len] = '\0';
+                topicAllocated                      = true;
             }
         }
     }
@@ -99,8 +101,10 @@ void MqttClient::PahoMessageHandler(MessageData * md)
     }
     ChipLogProgress(DeviceLayer, "MQTT message: %.*s", static_cast<int>(payload.size()),
                     reinterpret_cast<const char *>(payload.data()));
-    free(topic);
-    topic = nullptr;
+    if (topicAllocated)
+    {
+        free(topic);
+    }
 }
 
 const char * GetNetworkErrorString(int status)
@@ -131,6 +135,9 @@ void MqttClient::LogNetworkConnectError(int status)
     ChipLogError(DeviceLayer, "%s", GetNetworkErrorString(status));
 }
 
+// Frees only the pre-connect TLS stub (cert holder) allocated in ProcessConnect.
+// After NetworkConnect succeeds, the transport owns the live context and frees it via
+// NetworkDisconnect; do not raw-free an initialized TLS context here.
 void MqttClient::FreeTlsContext()
 {
 #if MQTT_USE_HOST_LWIP_TLS && MQTT_TLS_ENABLE
@@ -180,6 +187,20 @@ void MqttClient::ServiceThread(void * arg)
         {
             self->ProcessOperation();
         }
+    }
+
+    // Release socket/TLS before the service thread exits (Stop or event-wait failure).
+    if (self->mInitialized)
+    {
+        CHIP_ERROR err = self->ProcessDisconnect();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT stop disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+        }
+    }
+    if (sActiveClient == self)
+    {
+        sActiveClient = nullptr;
     }
 
     osEventFlagsDelete(static_cast<osEventFlagsId_t>(self->mEventFlags));
@@ -363,6 +384,7 @@ CHIP_ERROR MqttClient::ProcessDeinit()
         }
     }
 
+    // Defensive: free any leftover pre-connect stub after NetworkDisconnect in ProcessDisconnect.
     FreeTlsContext();
     mInitialized = false;
     if (sActiveClient == this)
@@ -420,6 +442,7 @@ CHIP_ERROR MqttClient::ProcessConnect()
     if (netStatus != 0)
     {
         LogNetworkConnectError(netStatus);
+        // Recover leftover pre-connect stub if transport did not take ownership.
         FreeTlsContext();
         return CHIP_ERROR_INTERNAL;
     }
@@ -442,6 +465,7 @@ CHIP_ERROR MqttClient::ProcessConnect()
     if (mqttStatus != SUCCESS)
     {
         ChipLogError(DeviceLayer, "MQTT CONNECT failed: %d", mqttStatus);
+        // Transport frees the live TLS context; FreeTlsContext is stub-only if still set.
         NetworkDisconnect(&mNetwork);
         FreeTlsContext();
         return MapPahoStatus(mqttStatus);
@@ -466,6 +490,7 @@ CHIP_ERROR MqttClient::ProcessDisconnect()
         mConnected = false;
     }
 
+    // NetworkDisconnect frees the live TLS context; FreeTlsContext clears any leftover stub.
     NetworkDisconnect(&mNetwork);
     FreeTlsContext();
     ChipLogProgress(DeviceLayer, "MQTT disconnected");
