@@ -14,9 +14,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#include "../ProvisionStorageReader.h"
-#include "../ProvisionCrypto.h"
-#include "ProvisionStorageFlash.h"
 #include <app/TestEventTriggerDelegate.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
 #include <headers/ProvisionStorage.h>
@@ -25,6 +22,9 @@
 #include <lib/support/CodeUtils.h>
 #include <platform/CHIPDeviceConfig.h>
 #include <platform/CHIPDeviceError.h>
+#include <provision/ProvisionCrypto.h>
+#include <provision/ProvisionStorageReader.h>
+#include <provision/flash/ProvisionStorageFlash.h>
 #if defined(SL_MATTER_ENABLE_OTA_ENCRYPTION) && SL_MATTER_ENABLE_OTA_ENCRYPTION
 #include <platform/silabs/multi-ota/OtaTlvEncryptionKey.h>
 #endif
@@ -210,7 +210,7 @@ CHIP_ERROR ProvisionStorageReader::GetCertificationDeclaration(MutableByteSpan &
 {
     size_t size    = 0;
     CHIP_ERROR err = (Flash::Get(Parameters::ID::kCertification, value.data(), value.size(), size));
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+#if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     if (CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND == err)
     {
         // Example CD
@@ -226,7 +226,7 @@ CHIP_ERROR ProvisionStorageReader::GetProductAttestationIntermediateCert(Mutable
 {
     size_t size    = 0;
     CHIP_ERROR err = (Flash::Get(Parameters::ID::kPaiCert, value.data(), value.size(), size));
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+#if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     if (CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND == err)
     {
         // Example PAI
@@ -242,7 +242,7 @@ CHIP_ERROR ProvisionStorageReader::GetDeviceAttestationCert(MutableByteSpan & va
 {
     size_t size    = 0;
     CHIP_ERROR err = (Flash::Get(Parameters::ID::kDacCert, value.data(), value.size(), size));
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+#if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     if (CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND == err)
     {
         // Example DAC
@@ -257,7 +257,7 @@ CHIP_ERROR ProvisionStorageReader::GetDeviceAttestationCert(MutableByteSpan & va
 CHIP_ERROR ProvisionStorageReader::SignWithDeviceAttestationKey(const ByteSpan & message, MutableByteSpan & signature)
 {
     CHIP_ERROR err = ProvisionCrypto::GetInstance().SignWithDeviceAttestationKey(message, signature);
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+#if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     if (err == CHIP_ERROR_NOT_FOUND || err == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND)
     {
         return Examples::GetExampleDACProvider()->SignWithDeviceAttestationKey(message, signature);

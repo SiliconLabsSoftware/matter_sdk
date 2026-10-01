@@ -67,10 +67,10 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #include <data-model-providers/codegen/Instance.h>
 #endif // !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
 #include "provision/ProvisionStorageReader.h"
-#if defined(SL_MATTER_PROVISION_CHANNEL_ENABLED) && SL_MATTER_PROVISION_CHANNEL_ENABLED
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
+#include "provision/ProvisionChannel.h"
 #include "provision/ProvisionCrypto.h"
 #include "provision/ProvisionStorageWriter.h"
-#include "provision/ProvisionTransport.h"
 #include <headers/ProvisionManager.h>
 #endif
 #include <platform/DefaultTimerDelegate.h>
@@ -282,6 +282,23 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     MemMonitoring::StartMonitor();
 #endif
 
+    // The reader owns its singleton instance because Matter stores these
+    // provider pointers for the lifetime of the application. It requires no
+    // Provision Core initialization and exposes no write capability.
+    auto & provisionStorageReader = Provision::ProvisionStorageReader::GetInstance();
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
+    auto & provisionManager       = Provision::Manager::GetInstance();
+    auto & provisionStorageWriter = Provision::ProvisionStorageWriter::GetInstance();
+#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+    ReturnErrorOnFailure(provisionStorageWriter.Initialize());
+#endif
+    provisionManager.SetStorageBackend(provisionStorageReader, &provisionStorageWriter);
+    provisionManager.SetCryptoProvider(Provision::ProvisionCrypto::GetInstance());
+    provisionManager.SetChannel(Provision::ProvisionChannel::GetInstance());
+    provisionManager.SetResetHandler([]() { GetPlatform().SoftwareReset(); });
+    ReturnErrorOnFailure(provisionManager.Init(true));
+#endif
+
     //==============================================
     // Init Matter Stack
     //==============================================
@@ -309,26 +326,10 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Set BLE Device Name: %" CHIP_ERROR_FORMAT, err.Format()));
 #endif
-    // The reader owns its singleton instance because Matter stores these
-    // provider pointers for the lifetime of the application. It requires no
-    // Provision Core initialization and exposes no write capability.
-    auto & provisionStorageReader = Provision::ProvisionStorageReader::GetInstance();
+
     SetDeviceInstanceInfoProvider(&provisionStorageReader);
     SetCommissionableDataProvider(&provisionStorageReader);
     SetDeviceAttestationCredentialsProvider(&provisionStorageReader);
-
-#if defined(SL_MATTER_PROVISION_CHANNEL_ENABLED) && SL_MATTER_PROVISION_CHANNEL_ENABLED
-    auto & provisionManager = Provision::Manager::GetInstance();
-    auto & provisionStorageWriter = Provision::ProvisionStorageWriter::GetInstance();
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-    ReturnErrorOnFailure(provisionStorageWriter.Initialize());
-#endif
-    provisionManager.ConfigureStorage(provisionStorageReader, &provisionStorageWriter);
-    provisionManager.ConfigureCrypto(Provision::ProvisionCrypto::GetInstance());
-    provisionManager.ConfigureTransport(Provision::ProvisionTransport::GetInstance());
-    provisionManager.ConfigureResetHandler([]() { GetPlatform().SoftwareReset(); });
-    ReturnErrorOnFailure(provisionManager.Init(true));
-#endif
 
     // Create initParams with SDK example defaults here
     // TODO: replace with our own init param to avoid double allocation in examples

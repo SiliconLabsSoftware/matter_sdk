@@ -2,35 +2,35 @@
  *    Copyright (c) 2026 Project CHIP Authors
  *    All rights reserved.
  */
-#include "ProvisionTransport.h"
+#include "ProvisionChannel.h"
 
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
 namespace Provision {
 
-ProvisionTransport & ProvisionTransport::GetInstance()
+ProvisionChannel & ProvisionChannel::GetInstance()
 {
-    static ProvisionTransport instance;
+    static ProvisionChannel instance;
     return instance;
 }
 
-CHIP_ERROR ProvisionTransport::Init()
+CHIP_ERROR ProvisionChannel::Init()
 {
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR ProvisionTransport::Read(uint8_t *, size_t, size_t &)
+CHIP_ERROR ProvisionChannel::Read(uint8_t *, size_t, size_t &)
 {
     return CHIP_ERROR_READ_FAILED;
 }
 
-CHIP_ERROR ProvisionTransport::Write(const uint8_t *, size_t)
+CHIP_ERROR ProvisionChannel::Write(const uint8_t *, size_t)
 {
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR ProvisionTransport::OnDataAvailable()
+CHIP_ERROR ProvisionChannel::OnDataAvailable()
 {
     return CHIP_NO_ERROR;
 }

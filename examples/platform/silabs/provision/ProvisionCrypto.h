@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <headers/ProvisionCrypto.h>
+#include <headers/ProvisionCryptoInterface.h>
 
 namespace chip {
 namespace DeviceLayer {

@@ -14,8 +14,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#include "../ProvisionStorageReader.h"
-#include "../ProvisionCrypto.h"
 #include <credentials/examples/DeviceAttestationCredsExample.h>
 #include <lib/support/BytesToHex.h>
 #include <lib/support/CHIPMemString.h>
@@ -25,6 +23,8 @@
 #include <platform/CHIPDeviceError.h>
 #include <platform/silabs/SilabsConfig.h>
 #include <platform/silabs/multi-ota/OtaTlvEncryptionKey.h>
+#include <provision/ProvisionCrypto.h>
+#include <provision/ProvisionStorageReader.h>
 #include <silabs_creds.h>
 
 #ifndef NDEBUG
@@ -265,10 +265,9 @@ CHIP_ERROR ProvisionStorageReader::GetCertificationDeclaration(MutableByteSpan &
         err = ReadFileByOffset("GetCertificationDeclaration", SL_CREDENTIALS_CD_OFFSET, SL_CREDENTIALS_CD_SIZE, value);
     }
 #endif
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+#if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     if (CHIP_ERROR_NOT_FOUND == err)
     {
-        // Example CD
         err = chip::Credentials::Examples::GetExampleDACProvider()->GetCertificationDeclaration(value);
     }
 #endif
@@ -286,10 +285,9 @@ CHIP_ERROR ProvisionStorageReader::GetProductAttestationIntermediateCert(Mutable
         err = ReadFileByOffset("GetProductAttestationIntermediateCert", SL_CREDENTIALS_PAI_OFFSET, SL_CREDENTIALS_PAI_SIZE, value);
     }
 #endif
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+#if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     if (CHIP_ERROR_NOT_FOUND == err)
     {
-        // Example PAI
         err = chip::Credentials::Examples::GetExampleDACProvider()->GetProductAttestationIntermediateCert(value);
     }
 #endif
@@ -307,10 +305,9 @@ CHIP_ERROR ProvisionStorageReader::GetDeviceAttestationCert(MutableByteSpan & va
         err = ReadFileByOffset("GetDeviceAttestationCert", SL_CREDENTIALS_DAC_OFFSET, SL_CREDENTIALS_DAC_SIZE, value);
     }
 #endif
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
+#if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     if (CHIP_ERROR_NOT_FOUND == err)
     {
-        // Example DAC
         return chip::Credentials::Examples::GetExampleDACProvider()->GetDeviceAttestationCert(value);
     }
 #endif
@@ -330,14 +327,12 @@ CHIP_ERROR ProvisionStorageReader::GetSetupPayload(uint8_t * value, size_t max, 
 CHIP_ERROR ProvisionStorageReader::SignWithDeviceAttestationKey(const ByteSpan & message, MutableByteSpan & signature)
 {
     CHIP_ERROR error = ProvisionCrypto::GetInstance().SignWithDeviceAttestationKey(message, signature);
+#if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
     if (error == CHIP_ERROR_NOT_FOUND || error == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND)
     {
-#ifdef SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
         return chip::Credentials::Examples::GetExampleDACProvider()->SignWithDeviceAttestationKey(message, signature);
-#else
-        return error;
-#endif
     }
+#endif
     return error;
 }
 

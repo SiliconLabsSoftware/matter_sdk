@@ -61,9 +61,9 @@ extern "C" {
 #include <setup_payload/AdditionalDataPayloadGenerator.h>
 #endif
 
-#if defined(SL_MATTER_PROVISION_CHANNEL_ENABLED) && SL_MATTER_PROVISION_CHANNEL_ENABLED
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
 #include <headers/ProvisionManager.h>
-#endif
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 
 using namespace ::chip;
 using namespace ::chip::Ble;
@@ -897,7 +897,7 @@ BLEManagerImpl::EventFilter BLEManagerImpl::HandleWriteEvent(volatile sl_bt_msg_
 
         if (gattdb_CHIPoBLEChar_Rx == attribute)
         {
-#if defined(SL_MATTER_PROVISION_CHANNEL_ENABLED) && SL_MATTER_PROVISION_CHANNEL_ENABLED
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
             auto & provisionManager = ::chip::DeviceLayer::Silabs::Provision::Manager::GetInstance();
             if (provisionManager.IsProvisionRequired())
             {
@@ -910,7 +910,7 @@ BLEManagerImpl::EventFilter BLEManagerImpl::HandleWriteEvent(volatile sl_bt_msg_
             }
 #else
             HandleRXCharWrite(evt);
-#endif
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
         }
     }
     else if (isMATTERoBLECharacteristic(evt->data.evt_gatt_server_user_write_request.characteristic))

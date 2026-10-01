@@ -57,9 +57,9 @@
 #endif // ENABLE_CHIP_SHELL
 
 #include <assert.h>
-#if defined(SL_MATTER_PROVISION_CHANNEL_ENABLED) && SL_MATTER_PROVISION_CHANNEL_ENABLED
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
 #include <headers/ProvisionManager.h>
-#endif
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 #include <lib/support/CodeUtils.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <setup_payload/OnboardingCodesUtil.h>
@@ -1080,12 +1080,12 @@ void BaseApplication::ScheduleFactoryReset()
 {
     TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork([](intptr_t) {
     // Press both buttons to request provisioning
-#if defined(SL_MATTER_PROVISION_CHANNEL_ENABLED) && SL_MATTER_PROVISION_CHANNEL_ENABLED
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
         if (GetPlatform().GetButtonState(APP_ACTION_BUTTON))
         {
             TEMPORARY_RETURN_IGNORED Provision::Manager::GetInstance().SetProvisionRequired(true);
         }
-#endif
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 #if defined(SL_WIFI) && SL_WIFI
         // Removing the matter services on factory reset
         TEMPORARY_RETURN_IGNORED chip::Dnssd::ServiceAdvertiser::Instance().RemoveServices();

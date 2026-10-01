@@ -15,13 +15,13 @@
  *    limitations under the License.
  */
 
-#include "../ProvisionStorageReader.h"
-#include "ProvisionStorageZephyr.h"
 #include <cinttypes>
 #include <crypto/CHIPCryptoPAL.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/Zephyr/ZephyrConfig.h>
+#include <provision/ProvisionStorageReader.h>
+#include <provision/zephyr/ProvisionStorageZephyr.h>
 #include <psa/crypto.h>
 namespace chip {
 namespace DeviceLayer {
@@ -217,12 +217,14 @@ CHIP_ERROR ProvisionStorageReader::GetOtaTlvEncryptionKeyId(uint32_t & keyId)
     (void) keyId;
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
+
 CHIP_ERROR ProvisionStorageReader::DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uint32_t & ivOffset)
 {
     (void) block;
     (void) ivOffset;
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
+
 CHIP_ERROR ProvisionStorageReader::GetTestEventTriggerKey(MutableByteSpan & keySpan)
 {
     (void) keySpan;

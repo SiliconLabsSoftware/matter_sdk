@@ -14,11 +14,11 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#include "../ProvisionStorageWriter.h"
-#include "ProvisionStorageFlash.h"
 #include <app/TestEventTriggerDelegate.h>
 #include <headers/ProvisionStorage.h>
 #include <lib/support/CodeUtils.h>
+#include <provision/ProvisionStorageWriter.h>
+#include <provision/flash/ProvisionStorageFlash.h>
 #if defined(SL_MATTER_ENABLE_OTA_ENCRYPTION) && SL_MATTER_ENABLE_OTA_ENCRYPTION
 #include <platform/silabs/multi-ota/OtaTlvEncryptionKey.h>
 #endif

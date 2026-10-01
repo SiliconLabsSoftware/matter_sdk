@@ -18,6 +18,7 @@ import("${silabs_sdk_build_root}/silabs_board.gni")
 
 declare_args() {
   sl_use_provision_channel = false
+  sl_use_example_credentials = true
 }
 
 if (wifi_soc) {
@@ -33,11 +34,25 @@ config("storage-config") {
 }
 
 source_set("storage") {
+
+  impl_folder = "default"
+  if (use_provision_flash_storage) {
+    impl_folder = "flash"
+  }
+
   sources = [
     "ProvisionCrypto.h",
     "ProvisionStorageReader.h",
     "ProvisionStorageReaderCommon.cpp",
+    "${impl_folder}/ProvisionStorageReader.cpp"
   ]
+
+  if (use_provision_flash_storage) {
+    sources += [
+      "${impl_folder}/ProvisionStorageFlash.cpp",
+      "${impl_folder}/ProvisionStorageFlash.h",
+    ]
+  }
 
   if (wifi_soc) {
     if (sl_si91x_crypto_flavor == "psa") {
@@ -49,48 +64,38 @@ source_set("storage") {
     sources += [ "ProvisionCryptoPSA.cpp" ]
   }
 
-  if (use_provision_flash_storage) {
-    sources += [
-      "flash/ProvisionStorageFlash.cpp",
-      "flash/ProvisionStorageFlash.h",
-      "flash/ProvisionStorageReader.cpp",
-    ]
-  } else {
-    sources += [ "default/ProvisionStorageReader.cpp" ]
-  }
-
   if (sl_use_provision_channel) {
     sources += [
       "ProvisionStorageCustom.cpp",
       "ProvisionStorageWriter.h",
-      "ProvisionTransport.h",
+      "ProvisionChannel.h",
+      "${impl_folder}/ProvisionStorageWriter.cpp"
     ]
-    if (use_provision_flash_storage) {
-      sources += [ "flash/ProvisionStorageWriter.cpp" ]
-    } else {
-      sources += [ "default/ProvisionStorageWriter.cpp" ]
-    }
+
     if (wifi_soc) {
-      sources += [ "ProvisionTransportSi917BLE.cpp" ]
+      sources += [ "ProvisionChannelSi917BLE.cpp" ]
     } else {
-      sources += [ "ProvisionTransportEFR32BLE.cpp" ]
+      sources += [ "ProvisionChannelEFR32BLE.cpp" ]
     }
   }
 
+  defines = [
+    "SL_MATTER_PROVISION_CHANNEL_ENABLED=${sl_use_provision_channel}",
+    "SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS=${sl_use_example_credentials}",
+  ]
+
   # Require the provision library when provision channel or flash storage is used
   if (sl_use_provision_channel || use_provision_flash_storage) {
+    _provision_abi = "m33-hard"
     if (wifi_soc) {
       _provision_abi = "m4-softfp"
-    } else {
-      _provision_abi = "m33-hard"
     }
 
     if (is_clang) {
-      libs =
-          [ "${sl_provision_root}/libs/libProvision-${_provision_abi}-clang.a" ]
-    } else {
-      libs = [ "${sl_provision_root}/libs/libProvision-${_provision_abi}.a" ]
+      _provision_abi += "-clang"
     }
+
+    libs = [ "${sl_provision_root}/libs/libProvision-${_provision_abi}.a" ]
   }
 
   deps = [ "${chip_root}/src/lib" ]

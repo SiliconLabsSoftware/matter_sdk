@@ -15,11 +15,11 @@
  *    limitations under the License.
  */
 
-#include "../ProvisionStorageWriter.h"
-#include "ProvisionStorageZephyr.h"
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/Zephyr/ZephyrConfig.h>
+#include <provision/ProvisionStorageWriter.h>
+#include <provision/zephyr/ProvisionStorageZephyr.h>
 #if defined(SL_PROVISION_GENERATOR) && SL_PROVISION_GENERATOR
 #include <settings/settings_nvs.h>
 #endif

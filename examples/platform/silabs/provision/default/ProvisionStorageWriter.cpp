@@ -14,7 +14,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#include "../ProvisionStorageWriter.h"
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -22,6 +21,7 @@
 #include <platform/silabs/SilabsConfig.h>
 #include <platform/silabs/multi-ota/OtaTlvEncryptionKey.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+#include <provision/ProvisionStorageWriter.h>
 #include <silabs_creds.h>
 
 #include <cstring>

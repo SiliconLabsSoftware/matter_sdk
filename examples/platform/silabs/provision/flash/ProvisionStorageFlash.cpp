@@ -14,7 +14,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#include "ProvisionStorageFlash.h"
+#include <provision/flash/ProvisionStorageFlash.h>
 
 #include <headers/ProvisionEncoder.h>
 #include <lib/core/CHIPEncoding.h>
