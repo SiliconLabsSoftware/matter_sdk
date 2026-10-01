@@ -29,8 +29,8 @@ namespace {
 using SilabsConfig = chip::DeviceLayer::Internal::SilabsConfig;
 
 constexpr size_t kDeviceAttestationKeySizeMax = 128;
-constexpr size_t kSubjectNameLengthMax        = 160;
-
+#ifndef SLI_SI91X_MCU_INTERFACE
+constexpr size_t kSubjectNameLengthMax = 160;
 int GetRandom(void *, unsigned char * output, size_t size)
 {
     return chip::Crypto::DRBG_get_bytes(output, size) == CHIP_NO_ERROR ? 0 : -1;
@@ -45,6 +45,7 @@ CHIP_ERROR FormatMatterOidUtf8DerHex(char * destination, size_t destinationSize,
                  static_cast<unsigned char>(hex[1]), static_cast<unsigned char>(hex[2]), static_cast<unsigned char>(hex[3]));
     return written == 13 ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
+#endif // SLI_SI91X_MCU_INTERFACE
 
 CHIP_ERROR ReadKey(MutableByteSpan & key)
 {
