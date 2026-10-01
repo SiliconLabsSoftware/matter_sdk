@@ -16,7 +16,7 @@
  *    limitations under the License.
  *
  * @brief Host LwIP Paho MQTT/MQTTS demo entry point
- * 1. Init the MqttClient
+ * 1. Start + Init the MqttClient (skipped if already running/initialized)
  * 2. Connect to the MQTT broker
  * 3. Subscribe to the topic
  * 4. Publish the message
@@ -64,5 +64,14 @@
 #define MQTT_PUBLISH_MESSAGE "THIS IS MQTT CLIENT DEMO FROM APPLICATION"
 #endif
 
-/** Load config + run MQTT demo on the MqttClient service thread (idempotent). */
+/**
+ * Start/Init if needed, then Connect + Subscribe + Publish (blocking wait).
+ * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
+ */
 sl_status_t mqtt_client_demo_start(void);
+
+/**
+ * Disconnect the MQTT session on link loss; leave Start/Init intact for reconnect.
+ * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop.
+ */
+sl_status_t mqtt_client_demo_stop(void);

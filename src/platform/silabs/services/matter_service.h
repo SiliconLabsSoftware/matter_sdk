@@ -24,9 +24,6 @@ namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
 
-/** Delay before starting service demos after internet connectivity is established. */
-static constexpr uint32_t kMatterServicesInitDelaySec = 10;
-
 /**
  * @brief Common lifecycle for Matter platform services (HTTP, MQTT, ...).
  *

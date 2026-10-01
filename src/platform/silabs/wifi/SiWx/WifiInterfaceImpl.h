@@ -153,6 +153,7 @@ private:
      */
     void NotifySuccessfulConnection();
 
+    void ClearWifiDisconnectedState();
     bool mHasNotifiedWifiConnectivity = false;
     bool mUseQuickJoin                = false;
 
