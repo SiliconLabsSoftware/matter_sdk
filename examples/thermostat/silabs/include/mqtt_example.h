@@ -42,7 +42,7 @@
 #endif
 
 #ifndef MQTT_CLIENT_ID // The ID of your MQTT client
-#define MQTT_CLIENT_ID "WISECONNECT_SDK_TOPIC"
+#define MQTT_CLIENT_ID "MQTT_CLIENT_ID"
 #endif
 
 #ifndef MQTT_USERNAME // The username of your MQTT client
@@ -54,11 +54,11 @@
 #endif
 
 #ifndef MQTT_TOPIC // The topic of your MQTT client
-#define MQTT_TOPIC "THERMOSTAT-DATA"
+#define MQTT_TOPIC "MQTT_TOPIC"
 #endif
 
 #ifndef MQTT_PUBLISH_MESSAGE // The message to publish to the MQTT broker
-#define MQTT_PUBLISH_MESSAGE "THIS IS MQTT CLIENT DEMO FROM APPLICATION"
+#define MQTT_PUBLISH_MESSAGE "MQTT_PUBLISH_MESSAGE"
 #endif
 
 /**
