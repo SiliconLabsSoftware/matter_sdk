@@ -112,6 +112,11 @@ void MatterClusterServerInitCallback(EndpointId endpoint, ClusterId clusterId)
     case app::Clusters::OvenMode::Id:
         MatterOvenModeClusterInitCallback(endpoint);
         break;
+    case app::Clusters::LaundryDryerControls::Id:
+        MatterLaundryDryerControlsClusterInitCallback(endpoint);
+    case app::Clusters::ModeSelect::Id:
+        MatterModeSelectClusterInitCallback(endpoint);
+        break;
     case app::Clusters::LaundryWasherMode::Id:
         MatterLaundryWasherModeClusterInitCallback(endpoint);
         break;
@@ -301,6 +306,11 @@ void MatterClusterServerShutdownCallback(EndpointId endpoint, ClusterId clusterI
         break;
     case app::Clusters::OvenMode::Id:
         MatterOvenModeClusterShutdownCallback(endpoint, shutdownType);
+        break;
+    case app::Clusters::LaundryDryerControls::Id:
+        MatterLaundryDryerControlsClusterShutdownCallback(endpoint, shutdownType);
+    case app::Clusters::ModeSelect::Id:
+        MatterModeSelectClusterShutdownCallback(endpoint, shutdownType);
         break;
     case app::Clusters::LaundryWasherMode::Id:
         MatterLaundryWasherModeClusterShutdownCallback(endpoint, shutdownType);
