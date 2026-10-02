@@ -34,17 +34,16 @@ config("storage-config") {
 }
 
 source_set("storage") {
-
   impl_folder = "default"
   if (use_provision_flash_storage) {
     impl_folder = "flash"
   }
 
   sources = [
+    "${impl_folder}/ProvisionStorageReader.cpp",
     "ProvisionCrypto.h",
     "ProvisionStorageReader.h",
     "ProvisionStorageReaderCommon.cpp",
-    "${impl_folder}/ProvisionStorageReader.cpp"
   ]
 
   if (use_provision_flash_storage) {
@@ -58,7 +57,7 @@ source_set("storage") {
     if (sl_si91x_crypto_flavor == "psa") {
       sources += [ "ProvisionCryptoPSA.cpp" ]
     } else {
-      sources += [ "ProvisionCryptoMbed.cpp"]
+      sources += [ "ProvisionCryptoMbed.cpp" ]
     }
   } else {
     sources += [ "ProvisionCryptoPSA.cpp" ]
@@ -66,10 +65,10 @@ source_set("storage") {
 
   if (sl_use_provision_channel) {
     sources += [
+      "${impl_folder}/ProvisionStorageWriter.cpp",
+      "ProvisionChannel.h",
       "ProvisionStorageCustom.cpp",
       "ProvisionStorageWriter.h",
-      "ProvisionChannel.h",
-      "${impl_folder}/ProvisionStorageWriter.cpp"
     ]
 
     if (wifi_soc) {
