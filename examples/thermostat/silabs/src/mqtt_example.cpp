@@ -26,15 +26,21 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceLayer.h>
 
 #include <cstring>
 
 namespace {
 
 using chip::ByteSpan;
+using chip::DeviceLayer::ChipDeviceEvent;
+using chip::DeviceLayer::PlatformMgr;
 using chip::DeviceLayer::Silabs::MqttBroker;
 using chip::DeviceLayer::Silabs::MqttClient;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
+using chip::DeviceLayer::kConnectivity_Established;
+using chip::DeviceLayer::kConnectivity_Lost;
+namespace DeviceEventType = chip::DeviceLayer::DeviceEventType;
 
 // Please fill in the details for your own MQTT broker.
 constexpr char kMqttBrokerIp[]       = MQTT_BROKER_IP;    // The IP address of your MQTT broker
@@ -50,6 +56,36 @@ constexpr char kMqttPublishMessage[] = MQTT_PUBLISH_MESSAGE;
 MqttClient gMqttsClient;
 volatile bool gOpDone = false;
 CHIP_ERROR gOpResult  = CHIP_NO_ERROR;
+
+void OnPlatformEvent(const ChipDeviceEvent * event, intptr_t /* arg */)
+{
+    VerifyOrReturn(event != nullptr);
+
+    switch (event->Type)
+    {
+    case DeviceEventType::kWiFiConnectivityChange:
+        if (event->WiFiConnectivityChange.Result == kConnectivity_Established)
+        {
+            ChipLogProgress(DeviceLayer, "MQTT demo: WiFi Connected");
+        }
+        else if (event->WiFiConnectivityChange.Result == kConnectivity_Lost)
+        {
+            ChipLogProgress(DeviceLayer, "MQTT demo: WiFi Disconnected");
+        }
+        break;
+
+    case DeviceEventType::kCommissioningComplete:
+        ChipLogProgress(DeviceLayer, "MQTT demo: Commissioning Complete");
+        break;
+
+    case DeviceEventType::kSecureSessionEstablished:
+        ChipLogProgress(DeviceLayer, "MQTT demo: Commissioning Started");
+        break;
+
+    default:
+        break;
+    }
+}
 
 void OnOperationDone(CHIP_ERROR result, void * /* context */)
 {
@@ -111,6 +147,13 @@ sl_status_t mqtt_client_demo_start(void)
 
     if (!gMqttsClient.IsInitialized())
     {
+        err = PlatformMgr().AddEventHandler(OnPlatformEvent, 0);
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "MQTT OnPlatformEvent register failed: %" CHIP_ERROR_FORMAT, err.Format());
+            return SL_STATUS_FAIL;
+        }
+
         // Init is queued to the service thread, so Start must happen first when needed.
         if (!gMqttsClient.IsRunning())
         {
