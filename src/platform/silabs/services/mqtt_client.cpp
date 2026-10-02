@@ -73,8 +73,7 @@ void MqttClient::PahoMessageHandler(MessageData * md)
     VerifyOrReturn(self != nullptr);
     VerifyOrReturn(md != nullptr && md->message != nullptr);
 
-    char * topic        = nullptr;
-    bool topicAllocated = false;
+    char * topic = nullptr;
     if (md->topicName != nullptr)
     {
         if (md->topicName->cstring != nullptr)
@@ -88,7 +87,6 @@ void MqttClient::PahoMessageHandler(MessageData * md)
             {
                 memcpy(topic, md->topicName->lenstring.data, md->topicName->lenstring.len);
                 topic[md->topicName->lenstring.len] = '\0';
-                topicAllocated                      = true;
             }
         }
     }
@@ -101,7 +99,7 @@ void MqttClient::PahoMessageHandler(MessageData * md)
     }
     ChipLogProgress(DeviceLayer, "MQTT message: %.*s", static_cast<int>(payload.size()),
                     reinterpret_cast<const char *>(payload.data()));
-    if (topicAllocated)
+    if (topic != nullptr)
     {
         free(topic);
     }
@@ -190,18 +188,10 @@ void MqttClient::ServiceThread(void * arg)
     }
 
     // Release socket/TLS before the service thread exits (Stop or event-wait failure).
-    if (self->mInitialized)
-    {
-        CHIP_ERROR err = self->ProcessDisconnect();
-        if (err != CHIP_NO_ERROR)
-        {
-            ChipLogError(DeviceLayer, "MQTT stop disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
-        }
-    }
-    if (sActiveClient == self)
-    {
-        sActiveClient = nullptr;
-    }
+    ChipLogDetail(DeviceLayer, "MQTT service thread exiting");
+
+    LogErrorOnFailure(self->ProcessDisconnect());
+    LogErrorOnFailure(self->ProcessDeinit());
 
     osEventFlagsDelete(static_cast<osEventFlagsId_t>(self->mEventFlags));
     self->mEventFlags = nullptr;
