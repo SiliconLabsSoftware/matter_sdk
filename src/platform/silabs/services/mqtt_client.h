@@ -79,10 +79,10 @@ struct MqttClientConfig
     const char * willTopic   = nullptr;
     const char * willMessage = nullptr;
     // Defaults used when Subscribe / Publish omit an explicit QoS.
-    MqttQoS willQoS          = MqttQoS::QoS1; ///< Last Will QoS when willEnable is true.
-    bool willRetained        = false;
-    MqttQoS pubQoS           = MqttQoS::QoS1; ///< Default Publish QoS.
-    MqttQoS subQoS           = MqttQoS::QoS1; ///< Default Subscribe QoS.
+    MqttQoS willQoS   = MqttQoS::QoS1; ///< Last Will QoS when willEnable is true.
+    bool willRetained = false;
+    MqttQoS pubQoS    = MqttQoS::QoS1; ///< Default Publish QoS.
+    MqttQoS subQoS    = MqttQoS::QoS1; ///< Default Subscribe QoS.
 
     /** PEM bytes for host mbedTLS CA chain. nullptr = skip CA install. */
     const uint8_t * tlsCaCert = nullptr;
@@ -120,18 +120,45 @@ using MqttSubscriptionCallback = void (*)(const char * topic, ByteSpan payload, 
  *
  * Lifecycle: Start → Init → Connect → Subscribe/Publish → Disconnect → Deinit → Stop.
  * Operations are queued to the service thread and report completion via @ref MqttOperationCallback.
+ * Disconnect / Deinit cancel any still-queued operations with @ref CHIP_ERROR_CANCELLED.
  * While connected and idle, the service thread auto-runs MQTTYield for keepalive and inbound publishes.
+ *
+ * @ref MqttClientConfig and @ref MqttBroker are instance state shared by all operations.
+ * They may only change while disconnected (before Connect, or after Disconnect).
  */
 class MqttClient : public MatterService
 {
 public:
     /**
+     * @brief Update client config. Allowed only while disconnected.
+     *
+     * Pointer fields must remain valid for as long as the config is in use (through Connect / session).
+     */
+    CHIP_ERROR SetConfig(const MqttClientConfig & config);
+
+    /**
+     * @brief Update broker destination. Allowed only while disconnected.
+     *
+     * Pointer fields must remain valid until Connect completes or the broker is replaced after Disconnect.
+     */
+    CHIP_ERROR SetBroker(const MqttBroker & broker);
+
+    /**
      * @brief Queue client buffer / Network / MQTTClient setup on the service thread.
+     *
+     * Applies @p config via @ref SetConfig (disconnected only), then queues Init.
      */
     CHIP_ERROR Init(const MqttClientConfig & config, MqttOperationCallback callback, void * context = nullptr);
 
     /**
+     * @brief Queue Init using the config last set by @ref SetConfig / @ref Init.
+     */
+    CHIP_ERROR Init(MqttOperationCallback callback, void * context = nullptr);
+
+    /**
      * @brief Queue teardown of an initialized (and preferably disconnected) client.
+     *
+     * Cancels any still-queued operations before teardown.
      */
     CHIP_ERROR Deinit(MqttOperationCallback callback, void * context = nullptr);
 
@@ -148,18 +175,28 @@ public:
     void SetSubscriptionCallback(MqttSubscriptionCallback callback, void * context = nullptr);
 
     /**
-     * @brief TCP/TLS NetworkConnect + MQTT CONNECT.
+     * @brief TCP/TLS NetworkConnect + MQTT CONNECT using @p broker.
      *
-     * @p broker string pointers must remain valid until the operation completes.
+     * Applies @p broker via @ref SetBroker (disconnected only), then queues Connect.
      */
     CHIP_ERROR Connect(const MqttBroker & broker, MqttOperationCallback callback, void * context = nullptr);
 
+    /**
+     * @brief Queue Connect using the broker last set by @ref SetBroker / @ref Connect.
+     */
+    CHIP_ERROR Connect(MqttOperationCallback callback, void * context = nullptr);
+
+    /**
+     * @brief Queue MQTT / network disconnect.
+     *
+     * Cancels any still-queued operations before disconnect.
+     */
     CHIP_ERROR Disconnect(MqttOperationCallback callback, void * context = nullptr);
 
     /**
      * @brief Subscribe with the instance message callback (@ref SetSubscriptionCallback).
      *
-     * @p topic must remain valid until the operation completes.
+     * @p topic must remain valid until the operation completes or is cancelled.
      */
     CHIP_ERROR Subscribe(const char * topic, MqttQoS qos, MqttOperationCallback callback, void * context = nullptr);
 
@@ -173,7 +210,7 @@ public:
     /**
      * @brief Publish @p payload to @p topic.
      *
-     * @p topic and @p payload must remain valid until the operation completes.
+     * @p topic and @p payload must remain valid until the operation completes or is cancelled.
      */
     CHIP_ERROR Publish(const char * topic, ByteSpan payload, MqttQoS qos, bool retained, MqttOperationCallback callback,
                        void * context = nullptr);
@@ -193,10 +230,11 @@ private:
     static constexpr size_t kTxBufferSize           = 1500;
     static constexpr size_t kRxBufferSize           = 1500;
     static constexpr size_t kDefaultThreadStackSize = 8 * 1024;
+    static constexpr size_t kQueueSize              = 8;
 
     enum class Operation : uint8_t
     {
-        None,
+        Stop,
         Init,
         Deinit,
         Connect,
@@ -207,34 +245,45 @@ private:
         Yield,
     };
 
-    static constexpr uint32_t kEventOperation = 1u << 0;
-    static constexpr uint32_t kEventStop      = 1u << 1;
+    struct ServiceMessage
+    {
+        Operation operation            = Operation::Stop;
+        MqttOperationCallback callback = nullptr;
+        void * context                 = nullptr;
+        const char * topic             = nullptr;
+        ByteSpan payload               = {};
+        MqttQoS qos                    = MqttQoS::QoS0;
+        bool retained                  = false;
+        uint32_t yieldTimeoutMs        = 0;
+    };
 
     static void ServiceThread(void * arg);
     static void PahoMessageHandler(MessageData * md);
     static CHIP_ERROR MapPahoStatus(int status);
     static enum QoS ToPahoQos(MqttQoS qos);
+    static void InvokeCallback(const ServiceMessage & message, CHIP_ERROR error);
 
-    CHIP_ERROR QueueOperation(Operation operation, MqttOperationCallback callback, void * context);
-    void ProcessOperation();
-    void CompleteOperation(CHIP_ERROR error);
+    CHIP_ERROR PostMessage(const ServiceMessage & message);
+    void ProcessMessage(const ServiceMessage & message);
+    void DrainQueuedOperations(CHIP_ERROR reason);
     void IdleYield();
     uint32_t GetIdleYieldTimeoutMs();
+    bool HasQueuedMessages() const;
 
     CHIP_ERROR ProcessInit();
     CHIP_ERROR ProcessDeinit();
     CHIP_ERROR ProcessConnect();
     CHIP_ERROR ProcessDisconnect();
-    CHIP_ERROR ProcessSubscribe();
-    CHIP_ERROR ProcessUnsubscribe();
-    CHIP_ERROR ProcessPublish();
-    CHIP_ERROR ProcessYield();
+    CHIP_ERROR ProcessSubscribe(const ServiceMessage & message);
+    CHIP_ERROR ProcessUnsubscribe(const ServiceMessage & message);
+    CHIP_ERROR ProcessPublish(const ServiceMessage & message);
+    CHIP_ERROR ProcessYield(const ServiceMessage & message);
 
     void FreeTlsContext();
     void LogNetworkConnectError(int status);
 
     MqttClientConfig mConfig{};
-    MqttBroker mPendingBroker{};
+    MqttBroker mBroker{};
 
     Client mClient{};
     Network mNetwork{};
@@ -242,22 +291,11 @@ private:
     uint8_t mRxBuffer[kRxBufferSize] = { 0 };
     sl_ip_address_t mServerIp{};
 
-    const char * mPendingTopic = nullptr;
-    ByteSpan mPendingPayload;
-    MqttQoS mPendingQos             = MqttQoS::QoS0;
-    bool mPendingRetained           = false;
-    uint32_t mPendingYieldTimeoutMs = 0;
+    void * mThreadId     = nullptr; // osThreadId_t
+    void * mMessageQueue = nullptr; // osMessageQueueId_t
 
-    void * mThreadId   = nullptr; // osThreadId_t
-    void * mEventFlags = nullptr; // osEventFlagsId_t
-
-    volatile bool mBusy         = false;
-    bool mInitialized           = false;
-    bool mConnected             = false;
-    Operation mPendingOperation = Operation::None;
-
-    MqttOperationCallback mUserCallback = nullptr;
-    void * mUserCallbackContext         = nullptr;
+    bool mInitialized = false;
+    bool mConnected   = false;
 
     MqttSubscriptionCallback mMessageCallback = nullptr;
     void * mMessageCallbackContext            = nullptr;

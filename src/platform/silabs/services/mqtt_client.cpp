@@ -23,6 +23,7 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+#include <cinttypes>
 #include <cstdlib>
 #include <cstring>
 
@@ -56,15 +57,29 @@ bool MqttClient::IsRunning() const
     return mThreadId != nullptr;
 }
 
+bool MqttClient::HasQueuedMessages() const
+{
+    VerifyOrReturnValue(mMessageQueue != nullptr, false);
+    return osMessageQueueGetCount(static_cast<osMessageQueueId_t>(mMessageQueue)) > 0;
+}
+
 bool MqttClient::IsBusy() const
 {
-    return mBusy;
+    return HasQueuedMessages();
 }
 
 void MqttClient::SetSubscriptionCallback(MqttSubscriptionCallback callback, void * context)
 {
     mMessageCallback        = callback;
     mMessageCallbackContext = context;
+}
+
+void MqttClient::InvokeCallback(const ServiceMessage & message, CHIP_ERROR error)
+{
+    if (message.callback != nullptr)
+    {
+        message.callback(error, message.context);
+    }
 }
 
 void MqttClient::PahoMessageHandler(MessageData * md)
@@ -90,16 +105,14 @@ void MqttClient::PahoMessageHandler(MessageData * md)
             }
         }
     }
-    ChipLogProgress(DeviceLayer, "MQTT message received on topic: %s", topic != nullptr ? topic : "unknown");
+    ChipLogDetail(DeviceLayer, "[MQTT] message received on topic: %s", topic != nullptr ? topic : "unknown");
 
     const ByteSpan payload(static_cast<const uint8_t *>(md->message->payload), md->message->payloadlen);
     if (self->mMessageCallback != nullptr)
     {
         self->mMessageCallback(topic, payload, self->mMessageCallbackContext);
     }
-    ChipLogProgress(DeviceLayer, "MQTT message: %.*s", static_cast<int>(payload.size()),
-                    reinterpret_cast<const char *>(payload.data()));
-    if (topic != nullptr)
+    if (topic != nullptr && (md->topicName == nullptr || md->topicName->cstring == nullptr))
     {
         free(topic);
     }
@@ -147,55 +160,136 @@ void MqttClient::FreeTlsContext()
 #endif // MQTT_USE_HOST_LWIP_TLS && MQTT_TLS_ENABLE
 }
 
+CHIP_ERROR MqttClient::PostMessage(const ServiceMessage & message)
+{
+    VerifyOrReturnError(mMessageQueue != nullptr, CHIP_ERROR_INCORRECT_STATE);
+
+    const osStatus_t status = osMessageQueuePut(static_cast<osMessageQueueId_t>(mMessageQueue), &message, 0, 0);
+    if (status != osOK)
+    {
+        ChipLogError(DeviceLayer, "[MQTT] unable to post message: 0x%" PRIx32, static_cast<uint32_t>(status));
+        return CHIP_ERROR_INTERNAL;
+    }
+    return CHIP_NO_ERROR;
+}
+
+void MqttClient::DrainQueuedOperations(CHIP_ERROR reason)
+{
+    VerifyOrReturn(mMessageQueue != nullptr);
+
+    auto messageQueue = static_cast<osMessageQueueId_t>(mMessageQueue);
+    ServiceMessage message{};
+    bool stopPending = false;
+
+    while (osMessageQueueGet(messageQueue, &message, nullptr, 0) == osOK)
+    {
+        if (message.operation == Operation::Stop)
+        {
+            stopPending = true;
+            continue;
+        }
+        InvokeCallback(message, reason);
+    }
+
+    if (stopPending)
+    {
+        ServiceMessage stopMessage{};
+        stopMessage.operation = Operation::Stop;
+        LogErrorOnFailure(PostMessage(stopMessage));
+    }
+}
+
+void MqttClient::ProcessMessage(const ServiceMessage & message)
+{
+    CHIP_ERROR err = CHIP_ERROR_INTERNAL;
+
+    switch (message.operation)
+    {
+    case Operation::Init:
+        err = ProcessInit();
+        break;
+    case Operation::Deinit:
+        DrainQueuedOperations(CHIP_ERROR_CANCELLED);
+        err = ProcessDeinit();
+        break;
+    case Operation::Connect:
+        err = ProcessConnect();
+        break;
+    case Operation::Disconnect:
+        DrainQueuedOperations(CHIP_ERROR_CANCELLED);
+        err = ProcessDisconnect();
+        break;
+    case Operation::Subscribe:
+        err = ProcessSubscribe(message);
+        break;
+    case Operation::Unsubscribe:
+        err = ProcessUnsubscribe(message);
+        break;
+    case Operation::Publish:
+        err = ProcessPublish(message);
+        break;
+    case Operation::Yield:
+        err = ProcessYield(message);
+        break;
+    case Operation::Stop:
+    default:
+        err = CHIP_ERROR_INCORRECT_STATE;
+        break;
+    }
+
+    InvokeCallback(message, err);
+}
+
 void MqttClient::ServiceThread(void * arg)
 {
     auto * self = static_cast<MqttClient *>(arg);
     VerifyOrReturn(self != nullptr);
 
-    auto eventFlags = static_cast<osEventFlagsId_t>(self->mEventFlags);
+    auto messageQueue = static_cast<osMessageQueueId_t>(self->mMessageQueue);
     while (true)
     {
-        // If the client is connected and not busy, wait for the idle yield timeout.
-        // Otherwise, wait forever for an event.
-        // This is to publish PINGREQ messages in the background to keep the connection alive.
-        // idleYieldTimeoutMs cannot be greater than keepAliveIntervalSec * 1000 so PINGREQ can fire in time.
+        ServiceMessage message{};
+        // While connected, poll the queue (timeout 0) then MQTTYield so the socket is read
+        // for subscribed publishes / keepalive. Do not block on the queue first — that starves
+        // MQTTYield and drops inbound topic traffic until the wait expires.
+        // While disconnected, block forever waiting for Init / Connect / Stop.
+        const uint32_t waitMs   = self->mConnected ? 0 : osWaitForever;
+        const osStatus_t status = osMessageQueueGet(messageQueue, &message, nullptr, waitMs);
 
-        // TODO: revist this logic, since most of the calculations are done in the MQTTYield function.
-        // so just invoking MQTTYield function here with (keepAliveIntervalSec *1000u - idleYieldTimeoutMs) value.
-        // should be enough to keep the connection alive.
-        const uint32_t waitMs = (self->mConnected && !self->mBusy) ? self->GetIdleYieldTimeoutMs() : osWaitForever;
-        uint32_t events       = osEventFlagsWait(eventFlags, kEventOperation | kEventStop, osFlagsWaitAny, waitMs);
-
-        if (events == osFlagsErrorTimeout)
+        if (status == osOK)
         {
-            self->IdleYield();
+            if (message.operation == Operation::Stop)
+            {
+                break;
+            }
+            self->ProcessMessage(message);
             continue;
         }
 
-        if (events & osFlagsError)
+        // Empty queue: CMSIS returns osErrorResource for timeout 0, osErrorTimeout for timed waits.
+        if (status == osErrorTimeout || status == osErrorResource)
         {
-            ChipLogError(DeviceLayer, "MQTT service event wait failed: 0x%lx", static_cast<unsigned long>(events));
-            break;
+            if (self->mConnected)
+            {
+                self->IdleYield();
+            }
+            continue;
         }
-        if (events & kEventStop)
-        {
-            break;
-        }
-        if (events & kEventOperation)
-        {
-            self->ProcessOperation();
-        }
+
+        ChipLogError(DeviceLayer, "[MQTT] service queue get failed: 0x%" PRIx32, static_cast<uint32_t>(status));
+        break;
     }
 
-    // Release socket/TLS before the service thread exits (Stop or event-wait failure).
-    ChipLogDetail(DeviceLayer, "MQTT service thread exiting");
+    // Release socket/TLS before the service thread exits (Stop or queue-get failure).
+    ChipLogDetail(DeviceLayer, "[MQTT] service thread exiting");
 
+    self->DrainQueuedOperations(CHIP_ERROR_CANCELLED);
     LogErrorOnFailure(self->ProcessDisconnect());
     LogErrorOnFailure(self->ProcessDeinit());
 
-    osEventFlagsDelete(static_cast<osEventFlagsId_t>(self->mEventFlags));
-    self->mEventFlags = nullptr;
-    self->mThreadId   = nullptr;
+    osMessageQueueDelete(static_cast<osMessageQueueId_t>(self->mMessageQueue));
+    self->mMessageQueue = nullptr;
+    self->mThreadId     = nullptr;
     osThreadTerminate(osThreadGetId());
 }
 
@@ -205,7 +299,7 @@ uint32_t MqttClient::GetIdleYieldTimeoutMs()
     // Though this is set in the constructor, it is possible to change the value later.
     if (mConfig.idleYieldTimeoutMs == 0)
     {
-        ChipLogError(DeviceLayer, "MQTT idleYieldTimeoutMs is 0 (ignored); using default 1000 ms");
+        ChipLogDetail(DeviceLayer, "[MQTT] idleYieldTimeoutMs is 0 (ignored); using default 1000 ms");
         mConfig.idleYieldTimeoutMs = 1000;
     }
 
@@ -220,17 +314,17 @@ uint32_t MqttClient::GetIdleYieldTimeoutMs()
 
 void MqttClient::IdleYield()
 {
-    VerifyOrReturn(mConnected && !mBusy);
+    VerifyOrReturn(mConnected);
 
     const uint32_t yieldMs = GetIdleYieldTimeoutMs();
     const int status       = MQTTYield(&mClient, static_cast<int>(yieldMs));
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "MQTT idle Yield failed: %d (session marked disconnected)", status);
+        ChipLogError(DeviceLayer, "[MQTT] idle yield failed: %d (session marked disconnected)", status);
         CHIP_ERROR err = ProcessDisconnect();
         if (err != CHIP_NO_ERROR)
         {
-            ChipLogError(DeviceLayer, "MQTT idle Yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+            ChipLogError(DeviceLayer, "[MQTT] idle yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
         }
     }
 }
@@ -239,8 +333,8 @@ CHIP_ERROR MqttClient::Start()
 {
     VerifyOrReturnError(mThreadId == nullptr, CHIP_NO_ERROR);
 
-    mEventFlags = osEventFlagsNew(nullptr);
-    VerifyOrReturnError(mEventFlags != nullptr, CHIP_ERROR_INTERNAL);
+    mMessageQueue = osMessageQueueNew(kQueueSize, sizeof(ServiceMessage), nullptr);
+    VerifyOrReturnError(mMessageQueue != nullptr, CHIP_ERROR_NO_MEMORY);
 
     osThreadAttr_t attrs = {};
     attrs.name           = "mqtt_client";
@@ -250,92 +344,23 @@ CHIP_ERROR MqttClient::Start()
     mThreadId = osThreadNew(ServiceThread, this, &attrs);
     if (mThreadId == nullptr)
     {
-        osEventFlagsDelete(static_cast<osEventFlagsId_t>(mEventFlags));
-        mEventFlags = nullptr;
+        osMessageQueueDelete(static_cast<osMessageQueueId_t>(mMessageQueue));
+        mMessageQueue = nullptr;
         return CHIP_ERROR_INTERNAL;
     }
-    ChipLogProgress(DeviceLayer, "MQTT client service thread started");
+    ChipLogDetail(DeviceLayer, "[MQTT] client service thread started");
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR MqttClient::Stop()
 {
-    VerifyOrReturnError(mEventFlags != nullptr, CHIP_ERROR_INCORRECT_STATE);
-    // TODO: should we terminate the thread if it is busy?
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
-    osEventFlagsSet(static_cast<osEventFlagsId_t>(mEventFlags), kEventStop);
-    ChipLogProgress(DeviceLayer, "MQTT client service thread stopped");
+    VerifyOrReturnError(mMessageQueue != nullptr, CHIP_ERROR_INCORRECT_STATE);
+
+    ServiceMessage message{};
+    message.operation = Operation::Stop;
+    ReturnErrorOnFailure(PostMessage(message));
+
     return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR MqttClient::QueueOperation(Operation operation, MqttOperationCallback callback, void * context)
-{
-    VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
-
-    mPendingOperation    = operation;
-    mUserCallback        = callback;
-    mUserCallbackContext = context;
-    mBusy                = true;
-    osEventFlagsSet(static_cast<osEventFlagsId_t>(mEventFlags), kEventOperation);
-    return CHIP_NO_ERROR;
-}
-
-void MqttClient::CompleteOperation(CHIP_ERROR error)
-{
-    MqttOperationCallback callback = mUserCallback;
-    void * context                 = mUserCallbackContext;
-
-    mPendingOperation    = Operation::None;
-    mUserCallback        = nullptr;
-    mUserCallbackContext = nullptr;
-    mPendingTopic        = nullptr;
-    mPendingPayload      = ByteSpan();
-    mBusy                = false;
-
-    if (callback != nullptr)
-    {
-        callback(error, context);
-    }
-}
-
-void MqttClient::ProcessOperation()
-{
-    CHIP_ERROR err = CHIP_ERROR_INTERNAL;
-
-    switch (mPendingOperation)
-    {
-    case Operation::Init:
-        err = ProcessInit();
-        break;
-    case Operation::Deinit:
-        err = ProcessDeinit();
-        break;
-    case Operation::Connect:
-        err = ProcessConnect();
-        break;
-    case Operation::Disconnect:
-        err = ProcessDisconnect();
-        break;
-    case Operation::Subscribe:
-        err = ProcessSubscribe();
-        break;
-    case Operation::Unsubscribe:
-        err = ProcessUnsubscribe();
-        break;
-    case Operation::Publish:
-        err = ProcessPublish();
-        break;
-    case Operation::Yield:
-        err = ProcessYield();
-        break;
-    case Operation::None:
-    default:
-        err = CHIP_ERROR_INCORRECT_STATE;
-        break;
-    }
-
-    CompleteOperation(err);
 }
 
 CHIP_ERROR MqttClient::ProcessInit()
@@ -357,7 +382,7 @@ CHIP_ERROR MqttClient::ProcessInit()
     mInitialized  = true;
     mConnected    = false;
     sActiveClient = this;
-    ChipLogProgress(DeviceLayer, "MQTT client initialized");
+    ChipLogDetail(DeviceLayer, "[MQTT] initialized");
     return CHIP_NO_ERROR;
 }
 
@@ -370,7 +395,7 @@ CHIP_ERROR MqttClient::ProcessDeinit()
         CHIP_ERROR err = ProcessDisconnect();
         if (err != CHIP_NO_ERROR)
         {
-            ChipLogError(DeviceLayer, "MQTT Deinit disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+            ChipLogError(DeviceLayer, "[MQTT] deinit disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
         }
     }
 
@@ -381,7 +406,7 @@ CHIP_ERROR MqttClient::ProcessDeinit()
     {
         sActiveClient = nullptr;
     }
-    ChipLogProgress(DeviceLayer, "MQTT client deinitialized");
+    ChipLogDetail(DeviceLayer, "[MQTT] de-initialized");
     return CHIP_NO_ERROR;
 }
 
@@ -389,23 +414,23 @@ CHIP_ERROR MqttClient::ProcessConnect()
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mPendingBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(mPendingBroker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(mBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(mBroker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
 
     mServerIp.type = SL_IPV4;
-    if (sl_net_inet_addr(mPendingBroker.brokerIp, reinterpret_cast<uint32_t *>(&mServerIp.ip.v4.value)) != SL_STATUS_OK)
+    if (sl_net_inet_addr(mBroker.brokerIp, reinterpret_cast<uint32_t *>(&mServerIp.ip.v4.value)) != SL_STATUS_OK)
     {
-        ChipLogError(DeviceLayer, "MQTT invalid broker IP: %s", mPendingBroker.brokerIp);
+        ChipLogError(DeviceLayer, "[MQTT] invalid broker IP: %s", mBroker.brokerIp);
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
-    ChipLogProgress(DeviceLayer, "MQTT connecting to broker %s port %u (TLS=%s)", mPendingBroker.brokerIp,
-                    mPendingBroker.brokerPort, mConfig.useTls ? "yes" : "no");
+    ChipLogDetail(DeviceLayer, "[MQTT] connecting to broker %s port %u (TLS=%s)", mBroker.brokerIp, mBroker.brokerPort,
+                    mConfig.useTls ? "yes" : "no");
 
 #if MQTT_USE_HOST_LWIP_TLS && MQTT_TLS_ENABLE
     if (mConfig.useTls)
     {
-        VerifyOrReturnError(mPendingBroker.tlsHostname != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+        VerifyOrReturnError(mBroker.tlsHostname != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
         FreeTlsContext();
         mNetwork.tls = static_cast<mqtt_tls_context_t *>(malloc(sizeof(mqtt_tls_context_t)));
@@ -418,7 +443,7 @@ CHIP_ERROR MqttClient::ProcessConnect()
             mNetwork.tls->cert_ctx.cacert_len = mConfig.tlsCaCertLen;
         }
 
-        if (NetworkSetTlsHostname(&mNetwork, mPendingBroker.tlsHostname) != 0)
+        if (NetworkSetTlsHostname(&mNetwork, mBroker.tlsHostname) != 0)
         {
             ChipLogError(DeviceLayer, "MQTT invalid TLS hostname");
             FreeTlsContext();
@@ -427,8 +452,8 @@ CHIP_ERROR MqttClient::ProcessConnect()
     }
 #endif
 
-    const int netStatus = NetworkConnect(&mNetwork, 0, reinterpret_cast<char *>(&mServerIp), mPendingBroker.brokerPort,
-                                         mPendingBroker.clientPort, mConfig.useTls);
+    const int netStatus =
+        NetworkConnect(&mNetwork, 0, reinterpret_cast<char *>(&mServerIp), mBroker.brokerPort, mBroker.clientPort, mConfig.useTls);
     if (netStatus != 0)
     {
         LogNetworkConnectError(netStatus);
@@ -436,7 +461,7 @@ CHIP_ERROR MqttClient::ProcessConnect()
         FreeTlsContext();
         return CHIP_ERROR_INTERNAL;
     }
-    ChipLogProgress(DeviceLayer, "MQTT TCP/TLS connection established");
+    ChipLogDetail(DeviceLayer, "[MQTT] TCP/TLS connection established");
 
     MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
     connectData.willFlag               = mConfig.willEnable ? 1 : 0;
@@ -454,7 +479,7 @@ CHIP_ERROR MqttClient::ProcessConnect()
     const int mqttStatus = MQTTConnect(&mClient, &connectData);
     if (mqttStatus != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "MQTT CONNECT failed: %d", mqttStatus);
+        ChipLogError(DeviceLayer, "[MQTT] connect failed: %d", mqttStatus);
         // Transport frees the live TLS context; FreeTlsContext is stub-only if still set.
         NetworkDisconnect(&mNetwork);
         FreeTlsContext();
@@ -462,7 +487,7 @@ CHIP_ERROR MqttClient::ProcessConnect()
     }
 
     mConnected = true;
-    ChipLogProgress(DeviceLayer, "MQTT connected");
+    ChipLogDetail(DeviceLayer, "[MQTT] connected");
     return CHIP_NO_ERROR;
 }
 
@@ -475,7 +500,7 @@ CHIP_ERROR MqttClient::ProcessDisconnect()
         const int status = MQTTDisconnect(&mClient);
         if (status != SUCCESS)
         {
-            ChipLogError(DeviceLayer, "MQTT DISCONNECT failed: %d", status);
+            ChipLogError(DeviceLayer, "[MQTT] disconnect failed: %d", status);
         }
         mConnected = false;
     }
@@ -483,92 +508,119 @@ CHIP_ERROR MqttClient::ProcessDisconnect()
     // NetworkDisconnect frees the live TLS context; FreeTlsContext clears any leftover stub.
     NetworkDisconnect(&mNetwork);
     FreeTlsContext();
-    ChipLogProgress(DeviceLayer, "MQTT disconnected");
+    ChipLogDetail(DeviceLayer, "[MQTT] disconnected");
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR MqttClient::ProcessSubscribe()
+CHIP_ERROR MqttClient::ProcessSubscribe(const ServiceMessage & message)
 {
     VerifyOrReturnError(mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mPendingTopic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(message.topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    const int status = MQTTSubscribe(&mClient, const_cast<char *>(mPendingTopic), ToPahoQos(mPendingQos), PahoMessageHandler);
+    const int status = MQTTSubscribe(&mClient, const_cast<char *>(message.topic), ToPahoQos(message.qos), PahoMessageHandler);
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "MQTT SUBSCRIBE failed: %d", status);
+        ChipLogError(DeviceLayer, "[MQTT] subscribe failed: %d", status);
         return MapPahoStatus(status);
     }
 
-    ChipLogProgress(DeviceLayer, "MQTT subscribed to %s", mPendingTopic);
+    ChipLogDetail(DeviceLayer, "[MQTT] subscribed to %s", message.topic);
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR MqttClient::ProcessUnsubscribe()
+CHIP_ERROR MqttClient::ProcessUnsubscribe(const ServiceMessage & message)
 {
     VerifyOrReturnError(mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mPendingTopic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(message.topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    const int status = MQTTUnsubscribe(&mClient, mPendingTopic);
+    const int status = MQTTUnsubscribe(&mClient, message.topic);
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "MQTT UNSUBSCRIBE failed: %d", status);
+        ChipLogError(DeviceLayer, "[MQTT] unsubscribe failed: %d", status);
         return MapPahoStatus(status);
     }
 
-    ChipLogProgress(DeviceLayer, "MQTT unsubscribed from %s", mPendingTopic);
+    ChipLogDetail(DeviceLayer, "[MQTT] unsubscribed from %s", message.topic);
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR MqttClient::ProcessPublish()
+CHIP_ERROR MqttClient::ProcessPublish(const ServiceMessage & message)
 {
     VerifyOrReturnError(mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mPendingTopic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(message.topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    MQTTMessage message = {};
-    message.qos         = ToPahoQos(mPendingQos);
-    message.retained    = mPendingRetained ? 1 : 0;
-    message.dup         = 0;
-    message.payload     = const_cast<uint8_t *>(mPendingPayload.data());
-    message.payloadlen  = mPendingPayload.size();
+    MQTTMessage mqttMessage = {};
+    mqttMessage.qos         = ToPahoQos(message.qos);
+    mqttMessage.retained    = message.retained ? 1 : 0;
+    mqttMessage.dup         = 0;
+    mqttMessage.payload     = const_cast<uint8_t *>(message.payload.data());
+    mqttMessage.payloadlen  = message.payload.size();
 
-    const int status = MQTTPublish(&mClient, mPendingTopic, &message);
+    const int status = MQTTPublish(&mClient, message.topic, &mqttMessage);
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "MQTT PUBLISH failed: %d", status);
+        ChipLogError(DeviceLayer, "[MQTT] publish failed: %d", status);
         return MapPahoStatus(status);
     }
 
-    ChipLogProgress(DeviceLayer, "MQTT published to %s", mPendingTopic);
+    ChipLogDetail(DeviceLayer, "[MQTT] published to %s", message.topic);
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR MqttClient::ProcessYield()
+CHIP_ERROR MqttClient::ProcessYield(const ServiceMessage & message)
 {
     VerifyOrReturnError(mConnected, CHIP_ERROR_INCORRECT_STATE);
 
-    const int status = MQTTYield(&mClient, static_cast<int>(mPendingYieldTimeoutMs));
+    const int status = MQTTYield(&mClient, static_cast<int>(message.yieldTimeoutMs));
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "MQTT Yield failed: %d", status);
+        ChipLogError(DeviceLayer, "[MQTT] yield failed: %d", status);
         CHIP_ERROR err = ProcessDisconnect();
         if (err != CHIP_NO_ERROR)
         {
-            ChipLogError(DeviceLayer, "MQTT Yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
+            ChipLogError(DeviceLayer, "[MQTT] yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
         }
         return MapPahoStatus(status);
     }
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR MqttClient::Init(const MqttClientConfig & config, MqttOperationCallback callback, void * context)
+CHIP_ERROR MqttClient::SetConfig(const MqttClientConfig & config)
 {
-    VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
-    VerifyOrReturnError(!mInitialized, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(config.clientId != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
     mConfig = config;
-    return QueueOperation(Operation::Init, callback, context);
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR MqttClient::SetBroker(const MqttBroker & broker)
+{
+    VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(broker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(broker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
+
+    mBroker = broker;
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR MqttClient::Init(MqttOperationCallback callback, void * context)
+{
+    VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(mConfig.clientId != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    ServiceMessage message{};
+    message.operation = Operation::Init;
+    message.callback  = callback;
+    message.context   = context;
+    return PostMessage(message);
+}
+
+CHIP_ERROR MqttClient::Init(const MqttClientConfig & config, MqttOperationCallback callback, void * context)
+{
+    ReturnErrorOnFailure(SetConfig(config));
+    return Init(callback, context);
 }
 
 CHIP_ERROR MqttClient::Deinit(MqttOperationCallback callback, void * context)
@@ -582,37 +634,57 @@ CHIP_ERROR MqttClient::Deinit(MqttOperationCallback callback, void * context)
         }
         return CHIP_NO_ERROR;
     }
-    return QueueOperation(Operation::Deinit, callback, context);
+
+    ServiceMessage message{};
+    message.operation = Operation::Deinit;
+    message.callback  = callback;
+    message.context   = context;
+    return PostMessage(message);
+}
+
+CHIP_ERROR MqttClient::Connect(MqttOperationCallback callback, void * context)
+{
+    VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(mBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(mBroker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
+
+    ServiceMessage message{};
+    message.operation = Operation::Connect;
+    message.callback  = callback;
+    message.context   = context;
+    return PostMessage(message);
 }
 
 CHIP_ERROR MqttClient::Connect(const MqttBroker & broker, MqttOperationCallback callback, void * context)
 {
-    VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
-    VerifyOrReturnError(broker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    mPendingBroker = broker;
-    return QueueOperation(Operation::Connect, callback, context);
+    ReturnErrorOnFailure(SetBroker(broker));
+    return Connect(callback, context);
 }
 
 CHIP_ERROR MqttClient::Disconnect(MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    return QueueOperation(Operation::Disconnect, callback, context);
+
+    ServiceMessage message{};
+    message.operation = Operation::Disconnect;
+    message.callback  = callback;
+    message.context   = context;
+    return PostMessage(message);
 }
 
 CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttQoS qos, MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
     VerifyOrReturnError(topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    mPendingTopic = topic;
-    mPendingQos   = qos;
-    return QueueOperation(Operation::Subscribe, callback, context);
+    ServiceMessage message{};
+    message.operation = Operation::Subscribe;
+    message.callback  = callback;
+    message.context   = context;
+    message.topic     = topic;
+    message.qos       = qos;
+    return PostMessage(message);
 }
 
 CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttOperationCallback callback, void * context)
@@ -623,27 +695,31 @@ CHIP_ERROR MqttClient::Subscribe(const char * topic, MqttOperationCallback callb
 CHIP_ERROR MqttClient::Unsubscribe(const char * topic, MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
     VerifyOrReturnError(topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    mPendingTopic = topic;
-    return QueueOperation(Operation::Unsubscribe, callback, context);
+    ServiceMessage message{};
+    message.operation = Operation::Unsubscribe;
+    message.callback  = callback;
+    message.context   = context;
+    message.topic     = topic;
+    return PostMessage(message);
 }
 
 CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, MqttQoS qos, bool retained, MqttOperationCallback callback,
                                void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
     VerifyOrReturnError(topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    mPendingTopic    = topic;
-    mPendingPayload  = payload;
-    mPendingQos      = qos;
-    mPendingRetained = retained;
-    return QueueOperation(Operation::Publish, callback, context);
+    ServiceMessage message{};
+    message.operation = Operation::Publish;
+    message.callback  = callback;
+    message.context   = context;
+    message.topic     = topic;
+    message.payload   = payload;
+    message.qos       = qos;
+    message.retained  = retained;
+    return PostMessage(message);
 }
 
 CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, bool retained, MqttOperationCallback callback, void * context)
@@ -654,11 +730,13 @@ CHIP_ERROR MqttClient::Publish(const char * topic, ByteSpan payload, bool retain
 CHIP_ERROR MqttClient::Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(!mBusy, CHIP_ERROR_BUSY);
 
-    mPendingYieldTimeoutMs = timeoutMs;
-    return QueueOperation(Operation::Yield, callback, context);
+    ServiceMessage message{};
+    message.operation      = Operation::Yield;
+    message.callback       = callback;
+    message.context        = context;
+    message.yieldTimeoutMs = timeoutMs;
+    return PostMessage(message);
 }
 
 } // namespace Silabs
