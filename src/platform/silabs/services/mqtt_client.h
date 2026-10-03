@@ -91,13 +91,17 @@ struct MqttClientConfig
 
 /**
  * @brief Broker destination for @ref MqttClient::Connect.
+ *
+ * Provide either @p brokerHostname (DNS) or @p brokerIp (literal). When @p brokerHostname is set,
+ * Connect resolves it into mServerIp and uses the hostname as @p tlsHostname.
  */
 struct MqttBroker
 {
-    const char * brokerIp    = nullptr; ///< IPv4 string for sl_net_inet_addr. Must not be nullptr.
-    const char * tlsHostname = nullptr; ///< SNI / cert verify name when TLS is enabled.
-    uint16_t brokerPort      = 0;       ///< Broker port (1883 or 8883 typical).
-    uint16_t clientPort      = 0;       ///< Local source port.
+    const char * brokerHostname = nullptr; ///< Optional DNS name. When set, resolves into mServerIp / tlsHostname.
+    const char * brokerIp       = nullptr; ///< IPv4 string for NetworkConnect. Required if brokerHostname is null.
+    const char * tlsHostname    = nullptr; ///< SNI / cert verify name when TLS is enabled.
+    uint16_t brokerPort         = 0;       ///< Broker port (1883 or 8883 typical).
+    uint16_t clientPort         = 0;       ///< Local source port.
 };
 
 /**
@@ -278,6 +282,7 @@ private:
     CHIP_ERROR ProcessUnsubscribe(const ServiceMessage & message);
     CHIP_ERROR ProcessPublish(const ServiceMessage & message);
     CHIP_ERROR ProcessYield(const ServiceMessage & message);
+    CHIP_ERROR ResolveBrokerHostname();
 
     void FreeTlsContext();
     void LogNetworkConnectError(int status);
