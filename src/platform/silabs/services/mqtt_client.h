@@ -259,7 +259,12 @@ private:
 
     static void ServiceThread(void * arg);
     static void PahoMessageHandler(MessageData * md);
-    static CHIP_ERROR MapPahoStatus(int status);
+    // Status mappers are API-specific: the same integer can mean different things
+    // across NetworkConnect / MQTTConnect / MQTTSubscribe / other client calls.
+    static CHIP_ERROR MapNetworkConnectStatus(int status);
+    static CHIP_ERROR MapMqttConnectStatus(int status);
+    static CHIP_ERROR MapMqttSubscribeStatus(int status);
+    static CHIP_ERROR MapMqttReturnCode(int status);
     static enum QoS ToPahoQos(MqttQoS qos);
     static void InvokeCallback(const ServiceMessage & message, CHIP_ERROR error);
 
@@ -280,7 +285,6 @@ private:
     CHIP_ERROR ProcessYield(const ServiceMessage & message);
 
     void FreeTlsContext();
-    void LogNetworkConnectError(int status);
 
     MqttClientConfig mConfig{};
     MqttBroker mBroker{};
