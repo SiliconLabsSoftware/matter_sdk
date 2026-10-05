@@ -166,13 +166,13 @@ CHIP_ERROR ProvisionStorageWriter::SetSetupPayload(const uint8_t * value, size_t
 CHIP_ERROR ProvisionStorageWriter::SetProvisionRequest(bool value)
 {
     // return Flash::Set(Parameters::ID::kProvisionRequest, value);
-    return CHIP_ERROR_NOT_IMPLEMENTED;
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR ProvisionStorageWriter::GetProvisionRequest(bool & value)
 {
     // return Flash::Set(Parameters::ID::kProvisionRequest, value);
-    return CHIP_ERROR_NOT_IMPLEMENTED;
+    return CHIP_ERROR_NOT_FOUND;
 }
 
 CHIP_ERROR ProvisionStorageWriter::SetOtaTlvEncryptionKey(const ByteSpan & value)

@@ -9,7 +9,7 @@
 #include <sl_bt_api.h>
 
 #include <cstring>
-#include <provision/headers/ProvisionProtocol.h>
+#include <headers/ProvisionProtocol.h>
 
 namespace chip {
 namespace DeviceLayer {
