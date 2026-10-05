@@ -597,11 +597,11 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnected);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting);
         ResetConnectivityNotificationFlags();
-#if CHIP_CONFIG_ENABLE_ICD_SERVER && defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
         // Re-apply sleep policy after join without re-entering ConfigureLITConnect.
         TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
             WifiSleepManager::PowerEvent::kConnectedActiveMode);
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER && defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         NotifySuccessfulConnection();
         break;
 
