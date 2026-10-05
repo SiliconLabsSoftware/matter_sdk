@@ -37,29 +37,64 @@ jobs:
       - name: Mask the generated token
         run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
 
-      - name: Checkout pull request merge commit
+      - name: Checkout pull request branch
         uses: actions/checkout@v7
         with:
-          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
 
+      # refs/pull/N/merge is a temporary simulated merge. Read it for tag
+      # calculation only. The sync commit must be a child of the PR head.
+      - name: Fetch pull request merge commit
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/merge:refs/remotes/origin/pr-merge"
+
       - name: Sync EFR32 image tags
         id: sync_tags
+        env:
+          MERGE_REF: refs/remotes/origin/pr-merge
         run: |
           python3 - <<'PY'
           import os
           import re
+          import subprocess
           from pathlib import Path
 
-          workflow_dir = Path(".github/workflows")
-          source_path = workflow_dir / "examples-efr32.yaml"
+          merge_ref = os.environ["MERGE_REF"]
+          workflow_dir = ".github/workflows"
+          source_path = f"{workflow_dir}/examples-efr32.yaml"
           image_pattern = re.compile(
               r"(^\s*image:\s*ghcr\.io/project-chip/chip-build-efr32:)(\d+)(\s*)$",
               re.MULTILINE,
           )
 
-          source_text = source_path.read_text()
+          def blob_text(rev, path):
+              result = subprocess.run(
+                  ["git", "show", f"{rev}:{path}"],
+                  check=False,
+                  capture_output=True,
+              )
+              if result.returncode != 0:
+                  return None
+              return result.stdout.decode("utf-8")
+
+          def workflow_paths(rev):
+              result = subprocess.run(
+                  ["git", "ls-tree", "-r", "--name-only", rev, workflow_dir],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              )
+              return sorted(
+                  path for path in result.stdout.splitlines() if path.endswith(".yaml")
+              )
+
+          source_text = blob_text(merge_ref, source_path)
+          if source_text is None:
+              raise SystemExit(f"Could not read {source_path} from {merge_ref}")
+
           source_match = image_pattern.search(source_text)
           if source_match is None:
               raise SystemExit(f"Could not find EFR32 image tag in {source_path}")
@@ -68,8 +103,11 @@ jobs:
           updated_files = []
           skipped_newer_files = []
 
-          for path in sorted(workflow_dir.glob("*.yaml")):
-              text = path.read_text()
+          for path in workflow_paths(merge_ref):
+              text = blob_text(merge_ref, path)
+              if text is None:
+                  continue
+
               matches = list(image_pattern.finditer(text))
               if not matches:
                   continue
@@ -89,9 +127,11 @@ jobs:
                   elif current_version > target_version:
                       skipped_newer_files.append(f"{path}:{current_version}")
 
-              if updated:
-                  path.write_text(new_text)
-                  updated_files.append(str(path))
+              if updated and new_text != blob_text("HEAD", path):
+                  output_path = Path(path)
+                  output_path.parent.mkdir(parents=True, exist_ok=True)
+                  output_path.write_text(new_text)
+                  updated_files.append(path)
 
           github_output = Path(os.environ["GITHUB_OUTPUT"])
           with github_output.open("a", encoding="utf-8") as output:
