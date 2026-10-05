@@ -83,9 +83,10 @@ CHIP_ERROR DecodeTotal(Encoding::Buffer & reader, uint16_t & total)
 {
     uint16_t sz = 0;
     ReturnErrorOnFailure(reader.Get(sz));
-    total     = (0xffff == sz) ? sizeof(uint16_t) : sz;
-    reader.in = reader.begin + total;
-    VerifyOrReturnError(reader.in <= reader.end, CHIP_ERROR_INTERNAL, ChipLogError(DeviceLayer, "Invalid page, or corrupted data"));
+    total      = (0xffff == sz) ? sizeof(uint16_t) : sz;
+    reader.pIn = reader.pBegin + total;
+    VerifyOrReturnError(reader.pIn <= reader.pEnd, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "Invalid page, or corrupted data"));
     return CHIP_NO_ERROR;
 }
 
