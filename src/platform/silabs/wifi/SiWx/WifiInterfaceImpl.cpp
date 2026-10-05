@@ -1176,8 +1176,7 @@ bool WifiInterfaceImpl::IsStationReady()
 
 void WifiInterfaceImpl::TriggerDisconnection()
 {
-    TriggerPlatformWifiDisconnection();
-    ClearWifiDisconnectedState();
+    PostWifiPlatformEvent(WifiPlatformEvent::kStationDisconnect);
 }
 
 void WifiInterfaceImpl::NotifyConnectivity(void)
