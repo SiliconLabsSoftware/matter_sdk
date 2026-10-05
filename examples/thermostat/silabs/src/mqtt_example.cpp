@@ -109,13 +109,6 @@ sl_status_t mqtt_client_demo_start(void)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
 
-    const MqttBroker broker = {
-        .brokerIp    = kMqttBrokerIp,
-        .tlsHostname = kMqttTlsHostname,
-        .brokerPort  = kMqttBrokerPort,
-        .clientPort  = kMqttClientPort,
-    };
-
     if (!gMqttsClient.IsInitialized())
     {
         // Init is queued to the service thread, so Start must happen first when needed.
@@ -165,6 +158,12 @@ sl_status_t mqtt_client_demo_start(void)
     // Prior attempt may have connected then failed on subscribe/publish; skip reconnect.
     if (!gMqttsClient.IsConnected())
     {
+        const MqttBroker broker = {
+            .brokerIp    = kMqttBrokerIp,
+            .tlsHostname = kMqttTlsHostname,
+            .brokerPort  = kMqttBrokerPort,
+            .clientPort  = kMqttClientPort,
+        };
         gOpDone = false;
         err     = RunOperation(gMqttsClient.Connect(broker, OnOperationDone));
         if (err != CHIP_NO_ERROR)
