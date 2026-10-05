@@ -37,10 +37,10 @@ jobs:
       - name: Mask the generated token
         run: echo "::add-mask::${{ steps.generate_token.outputs.token }}"
 
-      - name: Checkout pull request branch
+      - name: Checkout pull request merge commit
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
           fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
 
