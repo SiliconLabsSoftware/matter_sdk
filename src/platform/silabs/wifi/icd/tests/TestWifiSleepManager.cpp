@@ -335,6 +335,28 @@ TEST_F(TestWifiSleepManager, TestLitIdleModeDoesNotRestartPrecheckTimerWhenAlrea
     EXPECT_FALSE(mMock.WasStartLitPrecheckTimerCalled());
 }
 
+// Failed join clears station-connected; a later kGenericEvent must not restart the
+// precheck-in timer (platform ConfigureLITDisconnect succeeds without sl_net_down).
+TEST_F(TestWifiSleepManager, TestLitGenericEventDoesNotRestartPrecheckTimerAfterFailedJoin)
+{
+    mMock.SetIsWifiProvisioned(true);
+    mMock.SetIsStationConnected(true);
+    WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
+
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode),
+              CHIP_NO_ERROR);
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_TRUE(mMock.WasStartLitPrecheckTimerCalled());
+
+    // Simulate join failure: STA already down, idle mode preserved across kGenericEvent.
+    mMock.SetIsStationConnected(false);
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent),
+              CHIP_NO_ERROR);
+
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_FALSE(mMock.WasStartLitPrecheckTimerCalled());
+}
+
 TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnect)
 {
     mMock.SetIsWifiProvisioned(true);

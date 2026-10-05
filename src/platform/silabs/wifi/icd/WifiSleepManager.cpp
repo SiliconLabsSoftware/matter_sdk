@@ -202,13 +202,23 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
     // Do not tear down an in-progress join (e.g. ICD idle during reconnect).
     VerifyOrReturnError(!mWifiStateProvider->IsStationConnecting(), CHIP_NO_ERROR);
 
+    // Capture before the platform call: when already down, ConfigureLITDisconnect
+    // skips sl_net_down but still returns success.
+    const bool wasConnected = mWifiStateProvider->IsStationConnected();
+
     // Platform skips sl_net_down when already down (avoids 0x10021 + fake kSuccess disconnect).
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(false));
     ReturnLogErrorOnFailure(
         mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep, 0));
 
-    mPowerSaveInterface->StartLitPrecheckInReconnectTimer();
+    // Only arm the precheck-in timer when we actually tore the STA down.
+    // A failed join via kGenericEvent re-enters here while already disconnected;
+    // restarting would reset the full idle delay and can miss the next check-in.
+    if (wasConnected)
+    {
+        mPowerSaveInterface->StartLitPrecheckInReconnectTimer();
+    }
     return CHIP_NO_ERROR;
 }
 

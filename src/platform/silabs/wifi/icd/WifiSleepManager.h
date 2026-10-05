@@ -148,14 +148,8 @@ public:
      *
      *        State machine logic:
      *        1. If there are high performance requests, configure high performance mode.
-<<<<<<< HEAD
      *        2. If the device is unprovisioned, configure deep sleep.
-     *        3. Otherwise, configure DTIM based sleep.
-=======
-     *        2. If commissioning is in progress, configure DTIM based sleep.
-     *        3. If no commissioning is in progress and the device is unprovisioned, configure deep sleep.
-     *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
->>>>>>> origin/release_2.10-1.6.1
+     *        3. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
      *
