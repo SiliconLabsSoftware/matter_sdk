@@ -147,6 +147,7 @@ public:
     bool IsWifiProvisioned() override { return mIsWifiProvisioned; }
 
     bool IsStationConnected() override { return false; }
+    bool IsStationConnecting() override { return false; }
     bool IsStationModeEnabled() override { return false; }
     bool IsStationReady() override { return false; }
     bool HasAnIPv6Address() override { return false; }
@@ -302,7 +303,7 @@ TEST_F(TestWifiSleepManager, TestLitIdleModeSelectsLITDisconnectWhenCallbackAllo
     EXPECT_TRUE(mMock.WasStartLitPrecheckTimerCalled());
 }
 
-TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnectThenDTIMWhenProvisioned)
+TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnect)
 {
     mMock.SetIsWifiProvisioned(true);
     WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
@@ -312,9 +313,9 @@ TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnectThenDTIMWhenProvisio
 
     EXPECT_TRUE(mMock.WasCancelLitPrecheckTimerCalled());
     EXPECT_TRUE(mMock.WasConfigureLITConnectCalled());
-    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kConnectedSleep);
-    EXPECT_TRUE(mMock.WasConfigureBroadcastFilterCalled());
-    EXPECT_FALSE(mMock.WasBroadcastFilterEnabled());
+    // Wake/join power-save is applied inside ConfigureLITConnect, not by WifiSleepManager.
+    EXPECT_FALSE(mMock.WasConfigurePowerSaveCalled());
+    EXPECT_FALSE(mMock.WasConfigureBroadcastFilterCalled());
 }
 
 TEST_F(TestWifiSleepManager, TestLitIdleModePreservedAcrossHighPerformanceCycle)

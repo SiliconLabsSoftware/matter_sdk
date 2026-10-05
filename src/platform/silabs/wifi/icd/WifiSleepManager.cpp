@@ -85,6 +85,7 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
         // Preserve mActiveMode; HP cycles and connectivity use these events.
         break;
     case PowerEvent::kActiveMode:
+    case PowerEvent::kConnectedActiveMode:
         mActiveMode = true;
         break;
     case PowerEvent::kIdleMode:
@@ -110,7 +111,7 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
     if (event == PowerEvent::kActiveMode)
     {
         mPowerSaveInterface->CancelLitPrecheckInReconnectTimer();
-        ReturnErrorOnFailure(ConfigureLITConnect());
+        return ConfigureLITConnect();
     }
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
@@ -129,8 +130,17 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         if (!mActiveMode)
         {
+            // ICD may enter idle while a btn0/precheck-in reconnect is still joining.
+            // Defer LIT disconnect until the join finishes.
+            if (mWifiStateProvider->IsStationConnecting())
+            {
+                ChipLogProgress(DeviceLayer, "WifiSleepManager: deferring LIT disconnect while station is connecting");
+                return CHIP_NO_ERROR;
+            }
             return ConfigureLITDisconnect();
         }
+
+        return ConfigureLIBasedSleep();
 #else  // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         return ConfigureLIBasedSleep();
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
@@ -172,6 +182,10 @@ CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
 
 CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 {
+    // LI sleep is only valid while associated. Skip while joining or after a join fail.
+    VerifyOrReturnError(!mWifiStateProvider->IsStationConnecting(), CHIP_NO_ERROR);
+    VerifyOrReturnError(mWifiStateProvider->IsStationConnected(), CHIP_NO_ERROR);
+
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
 
     // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
@@ -185,11 +199,14 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
 {
+    // Do not tear down an in-progress join (e.g. ICD idle during reconnect).
+    VerifyOrReturnError(!mWifiStateProvider->IsStationConnecting(), CHIP_NO_ERROR);
+
+    // Platform skips sl_net_down when already down (avoids 0x10021 + fake kSuccess disconnect).
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
-    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(true));
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(false));
     ReturnLogErrorOnFailure(
-        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep,
-                                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep, 0));
 
     mPowerSaveInterface->StartLitPrecheckInReconnectTimer();
     return CHIP_NO_ERROR;
@@ -197,10 +214,11 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
 
 CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
 {
+    // Wake + join are handled inside ConfigureLITConnect (high performance, then scan).
     ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
     return CHIP_NO_ERROR;
 }
-#endif
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
 } // namespace Silabs
 } // namespace DeviceLayer

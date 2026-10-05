@@ -92,11 +92,6 @@ bool ApplicationSleepManager::CanGoToLIBasedSleep()
         ChipLogProgress(AppServer, "Commissioning Window is Open - Cannot go to LI based sleep");
         canGoToLIBasedSleep = false;
     }
-    else if (mIsInActiveMode)
-    {
-        ChipLogProgress(AppServer, "Device is in active mode - Cannot go to LI based sleep");
-        canGoToLIBasedSleep = false;
-    }
     else
     {
         for (auto it = mFabricTable->begin(); it != mFabricTable->end(); ++it)

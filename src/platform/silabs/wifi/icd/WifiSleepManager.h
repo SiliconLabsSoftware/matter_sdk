@@ -44,6 +44,7 @@ public:
         kConnectivityChange    = 2,
         kActiveMode            = 3,
         kIdleMode              = 4,
+        kConnectedActiveMode   = 5,
     };
 
     /**
