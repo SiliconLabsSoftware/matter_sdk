@@ -335,12 +335,12 @@ CHIP_ERROR BaseApplication::Init()
 
     mIsApplicationInitialized = true;
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
-#ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
+#if defined(GENERATED_MULTI_PROTOCOL_ATTRIBUTE_MAPPING) && defined(SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT)
     if (PlatformMgr().ScheduleWork([](intptr_t) { MultiProtocolDataModel::Initialize(); }) != CHIP_NO_ERROR)
     {
         ChipLogError(AppServer, "Failed to Schedule MultiProtocol DataModel Initialization");
     }
-#endif // SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
+#endif // defined(GENERATED_MULTI_PROTOCOL_ATTRIBUTE_MAPPING) && defined(SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT)
 
 #ifdef SL_MATTER_ZIGBEE_SEQUENTIAL
     PlatformMgr().LockChipStack();
@@ -1266,10 +1266,12 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
 #ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#if defined(GENERATED_MULTI_PROTOCOL_ATTRIBUTE_MAPPING) && defined(SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT)
     EndpointId endpointId   = attributePath.mEndpointId;
     ClusterId clusterId     = attributePath.mClusterId;
     AttributeId attributeId = attributePath.mAttributeId;
     MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
+#endif // defined(GENERATED_MULTI_PROTOCOL_ATTRIBUTE_MAPPING) && defined(SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT)
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
 #endif // defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
