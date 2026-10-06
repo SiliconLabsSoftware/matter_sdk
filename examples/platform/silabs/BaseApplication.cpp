@@ -222,6 +222,13 @@ bool BaseApplication::sIsFactoryResetTriggered        = false;
 LEDWidget * BaseApplication::sAppActionLed            = nullptr;
 BaseApplicationDelegate BaseApplication::sAppDelegate = BaseApplicationDelegate();
 
+void BaseApplicationDelegate::OnCommissioningSessionEstablishmentStarted()
+{
+    ChipDeviceEvent event{};
+    event.Type = DeviceEventType::kSLSystemEventCommissioningStarted;
+    LogErrorOnFailure(PlatformMgr().PostEvent(&event));
+}
+
 void BaseApplicationDelegate::OnCommissioningSessionStarted()
 {
     isComissioningStarted = true;
