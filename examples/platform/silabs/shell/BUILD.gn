@@ -37,6 +37,13 @@ config("ble-shell-config") {
   include_dirs = [ "./ble/" ]
 }
 
+config("provision-shell-config") {
+  include_dirs = [
+    "./provision/",
+    "${chip_root}/examples/platform/silabs",
+  ]
+}
+
 source_set("icd") {
   sources = [
     "./icd/ICDShellCommands.cpp",
@@ -89,6 +96,17 @@ source_set("ble") {
   ]
 
   public_configs = [ ":ble-shell-config" ]
+
+  deps = [ "${shell_dependency_path}:matter-shell" ]
+}
+
+source_set("provision") {
+  sources = [
+    "./provision/ProvisionShellCommands.cpp",
+    "./provision/ProvisionShellCommands.h",
+  ]
+
+  public_configs = [ ":provision-shell-config" ]
 
   deps = [ "${shell_dependency_path}:matter-shell" ]
 }

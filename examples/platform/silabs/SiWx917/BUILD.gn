@@ -190,6 +190,7 @@ source_set("siwx917-common") {
     if (chip_config_network_layer_ble) {
       deps += [ "${silabs_common_plat_dir}/shell:ble" ]
     }
+    deps += [ "${silabs_common_plat_dir}/shell:provision" ]
   }
 
   # MATTER_AWS

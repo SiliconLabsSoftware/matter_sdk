@@ -301,7 +301,7 @@ protected:
      *  With our KVS platform implementation this is a lot slower than deleting the whole kvs section
      *  our silabs nvm3 driver which end up being doing in ConfigurationManagerImpl::DoFactoryReset(intptr_t arg).
      */
-    static void ScheduleFactoryReset();
+    static void ScheduleFactoryReset(bool requestProvisioning = false);
 
     static void OnPlatformEvent(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t);
 
