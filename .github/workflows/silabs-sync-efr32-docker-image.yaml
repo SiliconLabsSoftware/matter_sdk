@@ -44,17 +44,26 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
 
-      # refs/pull/N/merge is a temporary simulated merge. Read it for tag
-      # calculation only. The sync commit must be a child of the PR head.
+      # refs/pull/N/merge is a temporary simulated merge. It is absent for
+      # conflicted pull requests and until GitHub publishes it for new ones.
+      # Head-file tag sync does not require it.
       - name: Fetch pull request merge commit
+        id: fetch_merge
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/merge:refs/remotes/origin/pr-merge"
+        run: |
+          if git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/merge:refs/remotes/origin/pr-merge"; then
+            echo "available=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "refs/pull/${PR_NUMBER}/merge is not available. Syncing tags on the pull request head."
+            echo "available=false" >> "${GITHUB_OUTPUT}"
+          fi
 
       - name: Sync EFR32 image tags
         id: sync_tags
         env:
           MERGE_REF: refs/remotes/origin/pr-merge
+          MERGE_AVAILABLE: ${{ steps.fetch_merge.outputs.available }}
         run: |
           python3 - <<'PY'
           import os
@@ -63,6 +72,10 @@ jobs:
           from pathlib import Path
 
           merge_ref = os.environ["MERGE_REF"]
+          merge_available = os.environ["MERGE_AVAILABLE"] == "true"
+          # Without a merge ref, the head tree is the source the previous
+          # workflow used. Base-only files stay undiscovered until the ref exists.
+          source_rev = merge_ref if merge_available else "HEAD"
           workflow_dir = ".github/workflows"
           source_path = f"{workflow_dir}/examples-efr32.yaml"
           image_pattern = re.compile(
@@ -91,9 +104,12 @@ jobs:
                   path for path in result.stdout.splitlines() if path.endswith(".yaml")
               )
 
-          source_text = blob_text(merge_ref, source_path)
+          if not merge_available:
+              print("Merge ref unavailable; syncing workflow files on the pull request head.")
+
+          source_text = blob_text(source_rev, source_path)
           if source_text is None:
-              raise SystemExit(f"Could not read {source_path} from {merge_ref}")
+              raise SystemExit(f"Could not read {source_path} from {source_rev}")
 
           source_match = image_pattern.search(source_text)
           if source_match is None:
@@ -121,8 +137,8 @@ jobs:
           base_only_files = []
           skipped_newer_files = []
 
-          for path in workflow_paths(merge_ref):
-              merge_text = blob_text(merge_ref, path)
+          for path in workflow_paths(source_rev):
+              merge_text = blob_text(source_rev, path)
               if merge_text is None or not image_pattern.search(merge_text):
                   continue
 
