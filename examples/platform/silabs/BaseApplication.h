@@ -72,6 +72,7 @@ public:
 private:
     // AppDelegate
     bool isComissioningStarted = false;
+    void OnCommissioningSessionEstablishmentStarted() override;
     void OnCommissioningSessionStarted() override;
     void OnCommissioningSessionStopped() override;
     void OnCommissioningSessionEstablishmentError(CHIP_ERROR err) override;
