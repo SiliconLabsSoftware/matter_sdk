@@ -38,10 +38,7 @@ config("ble-shell-config") {
 }
 
 config("provision-shell-config") {
-  include_dirs = [
-    "./provision/",
-    "${chip_root}/examples/platform/silabs",
-  ]
+  include_dirs = [ "./provision/" ]
 }
 
 source_set("icd") {
