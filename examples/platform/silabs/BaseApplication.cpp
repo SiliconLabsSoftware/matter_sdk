@@ -54,6 +54,7 @@
 
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
+#include <ProvisionShellCommands.h>
 #endif // ENABLE_CHIP_SHELL
 #include "provision/ProvisionStorageReader.h"
 
@@ -214,6 +215,9 @@ Clusters::Identify::EffectIdentifierEnum sCodeDrivenIdentifyEffect = Clusters::I
 
 // Protects the three sCodeDrivenIdentify* variables above.
 osSemaphoreId_t sCodeDrivenIdentifyLock = nullptr;
+
+// Set for the current ScheduleFactoryReset() call by the provision shell command.
+bool sProvisionWithFactoryReset = false;
 
 } // namespace
 
@@ -439,6 +443,7 @@ CHIP_ERROR BaseApplication::BaseInit()
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
     BLEShellCommands::RegisterCommands();
+    ProvisionShellCommands::RegisterCommands();
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -1073,15 +1078,17 @@ void BaseApplication::DispatchEvent(AppEvent * aEvent)
     }
 }
 
-void BaseApplication::ScheduleFactoryReset()
+void BaseApplication::ScheduleFactoryReset(bool requestProvisioning)
 {
+    sProvisionWithFactoryReset = requestProvisioning;
     TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork([](intptr_t) {
-    // Press both buttons to request provisioning
+    // Press both buttons, or the provision shell command, to request provisioning
 #if SL_MATTER_PROVISION_CHANNEL_ENABLED
-        if (GetPlatform().GetButtonState(APP_ACTION_BUTTON))
+        if (sProvisionWithFactoryReset || GetPlatform().GetButtonState(APP_ACTION_BUTTON))
         {
             TEMPORARY_RETURN_IGNORED Provision::Manager::GetInstance().SetProvisionRequired(true);
         }
+        sProvisionWithFactoryReset = false;
 #endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 #if defined(SL_WIFI) && SL_WIFI
         // Removing the matter services on factory reset
