@@ -41,6 +41,9 @@ namespace DeviceEventType {
 enum PublicPlatformSpecificEventTypes
 {
     kSLSystemEvent = kRange_PublicPlatformSpecific,
+    // Commissioning events
+    kSLSystemEventCommissioningStarted,
+    kSLSystemEventCommissioningFailed,
 };
 
 /**
