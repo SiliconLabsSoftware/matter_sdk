@@ -215,6 +215,13 @@ bool BaseApplication::sIsFactoryResetTriggered        = false;
 LEDWidget * BaseApplication::sAppActionLed            = nullptr;
 BaseApplicationDelegate BaseApplication::sAppDelegate = BaseApplicationDelegate();
 
+void BaseApplicationDelegate::OnCommissioningSessionEstablishmentStarted()
+{
+    ChipDeviceEvent event{};
+    event.Type = DeviceEventType::kSLSystemEventCommissioningStarted;
+    LogErrorOnFailure(PlatformMgr().PostEvent(&event));
+}
+
 void BaseApplicationDelegate::OnCommissioningSessionStarted()
 {
     isComissioningStarted = true;
@@ -240,6 +247,10 @@ void BaseApplicationDelegate::OnCommissioningSessionEstablishmentError(CHIP_ERRO
 #if defined(SL_WIFI) && SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
     WifiSleepManager::GetInstance().HandleCommissioningSessionStopped();
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+
+    ChipDeviceEvent event{};
+    event.Type = DeviceEventType::kSLSystemEventCommissioningFailed;
+    LogErrorOnFailure(PlatformMgr().PostEvent(&event));
 }
 
 void BaseApplicationDelegate::OnCommissioningWindowOpened()
