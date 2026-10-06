@@ -294,6 +294,8 @@ protected:
      */
     static bool ActivateStatusLedPatterns();
 
+    friend void SilabsScheduleFactoryReset(bool requestProvisioning);
+
     /**
      * @brief Start the factory Reset process
      *  Almost identical to Server::ScheduleFactoryReset()

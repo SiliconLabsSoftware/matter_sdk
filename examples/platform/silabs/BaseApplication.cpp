@@ -1073,6 +1073,13 @@ void BaseApplication::DispatchEvent(AppEvent * aEvent)
     }
 }
 
+#ifdef ENABLE_CHIP_SHELL
+void SilabsScheduleFactoryReset(bool requestProvisioning)
+{
+    BaseApplication::ScheduleFactoryReset(requestProvisioning);
+}
+#endif // ENABLE_CHIP_SHELL
+
 void BaseApplication::ScheduleFactoryReset(bool requestProvisioning)
 {
     sProvisionWithFactoryReset = requestProvisioning;

@@ -16,10 +16,10 @@
  ******************************************************************************/
 
 #include "ProvisionShellCommands.h"
-#include "BaseApplication.h"
 #include <lib/shell/Engine.h>
 #include <lib/support/CodeUtils.h>
 
+using namespace chip;
 using Shell::Engine;
 using Shell::streamer_get;
 using Shell::streamer_printf;
@@ -35,7 +35,7 @@ CHIP_ERROR ProvisionCommand(int argc, char ** argv)
     }
 
     streamer_printf(streamer_get(), "Factory reset with provisioning enabled\r\n");
-    BaseApplication::ScheduleFactoryReset(true);
+    SilabsScheduleFactoryReset(true);
     return CHIP_NO_ERROR;
 }
 
