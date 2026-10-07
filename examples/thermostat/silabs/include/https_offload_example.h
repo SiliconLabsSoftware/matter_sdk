@@ -20,6 +20,10 @@
 
 #include "sl_status.h"
 
+#define HTTP_SERVER_IP "192.168.0.191"
+#define HTTP_HOSTNAME "example.com"
+#define HTTP_PORT 8443
+
 #ifndef HTTP_SERVER_IP // IP address of the HTTP server
 #error "HTTP_SERVER_IP is not defined"
 #endif

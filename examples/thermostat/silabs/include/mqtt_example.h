@@ -25,6 +25,10 @@
 
 #include "sl_status.h"
 
+#define MQTT_BROKER_IP "192.168.0.191"
+#define MQTT_TLS_HOSTNAME "example.com"
+#define MQTT_BROKER_PORT 8888
+
 #ifndef MQTT_BROKER_IP
 #error "MQTT_BROKER_IP is not defined"
 #endif
@@ -49,7 +53,7 @@
 #define MQTT_USERNAME "john"
 #endif
 
-#ifndef MQTT_PASSWORD // The password of your MQTT client
+#ifndef MQTT_PASSWORD // Unused. Connect sends an RS256 JWT instead of this string.
 #define MQTT_PASSWORD "doe"
 #endif
 
@@ -59,6 +63,12 @@
 
 #ifndef MQTT_PUBLISH_MESSAGE // The message to publish to the MQTT broker
 #define MQTT_PUBLISH_MESSAGE "MQTT_PUBLISH_MESSAGE"
+#endif
+
+// Compact JSON, no spaces. Same bytes as json.dumps(claims, separators=(",", ":")).
+// This object is the JWT payload. The signed token is the MQTT password.
+#ifndef MQTT_JWT_CLAIMS
+#define MQTT_JWT_CLAIMS "{\"sub\":\"" MQTT_USERNAME "\", \"subs\": [ \"" MQTT_TOPIC "\" ],\"publ\": [ \"" MQTT_TOPIC "\" ] }"
 #endif
 
 /**
