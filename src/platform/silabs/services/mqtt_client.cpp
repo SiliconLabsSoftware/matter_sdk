@@ -34,9 +34,93 @@ namespace Silabs {
 
 MqttClient * MqttClient::sActiveClient = nullptr;
 
-CHIP_ERROR MqttClient::MapPahoStatus(int status)
+namespace {
+// TODO: Remove this once we have a proper enum for SUBACK return codes.
+// MQTT 3.1.1 SUBACK return code: subscription refused by broker (not a named Paho enum).
+constexpr int kMqttSubackFailure = 0x80;
+
+} // namespace
+
+CHIP_ERROR MqttClient::MapNetworkConnectStatus(int status)
 {
-    return (status == SUCCESS) ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
+    switch (status)
+    {
+    case SUCCESS:
+        return CHIP_NO_ERROR;
+    case NETWORK_ERROR_NULL_STRUCTURE:
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    case NETWORK_ERROR_NULL_ADDRESS:
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    case NETWORK_ERROR_INVALID_TYPE:
+        return CHIP_ERROR_INVALID_ARGUMENT;
+#if defined(NETWORK_ERROR_TLS_HOSTNAME_REQUIRED)
+    case NETWORK_ERROR_TLS_HOSTNAME_REQUIRED:
+        return CHIP_ERROR_INVALID_ARGUMENT;
+#endif // NETWORK_ERROR_TLS_HOSTNAME_REQUIRED
+#if defined(NETWORK_ERROR_CONNECT_FAILED)
+    case NETWORK_ERROR_CONNECT_FAILED:
+        return CHIP_ERROR_INTERNAL;
+#endif // NETWORK_ERROR_CONNECT_FAILED
+    default:
+        return CHIP_ERROR_INTERNAL;
+    }
+}
+
+CHIP_ERROR MqttClient::MapMqttConnectStatus(int status)
+{
+    // MQTTConnect returns CONNACK codes (0-5) or client returnCode (FAILURE / BUFFER_OVERFLOW).
+    switch (status)
+    {
+    case SUCCESS: // also MQTT_CONNECTION_ACCEPTED
+        return CHIP_NO_ERROR;
+    case MQTT_UNNACCEPTABLE_PROTOCOL:
+        return CHIP_ERROR_VERSION_MISMATCH;
+    case MQTT_CLIENTID_REJECTED:
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    case MQTT_SERVER_UNAVAILABLE:
+        return CHIP_ERROR_BUSY;
+    case MQTT_BAD_USERNAME_OR_PASSWORD:
+        return CHIP_ERROR_ACCESS_DENIED;
+    case MQTT_NOT_AUTHORIZED:
+        return CHIP_ERROR_ACCESS_DENIED;
+    case BUFFER_OVERFLOW:
+        return CHIP_ERROR_BUFFER_TOO_SMALL;
+    case FAILURE:
+    default:
+        return CHIP_ERROR_INTERNAL;
+    }
+}
+
+CHIP_ERROR MqttClient::MapMqttSubscribeStatus(int status)
+{
+    // MQTTSubscribe returns SUCCESS, SUBACK failure 0x80, or client returnCode.
+    switch (status)
+    {
+    case SUCCESS:
+        return CHIP_NO_ERROR;
+    case kMqttSubackFailure:
+        return CHIP_ERROR_ACCESS_DENIED;
+    case BUFFER_OVERFLOW:
+        return CHIP_ERROR_BUFFER_TOO_SMALL;
+    case FAILURE:
+    default:
+        return CHIP_ERROR_INTERNAL;
+    }
+}
+
+CHIP_ERROR MqttClient::MapMqttReturnCode(int status)
+{
+    // MQTTPublish / MQTTUnsubscribe / MQTTYield / MQTTDisconnect: client returnCode only.
+    switch (status)
+    {
+    case SUCCESS:
+        return CHIP_NO_ERROR;
+    case BUFFER_OVERFLOW:
+        return CHIP_ERROR_BUFFER_TOO_SMALL;
+    case FAILURE:
+    default:
+        return CHIP_ERROR_INTERNAL;
+    }
 }
 
 enum QoS MqttClient::ToPahoQos(MqttQoS qos)
@@ -142,9 +226,61 @@ const char * GetNetworkErrorString(int status)
     }
 }
 
-void MqttClient::LogNetworkConnectError(int status)
+const char * GetConnackErrorString(int status)
 {
-    ChipLogError(DeviceLayer, "%s", GetNetworkErrorString(status));
+    switch (status)
+    {
+    case MQTT_CONNECTION_ACCEPTED:
+        return "MQTT connection accepted";
+    case MQTT_UNNACCEPTABLE_PROTOCOL:
+        return "MQTT unacceptable protocol version";
+    case MQTT_CLIENTID_REJECTED:
+        return "MQTT client ID rejected";
+    case MQTT_SERVER_UNAVAILABLE:
+        return "MQTT server unavailable";
+    case MQTT_BAD_USERNAME_OR_PASSWORD:
+        return "MQTT bad username or password";
+    case MQTT_NOT_AUTHORIZED:
+        return "MQTT not authorized";
+    case BUFFER_OVERFLOW:
+        return "MQTT connect buffer too small";
+    case FAILURE:
+        return "MQTT connect failed (timeout or transport)";
+    default:
+        return "MQTT connect failed";
+    }
+}
+
+const char * GetSubscribeErrorString(int status)
+{
+    switch (status)
+    {
+    case SUCCESS:
+        return "MQTT subscribe succeeded";
+    case kMqttSubackFailure:
+        return "MQTT subscribe refused by broker (SUBACK 0x80)";
+    case BUFFER_OVERFLOW:
+        return "MQTT subscribe buffer too small";
+    case FAILURE:
+        return "MQTT subscribe failed (timeout or transport)";
+    default:
+        return "MQTT subscribe failed";
+    }
+}
+
+const char * GetMqttReturnCodeString(int status)
+{
+    switch (status)
+    {
+    case SUCCESS:
+        return "succeeded";
+    case BUFFER_OVERFLOW:
+        return "buffer too small";
+    case FAILURE:
+        return "failed (timeout or transport)";
+    default:
+        return "failed";
+    }
 }
 
 // Frees only the pre-connect TLS stub (cert holder) allocated in ProcessConnect.
@@ -490,13 +626,14 @@ CHIP_ERROR MqttClient::ProcessConnect()
 #endif
 
     const int netStatus =
-        NetworkConnect(&mNetwork, 0, reinterpret_cast<char *>(&mServerIp), mBroker.brokerPort, mBroker.clientPort, mConfig.useTls);
-    if (netStatus != 0)
+        sl_paho_network_connect(&mNetwork, SL_PAHO_NETWORK_FLAG_IPV4, reinterpret_cast<char *>(mServerIp.ip.v4.bytes),
+                                mBroker.brokerPort, mBroker.clientPort, mConfig.useTls);
+    if (netStatus != SUCCESS)
     {
-        LogNetworkConnectError(netStatus);
+        ChipLogError(DeviceLayer, "%s (%d)", GetNetworkErrorString(netStatus), netStatus);
         // Recover leftover pre-connect stub if transport did not take ownership.
         FreeTlsContext();
-        return CHIP_ERROR_INTERNAL;
+        return MapNetworkConnectStatus(netStatus);
     }
     ChipLogDetail(DeviceLayer, "[MQTT] TCP/TLS connection established");
 
@@ -516,11 +653,11 @@ CHIP_ERROR MqttClient::ProcessConnect()
     const int mqttStatus = MQTTConnect(&mClient, &connectData);
     if (mqttStatus != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "[MQTT] connect failed: %d", mqttStatus);
+        ChipLogError(DeviceLayer, "[MQTT] connect failed: %s (%d)", GetConnackErrorString(mqttStatus), mqttStatus);
         // Transport frees the live TLS context; FreeTlsContext is stub-only if still set.
         NetworkDisconnect(&mNetwork);
         FreeTlsContext();
-        return MapPahoStatus(mqttStatus);
+        return MapMqttConnectStatus(mqttStatus);
     }
 
     mConnected = true;
@@ -557,8 +694,8 @@ CHIP_ERROR MqttClient::ProcessSubscribe(const ServiceMessage & message)
     const int status = MQTTSubscribe(&mClient, const_cast<char *>(message.topic), ToPahoQos(message.qos), PahoMessageHandler);
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "[MQTT] subscribe failed: %d", status);
-        return MapPahoStatus(status);
+        ChipLogError(DeviceLayer, "[MQTT] subscribe failed: %s (%d)", GetSubscribeErrorString(status), status);
+        return MapMqttSubscribeStatus(status);
     }
 
     ChipLogDetail(DeviceLayer, "[MQTT] subscribed to %s", message.topic);
@@ -573,8 +710,8 @@ CHIP_ERROR MqttClient::ProcessUnsubscribe(const ServiceMessage & message)
     const int status = MQTTUnsubscribe(&mClient, message.topic);
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "[MQTT] unsubscribe failed: %d", status);
-        return MapPahoStatus(status);
+        ChipLogError(DeviceLayer, "[MQTT] unsubscribe %s (%d)", GetMqttReturnCodeString(status), status);
+        return MapMqttReturnCode(status);
     }
 
     ChipLogDetail(DeviceLayer, "[MQTT] unsubscribed from %s", message.topic);
@@ -596,8 +733,8 @@ CHIP_ERROR MqttClient::ProcessPublish(const ServiceMessage & message)
     const int status = MQTTPublish(&mClient, message.topic, &mqttMessage);
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "[MQTT] publish failed: %d", status);
-        return MapPahoStatus(status);
+        ChipLogError(DeviceLayer, "[MQTT] publish %s (%d)", GetMqttReturnCodeString(status), status);
+        return MapMqttReturnCode(status);
     }
 
     ChipLogDetail(DeviceLayer, "[MQTT] published to %s", message.topic);
@@ -611,13 +748,13 @@ CHIP_ERROR MqttClient::ProcessYield(const ServiceMessage & message)
     const int status = MQTTYield(&mClient, static_cast<int>(message.yieldTimeoutMs));
     if (status != SUCCESS)
     {
-        ChipLogError(DeviceLayer, "[MQTT] yield failed: %d", status);
+        ChipLogError(DeviceLayer, "[MQTT] yield %s (%d)", GetMqttReturnCodeString(status), status);
         CHIP_ERROR err = ProcessDisconnect();
         if (err != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "[MQTT] yield disconnect failed: %" CHIP_ERROR_FORMAT, err.Format());
         }
-        return MapPahoStatus(status);
+        return MapMqttReturnCode(status);
     }
     return CHIP_NO_ERROR;
 }
@@ -634,7 +771,7 @@ CHIP_ERROR MqttClient::SetConfig(const MqttClientConfig & config)
 CHIP_ERROR MqttClient::SetBroker(const MqttBroker & broker)
 {
     VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(broker.brokerHostname != nullptr || broker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(broker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(broker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
 
     mBroker = broker;

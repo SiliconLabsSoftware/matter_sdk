@@ -231,10 +231,10 @@ public:
     CHIP_ERROR Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context = nullptr);
 
 private:
-    static constexpr size_t kTxBufferSize           = 1500;
-    static constexpr size_t kRxBufferSize           = 1500;
-    static constexpr size_t kDefaultThreadStackSize = 8 * 1024;
-    static constexpr size_t kQueueSize              = 8;
+    static constexpr size_t kTxBufferSize           = 1024;
+    static constexpr size_t kRxBufferSize           = 1024;
+    static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
+    static constexpr size_t kQueueSize              = 4;
 
     enum class Operation : uint8_t
     {
@@ -263,7 +263,12 @@ private:
 
     static void ServiceThread(void * arg);
     static void PahoMessageHandler(MessageData * md);
-    static CHIP_ERROR MapPahoStatus(int status);
+    // Status mappers are API-specific: the same integer can mean different things
+    // across NetworkConnect / MQTTConnect / MQTTSubscribe / other client calls.
+    static CHIP_ERROR MapNetworkConnectStatus(int status);
+    static CHIP_ERROR MapMqttConnectStatus(int status);
+    static CHIP_ERROR MapMqttSubscribeStatus(int status);
+    static CHIP_ERROR MapMqttReturnCode(int status);
     static enum QoS ToPahoQos(MqttQoS qos);
     static void InvokeCallback(const ServiceMessage & message, CHIP_ERROR error);
 
@@ -285,7 +290,6 @@ private:
     CHIP_ERROR ResolveBrokerHostname();
 
     void FreeTlsContext();
-    void LogNetworkConnectError(int status);
 
     MqttClientConfig mConfig{};
     MqttBroker mBroker{};

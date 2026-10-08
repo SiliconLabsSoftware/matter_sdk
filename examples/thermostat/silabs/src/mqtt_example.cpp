@@ -76,8 +76,12 @@ void OnPlatformEvent(const ChipDeviceEvent * event, intptr_t /* arg */)
         ChipLogProgress(DeviceLayer, "MQTT demo: Commissioning Complete");
         break;
 
-    case DeviceEventType::kSecureSessionEstablished:
+    case DeviceEventType::kSLSystemEventCommissioningStarted:
         ChipLogProgress(DeviceLayer, "MQTT demo: Commissioning Started");
+        break;
+
+    case DeviceEventType::kSLSystemEventCommissioningFailed:
+        ChipLogProgress(DeviceLayer, "MQTT demo: Commissioning Failed");
         break;
 
     default:
