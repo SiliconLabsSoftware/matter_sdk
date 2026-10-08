@@ -42,8 +42,7 @@
 #include <app/clusters/ota-requestor/DefaultOTARequestorDriver.h>
 #include <app/clusters/ota-requestor/DefaultOTARequestorStorage.h>
 #include <app/clusters/ota-requestor/OTARequestorAttributes.h>
-#include <app/clusters/ota-requestor/OTARequestorCluster.h>
-#include <app/server-cluster/ServerClusterInterfaceRegistry.h>
+#include <device/types/root-node/features/OtaFeature.h>
 #endif // CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
 
 #include <memory>
@@ -99,9 +98,6 @@ public:
 
     /// Substitutes board-specific implementations
     CHIP_ERROR RegisterDeviceCreators();
-
-    /// OTA Requestor cluster on the root endpoint, if enabled.
-    CHIP_ERROR RegisterOTACluster();
 
     /// Instantiates every type in DeviceFactory::SupportedDeviceTypes().
     CHIP_ERROR RegisterAppDevices();
