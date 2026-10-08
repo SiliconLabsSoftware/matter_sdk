@@ -142,7 +142,7 @@ public:
      */
     bool IsOccupancyDetected();
 
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
     /**
      * @brief LCD callback function to cycle LCD display.
      *        Function switch to the next LCD UI and update the show values.
