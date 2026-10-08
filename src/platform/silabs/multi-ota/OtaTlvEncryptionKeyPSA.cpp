@@ -28,18 +28,9 @@ namespace Silabs {
 
 int destroyAESKey(uint32_t kid)
 {
-    psa_key_handle_t key_handle;
-
-    int err = psa_open_key(kid, &key_handle);
-    if (err)
-    {
-        psa_close_key(kid);
-    }
-    else
-    {
-        err = psa_destroy_key(kid);
-    }
-    return err;
+    // Persistent keys are addressed by ID; psa_open_key()/psa_close_key() were
+    // removed in mbedTLS 4 / PSA Crypto 1.0.
+    return psa_destroy_key(static_cast<psa_key_id_t>(kid));
 }
 
 CHIP_ERROR OtaTlvEncryptionKey::Import(const uint8_t * key, size_t key_len)
@@ -59,7 +50,7 @@ CHIP_ERROR OtaTlvEncryptionKey::Import(const uint8_t * key, size_t key_len)
     status = psa_import_key(&attributes, key, key_len, &key_id);
     if (status != PSA_SUCCESS)
     {
-        printf("Failed to import a key error:%ld\n", status);
+        printf("Failed to import a key error:%" PRI32 "\n", status);
         return CHIP_ERROR_INTERNAL;
     }
 
@@ -90,21 +81,21 @@ CHIP_ERROR OtaTlvEncryptionKey::Decrypt(MutableByteSpan & block, uint32_t & mIVO
         status = psa_cipher_decrypt_setup(&operation, static_cast<psa_key_id_t>(mId), PSA_ALG_CTR);
         if (status != PSA_SUCCESS)
         {
-            printf("Failed to begin cipher operation error:%ld\n", status);
+            printf("Failed to begin cipher operation error:%" PRI32 "\n", status);
             return CHIP_ERROR_INTERNAL;
         }
 
         status = psa_cipher_set_iv(&operation, iv, sizeof(iv));
         if (status != PSA_SUCCESS)
         {
-            printf("Failed to set IV error:%ld\n", status);
+            printf("Failed to set IV error:%" PRI32 "\n", status);
             return CHIP_ERROR_INTERNAL;
         }
 
         status = psa_cipher_update(&operation, static_cast<uint8_t *>(&block[Offset]), 16, output, sizeof(output), &output_len);
         if (status != PSA_SUCCESS)
         {
-            printf("Failed to update cipher operation error:%ld\n", status);
+            printf("Failed to update cipher operation error:%" PRI32 "\n", status);
             return CHIP_ERROR_INTERNAL;
         }
 
