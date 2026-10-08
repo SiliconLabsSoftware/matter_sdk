@@ -55,8 +55,9 @@ public:
      * @param storageDelegate Persistent storage delegate for attribute persistence
      * @return CHIP_ERROR
      */
-    static CHIP_ERROR InitCodeDrivenDataModel(chip::PersistentStorageDelegate & storageDelegate,
-                                              chip::Credentials::GroupDataProvider * groupDataProvider);
+    static CHIP_ERROR InitCodeDrivenDataModel(chip::PersistentStorageDelegate & storage,
+                                              chip::Credentials::GroupDataProvider * groupDataProvider,
+                                              chip::Crypto::SessionKeystore * sessionKeyStore);
 
     /**
      * @brief Shutdown and cleanup the code-driven data model
