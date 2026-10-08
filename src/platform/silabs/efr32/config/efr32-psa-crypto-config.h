@@ -18,6 +18,27 @@
 
 #pragma once
 
+// Ensure device feature macros (e.g. SEMAILBOX_PRESENT) are available before
+// any Silabs security headers that key off them. TF-PSA build_info pulls this
+// file in very early — before em_device.h would otherwise be reached.
+#include "em_device.h"
+
+// mbedTLS 4 includes tf-psa-crypto/build_info.h before MBEDTLS_CONFIG_FILE.
+// The Silabs autogen that enables MBEDTLS_PSA_CRYPTO_C (and related symbols)
+// must be visible during that first TF-PSA finalize pass.
+#include "sli_mbedtls_config_autogen.h"
+
+// Derive the SLI_MBEDTLS_DEVICE_* family. Board-support snapshots of
+// psa_crypto_config.h predate mbedTLS 4 and only pull this in from
+// sl_mbedtls_config.h, which TF-PSA translation units never load. Without it,
+// headers keyed on SLI_MBEDTLS_DEVICE_HSE are skipped while device-derived
+// features such as SLI_PSA_DRIVER_FEATURE_KSU still apply.
+#include "sli_mbedtls_omnipresent.h"
+
+// Allow use of legacy mbedtls_* crypto primitives that moved under private/
+// headers in mbedTLS 4 / TF-PSA-Crypto (e.g. Spake2p).
+#define MBEDTLS_DECLARE_PRIVATE_IDENTIFIERS
+
 // MATTER AWS Specific Configurations
 #ifdef SL_MATTER_ENABLE_AWS
 #ifndef PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY
@@ -38,6 +59,14 @@
 #define PSA_WANT_ALG_JPAKE
 #define PSA_WANT_ECC_SECP_R1_256
 #endif // SL_USE_COAP_CONFIG
+
+// Required when MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED is set (see efr32-chip-mbedtls-config.h).
+#ifndef PSA_WANT_ALG_JPAKE
+#define PSA_WANT_ALG_JPAKE
+#endif
+#ifndef PSA_WANT_ALG_TLS12_ECJPAKE_TO_PMS
+#define PSA_WANT_ALG_TLS12_ECJPAKE_TO_PMS
+#endif
 
 // Multi-chip OTA encryption processing
 #ifdef SL_MATTER_ENABLE_OTA_ENCRYPTION

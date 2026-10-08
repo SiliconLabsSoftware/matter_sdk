@@ -97,6 +97,21 @@
 #define MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED
 #endif // SL_USE_COAP_CONFIG
 
+// OpenThread's EcJpakePassword helper (mbedtls 4 opaque API) is always compiled
+// from the Silabs OT fork. mbedtls/private/config_adjust_ssl.h undefines
+// MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED unless TLS 1.2 is enabled via SSL_TLS_C.
+// Matter Thread builds do not call that helper (secure transport off), but the
+// declaration must remain visible so the TU compiles.
+#ifndef MBEDTLS_SSL_TLS_C
+#define MBEDTLS_SSL_TLS_C
+#endif
+#ifndef MBEDTLS_SSL_PROTO_TLS1_2
+#define MBEDTLS_SSL_PROTO_TLS1_2
+#endif
+#ifndef MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
+#define MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
+#endif
+
 #if SL_MATTER_PROVISION_FLASH
 #define MBEDTLS_SHA256_C
 #define MBEDTLS_HMAC_DRBG_C
