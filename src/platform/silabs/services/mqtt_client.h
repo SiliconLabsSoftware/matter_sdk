@@ -227,10 +227,10 @@ public:
     CHIP_ERROR Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context = nullptr);
 
 private:
-    static constexpr size_t kTxBufferSize           = 1500;
-    static constexpr size_t kRxBufferSize           = 1500;
-    static constexpr size_t kDefaultThreadStackSize = 8 * 1024;
-    static constexpr size_t kQueueSize              = 8;
+    static constexpr size_t kTxBufferSize           = 1024;
+    static constexpr size_t kRxBufferSize           = 1024;
+    static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
+    static constexpr size_t kQueueSize              = 4;
 
     enum class Operation : uint8_t
     {

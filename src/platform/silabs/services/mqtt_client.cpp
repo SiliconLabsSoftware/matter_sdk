@@ -589,7 +589,8 @@ CHIP_ERROR MqttClient::ProcessConnect()
 #endif
 
     const int netStatus =
-        NetworkConnect(&mNetwork, 0, reinterpret_cast<char *>(&mServerIp), mBroker.brokerPort, mBroker.clientPort, mConfig.useTls);
+        sl_paho_network_connect(&mNetwork, SL_PAHO_NETWORK_FLAG_IPV4, reinterpret_cast<char *>(mServerIp.ip.v4.bytes),
+                                mBroker.brokerPort, mBroker.clientPort, mConfig.useTls);
     if (netStatus != SUCCESS)
     {
         ChipLogError(DeviceLayer, "%s (%d)", GetNetworkErrorString(netStatus), netStatus);
