@@ -493,15 +493,15 @@ void AppTask::OvenActionHandler(AppEvent * aEvent)
     case COOK_TOP_ON_ACTION:
     case COOK_TOP_OFF_ACTION: {
         sLightLED.Set(AppInstance().GetCookTopState());
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
 #endif // SL_MATTER_DISPLAY_ENABLED
         break;
     }
     case OVEN_MODE_UPDATE_ACTION:
-#ifdef DISPLAY_ENABLED
+#if SL_MATTER_DISPLAY_ENABLED
         GetLCD().WriteDemoUI(false);
-#endif // DISPLAY_ENABLED
+#endif // SL_MATTER_DISPLAY_ENABLED
         break;
     default:
         break;
