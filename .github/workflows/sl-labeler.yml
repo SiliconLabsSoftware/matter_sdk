@@ -7,6 +7,9 @@ on:
       - release_*
     types: [opened, edited, synchronize, reopened]
 
+permissions:
+  contents: read
+
 jobs:
   check-sl-prefix:
     name: Check SL Prefix and Apply Labels
