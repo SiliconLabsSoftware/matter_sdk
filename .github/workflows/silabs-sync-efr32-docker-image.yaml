@@ -44,39 +44,81 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
 
+      # refs/pull/N/merge is a temporary simulated merge. It is absent for
+      # conflicted pull requests and until GitHub publishes it for new ones.
+      # Head-file tag sync does not require it.
+      - name: Fetch pull request merge commit
+        id: fetch_merge
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/merge:refs/remotes/origin/pr-merge"; then
+            echo "available=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "refs/pull/${PR_NUMBER}/merge is not available. Syncing tags on the pull request head."
+            echo "available=false" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Sync EFR32 image tags
         id: sync_tags
+        env:
+          MERGE_REF: refs/remotes/origin/pr-merge
+          MERGE_AVAILABLE: ${{ steps.fetch_merge.outputs.available }}
         run: |
           python3 - <<'PY'
           import os
           import re
+          import subprocess
           from pathlib import Path
 
-          workflow_dir = Path(".github/workflows")
-          source_path = workflow_dir / "examples-efr32.yaml"
+          merge_ref = os.environ["MERGE_REF"]
+          merge_available = os.environ["MERGE_AVAILABLE"] == "true"
+          # Without a merge ref, the head tree is the source the previous
+          # workflow used. Base-only files stay undiscovered until the ref exists.
+          source_rev = merge_ref if merge_available else "HEAD"
+          workflow_dir = ".github/workflows"
+          source_path = f"{workflow_dir}/examples-efr32.yaml"
           image_pattern = re.compile(
               r"(^\s*image:\s*ghcr\.io/project-chip/chip-build-efr32:)(\d+)(\s*)$",
               re.MULTILINE,
           )
 
-          source_text = source_path.read_text()
+          def blob_text(rev, path):
+              result = subprocess.run(
+                  ["git", "show", f"{rev}:{path}"],
+                  check=False,
+                  capture_output=True,
+              )
+              if result.returncode != 0:
+                  return None
+              return result.stdout.decode("utf-8")
+
+          def workflow_paths(rev):
+              result = subprocess.run(
+                  ["git", "ls-tree", "-r", "--name-only", rev, workflow_dir],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              )
+              return sorted(
+                  path for path in result.stdout.splitlines() if path.endswith(".yaml")
+              )
+
+          if not merge_available:
+              print("Merge ref unavailable; syncing workflow files on the pull request head.")
+
+          source_text = blob_text(source_rev, source_path)
+          if source_text is None:
+              raise SystemExit(f"Could not read {source_path} from {source_rev}")
+
           source_match = image_pattern.search(source_text)
           if source_match is None:
               raise SystemExit(f"Could not find EFR32 image tag in {source_path}")
 
-          target_version = int(source_match.group(2))
-          updated_files = []
-          skipped_newer_files = []
-
-          for path in sorted(workflow_dir.glob("*.yaml")):
-              text = path.read_text()
+          def bump_tags(text, path):
               matches = list(image_pattern.finditer(text))
-              if not matches:
-                  continue
-
               new_text = text
               updated = False
-
               for match in reversed(matches):
                   current_version = int(match.group(2))
                   if current_version < target_version:
@@ -88,18 +130,49 @@ jobs:
                       updated = True
                   elif current_version > target_version:
                       skipped_newer_files.append(f"{path}:{current_version}")
+              return new_text, updated
 
-              if updated:
-                  path.write_text(new_text)
-                  updated_files.append(str(path))
+          target_version = int(source_match.group(2))
+          updated_files = []
+          base_only_files = []
+          skipped_newer_files = []
+
+          for path in workflow_paths(source_rev):
+              merge_text = blob_text(source_rev, path)
+              if merge_text is None or not image_pattern.search(merge_text):
+                  continue
+
+              head_text = blob_text("HEAD", path)
+              if head_text is None:
+                  # The file exists only on the base. Adding it on the PR head
+                  # is a second add, and the pull request becomes unmergeable.
+                  _, updated = bump_tags(merge_text, path)
+                  if updated:
+                      base_only_files.append(path)
+                  continue
+
+              new_text, updated = bump_tags(head_text, path)
+              if updated and new_text != head_text:
+                  output_path = Path(path)
+                  output_path.parent.mkdir(parents=True, exist_ok=True)
+                  output_path.write_text(new_text)
+                  updated_files.append(path)
 
           github_output = Path(os.environ["GITHUB_OUTPUT"])
           with github_output.open("a", encoding="utf-8") as output:
               output.write(
                   f"has_updates={'true' if updated_files else 'false'}\n"
               )
+              output.write(f"target_version={target_version}\n")
+              output.write(
+                  "has_base_only_updates="
+                  f"{'true' if base_only_files else 'false'}\n"
+              )
               output.write("updated_files<<EOF\n")
               output.write("\n".join(updated_files))
+              output.write("\nEOF\n")
+              output.write("base_only_files<<EOF\n")
+              output.write("\n".join(base_only_files))
               output.write("\nEOF\n")
               output.write("skipped_newer_files<<EOF\n")
               output.write("\n".join(skipped_newer_files))
@@ -107,11 +180,16 @@ jobs:
 
           print(f"Source EFR32 image tag: {target_version}")
           if updated_files:
-              print("Updated workflow files:")
+              print("Updated workflow files on the pull request head:")
               for path in updated_files:
                   print(f" - {path}")
           else:
-              print("No older workflow tags were found.")
+              print("No older workflow tags were found on the pull request head.")
+
+          if base_only_files:
+              print("Base-only workflows to update on a separate branch:")
+              for path in base_only_files:
+                  print(f" - {path}")
 
           if skipped_newer_files:
               print("Skipped workflows with newer tags:")
@@ -120,7 +198,7 @@ jobs:
           PY
 
       - name: Configure git author
-        if: steps.sync_tags.outputs.has_updates == 'true'
+        if: steps.sync_tags.outputs.has_updates == 'true' || steps.sync_tags.outputs.has_base_only_updates == 'true'
         run: |
           git config user.name "silabs-matter-ci-bot[bot]"
           git config user.email "silabs-matter-ci-bot[bot]@users.noreply.github.com"
@@ -133,3 +211,79 @@ jobs:
           git add .github/workflows/*.yaml
           git commit -m "Sync EFR32 Docker image tag"
           git push origin "HEAD:${PR_HEAD_REF}"
+
+      # These files are already on the base, so the tag change has to be a
+      # child of the base branch. A new file on the pull request head conflicts.
+      - name: Open a pull request for base-only tag updates
+        if: steps.sync_tags.outputs.has_base_only_updates == 'true'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TARGET_VERSION: ${{ steps.sync_tags.outputs.target_version }}
+          BASE_ONLY_FILES: ${{ steps.sync_tags.outputs.base_only_files }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          branch="bot/sync-efr32-docker-tag-${PR_NUMBER}"
+          git fetch --no-tags origin "${BASE_REF}"
+          if git ls-remote --exit-code origin "refs/heads/${branch}" >/dev/null; then
+            git fetch --no-tags origin "+refs/heads/${branch}:refs/remotes/origin/${branch}"
+            git checkout --detach "refs/remotes/origin/${branch}"
+          else
+            git checkout --detach "origin/${BASE_REF}"
+          fi
+
+          TARGET_VERSION="${TARGET_VERSION}" BASE_ONLY_FILES="${BASE_ONLY_FILES}" python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          target_version = int(os.environ["TARGET_VERSION"])
+          image_pattern = re.compile(
+              r"(^\s*image:\s*ghcr\.io/project-chip/chip-build-efr32:)(\d+)(\s*)$",
+              re.MULTILINE,
+          )
+          for path in os.environ["BASE_ONLY_FILES"].splitlines():
+              if not path.startswith(".github/workflows/") or not path.endswith(".yaml"):
+                  raise SystemExit(f"Refusing to update unexpected path: {path}")
+              file_path = Path(path)
+              if not file_path.is_file():
+                  print(f"Skipping {path}: not on {os.environ.get('BASE_REF', 'the base branch')}")
+                  continue
+              text = file_path.read_text()
+              new_text = text
+              for match in reversed(list(image_pattern.finditer(text))):
+                  if int(match.group(2)) < target_version:
+                      new_text = (
+                          new_text[: match.start(2)]
+                          + str(target_version)
+                          + new_text[match.end(2) :]
+                      )
+              if new_text != text:
+                  file_path.write_text(new_text)
+                  print(f"Updated {path}")
+          PY
+
+          if git diff --quiet; then
+            echo "Base-only workflows already use the target tag."
+          else
+            git add -- .github/workflows/*.yaml
+            git commit -m "Sync EFR32 Docker image tag"
+            git push origin "HEAD:refs/heads/${branch}"
+          fi
+
+          git fetch --no-tags origin "${BASE_REF}"
+          if git merge-base --is-ancestor HEAD "origin/${BASE_REF}"; then
+            echo "Base already contains this tag update."
+            exit 0
+          fi
+          existing="$(gh pr list --repo "${GITHUB_REPOSITORY}" --head "${branch}" --base "${BASE_REF}" --state open --json number --jq '.[].number')"
+          if [ -n "${existing}" ]; then
+            echo "Follow-up pull request #${existing} is already open."
+            exit 0
+          fi
+          gh pr create \
+            --repo "${GITHUB_REPOSITORY}" \
+            --base "${BASE_REF}" \
+            --head "${branch}" \
+            --title "Sync EFR32 Docker image tag" \
+            --body "Updates Silabs workflow image tags that are absent from the head of #${PR_NUMBER}. Adding those files on that branch would conflict with the copies already on \`${BASE_REF}\`."
