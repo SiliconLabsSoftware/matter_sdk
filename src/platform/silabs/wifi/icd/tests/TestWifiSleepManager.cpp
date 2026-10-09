@@ -32,6 +32,8 @@ public:
         mConfigurePowerSaveCalled       = false;
         mConfigureBroadcastFilterCalled = false;
         mIsWifiProvisioned              = false;
+        mIsStationConnected             = false;
+        mIsStationConnecting            = false;
         mBroadcastFilterEnabled         = false;
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         mConfigureLITConnectCalled    = false;
@@ -103,8 +105,9 @@ public:
 
     PowerSaveConfiguration GetLastPowerSaveConfiguration() const { return mLastPowerSaveConfiguration; }
 
-    // Setter for IsWifiProvisioned
     void SetIsWifiProvisioned(bool isProvisioned) { mIsWifiProvisioned = isProvisioned; }
+    void SetIsStationConnected(bool isConnected) { mIsStationConnected = isConnected; }
+    void SetIsStationConnecting(bool isConnecting) { mIsStationConnecting = isConnecting; }
 
     CHIP_ERROR ConfigurePowerSave(PowerSaveConfiguration configuration, uint32_t listenInterval) override
     {
@@ -146,7 +149,8 @@ public:
 
     bool IsWifiProvisioned() override { return mIsWifiProvisioned; }
 
-    bool IsStationConnected() override { return false; }
+    bool IsStationConnected() override { return mIsStationConnected; }
+    bool IsStationConnecting() override { return mIsStationConnecting; }
     bool IsStationModeEnabled() override { return false; }
     bool IsStationReady() override { return false; }
     bool HasAnIPv6Address() override { return false; }
@@ -157,7 +161,9 @@ private:
     bool mConfigureBroadcastFilterCalled = false;
     bool mBroadcastFilterEnabled         = false;
     PowerSaveConfiguration mLastPowerSaveConfiguration;
-    bool mIsWifiProvisioned = false;
+    bool mIsWifiProvisioned     = false;
+    bool mIsStationConnected    = false;
+    bool mIsStationConnecting   = false;
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     bool mConfigureLITConnectCalled    = false;
     bool mConfigureLITDisconnectCalled = false;
@@ -289,6 +295,7 @@ TEST_F(TestWifiSleepManager, TestRequestHighPerformanceWithoutProvisioning)
 TEST_F(TestWifiSleepManager, TestLitIdleModeSelectsLITDisconnectWhenCallbackAllowsLiSleep)
 {
     mMock.SetIsWifiProvisioned(true);
+    mMock.SetIsStationConnected(true);
     WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
 
     EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode),
@@ -296,13 +303,61 @@ TEST_F(TestWifiSleepManager, TestLitIdleModeSelectsLITDisconnectWhenCallbackAllo
 
     EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
     EXPECT_TRUE(mMock.WasConfigureBroadcastFilterCalled());
-    EXPECT_TRUE(mMock.WasBroadcastFilterEnabled());
+    EXPECT_FALSE(mMock.WasBroadcastFilterEnabled());
     EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kDeepSleep);
     EXPECT_TRUE(mMock.WasConfigurePowerSaveCalled());
     EXPECT_TRUE(mMock.WasStartLitPrecheckTimerCalled());
 }
 
-TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnectThenDTIMWhenProvisioned)
+TEST_F(TestWifiSleepManager, TestLitIdleModeDefersDisconnectWhileConnecting)
+{
+    mMock.SetIsWifiProvisioned(true);
+    mMock.SetIsStationConnecting(true);
+    WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
+
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode),
+              CHIP_NO_ERROR);
+
+    EXPECT_FALSE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_FALSE(mMock.WasStartLitPrecheckTimerCalled());
+}
+
+TEST_F(TestWifiSleepManager, TestLitIdleModeDoesNotRestartPrecheckTimerWhenAlreadyDisconnected)
+{
+    mMock.SetIsWifiProvisioned(true);
+    mMock.SetIsStationConnected(false);
+    WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
+
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode),
+              CHIP_NO_ERROR);
+
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_FALSE(mMock.WasStartLitPrecheckTimerCalled());
+}
+
+// Failed join clears station-connected; a later kGenericEvent must not restart the
+// precheck-in timer (platform ConfigureLITDisconnect succeeds without sl_net_down).
+TEST_F(TestWifiSleepManager, TestLitGenericEventDoesNotRestartPrecheckTimerAfterFailedJoin)
+{
+    mMock.SetIsWifiProvisioned(true);
+    mMock.SetIsStationConnected(true);
+    WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
+
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode),
+              CHIP_NO_ERROR);
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_TRUE(mMock.WasStartLitPrecheckTimerCalled());
+
+    // Simulate join failure: STA already down, idle mode preserved across kGenericEvent.
+    mMock.SetIsStationConnected(false);
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent),
+              CHIP_NO_ERROR);
+
+    EXPECT_TRUE(mMock.WasConfigureLITDisconnectCalled());
+    EXPECT_FALSE(mMock.WasStartLitPrecheckTimerCalled());
+}
+
+TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnect)
 {
     mMock.SetIsWifiProvisioned(true);
     WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
@@ -312,14 +367,15 @@ TEST_F(TestWifiSleepManager, TestLitActiveModeRunsLITConnectThenDTIMWhenProvisio
 
     EXPECT_TRUE(mMock.WasCancelLitPrecheckTimerCalled());
     EXPECT_TRUE(mMock.WasConfigureLITConnectCalled());
-    EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kConnectedSleep);
-    EXPECT_TRUE(mMock.WasConfigureBroadcastFilterCalled());
-    EXPECT_FALSE(mMock.WasBroadcastFilterEnabled());
+    // Wake/join power-save is applied inside ConfigureLITConnect, not by WifiSleepManager.
+    EXPECT_FALSE(mMock.WasConfigurePowerSaveCalled());
+    EXPECT_FALSE(mMock.WasConfigureBroadcastFilterCalled());
 }
 
 TEST_F(TestWifiSleepManager, TestLitIdleModePreservedAcrossHighPerformanceCycle)
 {
     mMock.SetIsWifiProvisioned(true);
+    mMock.SetIsStationConnected(true);
     WifiSleepManager::GetInstance().SetApplicationCallback(&mLiSleepCallback);
 
     EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kIdleMode),
