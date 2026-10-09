@@ -52,6 +52,10 @@
 #endif // ENABLE_CHIP_SHELL
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
+#ifdef ENABLE_CHIP_SHELL
+#include <BLEShellCommands.h>
+#endif // ENABLE_CHIP_SHELL
+
 #include <assert.h>
 #include <headers/ProvisionManager.h>
 #include <lib/support/CodeUtils.h>
@@ -96,6 +100,31 @@
 #ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
 #include "CustomerAppTask.h"
 #endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+// SL-Only
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+#include "ZigbeeCallbacks.h"
+#include "sl_cmp_config.h"
+
+#ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
+#include <MultiProtocolDataModelHelper.h>
+#endif // SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
+#endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+
+// Tracing
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
+#if MATTER_TRACING_ENABLED && defined(ENABLE_CHIP_SHELL)
+#include <TracingShellCommands.h>
+#endif // MATTER_TRACING_ENABLED
+
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#include <MultiProtocolDataModelHelper.h>
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
+// sl-only
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#include <ApplicationSleepManager.h>
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
 /**********************************************************
  * Defines and Constants
@@ -121,6 +150,7 @@ using namespace chip::app;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceLayer::Silabs;
 
+using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
 namespace {
 
 /**********************************************************
@@ -145,6 +175,8 @@ bool sHaveBLEConnections = false;
 
 constexpr uint32_t kLightTimerPeriod = static_cast<uint32_t>(pdMS_TO_TICKS(10));
 
+constexpr System::Clock::Milliseconds32 kZbLeaveAnnouceDelay = System::Clock::Milliseconds32(1000);
+
 uint8_t sAppEventQueueBuffer[APP_EVENT_QUEUE_SIZE * sizeof(AppEvent)];
 osMessageQueue_t sAppEventQueueStruct;
 constexpr osMessageQueueAttr_t appEventQueueAttr = { .cb_mem  = &sAppEventQueueStruct,
@@ -168,10 +200,15 @@ SilabsLCD slLCD;
 
 #ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
 Clusters::Identify::EffectIdentifierEnum sIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
-
 ObjectPool<Identify, MATTER_DM_IDENTIFY_CLUSTER_SERVER_ENDPOINT_COUNT + CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT> IdentifyPool;
-
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
+
+int sCodeDrivenIdentifyActiveCount                                 = 0;
+Clusters::Identify::EffectIdentifierEnum sCodeDrivenIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
+Clusters::Identify::EffectVariantEnum sCodeDrivenIdentifyVariant   = Clusters::Identify::EffectVariantEnum::kDefault;
+
+// Protects the three sCodeDrivenIdentify* variables above.
+osSemaphoreId_t sCodeDrivenIdentifyLock = nullptr;
 
 } // namespace
 
@@ -195,8 +232,19 @@ void BaseApplicationDelegate::OnCommissioningSessionEstablishmentError(CHIP_ERRO
     isComissioningStarted = false;
 }
 
+void BaseApplicationDelegate::OnCommissioningWindowOpened()
+{
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowOpened();
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+}
+
 void BaseApplicationDelegate::OnCommissioningWindowClosed()
 {
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    app::Silabs::ApplicationSleepManager::GetInstance().OnCommissioningWindowClosed();
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
     if (BaseApplication::GetProvisionStatus())
     {
         // After the device is provisioned and the commissioning passed
@@ -280,12 +328,47 @@ CHIP_ERROR BaseApplication::Init()
     }
 
     mIsApplicationInitialized = true;
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+#ifdef SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
+    if (PlatformMgr().ScheduleWork([](intptr_t) { MultiProtocolDataModel::Initialize(); }) != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "Failed to Schedule MultiProtocol DataModel Initialization");
+    }
+#endif // SL_CATALOG_MULTIPROTOCOL_ZIGBEE_MATTER_COMMON_PRESENT
+
+#ifdef SL_MATTER_ZIGBEE_SEQUENTIAL
+    PlatformMgr().LockChipStack();
+    uint16_t nbOfMatterFabric = Server::GetInstance().GetFabricTable().FabricCount();
+    PlatformMgr().UnlockChipStack();
+    if (nbOfMatterFabric != 0)
+    {
+        Zigbee::RequestLeave();
+        PlatformMgr().LockChipStack();
+        RETURN_SAFELY_IGNORED DeviceLayer::SystemLayer().StartTimer(
+            kZbLeaveAnnouceDelay, [](System::Layer *, void *) { Zigbee::ZLLNotFactoryNew(); }, nullptr);
+        PlatformMgr().UnlockChipStack();
+    }
+    else
+#endif // SL_MATTER_ZIGBEE_SEQUENTIAL
+    {
+        Zigbee::RequestStart();
+    }
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    SILABS_TRACE_END_ERROR(TimeTraceOperation::kAppInit, err);
+    SILABS_TRACE_END_ERROR(TimeTraceOperation::kBootup, err);
     return err;
 }
 
 CHIP_ERROR BaseApplication::BaseInit()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
+
+    sCodeDrivenIdentifyLock = osSemaphoreNew(1, 1, nullptr);
+    if (sCodeDrivenIdentifyLock == nullptr)
+    {
+        ChipLogError(AppServer, "Failed to create code-driven identify lock");
+        appError(APP_ERROR_ALLOCATION_FAILED);
+    }
 
 #if SL_MATTER_DISPLAY_ENABLED
     TEMPORARY_RETURN_IGNORED GetLCD().Init((uint8_t *) APP_TASK_NAME);
@@ -347,6 +430,10 @@ CHIP_ERROR BaseApplication::BaseInit()
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     ICDCommands::RegisterCommands();
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#if MATTER_TRACING_ENABLED
+    TracingCommands::RegisterCommands();
+#endif // MATTER_TRACING_ENABLED
+    BLEShellCommands::RegisterCommands();
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -402,8 +489,10 @@ bool BaseApplication::ActivateStatusLedPatterns()
 {
     bool isPatternSet = false;
 #if (defined(ENABLE_WSTK_LEDS) && (defined(SL_CATALOG_SIMPLE_LED_LED1_PRESENT)))
+    // Local copy to prevent race condition
+    Clusters::Identify::EffectIdentifierEnum activeEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
+    bool isIdentifyActive                                 = false;
 #ifdef MATTER_DM_PLUGIN_IDENTIFY_SERVER
-    bool isIdentifyActive = false;
     for (const auto & obj : IdentifyPool)
     {
         if (obj->mActive)
@@ -412,6 +501,21 @@ bool BaseApplication::ActivateStatusLedPatterns()
             break;
         }
     }
+    activeEffect = sIdentifyEffect;
+#endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
+
+    osSemaphoreAcquire(sCodeDrivenIdentifyLock, osWaitForever);
+    if (sCodeDrivenIdentifyActiveCount > 0)
+    {
+        isIdentifyActive = true;
+    }
+    if (activeEffect == Clusters::Identify::EffectIdentifierEnum::kStopEffect &&
+        sCodeDrivenIdentifyEffect != Clusters::Identify::EffectIdentifierEnum::kStopEffect)
+    {
+        activeEffect = sCodeDrivenIdentifyEffect;
+    }
+    osSemaphoreRelease(sCodeDrivenIdentifyLock);
+
     if (isIdentifyActive)
     {
         // Identify in progress
@@ -419,25 +523,25 @@ bool BaseApplication::ActivateStatusLedPatterns()
         sStatusLED.Blink(250, 250);
         isPatternSet = true;
     }
-    else if (sIdentifyEffect != Clusters::Identify::EffectIdentifierEnum::kStopEffect)
+    else if (activeEffect != Clusters::Identify::EffectIdentifierEnum::kStopEffect)
     {
         // Identify trigger effect received. Do some on/off patterns on the status led
-        if (sIdentifyEffect == Clusters::Identify::EffectIdentifierEnum::kBlink)
+        if (activeEffect == Clusters::Identify::EffectIdentifierEnum::kBlink)
         {
             // Fast blink
             sStatusLED.Blink(50, 50);
         }
-        else if (sIdentifyEffect == Clusters::Identify::EffectIdentifierEnum::kBreathe)
+        else if (activeEffect == Clusters::Identify::EffectIdentifierEnum::kBreathe)
         {
             // Slow blink
             sStatusLED.Blink(1000, 1000);
         }
-        else if (sIdentifyEffect == Clusters::Identify::EffectIdentifierEnum::kOkay)
+        else if (activeEffect == Clusters::Identify::EffectIdentifierEnum::kOkay)
         {
             // Pulse effect
             sStatusLED.Blink(300, 700);
         }
-        else if (sIdentifyEffect == Clusters::Identify::EffectIdentifierEnum::kChannelChange)
+        else if (activeEffect == Clusters::Identify::EffectIdentifierEnum::kChannelChange)
         {
             // Alternate between Short and Long pulses effect
             static uint64_t mLastChangeTimeMS = 0;
@@ -455,7 +559,6 @@ bool BaseApplication::ActivateStatusLedPatterns()
         }
         isPatternSet = true;
     }
-#endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
 
 #if !(CHIP_CONFIG_ENABLE_ICD_SERVER)
     // Identify Patterns have priority over Status patterns
@@ -720,7 +823,6 @@ void BaseApplication::OnIdentifyStop(Identify * identify)
 
 void BaseApplication::OnTriggerIdentifyEffectCompleted(chip::System::Layer * systemLayer, void * appState)
 {
-    ChipLogDetail(Zcl, "Trigger Identify Complete");
     sIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
@@ -763,7 +865,6 @@ void BaseApplication::OnTriggerIdentifyEffect(Identify * identify)
         break;
     default:
         sIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
-        ChipLogDetail(Zcl, "No identifier effect");
     }
 }
 
@@ -773,6 +874,101 @@ void emberAfIdentifyClusterInitCallback(chip::EndpointId endpoint)
                               Clusters::Identify::IdentifyTypeEnum::kVisibleIndicator, BaseApplication::OnTriggerIdentifyEffect);
 }
 #endif // MATTER_DM_PLUGIN_IDENTIFY_SERVER
+
+namespace {
+void CodeDrivenTriggerEffectCompleted(chip::System::Layer *, void *)
+{
+    ChipLogDetail(Zcl, "Trigger Identify Complete (code-driven)");
+    osSemaphoreAcquire(sCodeDrivenIdentifyLock, osWaitForever);
+    sCodeDrivenIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    const bool wentIdle =
+        (sCodeDrivenIdentifyActiveCount == 0 && sCodeDrivenIdentifyEffect == Clusters::Identify::EffectIdentifierEnum::kStopEffect);
+#endif
+    osSemaphoreRelease(sCodeDrivenIdentifyLock);
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    if (wentIdle)
+    {
+        BaseApplication::StopStatusLEDTimer();
+    }
+#endif
+}
+} // namespace
+
+void BaseApplication::NotifyCodeDrivenIdentifyStart()
+{
+    osSemaphoreAcquire(sCodeDrivenIdentifyLock, osWaitForever);
+    ++sCodeDrivenIdentifyActiveCount;
+    osSemaphoreRelease(sCodeDrivenIdentifyLock);
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    StartStatusLEDTimer();
+#endif
+}
+
+void BaseApplication::NotifyCodeDrivenIdentifyStop()
+{
+    osSemaphoreAcquire(sCodeDrivenIdentifyLock, osWaitForever);
+    if (sCodeDrivenIdentifyActiveCount > 0)
+    {
+        --sCodeDrivenIdentifyActiveCount;
+    }
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    const bool wentIdle =
+        (sCodeDrivenIdentifyActiveCount == 0 && sCodeDrivenIdentifyEffect == Clusters::Identify::EffectIdentifierEnum::kStopEffect);
+#endif
+    osSemaphoreRelease(sCodeDrivenIdentifyLock);
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    if (wentIdle)
+    {
+        StopStatusLEDTimer();
+    }
+#endif
+}
+
+void BaseApplication::NotifyCodeDrivenTriggerEffect(Clusters::Identify::EffectIdentifierEnum effect,
+                                                    Clusters::Identify::EffectVariantEnum variant)
+{
+    osSemaphoreAcquire(sCodeDrivenIdentifyLock, osWaitForever);
+    sCodeDrivenIdentifyEffect  = effect;
+    sCodeDrivenIdentifyVariant = variant;
+    osSemaphoreRelease(sCodeDrivenIdentifyLock);
+
+    if (variant != Clusters::Identify::EffectVariantEnum::kDefault)
+    {
+        ChipLogDetail(AppServer, "Identify Effect Variant unsupported. Using default");
+    }
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    StartStatusLEDTimer();
+#endif
+
+    switch (effect)
+    {
+    case Clusters::Identify::EffectIdentifierEnum::kBlink:
+    case Clusters::Identify::EffectIdentifierEnum::kOkay:
+        (void) chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds16(5), CodeDrivenTriggerEffectCompleted,
+                                                           nullptr);
+        break;
+    case Clusters::Identify::EffectIdentifierEnum::kBreathe:
+    case Clusters::Identify::EffectIdentifierEnum::kChannelChange:
+        (void) chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds16(10), CodeDrivenTriggerEffectCompleted,
+                                                           nullptr);
+        break;
+    case Clusters::Identify::EffectIdentifierEnum::kFinishEffect:
+        (void) chip::DeviceLayer::SystemLayer().CancelTimer(CodeDrivenTriggerEffectCompleted, nullptr);
+        (void) chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds16(1), CodeDrivenTriggerEffectCompleted,
+                                                           nullptr);
+        break;
+    case Clusters::Identify::EffectIdentifierEnum::kStopEffect:
+        (void) chip::DeviceLayer::SystemLayer().CancelTimer(CodeDrivenTriggerEffectCompleted, nullptr);
+        break;
+    default:
+        osSemaphoreAcquire(sCodeDrivenIdentifyLock, osWaitForever);
+        sCodeDrivenIdentifyEffect = Clusters::Identify::EffectIdentifierEnum::kStopEffect;
+        osSemaphoreRelease(sCodeDrivenIdentifyLock);
+        ChipLogDetail(Zcl, "No identifier effect");
+    }
+}
 
 void BaseApplication::LightTimerEventHandler(void * timerCbArg)
 {
@@ -887,6 +1083,9 @@ void BaseApplication::ScheduleFactoryReset()
         PlatformMgr().HandleServerShuttingDown(); // HandleServerShuttingDown calls OnShutdown() which is only implemented for the
                                                   // basic information cluster it seems. And triggers and Event flush, which is not
                                                   // relevant when there are no fabrics left
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+        Zigbee::TokenFactoryReset();
+#endif
         ConfigurationMgr().InitiateFactoryReset();
     });
 }
@@ -925,6 +1124,16 @@ void BaseApplication::InitOTARequestorHandler(System::Layer * systemLayer, void 
 }
 #endif // defined(SILABS_OTA_ENABLED) && SILABS_OTA_ENABLED
 
+#ifdef SL_MATTER_ENABLE_AWS
+namespace {
+void InitMatterAwsHandler(System::Layer * systemLayer, void * appState)
+{
+    VerifyOrReturn(MATTER_AWS_OK == MatterAwsInit(matterAws::control::subscribeCB),
+                   ChipLogError(AppServer, "MatterAwsInit failed"));
+}
+} // namespace
+#endif // SL_MATTER_ENABLE_AWS
+
 void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
 {
     switch (event->Type)
@@ -938,12 +1147,15 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
 #ifdef SL_MATTER_ENABLE_AWS
-        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
+        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+            || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
+#endif
+        )
         {
-            if (MATTER_AWS_OK != MatterAwsInit(matterAws::control::subscribeCB))
-            {
-                ChipLogError(AppServer, "MatterAwsInit failed");
-            }
+            ChipLogProgress(AppServer, "Scheduling Matter AWS initialization");
+            RETURN_SAFELY_IGNORED chip::DeviceLayer::SystemLayer().StartTimer(
+                chip::System::Clock::Seconds32(MATTER_AWS_INIT_DELAY_SEC), InitMatterAwsHandler, nullptr);
         }
 #endif // SL_MATTER_ENABLE_AWS
 #if SL_MATTER_DISPLAY_ENABLED
@@ -990,6 +1202,15 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
         TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
             WifiSleepManager::PowerEvent::kCommissioningComplete);
 #endif // SL_WIFI && CHIP_CONFIG_ENABLE_ICD_SERVER
+
+// SL-Only
+#ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+#ifdef SL_MATTER_ZIGBEE_SEQUENTIAL // Matter Zigbee sequential
+        Zigbee::RequestLeave();
+#endif // SL_MATTER_ZIGBEE_SEQUENTIAL
+        RETURN_SAFELY_IGNORED DeviceLayer::SystemLayer().StartTimer(
+            kZbLeaveAnnouceDelay, [](System::Layer *, void *) { Zigbee::ZLLNotFactoryNew(); }, nullptr);
+#endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
     }
     break;
     default:
@@ -1030,7 +1251,7 @@ bool BaseApplication::GetProvisionStatus()
     return BaseApplication::sIsProvisioned;
 }
 
-#ifdef CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#if defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
                                        uint8_t * value)
 {
@@ -1038,5 +1259,11 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     VerifyOrReturn(CustomerAppTask::GetAppTask().IsApplicationInitialized());
     // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
     CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
+#ifdef SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+    EndpointId endpointId   = attributePath.mEndpointId;
+    ClusterId clusterId     = attributePath.mClusterId;
+    AttributeId attributeId = attributePath.mAttributeId;
+    MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
+#endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 }
-#endif // CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK
+#endif // defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
