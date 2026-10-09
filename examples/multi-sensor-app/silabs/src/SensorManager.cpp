@@ -91,6 +91,7 @@ public:
 
         if (isOccupancyUpdate)
         {
+            ChipLogProgress(AppServer, "Occupancy attribute updated");
             OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(path.mEndpointId);
             VerifyOrReturn(cluster != nullptr);
 
