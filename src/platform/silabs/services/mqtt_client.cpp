@@ -19,6 +19,7 @@
 #include "mqtt_client.h"
 
 #include "cmsis_os2.h"
+#include "sl_net_dns.h"
 
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -546,21 +547,56 @@ CHIP_ERROR MqttClient::ProcessDeinit()
     return CHIP_NO_ERROR;
 }
 
+CHIP_ERROR MqttClient::ResolveBrokerHostname()
+{
+    VerifyOrReturnError(mBroker.brokerHostname != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    // Blocking DNS: initial_timeout_sec in [5, 10], retry_count additional attempts.
+    constexpr uint8_t kDnsInitialTimeoutSec = 5;
+    constexpr uint8_t kDnsRetryCount        = 1;
+
+    const sl_status_t status = sl_net_dns_resolve_hostname_v2(mBroker.brokerHostname, kDnsInitialTimeoutSec, kDnsRetryCount,
+                                                              SL_NET_DNS_TYPE_IPV4, &mServerIp);
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(DeviceLayer, "[MQTT] DNS resolve failed for %s: 0x%" PRIx32, mBroker.brokerHostname,
+                     static_cast<uint32_t>(status));
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    mBroker.tlsHostname = mBroker.brokerHostname;
+
+    ChipLogDetail(DeviceLayer, "[MQTT] resolved %s -> %u.%u.%u.%u", mBroker.brokerHostname, mServerIp.ip.v4.bytes[0],
+                  mServerIp.ip.v4.bytes[1], mServerIp.ip.v4.bytes[2], mServerIp.ip.v4.bytes[3]);
+    return CHIP_NO_ERROR;
+}
+
 CHIP_ERROR MqttClient::ProcessConnect()
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(mBroker.brokerHostname != nullptr || mBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(mBroker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
 
-    mServerIp.type = SL_IPV4;
-    if (sl_net_inet_addr(mBroker.brokerIp, reinterpret_cast<uint32_t *>(&mServerIp.ip.v4.value)) != SL_STATUS_OK)
+    memset(&mServerIp, 0, sizeof(mServerIp)); // Clear the server IP address
+    mServerIp.type = SL_IPV4;                 // Set the server IP address type to IPv4
+
+    if (mBroker.brokerHostname != nullptr)
     {
-        ChipLogError(DeviceLayer, "[MQTT] invalid broker IP: %s", mBroker.brokerIp);
-        return CHIP_ERROR_INVALID_ARGUMENT;
+        ReturnErrorOnFailure(ResolveBrokerHostname());
+    }
+    else
+    {
+        // mBroker.brokerIp is set
+        if (sl_net_inet_addr(mBroker.brokerIp, reinterpret_cast<uint32_t *>(&mServerIp.ip.v4.value)) != SL_STATUS_OK)
+        {
+            ChipLogError(DeviceLayer, "[MQTT] invalid broker IP: %s", mBroker.brokerIp);
+            return CHIP_ERROR_INVALID_ARGUMENT;
+        }
     }
 
-    ChipLogDetail(DeviceLayer, "[MQTT] connecting to broker %s port %u (TLS=%s)", mBroker.brokerIp, mBroker.brokerPort,
+    const char * brokerEndpoint = (mBroker.brokerHostname != nullptr) ? mBroker.brokerHostname : mBroker.brokerIp;
+    ChipLogDetail(DeviceLayer, "[MQTT] connecting to broker %s port %u (TLS=%s)", brokerEndpoint, mBroker.brokerPort,
                   mConfig.useTls ? "yes" : "no");
 
 #if MQTT_USE_HOST_LWIP_TLS && MQTT_TLS_ENABLE
@@ -783,7 +819,7 @@ CHIP_ERROR MqttClient::Connect(MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(mBroker.brokerHostname != nullptr || mBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(mBroker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
 
     ServiceMessage message{};
