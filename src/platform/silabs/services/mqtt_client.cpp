@@ -19,7 +19,14 @@
 #include "mqtt_client.h"
 
 #include "cmsis_os2.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "sl_net_dns.h"
+#ifdef __cplusplus
+}
+#endif
 
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
