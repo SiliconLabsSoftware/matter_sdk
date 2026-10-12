@@ -52,9 +52,15 @@ extern "C" {
 #if defined(SL_SI91X_BOARD_INIT)
 #include "rsi_board.h"
 #endif // SL_SI91X_BOARD_INIT
-#include "rsi_debug.h"
 #include "rsi_rom_egpio.h"
-extern osMutexId_t si91x_prints_mutex;
+#include "rsi_usart.h"
+#include "sl_si91x_usart.h"
+
+extern ARM_DRIVER_USART Driver_ULP_UART;
+
+#if defined(SL_ICD_ENABLED)
+#include "sl_si91x_power_manager.h"
+#endif
 #else // For EFR32
 #if (_SILICON_LABS_32B_SERIES < 3)
 #include "em_core.h"
@@ -153,16 +159,16 @@ typedef struct
     uint16_t MaxSize;
 } Fifo_t;
 
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-#define UART_MAX_QUEUE_SIZE 125
-#else
 static constexpr uint32_t kUartTxCompleteFlag = 1;
+#if defined(SILABS_LOG_OUT_UART) && SILABS_LOG_OUT_UART
 #if CHIP_DETAIL_LOGGING
 #define UART_MAX_QUEUE_SIZE 60
 #else
 #define UART_MAX_QUEUE_SIZE 25
-#endif
-#endif
+#endif // CHIP_DETAIL_LOGGING
+#else
+#define UART_MAX_QUEUE_SIZE 8
+#endif // defined(SILABS_LOG_OUT_UART) && SILABS_LOG_OUT_UART
 
 #define UART_TX_MAX_BUF_LEN 100 // Just enough for the QR code
 
@@ -179,12 +185,8 @@ constexpr osThreadAttr_t kUartTaskAttr = {
     .cb_size    = osThreadCbSize,
     .stack_mem  = uartStack,
     .stack_size = kUartTaskSize,
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-    .priority = osPriorityBelowNormal, // for SOC, must be below Matter Task priority
-#else
-    .priority = osPriorityRealtime6, // Must be above Matter Task priority
-#endif // SLI_SI91X_MCU_INTERFACE
-};     // Must be above Matter Task priority
+    .priority   = osPriorityRealtime6, // Must be above Matter Task priority
+};
 
 static uint32_t sMissedLogCount = 0; // Count of logs that were not sent to the UART due to queue full
 
@@ -224,26 +226,22 @@ void sendLogImmediately(bool force)
 
 static int16_t formatAndSendLog(UartTxStruct_t & logStruct, bool forceTransmit);
 
+#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+static void si91xUartTransmitAsync(const uint8_t * data, uint16_t length);
+static void Si91xUartTxCompleteNotify(void);
+static void Si91xUartAcquireTxMutex(void);
+static void Si91xUartReleaseTxMutex(void);
+static void Si91xUsartEventCallback(uint32_t event);
+static void Si91xUartInitUlpInstance(void);
+static void Si91xUartArmReceive(void);
+static void Si91xUartStartSendAndWait(uint16_t length);
+static void Si91xUartSendBuffer(const uint8_t * data, uint16_t length);
+#endif // SLI_SI91X_MCU_INTERFACE
+
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 0
 static void UART_rx_callback(UARTDRV_Handle_t handle, Ecode_t transferStatus, uint8_t * data, UARTDRV_Count_t transferCount);
 #endif // SLI_SI91X_MCU_INTERFACE == 0
 static void uartSendBytes(uint8_t * data, uint16_t length);
-
-#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-static void ensureNullTermination(UartTxStruct_t & bufferStruct)
-{
-    if (bufferStruct.length > 0 && bufferStruct.length < MATTER_ARRAY_SIZE(bufferStruct.data) &&
-        bufferStruct.data[bufferStruct.length - 1] != '\0')
-    {
-        bufferStruct.data[bufferStruct.length] = '\0';
-    }
-    else
-    {
-        uint16_t nullPos           = (bufferStruct.length == 0) ? 0 : MATTER_ARRAY_SIZE(bufferStruct.data) - 1;
-        bufferStruct.data[nullPos] = '\0';
-    }
-}
-#endif
 
 static bool InitFifo(Fifo_t * fifo, uint8_t * pDataBuffer, uint16_t bufferSize)
 {
@@ -370,6 +368,12 @@ void uartConsoleInit(void)
     VerifyOrDie(sUartTaskHandle != nullptr);
     VerifyOrDie(sUartTxQueue != nullptr);
 
+#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+    // Si91x sl_event_handler often omits the matter_uart platform_init hook; init here too.
+    uartEarlyInit();
+    Si91xUartArmReceive();
+#endif // SLI_SI91X_MCU_INTERFACE
+
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE == 0
 #ifdef SL_BOARD_NAME
     sl_board_enable_vcom();
@@ -410,6 +414,212 @@ void cache_uart_rx_data(char character)
     chip::NotifyShellProcess();
 #endif // ENABLE_CHIP_SHELL
 }
+
+namespace {
+constexpr uint16_t kSi91xUartTxBufferSize = kHeaderSize + SilabsCoreLogs::kTimeStampStringSize + SilabsCoreLogs::kMaxCategoryStrLen +
+                                            UART_TX_MAX_BUF_LEN + kEndOfLineSize + kFooterSize;
+// ULP UART + DMA requires buffers in ULP SRAM (WiSeConnect ULP UART examples).
+constexpr uint32_t kSi91xUlpUartBankOffset = 0x800;
+uint8_t * const sSi91xUartTxBuffer =
+    reinterpret_cast<uint8_t *>(ULP_SRAM_START_ADDR + (1U * kSi91xUlpUartBankOffset));
+uint8_t * const sSi91xUartRxChar =
+    reinterpret_cast<uint8_t *>(ULP_SRAM_START_ADDR + (2U * kSi91xUlpUartBankOffset));
+static_assert(kSi91xUartTxBufferSize <= kSi91xUlpUartBankOffset, "TX buffer must fit in one ULP SRAM bank");
+static sl_usart_handle_t sSi91xUsartHandle = nullptr;
+static volatile bool sSi91xTxComplete      = false;
+static bool sSi91xRxArmed                 = false;
+// Bound the waits so a missed SEND_COMPLETE cannot wedge boot or the UART task.
+constexpr uint32_t kSi91xUartTxTimeoutMs = 1000;
+constexpr uint32_t kSi91xUartBusyRetries = 100;
+// Matter-owned TX lock. SDK si91x_prints_mutex is never created once sl_ulp_uart
+// suppresses DEBUG_UART / Board_Debug_Init.
+static osMutexId_t sSi91xUartTxMutex = nullptr;
+} // namespace
+
+static void Si91xUartTxCompleteNotify(void)
+{
+    // Runs from UDMA / ULP UART IRQ.
+    sSi91xTxComplete = true;
+    if (sUartTaskHandle != nullptr)
+    {
+        osThreadFlagsSet(sUartTaskHandle, kUartTxCompleteFlag);
+    }
+}
+
+static void Si91xUsartEventCallback(uint32_t event)
+{
+    switch (event)
+    {
+    case SL_USART_EVENT_SEND_COMPLETE:
+        Si91xUartTxCompleteNotify();
+        break;
+    case SL_USART_EVENT_RECEIVE_COMPLETE:
+        cache_uart_rx_data(static_cast<char>(*sSi91xUartRxChar));
+        // Re-arm 1-byte RX for shell / console input.
+        (void) sl_si91x_usart_receive_data(sSi91xUsartHandle, sSi91xUartRxChar, 1);
+        break;
+    default:
+        break;
+    }
+}
+
+static void Si91xUartInitUlpInstance(void)
+{
+    if (sSi91xUsartHandle != nullptr)
+    {
+        return;
+    }
+
+    sl_status_t status;
+    sl_si91x_usart_control_config_t usart_config = {};
+
+    // Release CMSIS UART ownership if Board_Debug_Init() ran (DEBUG_UART from an old config).
+    if (USART_GetInitState(ULPUART))
+    {
+        (void) Driver_ULP_UART.Uninitialize();
+    }
+
+    status = sl_si91x_usart_init(ULPUART, &sSi91xUsartHandle);
+    if (status != SL_STATUS_OK)
+    {
+        sSi91xUsartHandle = nullptr;
+        return;
+    }
+
+    // With ULP_UART_UC enabled, configuration is taken from UC (115200 8N1 async).
+    status = sl_si91x_usart_set_configuration(sSi91xUsartHandle, &usart_config);
+    if (status != SL_STATUS_OK)
+    {
+        (void) sl_si91x_usart_deinit(sSi91xUsartHandle);
+        sSi91xUsartHandle = nullptr;
+        return;
+    }
+
+    status = sl_si91x_usart_multiple_instance_register_event_callback(ULPUART, Si91xUsartEventCallback);
+    if (status != SL_STATUS_OK)
+    {
+        (void) sl_si91x_usart_deinit(sSi91xUsartHandle);
+        sSi91xUsartHandle = nullptr;
+    }
+}
+
+static void Si91xUartArmReceive(void)
+{
+    VerifyOrReturn(sSi91xUsartHandle != nullptr && !sSi91xRxArmed);
+
+    if (sl_si91x_usart_receive_data(sSi91xUsartHandle, sSi91xUartRxChar, 1) == SL_STATUS_OK)
+    {
+        sSi91xRxArmed = true;
+    }
+}
+
+void uartEarlyInit(void)
+{
+    Si91xUartInitUlpInstance();
+}
+
+static void Si91xUartAcquireTxMutex(void)
+{
+    if (sSi91xUartTxMutex == nullptr)
+    {
+        sSi91xUartTxMutex = osMutexNew(nullptr);
+    }
+    if (osKernelGetState() == osKernelRunning && sSi91xUartTxMutex != nullptr)
+    {
+        osMutexAcquire(sSi91xUartTxMutex, osWaitForever);
+    }
+}
+
+static void Si91xUartReleaseTxMutex(void)
+{
+    if (osKernelGetState() == osKernelRunning && sSi91xUartTxMutex != nullptr)
+    {
+        osMutexRelease(sSi91xUartTxMutex);
+    }
+}
+
+// sSi91xUartTxBuffer already filled (ULP SRAM); starts UDMA TX and waits for SEND_COMPLETE.
+static void Si91xUartStartSendAndWait(uint16_t length)
+{
+    VerifyOrReturn(sSi91xUsartHandle != nullptr && length > 0);
+
+#if defined(SL_ICD_ENABLED) && SL_ICD_ENABLED
+    sl_si91x_power_manager_add_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    const bool kernelRunning = (osKernelGetState() == osKernelRunning);
+
+    sl_status_t status;
+    uint32_t busyRetries = 0;
+    do
+    {
+        if (kernelRunning && osThreadGetId() == sUartTaskHandle)
+        {
+            osThreadFlagsClear(kUartTxCompleteFlag);
+        }
+        sSi91xTxComplete = false;
+        status           = sl_si91x_usart_send_data(sSi91xUsartHandle, sSi91xUartTxBuffer, length);
+        if (status == SL_STATUS_BUSY)
+        {
+            // The UART task runs above every other task, so osThreadYield() would never
+            // release the CPU. Sleep instead, and give up rather than starve the system.
+            if (!kernelRunning || ++busyRetries > kSi91xUartBusyRetries)
+            {
+                break;
+            }
+            osDelay(1);
+        }
+    } while (status == SL_STATUS_BUSY);
+
+    if (status == SL_STATUS_OK)
+    {
+        if (kernelRunning && sUartTaskHandle != nullptr && osThreadGetId() == sUartTaskHandle)
+        {
+            (void) osThreadFlagsWait(kUartTxCompleteFlag, osFlagsWaitAny, kSi91xUartTxTimeoutMs);
+        }
+        else
+        {
+            // Force TX before the UART task exists, or from another context: poll the ISR flag.
+            for (uint32_t spins = 0; !sSi91xTxComplete && spins < kSi91xUartTxTimeoutMs * 1000; spins++)
+            {
+                __NOP();
+            }
+        }
+    }
+
+#if defined(SL_ICD_ENABLED) && SL_ICD_ENABLED
+    sl_si91x_power_manager_remove_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+}
+
+static void Si91xUartSendBuffer(const uint8_t * data, uint16_t length)
+{
+    VerifyOrReturn(data != nullptr && length > 0 && sSi91xUsartHandle != nullptr);
+    if (length > kSi91xUartTxBufferSize)
+    {
+        length = kSi91xUartTxBufferSize;
+    }
+
+    memcpy(sSi91xUartTxBuffer, data, length);
+    Si91xUartStartSendAndWait(length);
+}
+
+static void si91xUartTransmitAsync(const uint8_t * data, uint16_t length)
+{
+    if (data == nullptr || length == 0 || length > kSi91xUartTxBufferSize)
+    {
+        return;
+    }
+
+    VerifyOrReturn(osThreadGetId() == sUartTaskHandle);
+    VerifyOrReturn(sSi91xUsartHandle != nullptr);
+
+    Si91xUartAcquireTxMutex();
+    Si91xUartSendBuffer(data, length);
+    Si91xUartReleaseTxMutex();
+}
+#else
+void uartEarlyInit(void) {}
 #endif // SLI_SI91X_MCU_INTERFACE
 
 #if !defined(SLI_SI91X_MCU_INTERFACE) || !SLI_SI91X_MCU_INTERFACE
@@ -605,17 +815,29 @@ static int16_t formatAndSendLog(UartTxStruct_t & logStruct, bool forceTransmit)
                  SilabsCoreLogs::GetCategoryString(logStruct.category), logStruct.length, logStruct.data, kLogFooter);
     if (len > 0)
     {
+        // snprintf returns the untruncated length; never TX past the real buffer.
+        uint16_t sendLen = static_cast<uint16_t>(len);
+        if (static_cast<size_t>(len) >= sizeof(logWorkBuffer))
+        {
+            sendLen = static_cast<uint16_t>(sizeof(logWorkBuffer) - 1);
+        }
         if (forceTransmit)
         {
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-            Board_UARTPutSTR(logWorkBuffer);
+            // Drop rather than hang if early init failed; there is no Board_Debug path.
+            if (sSi91xUsartHandle != nullptr)
+            {
+                Si91xUartAcquireTxMutex();
+                Si91xUartSendBuffer(logWorkBuffer, sendLen);
+                Si91xUartReleaseTxMutex();
+            }
 #else
-            UARTDRV_ForceTransmit(vcom_handle, logWorkBuffer, static_cast<uint16_t>(len));
-#endif
+            UARTDRV_ForceTransmit(vcom_handle, logWorkBuffer, sendLen);
+#endif // SLI_SI91X_MCU_INTERFACE
         }
         else
         {
-            uartSendBytes(logWorkBuffer, static_cast<uint16_t>(len));
+            uartSendBytes(logWorkBuffer, sendLen);
         }
     }
     return static_cast<int16_t>(len);
@@ -657,9 +879,7 @@ void uartMainLoop(void * args)
 }
 
 /**
- * @brief Send Bytes to UART. This blocks the UART task.
- *
- * @param bufferStruct reference to the UartTxStruct_t containing the data
+ * @brief Send Bytes to UART. Async DMA TX; UART task blocks on TX-complete thread flag.
  */
 void uartSendBytes(uint8_t * data, uint16_t length)
 {
@@ -668,24 +888,29 @@ void uartSendBytes(uint8_t * data, uint16_t length)
         return;
     }
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-    // Not optimal, waiting for a more efficient way to send logs over UART on SI91x
-    //
-    // Board_UARTPutSTR(data) does the exact same thing and is not compatible with
-    // the Silabs Matter console.
-    osMutexAcquire(si91x_prints_mutex, osWaitForever);
-    for (uint8_t i = 0; i < length; i++)
-    {
-        Board_UARTPutChar(data[i]);
-    }
-    osMutexRelease(si91x_prints_mutex);
+    si91xUartTransmitAsync(data, length);
 #else
 #if defined(SL_CATALOG_POWER_MANAGER_PRESENT)
     sl_power_manager_add_em_requirement(SL_POWER_MANAGER_EM1);
 #endif // SL_CATALOG_POWER_MANAGER_PRESENT
 
+#if defined(SL_UARTCTRL_MUX) && SL_UARTCTRL_MUX
+    sl_wfx_host_pre_uart_transfer();
+#endif // SL_UARTCTRL_MUX
+
+#if (defined(EFR32MG24) && defined(WF200_WIFI))
+    // Blocking transmit for the MG24 + WF200 since UART TX is multiplexed with
+    // WF200 SPI IRQ
+    UARTDRV_ForceTransmit(vcom_handle, data, length);
+#else
     // Non Blocking Transmit
     UARTDRV_Transmit(vcom_handle, data, length, UART_tx_callback);
     osThreadFlagsWait(kUartTxCompleteFlag, osFlagsWaitAny, osWaitForever);
+#endif /* EFR32MG24 && WF200_WIFI */
+
+#if defined(SL_UARTCTRL_MUX) && SL_UARTCTRL_MUX
+    sl_wfx_host_post_uart_transfer();
+#endif // SL_UARTCTRL_MUX
 
 #if defined(SL_CATALOG_POWER_MANAGER_PRESENT)
     sl_power_manager_remove_em_requirement(SL_POWER_MANAGER_EM1);
@@ -705,8 +930,12 @@ void uartFlushTxQueue(void)
     while (osMessageQueueGet(sUartTxQueue, &workBuffer, nullptr, 0) == osOK)
     {
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
-        ensureNullTermination(workBuffer);
-        Board_UARTPutSTR(workBuffer.data);
+        if (sSi91xUsartHandle != nullptr)
+        {
+            Si91xUartAcquireTxMutex();
+            Si91xUartSendBuffer(workBuffer.data, workBuffer.length);
+            Si91xUartReleaseTxMutex();
+        }
 #else
         UARTDRV_ForceTransmit(vcom_handle, workBuffer.data, workBuffer.length);
 #endif

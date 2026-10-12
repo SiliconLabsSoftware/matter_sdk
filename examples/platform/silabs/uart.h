@@ -20,17 +20,27 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
 constexpr uint8_t kLogHeader     = 0x01; // ASCII Start of Heading
 constexpr uint8_t kLogFooter     = 0x04; // ASCII End of Transmission
 constexpr uint8_t kHeaderSize    = 1;
 constexpr uint8_t kFooterSize    = 1;
 constexpr uint8_t kEndOfLineSize = 2; // \r\n
+#else
+#define kLogHeader     0x01
+#define kLogFooter     0x04
+#define kHeaderSize    1
+#define kFooterSize    1
+#define kEndOfLineSize 2
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 void uartConsoleInit(void);
+// SiWx917: brings up ULP UART during sl_platform_init. No-op on other platforms.
+void uartEarlyInit(void);
 int16_t uartConsoleWrite(const char * Buf, uint16_t BufLength);
 int16_t uartLogWrite(const char * log, uint8_t length, uint8_t category, uint64_t timestamp);
 int16_t uartConsoleRead(char * Buf, uint16_t NbBytesToRead);
