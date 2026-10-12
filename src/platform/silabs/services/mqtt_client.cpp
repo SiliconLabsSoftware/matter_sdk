@@ -571,7 +571,10 @@ CHIP_ERROR MqttClient::ResolveBrokerHostname()
         return CHIP_ERROR_INTERNAL;
     }
 
-    mBroker.tlsHostname = mBroker.brokerHostname;
+    if (mBroker.tlsHostname == nullptr)
+    {
+        mBroker.tlsHostname = mBroker.brokerHostname;
+    }
 
     ChipLogDetail(DeviceLayer, "[MQTT] resolved %s -> %u.%u.%u.%u", mBroker.brokerHostname, mServerIp.ip.v4.bytes[0],
                   mServerIp.ip.v4.bytes[1], mServerIp.ip.v4.bytes[2], mServerIp.ip.v4.bytes[3]);
