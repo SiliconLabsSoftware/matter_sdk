@@ -45,7 +45,7 @@ public:
      * @return true, if the Wi-Fi station is currently connecting
      *         false, otherwise
      */
-    virtual bool IsStationConnecting() { return false; }
+    virtual bool IsStationConnecting() = 0;
 
     /**
      * @brief Returns the state of the Wi-Fi Station configuration of the Wi-Fi device
