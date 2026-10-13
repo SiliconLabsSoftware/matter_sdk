@@ -228,7 +228,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLITConnect()
     ReturnErrorOnFailure(mPowerSaveInterface->ConfigureLITConnect());
     return CHIP_NO_ERROR;
 }
-#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
+#endif // CHIP_CONFIG_ENABLE_ICD_LIT
 
 } // namespace Silabs
 } // namespace DeviceLayer
