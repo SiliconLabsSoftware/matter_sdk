@@ -1013,7 +1013,8 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilte
             ChipLogError(DeviceLayer, "sl_wifi_allowlist_mcast_add_ip failed: 0x%" PRIx32, static_cast<uint32_t>(status)));
     }
 
-    // Multicast filtering stays enabled in both modes; the allowlist controls what passes.
+    // Broadcast and multicast filters share the same enable state. When disabled, the allowlist
+    // above (if applied) controls which multicast still passes.
     sl_wifi_groupcast_filter_config_t groupcastFilterConfig = {};
     groupcastFilterConfig.enable_bcast_filter               = enableBroadcastFilter ? 1 : 0;
     groupcastFilterConfig.enable_mcast_filter               = groupcastFilterConfig.enable_bcast_filter;
