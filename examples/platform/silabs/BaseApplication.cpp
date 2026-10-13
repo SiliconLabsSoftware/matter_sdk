@@ -175,7 +175,7 @@ bool sHaveBLEConnections = false;
 
 constexpr uint32_t kLightTimerPeriod = static_cast<uint32_t>(pdMS_TO_TICKS(10));
 
-#if SL_MATTER_ZIGBEE_SEQUENTIAL
+#if defined(SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT)
 constexpr System::Clock::Milliseconds32 kZbLeaveAnnouceDelay = System::Clock::Milliseconds32(1000);
 #endif
 
