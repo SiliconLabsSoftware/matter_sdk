@@ -1016,7 +1016,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilte
     // Multicast filtering stays enabled in both modes; the allowlist controls what passes.
     sl_wifi_groupcast_filter_config_t groupcastFilterConfig = {};
     groupcastFilterConfig.enable_bcast_filter               = enableBroadcastFilter ? 1 : 0;
-    groupcastFilterConfig.enable_mcast_filter               = enableBroadcastFilter ? 1 : 0;
+    groupcastFilterConfig.enable_mcast_filter               = groupcastFilterConfig.enable_bcast_filter;
     groupcastFilterConfig.filter_mode                       = 0; // default
 
     status = sl_wifi_set_groupcast_filter_config(&groupcastFilterConfig);
