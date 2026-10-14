@@ -25,17 +25,15 @@
 
 namespace chip::app::AllDevices {
 
-// Initializes the Silabs provisioning storage and points the credential providers at it.
-// Uses the example credentials if CONFIG_CHIP_FACTORY_DATA is nil.
+// Initializes Silabs provision storage reader and points the credential providers at it.
+// Uses the example credentials if CONFIG_CHIP_FACTORY_DATA is not set.
 CHIP_ERROR InitSilabsCredentials();
-
 
 template <class Derived>
 class SilabsAppTask : public AppTaskBase<Derived>
 {
 public:
     CHIP_ERROR InitCredentials() { return InitSilabsCredentials(); }
-
 };
 
 class AppTask final : public SilabsAppTask<AppTask>
