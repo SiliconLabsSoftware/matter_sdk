@@ -516,7 +516,6 @@ CHIP_ERROR MqttClient::ProcessInit()
     memset(&mNetwork, 0, sizeof(mNetwork));
     memset(mTxBuffer, 0, sizeof(mTxBuffer));
     memset(mRxBuffer, 0, sizeof(mRxBuffer));
-    memset(&mServerIp, 0, sizeof(mServerIp));
 
     mNetwork.transport_type = MQTT_TRANSPORT_TCP;
     NetworkInit(&mNetwork);
@@ -554,65 +553,54 @@ CHIP_ERROR MqttClient::ProcessDeinit()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR MqttClient::ResolveBrokerHostname()
-{
-    VerifyOrReturnError(mBroker.brokerHostname != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    // Blocking DNS: initial_timeout_sec in [5, 10], retry_count additional attempts.
-    constexpr uint8_t kDnsInitialTimeoutSec = 5;
-    constexpr uint8_t kDnsRetryCount        = 1;
-
-    const sl_status_t status = sl_net_dns_resolve_hostname_v2(mBroker.brokerHostname, kDnsInitialTimeoutSec, kDnsRetryCount,
-                                                              SL_NET_DNS_TYPE_IPV4, &mServerIp);
-    if (status != SL_STATUS_OK)
-    {
-        ChipLogError(DeviceLayer, "[MQTT] DNS resolve failed for %s: 0x%" PRIx32, mBroker.brokerHostname,
-                     static_cast<uint32_t>(status));
-        return CHIP_ERROR_INTERNAL;
-    }
-
-    if (mBroker.tlsHostname == nullptr)
-    {
-        mBroker.tlsHostname = mBroker.brokerHostname;
-    }
-
-    ChipLogDetail(DeviceLayer, "[MQTT] resolved %s -> %u.%u.%u.%u", mBroker.brokerHostname, mServerIp.ip.v4.bytes[0],
-                  mServerIp.ip.v4.bytes[1], mServerIp.ip.v4.bytes[2], mServerIp.ip.v4.bytes[3]);
-    return CHIP_NO_ERROR;
-}
-
 CHIP_ERROR MqttClient::ProcessConnect()
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mBroker.brokerHostname != nullptr || mBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(mBroker.brokerEndpoint != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(mBroker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
 
-    memset(&mServerIp, 0, sizeof(mServerIp)); // Clear the server IP address
-    mServerIp.type = SL_IPV4;                 // Set the server IP address type to IPv4
+    sl_ip_address_t serverIp = { 0 };
+    serverIp.type            = SL_IPV4; // Set the server IP address type to IPv4
 
-    if (mBroker.brokerHostname != nullptr)
+    // brokerEndpoint may be an IPv4 literal or a hostname.
+    if (sl_net_inet_addr(mBroker.brokerEndpoint, reinterpret_cast<uint32_t *>(&serverIp.ip.v4.value)) == SL_STATUS_OK)
     {
-        ReturnErrorOnFailure(ResolveBrokerHostname());
+        // if the broker endpoint is an IPv4 literal, use it directly
+        ChipLogDetail(DeviceLayer, "[MQTT] using broker IP %s", mBroker.brokerEndpoint);
     }
     else
     {
-        // mBroker.brokerIp is set
-        if (sl_net_inet_addr(mBroker.brokerIp, reinterpret_cast<uint32_t *>(&mServerIp.ip.v4.value)) != SL_STATUS_OK)
+        // if the broker endpoint is a hostname, resolve it using DNS
+        // Blocking DNS: initial_timeout_sec in [5, 10], retry_count additional attempts.
+        constexpr uint8_t kDnsInitialTimeoutSec = 5;
+        constexpr uint8_t kDnsRetryCount        = 1;
+
+        const sl_status_t status = sl_net_dns_resolve_hostname_v2(mBroker.brokerEndpoint, kDnsInitialTimeoutSec, kDnsRetryCount,
+                                                                  SL_NET_DNS_TYPE_IPV4, &serverIp);
+        if (status != SL_STATUS_OK)
         {
-            ChipLogError(DeviceLayer, "[MQTT] invalid broker IP: %s", mBroker.brokerIp);
-            return CHIP_ERROR_INVALID_ARGUMENT;
+            ChipLogError(DeviceLayer, "[MQTT] DNS resolve failed for %s: 0x%" PRIx32, mBroker.brokerEndpoint,
+                         static_cast<uint32_t>(status));
+            return CHIP_ERROR_INTERNAL;
         }
+
+        ChipLogDetail(DeviceLayer, "[MQTT] resolved %s -> %u.%u.%u.%u", mBroker.brokerEndpoint, serverIp.ip.v4.bytes[0],
+                      serverIp.ip.v4.bytes[1], serverIp.ip.v4.bytes[2], serverIp.ip.v4.bytes[3]);
     }
 
-    const char * brokerEndpoint = (mBroker.brokerHostname != nullptr) ? mBroker.brokerHostname : mBroker.brokerIp;
-    ChipLogDetail(DeviceLayer, "[MQTT] connecting to broker %s port %u (TLS=%s)", brokerEndpoint, mBroker.brokerPort,
+    ChipLogDetail(DeviceLayer, "[MQTT] connecting to broker %s port %u (TLS=%s)", mBroker.brokerEndpoint, mBroker.brokerPort,
                   mConfig.useTls ? "yes" : "no");
 
 #if MQTT_USE_HOST_LWIP_TLS && MQTT_TLS_ENABLE
     if (mConfig.useTls)
     {
-        VerifyOrReturnError(mBroker.tlsHostname != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+        // if the TLS hostname is not set, use the broker endpoint
+        if (mBroker.tlsHostname == nullptr)
+        {
+            mBroker.tlsHostname = mBroker.brokerEndpoint;
+        }
+        ChipLogDetail(DeviceLayer, "[MQTT] using TLS hostname %s", mBroker.tlsHostname);
 
         FreeTlsContext();
         mNetwork.tls = static_cast<mqtt_tls_context_t *>(malloc(sizeof(mqtt_tls_context_t)));
@@ -635,7 +623,7 @@ CHIP_ERROR MqttClient::ProcessConnect()
 #endif
 
     const int netStatus =
-        sl_paho_network_connect(&mNetwork, SL_PAHO_NETWORK_FLAG_IPV4, reinterpret_cast<char *>(mServerIp.ip.v4.bytes),
+        sl_paho_network_connect(&mNetwork, SL_PAHO_NETWORK_FLAG_IPV4, reinterpret_cast<char *>(serverIp.ip.v4.bytes),
                                 mBroker.brokerPort, mBroker.clientPort, mConfig.useTls);
     if (netStatus != SUCCESS)
     {
@@ -780,7 +768,7 @@ CHIP_ERROR MqttClient::SetConfig(const MqttClientConfig & config)
 CHIP_ERROR MqttClient::SetBroker(const MqttBroker & broker)
 {
     VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(broker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(broker.brokerEndpoint != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(broker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
 
     mBroker = broker;
@@ -829,7 +817,7 @@ CHIP_ERROR MqttClient::Connect(MqttOperationCallback callback, void * context)
 {
     VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mConnected, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mBroker.brokerHostname != nullptr || mBroker.brokerIp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(mBroker.brokerEndpoint != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(mBroker.brokerPort != 0, CHIP_ERROR_INVALID_ARGUMENT);
 
     ServiceMessage message{};

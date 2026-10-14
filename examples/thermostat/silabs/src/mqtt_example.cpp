@@ -43,8 +43,8 @@ using chip::DeviceLayer::Silabs::MqttClientConfig;
 namespace DeviceEventType = chip::DeviceLayer::DeviceEventType;
 
 // Please fill in the details for your own MQTT broker.
-constexpr char kMqttBrokerIp[]       = MQTT_BROKER_IP;    // The IP address of your MQTT broker
-constexpr char kMqttTlsHostname[]    = MQTT_TLS_HOSTNAME; // The TLS hostname of your MQTT broker
+constexpr char kMqttBrokerEndpoint[] = MQTT_BROKER_ENDPOINT; // DNS name or IPv4 of your MQTT broker
+constexpr char kMqttTlsHostname[]    = MQTT_TLS_HOSTNAME;    // The TLS hostname of your MQTT broker
 constexpr uint16_t kMqttBrokerPort   = MQTT_BROKER_PORT;
 constexpr uint16_t kMqttClientPort   = MQTT_CLIENT_PORT;
 constexpr char kMqttClientId[]       = MQTT_CLIENT_ID;
@@ -100,10 +100,10 @@ void OnInitDone(CHIP_ERROR result, void * /* context */)
     if (!gMqttsClient.IsConnected())
     {
         const MqttBroker broker = {
-            .brokerIp    = kMqttBrokerIp,
-            .tlsHostname = kMqttTlsHostname,
-            .brokerPort  = kMqttBrokerPort,
-            .clientPort  = kMqttClientPort,
+            .brokerEndpoint = kMqttBrokerEndpoint,
+            .tlsHostname    = kMqttTlsHostname,
+            .brokerPort     = kMqttBrokerPort,
+            .clientPort     = kMqttClientPort,
         };
         CHIP_ERROR err = gMqttsClient.Connect(broker, OnConnectDone);
         LogErrorOnFailure(err);
