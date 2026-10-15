@@ -25,6 +25,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 
 #ifdef __cplusplus
 extern "C" {
@@ -205,6 +207,39 @@ public:
     CHIP_ERROR Put(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
                    void * context = nullptr);
 
+    /**
+     * @brief Add or replace an HTTP request header.
+     *
+     * Entries are applied to each Get / Post / Put via @c sl_http_client_add_header.
+     * Headers persist across verbs until @ref ClearHeaders or @ref Deinit.
+     *
+     * @param[in] key   Header name. Must not be nullptr.
+     * @param[in] value Header value. Must not be nullptr.
+     *
+     * @retval CHIP_NO_ERROR              Header stored.
+     * @retval CHIP_ERROR_BUSY            Another request is in progress.
+     * @retval CHIP_ERROR_INVALID_ARGUMENT Null key or value.
+     */
+    CHIP_ERROR SetHeader(const char * key, const char * value);
+
+    /**
+     * @brief Replace all stored HTTP request headers with a copy of @p headers.
+     *
+     * @param[in] headers Map of header name to value; contents are copied into the client.
+     *
+     * @retval CHIP_NO_ERROR   Headers replaced.
+     * @retval CHIP_ERROR_BUSY Another request is in progress.
+     */
+    CHIP_ERROR SetHeaders(std::unordered_map<std::string, std::string> headers);
+
+    /**
+     * @brief Remove all stored HTTP request headers.
+     *
+     * @retval CHIP_NO_ERROR   Headers cleared.
+     * @retval CHIP_ERROR_BUSY Another request is in progress.
+     */
+    CHIP_ERROR ClearHeaders();
+
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
     // HTTP request status codes.
@@ -297,6 +332,8 @@ private:
     CHIP_ERROR ProcessContinueChunkedBody();
     CHIP_ERROR ResolveServerEndpoint();
     bool NeedsChunkedBody() const;
+    CHIP_ERROR ApplyHeaders(sl_http_client_request_t & request);
+    void ReleaseRequestHeaders(sl_http_client_request_t & request);
 
     /**
      * @brief Complete an operation.
@@ -319,6 +356,7 @@ private:
     void SignalResponse();
 
     sl_http_client_t mClientHandle = 0;
+    std::unordered_map<std::string, std::string> mHeaders;
 
     HttpClientConfig mConfig{};
     void * mThreadId   = nullptr; // osThreadId_t
