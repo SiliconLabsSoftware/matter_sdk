@@ -201,6 +201,11 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
 {
     // Do not tear down an in-progress join (e.g. ICD idle during reconnect).
+    // Re-entry after the join finishes:
+    // - Join failure: WifiInterfaceImpl calls VerifyAndTransitionToLowPowerMode(kGenericEvent),
+    //   which re-enters here while still idle.
+    // - Join success: kConnectedActiveMode selects LI sleep (stay associated); LIT disconnect
+    //   is not re-run for that idle edge.
     VerifyOrReturnError(!mWifiStateProvider->IsStationConnecting(), CHIP_NO_ERROR);
 
     // Capture before the platform call: when already down, ConfigureLITDisconnect
