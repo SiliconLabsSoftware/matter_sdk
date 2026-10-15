@@ -599,8 +599,14 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         ResetConnectivityNotificationFlags();
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
         // Re-apply sleep policy after join without re-entering ConfigureLITConnect.
-        TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
-            WifiSleepManager::PowerEvent::kConnectedActiveMode);
+        {
+            CHIP_ERROR err = WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
+                WifiSleepManager::PowerEvent::kConnectedActiveMode);
+            if (err != CHIP_NO_ERROR)
+            {
+                ChipLogError(DeviceLayer, "kConnectedActiveMode sleep transition failed: %" CHIP_ERROR_FORMAT, err.Format());
+            }
+        }
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         NotifySuccessfulConnection();
         break;
@@ -716,8 +722,14 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     // Join failed; allow deferred LIT idle transitions to run now that connecting is clear.
-    TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
-        WifiSleepManager::PowerEvent::kGenericEvent);
+    {
+        CHIP_ERROR err = WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
+            WifiSleepManager::PowerEvent::kGenericEvent);
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "Join-failure sleep transition failed: %" CHIP_ERROR_FORMAT, err.Format());
+        }
+    }
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
     return status;

@@ -182,7 +182,8 @@ CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
 
 CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 {
-    // LI sleep is only valid while associated. Skip while joining or after a join fail.
+    // LI sleep requires an active Wi-Fi association (connected to an AP).
+    // Skip while joining or after a join failure.
     VerifyOrReturnError(!mWifiStateProvider->IsStationConnecting(), CHIP_NO_ERROR);
     VerifyOrReturnError(mWifiStateProvider->IsStationConnected(), CHIP_NO_ERROR);
 
@@ -209,8 +210,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLITDisconnect()
     // Platform skips sl_net_down when already down (avoids 0x10021 + fake kSuccess disconnect).
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureLITDisconnect());
     ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigureBroadcastFilter(false));
-    ReturnLogErrorOnFailure(
-        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep, 0));
+    ReturnLogErrorOnFailure(mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kDeepSleep, 0));
 
     // Only arm the precheck-in timer when we actually tore the STA down.
     // A failed join via kGenericEvent re-enters here while already disconnected;
