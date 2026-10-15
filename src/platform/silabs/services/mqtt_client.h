@@ -60,8 +60,8 @@ enum class MqttQoS : uint8_t
 /**
  * @brief Configuration for @ref MqttClient::Init.
  *
- * When @p useTls is true and @p tlsCaCert is non-null, Connect installs the PEM into the
- * host LwIP TLS context before NetworkConnect.
+ * When @p useTls is true, Connect installs non-null CA and optional client cert/key PEMs
+ * into the host LwIP TLS context before NetworkConnect.
  */
 struct MqttClientConfig
 {
@@ -87,6 +87,12 @@ struct MqttClientConfig
     /** PEM bytes for host mbedTLS CA chain. nullptr = skip CA install. */
     const uint8_t * tlsCaCert = nullptr;
     size_t tlsCaCertLen       = 0;
+    /** PEM bytes for client certificate (mutual TLS). nullptr = skip. */
+    const uint8_t * clientCert = nullptr;
+    size_t clientCertLen       = 0;
+    /** PEM bytes for client private key (mutual TLS). nullptr = skip. */
+    const uint8_t * clientKey = nullptr;
+    size_t clientKeyLen       = 0;
 };
 
 /**
