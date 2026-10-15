@@ -91,13 +91,16 @@ struct MqttClientConfig
 
 /**
  * @brief Broker destination for @ref MqttClient::Connect.
+ *
+ * @p brokerEndpoint is a DNS name or IPv4 string. Connect uses sl_net_inet_addr for
+ * literals, otherwise DNS; when @p tlsHostname is unset, it defaults to @p brokerEndpoint.
  */
 struct MqttBroker
 {
-    const char * brokerIp    = nullptr; ///< IPv4 string for sl_net_inet_addr. Must not be nullptr.
-    const char * tlsHostname = nullptr; ///< SNI / cert verify name when TLS is enabled.
-    uint16_t brokerPort      = 0;       ///< Broker port (1883 or 8883 typical).
-    uint16_t clientPort      = 0;       ///< Local source port.
+    const char * brokerEndpoint = nullptr; ///< Required DNS name or IPv4 string
+    const char * tlsHostname    = nullptr; ///< SNI / cert verify name when TLS is enabled.
+    uint16_t brokerPort         = 0;       ///< Broker port (1883 or 8883 typical).
+    uint16_t clientPort         = 0;       ///< Local source port.
 };
 
 /**
@@ -293,7 +296,6 @@ private:
     Network mNetwork{};
     uint8_t mTxBuffer[kTxBufferSize] = { 0 };
     uint8_t mRxBuffer[kRxBufferSize] = { 0 };
-    sl_ip_address_t mServerIp{};
 
     void * mThreadId     = nullptr; // osThreadId_t
     void * mMessageQueue = nullptr; // osMessageQueueId_t

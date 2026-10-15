@@ -25,12 +25,9 @@
 
 #include "sl_status.h"
 
-#ifndef MQTT_BROKER_IP
-#error "MQTT_BROKER_IP is not defined"
-#endif
 
-#ifndef MQTT_TLS_HOSTNAME // The TLS hostname of your MQTT broker
-#error "MQTT_TLS_HOSTNAME is not defined"
+#ifndef MQTT_BROKER_ENDPOINT
+#error "MQTT_BROKER_ENDPOINT is not defined"
 #endif
 
 #ifndef MQTT_BROKER_PORT // The port of your MQTT broker
