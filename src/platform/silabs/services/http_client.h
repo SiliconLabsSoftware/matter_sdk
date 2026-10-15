@@ -60,14 +60,15 @@ struct HttpClientConfig
 /**
  * @brief Per-request destination for Get / Post / Put.
  *
- * The SiWx917 NWP HTTP client needs a connect address (@p serverIp) and a Host / SNI
- * name (@p hostName) separately; they may be the same string.
+ * @p serverEndpoint is a DNS name or IPv4 string. Requests parse IPv4 via sl_net_inet_addr,
+ * otherwise resolve via DNS into an ASCII IP for the NWP. @p tlsHostname is Host / SNI;
+ * when unset, it defaults to @p serverEndpoint.
  */
 struct HttpHost
 {
-    const char * hostName = nullptr; ///< Host header / SNI name. Must not be nullptr for requests.
-    const char * serverIp = nullptr; ///< IP (or resolvable address) used to connect. Must not be nullptr.
-    uint16_t port         = 0;       ///< Destination port (e.g. 443 or 8443).
+    const char * serverEndpoint = nullptr; ///< Required DNS name or IPv4 string used to connect.
+    const char * tlsHostname    = nullptr; ///< Host header / SNI name; defaults to serverEndpoint.
+    uint16_t port               = 0;       ///< Destination port (e.g. 443 or 8443).
 };
 
 /**
@@ -294,6 +295,7 @@ private:
     CHIP_ERROR ProcessPost();
     CHIP_ERROR ProcessPut();
     CHIP_ERROR ProcessContinueChunkedBody();
+    CHIP_ERROR ResolveServerEndpoint();
     bool NeedsChunkedBody() const;
 
     /**
@@ -334,6 +336,7 @@ private:
 
     MutableByteSpan * mActiveResponseBuffer = nullptr;
     HttpHost mPendingHost{};
+    char mResolvedServerIp[16] = {}; ///< ASCII IPv4 ("a.b.c.d") after ResolveServerEndpoint.
     const char * mPendingResource = nullptr;
     ByteSpan mPendingBody;
 

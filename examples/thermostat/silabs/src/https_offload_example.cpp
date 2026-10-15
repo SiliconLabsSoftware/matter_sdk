@@ -55,9 +55,9 @@ using chip::DeviceLayer::Silabs::HttpClientConfig;
 using chip::DeviceLayer::Silabs::HttpHost;
 
 // TODO: Update the below values to the correct values for your server.
-constexpr char kHttpServerIp[]   = HTTP_SERVER_IP;
-constexpr char kHttpHostname[]   = HTTP_HOSTNAME; // used for SNI validation
-constexpr uint16_t kHttpPort     = HTTP_PORT;
+constexpr char kHttpServerEndpoint[] = HTTP_SERVER_ENDPOINT; // DNS name or IPv4
+constexpr char kHttpTlsHostname[]    = HTTP_TLS_HOSTNAME;    // SNI / Host header
+constexpr uint16_t kHttpPort         = HTTP_PORT;
 constexpr char kHttpUrl[]        = HTTP_URL;
 constexpr char kHttpClientUser[] = HTTP_USER;
 constexpr char kHttpClientPass[] = HTTP_PASS;
@@ -111,9 +111,9 @@ CHIP_ERROR RunHttpsOffloadExample()
     OperationWaitContext waitCtx = { .lock = gHttpsTaskLock, .result = CHIP_NO_ERROR };
 
     const HttpHost host = {
-        .hostName = kHttpHostname,
-        .serverIp = kHttpServerIp,
-        .port     = kHttpPort,
+        .serverEndpoint = kHttpServerEndpoint,
+        .tlsHostname    = kHttpTlsHostname,
+        .port           = kHttpPort,
     };
 
     const ByteSpan putBody(reinterpret_cast<const uint8_t *>(sl_index), sizeof(sl_index) - 1);

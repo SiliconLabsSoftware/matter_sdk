@@ -24,6 +24,7 @@
 extern "C" {
 #endif
 #include "sl_net.h"
+#include "sl_net_dns.h"
 #ifdef __cplusplus
 }
 #endif
@@ -31,6 +32,8 @@ extern "C" {
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+#include <cinttypes>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -579,13 +582,55 @@ sl_status_t HttpClient::PutResponseCallback(const sl_http_client_t * client, sl_
     return SL_STATUS_OK;
 }
 
+CHIP_ERROR HttpClient::ResolveServerEndpoint()
+{
+    VerifyOrReturnError(mPendingHost.serverEndpoint != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    memset(mResolvedServerIp, 0, sizeof(mResolvedServerIp));
+
+    sl_ip_address_t serverIp = { 0 };
+    serverIp.type            = SL_IPV4;
+
+    // serverEndpoint may be an IPv4 literal or a hostname.
+    if (sl_net_inet_addr(mPendingHost.serverEndpoint, reinterpret_cast<uint32_t *>(&serverIp.ip.v4.value)) == SL_STATUS_OK)
+    {
+        strncpy(mResolvedServerIp, mPendingHost.serverEndpoint, sizeof(mResolvedServerIp) - 1);
+        ChipLogDetail(DeviceLayer, "[HTTP] using server IP %s", mResolvedServerIp);
+    }
+    else
+    {
+        // Blocking DNS: initial_timeout_sec in [5, 10], retry_count additional attempts.
+        constexpr uint8_t kDnsInitialTimeoutSec = 5;
+        constexpr uint8_t kDnsRetryCount        = 1;
+
+        const sl_status_t status = sl_net_dns_resolve_hostname_v2(mPendingHost.serverEndpoint, kDnsInitialTimeoutSec,
+                                                                  kDnsRetryCount, SL_NET_DNS_TYPE_IPV4, &serverIp);
+        if (status != SL_STATUS_OK)
+        {
+            ChipLogError(DeviceLayer, "[HTTP] DNS resolve failed for %s: 0x%" PRIx32, mPendingHost.serverEndpoint,
+                         static_cast<uint32_t>(status));
+            return MapStatus(status);
+        }
+
+        snprintf(mResolvedServerIp, sizeof(mResolvedServerIp), "%u.%u.%u.%u", serverIp.ip.v4.bytes[0], serverIp.ip.v4.bytes[1],
+                 serverIp.ip.v4.bytes[2], serverIp.ip.v4.bytes[3]);
+        ChipLogDetail(DeviceLayer, "[HTTP] resolved %s -> %s", mPendingHost.serverEndpoint, mResolvedServerIp);
+    }
+
+    if (mPendingHost.tlsHostname == nullptr)
+    {
+        mPendingHost.tlsHostname = mPendingHost.serverEndpoint;
+    }
+
+    return CHIP_NO_ERROR;
+}
+
 CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
                            HttpOperationCallback callback, void * context)
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
-    VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
-                        CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError((host.serverEndpoint != nullptr) && (resource != nullptr), CHIP_ERROR_INVALID_ARGUMENT);
 
     ResetRequestState();
     mActiveResponseBuffer = &responseBuffer;
@@ -596,9 +641,11 @@ CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, Mutable
 
 CHIP_ERROR HttpClient::ProcessGet()
 {
+    ReturnErrorOnFailure(ResolveServerEndpoint());
+
     sl_http_client_request_t request = {};
-    request.ip_address               = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.serverIp));
-    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.hostName));
+    request.ip_address               = reinterpret_cast<uint8_t *>(mResolvedServerIp);
+    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.tlsHostname));
     request.port                     = mPendingHost.port;
     request.resource                 = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
     request.extended_header          = nullptr;
@@ -621,8 +668,7 @@ CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSp
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
-    VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
-                        CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError((host.serverEndpoint != nullptr) && (resource != nullptr), CHIP_ERROR_INVALID_ARGUMENT);
 
     ResetRequestState();
     mPendingHost     = host;
@@ -633,9 +679,11 @@ CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSp
 
 CHIP_ERROR HttpClient::ProcessPost()
 {
+    ReturnErrorOnFailure(ResolveServerEndpoint());
+
     sl_http_client_request_t request = {};
-    request.ip_address               = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.serverIp));
-    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.hostName));
+    request.ip_address               = reinterpret_cast<uint8_t *>(mResolvedServerIp);
+    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.tlsHostname));
     request.port                     = mPendingHost.port;
     request.resource                 = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
     request.extended_header          = nullptr;
@@ -677,8 +725,7 @@ CHIP_ERROR HttpClient::Put(const HttpHost & host, const char * resource, ByteSpa
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
-    VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
-                        CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError((host.serverEndpoint != nullptr) && (resource != nullptr), CHIP_ERROR_INVALID_ARGUMENT);
 
     ResetRequestState();
     mPendingBody     = body;
@@ -690,9 +737,11 @@ CHIP_ERROR HttpClient::Put(const HttpHost & host, const char * resource, ByteSpa
 
 CHIP_ERROR HttpClient::ProcessPut()
 {
+    ReturnErrorOnFailure(ResolveServerEndpoint());
+
     sl_http_client_request_t request = {};
-    request.ip_address               = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.serverIp));
-    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.hostName));
+    request.ip_address               = reinterpret_cast<uint8_t *>(mResolvedServerIp);
+    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.tlsHostname));
     request.port                     = mPendingHost.port;
     request.resource                 = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
     request.extended_header          = nullptr;
