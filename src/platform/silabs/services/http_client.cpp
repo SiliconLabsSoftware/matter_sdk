@@ -337,6 +337,7 @@ CHIP_ERROR HttpClient::Deinit(HttpOperationCallback callback, void * context)
 {
     if (!mInitialized)
     {
+        mHeaders.clear();
         if (callback != nullptr)
         {
             callback(CHIP_NO_ERROR, context);
@@ -346,8 +347,60 @@ CHIP_ERROR HttpClient::Deinit(HttpOperationCallback callback, void * context)
     return QueueOperation(Operation::Deinit, callback, context);
 }
 
+CHIP_ERROR HttpClient::SetHeader(const char * key, const char * value)
+{
+    VerifyOrReturnError((key != nullptr) && (value != nullptr), CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
+
+    mHeaders[key] = value;
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR HttpClient::SetHeaders(std::unordered_map<std::string, std::string> headers)
+{
+    VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
+
+    mHeaders = std::move(headers);
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR HttpClient::ClearHeaders()
+{
+    VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
+    mHeaders.clear();
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR HttpClient::ApplyHeaders(sl_http_client_request_t & request)
+{
+    for (const auto & entry : mHeaders)
+    {
+        // SDK has no update API: drop any prior node for this key first.
+        sl_status_t status = sl_http_client_delete_header(&request, entry.first.c_str());
+        if ((status != SL_STATUS_OK) && (status != SL_STATUS_INVALID_KEY) && (status != SL_STATUS_EMPTY))
+        {
+            return MapStatus(status);
+        }
+
+        status = sl_http_client_add_header(&request, entry.first.c_str(), entry.second.c_str());
+        VerifyOrReturnError(status == SL_STATUS_OK, MapStatus(status));
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+void HttpClient::ReleaseRequestHeaders(sl_http_client_request_t & request)
+{
+    if (request.extended_header != nullptr)
+    {
+        (void) sl_http_client_delete_all_headers(&request);
+    }
+}
+
 CHIP_ERROR HttpClient::ProcessDeinit()
 {
+    mHeaders.clear();
+
     if (mClientHandle != 0)
     {
         sl_status_t status = sl_http_client_deinit(&mClientHandle);
@@ -653,11 +706,19 @@ CHIP_ERROR HttpClient::ProcessGet()
     request.body                     = nullptr;
     request.body_length              = 0;
 
+    ReturnErrorOnFailure(ApplyHeaders(request));
+
     sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, GetResponseCallback, this);
-    VerifyOrReturnError(status == SL_STATUS_OK, MapStatus(status));
+    if (status != SL_STATUS_OK)
+    {
+        ReleaseRequestHeaders(request);
+        return MapStatus(status);
+    }
 
     status = sl_http_client_send_request(&mClientHandle, &request);
+    // Headers are copied into the NWP command buffer during send; free SDK nodes now.
+    ReleaseRequestHeaders(request);
     VerifyOrReturnError((status == SL_STATUS_OK) || (status == SL_STATUS_IN_PROGRESS), MapStatus(status));
 
     return CHIP_ERROR_IN_PROGRESS;
@@ -700,16 +761,27 @@ CHIP_ERROR HttpClient::ProcessPost()
         request.body = const_cast<uint8_t *>(mPendingBody.data());
     }
 
+    CHIP_ERROR err = ApplyHeaders(request);
+    if (err != CHIP_NO_ERROR)
+    {
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
+        return err;
+    }
+
     sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, PostResponseCallback, this);
     if (status != SL_STATUS_OK)
     {
+        ReleaseRequestHeaders(request);
         mChunkedActive = false;
         mPendingBody   = ByteSpan();
         return MapStatus(status);
     }
 
     status = sl_http_client_send_request(&mClientHandle, &request);
+    // Headers are copied into the NWP command buffer during send; free SDK nodes now.
+    ReleaseRequestHeaders(request);
     if ((status != SL_STATUS_OK) && (status != SL_STATUS_IN_PROGRESS))
     {
         mChunkedActive = false;
@@ -749,16 +821,27 @@ CHIP_ERROR HttpClient::ProcessPut()
     request.body                     = nullptr;
     request.body_length              = static_cast<uint32_t>(mPendingBody.size());
 
+    CHIP_ERROR err = ApplyHeaders(request);
+    if (err != CHIP_NO_ERROR)
+    {
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
+        return err;
+    }
+
     sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, PutResponseCallback, this);
     if (status != SL_STATUS_OK)
     {
+        ReleaseRequestHeaders(request);
         mChunkedActive = false;
         mPendingBody   = ByteSpan();
         return MapStatus(status);
     }
 
     status = sl_http_client_send_request(&mClientHandle, &request);
+    // Headers are copied into the NWP command buffer during send; free SDK nodes now.
+    ReleaseRequestHeaders(request);
     if ((status != SL_STATUS_OK) && (status != SL_STATUS_IN_PROGRESS))
     {
         mChunkedActive = false;
