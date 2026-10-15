@@ -1,17 +1,17 @@
 #
-#   Copyright (c) 2021 Project CHIP Authors
+#Copyright(c) 2021 Project CHIP Authors
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
+#Licensed under the Apache License, Version 2.0(the "License");
+#you may not use this file except in compliance with the License.
+#You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#http: // www.apache.org/licenses/LICENSE-2.0
 #
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+#Unless required by applicable law or agreed to in writing, software
+#distributed under the License is distributed on an "AS IS" BASIS,
+#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#See the License for the specific language governing permissions and
+#limitations under the License.
 #
 
 rsource "../zephyr/Kconfig"
@@ -19,12 +19,12 @@ rsource "../zephyr/Kconfig"
 if CHIP
 menu "Silabs Matter Config"
 
-# See config/zephyr/Kconfig for full definition
+#See config / zephyr / Kconfig for full definition
 config CHIP_DEVICE_VENDOR_NAME
 	string "Vendor Name"
 	default "Silicon Laboratories"
 
-# See config/zephyr/Kconfig for full definition
+#See config / zephyr / Kconfig for full definition
 config CHIP_OTA_REQUESTOR
 	bool "Enable OTA Requestor"
 	default n
@@ -38,8 +38,8 @@ config CHIP_OTA_IMAGE_BUILD
 	default y if CHIP_OTA_REQUESTOR
 	depends on SIGN_IMAGES
 
-# Sign the application with the MCUboot ECDSA-P256 development key. Only relevant
-# for MCUboot/OTA builds; replace with a private key for production.
+#Sign the application with the MCUboot ECDSA - P256 development key.Only relevant
+#for MCUboot / OTA builds; replace with a private key for production.
 config MCUBOOT_SIGNATURE_KEY_FILE
 	default "bootloader/mcuboot/root-ec-p256.pem"
 	depends on BOOTLOADER_MCUBOOT
@@ -74,10 +74,11 @@ config CHIP_FACTORY_DATA
 	bool "Use provisioned factory data from Zephyr settings"
 	default n
 	help
-		Enables Provision::Storage (ProvisionStorageZephyr) that reads provisioned
-		credentials and commissionable data from Zephyr settings stored in the
-		storage partition. Factory data is expected to be provisioned into NVS
-		separately using Silicon Labs generator firmware.
+	  Enables ProvisionStorageReader, which reads
+	  provisioned credentials and commissionable data from Zephyr settings
+	  stored in the storage partition. Factory data is expected to be
+	  provisioned into NVS separately using Silicon Labs generator
+	  firmware.
 
 config CHIP_FACTORY_DATA_ROTATING_DEVICE_UID_MAX_LEN
 	int "Maximum length of rotating device ID unique ID in bytes"
@@ -90,7 +91,7 @@ config CHIP_FACTORY_RESET_ERASE_SETTINGS
 	default n
 	depends on NVS || ZMS
 	help
-		Enables storage partition wipe on factory reset. Enabling also wipes 
+		Enables storage partition wipe on factory reset. Enabling also wipes
 		provisioned data. Disabling only resets relevant entries.
 
 config CHIP_OPENTHREAD_JOINER_ENABLED
@@ -120,7 +121,7 @@ config CHIP_FACTORY_RESET_ON_KEY_MIGRATION_FAILURE
 
 config CHIP_PERSISTENT_SUBSCRIPTIONS
 	default n
-	# selecting experimental for this feature since there is an issue with multiple controllers.
+#selecting experimental for this feature since there is an issue with multiple controllers.
 	select EXPERIMENTAL
 
 config CHIP_MAX_FABRICS
@@ -164,7 +165,7 @@ config CHIP_ENABLE_BDX_LOG_TRANSFER
 	help
 	  Enables the BDX protocol for diagnostics log transfer purposes.
 
-# See config/common/cmake/Kconfig for full definition
+#See config / common / cmake / Kconfig for full definition
 config CHIP_WIFI
 	select WIFI
 	imply NET_STATISTICS
@@ -178,21 +179,21 @@ config CHIP_WIFI
 
 config CHIP_MEMORY_PROFILING
 	bool "Enable features for tracking memory usage"
-	# Matter stack
+#Matter stack
 	select CHIP_STATISTICS
-	# Heap
+#Heap
 	select CHIP_MALLOC_SYS_HEAP_WATERMARKS_SUPPORT if CHIP_MALLOC_SYS_HEAP
-	select SYS_HEAP_RUNTIME_STATS if CHIP_MALLOC_SYS_HEAP	
-	# Crypto
+	select SYS_HEAP_RUNTIME_STATS if CHIP_MALLOC_SYS_HEAP
+#Crypto
 	select MBEDTLS_MEMORY_DEBUG if !CHIP_CRYPTO_IMPL_PSA
-	# Network
+#Network
 	select NET_STATISTICS
 	select NET_SHELL
 	select NET_BUF_POOL_USAGE
 	select OPENTHREAD_SHELL if !CHIP_WIFI
-	# Settings
+#Settings
 	select SETTINGS_SHELL
-	# Zephyr
+#Zephyr
 	select KERNEL_SHELL
 	help
 	  Enables features for tracking memory usage in Matter.
@@ -218,18 +219,18 @@ choice CHIP_LAST_FABRIC_REMOVED_ACTION
 	config CHIP_LAST_FABRIC_REMOVED_ERASE_AND_PAIRING_START
 		bool "After removing the last fabric erase NVS and start Bluetooth LE advertising"
 		help
-		  After removing the last fabric the device will perform the factory reset without 
+		  After removing the last fabric the device will perform the factory reset without
 		  rebooting and start the Bluetooth LE advertisement automatically.
-		  The current RAM state will be saved and the new commissioning to the next 
+		  The current RAM state will be saved and the new commissioning to the next
 		  fabric will use the next possible fabric index. This option should not be used for
-		  devices that normally do not advertise Bluetooth LE on boot to keep their original 
+		  devices that normally do not advertise Bluetooth LE on boot to keep their original
 		  behavior.
 
 	config CHIP_LAST_FABRIC_REMOVED_ERASE_ONLY
 		bool "After removing the last fabric erase NVS only"
 		help
 		  After removing the last fabric the device will perform the factory reset only without
-		  rebooting. The current RAM state will be saved and the new commissioning to the next 
+		  rebooting. The current RAM state will be saved and the new commissioning to the next
 		  fabric will use the next possible fabric index.
 
 endchoice
@@ -243,9 +244,9 @@ config CHIP_LAST_FABRIC_REMOVED_ACTION_DELAY
 	  an action chosen by the CHIP_LAST_FABRIC_REMOVED_ACTION option. This schedule will allow for
 	  avoiding race conditions before the device removes non-volatile data.
 
-# ==============================================================================
-# System configuration
-# ==============================================================================
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+#System configuration
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 
 choice LIBC_IMPLEMENTATION
     default NEWLIB_LIBC
@@ -285,9 +286,9 @@ config NVS_LOOKUP_CACHE_SIZE
 config ZMS_LOOKUP_CACHE_SIZE
     default 512 if ZMS
 
-# ==============================================================================
-# Zephyr networking configuration
-# ==============================================================================
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+#Zephyr networking configuration
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 
 config NET_IPV6_MLD
     default y
@@ -320,9 +321,9 @@ config NET_BUF_TX_COUNT
 config ZVFS_POLL_MAX
 	default 6 if CHIP_WIFI
 
-# ==============================================================================
-# Bluetooth Low Energy configuration
-# ==============================================================================
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+#Bluetooth Low Energy configuration
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 
 config BT
     default y
@@ -336,16 +337,16 @@ config BT_PERIPHERAL_PREF_MIN_INT
 config BT_PERIPHERAL_PREF_MAX_INT
     default 36
 
-# Increase BT timeout to 5 s to improve connection reliability and avoid fast drop outs.
+#Increase BT timeout to 5 s to improve connection reliability and avoid fast drop outs.
 config BT_PERIPHERAL_PREF_TIMEOUT
     default 500
 
 config BT_GAP_AUTO_UPDATE_CONN_PARAMS
     default y
 
-# Decrease connection parameters update time, as some Matter controllers request
-# enabling IP networking faster than BT connection parameters are updated, what may result
-# in commissioning instabilities.
+#Decrease connection parameters update time, as some Matter controllers request
+#enabling IP networking faster than BT connection parameters are updated, what may result
+#in commissioning instabilities.
 config BT_CONN_PARAM_UPDATE_TIMEOUT
     default 1000
 
@@ -379,11 +380,11 @@ config BT_DEVICE_NAME_GATT_WRITABLE
 config BT_GATT_CACHING
     default n
 
-# ==============================================================================
-# DFU configuration
-# ==============================================================================
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+#DFU configuration
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 config BOOT_IMAGE_ACCESS_HOOKS
-    default n 
+    default n
 
 config UPDATEABLE_IMAGE_NUMBER
     default 1
@@ -392,9 +393,9 @@ config DFU_MULTI_IMAGE_MAX_IMAGE_COUNT
     int "Maximum number of images for multi-image DFU"
     default 1
 
-# ==============================================================================
-# OpenThread configuration
-# ==============================================================================
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+#OpenThread configuration
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 
 config NET_L2_OPENTHREAD
     default y if !CHIP_WIFI
@@ -410,9 +411,9 @@ config OPENTHREAD_DEFAULT_TX_POWER
 
 endif # NET_L2_OPENTHREAD
 
-# ==============================================================================
-# Crypto configuration
-# ==============================================================================
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+#Crypto configuration
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 
 menu "Crypto configuration"
 
@@ -436,7 +437,7 @@ config CHIP_CRYPTO
 
 config MBEDTLS_ENABLE_HEAP
 	bool "Enable MbedTLS heap"
-    default y 
+    default y
 
 config MBEDTLS_HEAP_SIZE
 	int "MbedTLS heap size"
@@ -537,12 +538,12 @@ if CHIP_CRYPTO_IMPL_PSA
 		default n
 	config MBEDTLS_CMAC
 		bool
-		default y		
+		default y
     config MBEDTLS_USE_PSA_CRYPTO
         bool
         default y
 
-# Extend the maximum number of PSA key slots to fit Matter requirements
+#Extend the maximum number of PSA key slots to fit Matter requirements
 config MBEDTLS_PSA_KEY_SLOT_COUNT
     default 64
 endif # CHIP_CRYPTO_IMPL_PSA
@@ -569,7 +570,7 @@ config MBEDTLS_PKCS5_C
     default y
 config MBEDTLS_PK_WRITE_C
 	bool
-	default y	
+	default y
 config MBEDTLS_PK_HAVE_ECC_KEYS
     bool "Enable PK Have ECC Keys"
     default y
@@ -605,7 +606,7 @@ config MBEDTLS_HAVE_ASM
     default y
 
 config MBEDTLS_CIPHER_CCM_ENABLED
-    bool 
+    bool
     default y
 
 config MBEDTLS_CIPHER_AES_128_CCM
@@ -622,7 +623,7 @@ config MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH
 
 if BOARD_SIWX917_RB4338A
 config MBEDTLS_AES_ROM_TABLES
-    bool 
+    bool
     default y
 
 config MBEDTLS_AES_FEWER_TABLES

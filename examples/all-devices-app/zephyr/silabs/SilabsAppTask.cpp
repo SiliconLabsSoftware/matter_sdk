@@ -20,13 +20,13 @@
 
 #include <device-factory/DeviceFactory.h>
 #include <lib/support/CodeUtils.h>
-#include <lib/support/logging/CHIPLogging.h>
 
 #include <credentials/DeviceAttestationCredsProvider.h>
 #ifdef CONFIG_CHIP_FACTORY_DATA
-#include <headers/ProvisionStorage.h>
 #include <platform/CommissionableDataProvider.h>
 #include <platform/DeviceInstanceInfoProvider.h>
+#include <platform/Zephyr/ZephyrConfig.h>
+#include <provision/ProvisionStorageReader.h>
 #else
 #include <credentials/examples/DeviceAttestationCredsExample.h>
 #endif
@@ -36,14 +36,12 @@ namespace chip::app::AllDevices {
 CHIP_ERROR InitSilabsCredentials()
 {
 #if CONFIG_CHIP_FACTORY_DATA
-    // Replace all 3 providers to use Silabs provisioning.
-    static DeviceLayer::Silabs::Provision::Storage sStorage;
-    CHIP_ERROR err = sStorage.Initialize();
-    VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "Failed to initialize provision storage."));
-
-    DeviceLayer::SetDeviceInstanceInfoProvider(&sStorage);
-    DeviceLayer::SetCommissionableDataProvider(&sStorage);
-    Credentials::SetDeviceAttestationCredentialsProvider(&sStorage);
+    // Replace all 3 providers to use the Silabs provision storage reader.
+    ReturnErrorOnFailure(DeviceLayer::Internal::ZephyrConfig::Init());
+    auto & storageReader = DeviceLayer::Silabs::Provision::ProvisionStorageReader::GetInstance();
+    DeviceLayer::SetDeviceInstanceInfoProvider(&storageReader);
+    DeviceLayer::SetCommissionableDataProvider(&storageReader);
+    Credentials::SetDeviceAttestationCredentialsProvider(&storageReader);
 
 #else // CONFIG_CHIP_FACTORY_DATA
     Credentials::SetDeviceAttestationCredentialsProvider(Credentials::Examples::GetExampleDACProvider());
