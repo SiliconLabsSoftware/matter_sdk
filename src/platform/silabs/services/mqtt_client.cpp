@@ -613,6 +613,18 @@ CHIP_ERROR MqttClient::ProcessConnect()
             mNetwork.tls->cert_ctx.cacert_len = mConfig.tlsCaCertLen;
         }
 
+        if (mConfig.clientCert != nullptr && mConfig.clientCertLen > 0)
+        {
+            mNetwork.tls->cert_ctx.client_cert     = const_cast<uint8_t *>(mConfig.clientCert);
+            mNetwork.tls->cert_ctx.client_cert_len = mConfig.clientCertLen;
+        }
+
+        if (mConfig.clientKey != nullptr && mConfig.clientKeyLen > 0)
+        {
+            mNetwork.tls->cert_ctx.client_key     = const_cast<uint8_t *>(mConfig.clientKey);
+            mNetwork.tls->cert_ctx.client_key_len = mConfig.clientKeyLen;
+        }
+
         if (NetworkSetTlsHostname(&mNetwork, mBroker.tlsHostname) != 0)
         {
             ChipLogError(DeviceLayer, "MQTT invalid TLS hostname");
