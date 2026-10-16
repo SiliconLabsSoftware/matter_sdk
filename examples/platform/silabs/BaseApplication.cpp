@@ -76,6 +76,7 @@
 #include <atomic>
 #if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
 #include <platform/silabs/address_resolve/AddressResolverImpl.h>
+#include <platform/silabs/address_resolve/PreCommissioning.h>
 #endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
 #endif // SL_USE_THREAD_DIRECT
 
@@ -222,6 +223,7 @@ struct PendingThreadDirectWork
 {
     chip::DeviceLayer::AsyncWorkFunct work;
     intptr_t arg;
+    chip::DeviceLayer::AsyncWorkFunct onCancel;
 };
 
 constexpr size_t kPendingThreadDirectWorkQueueSize = 4;
@@ -234,7 +236,6 @@ constexpr osMessageQueueAttr_t pendingThreadDirectWorkQueueAttr = { .cb_mem  = &
                                                                     .mq_size =
                                                                         sizeof(sPendingThreadDirectWorkQueueBuffer) };
 
-// Written from the OpenThread task, read from the CHIP/App task.
 std::atomic<bool> sThreadDirectLinked{ false };
 
 void DrainPendingThreadDirectWork(AppEvent *)
@@ -242,24 +243,68 @@ void DrainPendingThreadDirectWork(AppEvent *)
     PendingThreadDirectWork pending;
     while (osMessageQueueGet(sPendingThreadDirectWorkQueue, &pending, nullptr, 0) == osOK)
     {
-        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(pending.work, pending.arg);
+        CHIP_ERROR err = PlatformMgr().ScheduleWork(pending.work, pending.arg);
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(AppServer, "Failed to schedule pending Thread Direct work: %" CHIP_ERROR_FORMAT, err.Format());
+            VerifyOrDo(pending.onCancel == nullptr, pending.onCancel(pending.arg));
+        }
     }
 }
 
 #if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+CHIP_ERROR InvalidateThreadDirectPeerSessions()
+{
+    chip::PeerId peerId;
+    CHIP_ERROR err = chip::DeviceLayer::Internal::PreCommissioning::GetInstance().GetTargetPeerId(peerId);
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err,
+                        ChipLogError(AppServer, "Failed to get Thread Direct peer: %" CHIP_ERROR_FORMAT, err.Format()));
+
+    auto & server       = chip::Server::GetInstance();
+    const auto * fabric = server.GetFabricTable().FindFabricWithCompressedId(peerId.GetCompressedFabricId());
+    VerifyOrReturnError(fabric != nullptr, CHIP_ERROR_NOT_FOUND, ChipLogError(AppServer, "Thread Direct peer fabric not found"));
+
+    server.GetSecureSessionManager().MarkSessionsAsDefunct(
+        chip::ScopedNodeId(peerId.GetNodeId(), fabric->GetFabricIndex()),
+        chip::MakeOptional(chip::Transport::SecureSession::Type::kCASE));
+    ChipLogProgress(AppServer, "TD linked: prior peer CASE sessions marked defunct");
+
+    return CHIP_NO_ERROR;
+}
+
+void CancelPendingThreadDirectWork()
+{
+    PendingThreadDirectWork pending;
+    for (size_t count = 0; count < kPendingThreadDirectWorkQueueSize; ++count)
+    {
+        VerifyOrReturn(osMessageQueueGet(sPendingThreadDirectWorkQueue, &pending, nullptr, 0) == osOK);
+        VerifyOrDo(pending.onCancel == nullptr, pending.onCancel(pending.arg));
+    }
+}
+
+void NotifyResolverThreadDirectLinkFailed(intptr_t)
+{
+    sThreadDirectLinked.store(false, std::memory_order_relaxed);
+    CancelPendingThreadDirectWork();
+    static_cast<chip::AddressResolve::Impl::Resolver &>(chip::AddressResolve::Resolver::Instance()).OnThreadDirectLinkFailed();
+}
+
 void NotifyResolverThreadDirectLinked(intptr_t)
 {
+    CHIP_ERROR err = InvalidateThreadDirectPeerSessions();
+    if (err != CHIP_NO_ERROR)
+    {
+        NotifyResolverThreadDirectLinkFailed(0);
+        return;
+    }
+    sThreadDirectLinked.store(true, std::memory_order_relaxed);
     static_cast<chip::AddressResolve::Impl::Resolver &>(chip::AddressResolve::Resolver::Instance()).OnThreadDirectLinked();
+    DrainPendingThreadDirectWork(nullptr);
 }
 
 void NotifyResolverThreadDirectUnlinked(intptr_t)
 {
     static_cast<chip::AddressResolve::Impl::Resolver &>(chip::AddressResolve::Resolver::Instance()).OnThreadDirectUnlinked();
-}
-
-void NotifyResolverThreadDirectLinkFailed(intptr_t)
-{
-    static_cast<chip::AddressResolve::Impl::Resolver &>(chip::AddressResolve::Resolver::Instance()).OnThreadDirectLinkFailed();
 }
 #endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
 
@@ -268,27 +313,40 @@ class ThreadDirectLinkDelegate : public chip::DeviceLayer::ThreadDirectDelegate
 public:
     void OnThreadDirectLinked() override
     {
-        sThreadDirectLinked.store(true, std::memory_order_relaxed);
+        VerifyOrReturn(!sThreadDirectLinked.load(std::memory_order_relaxed));
 #if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
-        // OT callbacks run off the Matter stack; hop before touching AddressResolve / SystemLayer.
-        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(NotifyResolverThreadDirectLinked);
-#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
+        CHIP_ERROR err = PlatformMgr().ScheduleWork(NotifyResolverThreadDirectLinked);
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(AppServer, "Failed to schedule Thread Direct link preparation: %" CHIP_ERROR_FORMAT, err.Format());
+        }
+#else
+        sThreadDirectLinked.store(true, std::memory_order_relaxed);
         AppEvent event = {};
         event.Handler  = DrainPendingThreadDirectWork;
         BaseApplication::PostEvent(&event);
+#endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
     }
     void OnThreadDirectUnlinked() override
     {
         sThreadDirectLinked.store(false, std::memory_order_relaxed);
 #if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
-        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(NotifyResolverThreadDirectUnlinked);
+        CHIP_ERROR err = PlatformMgr().ScheduleWork(NotifyResolverThreadDirectUnlinked);
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(AppServer, "Failed to schedule Thread Direct unlink notification: %" CHIP_ERROR_FORMAT, err.Format());
+        }
 #endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
     }
     void OnThreadDirectLinkFailed() override
     {
         sThreadDirectLinked.store(false, std::memory_order_relaxed);
 #if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
-        TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(NotifyResolverThreadDirectLinkFailed);
+        CHIP_ERROR err = PlatformMgr().ScheduleWork(NotifyResolverThreadDirectLinkFailed);
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(AppServer, "Failed to schedule Thread Direct failure notification: %" CHIP_ERROR_FORMAT, err.Format());
+        }
 #endif // OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
     }
 };
@@ -1066,20 +1124,22 @@ void BaseApplication::DispatchEvent(AppEvent * aEvent)
     }
 }
 
-CHIP_ERROR BaseApplication::ScheduleWorkGatedOnThreadDirectLink(chip::DeviceLayer::AsyncWorkFunct work, intptr_t arg)
+CHIP_ERROR BaseApplication::ScheduleWorkGatedOnThreadDirectLink(chip::DeviceLayer::AsyncWorkFunct work, intptr_t arg,
+                                                             chip::DeviceLayer::AsyncWorkFunct onCancel)
 {
 #if SL_USE_THREAD_DIRECT && OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_INITIATOR_ENABLE
     if (sThreadDirectLinked.load(std::memory_order_relaxed))
     {
         return PlatformMgr().ScheduleWork(work, arg);
     }
-
-    PendingThreadDirectWork pending{ work, arg };
-    VerifyOrReturnError(osMessageQueuePut(sPendingThreadDirectWorkQueue, &pending, osPriorityNormal, 0) == osOK,
-                        CHIP_ERROR_NO_MEMORY, ChipLogError(AppServer, "Failed to queue pending Thread Direct work"));
+    PendingThreadDirectWork pending{ work, arg, onCancel };
+    osStatus_t queueStatus = osMessageQueuePut(sPendingThreadDirectWorkQueue, &pending, osPriorityNormal, 0);
+    VerifyOrReturnError(queueStatus == osOK, CHIP_ERROR_NO_MEMORY,
+                        ChipLogError(AppServer, "Failed to queue pending Thread Direct work"));
     ThreadStackMgrImpl().ThreadDirectSendWakeup();
     return CHIP_NO_ERROR;
 #else
+    static_cast<void>(onCancel);
     return PlatformMgr().ScheduleWork(work, arg);
 #endif // SL_USE_THREAD_DIRECT
 }

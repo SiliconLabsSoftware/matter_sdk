@@ -319,7 +319,10 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
                 closureData->isGroup         = false;
                 closureData->commandId       = Clusters::ClosureControl::Commands::MoveTo::Id;
                 if (BaseApplication::ScheduleWorkGatedOnThreadDirectLink(AppTask::SwitchWorkerFunction,
-                                                                         reinterpret_cast<intptr_t>(closureData)) != CHIP_NO_ERROR)
+                                                                         reinterpret_cast<intptr_t>(closureData),
+                                                                         [](intptr_t context) {
+                                                                             Platform::Delete(reinterpret_cast<BindingCommandData *>(context));
+                                                                         }) != CHIP_NO_ERROR)
                 {
                     ChipLogError(AppServer, "Failed to schedule closure switch worker");
                     Platform::Delete(closureData);
@@ -339,7 +342,10 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
                 toggleData->isGroup         = false;
                 toggleData->commandId       = OnOff::Commands::Toggle::Id;
                 if (BaseApplication::ScheduleWorkGatedOnThreadDirectLink(AppTask::SwitchWorkerFunction,
-                                                                         reinterpret_cast<intptr_t>(toggleData)) != CHIP_NO_ERROR)
+                                                                         reinterpret_cast<intptr_t>(toggleData),
+                                                                         [](intptr_t context) {
+                                                                             Platform::Delete(reinterpret_cast<BindingCommandData *>(context));
+                                                                         }) != CHIP_NO_ERROR)
                 {
                     ChipLogError(AppServer, "Failed to schedule switch worker");
                     Platform::Delete(toggleData);
@@ -384,8 +390,10 @@ void AppTask::AppEventHandler(AppEvent * aEvent)
         stepData.optionsMask.Set(kStepCommand.optionsMask);
         stepData.optionsOverride.Set(kStepCommand.optionsOverride);
         data->commandData = stepData;
-        if (BaseApplication::ScheduleWorkGatedOnThreadDirectLink(AppTask::SwitchWorkerFunction, reinterpret_cast<intptr_t>(data)) !=
-            CHIP_NO_ERROR)
+        if (BaseApplication::ScheduleWorkGatedOnThreadDirectLink(AppTask::SwitchWorkerFunction, reinterpret_cast<intptr_t>(data),
+                                                               [](intptr_t context) {
+                                                                   Platform::Delete(reinterpret_cast<BindingCommandData *>(context));
+                                                               }) != CHIP_NO_ERROR)
         {
             ChipLogError(AppServer, "Failed to schedule switch worker");
             Platform::Delete(data);
@@ -789,7 +797,8 @@ void AppTask::ProcessClosureControlBindingCommand(CommandId commandId, const Bin
     {
         VerifyOrDie(peer_device->ConnectionReady());
         Messaging::ExchangeManager * exchangeMgr = peer_device->GetExchangeManager();
-        const SessionHandle & sessionHandle      = peer_device->GetSecureSession().Value();
+        auto optionalSession                     = peer_device->GetSecureSession();
+        const SessionHandle & sessionHandle      = optionalSession.Value();
 
         switch (commandId)
         {
