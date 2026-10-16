@@ -32,8 +32,6 @@
 
 #define MBEDTLS_FREERTOS
 
-#define MBEDTLS_MPI_WINDOW_SIZE 1
-
 // Added for codesize optimizations
 #define MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
 #define MBEDTLS_PLATFORM_SNPRINTF_MACRO snprintf
