@@ -141,8 +141,8 @@ public:
      *
      * @param work Work function to run on the CHIP task once the link is established
      * @param arg Context passed to work function
-        * @param onCancel Optional cleanup if accepted work fails or times out waiting for the link.
-        * @note If this function returns an error, the caller remains responsible for arg.
+     * @param onCancel Optional cleanup if accepted work fails or times out waiting for the link.
+     * @note If this function returns an error, the caller remains responsible for arg.
      */
     static CHIP_ERROR ScheduleWorkGatedOnThreadDirectLink(chip::DeviceLayer::AsyncWorkFunct work, intptr_t arg = 0,
                                                         chip::DeviceLayer::AsyncWorkFunct onCancel = nullptr);
