@@ -601,6 +601,17 @@ void WifiInterfaceImpl::ProcessEvent(WifiPlatformEvent event)
         wfx_rsi.dev_state.Set(WifiInterface::WifiState::kStationConnected);
         wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting);
         ResetConnectivityNotificationFlags();
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+        // Re-apply sleep policy after join without re-entering ConfigureLITConnect.
+        {
+            CHIP_ERROR err = WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
+                WifiSleepManager::PowerEvent::kConnectedActiveMode);
+            if (err != CHIP_NO_ERROR)
+            {
+                ChipLogError(DeviceLayer, "kConnectedActiveMode sleep transition failed: %" CHIP_ERROR_FORMAT, err.Format());
+            }
+        }
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
         NotifySuccessfulConnection();
         break;
 
@@ -712,6 +723,18 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     mLastDisconnectionReason = status;
     WifiInterface::NotifyDisconnection(status);
+
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+    // Join failed; allow deferred LIT idle transitions to run now that connecting is clear.
+    {
+        CHIP_ERROR err = WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
+            WifiSleepManager::PowerEvent::kGenericEvent);
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(DeviceLayer, "Join-failure sleep transition failed: %" CHIP_ERROR_FORMAT, err.Format());
+        }
+    }
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
     return status;
 }
@@ -874,7 +897,7 @@ void WifiInterfaceImpl::ClearWifiDisconnectedState()
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 namespace {
 osTimerId_t sLitPrecheckInReconnectTimer       = nullptr;
-constexpr uint32_t kLitPrecheckInMarginSeconds = 15;
+constexpr uint32_t kLitPrecheckInMarginSeconds = 30;
 
 void OnLitPrecheckInReconnectOsTimer(void *)
 {
@@ -900,7 +923,6 @@ CHIP_ERROR WifiInterfaceImpl::InitLitPrecheckInReconnectTimer()
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 {
     VerifyOrReturnError(IsWifiProvisioned(), CHIP_NO_ERROR);
-
     VerifyOrReturnError(!IsStationConnected(), CHIP_NO_ERROR);
 
     CHIP_ERROR err = ConnectToAccessPoint();
@@ -911,6 +933,13 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureLITConnect()
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureLITDisconnect()
 {
+    // Do not tear down an in-progress join (e.g. ICD idle during btn0 reconnect).
+    VerifyOrReturnError(!IsStationConnecting(), CHIP_NO_ERROR);
+
+    // Join already failed / STA already down: skip sl_net_down to avoid 0x10021 and a
+    // second DISCONNECT with SL_STATUS_OK that disables ConnectivityManager auto-reconnect.
+    VerifyOrReturnError(IsStationConnected(), CHIP_NO_ERROR);
+
     TriggerDisconnection();
     return CHIP_NO_ERROR;
 }
@@ -940,6 +969,9 @@ void WifiInterfaceImpl::StartLitPrecheckInReconnectTimer()
 
 CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration configuration, uint32_t listenInterval)
 {
+    // Do not change the power profile while the station is joining an AP.
+    VerifyOrReturnError(!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting), CHIP_NO_ERROR);
+
     // Power save configuration is already set, nothing to do
     VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
 
@@ -966,6 +998,9 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
 
 CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilter)
 {
+    // Do not change filters while the station is joining an AP.
+    VerifyOrReturnError(!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting), CHIP_NO_ERROR);
+
     // Skip the underlying call if the filter is already in the requested state.
     VerifyOrReturnValue(mBroadcastFilterEnabled != enableBroadcastFilter, CHIP_NO_ERROR);
 
@@ -974,7 +1009,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilte
         status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
         ChipLogError(DeviceLayer, "sl_wifi_allowlist_mcast_remove_all failed: 0x%" PRIx32, static_cast<uint32_t>(status)));
 
-    if (!enableBroadcastFilter)
+    if (!enableBroadcastFilter && IsStationConnected())
     {
         // Filter disabled: allowlist Matter mDNS (ff02::fb) so only that multicast is received.
         // Use sl_inet_pton6 so the address is in the endianness expected by the NWP.
@@ -994,10 +1029,11 @@ CHIP_ERROR WifiInterfaceImpl::ConfigureBroadcastFilter(bool enableBroadcastFilte
             ChipLogError(DeviceLayer, "sl_wifi_allowlist_mcast_add_ip failed: 0x%" PRIx32, static_cast<uint32_t>(status)));
     }
 
-    // Multicast filtering stays enabled in both modes; the allowlist controls what passes.
+    // Broadcast and multicast filters share the same enable state. When disabled, the allowlist
+    // above (if applied) controls which multicast still passes.
     sl_wifi_groupcast_filter_config_t groupcastFilterConfig = {};
     groupcastFilterConfig.enable_bcast_filter               = enableBroadcastFilter ? 1 : 0;
-    groupcastFilterConfig.enable_mcast_filter               = 1;
+    groupcastFilterConfig.enable_mcast_filter               = groupcastFilterConfig.enable_bcast_filter;
     groupcastFilterConfig.filter_mode                       = 0; // default
 
     status = sl_wifi_set_groupcast_filter_config(&groupcastFilterConfig);
@@ -1143,6 +1179,11 @@ bool WifiInterfaceImpl::IsStationModeEnabled()
 bool WifiInterfaceImpl::IsStationConnected()
 {
     return wfx_rsi.dev_state.Has(WifiState::kStationConnected);
+}
+
+bool WifiInterfaceImpl::IsStationConnecting()
+{
+    return wfx_rsi.dev_state.Has(WifiState::kStationConnecting);
 }
 
 bool WifiInterfaceImpl::IsStationReady()
