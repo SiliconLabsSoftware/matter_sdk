@@ -2063,15 +2063,15 @@ endpoint 0 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    callback attribute featureMap default = 0;
+    callback attribute featureMap;
     callback attribute clusterRevision;
   }
 
   server cluster TimeFormatLocalization {
-    persist  attribute hourFormat default = 0;
-    persist  attribute activeCalendarType default = 0;
+    callback attribute hourFormat default = 0;
+    callback attribute activeCalendarType default = 0;
     callback attribute supportedCalendarTypes;
-    ram      attribute featureMap default = 0;
+    callback attribute featureMap default = 0;
     callback attribute clusterRevision;
   }
 
@@ -2123,7 +2123,7 @@ endpoint 0 {
     callback attribute activeHardwareFaults;
     callback attribute activeRadioFaults;
     callback attribute activeNetworkFaults;
-    callback attribute testEventTriggersEnabled default = false;
+    callback attribute testEventTriggersEnabled;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
@@ -2157,8 +2157,8 @@ endpoint 0 {
     callback attribute packetUnicastTxCount;
     callback attribute currentMaxRate;
     callback attribute overrunCount;
-    ram      attribute featureMap default = 3;
-    ram      attribute clusterRevision default = 1;
+    callback attribute featureMap default = 3;
+    callback attribute clusterRevision;
   }
 
   server cluster AdministratorCommissioning {
@@ -2168,7 +2168,7 @@ endpoint 0 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 0;
+    callback attribute featureMap default = 0;
     callback attribute clusterRevision;
 
     handle command OpenCommissioningWindow;
@@ -2266,9 +2266,9 @@ endpoint 1 {
   }
 
   server cluster OccupancySensing {
-    ram      attribute occupancy;
-    ram      attribute occupancySensorType;
-    ram      attribute occupancySensorTypeBitmap;
+    callback attribute occupancy;
+    callback attribute occupancySensorType;
+    callback attribute occupancySensorTypeBitmap;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
@@ -2307,9 +2307,9 @@ endpoint 2 {
 
   server cluster TemperatureMeasurement {
     callback attribute measuredValue;
-    ram      attribute minMeasuredValue default = -1000;
-    ram      attribute maxMeasuredValue default = 8500;
-    ram      attribute tolerance default = 40;
+    callback attribute minMeasuredValue default = -1000;
+    callback attribute maxMeasuredValue default = 8500;
+    callback attribute tolerance default = 40;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
@@ -2348,9 +2348,9 @@ endpoint 3 {
 
   server cluster RelativeHumidityMeasurement {
     callback attribute measuredValue;
-    ram      attribute minMeasuredValue default = 0;
-    ram      attribute maxMeasuredValue default = 8000;
-    ram      attribute tolerance default = 300;
+    callback attribute minMeasuredValue default = 0;
+    callback attribute maxMeasuredValue default = 8000;
+    callback attribute tolerance default = 300;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;

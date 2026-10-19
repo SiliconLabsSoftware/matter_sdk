@@ -1860,16 +1860,16 @@ endpoint 0 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    callback attribute featureMap default = 0;
+    callback attribute featureMap;
     callback attribute clusterRevision;
   }
 
   server cluster TimeFormatLocalization {
-    ram      attribute hourFormat default = 0;
+    callback attribute hourFormat default = 0;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 0;
+    callback attribute featureMap default = 0;
     callback attribute clusterRevision;
   }
 
@@ -1962,7 +1962,7 @@ endpoint 0 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 3;
+    callback attribute featureMap default = 3;
     callback attribute clusterRevision;
 
     handle command ResetCounts;
@@ -1975,7 +1975,7 @@ endpoint 0 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 0;
+    callback attribute featureMap default = 0;
     callback attribute clusterRevision;
 
     handle command OpenCommissioningWindow;
@@ -2029,12 +2029,12 @@ endpoint 1 {
 
 
   server cluster Groups {
-    ram      attribute nameSupport default = 0x00;
+    callback attribute nameSupport;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 1;
-    ram      attribute clusterRevision default = 4;
+    callback attribute featureMap default = 1;
+    callback attribute clusterRevision;
 
     handle command AddGroup;
     handle command ViewGroup;

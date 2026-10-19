@@ -2925,15 +2925,15 @@ endpoint 0 {
   server cluster LocalizationConfiguration {
     callback attribute activeLocale default = "en-US";
     callback attribute supportedLocales;
-    callback attribute featureMap default = 0;
+    callback attribute featureMap;
     callback attribute clusterRevision;
   }
 
   server cluster TimeFormatLocalization {
-    persist  attribute hourFormat default = 0;
-    persist  attribute activeCalendarType default = 0;
+    callback attribute hourFormat default = 0;
+    callback attribute activeCalendarType default = 0;
     callback attribute supportedCalendarTypes;
-    ram      attribute featureMap default = 0;
+    callback attribute featureMap default = 0;
     callback attribute clusterRevision;
   }
 
@@ -3067,7 +3067,7 @@ endpoint 0 {
     callback attribute channelPage0Mask;
     callback attribute operationalDatasetComponents;
     callback attribute activeNetworkFaultsList;
-    ram      attribute featureMap default = 0x000F;
+    callback attribute featureMap default = 0x000F;
     callback attribute clusterRevision;
 
     handle command ResetCounts;
@@ -3087,8 +3087,8 @@ endpoint 0 {
     callback attribute packetUnicastTxCount;
     callback attribute currentMaxRate;
     callback attribute overrunCount;
-    ram      attribute featureMap default = 3;
-    ram      attribute clusterRevision default = 1;
+    callback attribute featureMap default = 3;
+    callback attribute clusterRevision;
 
     handle command ResetCounts;
   }
@@ -3103,7 +3103,7 @@ endpoint 0 {
     callback attribute overrunCount;
     callback attribute carrierDetect;
     callback attribute timeSinceReset;
-    ram      attribute featureMap default = 3;
+    callback attribute featureMap default = 3;
     callback attribute clusterRevision;
 
     handle command ResetCounts;
@@ -3113,7 +3113,7 @@ endpoint 0 {
     callback attribute windowStatus;
     callback attribute adminFabricIndex;
     callback attribute adminVendorId;
-    ram      attribute featureMap default = 0;
+    callback attribute featureMap default = 0;
     callback attribute clusterRevision;
 
     handle command OpenCommissioningWindow;
@@ -3182,9 +3182,9 @@ endpoint 1 {
   }
 
   server cluster Groups {
-    ram      attribute nameSupport;
-    ram      attribute featureMap default = 0;
-    ram      attribute clusterRevision default = 4;
+    callback attribute nameSupport;
+    callback attribute featureMap default = 0;
+    callback attribute clusterRevision;
 
     handle command AddGroup;
     handle command ViewGroup;
@@ -3249,12 +3249,12 @@ endpoint 1 {
   }
 
   server cluster ScenesManagement {
-    ram      attribute sceneTableSize default = 16;
+    callback attribute sceneTableSize default = 16;
     callback attribute fabricSceneInfo;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 0;
+    callback attribute featureMap default = 0;
     callback attribute clusterRevision;
 
     handle command AddScene;
@@ -3314,9 +3314,9 @@ endpoint 1 {
   }
 
   server cluster OccupancySensing {
-    ram      attribute occupancy;
-    ram      attribute occupancySensorType;
-    ram      attribute occupancySensorTypeBitmap;
+    callback attribute occupancy;
+    callback attribute occupancySensorType;
+    callback attribute occupancySensorTypeBitmap;
     callback attribute featureMap;
     callback attribute clusterRevision;
   }
