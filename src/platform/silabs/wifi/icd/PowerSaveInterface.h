@@ -57,14 +57,17 @@ public:
     }
 
     /**
-     * @brief Configures the broadcast filter.
+     * @brief Configures broadcast and multicast filtering.
      *
-     * @param[in] enableBroadcastFilter Boolean to enable or disable the broadcast filter.
+     * Platforms that support filtering apply the same enable/disable state to both
+     * broadcast and multicast filters. When filtering is disabled, platforms may still allowlist
+     * required multicast traffic (e.g. Matter mDNS).
      *
-     * @return CHIP_ERROR CHIP_NO_ERROR, the counters were succesfully reset to 0.
-     *                    CHIP_ERROR_INTERNAL, if there was an error when configuring the broadcast filter
-     *                    CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE, if the platform does not support the requested power save mode
-     *                                                         or if it is a non-supported configuration
+     * @param[in] enableBroadcastFilter Boolean to enable or disable broadcast/multicast filtering.
+     *
+     * @return CHIP_ERROR CHIP_NO_ERROR, the filters were successfully configured
+     *                    CHIP_ERROR_INTERNAL, if there was an error when configuring the filters
+     *                    CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE, if the platform does not support the requested configuration
      */
     virtual CHIP_ERROR ConfigureBroadcastFilter(bool enableBroadcastFilter) { return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE; }
 
