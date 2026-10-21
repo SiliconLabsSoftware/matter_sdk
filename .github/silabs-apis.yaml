@@ -370,6 +370,8 @@ apps:
             uint16_t size, uint8_t *value)
         - name: CabinetModeClusterInit
           signature: void CabinetModeClusterInit(chip::EndpointId endpointId)
+        - name: CabinetModeClusterShutdown
+          signature: void CabinetModeClusterShutdown(chip::EndpointId endpointId)
         - name: Init
           signature: CHIP_ERROR Init()override
         - name: HandleChangeToMode
