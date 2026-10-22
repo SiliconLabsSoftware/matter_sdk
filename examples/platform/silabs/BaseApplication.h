@@ -216,6 +216,13 @@ public:
      */
     static void DoProvisioningReset();
 
+    /**
+     * @brief Schedules factory reset and requests manufacturing provisioning (e.g. shell `provision`).
+     *
+     * Same behavior as holding the action button during factory reset when the provision channel is enabled.
+     */
+    static void ScheduleFactoryResetForProvisioning();
+
 protected:
     CHIP_ERROR Init();
     CHIP_ERROR BaseInit();
@@ -300,8 +307,10 @@ protected:
      *  but doesn't call GetFabricTable().DeleteAllFabrics(); which deletes Key per key.
      *  With our KVS platform implementation this is a lot slower than deleting the whole kvs section
      *  our silabs nvm3 driver which end up being doing in ConfigurationManagerImpl::DoFactoryReset(intptr_t arg).
+     *
+     * @param requestProvisioning When true, enable manufacturing provision mode on reset.
      */
-    static void ScheduleFactoryReset();
+    static void ScheduleFactoryReset(bool requestProvisioning = false);
 
     static void OnPlatformEvent(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t);
 

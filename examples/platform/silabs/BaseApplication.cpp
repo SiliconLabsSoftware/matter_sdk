@@ -54,6 +54,7 @@
 
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
+#include <ProvisionShellCommands.h>
 #endif // ENABLE_CHIP_SHELL
 #include "provision/ProvisionStorageReader.h"
 
@@ -439,6 +440,7 @@ CHIP_ERROR BaseApplication::BaseInit()
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
     BLEShellCommands::RegisterCommands();
+    ProvisionShellCommands::RegisterCommands();
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -1073,15 +1075,22 @@ void BaseApplication::DispatchEvent(AppEvent * aEvent)
     }
 }
 
-void BaseApplication::ScheduleFactoryReset()
+void BaseApplication::ScheduleFactoryResetForProvisioning()
 {
-    TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork([](intptr_t) {
-    // Press both buttons to request provisioning
+    ScheduleFactoryReset(true);
+}
+
+void BaseApplication::ScheduleFactoryReset(bool requestProvisioning)
+{
+    TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(
+        [](intptr_t arg) {
+            const bool requestProvisioning = (arg != 0);
+    // Press both buttons, or the provision shell command, to request provisioning
 #if SL_MATTER_PROVISION_CHANNEL_ENABLED
-        if (GetPlatform().GetButtonState(APP_ACTION_BUTTON))
-        {
-            TEMPORARY_RETURN_IGNORED Provision::Manager::GetInstance().SetProvisionRequired(true);
-        }
+            if (requestProvisioning || GetPlatform().GetButtonState(APP_ACTION_BUTTON))
+            {
+                TEMPORARY_RETURN_IGNORED Provision::Manager::GetInstance().SetProvisionRequired(true);
+            }
 #endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 #if defined(SL_WIFI) && SL_WIFI
         // Removing the matter services on factory reset
@@ -1091,10 +1100,11 @@ void BaseApplication::ScheduleFactoryReset()
                                                   // basic information cluster it seems. And triggers and Event flush, which is not
                                                   // relevant when there are no fabrics left
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
-        Zigbee::TokenFactoryReset();
+            Zigbee::TokenFactoryReset();
 #endif
-        ConfigurationMgr().InitiateFactoryReset();
-    });
+            ConfigurationMgr().InitiateFactoryReset();
+        },
+        requestProvisioning ? 1 : 0);
 }
 
 void BaseApplication::DoProvisioningReset()
