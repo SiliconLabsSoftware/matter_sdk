@@ -1087,10 +1087,10 @@ void BaseApplication::ScheduleFactoryReset(bool requestProvisioning)
             const bool requestProvisioning = (arg != 0);
     // Press both buttons, or the provision shell command, to request provisioning
 #if SL_MATTER_PROVISION_CHANNEL_ENABLED
-            if (requestProvisioning || GetPlatform().GetButtonState(APP_ACTION_BUTTON))
-            {
-                TEMPORARY_RETURN_IGNORED Provision::Manager::GetInstance().SetProvisionRequired(true);
-            }
+        if (requestProvisioning || GetPlatform().GetButtonState(APP_ACTION_BUTTON))
+        {
+            TEMPORARY_RETURN_IGNORED Provision::Manager::GetInstance().SetProvisionRequired(true);
+        }
 #endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 #if defined(SL_WIFI) && SL_WIFI
         // Removing the matter services on factory reset
@@ -1100,7 +1100,7 @@ void BaseApplication::ScheduleFactoryReset(bool requestProvisioning)
                                                   // basic information cluster it seems. And triggers and Event flush, which is not
                                                   // relevant when there are no fabrics left
 #ifdef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
-            Zigbee::TokenFactoryReset();
+        Zigbee::TokenFactoryReset();
 #endif
             ConfigurationMgr().InitiateFactoryReset();
         },
