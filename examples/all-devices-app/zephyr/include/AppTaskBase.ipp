@@ -73,7 +73,6 @@ CHIP_ERROR AppTaskBase<Derived>::Run()
     ReturnErrorOnFailure(Self().InitServer());
     ReturnErrorOnFailure(Self().InitBoardControls());
     ReturnErrorOnFailure(Self().PostServerInit());
-    ReturnErrorOnFailure(Self().InitOTARequestor());
 
     return DeviceLayer::PlatformMgr().StartEventLoopTask();
 }
@@ -315,7 +314,24 @@ CHIP_ERROR AppTaskBase<Derived>::PostServerInit()
 {
     DeviceLayer::ConfigurationMgr().LogDeviceConfig();
     PrintOnboardingCodes(RendezvousInformationFlags(RendezvousInformationFlag::kBLE));
+    ReturnErrorOnFailure(DeviceLayer::PlatformMgr().AddEventHandler(OnPlatformEvent, reinterpret_cast<intptr_t>(this)));
     return CHIP_NO_ERROR;
+}
+
+template <class Derived>
+void AppTaskBase<Derived>::OnPlatformEvent(const DeviceLayer::ChipDeviceEvent * event, intptr_t context)
+{
+    switch (event->Type)
+    {
+    case DeviceLayer::DeviceEventType::kServerReady: {
+        // If OTA isn't enabled, InitOTARequestor just returns CHIP_NO_ERROR
+        auto & task = *reinterpret_cast<AppTaskBase<Derived> *>(context);
+        SuccessOrLog(task.Self().InitOTARequestor(), SoftwareUpdate, "Failed to initialize OTA requestor");
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 template <class Derived>
