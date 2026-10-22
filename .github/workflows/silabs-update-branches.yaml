@@ -6,16 +6,38 @@ on:
     workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-    sync:
+    monthly-window:
         if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        outputs:
+            run: ${{ steps.check.outputs.run }}
+        steps:
+            - name: Run monthly sync on the 1st or when dispatched manually
+              id: check
+              run: |
+                  if [[ "${{ github.event_name }}" == "workflow_dispatch" || "$(date -u +%d)" == "01" ]]; then
+                      echo "run=true" >> "${GITHUB_OUTPUT}"
+                  else
+                      echo "run=false" >> "${GITHUB_OUTPUT}"
+                  fi
+
+    sync:
+        needs: monthly-window
+        if: github.ref == 'refs/heads/main' && (matrix.cadence != 'monthly' || needs.monthly-window.outputs.run == 'true')
         runs-on: ubuntu-latest
         strategy:
             matrix:
                 include:
                     - local_branch: csa
                       upstream_branch: master
+                      cadence: daily
                     - local_branch: csa-v1.6.1-branch
                       upstream_branch: v1.6.1-branch
+                      cadence: daily
+                    # Synced from upstream v1.6-branch on the 1st, or on manual dispatch.
+                    - local_branch: csa-v1.6-branch
+                      upstream_branch: v1.6-branch
+                      cadence: monthly
 
         steps:
             - name: Generate token for the workflow

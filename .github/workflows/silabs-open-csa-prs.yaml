@@ -8,28 +8,37 @@ on:
     workflow_dispatch:
 
 jobs:
-    open-pr:
+    monthly-window:
         if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+        runs-on: ubuntu-latest
+        outputs:
+            run: ${{ steps.check.outputs.run }}
+        steps:
+            - name: Open the monthly PR on the 1st or when the sync was dispatched manually
+              id: check
+              run: |
+                  if [[ "${{ github.event_name }}" == "workflow_dispatch" || "${{ github.event.workflow_run.event }}" == "workflow_dispatch" || "$(date -u +%d)" == "01" ]]; then
+                      echo "run=true" >> "${GITHUB_OUTPUT}"
+                  else
+                      echo "run=false" >> "${GITHUB_OUTPUT}"
+                  fi
+
+    open-pr:
+        needs: monthly-window
+        if: ${{ (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') && (matrix.cadence != 'monthly' || needs.monthly-window.outputs.run == 'true') }}
         runs-on: ubuntu-latest
         strategy:
             matrix:
                 include:
                     - local_branch: csa
-                      pr_branch: automation/update_main
                       base_branch: main
-                      title: "Sync csa branch with main"
-                      body: |
-                          This PR syncs the csa branch with the main branch.
-
-                          **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
+                      cadence: daily
                     - local_branch: csa-v1.6.1-branch
-                      pr_branch: automation/update_release_2.10-1.6.1
                       base_branch: release_2.10-1.6.1
-                      title: "Sync csa-v1.6.1-branch branch with release_2.10-1.6.1"
-                      body: |
-                          This PR syncs the csa-v1.6.1-branch branch with the release_2.10-1.6.1 branch.
-
-                          **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
+                      cadence: daily
+                    - local_branch: csa-v1.6-branch
+                      base_branch: v1.6-branch
+                      cadence: monthly
 
         steps:
             - name: Generate token for the workflow
@@ -54,9 +63,12 @@ jobs:
             - name: Create Pull Request
               uses: peter-evans/create-pull-request@v8
               with:
-                  branch: ${{ matrix.pr_branch }}
+                  branch: automation/update_${{ matrix.base_branch }}
                   base: ${{ matrix.base_branch }}
-                  title: ${{ matrix.title }}
-                  body: ${{ matrix.body }}
+                  title: Sync ${{ matrix.local_branch }} branch with ${{ matrix.base_branch }}
+                  body: |
+                      This PR syncs the ${{ matrix.local_branch }} branch with the ${{ matrix.base_branch }} branch.
+
+                      **PR MUST BE MERGED WITH MERGE COMMIT - ADMIN MUST ENABLE THE OPTION**
                   token: ${{ steps.generate_token.outputs.token }}
                   labels: changing-git-submodules-on-purpose, sl-require-admin-action
