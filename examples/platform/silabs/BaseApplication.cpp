@@ -440,7 +440,9 @@ CHIP_ERROR BaseApplication::BaseInit()
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
     BLEShellCommands::RegisterCommands();
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
     ProvisionShellCommands::RegisterCommands();
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
