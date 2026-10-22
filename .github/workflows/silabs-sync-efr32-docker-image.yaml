@@ -19,11 +19,38 @@ permissions:
   contents: write
 
 jobs:
-  silabs-sync-efr32-docker-image:
-    name: silabs-sync-efr32-docker-image
+  detect-efr32-image:
+    name: detect-efr32-image
     if: |
       github.actor != 'restyled-io[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      uses_csa_image: ${{ steps.detect.outputs.uses_csa_image }}
+
+    steps:
+      - name: Checkout examples-efr32.yaml
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          sparse-checkout: .github/workflows/examples-efr32.yaml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Detect CSA EFR32 image
+        id: detect
+        run: |
+          if grep -Eq '^\s*image:\s*ghcr\.io/project-chip/chip-build-efr32:[0-9]+\s*$' .github/workflows/examples-efr32.yaml; then
+            echo "uses_csa_image=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice file=.github/workflows/examples-efr32.yaml::Not using the CSA chip-build-efr32 image; EFR32 image tag sync skipped."
+            echo "uses_csa_image=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  silabs-sync-efr32-docker-image:
+    name: silabs-sync-efr32-docker-image
+    needs: detect-efr32-image
+    if: needs.detect-efr32-image.outputs.uses_csa_image == 'true'
     runs-on: ubuntu-latest
 
     steps:
