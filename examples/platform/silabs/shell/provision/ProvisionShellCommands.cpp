@@ -16,7 +16,6 @@
  ******************************************************************************/
 
 #include "ProvisionShellCommands.h"
-#include "BaseApplication.h"
 #include <lib/shell/Engine.h>
 #include <lib/support/CodeUtils.h>
 
@@ -36,7 +35,7 @@ CHIP_ERROR ProvisionCommand(int argc, char ** argv)
     }
 
     streamer_printf(streamer_get(), "Factory reset with provisioning enabled\r\n");
-    BaseApplication::ScheduleFactoryResetForProvisioning();
+    ScheduleFactoryResetForProvisioning();
     return CHIP_NO_ERROR;
 }
 

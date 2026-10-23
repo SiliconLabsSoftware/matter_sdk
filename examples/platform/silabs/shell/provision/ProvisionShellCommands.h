@@ -16,6 +16,10 @@
  ******************************************************************************/
 #pragma once
 
+// Implemented in BaseApplication.cpp. Kept out of BaseApplication.h so this
+// shell target does not pull in zap-generated app headers.
+void ScheduleFactoryResetForProvisioning();
+
 namespace ProvisionShellCommands {
 
 void RegisterCommands();

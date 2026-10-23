@@ -216,13 +216,6 @@ public:
      */
     static void DoProvisioningReset();
 
-    /**
-     * @brief Schedules factory reset and requests manufacturing provisioning (e.g. shell `provision`).
-     *
-     * Same behavior as holding the action button during factory reset when the provision channel is enabled.
-     */
-    static void ScheduleFactoryResetForProvisioning();
-
 protected:
     CHIP_ERROR Init();
     CHIP_ERROR BaseInit();
@@ -300,6 +293,10 @@ protected:
      * @return True if a Led pattern was set, otherwise, returns false.
      */
     static bool ActivateStatusLedPatterns();
+
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
+    friend void ScheduleFactoryResetForProvisioning();
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 
     /**
      * @brief Start the factory Reset process

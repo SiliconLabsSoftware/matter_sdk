@@ -54,7 +54,9 @@
 
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
 #include <ProvisionShellCommands.h>
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 #endif // ENABLE_CHIP_SHELL
 #include "provision/ProvisionStorageReader.h"
 
@@ -440,7 +442,9 @@ CHIP_ERROR BaseApplication::BaseInit()
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
     BLEShellCommands::RegisterCommands();
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
     ProvisionShellCommands::RegisterCommands();
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -1075,10 +1079,12 @@ void BaseApplication::DispatchEvent(AppEvent * aEvent)
     }
 }
 
-void BaseApplication::ScheduleFactoryResetForProvisioning()
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED && defined(ENABLE_CHIP_SHELL)
+void ScheduleFactoryResetForProvisioning()
 {
-    ScheduleFactoryReset(true);
+    BaseApplication::ScheduleFactoryReset(true);
 }
+#endif // SL_MATTER_PROVISION_CHANNEL_ENABLED && defined(ENABLE_CHIP_SHELL)
 
 void BaseApplication::ScheduleFactoryReset(bool requestProvisioning)
 {
