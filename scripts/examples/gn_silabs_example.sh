@@ -369,7 +369,7 @@ EOF
 
     if [ "$USE_DOCKER" == true ] && [ "$USE_WIFI" == false ]; then
         echo "Switching OpenThread ROOT"
-        optArgs+="openthread_root=\"$GSDK_ROOT/openthread_stack/util/third_party/openthread\" "
+        optArgs+="openthread_root=\"$GSDK_ROOT/openthread_forks/util/third_party/openthread\" "
     fi
 
     if [ "$VERBOSE_MODE" == false ]; then

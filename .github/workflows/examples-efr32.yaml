@@ -41,7 +41,7 @@ jobs:
     if: github.actor != 'restyled-io[bot]'
 
     container:
-      image: ghcr.io/project-chip/chip-build-efr32:206
+      image: ghcr.io/siliconlabssoftware/matter_extension_dependencies:SiSDKv2026.12-1130_WiFi_SDKv4.2.0
       volumes:
         - "/tmp/bloat_reports:/tmp/bloat_reports"
     steps:
