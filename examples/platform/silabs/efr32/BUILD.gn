@@ -239,6 +239,9 @@ source_set("efr32-common") {
     if (chip_config_network_layer_ble) {
       deps += [ "${silabs_common_plat_dir}/shell:ble" ]
     }
+    if (sl_use_provision_channel) {
+      deps += [ "${silabs_common_plat_dir}/shell:provision" ]
+    }
   }
 
   public_deps += [
