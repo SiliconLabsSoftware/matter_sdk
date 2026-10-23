@@ -79,6 +79,13 @@ void SLApplyWiFiDeviceConfiguration(sl_wifi_device_configuration_t * configurati
     // Enable basic SSL and SSL memory cloud support with more RAM for certificate storage
     configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_TCP_IP_FEAT_SSL;
     configuration->boot_config.ext_tcp_ip_feature_bit_map |= SL_SI91X_EXT_TCP_IP_FEAT_SSL_MEMORY_CLOUD;
+
+#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
+    configuration->boot_config.tcp_ip_feature_bit_map |= SL_SI91X_TCP_IP_FEAT_HTTP_CLIENT;
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
+#endif // SL_MATTER_ENABLE_SERVICES
+
 #endif // SL_MATTER_ENABLE_DUAL_STACK
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
