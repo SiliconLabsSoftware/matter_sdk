@@ -1088,10 +1088,9 @@ void ScheduleFactoryResetForProvisioning()
 
 void BaseApplication::ScheduleFactoryReset(bool requestProvisioning)
 {
-    TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(
-        [](intptr_t arg) {
-            [[maybe_unused]] const bool requestProvisioning = (arg != 0);
-            // Press both buttons, or the provision shell command, to request provisioning
+    TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork([](intptr_t arg) {
+        [[maybe_unused]] const bool requestProvisioning = (arg != 0);
+        // Press both buttons, or the provision shell command, to request provisioning
 #if SL_MATTER_PROVISION_CHANNEL_ENABLED
         if (requestProvisioning || GetPlatform().GetButtonState(APP_ACTION_BUTTON))
         {
