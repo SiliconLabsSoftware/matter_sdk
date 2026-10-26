@@ -33,6 +33,8 @@
 
 #include "https_offload_example.h"
 
+#include "AppEvent.h"
+#include "BaseApplication.h"
 #include "cacert.h"
 #include "index_html.h"
 
@@ -43,12 +45,22 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceLayer.h>
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+#include "OTAConfig.h"
+#include <lib/shell/streamer.h>
+#include <platform/silabs/services/https_downloader.h>
+#include <platform/silabs/services/vendor_ota_requestor.h>
+#endif
+
+#include <cinttypes>
 #include <cstring>
 
 namespace {
 
 using chip::ByteSpan;
+using chip::CharSpan;
 using chip::MutableByteSpan;
 using chip::DeviceLayer::Silabs::HttpClient;
 using chip::DeviceLayer::Silabs::HttpClientConfig;
@@ -63,7 +75,7 @@ constexpr char kHttpClientUser[] = HTTP_USER;
 constexpr char kHttpClientPass[] = HTTP_PASS;
 constexpr char kHttpPostData[]   = HTTP_POST_DATA;
 
-// HTTPS client instance.
+// HTTPS client instance (process lifetime; not Deinit'd after successful start).
 HttpClient gHttpsClient;
 
 // Binary semaphore: CMSIS mutex cannot be released from another thread; NWP/HTTP
@@ -149,6 +161,77 @@ CHIP_ERROR RunHttpsOffloadExample()
     return CHIP_NO_ERROR;
 }
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+
+using chip::HttpsDownloader;
+using chip::VendorOTARequestor;
+using chip::Shell::streamer_get;
+using chip::Shell::streamer_printf;
+
+char gPendingOtaUrl[HttpsDownloader::kMaxUrlLen];
+size_t gPendingOtaUrlLen = 0;
+
+void PrintHttpsOtaHelp()
+{
+    streamer_printf(streamer_get(), "Usage: demo https-ota <url|abort|default|status>\r\n");
+    streamer_printf(streamer_get(), "  url <url>       Start one-shot HTTPS OTA (no NVM write)\r\n");
+    streamer_printf(streamer_get(), "  abort           Cancel in-progress HTTPS OTA\r\n");
+    streamer_printf(streamer_get(), "  default <url>   Persist default URL for 24h check (NVM)\r\n");
+    streamer_printf(streamer_get(), "  status          Show state / progress / last result\r\n");
+}
+
+CHIP_ERROR HttpsOtaStatusCommand()
+{
+    auto & req = VendorOTARequestor::GetInstance();
+    auto * dl  = req.GetHttpsDownloader();
+    auto * ip  = req.GetImageProcessor();
+
+    using OTAUpdateStateEnum = chip::OTARequestorInterface::OTAUpdateStateEnum;
+    const char * stateStr    = "idle";
+    switch (req.GetCurrentUpdateState())
+    {
+    case OTAUpdateStateEnum::kIdle:
+        stateStr = "idle";
+        break;
+    case OTAUpdateStateEnum::kQuerying:
+        stateStr = "querying";
+        break;
+    case OTAUpdateStateEnum::kDownloading:
+        stateStr = "downloading";
+        break;
+    case OTAUpdateStateEnum::kApplying:
+        stateStr = "applying";
+        break;
+    default:
+        stateStr = "other";
+        break;
+    }
+
+    const uint32_t offset = (dl != nullptr) ? dl->GetNextOffset() : 0;
+    const uint64_t bytes  = (ip != nullptr) ? ip->GetBytesDownloaded() : 0;
+    auto percent          = (ip != nullptr) ? ip->GetPercentComplete() : chip::app::DataModel::Nullable<uint8_t>{};
+
+    streamer_printf(streamer_get(), "HTTPS OTA state=%s offset=%" PRIu32 " downloaded=%" PRIu64, stateStr, offset, bytes);
+    if (percent.IsNull())
+    {
+        streamer_printf(streamer_get(), " total=unknown percent=n/a");
+    }
+    else
+    {
+        streamer_printf(streamer_get(), " percent=%u", percent.Value());
+    }
+    streamer_printf(streamer_get(), " target=%" PRIu32, req.GetTargetVersion());
+
+    CHIP_ERROR lastErr;
+    VendorOTARequestor::LastResultReason reason;
+    TEMPORARY_RETURN_IGNORED req.GetLastResult(lastErr, reason);
+    streamer_printf(streamer_get(), " last=%s 0x%08" PRIX32 "\r\n", VendorOTARequestor::LastResultReasonToString(reason),
+                    lastErr.AsInteger());
+    return CHIP_NO_ERROR;
+}
+
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
+
 } // namespace
 
 void HttpsRunAppEvent(AppEvent * /* aEvent */)
@@ -158,8 +241,23 @@ void HttpsRunAppEvent(AppEvent * /* aEvent */)
 
 sl_status_t https_client_demo_start(void)
 {
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    auto bindDownloaderClient = []() {
+        auto * dl = chip::VendorOTARequestor::GetInstance().GetHttpsDownloader();
+        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] bindDownloaderClient dl=%p", static_cast<void *>(dl));
+        if (dl != nullptr)
+        {
+            dl->SetHttpClient(&gHttpsClient);
+        }
+    };
+#endif
+
     if (gHttpsClient.IsRunning())
     {
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+        bindDownloaderClient();
+        ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] client start: already running");
+#endif
         return SL_STATUS_ALREADY_INITIALIZED;
     }
 
@@ -189,6 +287,9 @@ sl_status_t https_client_demo_start(void)
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS Start failed: %" CHIP_ERROR_FORMAT, err.Format());
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] client start: failed");
+#endif
         return SL_STATUS_FAIL;
     }
 
@@ -198,6 +299,9 @@ sl_status_t https_client_demo_start(void)
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS Init failed: %" CHIP_ERROR_FORMAT, err.Format());
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] client init: failed");
+#endif
         CHIP_ERROR stopErr = gHttpsClient.Stop();
         if (stopErr != CHIP_NO_ERROR)
         {
@@ -206,25 +310,11 @@ sl_status_t https_client_demo_start(void)
         return SL_STATUS_FAIL;
     }
 
-    /* NOTE: Deinit and Stop are not needed for the HTTP client.
-        CHIP_ERROR deinitErr = RunQueuedOperation(gHttpsClient.Deinit(OnOperationDone, &waitCtx), waitCtx);
-        if (deinitErr != CHIP_NO_ERROR)
-        {
-            ChipLogError(DeviceLayer, "HTTPS deinit failed: %" CHIP_ERROR_FORMAT, deinitErr.Format());
-        }
-
-        CHIP_ERROR stopErr = gHttpsClient.Stop();
-        if (stopErr != CHIP_NO_ERROR)
-        {
-            ChipLogError(DeviceLayer, "HTTPS Stop failed: %" CHIP_ERROR_FORMAT, stopErr.Format());
-        }
-    */
-    return (err == CHIP_NO_ERROR
-            // && deinitErr == CHIP_NO_ERROR
-            // && stopErr == CHIP_NO_ERROR
-            )
-        ? SL_STATUS_OK
-        : SL_STATUS_FAIL;
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    bindDownloaderClient();
+    ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] client start: started");
+#endif
+    return SL_STATUS_OK;
 }
 
 sl_status_t https_client_demo_run(void)
@@ -236,3 +326,98 @@ sl_status_t https_client_demo_run(void)
     }
     return SL_STATUS_OK;
 }
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+
+void HttpsOtaUrlAppEvent(AppEvent * /* aEvent */)
+{
+    sl_status_t st = https_client_demo_start();
+    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HttpsOtaUrlAppEvent client_start=0x%lx",
+                    static_cast<unsigned long>(st));
+    if ((st != SL_STATUS_OK) && (st != SL_STATUS_ALREADY_INITIALIZED))
+    {
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL client-start 0x%08" PRIX32,
+                     CHIP_ERROR_INCORRECT_STATE.AsInteger());
+        return;
+    }
+
+    CHIP_ERROR schedErr = chip::DeviceLayer::SystemLayer().ScheduleLambda([] {
+        // Shell may run before connectivity-triggered OTAConfig::Init; wire vendor OTA on CHIP thread.
+        auto * dl = chip::VendorOTARequestor::GetInstance().GetHttpsDownloader();
+        if (dl == nullptr)
+        {
+            ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] VendorOTA not wired; calling OTAConfig::Init");
+            OTAConfig::Init();
+            dl = chip::VendorOTARequestor::GetInstance().GetHttpsDownloader();
+        }
+        // Bind after Init: earlier https_client_demo_start may have seen dl==nullptr.
+        if (dl != nullptr)
+        {
+            dl->SetHttpClient(&gHttpsClient);
+        }
+        CHIP_ERROR err =
+            chip::VendorOTARequestor::GetInstance().StartUpdate(chip::CharSpan(gPendingOtaUrl, gPendingOtaUrlLen));
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] StartUpdate failed: %" CHIP_ERROR_FORMAT, err.Format());
+        }
+    });
+    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HttpsOtaUrlAppEvent ScheduleLambda=%" CHIP_ERROR_FORMAT, schedErr.Format());
+}
+
+CHIP_ERROR HttpsOtaDemoCommand(int argc, char ** argv)
+{
+    if (argc == 0)
+    {
+        PrintHttpsOtaHelp();
+        return CHIP_NO_ERROR;
+    }
+
+    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HttpsOtaDemoCommand subcmd=%s argc=%d", argv[0], argc);
+
+    if (strcmp(argv[0], "url") == 0)
+    {
+        VerifyOrReturnError(argc == 2, CHIP_ERROR_INVALID_ARGUMENT);
+        const size_t len = strlen(argv[1]);
+        VerifyOrReturnError(len > 0 && len < sizeof(gPendingOtaUrl), CHIP_ERROR_INVALID_ARGUMENT);
+        memcpy(gPendingOtaUrl, argv[1], len);
+        gPendingOtaUrl[len] = '\0';
+        gPendingOtaUrlLen   = len;
+
+        ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] session start source=shell-url url=%s", gPendingOtaUrl);
+        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] url len=%u", static_cast<unsigned>(len));
+
+        AppEvent event = {};
+        event.Type     = AppEvent::kEventType_Timer;
+        event.Handler  = HttpsOtaUrlAppEvent;
+        BaseApplication::PostEvent(&event);
+        return CHIP_NO_ERROR;
+    }
+
+    if (strcmp(argv[0], "abort") == 0)
+    {
+        VerifyOrReturnError(argc == 1, CHIP_ERROR_INVALID_ARGUMENT);
+        TEMPORARY_RETURN_IGNORED chip::DeviceLayer::SystemLayer().ScheduleLambda(
+            [] { chip::VendorOTARequestor::GetInstance().CancelImageUpdate(); });
+        return CHIP_NO_ERROR;
+    }
+
+    if (strcmp(argv[0], "default") == 0)
+    {
+        VerifyOrReturnError(argc == 2, CHIP_ERROR_INVALID_ARGUMENT);
+        const size_t len = strlen(argv[1]);
+        VerifyOrReturnError(len > 0 && len < HttpsDownloader::kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
+        return VendorOTARequestor::GetInstance().SetDefaultUrl(CharSpan(argv[1], len));
+    }
+
+    if (strcmp(argv[0], "status") == 0)
+    {
+        VerifyOrReturnError(argc == 1, CHIP_ERROR_INVALID_ARGUMENT);
+        return HttpsOtaStatusCommand();
+    }
+
+    PrintHttpsOtaHelp();
+    return CHIP_ERROR_INVALID_ARGUMENT;
+}
+
+#endif // SL_MATTER_ENABLE_HTTPS_OTA

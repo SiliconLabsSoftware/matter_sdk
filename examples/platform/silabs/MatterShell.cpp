@@ -188,6 +188,9 @@ CHIP_ERROR DemoHelpHandler(int /* argc */, char ** /* argv */)
 
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
     streamer_printf(streamer_get(), "  http  Run HTTPS PUT/GET/POST on the AppTask thread\r\n");
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    streamer_printf(streamer_get(), "  https-ota  Vendor HTTPS OTA: url|abort|default|status\r\n");
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
 #if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
@@ -203,6 +206,13 @@ CHIP_ERROR DemoCommandHandler(int argc, char ** argv)
     {
         return DemoHelpHandler(argc, argv);
     }
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    if (strcmp(argv[0], "https-ota") == 0)
+    {
+        return HttpsOtaDemoCommand(argc - 1, argv + 1);
+    }
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 
     VerifyOrReturnError(argc == 1, CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -235,7 +245,8 @@ CHIP_ERROR DemoCommandHandler(int argc, char ** argv)
 
 void RegisterCommands()
 {
-    static const Shell::Command sDemoCmd = { &DemoCommandHandler, "demo", "Run a Matter service demo: demo <http|mqtt>" };
+    static const Shell::Command sDemoCmd = { &DemoCommandHandler, "demo",
+                                             "Run a Matter service demo: demo <http|https-ota|mqtt>" };
     Engine::Root().RegisterCommands(&sDemoCmd, 1);
 }
 

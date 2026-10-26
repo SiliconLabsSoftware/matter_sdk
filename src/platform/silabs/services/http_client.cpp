@@ -23,14 +23,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "sl_additional_status.h"
 #include "sl_net.h"
+#include "sl_net_dns.h"
 #ifdef __cplusplus
 }
 #endif
 
 #include <lib/support/CodeUtils.h>
+#include <lib/support/StringBuilder.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/silabs/wifi/WifiInterface.h>
 
+#include <cinttypes>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -55,6 +61,11 @@ CHIP_ERROR HttpClient::MapStatus(sl_status_t status)
     if (status == SL_STATUS_ALLOCATION_FAILED)
     {
         return CHIP_ERROR_NO_MEMORY;
+    }
+    // MQTT holding SNI: same retry path as CHIP_ERROR_BUSY for GetRange.
+    if (status == SL_STATUS_SI91X_FEATURE_NOT_AVAILABLE)
+    {
+        return CHIP_ERROR_BUSY;
     }
     return CHIP_ERROR_INTERNAL;
 }
@@ -151,8 +162,52 @@ void HttpClient::ResetRequestState()
     mPendingBody          = ByteSpan();
     mPendingHost          = {};
     mPendingResource      = nullptr;
-    mBusy                 = false;
-    mChunkedActive        = false;
+    mPendingRangeStart        = 0;
+    mPendingRangeEndInclusive = 0;
+    mBusy                     = false;
+    mChunkedActive            = false;
+}
+
+void HttpClient::ClearRangeHeaders()
+{
+    TEMPORARY_RETURN_IGNORED sl_http_client_delete_all_headers(&mRangeRequest);
+    memset(&mRangeRequest, 0, sizeof(mRangeRequest));
+    mRangeHeaderValue[0] = '\0';
+}
+
+CHIP_ERROR HttpClient::ResolveDnsIfNeeded(const char * host, char * outIp, size_t outIpLen)
+{
+    VerifyOrReturnError((host != nullptr) && (outIp != nullptr) && (outIpLen > 0), CHIP_ERROR_INVALID_ARGUMENT);
+
+    unsigned b0 = 0;
+    unsigned b1 = 0;
+    unsigned b2 = 0;
+    unsigned b3 = 0;
+    if (sscanf(host, "%u.%u.%u.%u", &b0, &b1, &b2, &b3) == 4)
+    {
+        StringBuilderBase ip(outIp, outIpLen);
+        ip.AddFormat("%u.%u.%u.%u", b0, b1, b2, b3);
+        VerifyOrReturnError(ip.Fit(), CHIP_ERROR_BUFFER_TOO_SMALL);
+        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ResolveDnsIfNeeded literal=%s", outIp);
+        return CHIP_NO_ERROR;
+    }
+
+    sl_ip_address_t resolved = {};
+    sl_status_t status =
+        sl_net_dns_resolve_hostname_v2(host, 10 /* s */, 1 /* retry */, SL_NET_DNS_TYPE_IPV4, &resolved);
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ResolveDnsIfNeeded host=%s failed status=0x%lx", host,
+                     static_cast<unsigned long>(status));
+        return MapStatus(status);
+    }
+
+    StringBuilderBase ip(outIp, outIpLen);
+    ip.AddFormat("%u.%u.%u.%u", resolved.ip.v4.bytes[0], resolved.ip.v4.bytes[1], resolved.ip.v4.bytes[2],
+                 resolved.ip.v4.bytes[3]);
+    VerifyOrReturnError(ip.Fit(), CHIP_ERROR_BUFFER_TOO_SMALL);
+    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ResolveDnsIfNeeded host=%s -> %s", host, outIp);
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback callback, void * context)
@@ -345,6 +400,8 @@ CHIP_ERROR HttpClient::Deinit(HttpOperationCallback callback, void * context)
 
 CHIP_ERROR HttpClient::ProcessDeinit()
 {
+    ClearRangeHeaders();
+
     if (mClientHandle != 0)
     {
         sl_status_t status = sl_http_client_deinit(&mClientHandle);
@@ -375,6 +432,11 @@ CHIP_ERROR HttpClient::ProcessDeinit()
 
 void HttpClient::CompleteOperation(CHIP_ERROR error)
 {
+    if (mPendingOperation == Operation::GetRange)
+    {
+        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] CompleteOperation GetRange err=%" CHIP_ERROR_FORMAT " http=%u",
+                        error.Format(), mLastHttpResponseCode);
+    }
     // if the operation failed, clear the chunked active flag and pending body
     if (error != CHIP_NO_ERROR)
     {
@@ -420,6 +482,9 @@ void HttpClient::ProcessOperation()
     case Operation::Get:
         result = ProcessGet();
         break;
+    case Operation::GetRange:
+        result = ProcessGetRange();
+        break;
     case Operation::Post:
         result = ProcessPost();
         break;
@@ -448,6 +513,7 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
 
     sl_http_client_response_t * getResponse = static_cast<sl_http_client_response_t *>(data);
     self->mCallbackStatus                   = getResponse->status;
+    self->mLastHttpResponseCode             = static_cast<uint16_t>(getResponse->http_response_code);
 
     ChipLogProgress(DeviceLayer, "HTTPS GET response: status=0x%lX http_code=%u data_len=%u end_of_data=%lu",
                     static_cast<unsigned long>(getResponse->status), getResponse->http_response_code, getResponse->data_length,
@@ -614,6 +680,211 @@ CHIP_ERROR HttpClient::ProcessGet()
     VerifyOrReturnError((status == SL_STATUS_OK) || (status == SL_STATUS_IN_PROGRESS), MapStatus(status));
 
     return CHIP_ERROR_IN_PROGRESS;
+}
+
+CHIP_ERROR HttpClient::GetRange(const HttpHost & host, const char * resource, uint32_t start, uint32_t endInclusive,
+                                MutableByteSpan & responseBuffer, HttpOperationCallback callback, void * context)
+{
+    if (!mInitialized)
+    {
+        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] GetRange reject: not initialized");
+        return CHIP_ERROR_INCORRECT_STATE;
+    }
+    if (mBusy || mChunkedActive)
+    {
+        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] GetRange reject: busy");
+        return CHIP_ERROR_BUSY;
+    }
+    if ((host.hostName == nullptr) || (resource == nullptr) || (start > endInclusive))
+    {
+        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] GetRange reject: invalid argument");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+
+    ResetRequestState();
+    mActiveResponseBuffer     = &responseBuffer;
+    mPendingHost              = host;
+    mPendingResource          = resource;
+    mPendingRangeStart        = start;
+    mPendingRangeEndInclusive = endInclusive;
+    mLastHttpResponseCode     = 0;
+    return QueueOperation(Operation::GetRange, callback, context);
+}
+
+CHIP_ERROR HttpClient::ProcessGetRange()
+{
+    ClearRangeHeaders();
+
+    // Prefer connect address from serverIp when set; otherwise resolve hostName on this thread.
+    const char * connectHost =
+        (mPendingHost.serverIp != nullptr) ? mPendingHost.serverIp : mPendingHost.hostName;
+    CHIP_ERROR dnsErr = ResolveDnsIfNeeded(connectHost, mResolvedServerIp, sizeof(mResolvedServerIp));
+    if (dnsErr != CHIP_NO_ERROR)
+    {
+        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ProcessGetRange DNS=%" CHIP_ERROR_FORMAT, dnsErr.Format());
+        return dnsErr;
+    }
+
+    snprintf(mRangeHeaderValue, sizeof(mRangeHeaderValue), "bytes=%" PRIu32 "-%" PRIu32, mPendingRangeStart,
+             mPendingRangeEndInclusive);
+    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ProcessGetRange ip=%s range=%s", mResolvedServerIp, mRangeHeaderValue);
+
+    memset(&mRangeRequest, 0, sizeof(mRangeRequest));
+    mRangeRequest.ip_address       = reinterpret_cast<uint8_t *>(mResolvedServerIp);
+    mRangeRequest.host_name        = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.hostName));
+    mRangeRequest.port             = mPendingHost.port;
+    mRangeRequest.resource         = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
+    mRangeRequest.extended_header  = nullptr;
+    mRangeRequest.http_method_type = SL_HTTP_GET;
+    mRangeRequest.body             = nullptr;
+    mRangeRequest.body_length      = 0;
+
+    sActiveClient      = this;
+    sl_status_t status = sl_http_client_request_init(&mRangeRequest, GetRangeResponseCallback, this);
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ProcessGetRange request_init=0x%lx", static_cast<unsigned long>(status));
+        ClearRangeHeaders();
+        return MapStatus(status);
+    }
+
+    status = sl_http_client_add_header(&mRangeRequest, "Range", mRangeHeaderValue);
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ProcessGetRange add_header=0x%lx", static_cast<unsigned long>(status));
+        ClearRangeHeaders();
+        return MapStatus(status);
+    }
+
+    const bool wifiConnected = chip::DeviceLayer::Silabs::WifiInterface::GetInstance().IsStationConnected();
+    // NWP returns 0x10021 (COMMAND_GIVEN_IN_INVALID_STATE) if not associated; fail clearly.
+    if (!wifiConnected)
+    {
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] GetRange: Wi-Fi station not connected");
+        ClearRangeHeaders();
+        return CHIP_ERROR_NOT_CONNECTED;
+    }
+
+    status = sl_http_client_send_request(&mClientHandle, &mRangeRequest);
+    if ((status != SL_STATUS_OK) && (status != SL_STATUS_IN_PROGRESS))
+    {
+        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ProcessGetRange send_request=0x%lx", static_cast<unsigned long>(status));
+        ClearRangeHeaders();
+        return MapStatus(status);
+    }
+
+    return CHIP_ERROR_IN_PROGRESS;
+}
+
+sl_status_t HttpClient::GetRangeResponseCallback(const sl_http_client_t * client, sl_http_client_event_t event, void * data,
+                                                 void * request_context)
+{
+    (void) client;
+    (void) event;
+
+    auto * self = ClientFromContext(request_context);
+    VerifyOrReturnError(self != nullptr, SL_STATUS_FAIL);
+
+    sl_http_client_response_t * getResponse = static_cast<sl_http_client_response_t *>(data);
+    self->mCallbackStatus                   = getResponse->status;
+    self->mLastHttpResponseCode             = static_cast<uint16_t>(getResponse->http_response_code);
+
+    ChipLogDetail(DeviceLayer, "HTTPS GET Range response: status=0x%lX http_code=%u data_len=%u end_of_data=%lu",
+                  static_cast<unsigned long>(getResponse->status), getResponse->http_response_code, getResponse->data_length,
+                  static_cast<unsigned long>(getResponse->end_of_data));
+
+    static uint32_t sRangeCbCount = 0;
+    const uint32_t cbIdx          = sRangeCbCount++;
+    const bool throttleLog =
+        (cbIdx == 0) || ((cbIdx % 100) == 0) || (getResponse->http_response_code == 416) ||
+        (getResponse->end_of_data != 0) ||
+        ((getResponse->status != SL_STATUS_OK) && (getResponse->status != SL_STATUS_IN_PROGRESS));
+    if (throttleLog)
+    {
+        ChipLogProgress(SoftwareUpdate,
+                        "[DEBUG-HTTPS-OTA] GetRangeResponseCallback idx=%" PRIu32
+                        " status=0x%lx http=%u data_len=%u end_of_data=%lu written=%" PRIu32,
+                        cbIdx, static_cast<unsigned long>(getResponse->status), getResponse->http_response_code,
+                        getResponse->data_length, static_cast<unsigned long>(getResponse->end_of_data),
+                        self->mResponseBytesWritten);
+    }
+
+    if ((getResponse->status != SL_STATUS_OK) && (getResponse->status != SL_STATUS_IN_PROGRESS))
+    {
+        self->ClearRangeHeaders();
+        self->mHttpRspReceived = kHttpFailureResponse;
+        self->mCallbackStatus  = SL_STATUS_FAIL;
+        self->SignalResponse();
+        return getResponse->status;
+    }
+
+    const uint16_t httpCode = static_cast<uint16_t>(getResponse->http_response_code);
+    // 200/206 success; 416 is success with that status (EOF for range OTA). Other 4xx/5xx fail.
+    if ((httpCode >= kHttpClientErrorMin) && (httpCode <= kHttpServerErrorMax) && (httpCode != 0) && (httpCode != 416))
+    {
+        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] GetRangeResponseCallback http fail code=%u", httpCode);
+        self->ClearRangeHeaders();
+        self->mHttpRspReceived = kHttpFailureResponse;
+        self->mCallbackStatus  = SL_STATUS_FAIL;
+        self->SignalResponse();
+        return getResponse->status;
+    }
+
+    // 416: complete immediately (no useful body; treat as EOF).
+    if (httpCode == 416)
+    {
+        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] GetRangeResponseCallback http=416 EOF");
+        if (self->mActiveResponseBuffer != nullptr)
+        {
+            self->mActiveResponseBuffer->reduce_size(0);
+        }
+        self->ClearRangeHeaders();
+        self->mHttpRspReceived      = kHttpSuccessResponse;
+        self->mResponseBytesWritten = 0;
+        self->SignalResponse();
+        return SL_STATUS_OK;
+    }
+
+    self->mEndOfData = static_cast<EndOfData>(getResponse->end_of_data);
+
+    if (getResponse->data_length)
+    {
+        if (self->mActiveResponseBuffer != nullptr)
+        {
+            const size_t size    = self->mActiveResponseBuffer->size();
+            const size_t avail   = (size > self->mResponseBytesWritten) ? size - self->mResponseBytesWritten : 0;
+            const size_t copyLen = (getResponse->data_length < avail) ? getResponse->data_length : avail;
+            if (copyLen > 0)
+            {
+                memcpy(self->mActiveResponseBuffer->data() + self->mResponseBytesWritten, getResponse->data_buffer, copyLen);
+                self->mResponseBytesWritten += static_cast<uint32_t>(copyLen);
+            }
+            if (copyLen < getResponse->data_length)
+            {
+                ChipLogError(DeviceLayer, "HTTPS GET Range response truncated, dropped %u bytes",
+                             static_cast<unsigned>(getResponse->data_length - copyLen));
+            }
+        }
+    }
+
+    if (self->mEndOfData == EndOfData::EndOfData)
+    {
+        if (throttleLog)
+        {
+            ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] GetRangeResponseCallback end_of_data copied=%" PRIu32,
+                            self->mResponseBytesWritten);
+        }
+        if (self->mActiveResponseBuffer != nullptr)
+        {
+            self->mActiveResponseBuffer->reduce_size(self->mResponseBytesWritten);
+        }
+        self->ClearRangeHeaders();
+        self->mHttpRspReceived      = kHttpSuccessResponse;
+        self->mResponseBytesWritten = 0;
+        self->SignalResponse();
+    }
+
+    return SL_STATUS_OK;
 }
 
 CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,

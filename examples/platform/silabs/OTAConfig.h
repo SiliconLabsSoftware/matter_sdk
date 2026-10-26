@@ -24,6 +24,13 @@
 #include <app/clusters/ota-requestor/DefaultOTARequestorDriver.h>
 #include <app/clusters/ota-requestor/DefaultOTARequestorStorage.h>
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+#include <platform/silabs/services/https_downloader.h>
+#include <platform/silabs/services/vendor_ota_matter_gate.h>
+#include <platform/silabs/services/vendor_ota_requestor.h>
+#include <platform/silabs/services/vendor_ota_requestor_driver.h>
+#endif
+
 #if defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
 #include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
 #else
@@ -42,3 +49,10 @@ public:
     static void Init();
     static constexpr uint32_t kInitOTARequestorDelaySec = 3;
 };
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+inline chip::VendorOTARequestor & GetVendorOTARequestor()
+{
+    return chip::VendorOTARequestor::GetInstance();
+}
+#endif

@@ -20,16 +20,20 @@
 
 #include "sl_status.h"
 
+#include <lib/core/CHIPError.h>
+
+// Placeholder defaults so the dual-stack project builds without a local server.
+// Override in the project (slcp define:) or edit here before running the HTTPS demo.
 #ifndef HTTP_SERVER_IP // IP address of the HTTP server
-#error "HTTP_SERVER_IP is not defined"
+#define HTTP_SERVER_IP "192.168.29.150"
 #endif
 
 #ifndef HTTP_HOSTNAME // used for SNI validation
-#error "HTTP_HOSTNAME is not defined"
+#define HTTP_HOSTNAME "otaserver.com"
 #endif
 
 #ifndef HTTP_PORT // port of the HTTP server
-#error "HTTP_PORT is not defined"
+#define HTTP_PORT 8443
 #endif
 
 #ifndef HTTP_URL
@@ -63,3 +67,15 @@ struct AppEvent;
 
 /** AppTask-queue handler that runs https_client_demo_run(). */
 void HttpsRunAppEvent(AppEvent * aEvent);
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+/**
+ * demo https-ota subcommands (argv after the https-ota token).
+ * url posts an AppEvent (client start on AppTask, then StartUpdate on CHIP).
+ * abort/default/status may run from the shell thread (CHIP ScheduleLambda where needed).
+ */
+CHIP_ERROR HttpsOtaDemoCommand(int argc, char ** argv);
+
+/** AppTask handler: ensure HttpClient is up, then ScheduleLambda StartUpdate. */
+void HttpsOtaUrlAppEvent(AppEvent * aEvent);
+#endif
