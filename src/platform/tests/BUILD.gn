@@ -100,6 +100,10 @@ if (chip_device_platform != "none") {
       test_sources += [ "TestConnectivityMgr.cpp" ]
     }
 
+    if (chip_device_platform == "darwin" && chip_enable_ble &&
+        chip_config_network_layer_ble) {
+      test_sources += [ "TestDarwinBleConnection.mm" ]
+    }
     test_sources += [ "TestSilabsTracing.cpp" ]
     public_deps += [ "${chip_root}/src/platform/silabs/tracing:SilabsTracing" ]
   }
