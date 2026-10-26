@@ -20,18 +20,14 @@
  *      PSA Crypto API based implementation of CHIP crypto primitives
  */
 
-// In mbedTLS v4.0, ECP and bignum function declarations moved to private headers.
 // These are only needed for the mbedTLS-based SPAKE2+ fallback. Platforms with a
 // PSA SPAKE2+ driver don't need these private headers.
 // TODO(#71479): Remove once a PSA SPAKE2+ driver is available for all platforms.
 #if !defined(CHIP_CRYPTO_SPAKE2P_PSA) || !CHIP_CRYPTO_SPAKE2P_PSA
-#include <mbedtls/version.h>
-#if (MBEDTLS_VERSION_NUMBER >= 0x04000000)
 #define MBEDTLS_DECLARE_PRIVATE_IDENTIFIERS
 #include <mbedtls/private/bignum.h>
 #include <mbedtls/private/ecp.h>
-#endif // (MBEDTLS_VERSION_NUMBER >= 0x04000000)
-#endif // !CHIP_CRYPTO_SPAKE2P_PSA
+#endif
 
 #include <crypto/CHIPCryptoPALPSA.h>
 #include <crypto/CHIPCryptoPALmbedTLS.h>
@@ -46,11 +42,6 @@
 #include <lib/support/logging/CHIPLogging.h>
 
 #include <psa/crypto.h>
-
-#if (MBEDTLS_VERSION_NUMBER < 0x04000000)
-#include <mbedtls/bignum.h>
-#include <mbedtls/ecp.h>
-#endif // (MBEDTLS_VERSION_NUMBER < 0x04000000)
 
 #include <mbedtls/error.h>
 #include <mbedtls/md.h>
@@ -1811,7 +1802,6 @@ CHIP_ERROR ExtractPubkeyFromX509Cert(const ByteSpan & certificate, Crypto::P256P
     VerifyOrExit(result == 0, error = CHIP_ERROR_INTERNAL);
 
     // Copy the public key from the cert in raw point format
-#if (MBEDTLS_VERSION_NUMBER >= 0x04000000)
     {
         mbedtls_svc_key_id_t key_id     = MBEDTLS_SVC_KEY_ID_INIT;
         psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -1830,22 +1820,6 @@ CHIP_ERROR ExtractPubkeyFromX509Cert(const ByteSpan & certificate, Crypto::P256P
         VerifyOrExit(status == PSA_SUCCESS, _log_PSA_error(status); error = CHIP_ERROR_INTERNAL);
         VerifyOrExit(pubkey_size == pubkey.Length(), error = CHIP_ERROR_INTERNAL);
     }
-#else
-    {
-        VerifyOrExit(mbedtls_pk_get_type(&(mbed_cert.CHIP_CRYPTO_PAL_PRIVATE_X509(pk))) == MBEDTLS_PK_ECKEY,
-                     error = CHIP_ERROR_INVALID_ARGUMENT);
-
-        mbedtls_ecp_keypair * keypair = mbedtls_pk_ec(mbed_cert.CHIP_CRYPTO_PAL_PRIVATE_X509(pk));
-        VerifyOrExit(keypair->CHIP_CRYPTO_PAL_PRIVATE(grp).id == MapECPGroupId(pubkey.Type()), error = CHIP_ERROR_INVALID_ARGUMENT);
-        // Copy the public key from the cert in raw point format
-        result = mbedtls_ecp_point_write_binary(&keypair->CHIP_CRYPTO_PAL_PRIVATE(grp), &keypair->CHIP_CRYPTO_PAL_PRIVATE(Q),
-                                                MBEDTLS_ECP_PF_UNCOMPRESSED, &pubkey_size, Uint8::to_uchar(pubkey.Bytes()),
-                                                pubkey.Length());
-
-        VerifyOrExit(result == 0, error = CHIP_ERROR_INTERNAL);
-        VerifyOrExit(pubkey_size == pubkey.Length(), error = CHIP_ERROR_INTERNAL);
-    }
-#endif // (MBEDTLS_VERSION_NUMBER >= 0x04000000)
 
 exit:
     _log_mbedTLS_error(result);
@@ -2413,14 +2387,9 @@ CHIP_ERROR VerifyCertificateSigningRequest(const uint8_t * csr_buf, size_t csr_l
     // Verify the signature algorithm and public key type
     VerifyOrExit(csr.CHIP_CRYPTO_PAL_PRIVATE(sig_md) == MBEDTLS_MD_SHA256, error = CHIP_ERROR_UNSUPPORTED_SIGNATURE_TYPE);
 
-#if (MBEDTLS_VERSION_NUMBER >= 0x04000000)
     VerifyOrExit(csr.CHIP_CRYPTO_PAL_PRIVATE(sig_pk) == MBEDTLS_PK_SIGALG_ECDSA, error = CHIP_ERROR_WRONG_KEY_TYPE);
-#else
-    VerifyOrExit(csr.CHIP_CRYPTO_PAL_PRIVATE(sig_pk) == MBEDTLS_PK_ECDSA, error = CHIP_ERROR_WRONG_KEY_TYPE);
-#endif
 
     // Copy the public key from the CSR
-#if (MBEDTLS_VERSION_NUMBER >= 0x04000000)
     {
         mbedtls_svc_key_id_t key_id     = MBEDTLS_SVC_KEY_ID_INIT;
         psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -2438,19 +2407,6 @@ CHIP_ERROR VerifyCertificateSigningRequest(const uint8_t * csr_buf, size_t csr_l
         VerifyOrExit(status == PSA_SUCCESS, _log_PSA_error(status); error = CHIP_ERROR_INTERNAL);
         VerifyOrExit(pubkey_size == pubkey.Length(), error = CHIP_ERROR_INTERNAL);
     }
-#else
-    {
-        mbedtls_ecp_keypair * keypair = mbedtls_pk_ec(csr.CHIP_CRYPTO_PAL_PRIVATE_X509(pk));
-        VerifyOrExit(keypair != nullptr, error = CHIP_ERROR_WRONG_KEY_TYPE);
-
-        result =
-            mbedtls_ecp_point_write_binary(&keypair->CHIP_CRYPTO_PAL_PRIVATE(grp), &keypair->CHIP_CRYPTO_PAL_PRIVATE(Q),
-                                           MBEDTLS_ECP_PF_UNCOMPRESSED, &pubkey_size, Uint8::to_uchar(pubkey), pubkey.Length());
-
-        VerifyOrExit(result == 0, error = CHIP_ERROR_INTERNAL);
-        VerifyOrExit(pubkey_size == pubkey.Length(), error = CHIP_ERROR_INTERNAL);
-    }
-#endif // (MBEDTLS_VERSION_NUMBER >= 0x04000000)
 
     // Convert DER signature to raw signature
     error = EcdsaAsn1SignatureToRaw(kP256_FE_Length,
