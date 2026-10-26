@@ -104,6 +104,8 @@ if (chip_device_platform != "none") {
         chip_config_network_layer_ble) {
       test_sources += [ "TestDarwinBleConnection.mm" ]
     }
+    test_sources += [ "TestSilabsTracing.cpp" ]
+    public_deps += [ "${chip_root}/src/platform/silabs/tracing:SilabsTracing" ]
   }
 } else {
   import("${chip_root}/build/chip/chip_test_group.gni")
