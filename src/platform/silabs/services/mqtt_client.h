@@ -62,6 +62,8 @@ enum class MqttQoS : uint8_t
  *
  * When @p useTls is true, Connect installs non-null CA and optional client cert/key PEMs
  * into the host LwIP TLS context before NetworkConnect.
+ *
+ * @p txBufferSize / @p rxBufferSize are applied at Init (change requires Deinit then Init).
  */
 struct MqttClientConfig
 {
@@ -74,6 +76,8 @@ struct MqttClientConfig
     uint8_t mqttVersion           = 4;
     bool cleanSession             = true;
     uint32_t idleYieldTimeoutMs   = 1000; // This is the timeout for the idle yield operation.
+    size_t txBufferSize           = 1024; ///< Paho TX buffer bytes allocated at Init.
+    size_t rxBufferSize           = 1024; ///< Paho RX buffer bytes allocated at Init.
 
     bool willEnable          = false;
     const char * willTopic   = nullptr;
@@ -156,6 +160,8 @@ public:
      * @brief Queue client buffer / Network / MQTTClient setup on the service thread.
      *
      * Applies @p config via @ref SetConfig (disconnected only), then queues Init.
+     * Allocates TX/RX buffers sized by @ref MqttClientConfig::txBufferSize /
+     * @ref MqttClientConfig::rxBufferSize.
      */
     CHIP_ERROR Init(const MqttClientConfig & config, MqttOperationCallback callback, void * context = nullptr);
 
@@ -236,8 +242,6 @@ public:
     CHIP_ERROR Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context = nullptr);
 
 private:
-    static constexpr size_t kTxBufferSize           = 1024;
-    static constexpr size_t kRxBufferSize           = 1024;
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
     static constexpr size_t kQueueSize              = 4;
 
@@ -300,8 +304,8 @@ private:
 
     Client mClient{};
     Network mNetwork{};
-    uint8_t mTxBuffer[kTxBufferSize] = { 0 };
-    uint8_t mRxBuffer[kRxBufferSize] = { 0 };
+    uint8_t * mTxBuffer = nullptr;
+    uint8_t * mRxBuffer = nullptr;
 
     void * mThreadId     = nullptr; // osThreadId_t
     void * mMessageQueue = nullptr; // osMessageQueueId_t
