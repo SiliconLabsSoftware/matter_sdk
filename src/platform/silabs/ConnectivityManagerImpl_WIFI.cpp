@@ -63,7 +63,7 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     mWiFiStationDisconnectPending = false;
     mLastStationConnectFailTime   = System::Clock::kZero;
     mWiFiStationReconnectInterval = System::Clock::Milliseconds32(CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL);
-    mWiFiStationReconnectCount    = 1;
+    mWiFiStationReconnectCount    = 0;
     mFlags.ClearAll();
 
     // TODO Initialize the Chip Addressing and Routing Module.
@@ -432,7 +432,7 @@ void ConnectivityManagerImpl::OnStationDisconnected()
 void ConnectivityManagerImpl::ResetReconnectionWiFiStationState()
 {
     mLastStationConnectFailTime = System::Clock::kZero;
-    mWiFiStationReconnectCount  = 1;
+    mWiFiStationReconnectCount  = 0;
     DeviceLayer::SystemLayer().CancelTimer(DriveStationState, NULL);
 }
 
