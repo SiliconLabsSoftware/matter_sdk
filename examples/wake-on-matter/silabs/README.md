@@ -35,21 +35,36 @@ Steps
 2. Grant ACL to the desired node with which you want to establish a subscription
    with the following command
 
-```
-    chip-tool accesscontrol write acl '[{"fabricIndex": 1, "privilege": 1, "authMode": 2, "subjects": [<woM node ID>], "targets": null}]' <target node id> 0
-```
+    ```
+        chip-tool accesscontrol write acl '[{"fabricIndex": 1, "privilege": 1, "authMode": 2, "subjects": [<woM node ID>], "targets": null}]' <target node id> 0
+    ```
 
 Important detail:
 `write acl` replaces the full ACL list; it does not append an entry. So if you already have other ACL entries, you must include them too in the same JSON array, for example:
 
-```
-chip-tool accesscontrol write acl '[{"fabricIndex": 1, "privilege": 5, "authMode": 2, "subjects": [112233], "targets": null}, {"fabricIndex": 1, "privilege": 1, "authMode": 2, "subjects": [<node ID>], "targets": null}]' 1 0
-```
+        chip-tool accesscontrol write acl '[{"fabricIndex": 1, "privilege": 5, "authMode": 2, "subjects": [112233], "targets": null}, {"fabricIndex": 1, "privilege": 1, "authMode": 2, "subjects": [<node ID>], "targets": null}]' 1 0
+    
 
 3. Run this command on the pi so that a subscription can be established between the node and the WoM device
-```
-    > host_app establish_subscription <fabricIndex> <nodeId> <endpointId> <clusterId>
-```     
+    ```
+        > host_app establish_subscription <fabricIndex> <nodeId> <endpointId> <clusterId>
+    ```     
+
+5. Setup wake-up trigger with the following command. This will cause the LED to turn on upon receiving a subscription update that       
+    matches the set requirements.
+
+    ```
+        addWakeUp :	Install a wake-up trigger (usage: addWakeUp <clusterId> <attributeId> <mode:0=Bool,1=Bitmask,2=Equal> <operand>)
+        addWakeUp 6 0 0 1 // OnOff cluster, upon receiving a ON attribute change
+    ```
+
+6. Verify that wake-up trigger were properly set by running
+
+    ```
+        > wakeUpList
+        Active wake-up triggers (1):
+        cluster=0x00000006 attribute=0x00000000 mode=Boolean(0) operand=0x0000000000000001
+    ```
 
 ## Prerequisites
 
