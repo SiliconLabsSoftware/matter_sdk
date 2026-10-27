@@ -234,6 +234,8 @@ void SlWiFiDriver::ConnectNetwork(ByteSpan networkId, ConnectCallback * callback
 exit:
     VerifyOrReturn(commissioningError != Status::kSuccess);
     ChipLogError(NetworkProvisioning, "Failed to connect to WiFi network: %" CHIP_ERROR_FORMAT, err.Format());
+    // Shell wifi connect passes a null callback; never dereference it.
+    VerifyOrReturn(callback != nullptr);
     callback->OnResult(commissioningError, // commissioning error
                        CharSpan(),         // debug text
                        SL_STATUS_FAIL      // connect status
