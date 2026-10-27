@@ -342,12 +342,16 @@ void ConnectivityManagerImpl::DriveStationState()
     }
     break;
     case kWiFiStationState_Connecting_Failed: {
+        static_assert(UINT64_MAX / CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL >=
+                          (1 << CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF),
+                      "Our backoff calculation will overflow.");
+
         // if the station is connecting failed,
         // arrange another connection attempt at a suitable point in the future
         // TODO: Verify why `mLastStationConnectFailTime` is not assigned the value of `now`
         mLastStationConnectFailTime = now;
         // Reset the station state to kWiFiStationState_Connecting to start a new connection attempt
-        timeToNextConnect = (mWiFiStationReconnectInterval * mWiFiStationReconnectCount);
+        timeToNextConnect = (mWiFiStationReconnectInterval * (1 << mWiFiStationReconnectCount));
         // DriveStationState() will be called again to start a new connection attempt
         ChipLogProgress(DeviceLayer, "Next WiFi station reconnect in %" PRIu32 " ms",
                         System::Clock::Milliseconds32(timeToNextConnect).count());
@@ -356,11 +360,10 @@ void ConnectivityManagerImpl::DriveStationState()
         ChangeWiFiStationState(kWiFiStationState_Connecting, false);
         LogErrorOnFailure(DeviceLayer::SystemLayer().StartTimer(timeToNextConnect, DriveStationState, NULL));
 
-        // TODO: Revisit this logic
         // increase the reconnect interval by the previous interval, for telescoping effect and reduce the frequency of
         // reconnect attempts thus saving power
-        // TODO: Guard this with commissioning mode flag
-        // mWiFiStationReconnectCount++;
+        mWiFiStationReconnectCount =
+            std::min(mWiFiStationReconnectCount + 1, CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF);
     }
     break;
     case kWiFiStationState_Connected:

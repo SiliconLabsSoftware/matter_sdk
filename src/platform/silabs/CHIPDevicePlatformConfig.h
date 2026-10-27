@@ -121,8 +121,28 @@
 
 // ========== Platform-specific Configuration =========
 
-// These are configuration options that are unique to the EFR32 platform.
+// These are configuration options that are unique to the Silabs platform.
 // These can be overridden by the application as needed.
+
+/**
+ * CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL
+ *
+ * The interval at which the chip platform will attempt to reconnect to the configured WiFi
+ * network (in milliseconds).
+ */
+#ifndef CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL
+#define CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL 1000
+#endif
+
+/**
+ * CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF
+ *
+ * The maximum number of times we back off, by a factor of 2 each time, from our
+ * initial reconnect retry interval before we plateau.
+ */
+#ifndef CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF
+#define CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF 6
+#endif
 
 // ========== Platform-specific Configuration Overrides =========
 
