@@ -342,6 +342,8 @@ void ConnectivityManagerImpl::DriveStationState()
     }
     break;
     case kWiFiStationState_Connecting_Failed: {
+
+        // verify that the backoff calculation will not overflow since `System::Clock::Timestamp` is a 64-bit value
         static_assert(UINT64_MAX / CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL >=
                           (1 << CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF),
                       "Our backoff calculation will overflow.");
