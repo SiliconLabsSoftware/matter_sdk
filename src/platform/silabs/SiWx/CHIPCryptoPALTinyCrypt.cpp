@@ -25,20 +25,24 @@
 
 #include <type_traits>
 
-#include <mbedtls/bignum.h>
-#include <mbedtls/ccm.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/ecdh.h>
-#include <mbedtls/ecdsa.h>
-#include <mbedtls/ecp.h>
-#include <mbedtls/entropy.h>
+#include <mbedtls/version.h>
+// Mbed TLS 4 / TF-PSA-Crypto gates legacy crypto APIs behind this macro.
+// Must be set before including md.h and private/* headers.
+#define MBEDTLS_DECLARE_PRIVATE_IDENTIFIERS
+
 #include <mbedtls/error.h>
-#include <mbedtls/hkdf.h>
 #include <mbedtls/md.h>
 #include <mbedtls/pk.h>
-#include <mbedtls/pkcs5.h>
-#include <mbedtls/sha1.h>
-#include <mbedtls/sha256.h>
+#include <mbedtls/platform_util.h>
+#include <mbedtls/private/bignum.h>
+#include <mbedtls/private/ccm.h>
+#include <mbedtls/private/ctr_drbg.h>
+#include <mbedtls/private/ecdsa.h>
+#include <mbedtls/private/ecp.h>
+#include <mbedtls/private/entropy.h>
+#include <mbedtls/private/pkcs5.h>
+#include <mbedtls/private/sha1.h>
+#include <mbedtls/private/sha256.h>
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
 #include <mbedtls/x509_crt.h>
 #endif // defined(MBEDTLS_X509_CRT_PARSE_C)
@@ -76,18 +80,8 @@ namespace Crypto {
 #define MAX_ERROR_STR_LEN 128
 #define NUM_BYTES_IN_SHA256_HASH 32
 
-// In mbedTLS 3.0.0 direct access to structure fields was replaced with using MBEDTLS_PRIVATE macro.
-#if (MBEDTLS_VERSION_NUMBER >= 0x03000000)
 #define CHIP_CRYPTO_PAL_PRIVATE(x) MBEDTLS_PRIVATE(x)
-#else
-#define CHIP_CRYPTO_PAL_PRIVATE(x) x
-#endif
-
-#if (MBEDTLS_VERSION_NUMBER >= 0x03000000 && MBEDTLS_VERSION_NUMBER < 0x03010000)
-#define CHIP_CRYPTO_PAL_PRIVATE_X509(x) MBEDTLS_PRIVATE(x)
-#else
 #define CHIP_CRYPTO_PAL_PRIVATE_X509(x) x
-#endif
 
 namespace {
 
@@ -212,11 +206,7 @@ CHIP_ERROR Hash_SHA256(const uint8_t * data, const size_t data_length, uint8_t *
     VerifyOrReturnError(data != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(out_buffer != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-#if (MBEDTLS_VERSION_NUMBER >= 0x03000000)
     const int result = mbedtls_sha256(Uint8::to_const_uchar(data), data_length, Uint8::to_uchar(out_buffer), 0);
-#else
-    const int result = mbedtls_sha256_ret(Uint8::to_const_uchar(data), data_length, Uint8::to_uchar(out_buffer), 0);
-#endif
 
     VerifyOrReturnError(result == 0, CHIP_ERROR_INTERNAL);
 
@@ -228,11 +218,7 @@ CHIP_ERROR Hash_SHA1(const uint8_t * data, const size_t data_length, uint8_t * o
     // zero data length hash is supported.
     VerifyOrReturnError(out_buffer != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-#if (MBEDTLS_VERSION_NUMBER >= 0x03000000)
     const int result = mbedtls_sha1(Uint8::to_const_uchar(data), data_length, Uint8::to_uchar(out_buffer));
-#else
-    const int result = mbedtls_sha1_ret(Uint8::to_const_uchar(data), data_length, Uint8::to_uchar(out_buffer));
-#endif
 
     VerifyOrReturnError(result == 0, CHIP_ERROR_INTERNAL);
 
@@ -264,11 +250,7 @@ CHIP_ERROR Hash_SHA256_stream::Begin(void)
 {
     mbedtls_sha256_context * const context = to_inner_hash_sha256_context(&mContext);
 
-#if (MBEDTLS_VERSION_NUMBER >= 0x03000000)
     const int result = mbedtls_sha256_starts(context, 0);
-#else
-    const int result = mbedtls_sha256_starts_ret(context, 0);
-#endif
 
     VerifyOrReturnError(result == 0, CHIP_ERROR_INTERNAL);
 
@@ -279,11 +261,7 @@ CHIP_ERROR Hash_SHA256_stream::AddData(const ByteSpan data)
 {
     mbedtls_sha256_context * const context = to_inner_hash_sha256_context(&mContext);
 
-#if (MBEDTLS_VERSION_NUMBER >= 0x03000000)
     const int result = mbedtls_sha256_update(context, Uint8::to_const_uchar(data.data()), data.size());
-#else
-    const int result = mbedtls_sha256_update_ret(context, Uint8::to_const_uchar(data.data()), data.size());
-#endif
 
     VerifyOrReturnError(result == 0, CHIP_ERROR_INTERNAL);
 
@@ -314,11 +292,7 @@ CHIP_ERROR Hash_SHA256_stream::Finish(MutableByteSpan & out_buffer)
     VerifyOrReturnError(out_buffer.size() >= kSHA256_Hash_Length, CHIP_ERROR_BUFFER_TOO_SMALL);
     mbedtls_sha256_context * const context = to_inner_hash_sha256_context(&mContext);
 
-#if (MBEDTLS_VERSION_NUMBER >= 0x03000000)
     const int result = mbedtls_sha256_finish(context, Uint8::to_uchar(out_buffer.data()));
-#else
-    const int result = mbedtls_sha256_finish_ret(context, Uint8::to_uchar(out_buffer.data()));
-#endif
 
     VerifyOrReturnError(result == 0, CHIP_ERROR_INTERNAL);
     out_buffer = out_buffer.SubSpan(0, kSHA256_Hash_Length);
@@ -348,15 +322,96 @@ CHIP_ERROR HKDF_sha::HKDF_SHA256(const uint8_t * secret, const size_t secret_len
     VerifyOrReturnError(out_length > 0, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(out_buffer != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
+    // mbedtls_hkdf was removed in Mbed TLS 4; implement HKDF-Extract/Expand with HMAC-SHA256.
+    CHIP_ERROR error                   = CHIP_NO_ERROR;
     const mbedtls_md_info_t * const md = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
     VerifyOrReturnError(md != nullptr, CHIP_ERROR_INTERNAL);
 
-    const int result = mbedtls_hkdf(md, Uint8::to_const_uchar(salt), salt_length, Uint8::to_const_uchar(secret), secret_length,
-                                    Uint8::to_const_uchar(info), info_length, Uint8::to_uchar(out_buffer), out_length);
-    _log_mbedTLS_error(result);
+    uint8_t prk[NUM_BYTES_IN_SHA256_HASH];
+    uint8_t t[NUM_BYTES_IN_SHA256_HASH];
+    uint8_t empty_salt[NUM_BYTES_IN_SHA256_HASH] = { 0 };
+    const uint8_t * const salt_ptr               = (salt_length > 0) ? salt : empty_salt;
+    const size_t salt_len                        = (salt_length > 0) ? salt_length : sizeof(empty_salt);
+
+    int result = mbedtls_md_hmac(md, Uint8::to_const_uchar(salt_ptr), salt_len, Uint8::to_const_uchar(secret), secret_length, prk);
     VerifyOrReturnError(result == 0, CHIP_ERROR_INTERNAL);
 
-    return CHIP_NO_ERROR;
+    mbedtls_md_context_t ctx;
+    mbedtls_md_init(&ctx);
+    // mbedTLS 4 rejects hmac=1 in mbedtls_md_setup(); HMAC needs a separate setup.
+    result = mbedtls_md_setup(&ctx, md, /*hmac=*/0);
+    if (result != 0)
+    {
+        error = CHIP_ERROR_INTERNAL;
+        goto exit;
+    }
+    result = mbedtls_md_hmac_setup(&ctx, md);
+    if (result != 0)
+    {
+        error = CHIP_ERROR_INTERNAL;
+        goto exit;
+    }
+
+    {
+        size_t done     = 0;
+        size_t t_len    = 0;
+        uint8_t counter = 1;
+
+        while (done < out_length)
+        {
+            result = mbedtls_md_hmac_starts(&ctx, prk, sizeof(prk));
+            if (result != 0)
+            {
+                error = CHIP_ERROR_INTERNAL;
+                goto exit;
+            }
+            if (t_len > 0)
+            {
+                result = mbedtls_md_hmac_update(&ctx, t, t_len);
+                if (result != 0)
+                {
+                    error = CHIP_ERROR_INTERNAL;
+                    goto exit;
+                }
+            }
+            result = mbedtls_md_hmac_update(&ctx, Uint8::to_const_uchar(info), info_length);
+            if (result != 0)
+            {
+                error = CHIP_ERROR_INTERNAL;
+                goto exit;
+            }
+            result = mbedtls_md_hmac_update(&ctx, &counter, 1);
+            if (result != 0)
+            {
+                error = CHIP_ERROR_INTERNAL;
+                goto exit;
+            }
+            result = mbedtls_md_hmac_finish(&ctx, t);
+            if (result != 0)
+            {
+                error = CHIP_ERROR_INTERNAL;
+                goto exit;
+            }
+            t_len = sizeof(t);
+
+            const size_t to_copy = (out_length - done > t_len) ? t_len : (out_length - done);
+            memcpy(out_buffer + done, t, to_copy);
+            done += to_copy;
+            counter++;
+            if (counter == 0)
+            {
+                error = CHIP_ERROR_INTERNAL;
+                goto exit;
+            }
+        }
+    }
+
+exit:
+    _log_mbedTLS_error(result);
+    mbedtls_md_free(&ctx);
+    mbedtls_platform_zeroize(prk, sizeof(prk));
+    mbedtls_platform_zeroize(t, sizeof(t));
+    return error;
 }
 
 CHIP_ERROR HMAC_sha::HMAC_SHA256(const uint8_t * key, size_t key_length, const uint8_t * message, size_t message_length,
@@ -392,12 +447,7 @@ CHIP_ERROR PBKDF2_sha256::pbkdf2_sha256(const uint8_t * password, size_t plen, c
                                         unsigned int iteration_count, uint32_t key_length, uint8_t * output)
 {
     CHIP_ERROR error = CHIP_NO_ERROR;
-    int result       = 0;
-    const mbedtls_md_info_t * md_info;
-    mbedtls_md_context_t md_ctxt;
-    constexpr int use_hmac = 1;
-
-    bool free_md_ctxt = false;
+    int result = 0;
 
     VerifyOrExit(password != nullptr, error = CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrExit(plen > 0, error = CHIP_ERROR_INVALID_ARGUMENT);
@@ -407,27 +457,13 @@ CHIP_ERROR PBKDF2_sha256::pbkdf2_sha256(const uint8_t * password, size_t plen, c
     VerifyOrExit(key_length > 0, error = CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrExit(output != nullptr, error = CHIP_ERROR_INVALID_ARGUMENT);
 
-    md_info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
-    VerifyOrExit(md_info != nullptr, error = CHIP_ERROR_INTERNAL);
-
-    mbedtls_md_init(&md_ctxt);
-    free_md_ctxt = true;
-
-    result = mbedtls_md_setup(&md_ctxt, md_info, use_hmac);
-    VerifyOrExit(result == 0, error = CHIP_ERROR_INTERNAL);
-
-    result = mbedtls_pkcs5_pbkdf2_hmac(&md_ctxt, Uint8::to_const_uchar(password), plen, Uint8::to_const_uchar(salt), slen,
-                                       iteration_count, key_length, Uint8::to_uchar(output));
+    result = mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA256, Uint8::to_const_uchar(password), plen, Uint8::to_const_uchar(salt),
+                                           slen, iteration_count, key_length, Uint8::to_uchar(output));
 
     VerifyOrExit(result == 0, error = CHIP_ERROR_INTERNAL);
 
 exit:
     _log_mbedTLS_error(result);
-
-    if (free_md_ctxt)
-    {
-        mbedtls_md_free(&md_ctxt);
-    }
 
     return error;
 }
@@ -724,8 +760,6 @@ CHIP_ERROR VerifyCertificateSigningRequest(const uint8_t * csr_buf, size_t csr_l
     CHIP_ERROR error   = CHIP_NO_ERROR;
     size_t pubkey_size = 0;
 
-    mbedtls_ecp_keypair * keypair = nullptr;
-
     P256ECDSASignature signature;
     MutableByteSpan out_raw_sig_span(signature.Bytes(), signature.Capacity());
 
@@ -737,14 +771,11 @@ CHIP_ERROR VerifyCertificateSigningRequest(const uint8_t * csr_buf, size_t csr_l
 
     // Verify the signature algorithm and public key type
     VerifyOrExit(csr.CHIP_CRYPTO_PAL_PRIVATE(sig_md) == MBEDTLS_MD_SHA256, error = CHIP_ERROR_UNSUPPORTED_SIGNATURE_TYPE);
-    VerifyOrExit(csr.CHIP_CRYPTO_PAL_PRIVATE(sig_pk) == MBEDTLS_PK_ECDSA, error = CHIP_ERROR_WRONG_KEY_TYPE);
+    VerifyOrExit(csr.CHIP_CRYPTO_PAL_PRIVATE(sig_pk) == MBEDTLS_PK_SIGALG_ECDSA, error = CHIP_ERROR_WRONG_KEY_TYPE);
 
-    keypair = mbedtls_pk_ec(csr.CHIP_CRYPTO_PAL_PRIVATE_X509(pk));
-
-    // Copy the public key from the CSR
-    result = mbedtls_ecp_point_write_binary(&keypair->CHIP_CRYPTO_PAL_PRIVATE(grp), &keypair->CHIP_CRYPTO_PAL_PRIVATE(Q),
-                                            MBEDTLS_ECP_PF_UNCOMPRESSED, &pubkey_size, Uint8::to_uchar(pubkey), pubkey.Length());
-
+    // Tinycrypt builds omit the PSA crypto core; export the raw EC point from PK pub_raw.
+    result = mbedtls_pk_write_pubkey_psa(&csr.CHIP_CRYPTO_PAL_PRIVATE_X509(pk), Uint8::to_uchar(pubkey), pubkey.Length(),
+                                         &pubkey_size);
     VerifyOrExit(result == 0, error = CHIP_ERROR_INTERNAL);
     VerifyOrExit(pubkey_size == pubkey.Length(), error = CHIP_ERROR_INTERNAL);
 
@@ -1449,23 +1480,20 @@ exit:
 CHIP_ERROR ExtractPubkeyFromX509Cert(const ByteSpan & certificate, Crypto::P256PublicKey & pubkey)
 {
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
-    CHIP_ERROR error = CHIP_NO_ERROR;
+    CHIP_ERROR error   = CHIP_NO_ERROR;
+    size_t pubkey_size = 0;
     mbedtls_x509_crt mbed_cert;
-    mbedtls_uecc_keypair * keypair = nullptr;
 
     mbedtls_x509_crt_init(&mbed_cert);
 
     int result = mbedtls_x509_crt_parse(&mbed_cert, Uint8::to_const_uchar(certificate.data()), certificate.size());
     VerifyOrExit(result == 0, error = CHIP_ERROR_INTERNAL);
 
-    VerifyOrExit(mbedtls_pk_get_type(&(mbed_cert.CHIP_CRYPTO_PAL_PRIVATE_X509(pk))) == MBEDTLS_PK_ECKEY,
-                 error = CHIP_ERROR_INVALID_ARGUMENT);
-
-    keypair                    = (mbedtls_uecc_keypair *) (mbedtls_pk_ec(mbed_cert.CHIP_CRYPTO_PAL_PRIVATE_X509(pk)));
-    Uint8::to_uchar(pubkey)[0] = 0x04; // uncompressed type
-    memcpy(Uint8::to_uchar(pubkey) + 1, keypair->public_key, 2 * NUM_ECC_BYTES);
-
+    // Tinycrypt builds omit the PSA crypto core; export the raw EC point from PK pub_raw.
+    result = mbedtls_pk_write_pubkey_psa(&mbed_cert.CHIP_CRYPTO_PAL_PRIVATE_X509(pk), Uint8::to_uchar(pubkey.Bytes()),
+                                         pubkey.Length(), &pubkey_size);
     VerifyOrExit(result == 0, error = CHIP_ERROR_INTERNAL);
+    VerifyOrExit(pubkey_size == pubkey.Length(), error = CHIP_ERROR_INTERNAL);
 
 exit:
     _log_mbedTLS_error(result);

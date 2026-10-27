@@ -8,10 +8,13 @@
 #include <lib/support/CodeUtils.h>
 #include <mbedtls/asn1.h>
 #include <mbedtls/pk.h>
-#include <mbedtls/sha256.h>
 #include <mbedtls/version.h>
 #include <mbedtls/x509_csr.h>
 #include <platform/silabs/SilabsConfig.h>
+
+#if !defined(SLI_SI91X_MCU_INTERFACE)
+#include <psa/crypto.h>
+#endif
 
 #if defined(SL_MBEDTLS_USE_TINYCRYPT) && SL_MBEDTLS_USE_TINYCRYPT
 #include <tinycrypt/ecc_dsa.h>
@@ -51,9 +54,23 @@ struct ScopedCsrContext
 
 #ifndef SLI_SI91X_MCU_INTERFACE
 constexpr size_t kSubjectNameLengthMax = 160;
-int GetRandom(void *, unsigned char * output, size_t size)
+
+CHIP_ERROR GenerateKeyPair(mbedtls_pk_context & key)
 {
-    return chip::Crypto::DRBG_get_bytes(output, size) == CHIP_NO_ERROR ? 0 : -1;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    psa_set_key_type(&attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+    psa_set_key_bits(&attributes, 256);
+    psa_set_key_usage_flags(&attributes, PSA_KEY_USAGE_EXPORT);
+
+    psa_key_id_t keyId        = PSA_KEY_ID_NULL;
+    const psa_status_t status = psa_generate_key(&attributes, &keyId);
+    psa_reset_key_attributes(&attributes);
+    VerifyOrReturnError(status == PSA_SUCCESS, CHIP_ERROR_INTERNAL);
+
+    // The PK context holds an independent copy of the key material, so the PSA key can be destroyed right away.
+    const int error = mbedtls_pk_copy_from_psa(keyId, &key);
+    psa_destroy_key(keyId);
+    return error == 0 ? CHIP_NO_ERROR : CHIP_ERROR_INTERNAL;
 }
 
 CHIP_ERROR FormatMatterOidUtf8DerHex(char * destination, size_t destinationSize, uint16_t value)
@@ -208,16 +225,13 @@ CHIP_ERROR ProvisionCrypto::GenerateDeviceAttestationCSR(uint16_t vid, uint16_t 
     ScopedPkContext key;
     ScopedCsrContext csrWriter;
 
-    VerifyOrReturnError(mbedtls_pk_setup(&key.context, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY)) == 0, CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(mbedtls_ecdsa_genkey(mbedtls_pk_ec(key.context), MBEDTLS_ECP_DP_SECP256R1, GetRandom, nullptr) == 0,
-                        CHIP_ERROR_INTERNAL);
+    ReturnErrorOnFailure(GenerateKeyPair(key.context));
     VerifyOrReturnError(mbedtls_x509write_csr_set_subject_name(&csrWriter.context, subjectName) == 0, CHIP_ERROR_INTERNAL);
     mbedtls_x509write_csr_set_md_alg(&csrWriter.context, MBEDTLS_MD_SHA256);
 
     mbedtls_x509write_csr_set_key(&csrWriter.context, &key.context);
-    VerifyOrReturnError(
-        mbedtls_x509write_csr_pem(&csrWriter.context, reinterpret_cast<uint8_t *>(csr.data()), csr.size(), GetRandom, nullptr) == 0,
-        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(mbedtls_x509write_csr_pem(&csrWriter.context, reinterpret_cast<uint8_t *>(csr.data()), csr.size()) == 0,
+                        CHIP_ERROR_INTERNAL);
     csr.reduce_size(strlen(csr.data()) + 1);
 
     uint8_t encodedKey[kDeviceAttestationKeySizeMax] = { 0 };
@@ -241,7 +255,7 @@ CHIP_ERROR ProvisionCrypto::SignWithDeviceAttestationKey(const ByteSpan & messag
     VerifyOrReturnError(signature.size() >= 64, CHIP_ERROR_BUFFER_TOO_SMALL);
 
     uint8_t hash[chip::Crypto::kSHA256_Hash_Length] = { 0 };
-    VerifyOrReturnError(mbedtls_sha256(message.data(), message.size(), hash, 0) == 0, CHIP_ERROR_INTERNAL);
+    ReturnErrorOnFailure(chip::Crypto::Hash_SHA256(message.data(), message.size(), hash));
     VerifyOrReturnError(uECC_sign(privateKey, hash, sizeof(hash), signature.data()) == UECC_SUCCESS, CHIP_ERROR_INTERNAL);
     signature.reduce_size(64);
     return CHIP_NO_ERROR;
@@ -249,14 +263,13 @@ CHIP_ERROR ProvisionCrypto::SignWithDeviceAttestationKey(const ByteSpan & messag
     uint8_t hash[chip::Crypto::kSHA256_Hash_Length]                     = { 0 };
     uint8_t encodedSignature[chip::Crypto::kMax_ECDSA_Signature_Length] = { 0 };
     size_t encodedSignatureSize                                         = 0;
-    VerifyOrReturnError(mbedtls_sha256(message.data(), message.size(), hash, 0) == 0, CHIP_ERROR_INTERNAL);
+    ReturnErrorOnFailure(chip::Crypto::Hash_SHA256(message.data(), message.size(), hash));
 
     ScopedPkContext key;
-    VerifyOrReturnError(
-        mbedtls_pk_parse_key(&key.context, encodedKeySpan.data(), encodedKeySpan.size(), nullptr, 0, GetRandom, nullptr) == 0,
-        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(mbedtls_pk_parse_key(&key.context, encodedKeySpan.data(), encodedKeySpan.size(), nullptr, 0) == 0,
+                        CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(mbedtls_pk_sign(&key.context, MBEDTLS_MD_SHA256, hash, sizeof(hash), encodedSignature,
-                                        sizeof(encodedSignature), &encodedSignatureSize, GetRandom, nullptr) == 0,
+                                        sizeof(encodedSignature), &encodedSignatureSize) == 0,
                         CHIP_ERROR_INTERNAL);
     return ConvertAsn1Signature(ByteSpan(encodedSignature, encodedSignatureSize), signature);
 #endif
