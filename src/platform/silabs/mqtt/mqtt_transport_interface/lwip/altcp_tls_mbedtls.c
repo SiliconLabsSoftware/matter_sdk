@@ -39,14 +39,6 @@
  * - 'sent' is always called with len==0 to the upper layer. This is because keeping
  *   track of the ratio of application data and TLS overhead would be too much.
  *
- * Mandatory security-related configuration:
- * - define ALTCP_MBEDTLS_RNG_FN to mbedtls_entropy_func to use the standard mbedTLS
- *   entropy and ensure to add at least one strong entropy source to your mbedtls port
- *   (implement mbedtls_platform_entropy_poll or mbedtls_hardware_poll providing strong
- *   entropy)
- * - define ALTCP_MBEDTLS_ENTROPY_PTR and ALTCP_MBEDTLS_ENTROPY_LEN to something providing
- *   GOOD custom entropy
- *
  * Missing things / @todo:
  * - some unhandled/untested things migh be caught by TRANSPORT_ASSERTs...
  */
@@ -74,11 +66,7 @@
 #include "altcp_tls_mbedtls_structs.h"
 
 /* @todo: which includes are really needed? */
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/entropy.h"
-// #include "mbedtls/certs.h"
 #include "mbedtls/x509.h"
-// #include "mbedtls/net.h"
 #include "mbedtls/debug.h"
 #include "mbedtls/error.h"
 #include "mbedtls/memory_buffer_alloc.h"
@@ -90,13 +78,6 @@
 
 #include <string.h>
 
-#ifndef ALTCP_MBEDTLS_ENTROPY_PTR
-#define ALTCP_MBEDTLS_ENTROPY_PTR NULL
-#endif
-#ifndef ALTCP_MBEDTLS_ENTROPY_LEN
-#define ALTCP_MBEDTLS_ENTROPY_LEN 0
-#endif
-
 /* Variable prototype, the actual declaration is at the end of this file
    since it contains pointers to static functions declared here */
 extern const struct altcp_functions matter_aws_altcp_mbedtls_functions;
@@ -105,8 +86,6 @@ extern const struct altcp_functions matter_aws_altcp_mbedtls_functions;
 struct altcp_tls_config
 {
     mbedtls_ssl_config conf;
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_x509_crt * cert;
     mbedtls_pk_context * pkey;
     mbedtls_x509_crt * ca;
@@ -770,22 +749,6 @@ static void matter_aws_altcp_mbedtls_debug(void * ctx, int level, const char * f
 }
 #endif
 
-#ifndef ALTCP_MBEDTLS_RNG_FN
-/** ATTENTION: It is *really* important to *NOT* use this dummy RNG in production code!!!! */
-static int matter_aws_dummy_rng(void * ctx, unsigned char * buffer, size_t len)
-{
-    static size_t ctr;
-    size_t i;
-    TRANSPORT_UNUSED_ARG(ctx);
-    for (i = 0; i < len; i++)
-    {
-        buffer[i] = (unsigned char) ++ctr;
-    }
-    return 0;
-}
-#define ALTCP_MBEDTLS_RNG_FN matter_aws_dummy_rng
-#endif /* ALTCP_MBEDTLS_RNG_FN */
-
 static int ciphers[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
                          MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, 0 };
 
@@ -842,18 +805,6 @@ static struct altcp_tls_config * matter_aws_altcp_tls_create_config(int is_serve
     }
 
     mbedtls_ssl_config_init(&conf->conf);
-    mbedtls_entropy_init(&conf->entropy);
-    mbedtls_ctr_drbg_init(&conf->ctr_drbg);
-
-    /* Seed the RNG */
-    ret = mbedtls_ctr_drbg_seed(&conf->ctr_drbg, ALTCP_MBEDTLS_RNG_FN, &conf->entropy, ALTCP_MBEDTLS_ENTROPY_PTR,
-                                ALTCP_MBEDTLS_ENTROPY_LEN);
-    if (ret != 0)
-    {
-        TRANSPORT_DEBUGF(("mbedtls_ctr_drbg_seed failed: %d\n", ret));
-        matter_aws_altcp_mbedtls_free_config(conf);
-        return NULL;
-    }
 
     /* Setup ssl context (@todo: what's different for a client here? -> might better be done on listen/connect) */
     ret = mbedtls_ssl_config_defaults(&conf->conf, is_server ? MBEDTLS_SSL_IS_SERVER : MBEDTLS_SSL_IS_CLIENT,
@@ -870,7 +821,6 @@ static struct altcp_tls_config * matter_aws_altcp_tls_create_config(int is_serve
     }
     mbedtls_ssl_conf_authmode(&conf->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     mbedtls_ssl_conf_ciphersuites(&conf->conf, (const int *) &ciphers);
-    mbedtls_ssl_conf_rng(&conf->conf, mbedtls_ctr_drbg_random, &conf->ctr_drbg);
 #if ALTCP_MBEDTLS_DEBUG
     mbedtls_ssl_conf_dbg(&conf->conf, matter_aws_altcp_mbedtls_debug, stdout);
     mbedtls_debug_set_threshold(ALTCP_MBEDTLS_DEBUG);
@@ -916,11 +866,7 @@ struct altcp_tls_config * matter_aws_altcp_tls_create_config_server_privkey_cert
         return NULL;
     }
 
-#ifdef SIWX_917
-    ret = mbedtls_pk_parse_key(pkey, (const unsigned char *) privkey, privkey_len, privkey_pass, privkey_pass_len);
-#else
-    ret = mbedtls_pk_parse_key(pkey, privkey, privkey_len, privkey_pass, privkey_pass_len, ALTCP_MBEDTLS_RNG_FN, NULL);
-#endif
+    ret = mbedtls_pk_parse_key(pkey, privkey, privkey_len, privkey_pass, privkey_pass_len);
 
     if (ret != 0)
     {
@@ -1008,11 +954,7 @@ struct altcp_tls_config * matter_aws_altcp_tls_create_config_client_2wayauth(con
     }
 
     mbedtls_pk_init(conf->pkey);
-#ifdef SIWX_917
-    ret = mbedtls_pk_parse_key(conf->pkey, (const unsigned char *) privkey, privkey_len, privkey_pass, privkey_pass_len);
-#else
-    ret = mbedtls_pk_parse_key(conf->pkey, privkey, privkey_len, privkey_pass, privkey_pass_len, ALTCP_MBEDTLS_RNG_FN, NULL);
-#endif
+    ret = mbedtls_pk_parse_key(conf->pkey, privkey, privkey_len, privkey_pass, privkey_pass_len);
     if (ret != 0)
     {
         SILABS_LOG("mbedtls_pk_parse_key failed: %d 0x%x", ret, -1 * ret);

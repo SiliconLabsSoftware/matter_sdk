@@ -137,13 +137,21 @@ if (wifi_soc != true) {  # CCP board
         "${openthread_root}/examples/platforms/utils/settings.h",
         "${openthread_root}/examples/platforms/utils/settings_ram.c",
         "${openthread_root}/examples/platforms/utils/soft_source_match_table.h",
+        "${openthread_root}/src/cli/cli_plat_tcp.hpp",
         "${openthread_root}/src/core/meshcop/secure_transport.cpp",
         "${sl_ot_efr32_root}/alarm.c",
         "${sl_ot_efr32_root}/crypto.c",
         "${sl_ot_efr32_root}/diag.c",
         "${sl_ot_efr32_root}/entropy.c",
-        "${sl_ot_efr32_root}/ieee802154-packet-utils.cpp",
+        "${sl_ot_efr32_root}/mac/frame-utils.cpp",
+        "${sl_ot_efr32_root}/mac/key-storage-ksu.cpp",
+        "${sl_ot_efr32_root}/mac/key-storage-plaintext.cpp",
+        "${sl_ot_efr32_root}/mac/sli-crypto-key-desc.cpp",
+        "${sl_ot_efr32_root}/mac/tx-aes-ccm-lpwaes.cpp",
+        "${sl_ot_efr32_root}/mac/tx-aes-ccm-radioaes.cpp",
+        "${sl_ot_efr32_root}/mac/tx-security.cpp",
         "${sl_ot_efr32_root}/misc.c",
+        "${sl_ot_efr32_root}/radio.cpp",
         "${sl_ot_efr32_root}/radio_coex.c",
         "${sl_ot_efr32_root}/radio_csl.cpp",
         "${sl_ot_efr32_root}/radio_energy_scan.cpp",
@@ -159,13 +167,11 @@ if (wifi_soc != true) {  # CCP board
         "${sl_ot_efr32_root}/system.c",
         "${sl_ot_libs_path}/src/stubs/diag/diag_stubs.c",
         "${sl_ot_libs_path}/src/stubs/tcp/tcp_stubs.c",
-
-        # Temporary file until the files in the SI SDK is fixed
-        "${matter_support_root}/sdk-copies/openthread/platform-abstraction/efr32/radio.cpp",
       ]
 
       include_dirs = [
         "${openthread_root}/examples/platforms/utils",
+        "${sl_ot_efr32_root}",
         "${sl_ot_platform_abstraction}/include",
       ]
 
@@ -256,7 +262,7 @@ if (wifi_soc != true) {  # CCP board
       # Use silabs openthread library stack with or without coap api enabled
       COAP_API = ""
       if (use_thread_coap_lib) {
-        COAP_API = "coap_"
+        COAP_API = "_coap"
       }
 
       public_configs += [ "${openthread_root}:openthread_${XTD}_config" ]
@@ -271,7 +277,7 @@ if (wifi_soc != true) {  # CCP board
         compiler = "llvm"
       }
 
-      libs = [ "${sl_ot_libs_path}/libs/libsl_ot_stack_${XTD}_${COAP_API}${silabs_family}_${compiler}.a" ]
+      libs = [ "${sl_ot_libs_path}/libs/build/${compiler}/cortex-m33/sl-openthread-cert-library/Release/libsl_ot_stack_${XTD}${COAP_API}.a" ]
     }
   }
 }
