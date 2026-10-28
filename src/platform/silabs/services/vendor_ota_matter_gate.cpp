@@ -20,7 +20,6 @@
 
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 #include <lib/support/CodeUtils.h>
-#include <lib/support/TypeTraits.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/OTAImageProcessor.h>
@@ -35,7 +34,6 @@ using OTAUpdateStateEnum = OTARequestorInterface::OTAUpdateStateEnum;
 
 void SilabsOTARequestorDriver::SetVendorOtaGate(bool active)
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] SetVendorOtaGate active=%d", active ? 1 : 0);
     mVendorOtaGate = active;
     if (active)
     {
@@ -51,7 +49,6 @@ void SilabsOTARequestorDriver::ProcessAnnounceOTAProviders(
     const ProviderLocationType & providerLocation,
     app::Clusters::OtaSoftwareUpdateRequestor::AnnouncementReasonEnum announcementReason)
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] ProcessAnnounceOTAProviders gate=%d", mVendorOtaGate ? 1 : 0);
     if (mVendorOtaGate)
     {
         ChipLogProgress(SoftwareUpdate, "Ignoring AnnounceOTAProvider; HTTPS OTA gated");
@@ -62,7 +59,6 @@ void SilabsOTARequestorDriver::ProcessAnnounceOTAProviders(
 
 void SilabsOTARequestorDriver::SendQueryImage()
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] SilabsOTARequestorDriver::SendQueryImage gate=%d", mVendorOtaGate ? 1 : 0);
     if (mVendorOtaGate)
     {
         ChipLogProgress(SoftwareUpdate, "Skipping QueryImage; HTTPS OTA gated");
@@ -86,15 +82,11 @@ void SilabsOTARequestorDriver::Init(OTARequestorInterface * requestor, OTAImageP
 
     const bool firstRun = mImageProcessor->IsFirstImageRun();
     const auto state    = mRequestor->GetCurrentUpdateState();
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] SilabsOTARequestorDriver::Init IsFirstImageRun=%d state=%u", firstRun ? 1 : 0,
-                    to_underlying(state));
 
     if (firstRun)
     {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] SilabsOTARequestorDriver::Init branch=confirm");
         TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([this] {
             CHIP_ERROR error = mImageProcessor->ConfirmCurrentImage();
-            ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] ConfirmCurrentImage=%" CHIP_ERROR_FORMAT, error.Format());
             if (error != CHIP_NO_ERROR)
             {
                 ChipLogError(SoftwareUpdate, "Failed to confirm image: %" CHIP_ERROR_FORMAT, error.Format());
@@ -105,12 +97,13 @@ void SilabsOTARequestorDriver::Init(OTARequestorInterface * requestor, OTAImageP
             bool skipNotify = false;
             CHIP_ERROR skipErr =
                 SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_HttpsOtaSkipNotify, skipNotify);
-            ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HttpsOtaSkipNotify read=%" CHIP_ERROR_FORMAT " value=%d",
-                            skipErr.Format(), skipNotify ? 1 : 0);
             if ((skipErr == CHIP_NO_ERROR) && skipNotify)
             {
                 TEMPORARY_RETURN_IGNORED SilabsConfig::WriteConfigValue(SilabsConfig::kConfigKey_HttpsOtaSkipNotify, false);
                 ChipLogProgress(SoftwareUpdate, "HTTPS OTA: skipped NotifyUpdateApplied");
+                // Matter path leaves kApplying until NotifyUpdateApplied / Reset. HTTPS has no
+                // provider notify, so clear shared requestor state so announces are accepted.
+                mRequestor->Reset();
             }
             else if (mSendNotifyUpdateApplied)
             {
@@ -120,12 +113,10 @@ void SilabsOTARequestorDriver::Init(OTARequestorInterface * requestor, OTAImageP
     }
     else if (state != OTAUpdateStateEnum::kIdle)
     {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] SilabsOTARequestorDriver::Init branch=reset");
         mRequestor->Reset();
     }
     else
     {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] SilabsOTARequestorDriver::Init branch=periodic");
         StartSelectedTimer(SelectedTimer::kPeriodicQueryTimer);
     }
 }

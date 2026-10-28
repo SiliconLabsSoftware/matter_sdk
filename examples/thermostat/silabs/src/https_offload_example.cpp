@@ -48,7 +48,6 @@
 #include <platform/CHIPDeviceLayer.h>
 
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-#include "OTAConfig.h"
 #include <lib/shell/streamer.h>
 #include <platform/silabs/services/https_downloader.h>
 #include <platform/silabs/services/vendor_ota_requestor.h>
@@ -244,7 +243,6 @@ sl_status_t https_client_demo_start(void)
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
     auto bindDownloaderClient = []() {
         auto * dl = chip::VendorOTARequestor::GetInstance().GetHttpsDownloader();
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] bindDownloaderClient dl=%p", static_cast<void *>(dl));
         if (dl != nullptr)
         {
             dl->SetHttpClient(&gHttpsClient);
@@ -256,7 +254,7 @@ sl_status_t https_client_demo_start(void)
     {
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
         bindDownloaderClient();
-        ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] client start: already running");
+        ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] client start: already running");
 #endif
         return SL_STATUS_ALREADY_INITIALIZED;
     }
@@ -312,7 +310,7 @@ sl_status_t https_client_demo_start(void)
 
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
     bindDownloaderClient();
-    ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] client start: started");
+    ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] client start: started");
 #endif
     return SL_STATUS_OK;
 }
@@ -332,8 +330,6 @@ sl_status_t https_client_demo_run(void)
 void HttpsOtaUrlAppEvent(AppEvent * /* aEvent */)
 {
     sl_status_t st = https_client_demo_start();
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HttpsOtaUrlAppEvent client_start=0x%lx",
-                    static_cast<unsigned long>(st));
     if ((st != SL_STATUS_OK) && (st != SL_STATUS_ALREADY_INITIALIZED))
     {
         ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL client-start 0x%08" PRIX32,
@@ -342,15 +338,7 @@ void HttpsOtaUrlAppEvent(AppEvent * /* aEvent */)
     }
 
     CHIP_ERROR schedErr = chip::DeviceLayer::SystemLayer().ScheduleLambda([] {
-        // Shell may run before connectivity-triggered OTAConfig::Init; wire vendor OTA on CHIP thread.
         auto * dl = chip::VendorOTARequestor::GetInstance().GetHttpsDownloader();
-        if (dl == nullptr)
-        {
-            ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] VendorOTA not wired; calling OTAConfig::Init");
-            OTAConfig::Init();
-            dl = chip::VendorOTARequestor::GetInstance().GetHttpsDownloader();
-        }
-        // Bind after Init: earlier https_client_demo_start may have seen dl==nullptr.
         if (dl != nullptr)
         {
             dl->SetHttpClient(&gHttpsClient);
@@ -362,7 +350,10 @@ void HttpsOtaUrlAppEvent(AppEvent * /* aEvent */)
             ChipLogError(SoftwareUpdate, "[HTTPS-OTA] StartUpdate failed: %" CHIP_ERROR_FORMAT, err.Format());
         }
     });
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HttpsOtaUrlAppEvent ScheduleLambda=%" CHIP_ERROR_FORMAT, schedErr.Format());
+    if (schedErr != CHIP_NO_ERROR)
+    {
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] ScheduleLambda failed: %" CHIP_ERROR_FORMAT, schedErr.Format());
+    }
 }
 
 CHIP_ERROR HttpsOtaDemoCommand(int argc, char ** argv)
@@ -372,8 +363,6 @@ CHIP_ERROR HttpsOtaDemoCommand(int argc, char ** argv)
         PrintHttpsOtaHelp();
         return CHIP_NO_ERROR;
     }
-
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HttpsOtaDemoCommand subcmd=%s argc=%d", argv[0], argc);
 
     if (strcmp(argv[0], "url") == 0)
     {
@@ -385,7 +374,6 @@ CHIP_ERROR HttpsOtaDemoCommand(int argc, char ** argv)
         gPendingOtaUrlLen   = len;
 
         ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] session start source=shell-url url=%s", gPendingOtaUrl);
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] url len=%u", static_cast<unsigned>(len));
 
         AppEvent event = {};
         event.Type     = AppEvent::kEventType_Timer;

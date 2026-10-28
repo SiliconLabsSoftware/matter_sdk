@@ -28,7 +28,6 @@
 #include <protocols/interaction_model/StatusCode.h>
 
 #include <cinttypes>
-#include <cstring>
 
 using namespace chip::app::Clusters::OtaSoftwareUpdateRequestor;
 using chip::app::DataModel::Nullable;
@@ -87,14 +86,13 @@ CHIP_ERROR VendorOTARequestor::GetLastResult(CHIP_ERROR & err, LastResultReason 
 
 void VendorOTARequestor::Init(HttpsDownloader & httpsDownloader,
                               DeviceLayer::Silabs::MultiOTA::OTAMultiImageProcessorImpl & imageProcessor,
-                              OTARequestorInterface & matterRequestor, DeviceLayer::DefaultOTARequestorDriver & matterDriver,
-                              OTADownloader & bdxDownloader, DefaultOTARequestorStorage & matterStorage, VendorOtaMatterGate & gate,
+                              OTARequestorInterface & matterRequestor, OTADownloader & bdxDownloader,
+                              DefaultOTARequestorStorage & matterStorage, VendorOtaMatterGate & gate,
                               VendorOTARequestorDriver & vendorDriver)
 {
     mHttpsDownloader = &httpsDownloader;
     mImageProcessor  = &imageProcessor;
     mMatterRequestor = &matterRequestor;
-    mMatterDriver    = &matterDriver;
     mBdxDownloader   = &bdxDownloader;
     mMatterStorage   = &matterStorage;
     mGate            = &gate;
@@ -138,13 +136,11 @@ CHIP_ERROR VendorOTARequestor::TakeOwnership()
     mImageProcessor->SetOTADownloader(mHttpsDownloader);
     mHttpsDownloader->SetImageProcessorDelegate(mImageProcessor);
     mActive = true;
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] TakeOwnership: requestor=vendor downloader=https");
     return CHIP_NO_ERROR;
 }
 
 void VendorOTARequestor::RestoreMatterOwnership()
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] RestoreMatterOwnership: requestor=matter downloader=bdx");
     if ((mImageProcessor != nullptr) && (mBdxDownloader != nullptr))
     {
         mImageProcessor->SetOTADownloader(mBdxDownloader);
@@ -199,11 +195,9 @@ CHIP_ERROR VendorOTARequestor::PersistApplyingForConfirm(uint32_t targetVersion)
 
 CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] StartUpdate entry urlLen=%u mActive=%d",
-                    static_cast<unsigned>(httpsUrl.size()), mActive ? 1 : 0);
     if (mActive)
     {
-        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] StartUpdate: already active -> BUSY");
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] StartUpdate: session already active");
         return CHIP_ERROR_BUSY;
     }
     // Uninitialized VendorOTARequestor (OTAConfig::Init not run) must not be reported as busy.
@@ -216,16 +210,12 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
     }
     if (!IsMatterIdle())
     {
-        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] StartUpdate: Matter not idle state=%u",
-                     static_cast<unsigned>(mMatterRequestor->GetCurrentUpdateState()));
         SetLastResult(CHIP_ERROR_BUSY, LastResultReason::kBusy);
         ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL busy 0x%08" PRIX32, CHIP_ERROR_BUSY.AsInteger());
         return CHIP_ERROR_BUSY;
     }
 
     auto * client = mHttpsDownloader->GetHttpClient();
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] StartUpdate client=%p running=%d", static_cast<void *>(client),
-                    (client != nullptr && client->IsRunning()) ? 1 : 0);
     if ((client == nullptr) || !client->IsRunning())
     {
         SetLastResult(CHIP_ERROR_INCORRECT_STATE, LastResultReason::kClientStart);
@@ -240,7 +230,6 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
     }
 
     CHIP_ERROR err = TakeOwnership();
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] StartUpdate TakeOwnership=%" CHIP_ERROR_FORMAT, err.Format());
     if (err != CHIP_NO_ERROR)
     {
         SetLastResult(err, LastResultReason::kHttp);
@@ -252,7 +241,6 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
     }
 
     err = mHttpsDownloader->SetImageURI(httpsUrl);
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] StartUpdate SetImageURI=%" CHIP_ERROR_FORMAT, err.Format());
     if (err != CHIP_NO_ERROR)
     {
         RestoreMatterOwnership();
@@ -269,7 +257,6 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
     RecordState(OTAUpdateStateEnum::kDownloading, OTAChangeReasonEnum::kSuccess);
 
     err = mHttpsDownloader->BeginPrepareDownload();
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] StartUpdate BeginPrepareDownload=%" CHIP_ERROR_FORMAT, err.Format());
     if (err != CHIP_NO_ERROR)
     {
         RestoreMatterOwnership();
@@ -287,7 +274,6 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
 
 void VendorOTARequestor::CancelImageUpdate()
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] CancelImageUpdate mActive=%d", mActive ? 1 : 0);
     if (mHttpsDownloader != nullptr)
     {
         mHttpsDownloader->EndDownload(CHIP_ERROR_CONNECTION_ABORTED);
@@ -310,27 +296,29 @@ void VendorOTARequestor::CancelImageUpdate()
 
 void VendorOTARequestor::Reset()
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] Reset");
     CancelImageUpdate();
 }
 
 void VendorOTARequestor::OnDownloadStateChanged(OTADownloader::State state, OTAChangeReasonEnum reason)
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] OnDownloadStateChanged state=%u reason=%u target=%" PRIu32,
-                    static_cast<unsigned>(state), static_cast<unsigned>(reason), mTargetVersion);
     if (state == OTADownloader::State::kComplete)
     {
         mTargetVersion = mHttpsDownloader->GetTargetVersion();
         TEMPORARY_RETURN_IGNORED SilabsConfig::WriteConfigValue(SilabsConfig::kConfigKey_HttpsOtaTargetVersion, mTargetVersion);
         CHIP_ERROR persistErr = PersistApplyingForConfirm(mTargetVersion);
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] PersistApplyingForConfirm=%" CHIP_ERROR_FORMAT " target=%" PRIu32,
-                        persistErr.Format(), mTargetVersion);
+        if (persistErr != CHIP_NO_ERROR)
+        {
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] PersistApplyingForConfirm failed %" CHIP_ERROR_FORMAT, persistErr.Format());
+        }
         SetLastResult(CHIP_NO_ERROR, LastResultReason::kOk);
         ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] RESULT: PASS");
         if (mImageProcessor != nullptr)
         {
             CHIP_ERROR applyErr = mImageProcessor->Apply();
-            ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ImageProcessor::Apply=%" CHIP_ERROR_FORMAT, applyErr.Format());
+            if (applyErr != CHIP_NO_ERROR)
+            {
+                ChipLogError(SoftwareUpdate, "[HTTPS-OTA] ImageProcessor::Apply failed %" CHIP_ERROR_FORMAT, applyErr.Format());
+            }
         }
         return;
     }
@@ -340,8 +328,6 @@ void VendorOTARequestor::OnDownloadStateChanged(OTADownloader::State state, OTAC
         if (mActive)
         {
             const bool notNewer = (mHttpsDownloader != nullptr) && mHttpsDownloader->WasLastFailureNotNewer();
-            ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] download fail branch notNewer=%d reason=%u", notNewer ? 1 : 0,
-                            static_cast<unsigned>(reason));
 
             RecordState(OTAUpdateStateEnum::kIdle, reason);
             RestoreMatterOwnership();

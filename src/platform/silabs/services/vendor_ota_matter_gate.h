@@ -31,7 +31,6 @@ class SilabsOTARequestorDriver : public DeviceLayer::DefaultOTARequestorDriver
 {
 public:
     void SetVendorOtaGate(bool active);
-    bool IsVendorOtaGateActive() const { return mVendorOtaGate; }
 
     void ProcessAnnounceOTAProviders(
         const ProviderLocationType & providerLocation,

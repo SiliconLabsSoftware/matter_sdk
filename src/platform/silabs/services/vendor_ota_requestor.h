@@ -22,7 +22,6 @@
 #include "vendor_ota_matter_gate.h"
 #include "vendor_ota_requestor_driver.h"
 
-#include <app/clusters/ota-requestor/DefaultOTARequestorDriver.h>
 #include <app/clusters/ota-requestor/DefaultOTARequestorStorage.h>
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 #include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
@@ -52,12 +51,10 @@ public:
     };
 
     static VendorOTARequestor & GetInstance();
-    static bool IsActive() { return GetInstance().mActive; }
 
     void Init(HttpsDownloader & httpsDownloader, DeviceLayer::Silabs::MultiOTA::OTAMultiImageProcessorImpl & imageProcessor,
-              OTARequestorInterface & matterRequestor, DeviceLayer::DefaultOTARequestorDriver & matterDriver,
-              OTADownloader & bdxDownloader, DefaultOTARequestorStorage & matterStorage, VendorOtaMatterGate & gate,
-              VendorOTARequestorDriver & vendorDriver);
+              OTARequestorInterface & matterRequestor, OTADownloader & bdxDownloader, DefaultOTARequestorStorage & matterStorage,
+              VendorOtaMatterGate & gate, VendorOTARequestorDriver & vendorDriver);
 
     CHIP_ERROR SetDefaultUrl(CharSpan url);
     CHIP_ERROR GetDefaultUrl(MutableCharSpan & outUrl);
@@ -113,7 +110,6 @@ private:
     HttpsDownloader * mHttpsDownloader                                              = nullptr;
     DeviceLayer::Silabs::MultiOTA::OTAMultiImageProcessorImpl * mImageProcessor = nullptr;
     OTARequestorInterface * mMatterRequestor                                        = nullptr;
-    DeviceLayer::DefaultOTARequestorDriver * mMatterDriver                          = nullptr;
     OTADownloader * mBdxDownloader                                                  = nullptr;
     DefaultOTARequestorStorage * mMatterStorage                                     = nullptr;
     VendorOtaMatterGate * mGate                                                     = nullptr;

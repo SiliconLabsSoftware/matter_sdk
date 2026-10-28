@@ -24,15 +24,9 @@
 #include <platform/ConfigurationManager.h>
 #include <platform/DeviceInstanceInfoProvider.h>
 
-// Project OTA config may define HTTPS_OTA_CONNECT_IP (SLC config_file copy can be stale).
+// Project OTA config may define HTTPS_OTA_CONNECT_IP.
 #if (SL_MATTER_GN_BUILD == 0)
 #include "sl_matter_ota_config.h"
-#endif
-// SDK-tree override: applied only if still undefined after the config include.
-#include "https_ota_connect_override.h"
-
-#ifndef HTTPS_OTA_CONNECT_IP
-#define HTTPS_OTA_CONNECT_IP ""
 #endif
 
 #include <algorithm>
@@ -45,10 +39,6 @@ using chip::DeviceLayer::Silabs::HttpClient;
 using chip::DeviceLayer::Silabs::HttpHost;
 
 namespace chip {
-namespace {
-constexpr uint32_t kDebugBlockThrottle = 100;
-uint32_t gHttpsRangeCount              = 0;
-} // namespace
 
 void HttpsDownloader::StallTimerHandler(System::Layer * /* layer */, void * appState)
 {
@@ -57,7 +47,6 @@ void HttpsDownloader::StallTimerHandler(System::Layer * /* layer */, void * appS
 
     if (self->HasTransferTimedOut())
     {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] StallTimerHandler timed out offset=%" PRIu32, self->mNextOffset);
         self->OnDownloadTimeout();
     }
     else
@@ -95,7 +84,6 @@ void HttpsDownloader::BusyRetryTimerHandler(System::Layer * /* layer */, void * 
     VerifyOrReturn(self != nullptr);
     VerifyOrReturn(self->mState == State::kInProgress);
     ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] busy/SNI retry at offset %" PRIu32, self->mNextOffset);
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] BusyRetryTimerHandler offset=%" PRIu32, self->mNextOffset);
     TEMPORARY_RETURN_IGNORED self->FetchNextData();
 }
 
@@ -151,7 +139,6 @@ CHIP_ERROR HttpsDownloader::ParseUrl(CharSpan uri)
         strcpy(mUrl.path, "/");
     }
 
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ParseUrl host=%s port=%u path=%s", mUrl.host, mUrl.port, mUrl.path);
     return CHIP_NO_ERROR;
 }
 
@@ -183,15 +170,7 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
     ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] range queued offset=%" PRIu32 "-%" PRIu32, mNextOffset, endInclusive);
     if ((mNextOffset == 0) && bypassDns)
     {
-        ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] DNS bypass connect=%s sni=%s", connectIp, mUrl.host);
-    }
-
-    const uint32_t idx     = gHttpsRangeCount;
-    const bool throttleLog = (idx == 0) || ((idx % kDebugBlockThrottle) == 0);
-    if (throttleLog)
-    {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] QueueRangeGet offset=%" PRIu32 "-%" PRIu32 " idx=%" PRIu32, mNextOffset,
-                        endInclusive, idx);
+        ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] DNS bypass connect=%s sni=%s", connectIp, mUrl.host);
     }
 
     CHIP_ERROR err =
@@ -199,13 +178,12 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
     if (err == CHIP_ERROR_BUSY)
     {
         ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] busy retry scheduled");
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] QueueRangeGet BUSY -> retry");
         ArmBusyRetryTimer();
         return CHIP_NO_ERROR;
     }
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] QueueRangeGet GetRange=%" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] QueueRangeGet GetRange=%" CHIP_ERROR_FORMAT, err.Format());
     }
     ReturnErrorOnFailure(err);
 
@@ -225,15 +203,6 @@ void HttpsDownloader::OnRangeComplete(CHIP_ERROR result, void * context)
 
     TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([self, result, httpCode, len]() {
         self->mWaitingHttp = false;
-
-        const uint32_t idx     = gHttpsRangeCount++;
-        const bool throttleLog = (idx == 0) || ((idx % kDebugBlockThrottle) == 0) || (httpCode == 416) || (result != CHIP_NO_ERROR);
-        if (throttleLog)
-        {
-            ChipLogProgress(SoftwareUpdate,
-                            "[DEBUG-HTTPS-OTA] OnRangeComplete idx=%" PRIu32 " result=%" CHIP_ERROR_FORMAT " http=%u len=%" PRIu32,
-                            idx, result.Format(), httpCode, len);
-        }
 
         if (self->mState != State::kInProgress)
         {
@@ -263,7 +232,7 @@ void HttpsDownloader::OnRangeComplete(CHIP_ERROR result, void * context)
         CHIP_ERROR err = self->HandleRangeBodyChunk(data, httpCode);
         if (err != CHIP_NO_ERROR)
         {
-            ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HandleRangeBodyChunk=%" CHIP_ERROR_FORMAT, err.Format());
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] HandleRangeBodyChunk=%" CHIP_ERROR_FORMAT, err.Format());
             self->CleanupOnError(OTAChangeReasonEnum::kFailure);
             if (self->mImageProcessor != nullptr)
             {
@@ -295,18 +264,14 @@ CHIP_ERROR HttpsDownloader::ValidateHeaderIncremental(ByteSpan & block)
     ReturnErrorOnFailure(DeviceLayer::GetDeviceInstanceInfoProvider()->GetProductId(productId));
     ReturnErrorOnFailure(DeviceLayer::ConfigurationMgr().GetSoftwareVersion(currentVersion));
 
-    ChipLogProgress(SoftwareUpdate,
-                    "[DEBUG-HTTPS-OTA] ValidateHeader header(v=0x%04X p=0x%04X ver=%" PRIu32 ") device(v=0x%04X p=0x%04X ver=%" PRIu32
-                    ")",
-                    header.mVendorId, header.mProductId, header.mSoftwareVersion, vendorId, productId, currentVersion);
     if (header.mVendorId != vendorId)
     {
-        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ValidateHeader vendor mismatch");
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] ValidateHeader vendor mismatch");
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
     if (header.mProductId != productId)
     {
-        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ValidateHeader product mismatch");
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] ValidateHeader product mismatch");
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
     VerifyOrReturnError(header.mSoftwareVersion > currentVersion, CHIP_ERROR_VERSION_MISMATCH);
@@ -327,10 +292,7 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
 
     if (httpCode == 416)
     {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HandleRangeBodyChunk http=416 -> Finalize");
-        CHIP_ERROR finErr = mImageProcessor->Finalize();
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] Finalize(416)=%" CHIP_ERROR_FORMAT, finErr.Format());
-        ReturnErrorOnFailure(finErr);
+        ReturnErrorOnFailure(mImageProcessor->Finalize());
         CancelStallTimer();
         CancelBusyRetryTimer();
         SetState(State::kComplete, OTAChangeReasonEnum::kSuccess);
@@ -338,14 +300,6 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
     }
 
     VerifyOrReturnError((httpCode == 200) || (httpCode == 206), CHIP_ERROR_INVALID_ARGUMENT);
-
-    if ((gHttpsRangeCount <= 1) || ((gHttpsRangeCount % kDebugBlockThrottle) == 1))
-    {
-        const uint64_t total =
-            (mImageProcessor != nullptr) ? mImageProcessor->GetBytesDownloaded() : 0; // may be 0 until header/processor fills total
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] block offset=%" PRIu32 " downloaded=%" PRIu64 " http=%u", mNextOffset,
-                        total, httpCode);
-    }
 
     const uint32_t space = mBlockSize - mBlockFilled;
     const uint32_t take  = static_cast<uint32_t>(std::min(data.size(), static_cast<size_t>(space)));
@@ -378,7 +332,7 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
     CHIP_ERROR procErr = mImageProcessor->ProcessBlock(processSpan);
     if (procErr != CHIP_NO_ERROR)
     {
-        ChipLogError(SoftwareUpdate, "[DEBUG-HTTPS-OTA] ProcessBlock=%" CHIP_ERROR_FORMAT, procErr.Format());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] ProcessBlock=%" CHIP_ERROR_FORMAT, procErr.Format());
     }
     ReturnErrorOnFailure(procErr);
 
@@ -390,10 +344,7 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
 
     if (shortRead)
     {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] HandleRangeBodyChunk shortRead -> Finalize offset=%" PRIu32, mNextOffset);
-        CHIP_ERROR finErr = mImageProcessor->Finalize();
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] Finalize(short)=%" CHIP_ERROR_FORMAT, finErr.Format());
-        ReturnErrorOnFailure(finErr);
+        ReturnErrorOnFailure(mImageProcessor->Finalize());
         CancelStallTimer();
         CancelBusyRetryTimer();
         SetState(State::kComplete, OTAChangeReasonEnum::kSuccess);
@@ -425,9 +376,7 @@ CHIP_ERROR HttpsDownloader::BeginPrepareDownload()
     mConnectivityLost = false;
     mWaitingHttp      = false;
     mBlockFilled      = 0;
-    gHttpsRangeCount  = 0;
 
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] BeginPrepareDownload");
     ArmStallTimer();
     SetState(State::kPreparing, OTAChangeReasonEnum::kSuccess);
     return mImageProcessor->PrepareDownload();
@@ -436,7 +385,6 @@ CHIP_ERROR HttpsDownloader::BeginPrepareDownload()
 CHIP_ERROR HttpsDownloader::OnPreparedForDownload(CHIP_ERROR status)
 {
     VerifyOrReturnError(mState == State::kPreparing, CHIP_ERROR_INCORRECT_STATE);
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] OnPreparedForDownload status=%" CHIP_ERROR_FORMAT, status.Format());
 
     if (status != CHIP_NO_ERROR)
     {
@@ -452,15 +400,10 @@ CHIP_ERROR HttpsDownloader::OnPreparedForDownload(CHIP_ERROR status)
 
 CHIP_ERROR HttpsDownloader::FetchNextData()
 {
-    if (mState != State::kInProgress)
-    {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] FetchNextData bail state=%u", static_cast<unsigned>(mState));
-        return CHIP_ERROR_INCORRECT_STATE;
-    }
+    VerifyOrReturnError(mState == State::kInProgress, CHIP_ERROR_INCORRECT_STATE);
     if (mConnectivityLost)
     {
         ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] waiting for Wi-Fi before offset %" PRIu32, mNextOffset);
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] FetchNextData bail connectivityLost offset=%" PRIu32, mNextOffset);
         return CHIP_NO_ERROR;
     }
 
@@ -476,7 +419,6 @@ CHIP_ERROR HttpsDownloader::SkipData(uint32_t numBytes)
 
 void HttpsDownloader::OnDownloadTimeout()
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] OnDownloadTimeout offset=%" PRIu32, mNextOffset);
     CancelStallTimer();
     CancelBusyRetryTimer();
     mWaitingHttp = false;
@@ -493,7 +435,6 @@ void HttpsDownloader::OnDownloadTimeout()
 
 void HttpsDownloader::EndDownload(CHIP_ERROR reason)
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] EndDownload reason=%" CHIP_ERROR_FORMAT, reason.Format());
     CancelStallTimer();
     CancelBusyRetryTimer();
     mWaitingHttp = false;
@@ -510,7 +451,6 @@ void HttpsDownloader::EndDownload(CHIP_ERROR reason)
 
 void HttpsDownloader::CleanupOnError(OTAChangeReasonEnum reason)
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] CleanupOnError reason=%u", static_cast<unsigned>(reason));
     CancelStallTimer();
     CancelBusyRetryTimer();
     mWaitingHttp = false;
@@ -519,8 +459,6 @@ void HttpsDownloader::CleanupOnError(OTAChangeReasonEnum reason)
 
 void HttpsDownloader::SetState(State state, OTAChangeReasonEnum reason)
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] SetState %u->%u reason=%u", static_cast<unsigned>(mState),
-                    static_cast<unsigned>(state), static_cast<unsigned>(reason));
     mState = state;
     if (mStateDelegate != nullptr)
     {
@@ -530,7 +468,6 @@ void HttpsDownloader::SetState(State state, OTAChangeReasonEnum reason)
 
 void HttpsDownloader::NoteConnectivityLost()
 {
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] NoteConnectivityLost");
     mConnectivityLost = true;
 }
 
@@ -541,7 +478,6 @@ CHIP_ERROR HttpsDownloader::NoteConnectivityRestored()
         return CHIP_NO_ERROR;
     }
 
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] NoteConnectivityRestored offset=%" PRIu32, mNextOffset);
     mConnectivityLost = false;
     ArmStallTimer();
     return FetchNextData();

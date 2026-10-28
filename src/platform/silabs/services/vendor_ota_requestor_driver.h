@@ -44,7 +44,6 @@ public:
 
     void UpdateNotFound();
     void UpdateFailed();
-    void UpdateDownloaded();
 
 private:
     static void PeriodicCheckTimerHandler(System::Layer * layer, void * appState);

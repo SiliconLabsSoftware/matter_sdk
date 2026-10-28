@@ -22,18 +22,16 @@
 
 #include <lib/core/CHIPError.h>
 
-// Placeholder defaults so the dual-stack project builds without a local server.
-// Override in the project (slcp define:) or edit here before running the HTTPS demo.
 #ifndef HTTP_SERVER_IP // IP address of the HTTP server
-#define HTTP_SERVER_IP "192.168.29.150"
+#error "HTTP_SERVER_IP is not defined"
 #endif
 
 #ifndef HTTP_HOSTNAME // used for SNI validation
-#define HTTP_HOSTNAME "otaserver.com"
+#error "HTTP_HOSTNAME is not defined"
 #endif
 
 #ifndef HTTP_PORT // port of the HTTP server
-#define HTTP_PORT 8443
+#error "HTTP_PORT is not defined"
 #endif
 
 #ifndef HTTP_URL

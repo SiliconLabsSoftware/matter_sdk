@@ -19,7 +19,6 @@
 #include "OTAConfig.h"
 #include "silabs_utils.h"
 #include <app/server/Server.h>
-#include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
 
 #ifndef SLI_SI91X_MCU_INTERFACE
@@ -45,7 +44,7 @@ __attribute__((used)) ApplicationProperties_t sl_app_properties = {
     .magic = APPLICATION_PROPERTIES_MAGIC,
 
     /// Version number of this struct
-    .structVersion = APP_PROPERTIES_VERSION,
+    .structVersion = APPLICATION_PROPERTIES_VERSION,
 
     /// Type of signature this application is signed with
     .signatureType = APPLICATION_SIGNATURE_NONE,
@@ -95,11 +94,16 @@ chip::DeviceLayer::DefaultOTARequestorDriver gRequestorUser;
 
 void OTAConfig::Init()
 {
-    // Connectivity and DNS-SD can each schedule this; only wire once.
+    // BaseApplication schedules this twice at boot (connectivity established and
+    // kDnssdInitialized, each after kInitOTARequestorDelaySec) and again on every
+    // later Wi-Fi/Thread reconnect. DNS-SD itself posts kDnssdInitialized only once
+    // per boot (DiscoveryImplPlatform::InitImpl returns early once initialized).
+    // Re-entry is not safe: SilabsOTARequestorDriver::Init calls Reset() whenever
+    // the requestor is not idle, which would abort an in-progress BDX or HTTPS OTA.
+    // AddEventHandler and StartTimer are idempotent; this guard exists for the Reset.
     static bool sInitialized = false;
     if (sInitialized)
     {
-        ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] OTAConfig::Init already done");
         return;
     }
 
@@ -115,22 +119,13 @@ void OTAConfig::Init()
 
 #if defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
     auto & imageProcessor = chip::DeviceLayer::Silabs::MultiOTA::OTAMultiImageProcessorImpl::GetDefaultInstance();
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] OTAConfig::Init processor=multi-image https_ota=%d",
-#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-                    1
-#else
-                    0
-#endif
-    );
 #else
     auto & imageProcessor = chip::OTAImageProcessorImpl::GetDefaultInstance();
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] OTAConfig::Init processor=single-image https_ota=0");
 #endif
 
     gRequestorUser.Init(&gRequestorCore, &imageProcessor);
 
     CHIP_ERROR err = imageProcessor.Init(&gDownloader);
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-MATTER-OTA] OTAConfig::Init imageProcessor.Init=%" CHIP_ERROR_FORMAT, err.Format());
     if (err != CHIP_NO_ERROR)
     {
         SILABS_LOG("Image processor init failed");
@@ -147,11 +142,10 @@ void OTAConfig::Init()
     gVendorGate.Init(gRequestorUser);
     gVendorDriver.SetPeriodicCheckTimeout(SL_MATTER_HTTPS_OTA_PERIODIC_TIMEOUT);
 
-    chip::VendorOTARequestor::GetInstance().Init(gHttpsDownloader, imageProcessor, gRequestorCore, gRequestorUser, gDownloader,
-                                                 gRequestorStorage, gVendorGate, gVendorDriver);
-    // Starts periodic timer + registers connectivity event handler (Matter-driver analog).
+    chip::VendorOTARequestor::GetInstance().Init(gHttpsDownloader, imageProcessor, gRequestorCore, gDownloader, gRequestorStorage,
+                                                 gVendorGate, gVendorDriver);
+    // Starts periodic timer + registers connectivity event handler.
     gVendorDriver.Init(&chip::VendorOTARequestor::GetInstance());
-    ChipLogProgress(SoftwareUpdate, "[DEBUG-HTTPS-OTA] OTAConfig::Init vendor OTA wired");
 #endif
     sInitialized = true;
     // Initialize and interconnect the Requestor and Image Processor objects -- END

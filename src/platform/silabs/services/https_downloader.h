@@ -81,7 +81,6 @@ public:
 
     uint32_t GetNextOffset() const { return mNextOffset; }
     uint32_t GetTargetVersion() const { return mTargetVersion; }
-    bool IsHeaderValidated() const { return mHeaderValidated; }
     bool WasLastFailureNotNewer() const { return mLastFailureNotNewer; }
 
     void NoteConnectivityLost();
