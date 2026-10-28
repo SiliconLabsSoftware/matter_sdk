@@ -1,0 +1,8 @@
+diff --git a/subsys/secure_storage/src/its/store/settings.c b/subsys/secure_storage/src/its/store/settings.c
+--- a/subsys/secure_storage/src/its/store/settings.c
++++ b/subsys/secure_storage/src/its/store/settings.c
+@@ -23,3 +23,5 @@ static int init_settings_subsys(void)
+ }
++#ifndef CONFIG_MATTER_PROVISIONING_DEFER_SETTINGS_INIT
+ SYS_INIT(init_settings_subsys, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
++#endif

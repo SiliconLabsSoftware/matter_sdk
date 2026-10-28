@@ -1,0 +1,95 @@
+/*******************************************************************************
+ * # License
+ * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc.  Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement.  This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
+
+/dts-v1/;
+#include <silabs/xg24/efr32mg24b220f1536im48.dtsi>
+#include <silabs/xg24/clock-hfrcodpll.dtsi>
+#include <silabs/xg24/clock-lfxo.dtsi>
+#include <zephyr/dt-bindings/regulator/silabs_dcdc.h>
+
+/ {
+	model = "Matter provisioning GFW (xG24/MGM24 family)";
+	compatible = "silabs,xg24_gfw", "silabs,efr32mg24";
+
+	chosen {
+		zephyr,code-partition = &slot0_partition;
+		zephyr,flash = &flash0;
+		zephyr,sram = &sram0;
+	};
+};
+
+&gpio {
+	status = "okay";
+};
+
+&gpioa {
+	status = "okay";
+};
+
+&gpiob {
+	status = "okay";
+};
+
+&gpioc {
+	status = "okay";
+};
+
+&gpiod {
+	status = "okay";
+};
+
+&se {
+	status = "okay";
+};
+
+&dcdc {
+	regulator-boot-on;
+	regulator-initial-mode = <SILABS_DCDC_MODE_BUCK>;
+	status = "okay";
+};
+
+&wdog0 {
+	status = "okay";
+};
+
+&sysrtc0 {
+	status = "okay";
+};
+
+&itm {
+	status = "okay";
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/*
+		 * Internal flash layout (1024 KB total):
+		 *   0x000000 - 0x0C7FFF  slot0   (800 KB, code)
+		 *   0x0C8000 - 0x0CBFFF  storage (16 KB, 2 x 8 KB erase blocks)
+		 */
+		slot0_partition: partition@0 {
+			reg = <0x0 DT_SIZE_K(800)>;
+			label = "image-0";
+		};
+
+		storage_partition: partition@c8000 {
+			reg = <0x000c8000 DT_SIZE_K(16)>;
+			label = "storage";
+		};
+	};
+};

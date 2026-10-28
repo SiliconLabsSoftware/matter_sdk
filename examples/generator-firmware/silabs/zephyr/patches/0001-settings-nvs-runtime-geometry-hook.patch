@@ -1,0 +1,117 @@
+diff --git a/subsys/settings/include/settings/settings_nvs.h b/subsys/settings/include/settings/settings_nvs.h
+index b8c15e1d2ab..eb5fb451789 100644
+--- a/subsys/settings/include/settings/settings_nvs.h
++++ b/subsys/settings/include/settings/settings_nvs.h
+@@ -59,6 +59,11 @@ int settings_nvs_dst(struct settings_nvs *cf);
+ /* Initialize a nvs backend. */
+ int settings_nvs_backend_init(struct settings_nvs *cf);
+ 
++/**
++ * Configure the Settings NVS offset and size before settings_subsys_init().
++ * The sector count is derived from the flash erase geometry at initialization.
++ */
++int settings_nvs_set_runtime_geometry(off_t offset, size_t size);
+ 
+ #ifdef __cplusplus
+ }
+diff --git a/subsys/settings/src/settings_nvs.c b/subsys/settings/src/settings_nvs.c
+index 85902cbddf0..094fae01459 100644
+--- a/subsys/settings/src/settings_nvs.c
++++ b/subsys/settings/src/settings_nvs.c
+@@ -13,6 +13,7 @@
+ #include <zephyr/sys/crc.h>
+ #include "settings_priv.h"
+ #include <zephyr/storage/flash_map.h>
++#include <zephyr/drivers/flash.h>
+ 
+ #include <zephyr/logging/log.h>
+ LOG_MODULE_DECLARE(settings, CONFIG_SETTINGS_LOG_LEVEL);
+@@ -382,6 +383,33 @@ int settings_nvs_backend_init(struct settings_nvs *cf)
+ 	return 0;
+ }
+ 
++struct settings_nvs_runtime_geometry {
++	bool configured;
++	off_t offset;
++	size_t size;
++};
++
++static struct settings_nvs_runtime_geometry s_runtime_geometry;
++
++int settings_nvs_set_runtime_geometry(off_t offset, size_t size)
++{
++	if (offset < 0 || size == 0) {
++		return -EINVAL;
++	}
++
++	if (s_runtime_geometry.configured) {
++		if (s_runtime_geometry.offset == offset && s_runtime_geometry.size == size) {
++			return 0;
++		}
++		return -EALREADY;
++	}
++
++	s_runtime_geometry.configured = true;
++	s_runtime_geometry.offset = offset;
++	s_runtime_geometry.size = size;
++	return 0;
++}
++
+ int settings_backend_init(void)
+ {
+ 	static struct settings_nvs default_settings_nvs;
+@@ -397,6 +425,41 @@ int settings_backend_init(void)
+ 		return rc;
+ 	}
+ 
++	if (s_runtime_geometry.configured) {
++		struct flash_pages_info page_info;
++		uint64_t flash_size;
++
++		rc = flash_get_size(fa->fa_dev, &flash_size);
++		if (rc) {
++			return rc;
++		}
++		if ((uint64_t)s_runtime_geometry.offset + s_runtime_geometry.size > flash_size) {
++			return -EINVAL;
++		}
++
++		rc = flash_get_page_info_by_offs(fa->fa_dev, s_runtime_geometry.offset, &page_info);
++		if (rc) {
++			return rc;
++		}
++		if (s_runtime_geometry.offset != page_info.start_offset) {
++			return -EINVAL;
++		}
++		nvs_sector_size = CONFIG_SETTINGS_NVS_SECTOR_SIZE_MULT * page_info.size;
++		if (nvs_sector_size == 0 || nvs_sector_size > UINT16_MAX ||
++			s_runtime_geometry.size % nvs_sector_size != 0) {
++			return -EINVAL;
++		}
++		nvs_size = s_runtime_geometry.size;
++		if (nvs_size / nvs_sector_size > UINT16_MAX) {
++			return -EINVAL;
++		}
++		cnt = (uint16_t)(nvs_size / nvs_sector_size);
++		if (cnt < 2) {
++			return -EINVAL;
++		}
++		goto geometry_ready;
++	}
++
+ 	rc = flash_area_get_sectors(SETTINGS_PARTITION, &sector_cnt,
+ 				    &hw_flash_sector);
+ 	if (rc != 0 && rc != -ENOMEM) {
+@@ -418,10 +481,11 @@ int settings_backend_init(void)
+ 		cnt++;
+ 	}
+ 
++geometry_ready:
+ 	/* define the nvs file system using the page_info */
+ 	default_settings_nvs.cf_nvs.sector_size = nvs_sector_size;
+ 	default_settings_nvs.cf_nvs.sector_count = cnt;
+-	default_settings_nvs.cf_nvs.offset = fa->fa_off;
++	default_settings_nvs.cf_nvs.offset = s_runtime_geometry.configured ? s_runtime_geometry.offset : fa->fa_off;
+ 	default_settings_nvs.flash_dev = fa->fa_dev;
+ 
+ 	rc = settings_nvs_backend_init(&default_settings_nvs);
