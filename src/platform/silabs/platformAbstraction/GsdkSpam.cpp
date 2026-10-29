@@ -85,9 +85,6 @@ extern "C" {
 #endif // SILABS_LOG_OUT_UART || (defined(ENABLE_CHIP_SHELL) && ENABLE_CHIP_SHELL) || defined(CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI)
        // && CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
 
-#ifdef SL_CATALOG_SYSTEMVIEW_TRACE_PRESENT
-#include "SEGGER_SYSVIEW.h"
-#endif
 }
 
 #if SILABS_LOG_ENABLED
@@ -131,10 +128,6 @@ CHIP_ERROR SilabsPlatform::Init(void)
 
 #if SILABS_LOG_OUT_UART && defined(SL_CATALOG_CLI_PRESENT)
     sl_iostream_set_default(sl_iostream_stdio_handle);
-#endif
-
-#ifdef SL_CATALOG_SYSTEMVIEW_TRACE_PRESENT
-    SEGGER_SYSVIEW_Conf();
 #endif
 
 #if SILABS_LOG_OUT_UART || (defined(ENABLE_CHIP_SHELL) && ENABLE_CHIP_SHELL) ||                                                    \
