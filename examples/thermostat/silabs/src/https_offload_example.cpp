@@ -238,22 +238,28 @@ void HttpsRunAppEvent(AppEvent * /* aEvent */)
     VerifyOrReturn(SL_STATUS_OK == https_client_demo_run(), ChipLogError(DeviceLayer, "https_client_demo_run failed"));
 }
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+void https_client_bind_ota_downloader(void)
+{
+    if (!gHttpsClient.IsRunning())
+    {
+        return;
+    }
+    auto * dl = chip::VendorOTARequestor::GetInstance().GetHttpsDownloader();
+    if (dl == nullptr)
+    {
+        return;
+    }
+    dl->SetHttpClient(&gHttpsClient);
+}
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
+
 sl_status_t https_client_demo_start(void)
 {
-#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-    auto bindDownloaderClient = []() {
-        auto * dl = chip::VendorOTARequestor::GetInstance().GetHttpsDownloader();
-        if (dl != nullptr)
-        {
-            dl->SetHttpClient(&gHttpsClient);
-        }
-    };
-#endif
-
     if (gHttpsClient.IsRunning())
     {
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-        bindDownloaderClient();
+        https_client_bind_ota_downloader();
         ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] client start: already running");
 #endif
         return SL_STATUS_ALREADY_INITIALIZED;
@@ -309,7 +315,7 @@ sl_status_t https_client_demo_start(void)
     }
 
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-    bindDownloaderClient();
+    https_client_bind_ota_downloader();
     ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] client start: started");
 #endif
     return SL_STATUS_OK;

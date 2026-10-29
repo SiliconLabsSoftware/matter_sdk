@@ -21,6 +21,13 @@
 #include <app/server/Server.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+// Thermostat (and other apps with the HTTPS demo) provide this; weak no-op otherwise.
+// Rebinds HttpClient after VendorOTA Init when AppTask started HTTPS first (3s OTA delay).
+void https_client_bind_ota_downloader(void) __attribute__((weak));
+void https_client_bind_ota_downloader(void) {}
+#endif
+
 #ifndef SLI_SI91X_MCU_INTERFACE
 
 #include "api/application_properties.h"
@@ -144,6 +151,8 @@ void OTAConfig::Init()
 
     chip::VendorOTARequestor::GetInstance().Init(gHttpsDownloader, imageProcessor, gRequestorCore, gDownloader, gRequestorStorage,
                                                  gVendorGate, gVendorDriver);
+    // AppTask may already have started HttpClient before this delayed Init; bind now.
+    https_client_bind_ota_downloader();
     // Starts periodic timer + registers connectivity event handler.
     gVendorDriver.Init(&chip::VendorOTARequestor::GetInstance());
 #endif

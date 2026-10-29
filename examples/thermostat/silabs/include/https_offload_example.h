@@ -55,6 +55,16 @@
 /** Load config + start HTTPS offload client (Init only). Call from AppTask. */
 sl_status_t https_client_demo_start(void);
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+/**
+ * Bind the running demo HttpClient to VendorOTA's HttpsDownloader.
+ * Safe on the CHIP thread (pointer assign only). No-op if the client is not
+ * running or OTAConfig has not wired the downloader yet.
+ * Needed because AppTask may start HTTPS before OTAConfig::Init (3s delay).
+ */
+void https_client_bind_ota_downloader(void);
+#endif
+
 /**
  * Run HTTPS PUT / GET / POST against the configured server.
  * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop or shell thread.
