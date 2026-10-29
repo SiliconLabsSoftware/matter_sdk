@@ -347,6 +347,10 @@
 [submodule "third_party/miniaudio/repo"]
 	path = third_party/miniaudio/repo
 	url = https://github.com/mackron/miniaudio
+[submodule "third_party/ot-ns/repo"]
+	path = third_party/ot-ns/repo
+	url = https://github.com/openthread/ot-ns.git
+	platforms = linux
 [submodule "third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk"]
 	path = third_party/silabs/aws_ota_sdk/ota-for-aws-iot-embedded-sdk
 	url = https://github.com/aws/ota-for-aws-iot-embedded-sdk.git
