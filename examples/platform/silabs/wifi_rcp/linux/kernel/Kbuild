@@ -1,0 +1,9 @@
+obj-m := si91x_rcp_eth.o
+
+ccflags-y += -I$(src)
+ifneq ($(SI91X_RCP_SDIO_VENDOR_ID),)
+ccflags-y += -DSI91X_RCP_SDIO_VENDOR_ID=$(SI91X_RCP_SDIO_VENDOR_ID)
+endif
+ifneq ($(SI91X_RCP_SDIO_DEVICE_ID),)
+ccflags-y += -DSI91X_RCP_SDIO_DEVICE_ID=$(SI91X_RCP_SDIO_DEVICE_ID)
+endif

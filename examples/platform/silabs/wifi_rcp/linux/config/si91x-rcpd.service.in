@@ -1,0 +1,14 @@
+[Unit]
+Description=SiWx917 Matter RCP address sharing daemon
+After=systemd-udevd.service
+Before=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=@CMAKE_INSTALL_FULL_SBINDIR@/si91x-rcpd
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
