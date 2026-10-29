@@ -39,3 +39,4 @@ app is assigned a PID from the list below:
 | TV                             | `0x800F` |
 | Window                         | `0x8010` |
 | Network Infrastructure Manager | `0x8013` |
+| Platform                       | `0x8014` |
