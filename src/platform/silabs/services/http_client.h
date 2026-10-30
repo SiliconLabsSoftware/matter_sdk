@@ -82,6 +82,18 @@ struct HttpHost
 using HttpOperationCallback = void (*)(CHIP_ERROR result, void * context);
 
 /**
+ * @brief One HTTP request header.
+ *
+ * Both strings must be non-null and NUL-terminated. The caller owns the array
+ * and both strings; they must remain valid until the verb callback runs.
+ */
+struct HttpHeader
+{
+    const char * key;
+    const char * value;
+};
+
+/**
  * @brief SiWx917 NWP offload HTTPS client usable from Matter C++ code.
  *
  * Lifecycle: Start → Init → Get/Post/Put → Deinit → Stop.
@@ -167,6 +179,21 @@ public:
                    void * context = nullptr);
 
     /**
+     * @brief Start an HTTPS GET with caller-owned request headers.
+     *
+     * @p headers may be nullptr when @p headerCount is 0. The array and its strings must remain
+     * valid until @p callback is invoked.
+     *
+     * @param[in] headers      Request headers, or nullptr when @p headerCount is 0.
+     * @param[in] headerCount  Number of entries in @p headers.
+     *
+     * @retval CHIP_ERROR_INVALID_ARGUMENT Null host, resource, header key, or header value, or a
+     *                                     null @p headers with a non-zero @p headerCount.
+     */
+    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer, const HttpHeader * headers,
+                   size_t headerCount, HttpOperationCallback callback, void * context = nullptr);
+
+    /**
      * @brief Start an HTTPS POST.
      *
      * @p body must remain valid until @p callback is invoked. Bodies larger than
@@ -187,6 +214,21 @@ public:
                     void * context = nullptr);
 
     /**
+     * @brief Start an HTTPS POST with caller-owned request headers.
+     *
+     * @p headers may be nullptr when @p headerCount is 0. The array and its strings must remain
+     * valid until @p callback is invoked.
+     *
+     * @param[in] headers      Request headers, or nullptr when @p headerCount is 0.
+     * @param[in] headerCount  Number of entries in @p headers.
+     *
+     * @retval CHIP_ERROR_INVALID_ARGUMENT Null host, resource, header key, or header value, or a
+     *                                     null @p headers with a non-zero @p headerCount.
+     */
+    CHIP_ERROR Post(const HttpHost & host, const char * resource, ByteSpan body, const HttpHeader * headers, size_t headerCount,
+                    HttpOperationCallback callback, void * context = nullptr);
+
+    /**
      * @brief Start an HTTPS PUT with chunked body upload handled on the service thread.
      *
      * @p body must remain valid until @p callback is invoked.
@@ -204,6 +246,21 @@ public:
      */
     CHIP_ERROR Put(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
                    void * context = nullptr);
+
+    /**
+     * @brief Start an HTTPS PUT with caller-owned request headers.
+     *
+     * @p headers may be nullptr when @p headerCount is 0. The array and its strings must remain
+     * valid until @p callback is invoked.
+     *
+     * @param[in] headers      Request headers, or nullptr when @p headerCount is 0.
+     * @param[in] headerCount  Number of entries in @p headers.
+     *
+     * @retval CHIP_ERROR_INVALID_ARGUMENT Null host, resource, header key, or header value, or a
+     *                                     null @p headers with a non-zero @p headerCount.
+     */
+    CHIP_ERROR Put(const HttpHost & host, const char * resource, ByteSpan body, const HttpHeader * headers, size_t headerCount,
+                   HttpOperationCallback callback, void * context = nullptr);
 
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
@@ -297,6 +354,9 @@ private:
     CHIP_ERROR ProcessContinueChunkedBody();
     CHIP_ERROR ResolveServerEndpoint();
     bool NeedsChunkedBody() const;
+    static CHIP_ERROR CheckHeaders(const HttpHeader * headers, size_t headerCount);
+    CHIP_ERROR ApplyHeaders(sl_http_client_request_t & request);
+    void ReleaseRequestHeaders(sl_http_client_request_t & request);
 
     /**
      * @brief Complete an operation.
@@ -336,8 +396,10 @@ private:
 
     MutableByteSpan * mActiveResponseBuffer = nullptr;
     HttpHost mPendingHost{};
-    char mResolvedServerIp[16] = {}; ///< ASCII IPv4 ("a.b.c.d") after ResolveServerEndpoint.
-    const char * mPendingResource = nullptr;
+    char mResolvedServerIp[16]         = {}; ///< ASCII IPv4 ("a.b.c.d") after ResolveServerEndpoint.
+    const char * mPendingResource      = nullptr;
+    const HttpHeader * mPendingHeaders = nullptr;
+    size_t mPendingHeaderCount         = 0;
     ByteSpan mPendingBody;
 
     volatile bool mBusy         = false;

@@ -23,10 +23,10 @@
  * 1. Start the HTTPS client
  * 2. Initialize the HTTPS client
  * 3. Run the HTTPS offload example
- * 4. Run the HTTPS PUT request to send the index.html file to the server
- * 5. Run the HTTPS GET request to get the index.html file from the server
- * 6. Run the HTTPS POST request to send the post data to the server
- * 7. Complete the HTTPS offload example and return the result
+ * 4. Run the HTTPS PUT request, with its own headers, to send the index.html file to the server
+ * 5. Run the HTTPS GET request, with its own headers, to get the index.html file from the server
+ * 6. Run the HTTPS POST request, with its own headers, to send the post data to the server
+ * 7. Complete the HTTPS offload example
  * 8. Deinitialize the HTTPS client (optional, disabled)
  * 9. Stop the HTTPS client (optional, disabled)
  */
@@ -52,16 +52,17 @@ using chip::ByteSpan;
 using chip::MutableByteSpan;
 using chip::DeviceLayer::Silabs::HttpClient;
 using chip::DeviceLayer::Silabs::HttpClientConfig;
+using chip::DeviceLayer::Silabs::HttpHeader;
 using chip::DeviceLayer::Silabs::HttpHost;
 
 // TODO: Update the below values to the correct values for your server.
 constexpr char kHttpServerEndpoint[] = HTTP_SERVER_ENDPOINT; // DNS name or IPv4
 constexpr char kHttpTlsHostname[]    = HTTP_TLS_HOSTNAME;    // SNI / Host header
 constexpr uint16_t kHttpPort         = HTTP_PORT;
-constexpr char kHttpUrl[]        = HTTP_URL;
-constexpr char kHttpClientUser[] = HTTP_USER;
-constexpr char kHttpClientPass[] = HTTP_PASS;
-constexpr char kHttpPostData[]   = HTTP_POST_DATA;
+constexpr char kHttpUrl[]            = HTTP_URL;
+constexpr char kHttpClientUser[]     = HTTP_USER;
+constexpr char kHttpClientPass[]     = HTTP_PASS;
+constexpr char kHttpPostData[]       = HTTP_POST_DATA;
 
 // HTTPS client instance.
 HttpClient gHttpsClient;
@@ -116,8 +117,25 @@ CHIP_ERROR RunHttpsOffloadExample()
         .port           = kHttpPort,
     };
 
+    // Each verb owns its headers. Expect these on the test server log
+    // (see slc/tools/https_header_test_server.py).
+    static constexpr HttpHeader kPutHeaders[] = {
+        { "X-Matter-Demo", "https-offload" },
+        { "X-Test-Verb", "PUT" },
+        { "X-Test-Id", "1" },
+    };
+    static constexpr HttpHeader kGetHeaders[] = {
+        { "X-Test-Verb", "GET" },
+    };
+    static constexpr HttpHeader kPostHeaders[] = {
+        { "X-Test-Verb", "POST" },
+        { "Content-Type", "application/x-www-form-urlencoded" },
+    };
+
     const ByteSpan putBody(reinterpret_cast<const uint8_t *>(sl_index), sizeof(sl_index) - 1);
-    CHIP_ERROR err = RunQueuedOperation(gHttpsClient.Put(host, kHttpUrl, putBody, OnOperationDone, &waitCtx), waitCtx);
+    CHIP_ERROR err = RunQueuedOperation(gHttpsClient.Put(host, kHttpUrl, putBody, kPutHeaders,
+                                                         sizeof(kPutHeaders) / sizeof(kPutHeaders[0]), OnOperationDone, &waitCtx),
+                                        waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS PUT failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -128,7 +146,9 @@ CHIP_ERROR RunHttpsOffloadExample()
     // Sized for the served index.html body; a smaller buffer truncates the response.
     uint8_t responseBuf[sizeof(sl_index)] = { 0 };
     MutableByteSpan responseSpan(responseBuf);
-    err = RunQueuedOperation(gHttpsClient.Get(host, kHttpUrl, responseSpan, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gHttpsClient.Get(host, kHttpUrl, responseSpan, kGetHeaders,
+                                              sizeof(kGetHeaders) / sizeof(kGetHeaders[0]), OnOperationDone, &waitCtx),
+                             waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS GET failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -137,7 +157,9 @@ CHIP_ERROR RunHttpsOffloadExample()
     ChipLogProgress(DeviceLayer, "HTTPS GET request success");
 
     const ByteSpan postBody(reinterpret_cast<const uint8_t *>(kHttpPostData), strlen(kHttpPostData));
-    err = RunQueuedOperation(gHttpsClient.Post(host, kHttpUrl, postBody, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gHttpsClient.Post(host, kHttpUrl, postBody, kPostHeaders,
+                                               sizeof(kPostHeaders) / sizeof(kPostHeaders[0]), OnOperationDone, &waitCtx),
+                             waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS POST failed: %" CHIP_ERROR_FORMAT, err.Format());
