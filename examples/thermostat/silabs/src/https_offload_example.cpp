@@ -23,13 +23,12 @@
  * 1. Start the HTTPS client
  * 2. Initialize the HTTPS client
  * 3. Run the HTTPS offload example
- * 4. Set custom headers (SetHeader / SetHeaders) for the request
- * 5. Run the HTTPS PUT request to send the index.html file to the server
- * 6. Run the HTTPS GET request to get the index.html file from the server
- * 7. Run the HTTPS POST request to send the post data to the server
- * 8. Clear headers and complete the HTTPS offload example
- * 9. Deinitialize the HTTPS client (optional, disabled)
- * 10. Stop the HTTPS client (optional, disabled)
+ * 4. Run the HTTPS PUT request, with its own headers, to send the index.html file to the server
+ * 5. Run the HTTPS GET request, with its own headers, to get the index.html file from the server
+ * 6. Run the HTTPS POST request, with its own headers, to send the post data to the server
+ * 7. Complete the HTTPS offload example
+ * 8. Deinitialize the HTTPS client (optional, disabled)
+ * 9. Stop the HTTPS client (optional, disabled)
  */
 
 #include "https_offload_example.h"
@@ -46,8 +45,6 @@
 #include <lib/support/logging/CHIPLogging.h>
 
 #include <cstring>
-#include <string>
-#include <unordered_map>
 
 namespace {
 
@@ -55,16 +52,17 @@ using chip::ByteSpan;
 using chip::MutableByteSpan;
 using chip::DeviceLayer::Silabs::HttpClient;
 using chip::DeviceLayer::Silabs::HttpClientConfig;
+using chip::DeviceLayer::Silabs::HttpHeader;
 using chip::DeviceLayer::Silabs::HttpHost;
 
 // TODO: Update the below values to the correct values for your server.
 constexpr char kHttpServerEndpoint[] = HTTP_SERVER_ENDPOINT; // DNS name or IPv4
 constexpr char kHttpTlsHostname[]    = HTTP_TLS_HOSTNAME;    // SNI / Host header
 constexpr uint16_t kHttpPort         = HTTP_PORT;
-constexpr char kHttpUrl[]        = HTTP_URL;
-constexpr char kHttpClientUser[] = HTTP_USER;
-constexpr char kHttpClientPass[] = HTTP_PASS;
-constexpr char kHttpPostData[]   = HTTP_POST_DATA;
+constexpr char kHttpUrl[]            = HTTP_URL;
+constexpr char kHttpClientUser[]     = HTTP_USER;
+constexpr char kHttpClientPass[]     = HTTP_PASS;
+constexpr char kHttpPostData[]       = HTTP_POST_DATA;
 
 // HTTPS client instance.
 HttpClient gHttpsClient;
@@ -119,27 +117,25 @@ CHIP_ERROR RunHttpsOffloadExample()
         .port           = kHttpPort,
     };
 
-    // Custom headers: SetHeaders replaces the map; SetHeader adds/updates one key.
-    // Expect these on the test server log for PUT (see slc/tools/https_header_test_server.py).
-    std::unordered_map<std::string, std::string> headers = {
+    // Each verb owns its headers. Expect these on the test server log
+    // (see slc/tools/https_header_test_server.py).
+    static constexpr HttpHeader kPutHeaders[] = {
         { "X-Matter-Demo", "https-offload" },
         { "X-Test-Verb", "PUT" },
+        { "X-Test-Id", "1" },
     };
-    CHIP_ERROR err = gHttpsClient.SetHeaders(std::move(headers));
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "HTTPS SetHeaders failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return err;
-    }
-    err = gHttpsClient.SetHeader("X-Test-Id", "1");
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "HTTPS SetHeader failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return err;
-    }
+    static constexpr HttpHeader kGetHeaders[] = {
+        { "X-Test-Verb", "GET" },
+    };
+    static constexpr HttpHeader kPostHeaders[] = {
+        { "X-Test-Verb", "POST" },
+        { "Content-Type", "application/x-www-form-urlencoded" },
+    };
 
     const ByteSpan putBody(reinterpret_cast<const uint8_t *>(sl_index), sizeof(sl_index) - 1);
-    err = RunQueuedOperation(gHttpsClient.Put(host, kHttpUrl, putBody, OnOperationDone, &waitCtx), waitCtx);
+    CHIP_ERROR err = RunQueuedOperation(gHttpsClient.Put(host, kHttpUrl, putBody, kPutHeaders,
+                                                         sizeof(kPutHeaders) / sizeof(kPutHeaders[0]), OnOperationDone, &waitCtx),
+                                        waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS PUT failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -147,18 +143,12 @@ CHIP_ERROR RunHttpsOffloadExample()
     }
     ChipLogProgress(DeviceLayer, "HTTPS PUT request success");
 
-    // Replace one header for GET; other map entries stay.
-    err = gHttpsClient.SetHeader("X-Test-Verb", "GET");
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "HTTPS SetHeader (GET) failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return err;
-    }
-
     // Sized for the served index.html body; a smaller buffer truncates the response.
     uint8_t responseBuf[sizeof(sl_index)] = { 0 };
     MutableByteSpan responseSpan(responseBuf);
-    err = RunQueuedOperation(gHttpsClient.Get(host, kHttpUrl, responseSpan, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gHttpsClient.Get(host, kHttpUrl, responseSpan, kGetHeaders,
+                                              sizeof(kGetHeaders) / sizeof(kGetHeaders[0]), OnOperationDone, &waitCtx),
+                             waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS GET failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -166,36 +156,16 @@ CHIP_ERROR RunHttpsOffloadExample()
     }
     ChipLogProgress(DeviceLayer, "HTTPS GET request success");
 
-    // Clear then set POST-only headers to prove ClearHeaders drops prior keys.
-    err = gHttpsClient.ClearHeaders();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "HTTPS ClearHeaders failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return err;
-    }
-    err = gHttpsClient.SetHeader("X-Test-Verb", "POST");
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "HTTPS SetHeader (POST) failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return err;
-    }
-    err = gHttpsClient.SetHeader("Content-Type", "application/x-www-form-urlencoded");
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "HTTPS SetHeader (Content-Type) failed: %" CHIP_ERROR_FORMAT, err.Format());
-        return err;
-    }
-
     const ByteSpan postBody(reinterpret_cast<const uint8_t *>(kHttpPostData), strlen(kHttpPostData));
-    err = RunQueuedOperation(gHttpsClient.Post(host, kHttpUrl, postBody, OnOperationDone, &waitCtx), waitCtx);
+    err = RunQueuedOperation(gHttpsClient.Post(host, kHttpUrl, postBody, kPostHeaders,
+                                               sizeof(kPostHeaders) / sizeof(kPostHeaders[0]), OnOperationDone, &waitCtx),
+                             waitCtx);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(DeviceLayer, "HTTPS POST failed: %" CHIP_ERROR_FORMAT, err.Format());
         return err;
     }
     ChipLogProgress(DeviceLayer, "HTTPS POST request success");
-
-    (void) gHttpsClient.ClearHeaders();
 
     ChipLogProgress(DeviceLayer, "HTTPS demo completed");
     return CHIP_NO_ERROR;
