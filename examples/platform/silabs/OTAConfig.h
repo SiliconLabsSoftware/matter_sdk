@@ -29,7 +29,7 @@
 #include <platform/silabs/services/vendor_ota_matter_gate.h>
 #include <platform/silabs/services/vendor_ota_requestor.h>
 #include <platform/silabs/services/vendor_ota_requestor_driver.h>
-#endif
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 
 #if defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
 #include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
@@ -55,4 +55,4 @@ inline chip::VendorOTARequestor & GetVendorOTARequestor()
 {
     return chip::VendorOTARequestor::GetInstance();
 }
-#endif
+#endif // SL_MATTER_ENABLE_HTTPS_OTA

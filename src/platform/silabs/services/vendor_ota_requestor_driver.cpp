@@ -69,9 +69,22 @@ void VendorOTARequestorDriver::OnPlatformEvent(const DeviceLayer::ChipDeviceEven
     VerifyOrReturn(self != nullptr && self->mRequestor != nullptr);
     VerifyOrReturn(event->Type == DeviceLayer::DeviceEventType::kInternetConnectivityChange);
 
-    const bool established = (event->InternetConnectivityChange.IPv4 == DeviceLayer::kConnectivity_Established) ||
-        (event->InternetConnectivityChange.IPv6 == DeviceLayer::kConnectivity_Established);
-    self->mRequestor->OnWiFiConnectivityChanged(established);
+    // IPv4 only; ignore IPv6 and IPv4 NoChange.
+    const auto ipv4 = event->InternetConnectivityChange.IPv4;
+    if (ipv4 == DeviceLayer::kConnectivity_Established)
+    {
+        self->mIPv4Established = true;
+    }
+    else if (ipv4 == DeviceLayer::kConnectivity_Lost)
+    {
+        self->mIPv4Established = false;
+    }
+    else
+    {
+        return;
+    }
+
+    self->mRequestor->OnWiFiConnectivityChanged(self->mIPv4Established);
 }
 
 void VendorOTARequestorDriver::OnPeriodicCheck()
@@ -80,16 +93,15 @@ void VendorOTARequestorDriver::OnPeriodicCheck()
 
     char urlBuf[HttpsDownloader::kMaxUrlLen];
     MutableCharSpan url(urlBuf);
-    CHIP_ERROR     err = mRequestor->GetDefaultUrl(url);
+    CHIP_ERROR err = mRequestor->GetPeriodicUrl(url);
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] periodic re-arm: no URL");
+        ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] periodic skip: no url");
         StartPeriodicCheckTimer();
         return;
     }
 
-    ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] session start source=periodic url=%.*s", static_cast<int>(url.size()),
-                    url.data());
+    ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] using periodic url=%.*s", static_cast<int>(url.size()), url.data());
 
     err = mRequestor->StartUpdate(CharSpan(url.data(), url.size()));
     if (err != CHIP_NO_ERROR)

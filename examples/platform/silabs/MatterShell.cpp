@@ -182,6 +182,17 @@ void RegisterCommands()
 
 namespace DemoShellCommands {
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+void PrintHttpsOtaHelp()
+{
+    streamer_printf(streamer_get(), "Usage: demo https-ota <url|abort|default|status>\r\n");
+    streamer_printf(streamer_get(), "  url <url>       Start one-shot HTTPS OTA (no NVM write)\r\n");
+    streamer_printf(streamer_get(), "  abort           Cancel in-progress HTTPS OTA\r\n");
+    streamer_printf(streamer_get(), "  default <url>   Set periodic check URL (RAM only, lost on reboot)\r\n");
+    streamer_printf(streamer_get(), "  status          Show state / progress / last result\r\n");
+}
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
+
 CHIP_ERROR DemoHelpHandler(int /* argc */, char ** /* argv */)
 {
     streamer_printf(streamer_get(), "Usage: demo <service>\r\n");
@@ -210,7 +221,35 @@ CHIP_ERROR DemoCommandHandler(int argc, char ** argv)
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
     if (strcmp(argv[0], "https-ota") == 0)
     {
-        return HttpsOtaDemoCommand(argc - 1, argv + 1);
+        if (argc < 2)
+        {
+            PrintHttpsOtaHelp();
+            return CHIP_NO_ERROR;
+        }
+
+        if (strcmp(argv[1], "url") == 0)
+        {
+            VerifyOrReturnError(argc == 3, CHIP_ERROR_INVALID_ARGUMENT);
+            return HttpsOtaQueueUrl(argv[2]);
+        }
+        if (strcmp(argv[1], "abort") == 0)
+        {
+            VerifyOrReturnError(argc == 2, CHIP_ERROR_INVALID_ARGUMENT);
+            return HttpsOtaAbort();
+        }
+        if (strcmp(argv[1], "default") == 0)
+        {
+            VerifyOrReturnError(argc == 3, CHIP_ERROR_INVALID_ARGUMENT);
+            return HttpsOtaSetPeriodicUrl(argv[2]);
+        }
+        if (strcmp(argv[1], "status") == 0)
+        {
+            VerifyOrReturnError(argc == 2, CHIP_ERROR_INVALID_ARGUMENT);
+            return HttpsOtaStatusCommand();
+        }
+
+        PrintHttpsOtaHelp();
+        return CHIP_ERROR_INVALID_ARGUMENT;
     }
 #endif // SL_MATTER_ENABLE_HTTPS_OTA
 

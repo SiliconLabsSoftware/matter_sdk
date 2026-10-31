@@ -19,6 +19,7 @@
 #pragma once
 
 #include "sl_status.h"
+#include <lib/core/CHIPError.h>
 
 #ifndef HTTP_SERVER_ENDPOINT // DNS name or IPv4 of the HTTP server
 #error "HTTP_SERVER_ENDPOINT is not defined"
@@ -53,16 +54,6 @@
 /** Load config + start HTTPS offload client (Init only). Call from AppTask. */
 sl_status_t https_client_demo_start(void);
 
-#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-/**
- * Bind the running demo HttpClient to VendorOTA's HttpsDownloader.
- * Safe on the CHIP thread (pointer assign only). No-op if the client is not
- * running or OTAConfig has not wired the downloader yet.
- * Needed because AppTask may start HTTPS before OTAConfig::Init (3s delay).
- */
-void https_client_bind_ota_downloader(void);
-#endif
-
 /**
  * Run HTTPS PUT / GET / POST against the configured server.
  * Call from AppTask (or another non-CHIP thread), not from the CHIP event loop or shell thread.
@@ -75,13 +66,18 @@ struct AppEvent;
 void HttpsRunAppEvent(AppEvent * aEvent);
 
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-/**
- * demo https-ota subcommands (argv after the https-ota token).
- * url posts an AppEvent (client start on AppTask, then StartUpdate on CHIP).
- * abort/default/status may run from the shell thread (CHIP ScheduleLambda where needed).
- */
-CHIP_ERROR HttpsOtaDemoCommand(int argc, char ** argv);
+/** Copy url and post AppTask work that ScheduleLambdas StartUpdate. */
+CHIP_ERROR HttpsOtaQueueUrl(const char * url);
 
-/** AppTask handler: ensure HttpClient is up, then ScheduleLambda StartUpdate. */
+/** Schedule CancelImageUpdate on the CHIP thread. */
+CHIP_ERROR HttpsOtaAbort(void);
+
+/** RAM-only periodic check URL (lost on reboot). */
+CHIP_ERROR HttpsOtaSetPeriodicUrl(const char * url);
+
+/** Print state / progress / last result. */
+CHIP_ERROR HttpsOtaStatusCommand(void);
+
+/** AppTask handler: ScheduleLambda StartUpdate (client must already be running). */
 void HttpsOtaUrlAppEvent(AppEvent * aEvent);
-#endif
+#endif // SL_MATTER_ENABLE_HTTPS_OTA

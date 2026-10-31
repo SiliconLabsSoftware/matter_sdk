@@ -29,7 +29,7 @@ class VendorOTARequestor;
 
 /**
  * Analog of DefaultOTARequestorDriver for HTTPS OTA periodic checks and connectivity.
- * App/config overrides the period via SetPeriodicCheckTimeout (see OTAConfig / sl_matter_ota_config.h).
+ * The app sets the period with SetPeriodicCheckTimeout. This driver does not read app config.
  */
 class VendorOTARequestorDriver
 {
@@ -52,6 +52,7 @@ private:
 
     VendorOTARequestor * mRequestor = nullptr;
     uint32_t mPeriodicTimeoutSec    = kDefaultPeriodicTimeoutSec;
+    bool mIPv4Established           = false;
 };
 
 } // namespace chip

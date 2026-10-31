@@ -31,7 +31,6 @@ extern "C" {
 #endif
 
 #include <lib/support/CodeUtils.h>
-#include <lib/support/StringBuilder.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/silabs/wifi/WifiInterface.h>
 
@@ -63,10 +62,8 @@ CHIP_ERROR HttpClient::MapStatus(sl_status_t status)
         return CHIP_ERROR_NO_MEMORY;
     }
     // MQTT holding SNI: same retry path as CHIP_ERROR_BUSY for GetRange.
-    if (status == SL_STATUS_SI91X_FEATURE_NOT_AVAILABLE)
-    {
-        return CHIP_ERROR_BUSY;
-    }
+    VerifyOrReturnError(status != SL_STATUS_SI91X_FEATURE_NOT_AVAILABLE, CHIP_ERROR_BUSY);
+
     return CHIP_ERROR_INTERNAL;
 }
 
@@ -173,41 +170,6 @@ void HttpClient::ClearRangeHeaders()
     TEMPORARY_RETURN_IGNORED sl_http_client_delete_all_headers(&mRangeRequest);
     memset(&mRangeRequest, 0, sizeof(mRangeRequest));
     mRangeHeaderValue[0] = '\0';
-}
-
-CHIP_ERROR HttpClient::ResolveDnsIfNeeded(const char * host, char * outIp, size_t outIpLen)
-{
-    VerifyOrReturnError((host != nullptr) && (outIp != nullptr) && (outIpLen > 0), CHIP_ERROR_INVALID_ARGUMENT);
-
-    unsigned b0 = 0;
-    unsigned b1 = 0;
-    unsigned b2 = 0;
-    unsigned b3 = 0;
-    if (sscanf(host, "%u.%u.%u.%u", &b0, &b1, &b2, &b3) == 4)
-    {
-        StringBuilderBase ip(outIp, outIpLen);
-        ip.AddFormat("%u.%u.%u.%u", b0, b1, b2, b3);
-        VerifyOrReturnError(ip.Fit(), CHIP_ERROR_BUFFER_TOO_SMALL);
-        return CHIP_NO_ERROR;
-    }
-
-    // TODO: this DNS-resolve path has not been verified end-to-end on this NWP stack.
-    // Today every caller supplies a literal IPv4 host, so this branch is unexercised.
-    sl_ip_address_t resolved = {};
-    sl_status_t status =
-        sl_net_dns_resolve_hostname_v2(host, 10 /* s */, 1 /* retry */, SL_NET_DNS_TYPE_IPV4, &resolved);
-    if (status != SL_STATUS_OK)
-    {
-        ChipLogError(DeviceLayer, "ResolveDnsIfNeeded host=%s failed status=0x%lx", host,
-                     static_cast<unsigned long>(status));
-        return MapStatus(status);
-    }
-
-    StringBuilderBase ip(outIp, outIpLen);
-    ip.AddFormat("%u.%u.%u.%u", resolved.ip.v4.bytes[0], resolved.ip.v4.bytes[1], resolved.ip.v4.bytes[2],
-                 resolved.ip.v4.bytes[3]);
-    VerifyOrReturnError(ip.Fit(), CHIP_ERROR_BUFFER_TOO_SMALL);
-    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback callback, void * context)
@@ -724,18 +686,10 @@ CHIP_ERROR HttpClient::ProcessGet()
 CHIP_ERROR HttpClient::GetRange(const HttpHost & host, const char * resource, uint32_t start, uint32_t endInclusive,
                                 MutableByteSpan & responseBuffer, HttpOperationCallback callback, void * context)
 {
-    if (!mInitialized)
-    {
-        return CHIP_ERROR_INCORRECT_STATE;
-    }
-    if (mBusy || mChunkedActive)
-    {
-        return CHIP_ERROR_BUSY;
-    }
-    if ((host.hostName == nullptr) || (resource == nullptr) || (start > endInclusive))
-    {
-        return CHIP_ERROR_INVALID_ARGUMENT;
-    }
+    VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
+    VerifyOrReturnError((host.serverEndpoint != nullptr) && (resource != nullptr) && (start <= endInclusive),
+                        CHIP_ERROR_INVALID_ARGUMENT);
 
     ResetRequestState();
     mActiveResponseBuffer     = &responseBuffer;
@@ -750,18 +704,14 @@ CHIP_ERROR HttpClient::GetRange(const HttpHost & host, const char * resource, ui
 CHIP_ERROR HttpClient::ProcessGetRange()
 {
     ClearRangeHeaders();
-
-    // Prefer connect address from serverIp when set; otherwise resolve hostName on this thread.
-    const char * connectHost =
-        (mPendingHost.serverIp != nullptr) ? mPendingHost.serverIp : mPendingHost.hostName;
-    ReturnErrorOnFailure(ResolveDnsIfNeeded(connectHost, mResolvedServerIp, sizeof(mResolvedServerIp)));
+    ReturnErrorOnFailure(ResolveServerEndpoint());
 
     snprintf(mRangeHeaderValue, sizeof(mRangeHeaderValue), "bytes=%" PRIu32 "-%" PRIu32, mPendingRangeStart,
              mPendingRangeEndInclusive);
 
     memset(&mRangeRequest, 0, sizeof(mRangeRequest));
     mRangeRequest.ip_address       = reinterpret_cast<uint8_t *>(mResolvedServerIp);
-    mRangeRequest.host_name        = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.hostName));
+    mRangeRequest.host_name        = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.tlsHostname));
     mRangeRequest.port             = mPendingHost.port;
     mRangeRequest.resource         = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
     mRangeRequest.extended_header  = nullptr;

@@ -31,7 +31,8 @@
 #endif
 
 #ifndef MQTT_BROKER_PORT // The port of your MQTT broker
-#error "MQTT_BROKER_PORT is not defined"
+// #error "MQTT_BROKER_PORT is not defined"
+#define MQTT_BROKER_PORT 8443
 #endif
 
 #ifndef MQTT_CLIENT_PORT // The port of your MQTT client

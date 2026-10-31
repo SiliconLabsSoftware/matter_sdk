@@ -24,11 +24,6 @@
 #include <platform/ConfigurationManager.h>
 #include <platform/DeviceInstanceInfoProvider.h>
 
-// Project OTA config may define HTTPS_OTA_CONNECT_IP.
-#if (SL_MATTER_GN_BUILD == 0)
-#include "sl_matter_ota_config.h"
-#endif
-
 #include <algorithm>
 #include <cinttypes>
 #include <cstring>
@@ -98,53 +93,32 @@ void HttpsDownloader::CancelBusyRetryTimer()
     DeviceLayer::SystemLayer().CancelTimer(BusyRetryTimerHandler, this);
 }
 
-CHIP_ERROR HttpsDownloader::ParseUrl(CharSpan uri)
+void HttpsDownloader::ClearSessionTarget()
 {
-    VerifyOrReturnError(uri.size() > 0 && uri.size() < kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
-    memcpy(mUrlStorage, uri.data(), uri.size());
-    mUrlStorage[uri.size()] = '\0';
-
-    const char * s = mUrlStorage;
-    mUrl           = ParsedUrl{};
-
-    VerifyOrReturnError(strncmp(s, "https://", 8) == 0, CHIP_ERROR_INVALID_ARGUMENT);
-    mUrl.port = 443;
-    s += 8;
-
-    const char * slash = strchr(s, '/');
-    const char * colon = strchr(s, ':');
-    size_t hostLen     = 0;
-
-    if ((colon != nullptr) && ((slash == nullptr) || (colon < slash)))
-    {
-        hostLen   = static_cast<size_t>(colon - s);
-        mUrl.port = static_cast<uint16_t>(atoi(colon + 1));
-    }
-    else
-    {
-        hostLen = (slash != nullptr) ? static_cast<size_t>(slash - s) : strlen(s);
-    }
-
-    VerifyOrReturnError(hostLen > 0 && hostLen < kMaxHostLen, CHIP_ERROR_INVALID_ARGUMENT);
-    memcpy(mUrl.host, s, hostLen);
-    mUrl.host[hostLen] = '\0';
-
-    if (slash != nullptr)
-    {
-        VerifyOrReturnError(strlen(slash) < kMaxPathLen, CHIP_ERROR_INVALID_ARGUMENT);
-        strcpy(mUrl.path, slash);
-    }
-    else
-    {
-        strcpy(mUrl.path, "/");
-    }
-
-    return CHIP_NO_ERROR;
+    memset(mServerEndpoint, 0, sizeof(mServerEndpoint));
+    memset(mTlsHostname, 0, sizeof(mTlsHostname));
+    memset(mPath, 0, sizeof(mPath));
+    mPort = 0;
 }
 
 CHIP_ERROR HttpsDownloader::SetImageURI(CharSpan uri)
 {
-    return ParseUrl(uri);
+    VerifyOrReturnError(mUriComposer != nullptr, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(uri.size() > 0 && uri.size() < kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
+
+    ClearSessionTarget();
+
+    // Leave one byte for NUL after the composer writes into the spans.
+    MutableCharSpan serverEndpoint(mServerEndpoint, kMaxHostLen - 1);
+    MutableCharSpan tlsHostname(mTlsHostname, kMaxHostLen - 1);
+    MutableCharSpan path(mPath, kMaxPathLen - 1);
+    ReturnErrorOnFailure(mUriComposer->ComposeImageUri(uri, serverEndpoint, tlsHostname, mPort, path));
+
+    VerifyOrReturnError(serverEndpoint.size() > 0 && tlsHostname.size() > 0 && path.size() > 0, CHIP_ERROR_INVALID_ARGUMENT);
+    mServerEndpoint[serverEndpoint.size()] = '\0';
+    mTlsHostname[tlsHostname.size()]       = '\0';
+    mPath[path.size()]                     = '\0';
+    return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR HttpsDownloader::QueueRangeGet()
@@ -152,29 +126,21 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
     VerifyOrReturnError(mHttpClient != nullptr, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mHttpClient->IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mWaitingHttp, CHIP_ERROR_BUSY);
+    VerifyOrReturnError(mServerEndpoint[0] != '\0' && mPath[0] != '\0', CHIP_ERROR_INCORRECT_STATE);
 
-    mRxSpan = MutableByteSpan(mRxStaging, sizeof(mRxStaging));
+    mRxSpan       = MutableByteSpan(mRxStaging, sizeof(mRxStaging));
     mRxStagingLen = 0;
 
-    // Optional dotted-IPv4 connect override (HTTPS_OTA_CONNECT_IP): skips DNS while
-    // keeping mUrl.host for TLS SNI / Host header.
-    const bool bypassDns   = (HTTPS_OTA_CONNECT_IP[0] != '\0');
-    const char * connectIp = bypassDns ? HTTPS_OTA_CONNECT_IP : mUrl.host;
-    const HttpHost host    = {
-        .hostName = mUrl.host,
-        .serverIp = connectIp,
-        .port     = mUrl.port,
+    const HttpHost host = {
+        .serverEndpoint = mServerEndpoint,
+        .tlsHostname    = mTlsHostname,
+        .port           = mPort,
     };
 
     const uint32_t endInclusive = mNextOffset + mBlockSize - 1;
     ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] range queued offset=%" PRIu32 "-%" PRIu32, mNextOffset, endInclusive);
-    if ((mNextOffset == 0) && bypassDns)
-    {
-        ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] DNS bypass connect=%s sni=%s", connectIp, mUrl.host);
-    }
 
-    CHIP_ERROR err =
-        mHttpClient->GetRange(host, mUrl.path, mNextOffset, endInclusive, mRxSpan, OnRangeComplete, this);
+    CHIP_ERROR err = mHttpClient->GetRange(host, mPath, mNextOffset, endInclusive, mRxSpan, OnRangeComplete, this);
     if (err == CHIP_ERROR_BUSY)
     {
         ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] busy retry scheduled");
@@ -218,6 +184,12 @@ void HttpsDownloader::OnRangeComplete(CHIP_ERROR result, void * context)
 
         if (result != CHIP_NO_ERROR)
         {
+            // Connectivity loss pauses the transfer; NoteConnectivityRestored re-arms and fetches.
+            if (self->mConnectivityLost)
+            {
+                ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] GetRange error during connectivity loss (ignored)");
+                return;
+            }
             ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL http 0x%08" PRIX32, result.AsInteger());
             self->CleanupOnError(OTAChangeReasonEnum::kFailure);
             if (self->mImageProcessor != nullptr)
@@ -290,17 +262,29 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
     VerifyOrReturnError(mState == State::kInProgress, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mImageProcessor != nullptr, CHIP_ERROR_INCORRECT_STATE);
 
+    // 1. Treat HTTP 416 as EOF only after a validated header and at least one byte written.
     if (httpCode == 416)
     {
+        VerifyOrReturnError(mHeaderValidated && (mNextOffset > 0), CHIP_ERROR_INVALID_ARGUMENT);
         ReturnErrorOnFailure(mImageProcessor->Finalize());
         CancelStallTimer();
         CancelBusyRetryTimer();
+        ClearSessionTarget();
         SetState(State::kComplete, OTAChangeReasonEnum::kSuccess);
         return CHIP_NO_ERROR;
     }
 
-    VerifyOrReturnError((httpCode == 200) || (httpCode == 206), CHIP_ERROR_INVALID_ARGUMENT);
+    // Range GETs require 206 Partial Content. HTTP 200 means the server ignored Range and
+    // may send the full image, which this block-sized client cannot handle.
+    if (httpCode == 200)
+    {
+        ChipLogError(SoftwareUpdate,
+                     "[HTTPS-OTA] RESULT: FAIL range-unsupported (HTTP 200; need 206 Partial Content)");
+        return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
+    }
+    VerifyOrReturnError(httpCode == 206, CHIP_ERROR_INVALID_ARGUMENT);
 
+    // 2. Accumulate this Range response into the download block.
     const uint32_t space = mBlockSize - mBlockFilled;
     const uint32_t take  = static_cast<uint32_t>(std::min(data.size(), static_cast<size_t>(space)));
     memcpy(mBlockBuf + mBlockFilled, data.data(), take);
@@ -339,6 +323,7 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
     mNextOffset += mBlockFilled;
     NotifyProgress();
 
+    // 3. Finalize on short read (last Range returned fewer bytes than requested).
     const bool shortRead = (mBlockFilled < mBlockSize);
     mBlockFilled         = 0;
 
@@ -347,6 +332,7 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
         ReturnErrorOnFailure(mImageProcessor->Finalize());
         CancelStallTimer();
         CancelBusyRetryTimer();
+        ClearSessionTarget();
         SetState(State::kComplete, OTAChangeReasonEnum::kSuccess);
     }
 
@@ -422,6 +408,7 @@ void HttpsDownloader::OnDownloadTimeout()
     CancelStallTimer();
     CancelBusyRetryTimer();
     mWaitingHttp = false;
+    ClearSessionTarget();
 
     if ((mState == State::kInProgress) || (mState == State::kPreparing))
     {
@@ -438,6 +425,7 @@ void HttpsDownloader::EndDownload(CHIP_ERROR reason)
     CancelStallTimer();
     CancelBusyRetryTimer();
     mWaitingHttp = false;
+    ClearSessionTarget();
 
     if ((mState == State::kInProgress) || (mState == State::kPreparing))
     {
@@ -454,6 +442,7 @@ void HttpsDownloader::CleanupOnError(OTAChangeReasonEnum reason)
     CancelStallTimer();
     CancelBusyRetryTimer();
     mWaitingHttp = false;
+    ClearSessionTarget();
     SetState(State::kIdle, reason);
 }
 
@@ -469,6 +458,7 @@ void HttpsDownloader::SetState(State state, OTAChangeReasonEnum reason)
 void HttpsDownloader::NoteConnectivityLost()
 {
     mConnectivityLost = true;
+    CancelStallTimer();
 }
 
 CHIP_ERROR HttpsDownloader::NoteConnectivityRestored()

@@ -24,7 +24,7 @@
 // later <functional> / CHIP headers do not break.
 #ifdef bind
 #undef bind
-#endif
+#endif // bind
 
 #include <app/clusters/ota-requestor/OTADownloader.h>
 #include <app-common/zap-generated/cluster-enums.h>
@@ -40,17 +40,17 @@ namespace chip {
  * @brief OTADownloader that fetches a Matter OTA image over HTTPS using HTTP Range GETs.
  *
  * Transport only (BDXDownloader analog). Uses the shared HttpClient on the http_client thread.
- * Session URL is kept in RAM; persistent default URL lives on VendorOTARequestor.
+ * Receives a URL via SetImageURI; does not know the URL source or where it is stored.
  */
 class HttpsDownloader : public OTADownloader
 {
 public:
-    static constexpr uint32_t kDefaultBlockSize             = 1024;
-    static constexpr System::Clock::Timeout kDefaultTimeout = System::Clock::Seconds32(5 * 60);
+    static constexpr uint32_t kDefaultBlockSize               = 1024;
+    static constexpr System::Clock::Timeout kDefaultTimeout   = System::Clock::Seconds32(5 * 60);
     static constexpr System::Clock::Timeout kBusyRetryTimeout = System::Clock::Seconds16(1);
-    static constexpr size_t kMaxUrlLen                      = 256;
-    static constexpr size_t kMaxHostLen                     = 128;
-    static constexpr size_t kMaxPathLen                     = 160;
+    static constexpr size_t kMaxUrlLen                        = 256;
+    static constexpr size_t kMaxHostLen                       = 128;
+    static constexpr size_t kMaxPathLen                       = 160;
 
     class StateDelegate
     {
@@ -61,6 +61,19 @@ public:
         virtual ~StateDelegate()                                                                                   = default;
     };
 
+    /**
+     * App/example parses the image URI and applies any connect-endpoint override.
+     * Pointer is not owned.
+     */
+    class UriComposer
+    {
+    public:
+        virtual ~UriComposer() = default;
+        // Parse uri and fill connect endpoint, TLS hostname, port, and path.
+        virtual CHIP_ERROR ComposeImageUri(CharSpan uri, MutableCharSpan & serverEndpoint, MutableCharSpan & tlsHostname,
+                                           uint16_t & port, MutableCharSpan & path) = 0;
+    };
+
     void SetStateDelegate(StateDelegate * delegate) { mStateDelegate = delegate; }
     void SetTimeout(System::Clock::Timeout timeout) { mTimeout = timeout; }
     void SetBlockSize(uint32_t blockSize) { mBlockSize = blockSize; }
@@ -69,7 +82,10 @@ public:
     void SetHttpClient(DeviceLayer::Silabs::HttpClient * client) { mHttpClient = client; }
     DeviceLayer::Silabs::HttpClient * GetHttpClient() const { return mHttpClient; }
 
-    /** Per-session URL only (RAM). Does not write NVM. Expects https://host[:port]/path */
+    /** URI composer (parse + connect override). Pointer is not owned. */
+    void SetUriComposer(UriComposer * composer) { mUriComposer = composer; }
+
+    /** Compose uri into the session target, then use it for Range GETs. */
     CHIP_ERROR SetImageURI(CharSpan uri);
 
     CHIP_ERROR BeginPrepareDownload() override;
@@ -87,15 +103,8 @@ public:
     CHIP_ERROR NoteConnectivityRestored();
 
 private:
-    struct ParsedUrl
-    {
-        char host[kMaxHostLen]{};
-        char path[kMaxPathLen]{};
-        uint16_t port = 443;
-    };
-
-    CHIP_ERROR ParseUrl(CharSpan uri);
     CHIP_ERROR QueueRangeGet();
+    void ClearSessionTarget();
 
     void ArmStallTimer();
     void CancelStallTimer();
@@ -113,10 +122,14 @@ private:
     void SetState(State state, app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
     void CleanupOnError(app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
 
-    StateDelegate * mStateDelegate                        = nullptr;
-    DeviceLayer::Silabs::HttpClient * mHttpClient         = nullptr;
-    ParsedUrl mUrl{};
-    char mUrlStorage[kMaxUrlLen]{};
+    StateDelegate * mStateDelegate                = nullptr;
+    DeviceLayer::Silabs::HttpClient * mHttpClient = nullptr;
+    UriComposer * mUriComposer                    = nullptr;
+
+    char mServerEndpoint[kMaxHostLen]{};
+    char mTlsHostname[kMaxHostLen]{};
+    char mPath[kMaxPathLen]{};
+    uint16_t mPort = 0;
 
     System::Clock::Timeout mTimeout = kDefaultTimeout;
     uint32_t mBlockSize             = kDefaultBlockSize;

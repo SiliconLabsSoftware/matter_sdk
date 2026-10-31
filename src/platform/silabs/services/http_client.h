@@ -208,9 +208,10 @@ public:
     /**
      * @brief Start an HTTPS GET with a Range header (bytes=@p start-@p endInclusive).
      *
-     * Runs on the HttpClient service thread. When @p host.hostName is not an IPv4 literal, DNS is
-     * resolved on that thread. HTTP 200, 206, and 416 complete with CHIP_NO_ERROR; other 4xx/5xx fail.
-     * Call @ref GetLastHttpResponseCode from the completion callback to read the status (e.g. 416).
+     * Runs on the HttpClient service thread. Resolves @p host.serverEndpoint via
+     * @ref ResolveServerEndpoint (IPv4 literal or DNS). HTTP 206, and 416 complete with
+     * CHIP_NO_ERROR; other 4xx/5xx fail. Call @ref GetLastHttpResponseCode from the completion
+     * callback to read the status (e.g. 416).
      *
      * @p responseBuffer must remain valid until @p callback is invoked.
      */
@@ -222,6 +223,8 @@ public:
 
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
+    // "bytes=<10 digits>-<10 digits>\0" = 28 bytes; rounded up for alignment margin.
+    static constexpr size_t kRangeHeaderValueSize = 32;
     // HTTP request status codes.
     static constexpr uint8_t kHttpSuccessResponse = 1;
     static constexpr uint8_t kHttpFailureResponse = 2;
@@ -316,8 +319,6 @@ private:
     CHIP_ERROR ProcessContinueChunkedBody();
     CHIP_ERROR ResolveServerEndpoint();
     bool NeedsChunkedBody() const;
-    /** Resolve @p host into @p outIp when @p host is not an IPv4 literal. Runs on the service thread. */
-    static CHIP_ERROR ResolveDnsIfNeeded(const char * host, char * outIp, size_t outIpLen);
     void ClearRangeHeaders();
 
     /**
@@ -362,10 +363,9 @@ private:
     const char * mPendingResource = nullptr;
     ByteSpan mPendingBody;
 
-    uint32_t mPendingRangeStart         = 0;
-    uint32_t mPendingRangeEndInclusive  = 0;
-    char mResolvedServerIp[sizeof("255.255.255.255")]{};
-    char mRangeHeaderValue[64]{};
+    uint32_t mPendingRangeStart        = 0;
+    uint32_t mPendingRangeEndInclusive = 0;
+    char mRangeHeaderValue[kRangeHeaderValueSize]{};
     sl_http_client_request_t mRangeRequest{};
     uint16_t mLastHttpResponseCode = 0;
 

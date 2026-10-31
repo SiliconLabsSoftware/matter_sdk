@@ -101,22 +101,38 @@ void VendorOTARequestor::Init(HttpsDownloader & httpsDownloader,
     mHttpsDownloader->SetStateDelegate(this);
     mHttpsDownloader->SetTimeout(HttpsDownloader::kDefaultTimeout);
     mHttpsDownloader->SetBlockSize(HttpsDownloader::kDefaultBlockSize);
+    ApplyBindings();
 }
 
-CHIP_ERROR VendorOTARequestor::SetDefaultUrl(CharSpan url)
+void VendorOTARequestor::ApplyBindings()
 {
-    VerifyOrReturnError(url.size() > 0 && url.size() < kMaxDefaultUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
-    return SilabsConfig::WriteConfigValueStr(SilabsConfig::kConfigKey_HttpsOtaPathString, url.data(), url.size());
+    VerifyOrReturn(mHttpsDownloader != nullptr);
+    if (mHttpClient != nullptr)
+    {
+        mHttpsDownloader->SetHttpClient(mHttpClient);
+    }
+    if (mAppDelegate != nullptr)
+    {
+        mHttpsDownloader->SetUriComposer(mAppDelegate);
+    }
 }
 
-CHIP_ERROR VendorOTARequestor::GetDefaultUrl(MutableCharSpan & outUrl)
+void VendorOTARequestor::SetAppDelegate(AppDelegate * delegate)
 {
-    size_t outLen = 0;
-    ReturnErrorOnFailure(
-        SilabsConfig::ReadConfigValueStr(SilabsConfig::kConfigKey_HttpsOtaPathString, outUrl.data(), outUrl.size(), outLen));
-    VerifyOrReturnError(outLen > 0, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
-    outUrl.reduce_size(outLen);
-    return CHIP_NO_ERROR;
+    mAppDelegate = delegate;
+    ApplyBindings();
+}
+
+void VendorOTARequestor::SetHttpClient(DeviceLayer::Silabs::HttpClient * client)
+{
+    mHttpClient = client;
+    ApplyBindings();
+}
+
+CHIP_ERROR VendorOTARequestor::GetPeriodicUrl(MutableCharSpan & outUrl)
+{
+    VerifyOrReturnError(mAppDelegate != nullptr, CHIP_ERROR_NOT_FOUND);
+    return mAppDelegate->GetPeriodicUrl(outUrl);
 }
 
 bool VendorOTARequestor::IsMatterIdle() const
@@ -195,6 +211,7 @@ CHIP_ERROR VendorOTARequestor::PersistApplyingForConfirm(uint32_t targetVersion)
 
 CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
 {
+    // 1. Reject if a HTTPS session is already active or Matter BDX is not idle.
     if (mActive)
     {
         ChipLogError(SoftwareUpdate, "[HTTPS-OTA] StartUpdate: session already active");
@@ -215,6 +232,7 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
         return CHIP_ERROR_BUSY;
     }
 
+    // 2. Require a running HttpClient bound to the downloader.
     auto * client = mHttpsDownloader->GetHttpClient();
     if ((client == nullptr) || !client->IsRunning())
     {
@@ -229,6 +247,7 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
         mVendorDriver->StopPeriodicCheckTimer();
     }
 
+    // 3. Take OTA ownership, set the session URL, and begin prepare/download.
     CHIP_ERROR err = TakeOwnership();
     if (err != CHIP_NO_ERROR)
     {
@@ -274,6 +293,9 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
 
 void VendorOTARequestor::CancelImageUpdate()
 {
+    // No-op when HTTPS does not own the processor (avoids aborting Matter BDX).
+    VerifyOrReturn(mActive);
+
     if (mHttpsDownloader != nullptr)
     {
         mHttpsDownloader->EndDownload(CHIP_ERROR_CONNECTION_ABORTED);
@@ -301,10 +323,10 @@ void VendorOTARequestor::Reset()
 
 void VendorOTARequestor::OnDownloadStateChanged(OTADownloader::State state, OTAChangeReasonEnum reason)
 {
+    // 1. Download complete: persist apply markers and hand off to the image processor.
     if (state == OTADownloader::State::kComplete)
     {
-        mTargetVersion = mHttpsDownloader->GetTargetVersion();
-        TEMPORARY_RETURN_IGNORED SilabsConfig::WriteConfigValue(SilabsConfig::kConfigKey_HttpsOtaTargetVersion, mTargetVersion);
+        mTargetVersion            = mHttpsDownloader->GetTargetVersion();
         CHIP_ERROR persistErr = PersistApplyingForConfirm(mTargetVersion);
         if (persistErr != CHIP_NO_ERROR)
         {
@@ -323,6 +345,7 @@ void VendorOTARequestor::OnDownloadStateChanged(OTADownloader::State state, OTAC
         return;
     }
 
+    // 2. Failed idle transition: restore Matter ownership and re-arm the periodic check.
     if ((state == OTADownloader::State::kIdle) && (reason != OTAChangeReasonEnum::kSuccess))
     {
         if (mActive)

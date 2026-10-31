@@ -21,13 +21,6 @@
 #include <app/server/Server.h>
 #include <platform/CHIPDeviceLayer.h>
 
-#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-// Thermostat (and other apps with the HTTPS demo) provide this; weak no-op otherwise.
-// Rebinds HttpClient after VendorOTA Init when AppTask started HTTPS first (3s OTA delay).
-void https_client_bind_ota_downloader(void) __attribute__((weak));
-void https_client_bind_ota_downloader(void) {}
-#endif
-
 #ifndef SLI_SI91X_MCU_INTERFACE
 
 #include "api/application_properties.h"
@@ -97,7 +90,7 @@ chip::VendorOTARequestorDriver gVendorDriver;
 chip::VendorOtaMatterGate gVendorGate;
 #else
 chip::DeviceLayer::DefaultOTARequestorDriver gRequestorUser;
-#endif
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 
 void OTAConfig::Init()
 {
@@ -109,10 +102,7 @@ void OTAConfig::Init()
     // the requestor is not idle, which would abort an in-progress BDX or HTTPS OTA.
     // AddEventHandler and StartTimer are idempotent; this guard exists for the Reset.
     static bool sInitialized = false;
-    if (sInitialized)
-    {
-        return;
-    }
+    VerifyOrReturn(!sInitialized);
 
     // Initialize and interconnect the Requestor and Image Processor objects -- START
     SetRequestorInstance(&gRequestorCore);
@@ -145,17 +135,16 @@ void OTAConfig::Init()
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
 #if !(defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR)
 #error "SL_MATTER_ENABLE_HTTPS_OTA requires SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR"
-#endif
+#endif // SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
     gVendorGate.Init(gRequestorUser);
     gVendorDriver.SetPeriodicCheckTimeout(SL_MATTER_HTTPS_OTA_PERIODIC_TIMEOUT);
 
     chip::VendorOTARequestor::GetInstance().Init(gHttpsDownloader, imageProcessor, gRequestorCore, gDownloader, gRequestorStorage,
                                                  gVendorGate, gVendorDriver);
-    // AppTask may already have started HttpClient before this delayed Init; bind now.
-    https_client_bind_ota_downloader();
     // Starts periodic timer + registers connectivity event handler.
+    // App binds HttpClient / UriComposer via VendorOTARequestor::SetHttpClient / SetAppDelegate.
     gVendorDriver.Init(&chip::VendorOTARequestor::GetInstance());
-#endif
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
     sInitialized = true;
     // Initialize and interconnect the Requestor and Image Processor objects -- END
 }

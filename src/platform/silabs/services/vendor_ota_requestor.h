@@ -36,8 +36,6 @@ namespace chip {
 class VendorOTARequestor : public OTARequestorInterface, public HttpsDownloader::StateDelegate
 {
 public:
-    static constexpr size_t kMaxDefaultUrlLen = HttpsDownloader::kMaxUrlLen;
-
     enum class LastResultReason : uint8_t
     {
         kOk = 0,
@@ -50,14 +48,30 @@ public:
         kClientStart,
     };
 
+    /**
+     * App/example owns URI composition and the periodic URL store.
+     * Register via SetAppDelegate; pointer is not owned.
+     */
+    class AppDelegate : public HttpsDownloader::UriComposer
+    {
+    public:
+        // CHIP_ERROR_NOT_FOUND when no periodic URL is configured.
+        virtual CHIP_ERROR GetPeriodicUrl(MutableCharSpan & outUrl) = 0;
+    };
+
     static VendorOTARequestor & GetInstance();
 
     void Init(HttpsDownloader & httpsDownloader, DeviceLayer::Silabs::MultiOTA::OTAMultiImageProcessorImpl & imageProcessor,
               OTARequestorInterface & matterRequestor, OTADownloader & bdxDownloader, DefaultOTARequestorStorage & matterStorage,
               VendorOtaMatterGate & gate, VendorOTARequestorDriver & vendorDriver);
 
-    CHIP_ERROR SetDefaultUrl(CharSpan url);
-    CHIP_ERROR GetDefaultUrl(MutableCharSpan & outUrl);
+    /** Cache app delegate and forward UriComposer to the downloader when ready. */
+    void SetAppDelegate(AppDelegate * delegate);
+    /** Cache HttpClient and forward to the downloader when ready. */
+    void SetHttpClient(DeviceLayer::Silabs::HttpClient * client);
+
+    /** Forwards to AppDelegate; CHIP_ERROR_NOT_FOUND if none / no URL. */
+    CHIP_ERROR GetPeriodicUrl(MutableCharSpan & outUrl);
 
     /** Start a one-shot HTTPS OTA session. Does not write NVM. */
     CHIP_ERROR StartUpdate(CharSpan httpsUrl);
@@ -100,6 +114,7 @@ public:
     ProviderLocationList::Iterator GetDefaultOTAProviderListIterator() override;
 
 private:
+    void ApplyBindings();
     CHIP_ERROR TakeOwnership();
     void RestoreMatterOwnership();
     bool IsMatterIdle() const;
@@ -107,13 +122,15 @@ private:
     CHIP_ERROR PersistApplyingForConfirm(uint32_t targetVersion);
     void SetLastResult(CHIP_ERROR err, LastResultReason reason);
 
-    HttpsDownloader * mHttpsDownloader                                              = nullptr;
+    HttpsDownloader * mHttpsDownloader                                          = nullptr;
     DeviceLayer::Silabs::MultiOTA::OTAMultiImageProcessorImpl * mImageProcessor = nullptr;
-    OTARequestorInterface * mMatterRequestor                                        = nullptr;
-    OTADownloader * mBdxDownloader                                                  = nullptr;
-    DefaultOTARequestorStorage * mMatterStorage                                     = nullptr;
-    VendorOtaMatterGate * mGate                                                     = nullptr;
-    VendorOTARequestorDriver * mVendorDriver                                        = nullptr;
+    OTARequestorInterface * mMatterRequestor                                    = nullptr;
+    OTADownloader * mBdxDownloader                                              = nullptr;
+    DefaultOTARequestorStorage * mMatterStorage                                 = nullptr;
+    VendorOtaMatterGate * mGate                                                 = nullptr;
+    VendorOTARequestorDriver * mVendorDriver                                    = nullptr;
+    AppDelegate * mAppDelegate                                                  = nullptr;
+    DeviceLayer::Silabs::HttpClient * mHttpClient                               = nullptr;
 
     bool mActive                    = false;
     OTAUpdateStateEnum mUpdateState = OTAUpdateStateEnum::kIdle;
@@ -121,8 +138,8 @@ private:
     app::DataModel::Nullable<uint8_t> mProgress;
     ProviderLocationList mEmptyProviderList;
 
-    CHIP_ERROR mLastResultError         = CHIP_NO_ERROR;
-    LastResultReason mLastResultReason  = LastResultReason::kOk;
+    CHIP_ERROR mLastResultError        = CHIP_NO_ERROR;
+    LastResultReason mLastResultReason = LastResultReason::kOk;
 };
 
 } // namespace chip
