@@ -188,6 +188,8 @@ public:
     static constexpr Key kConfigKey_BootCount             = SilabsConfigKey(kMatterConfig_KeyBase, 0x21);
     static constexpr Key kConfigKey_TotalOperationalHours = SilabsConfigKey(kMatterConfig_KeyBase, 0x22);
     static constexpr Key kConfigKey_MatterUpdateReboot    = SilabsConfigKey(kMatterConfig_KeyBase, 0x23);
+    // Survives post-apply reboot so VendorOtaMatterGate can skip NotifyUpdateApplied.
+    static constexpr Key kConfigKey_HttpsOtaSkipNotify    = SilabsConfigKey(kMatterConfig_KeyBase, 0x24);
 
     static constexpr Key kConfigKey_GroupKeyMax =
         SilabsConfigKey(kMatterConfig_KeyBase, 0x1E); // Allows 16 Group Keys to be created.
@@ -206,7 +208,7 @@ public:
     static constexpr Key kMinConfigKey_MatterFactory = SilabsConfigKey(kMatterFactory_KeyBase, 0x00);
     static constexpr Key kMaxConfigKey_MatterFactory = SilabsConfigKey(kMatterFactory_KeyBase, 0x30);
     static constexpr Key kMinConfigKey_MatterConfig  = SilabsConfigKey(kMatterConfig_KeyBase, 0x00);
-    static constexpr Key kMaxConfigKey_MatterConfig  = SilabsConfigKey(kMatterConfig_KeyBase, 0x23);
+    static constexpr Key kMaxConfigKey_MatterConfig  = SilabsConfigKey(kMatterConfig_KeyBase, 0x24);
 
     // Allows 32 Counters to be created.
     static constexpr Key kMinConfigKey_MatterCounter = SilabsConfigKey(kMatterCounter_KeyBase, 0x00);

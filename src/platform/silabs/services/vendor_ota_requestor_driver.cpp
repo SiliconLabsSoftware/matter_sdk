@@ -1,0 +1,131 @@
+/*
+ *
+ *    Copyright (c) 2026 Project CHIP Authors
+ *    All rights reserved.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+#include "vendor_ota_requestor_driver.h"
+#include "https_downloader.h"
+#include "vendor_ota_requestor.h"
+
+#include <lib/support/CodeUtils.h>
+#include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceLayer.h>
+
+namespace chip {
+
+void VendorOTARequestorDriver::Init(VendorOTARequestor * requestor)
+{
+    mRequestor = requestor;
+
+    // Same role as DefaultOTARequestorDriver::Init starting the periodic query timer.
+    StartPeriodicCheckTimer();
+
+    // Matter ConnectivityManager has no dedicated callback API; PlatformMgr events are the
+    // supported hook.
+    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().AddEventHandler(OnPlatformEvent, reinterpret_cast<intptr_t>(this));
+}
+
+void VendorOTARequestorDriver::SetPeriodicCheckTimeout(uint32_t timeoutSec)
+{
+    if (timeoutSec != 0)
+    {
+        mPeriodicTimeoutSec = timeoutSec;
+    }
+}
+
+void VendorOTARequestorDriver::StartPeriodicCheckTimer()
+{
+    StopPeriodicCheckTimer();
+    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().StartTimer(System::Clock::Seconds32(mPeriodicTimeoutSec),
+                                                                   PeriodicCheckTimerHandler, this);
+}
+
+void VendorOTARequestorDriver::StopPeriodicCheckTimer()
+{
+    DeviceLayer::SystemLayer().CancelTimer(PeriodicCheckTimerHandler, this);
+}
+
+void VendorOTARequestorDriver::PeriodicCheckTimerHandler(System::Layer * /* layer */, void * appState)
+{
+    static_cast<VendorOTARequestorDriver *>(appState)->OnPeriodicCheck();
+}
+
+void VendorOTARequestorDriver::OnPlatformEvent(const DeviceLayer::ChipDeviceEvent * event, intptr_t arg)
+{
+    auto * self = reinterpret_cast<VendorOTARequestorDriver *>(arg);
+    VerifyOrReturn(self != nullptr && self->mRequestor != nullptr);
+    VerifyOrReturn(event->Type == DeviceLayer::DeviceEventType::kInternetConnectivityChange);
+
+    // IPv4 only; ignore IPv6 and IPv4 NoChange.
+    const auto ipv4 = event->InternetConnectivityChange.IPv4;
+    if (ipv4 == DeviceLayer::kConnectivity_Established)
+    {
+        self->mIPv4Established = true;
+    }
+    else if (ipv4 == DeviceLayer::kConnectivity_Lost)
+    {
+        self->mIPv4Established = false;
+    }
+    else
+    {
+        return;
+    }
+
+    self->mRequestor->OnWiFiConnectivityChanged(self->mIPv4Established);
+}
+
+void VendorOTARequestorDriver::OnPeriodicCheck()
+{
+    VerifyOrReturn(mRequestor != nullptr);
+
+    char urlBuf[HttpsDownloader::kMaxUrlLen];
+    MutableCharSpan url(urlBuf);
+    CHIP_ERROR err = mRequestor->GetPeriodicUrl(url);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] periodic skip: no url");
+        StartPeriodicCheckTimer();
+        return;
+    }
+
+    ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] using periodic url=%.*s", static_cast<int>(url.size()), url.data());
+
+    err = mRequestor->StartUpdate(CharSpan(url.data(), url.size()));
+    if (err != CHIP_NO_ERROR)
+    {
+        if (err == CHIP_ERROR_BUSY)
+        {
+            ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] periodic re-arm: busy");
+        }
+        else
+        {
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] periodic re-arm: start failed %" CHIP_ERROR_FORMAT, err.Format());
+        }
+        StartPeriodicCheckTimer();
+    }
+}
+
+void VendorOTARequestorDriver::UpdateNotFound()
+{
+    StartPeriodicCheckTimer();
+}
+
+void VendorOTARequestorDriver::UpdateFailed()
+{
+    StartPeriodicCheckTimer();
+}
+
+} // namespace chip

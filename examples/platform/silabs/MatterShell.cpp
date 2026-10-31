@@ -182,12 +182,26 @@ void RegisterCommands()
 
 namespace DemoShellCommands {
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+void PrintHttpsOtaHelp()
+{
+    streamer_printf(streamer_get(), "Usage: demo https-ota <url|abort|default|status>\r\n");
+    streamer_printf(streamer_get(), "  url <url>       Start one-shot HTTPS OTA (no NVM write)\r\n");
+    streamer_printf(streamer_get(), "  abort           Cancel in-progress HTTPS OTA\r\n");
+    streamer_printf(streamer_get(), "  default <url>   Set periodic check URL (RAM only, lost on reboot)\r\n");
+    streamer_printf(streamer_get(), "  status          Show state / progress / last result\r\n");
+}
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
+
 CHIP_ERROR DemoHelpHandler(int /* argc */, char ** /* argv */)
 {
     streamer_printf(streamer_get(), "Usage: demo <service>\r\n");
 
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
     streamer_printf(streamer_get(), "  http  Run HTTPS PUT/GET/POST on the AppTask thread\r\n");
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    streamer_printf(streamer_get(), "  https-ota  Vendor HTTPS OTA: url|abort|default|status\r\n");
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
 #if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
@@ -203,6 +217,41 @@ CHIP_ERROR DemoCommandHandler(int argc, char ** argv)
     {
         return DemoHelpHandler(argc, argv);
     }
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    if (strcmp(argv[0], "https-ota") == 0)
+    {
+        if (argc < 2)
+        {
+            PrintHttpsOtaHelp();
+            return CHIP_NO_ERROR;
+        }
+
+        if (strcmp(argv[1], "url") == 0)
+        {
+            VerifyOrReturnError(argc == 3, CHIP_ERROR_INVALID_ARGUMENT);
+            return HttpsOtaQueueUrl(argv[2]);
+        }
+        if (strcmp(argv[1], "abort") == 0)
+        {
+            VerifyOrReturnError(argc == 2, CHIP_ERROR_INVALID_ARGUMENT);
+            return HttpsOtaAbort();
+        }
+        if (strcmp(argv[1], "default") == 0)
+        {
+            VerifyOrReturnError(argc == 3, CHIP_ERROR_INVALID_ARGUMENT);
+            return HttpsOtaSetPeriodicUrl(argv[2]);
+        }
+        if (strcmp(argv[1], "status") == 0)
+        {
+            VerifyOrReturnError(argc == 2, CHIP_ERROR_INVALID_ARGUMENT);
+            return HttpsOtaStatusCommand();
+        }
+
+        PrintHttpsOtaHelp();
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 
     VerifyOrReturnError(argc == 1, CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -235,7 +284,8 @@ CHIP_ERROR DemoCommandHandler(int argc, char ** argv)
 
 void RegisterCommands()
 {
-    static const Shell::Command sDemoCmd = { &DemoCommandHandler, "demo", "Run a Matter service demo: demo <http|mqtt>" };
+    static const Shell::Command sDemoCmd = { &DemoCommandHandler, "demo",
+                                             "Run a Matter service demo: demo <http|https-ota|mqtt>" };
     Engine::Root().RegisterCommands(&sDemoCmd, 1);
 }
 
