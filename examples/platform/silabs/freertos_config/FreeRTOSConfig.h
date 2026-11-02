@@ -132,6 +132,7 @@ extern uint32_t SystemCoreClock;
 
 #if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 void sl_matter_em4_check(uint32_t expected_idle_time_ms);
+void sl_matter_em4_cancel(void);
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 
 /*-----------------------------------------------------------
@@ -151,6 +152,7 @@ void sl_matter_em4_check(uint32_t expected_idle_time_ms);
 #define configUSE_TICKLESS_IDLE 1
 #if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 #define configPRE_SLEEP_PROCESSING(x) sl_matter_em4_check(x)
+#define configPOST_SLEEP_PROCESSING(x) sl_matter_em4_cancel()
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 #elif (SLI_SI91X_MCU_INTERFACE && SL_ICD_ENABLED)
 #define configUSE_TICKLESS_IDLE 1
