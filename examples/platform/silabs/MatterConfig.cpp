@@ -39,6 +39,9 @@
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #include <sl_component_catalog.h>
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1) && defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
+#include "sl_gpio.h"
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1) && defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
 #ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
 #include <sl_watchdog_manager.h>
 #endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
@@ -228,9 +231,9 @@ static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 uint32_t sMatterEm4Duration = 0;
 bool sMatterEm4Pending      = false;
 
-void OnPowerManagerTransition(sl_power_manager_em_t, sl_power_manager_em_t to)
+void OnPowerManagerEnteringEm2(sl_power_manager_em_t, sl_power_manager_em_t)
 {
-    if (to != SL_POWER_MANAGER_EM2 || !sMatterEm4Pending)
+    if (!sMatterEm4Pending)
     {
         return;
     }
@@ -250,8 +253,13 @@ void OnPowerManagerTransition(sl_power_manager_em_t, sl_power_manager_em_t to)
     BURTC_CompareSet(0, sMatterEm4Duration);
 
     BURTC_Enable(true);
+
     EMU_EM4Init_TypeDef em4Init = EMU_EM4INIT_DEFAULT;
     EMU_EM4Init(&em4Init);
+#if defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
+    // Button init already enabled the BTN0 EM4 wake pin. Keep that pin state through EM4.
+    sl_gpio_set_pin_em4_retention(true);
+#endif // SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT
     BURTC_CounterReset();
 
     BURTC_IntClear(BURTC_IF_COMP);
@@ -263,7 +271,7 @@ void OnPowerManagerTransition(sl_power_manager_em_t, sl_power_manager_em_t to)
 sl_power_manager_em_transition_event_handle_t sEm4TransitionEventHandle;
 const sl_power_manager_em_transition_event_info_t sEm4TransitionEventInfo = {
     .event_mask = SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM2,
-    .on_event   = OnPowerManagerTransition,
+    .on_event   = OnPowerManagerEnteringEm2,
 };
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 
