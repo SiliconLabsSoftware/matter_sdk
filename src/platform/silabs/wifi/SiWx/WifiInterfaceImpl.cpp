@@ -36,7 +36,7 @@
 #include <inet/UDPEndPointImplLwIP.h>
 // TODO: Remove nogncheck once we have a proper way to include this file.
 #include <platform/CHIPDeviceLayer.h> // nogncheck
-#endif // SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
+#endif                                // SL_INET_CONFIG_UDP_LWIP_QUEUE_UNTIL_NETIF_READY
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -455,22 +455,6 @@ sl_status_t SetWifiConfigurations()
     return status;
 }
 
-#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-/**
- * @brief Applies the Matter neutral-less switch application profile.
- *
- * @return SL_STATUS_OK on success, or the sl_status_t error code from sl_net_set_application_profile on failure.
- */
-sl_status_t ApplyNeutralLessSwitchProfile()
-{
-    sl_status_t status =
-        sl_net_set_application_profile(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_APPLICATION_PROFILE_MATTER_NEUTRAL_LESS_SWITCH);
-    VerifyOrReturnError(status == SL_STATUS_OK, status,
-                        ChipLogError(DeviceLayer, "Failed to set application profile: 0x%lx", static_cast<uint32_t>(status)));
-    return status;
-}
-#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 /**
  * @brief Converts the Matter Power Save Configuration to the SiWx Power Save Configuration
@@ -529,11 +513,6 @@ void WifiInterfaceImpl::MatterWifiTask(void * arg)
     VerifyOrReturn(status == SL_STATUS_OK,
                    ChipLogError(DeviceLayer, "MatterWifiTask: SiWxPlatformInit failed: 0x%" PRIx32, static_cast<uint32_t>(status)));
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-    // Remove High performance request after the device is initialized
-    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-
     WifiInterfaceImpl::GetInstance().NotifyWifiTaskInitialized();
 
     ChipLogDetail(DeviceLayer, "MatterWifiTask: starting event loop");
@@ -553,11 +532,6 @@ void WifiInterfaceImpl::MatterWifiTask(void * arg)
 CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
 {
     sl_status_t status = SL_STATUS_OK;
-
-#if CHIP_CONFIG_ENABLE_ICD_SERVER
-    // Force the device to high performance mode during the init sequence.
-    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::WifiSleepManager::GetInstance().RequestHighPerformanceWithoutTransition();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
     // The device configuration must be fully built before sl_net_init, which consumes it.
     sl_wifi_device_configuration_t deviceConfiguration = SLNetGetDeviceConfig();
@@ -585,8 +559,10 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    status = ApplyNeutralLessSwitchProfile();
-    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
+    status = sl_net_set_application_profile_config(SL_NET_APP_PROFILE_NEUTRAL_LESS_POWER_SAVE);
+    VerifyOrReturnError(
+        status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+        ChipLogError(DeviceLayer, "Failed to set application profile config: 0x%lx", static_cast<uint32_t>(status)));
 #endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     return CHIP_NO_ERROR;
@@ -715,11 +691,6 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     // failure only happens when the firmware returns an error
     ChipLogError(DeviceLayer, "sl_net_up failed: 0x%" PRIx32, static_cast<uint32_t>(status));
 
-#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    // Re-apply after join failure.
-    TEMPORARY_RETURN_IGNORED ApplyNeutralLessSwitchProfile();
-#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-
     wfx_rsi.dev_state.Clear(WifiInterface::WifiState::kStationConnecting).Clear(WifiInterface::WifiState::kStationConnected);
     mLastDisconnectionReason = status;
     WifiInterface::NotifyDisconnection(status);
@@ -727,8 +698,8 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
     // Join failed; allow deferred LIT idle transitions to run now that connecting is clear.
     {
-        CHIP_ERROR err = WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(
-            WifiSleepManager::PowerEvent::kGenericEvent);
+        CHIP_ERROR err =
+            WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent);
         if (err != CHIP_NO_ERROR)
         {
             ChipLogError(DeviceLayer, "Join-failure sleep transition failed: %" CHIP_ERROR_FORMAT, err.Format());
@@ -745,10 +716,6 @@ sl_status_t WifiInterfaceImpl::JoinCallback(sl_wifi_event_t event, char * result
     // If the failed event is encountered when sl_net_up is in-progress,
     // we ignore it and wait for the sl_net_up to complete.
 
-#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    // Re-apply the application profile after a join failure.
-    TEMPORARY_RETURN_IGNORED ApplyNeutralLessSwitchProfile();
-#endif // SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     if (wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting))
     {
         wfx_rsi.dev_state.Clear(WifiState::kStationConnecting);
@@ -972,8 +939,8 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
     // Do not change the power profile while the station is joining an AP.
     VerifyOrReturnError(!wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting), CHIP_NO_ERROR);
 
-    // Power save configuration is already set, nothing to do
-    VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration, CHIP_NO_ERROR);
+    // Skip only when both the power-save profile and listen interval are unchanged.
+    VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration || mCurrentListenInterval != listenInterval, CHIP_NO_ERROR);
 
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
     int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
@@ -993,6 +960,7 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
                         ChipLogError(DeviceLayer, "sl_wifi_set_performance_profile_v2 failed: 0x%" PRIx32, status));
 
     mCurrentPowerSaveConfiguration = configuration;
+    mCurrentListenInterval         = listenInterval;
     return CHIP_NO_ERROR;
 }
 

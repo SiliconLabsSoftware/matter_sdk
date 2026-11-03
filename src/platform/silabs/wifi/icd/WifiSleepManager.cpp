@@ -82,7 +82,8 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
-        // Preserve mActiveMode; HP cycles and connectivity use these events.
+    case PowerEvent::kOTAEvent:
+        // Preserve mActiveMode; HP cycles, connectivity, and OTA use these events.
         break;
     case PowerEvent::kActiveMode:
     case PowerEvent::kConnectedActiveMode:
@@ -125,8 +126,17 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
         return ConfigureDeepSleep();
     }
 
+    if (event == PowerEvent::kOTAEvent)
+    {
+        // Neutral-less OTA stays in associated sleep with a short LI (300 ms) so download/Apply
+        // traffic can be received without entering high-performance / no-sleep.
+        constexpr uint32_t kOtaEventListenIntervalMs = 300;
+        return ConfigureLIBasedSleep(kOtaEventListenIntervalMs);
+    }
+
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {
+        const uint32_t listenIntervalMs = chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count();
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
         if (!mActiveMode)
         {
@@ -140,9 +150,9 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
             return ConfigureLITDisconnect();
         }
 
-        return ConfigureLIBasedSleep();
+        return ConfigureLIBasedSleep(listenIntervalMs);
 #else  // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-        return ConfigureLIBasedSleep();
+        return ConfigureLIBasedSleep(listenIntervalMs);
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
 
@@ -180,7 +190,7 @@ CHIP_ERROR WifiSleepManager::ConfigureHighPerformance()
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
+CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep(uint32_t listenIntervalMs)
 {
     // LI sleep requires an active Wi-Fi association (connected to an AP).
     // Skip while joining or after a join failure.
@@ -191,8 +201,7 @@ CHIP_ERROR WifiSleepManager::ConfigureLIBasedSleep()
 
     // Allowing the device to go to sleep must be the last actions to avoid configuration failures.
     ReturnLogErrorOnFailure(
-        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kLIConnectedSleep,
-                                                chip::ICDConfigurationData::GetInstance().GetSlowPollingInterval().count()));
+        mPowerSaveInterface->ConfigurePowerSave(PowerSaveInterface::PowerSaveConfiguration::kLIConnectedSleep, listenIntervalMs));
 
     return CHIP_NO_ERROR;
 }

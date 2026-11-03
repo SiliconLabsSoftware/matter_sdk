@@ -45,6 +45,7 @@ public:
         kActiveMode            = 3,
         kIdleMode              = 4,
         kConnectedActiveMode   = 5,
+        kOTAEvent              = 6,
     };
 
     /**
@@ -203,11 +204,13 @@ private:
 
     /**
      * @brief Configures the Wi-Fi Chip to go to LI based sleep.
-     *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+     *        Function sets the listen interval and enables the broadcast filter.
+     *
+     * @param listenIntervalMs Listen interval in milliseconds
      *
      * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
      */
-    CHIP_ERROR ConfigureLIBasedSleep();
+    CHIP_ERROR ConfigureLIBasedSleep(uint32_t listenIntervalMs);
 
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     /**
@@ -216,7 +219,7 @@ private:
     CHIP_ERROR ConfigureLITDisconnect();
 
     CHIP_ERROR ConfigureLITConnect();
-    #endif // CHIP_CONFIG_ENABLE_ICD_LIT
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
     /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
