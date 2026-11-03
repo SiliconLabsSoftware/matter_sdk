@@ -224,6 +224,49 @@ constexpr osThreadAttr_t kMainTaskAttr = { .name       = "main",
 osThreadId_t sMainTaskHandle;
 static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+uint32_t sMatterEm4Duration = 0;
+bool sMatterEm4Pending      = false;
+
+void OnPowerManagerTransition(sl_power_manager_em_t, sl_power_manager_em_t to)
+{
+    if (to != SL_POWER_MANAGER_EM2 || !sMatterEm4Pending)
+    {
+        return;
+    }
+
+    sMatterEm4Pending = false;
+
+    CMU_ClockSelectSet(cmuClock_EM4GRPACLK, cmuSelect_ULFRCO);
+    CMU_ClockEnable(cmuClock_BURTC, true);
+    CMU_ClockEnable(cmuClock_BURAM, true);
+
+    BURTC_Init_TypeDef burtcInit = BURTC_INIT_DEFAULT;
+    burtcInit.compare0Top        = true; // reset counter when counter reaches compare value
+    burtcInit.em4comp            = true; // BURTC compare interrupt wakes from EM4 (causes reset)
+    BURTC_Init(&burtcInit);
+
+    BURTC_CounterReset();
+    BURTC_CompareSet(0, sMatterEm4Duration);
+
+    BURTC_Enable(true);
+    EMU_EM4Init_TypeDef em4Init = EMU_EM4INIT_DEFAULT;
+    EMU_EM4Init(&em4Init);
+    BURTC_CounterReset();
+
+    BURTC_IntClear(BURTC_IF_COMP);
+    BURTC_IntEnable(BURTC_IEN_COMP); // compare match
+    NVIC_EnableIRQ(BURTC_IRQn);
+    sl_power_manager_enter_em4();
+}
+
+sl_power_manager_em_transition_event_handle_t sEm4TransitionEventHandle;
+const sl_power_manager_em_transition_event_info_t sEm4TransitionEventInfo = {
+    .event_mask = SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM2,
+    .on_event   = OnPowerManagerTransition,
+};
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+
 void ApplicationStart(void * unused)
 {
     CHIP_ERROR err = SilabsMatterConfig::InitMatter(BLE_DEV_NAME);
@@ -232,6 +275,10 @@ void ApplicationStart(void * unused)
 
     SILABS_TRACE_END(TimeTraceOperation::kMatterInit);
     SILABS_TRACE_BEGIN(TimeTraceOperation::kAppInit);
+
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+    sl_power_manager_subscribe_em_transition_event(&sEm4TransitionEventHandle, &sEm4TransitionEventInfo);
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 
     err = AppTask::GetAppTask().StartAppTask();
     if (err != CHIP_NO_ERROR)
@@ -458,69 +505,10 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 }
 
 #if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
-namespace {
-
-uint32_t sMatterEm4Duration;
-bool sMatterEm4Pending;
-
-void OnPowerManagerTransition(sl_power_manager_em_t, sl_power_manager_em_t to)
-{
-    if (to != SL_POWER_MANAGER_EM2 || !sMatterEm4Pending)
-    {
-        return;
-    }
-
-    sMatterEm4Pending = false;
-
-    CMU_ClockSelectSet(cmuClock_EM4GRPACLK, cmuSelect_ULFRCO);
-    CMU_ClockEnable(cmuClock_BURTC, true);
-    CMU_ClockEnable(cmuClock_BURAM, true);
-
-    BURTC_Init_TypeDef burtcInit = BURTC_INIT_DEFAULT;
-    burtcInit.compare0Top        = true; // reset counter when counter reaches compare value
-    burtcInit.em4comp            = true; // BURTC compare interrupt wakes from EM4 (causes reset)
-    BURTC_Init(&burtcInit);
-
-    BURTC_CounterReset();
-    BURTC_CompareSet(0, sMatterEm4Duration);
-
-    BURTC_Enable(true);
-    EMU_EM4Init_TypeDef em4Init = EMU_EM4INIT_DEFAULT;
-    EMU_EM4Init(&em4Init);
-    BURTC_CounterReset();
-
-    BURTC_IntClear(BURTC_IF_COMP);
-    BURTC_IntEnable(BURTC_IEN_COMP); // compare match
-    NVIC_EnableIRQ(BURTC_IRQn);
-    sl_power_manager_enter_em4();
-}
-
-} // namespace
-
-void OnEM4Trigger(uint32_t duration)
-{
-    static sl_power_manager_em_transition_event_handle_t transitionEventHandle;
-    static const sl_power_manager_em_transition_event_info_t transitionEventInfo = {
-        .event_mask = SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM2,
-        .on_event   = OnPowerManagerTransition,
-    };
-    static bool transitionEventSubscribed;
-
-    sMatterEm4Duration = duration;
-    sMatterEm4Pending  = true;
-
-    if (!transitionEventSubscribed)
-    {
-        sl_power_manager_subscribe_em_transition_event(&transitionEventHandle, &transitionEventInfo);
-        transitionEventSubscribed = true;
-    }
-}
-
 extern "C" void sl_matter_em4_cancel(void)
 {
     sMatterEm4Pending = false;
 }
-
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 // ================================================================================
 // FreeRTOS Callbacks
@@ -559,7 +547,8 @@ extern "C" void sl_matter_em4_check(uint32_t expected_idle_time_ms)
         // Multiply by 10 to converts seconds into milliseconds (e.g. 90% of 1000sec in ms is 1000*90*10 = 900000ms)
         if (expected_idle_time_ms >= threshold_ms)
         {
-            OnEM4Trigger(expected_idle_time_ms);
+            sMatterEm4Duration = expected_idle_time_ms;
+            sMatterEm4Pending  = true;
         }
     }
 }
