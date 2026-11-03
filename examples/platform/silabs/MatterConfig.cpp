@@ -34,10 +34,14 @@
 #include "em_burtc.h"
 #include "em_cmu.h"
 #include "em_emu.h"
+#include "sl_power_manager.h"
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #include <sl_component_catalog.h>
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1) && defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
+#include "sl_gpio.h"
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1) && defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
 #ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
 #include <sl_watchdog_manager.h>
 #endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
@@ -223,6 +227,54 @@ constexpr osThreadAttr_t kMainTaskAttr = { .name       = "main",
 osThreadId_t sMainTaskHandle;
 static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+uint32_t sMatterEm4Duration = 0;
+bool sMatterEm4Pending      = false;
+
+void OnPowerManagerEnteringEm2(sl_power_manager_em_t, sl_power_manager_em_t)
+{
+    if (!sMatterEm4Pending)
+    {
+        return;
+    }
+
+    sMatterEm4Pending = false;
+
+    CMU_ClockSelectSet(cmuClock_EM4GRPACLK, cmuSelect_ULFRCO);
+    CMU_ClockEnable(cmuClock_BURTC, true);
+    CMU_ClockEnable(cmuClock_BURAM, true);
+
+    BURTC_Init_TypeDef burtcInit = BURTC_INIT_DEFAULT;
+    burtcInit.compare0Top        = true; // reset counter when counter reaches compare value
+    burtcInit.em4comp            = true; // BURTC compare interrupt wakes from EM4 (causes reset)
+    BURTC_Init(&burtcInit);
+
+    BURTC_CounterReset();
+    BURTC_CompareSet(0, sMatterEm4Duration);
+
+    BURTC_Enable(true);
+
+    EMU_EM4Init_TypeDef em4Init = EMU_EM4INIT_DEFAULT;
+    EMU_EM4Init(&em4Init);
+#if defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
+    // Button init already enabled the BTN0 EM4 wake pin. Keep that pin state through EM4.
+    sl_gpio_set_pin_em4_retention(true);
+#endif // SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT
+    BURTC_CounterReset();
+
+    BURTC_IntClear(BURTC_IF_COMP);
+    BURTC_IntEnable(BURTC_IEN_COMP); // compare match
+    NVIC_EnableIRQ(BURTC_IRQn);
+    sl_power_manager_enter_em4();
+}
+
+sl_power_manager_em_transition_event_handle_t sEm4TransitionEventHandle;
+const sl_power_manager_em_transition_event_info_t sEm4TransitionEventInfo = {
+    .event_mask = SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM2,
+    .on_event   = OnPowerManagerEnteringEm2,
+};
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+
 void ApplicationStart(void * unused)
 {
     CHIP_ERROR err = SilabsMatterConfig::InitMatter(BLE_DEV_NAME);
@@ -231,6 +283,10 @@ void ApplicationStart(void * unused)
 
     SILABS_TRACE_END(TimeTraceOperation::kMatterInit);
     SILABS_TRACE_BEGIN(TimeTraceOperation::kAppInit);
+
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+    sl_power_manager_subscribe_em_transition_event(&sEm4TransitionEventHandle, &sEm4TransitionEventInfo);
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 
     err = AppTask::GetAppTask().StartAppTask();
     if (err != CHIP_NO_ERROR)
@@ -457,31 +513,10 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 }
 
 #if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
-void OnEM4Trigger(uint32_t duration)
+extern "C" void sl_matter_em4_cancel(void)
 {
-    CMU_ClockSelectSet(cmuClock_EM4GRPACLK, cmuSelect_ULFRCO);
-    CMU_ClockEnable(cmuClock_BURTC, true);
-    CMU_ClockEnable(cmuClock_BURAM, true);
-
-    BURTC_Init_TypeDef burtcInit = BURTC_INIT_DEFAULT;
-    burtcInit.compare0Top        = true; // reset counter when counter reaches compare value
-    burtcInit.em4comp            = true; // BURTC compare interrupt wakes from EM4 (causes reset)
-    BURTC_Init(&burtcInit);
-
-    BURTC_CounterReset();
-    BURTC_CompareSet(0, duration);
-
-    BURTC_Enable(true);
-    EMU_EM4Init_TypeDef em4Init = EMU_EM4INIT_DEFAULT;
-    EMU_EM4Init(&em4Init);
-    BURTC_CounterReset();
-
-    BURTC_IntClear(BURTC_IF_COMP);
-    BURTC_IntEnable(BURTC_IEN_COMP); // compare match
-    NVIC_EnableIRQ(BURTC_IRQn);
-    EMU_EnterEM4();
+    sMatterEm4Pending = false;
 }
-
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 // ================================================================================
 // FreeRTOS Callbacks
@@ -520,7 +555,8 @@ extern "C" void sl_matter_em4_check(uint32_t expected_idle_time_ms)
         // Multiply by 10 to converts seconds into milliseconds (e.g. 90% of 1000sec in ms is 1000*90*10 = 900000ms)
         if (expected_idle_time_ms >= threshold_ms)
         {
-            OnEM4Trigger(expected_idle_time_ms);
+            sMatterEm4Duration = expected_idle_time_ms;
+            sMatterEm4Pending  = true;
         }
     }
 }
