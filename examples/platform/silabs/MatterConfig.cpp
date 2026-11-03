@@ -231,9 +231,9 @@ static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 uint32_t sMatterEm4Duration = 0;
 bool sMatterEm4Pending      = false;
 
-void OnPowerManagerTransition(sl_power_manager_em_t, sl_power_manager_em_t to)
+void OnPowerManagerEnteringEm2(sl_power_manager_em_t, sl_power_manager_em_t)
 {
-    if (to != SL_POWER_MANAGER_EM2 || !sMatterEm4Pending)
+    if (!sMatterEm4Pending)
     {
         return;
     }
@@ -271,7 +271,7 @@ void OnPowerManagerTransition(sl_power_manager_em_t, sl_power_manager_em_t to)
 sl_power_manager_em_transition_event_handle_t sEm4TransitionEventHandle;
 const sl_power_manager_em_transition_event_info_t sEm4TransitionEventInfo = {
     .event_mask = SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM2,
-    .on_event   = OnPowerManagerTransition,
+    .on_event   = OnPowerManagerEnteringEm2,
 };
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 
