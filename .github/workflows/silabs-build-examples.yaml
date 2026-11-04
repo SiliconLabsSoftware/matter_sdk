@@ -152,12 +152,11 @@ jobs:
             example-app: "closure-app"
             output-directory: "./out/closure-app"
             build-type: "standard"
-
-# TODO : Fixme JF : Update Docker to include CPC files in SiSDK
-# build-wake-on-matter:
-#     name: Build Wake-On-Matter variations
-#     uses: ./.github/workflows/silabs-custom-thread-build.yaml
-#     with:
-#         example-app: "wake-on-matter"
-#         output-directory: "./out/wake-on-matter"
-#         build-type: "standard"
+    # TODO @JF add sl_cpc_instances.h to matter_support
+    # build-wake-on-matter:
+    #     name: Build Wake-On-Matter variations
+    #     uses: ./.github/workflows/silabs-custom-thread-build.yaml
+    #     with:
+    #         example-app: "wake-on-matter"
+    #         output-directory: "./out/wake-on-matter"
+    #         build-type: "standard"
