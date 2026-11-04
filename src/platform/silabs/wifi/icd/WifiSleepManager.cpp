@@ -82,9 +82,14 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
 
     case PowerEvent::kConnectivityChange:
     case PowerEvent::kGenericEvent:
-    case PowerEvent::kOTAEvent:
-        // Preserve mActiveMode; HP cycles, connectivity, and OTA use these events.
+        // Preserve mActiveMode; HP cycles and connectivity use these events.
         break;
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    case PowerEvent::kOTAEvent:
+        // Latch 300 ms LI sleep so later ICD/connectivity transitions keep it until ClearOtaLIBasedSleep().
+        mOtaLIBasedSleepActive = true;
+        break;
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     case PowerEvent::kActiveMode:
     case PowerEvent::kConnectedActiveMode:
         mActiveMode = true;
@@ -126,13 +131,15 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
         return ConfigureDeepSleep();
     }
 
-    if (event == PowerEvent::kOTAEvent)
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    if (mOtaLIBasedSleepActive)
     {
         // Neutral-less OTA stays in associated sleep with a short LI (300 ms) so download/Apply
         // traffic can be received without entering high-performance / no-sleep.
         constexpr uint32_t kOtaEventListenIntervalMs = 300;
         return ConfigureLIBasedSleep(kOtaEventListenIntervalMs);
     }
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     if (mCallback && mCallback->CanGoToLIBasedSleep())
     {

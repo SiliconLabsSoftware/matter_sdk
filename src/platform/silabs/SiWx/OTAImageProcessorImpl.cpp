@@ -168,7 +168,8 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Neutral-less products must stay within 30 mA over any 250 ms window, so OTA uses
-    // associated LI sleep (300 ms) instead of high-performance / no-sleep.
+    // associated LI sleep (300 ms) instead of high-performance / no-sleep. kOTAEvent latches
+    // that policy until ClearOtaLIBasedSleep() (Abort) or reboot after Apply.
     LogErrorOnFailure(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kOTAEvent));
 #else  // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Setting the device in high performance - no-sleep mode during OTA tranfer
@@ -212,13 +213,11 @@ void OTAImageProcessorImpl::HandleFinalize(intptr_t context)
     TEMPORARY_RETURN_IGNORED imageProcessor->ReleaseBlock();
 
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
-#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    // Keep associated LI sleep (300 ms) through Apply so OTA traffic remains receivable.
-    LogErrorOnFailure(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kOTAEvent));
-#else  // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    // Setting the device back to power save mode when transfer is completed successfully
+#if !(defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI)
+    // Setting the device back to power save mode when transfer is completed successfully.
+    // Neutral-less builds keep the latched OTA LI sleep from PrepareDownload through Apply.
     TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
-#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+#endif // !(defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI)
 #endif /* CHIP_CONFIG_ENABLE_ICD_SERVER*/
 
     ChipLogProgress(SoftwareUpdate, "OTA image downloaded successfully");
@@ -260,6 +259,7 @@ void OTAImageProcessorImpl::HandleAbort(intptr_t context)
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Restore the normal low-power policy after an aborted OTA transfer.
+    WifiSleepManager::GetInstance().ClearOtaLIBasedSleep();
     LogErrorOnFailure(
         WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent));
 #else  // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI

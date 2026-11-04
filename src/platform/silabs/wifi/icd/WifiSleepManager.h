@@ -45,7 +45,9 @@ public:
         kActiveMode            = 3,
         kIdleMode              = 4,
         kConnectedActiveMode   = 5,
-        kOTAEvent              = 6,
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+        kOTAEvent = 6,
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     };
 
     /**
@@ -143,6 +145,14 @@ public:
      */
     CHIP_ERROR RemoveHighPerformanceRequest();
 
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    /**
+     * @brief Clears the sticky OTA 300 ms LI sleep latch set by PowerEvent::kOTAEvent.
+     *        Call VerifyAndTransitionToLowPowerMode afterwards to apply the normal policy.
+     */
+    void ClearOtaLIBasedSleep() { mOtaLIBasedSleepActive = false; }
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+
     /**
      * @brief Public API to validate what is the lowest power mode the device can got to and transitions the device to the
      *        determined low power state.
@@ -150,7 +160,8 @@ public:
      *        State machine logic:
      *        1. If there are high performance requests, configure high performance mode.
      *        2. If the device is unprovisioned, configure deep sleep.
-     *        3. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
+     *        3. If neutral-less OTA LI sleep is latched (kOTAEvent), configure 300 ms LI sleep.
+     *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
      *
@@ -237,7 +248,10 @@ private:
     PowerSaveInterface * mPowerSaveInterface = nullptr;
     WifiStateProvider * mWifiStateProvider   = nullptr;
     uint8_t mHighPerformanceRequestCounter   = 0;
-    bool mActiveMode                         = false;
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    bool mOtaLIBasedSleepActive = false;
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    bool mActiveMode = false;
 
     ApplicationCallback * mCallback = nullptr;
 };
