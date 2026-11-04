@@ -35,7 +35,7 @@ void VendorOTARequestorDriver::Init(VendorOTARequestor * requestor)
 
     // Matter ConnectivityManager has no dedicated callback API; PlatformMgr events are the
     // supported hook.
-    TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().AddEventHandler(OnPlatformEvent, reinterpret_cast<intptr_t>(this));
+    LogErrorOnFailure(DeviceLayer::PlatformMgr().AddEventHandler(OnPlatformEvent, reinterpret_cast<intptr_t>(this)));
 }
 
 void VendorOTARequestorDriver::SetPeriodicCheckTimeout(uint32_t timeoutSec)
@@ -49,8 +49,8 @@ void VendorOTARequestorDriver::SetPeriodicCheckTimeout(uint32_t timeoutSec)
 void VendorOTARequestorDriver::StartPeriodicCheckTimer()
 {
     StopPeriodicCheckTimer();
-    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().StartTimer(System::Clock::Seconds32(mPeriodicTimeoutSec),
-                                                                   PeriodicCheckTimerHandler, this);
+    LogErrorOnFailure(DeviceLayer::SystemLayer().StartTimer(System::Clock::Seconds32(mPeriodicTimeoutSec),
+                                                            PeriodicCheckTimerHandler, this));
 }
 
 void VendorOTARequestorDriver::StopPeriodicCheckTimer()

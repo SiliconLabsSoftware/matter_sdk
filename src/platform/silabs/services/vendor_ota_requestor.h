@@ -65,10 +65,10 @@ public:
               OTARequestorInterface & matterRequestor, OTADownloader & bdxDownloader, DefaultOTARequestorStorage & matterStorage,
               VendorOtaMatterGate & gate, VendorOTARequestorDriver & vendorDriver);
 
-    /** Cache app delegate and forward UriComposer to the downloader when ready. */
-    void SetAppDelegate(AppDelegate * delegate);
-    /** Cache HttpClient and forward to the downloader when ready. */
-    void SetHttpClient(DeviceLayer::Silabs::HttpClient * client);
+    /** Cache app UriComposer; applies to downloader when Init + HttpClient are ready. Fails if @p delegate is null. */
+    CHIP_ERROR SetAppDelegate(AppDelegate * delegate);
+    /** Cache HttpClient; applies to downloader when Init + AppDelegate are ready. Fails if @p client is null. */
+    CHIP_ERROR SetHttpClient(DeviceLayer::Silabs::HttpClient * client);
 
     /** Forwards to AppDelegate; CHIP_ERROR_NOT_FOUND if none / no URL. */
     CHIP_ERROR GetPeriodicUrl(MutableCharSpan & outUrl);
@@ -114,7 +114,11 @@ public:
     ProviderLocationList::Iterator GetDefaultOTAProviderListIterator() override;
 
 private:
-    void ApplyBindings();
+    /**
+     * Forward cached HttpClient / AppDelegate to the downloader.
+     * Returns CHIP_ERROR_INCORRECT_STATE if downloader, client, or delegate is null.
+     */
+    CHIP_ERROR ApplyBindings();
     CHIP_ERROR TakeOwnership();
     void RestoreMatterOwnership();
     bool IsMatterIdle() const;

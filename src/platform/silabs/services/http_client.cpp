@@ -32,7 +32,6 @@ extern "C" {
 
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include <platform/silabs/wifi/WifiInterface.h>
 
 #include <cinttypes>
 #include <cstdio>
@@ -167,7 +166,12 @@ void HttpClient::ResetRequestState()
 
 void HttpClient::ClearRangeHeaders()
 {
-    TEMPORARY_RETURN_IGNORED sl_http_client_delete_all_headers(&mRangeRequest);
+    const sl_status_t status = sl_http_client_delete_all_headers(&mRangeRequest);
+    // SL_STATUS_EMPTY (0x1b): no headers allocated yet — expected on first GetRange / after memset.
+    if ((status != SL_STATUS_OK) && (status != SL_STATUS_EMPTY))
+    {
+        ChipLogError(DeviceLayer, "ClearRangeHeaders delete_all_headers=0x%lx", static_cast<unsigned long>(status));
+    }
     memset(&mRangeRequest, 0, sizeof(mRangeRequest));
     mRangeHeaderValue[0] = '\0';
 }
@@ -736,15 +740,6 @@ CHIP_ERROR HttpClient::ProcessGetRange()
         return MapStatus(status);
     }
 
-    const bool wifiConnected = chip::DeviceLayer::Silabs::WifiInterface::GetInstance().IsStationConnected();
-    // NWP returns 0x10021 (COMMAND_GIVEN_IN_INVALID_STATE) if not associated; fail clearly.
-    if (!wifiConnected)
-    {
-        ChipLogError(DeviceLayer, "ProcessGetRange: Wi-Fi station not connected");
-        ClearRangeHeaders();
-        return CHIP_ERROR_NOT_CONNECTED;
-    }
-
     status = sl_http_client_send_request(&mClientHandle, &mRangeRequest);
     if ((status != SL_STATUS_OK) && (status != SL_STATUS_IN_PROGRESS))
     {
@@ -785,7 +780,8 @@ sl_status_t HttpClient::GetRangeResponseCallback(const sl_http_client_t * client
     const uint16_t httpCode = static_cast<uint16_t>(getResponse->http_response_code);
     // 200/206 success; 416 (Range Not Satisfiable) is also success - it signals the end of
     // the resource for sequential range requests. Other 4xx/5xx fail.
-    if ((httpCode >= kHttpClientErrorMin) && (httpCode <= kHttpServerErrorMax) && (httpCode != 0) && (httpCode != 416))
+    if ((httpCode >= kHttpClientErrorMin) && (httpCode <= kHttpServerErrorMax) && (httpCode != 0) &&
+        (httpCode != kHttpRangeNotSatisfiable))
     {
         ChipLogError(DeviceLayer, "GetRangeResponseCallback http fail code=%u", httpCode);
         self->ClearRangeHeaders();
@@ -796,7 +792,7 @@ sl_status_t HttpClient::GetRangeResponseCallback(const sl_http_client_t * client
     }
 
     // 416: complete immediately (no useful body; treat as EOF).
-    if (httpCode == 416)
+    if (httpCode == kHttpRangeNotSatisfiable)
     {
         if (self->mActiveResponseBuffer != nullptr)
         {

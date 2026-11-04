@@ -101,32 +101,44 @@ void VendorOTARequestor::Init(HttpsDownloader & httpsDownloader,
     mHttpsDownloader->SetStateDelegate(this);
     mHttpsDownloader->SetTimeout(HttpsDownloader::kDefaultTimeout);
     mHttpsDownloader->SetBlockSize(HttpsDownloader::kDefaultBlockSize);
-    ApplyBindings();
-}
-
-void VendorOTARequestor::ApplyBindings()
-{
-    VerifyOrReturn(mHttpsDownloader != nullptr);
-    if (mHttpClient != nullptr)
+    // Services may register HttpClient/AppDelegate before OTAConfig::Init; apply when both cached.
+    if ((mHttpClient != nullptr) && (mAppDelegate != nullptr))
     {
-        mHttpsDownloader->SetHttpClient(mHttpClient);
-    }
-    if (mAppDelegate != nullptr)
-    {
-        mHttpsDownloader->SetUriComposer(mAppDelegate);
+        LogErrorOnFailure(ApplyBindings());
     }
 }
 
-void VendorOTARequestor::SetAppDelegate(AppDelegate * delegate)
+CHIP_ERROR VendorOTARequestor::ApplyBindings()
 {
+    VerifyOrReturnError(mHttpsDownloader != nullptr, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(mHttpClient != nullptr, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(mAppDelegate != nullptr, CHIP_ERROR_INCORRECT_STATE);
+    mHttpsDownloader->SetHttpClient(mHttpClient);
+    mHttpsDownloader->SetUriComposer(mAppDelegate);
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR VendorOTARequestor::SetAppDelegate(AppDelegate * delegate)
+{
+    VerifyOrReturnError(delegate != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     mAppDelegate = delegate;
-    ApplyBindings();
+    // Defer until Init and SetHttpClient have also run; ApplyBindings errors if any binding is null.
+    if ((mHttpsDownloader == nullptr) || (mHttpClient == nullptr))
+    {
+        return CHIP_NO_ERROR;
+    }
+    return ApplyBindings();
 }
 
-void VendorOTARequestor::SetHttpClient(DeviceLayer::Silabs::HttpClient * client)
+CHIP_ERROR VendorOTARequestor::SetHttpClient(DeviceLayer::Silabs::HttpClient * client)
 {
+    VerifyOrReturnError(client != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     mHttpClient = client;
-    ApplyBindings();
+    if ((mHttpsDownloader == nullptr) || (mAppDelegate == nullptr))
+    {
+        return CHIP_NO_ERROR;
+    }
+    return ApplyBindings();
 }
 
 CHIP_ERROR VendorOTARequestor::GetPeriodicUrl(MutableCharSpan & outUrl)
@@ -191,12 +203,12 @@ void VendorOTARequestor::RecordState(OTAUpdateStateEnum state, OTAChangeReasonEn
     if (state != OTAUpdateStateEnum::kDownloading)
     {
         mProgress = NullNullable;
-        TEMPORARY_RETURN_IGNORED GetOTARequestorAttributes().SetUpdateStateProgress(NullNullable);
+        LogErrorOnFailure(GetOTARequestorAttributes().SetUpdateStateProgress(NullNullable));
     }
 
     if (mMatterStorage != nullptr)
     {
-        TEMPORARY_RETURN_IGNORED mMatterStorage->StoreCurrentUpdateState(state);
+        LogErrorOnFailure(mMatterStorage->StoreCurrentUpdateState(state));
     }
 }
 
@@ -221,14 +233,28 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
     if ((mHttpsDownloader == nullptr) || (mMatterRequestor == nullptr))
     {
         SetLastResult(CHIP_ERROR_INCORRECT_STATE, LastResultReason::kClientStart);
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL not-initialized 0x%08" PRIX32,
-                     CHIP_ERROR_INCORRECT_STATE.AsInteger());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL not-initialized %" CHIP_ERROR_FORMAT,
+                     CHIP_ERROR_INCORRECT_STATE.Format());
+        return CHIP_ERROR_INCORRECT_STATE;
+    }
+    if (!DeviceLayer::ConnectivityMgr().IsWiFiStationConnected())
+    {
+        SetLastResult(CHIP_ERROR_NOT_CONNECTED, LastResultReason::kClientStart);
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL not-connected %" CHIP_ERROR_FORMAT,
+                     CHIP_ERROR_NOT_CONNECTED.Format());
+        return CHIP_ERROR_NOT_CONNECTED;
+    }
+    if ((mHttpClient == nullptr) || (mAppDelegate == nullptr))
+    {
+        SetLastResult(CHIP_ERROR_INCORRECT_STATE, LastResultReason::kClientStart);
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL bindings-unset %" CHIP_ERROR_FORMAT,
+                     CHIP_ERROR_INCORRECT_STATE.Format());
         return CHIP_ERROR_INCORRECT_STATE;
     }
     if (!IsMatterIdle())
     {
         SetLastResult(CHIP_ERROR_BUSY, LastResultReason::kBusy);
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL busy 0x%08" PRIX32, CHIP_ERROR_BUSY.AsInteger());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL busy %" CHIP_ERROR_FORMAT, CHIP_ERROR_BUSY.Format());
         return CHIP_ERROR_BUSY;
     }
 
@@ -237,8 +263,8 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
     if ((client == nullptr) || !client->IsRunning())
     {
         SetLastResult(CHIP_ERROR_INCORRECT_STATE, LastResultReason::kClientStart);
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL client-start 0x%08" PRIX32,
-                     CHIP_ERROR_INCORRECT_STATE.AsInteger());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL client-start %" CHIP_ERROR_FORMAT,
+                     CHIP_ERROR_INCORRECT_STATE.Format());
         return CHIP_ERROR_INCORRECT_STATE;
     }
 
@@ -264,7 +290,7 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
     {
         RestoreMatterOwnership();
         SetLastResult(err, LastResultReason::kNoUrl);
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL no-url 0x%08" PRIX32, err.AsInteger());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL no-url %" CHIP_ERROR_FORMAT, err.Format());
         if (mVendorDriver != nullptr)
         {
             mVendorDriver->UpdateFailed();
@@ -280,7 +306,7 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
     {
         RestoreMatterOwnership();
         SetLastResult(err, LastResultReason::kHttp);
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL http 0x%08" PRIX32, err.AsInteger());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL http %" CHIP_ERROR_FORMAT, err.Format());
         if (mVendorDriver != nullptr)
         {
             mVendorDriver->UpdateFailed();
@@ -302,13 +328,14 @@ void VendorOTARequestor::CancelImageUpdate()
     }
     if (mImageProcessor != nullptr)
     {
-        TEMPORARY_RETURN_IGNORED mImageProcessor->Abort();
+        LogErrorOnFailure(mImageProcessor->Abort());
     }
 
     RecordState(OTAUpdateStateEnum::kIdle, OTAChangeReasonEnum::kFailure);
     RestoreMatterOwnership();
     SetLastResult(CHIP_ERROR_CONNECTION_ABORTED, LastResultReason::kAborted);
-    ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL aborted 0x%08" PRIX32, CHIP_ERROR_CONNECTION_ABORTED.AsInteger());
+    ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL aborted %" CHIP_ERROR_FORMAT,
+                 CHIP_ERROR_CONNECTION_ABORTED.Format());
 
     if (mVendorDriver != nullptr)
     {
@@ -387,7 +414,7 @@ void VendorOTARequestor::OnDownloadStateChanged(OTADownloader::State state, OTAC
 void VendorOTARequestor::OnUpdateProgressChanged(Nullable<uint8_t> percent)
 {
     mProgress = percent;
-    TEMPORARY_RETURN_IGNORED GetOTARequestorAttributes().SetUpdateStateProgress(percent);
+    LogErrorOnFailure(GetOTARequestorAttributes().SetUpdateStateProgress(percent));
 }
 
 void VendorOTARequestor::OnWiFiConnectivityChanged(bool established)
@@ -399,7 +426,7 @@ void VendorOTARequestor::OnWiFiConnectivityChanged(bool established)
     }
     else
     {
-        TEMPORARY_RETURN_IGNORED mHttpsDownloader->NoteConnectivityRestored();
+        LogErrorOnFailure(mHttpsDownloader->NoteConnectivityRestored());
     }
 }
 

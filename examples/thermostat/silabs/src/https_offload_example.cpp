@@ -48,24 +48,15 @@
 #include <platform/CHIPDeviceLayer.h>
 
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-#include <lib/shell/streamer.h>
 #include <platform/silabs/services/https_downloader.h>
 #include <platform/silabs/services/vendor_ota_requestor.h>
 
 #if (SL_MATTER_GN_BUILD == 0)
-#include "sl_matter_ota_config.h"
+#include "sl_matter_https_ota_config.h"
 #endif // SL_MATTER_GN_BUILD
-
-#ifndef SL_MATTER_HTTPS_OTA_ENDPOINT
-#define SL_MATTER_HTTPS_OTA_ENDPOINT ""
-#endif
-#ifndef SL_MATTER_HTTPS_OTA_DEFAULT_URL
-#define SL_MATTER_HTTPS_OTA_DEFAULT_URL ""
-#endif
 #endif // SL_MATTER_ENABLE_HTTPS_OTA
 
 #include <cinttypes>
-#include <cstdlib>
 #include <cstring>
 
 namespace {
@@ -177,14 +168,41 @@ CHIP_ERROR RunHttpsOffloadExample()
 using chip::HttpsDownloader;
 using chip::MutableCharSpan;
 using chip::VendorOTARequestor;
-using chip::Shell::streamer_get;
-using chip::Shell::streamer_printf;
+using chip::operator""_span;
 
-char gPendingOtaUrl[HttpsDownloader::kMaxUrlLen];
-size_t gPendingOtaUrlLen = 0;
+// Expected URL: https://<host>[:port]/path — host is DNS or IPv4 (no IPv6).
+constexpr CharSpan kHttpsScheme     = "https://"_span;
+constexpr uint16_t kDefaultHttpsPort = 443;
+
+bool FindFirst(CharSpan span, char ch, size_t & outIndex)
+{
+    for (size_t i = 0; i < span.size(); ++i)
+    {
+        if (span[i] == ch)
+        {
+            outIndex = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+CHIP_ERROR ParsePort(CharSpan digits, uint16_t & port)
+{
+    VerifyOrReturnError(digits.size() > 0, CHIP_ERROR_INVALID_ARGUMENT);
+    uint32_t value = 0;
+    for (char c : digits)
+    {
+        VerifyOrReturnError((c >= '0') && (c <= '9'), CHIP_ERROR_INVALID_ARGUMENT);
+        value = (value * 10u) + static_cast<uint32_t>(c - '0');
+        VerifyOrReturnError(value <= 65535u, CHIP_ERROR_INVALID_ARGUMENT);
+    }
+    port = static_cast<uint16_t>(value);
+    return CHIP_NO_ERROR;
+}
 
 /**
- * App owns URI composition (parse + connect-endpoint override) and the periodic URL store.
+ * App owns URI composition and the periodic URL store.
  */
 class HttpsOtaApp : public VendorOTARequestor::AppDelegate
 {
@@ -193,86 +211,74 @@ public:
     {
         if (SL_MATTER_HTTPS_OTA_DEFAULT_URL[0] != '\0')
         {
-            TEMPORARY_RETURN_IGNORED SetPeriodicUrl(CharSpan::fromCharString(SL_MATTER_HTTPS_OTA_DEFAULT_URL));
+            LogErrorOnFailure(SetPeriodicUrl(CharSpan::fromCharString(SL_MATTER_HTTPS_OTA_DEFAULT_URL)));
         }
     }
 
     CHIP_ERROR SetPeriodicUrl(CharSpan url)
     {
         VerifyOrReturnError(url.size() > 0 && url.size() < HttpsDownloader::kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
-        memcpy(mPeriodicUrl, url.data(), url.size());
-        mPeriodicUrl[url.size()] = '\0';
-        mPeriodicUrlLen          = url.size();
+        MutableCharSpan out(mPeriodicUrl, sizeof(mPeriodicUrl));
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(url, out));
+        mPeriodicUrlLen = out.size();
         return CHIP_NO_ERROR;
     }
 
     CHIP_ERROR GetPeriodicUrl(MutableCharSpan & outUrl) override
     {
         VerifyOrReturnError(mPeriodicUrlLen > 0, CHIP_ERROR_NOT_FOUND);
-        VerifyOrReturnError(outUrl.size() >= mPeriodicUrlLen, CHIP_ERROR_BUFFER_TOO_SMALL);
-        memcpy(outUrl.data(), mPeriodicUrl, mPeriodicUrlLen);
-        outUrl.reduce_size(mPeriodicUrlLen);
-        return CHIP_NO_ERROR;
+        return CopyCharSpanToMutableCharSpan(CharSpan(mPeriodicUrl, mPeriodicUrlLen), outUrl);
     }
 
+    /**
+     * Parse https://<host>[:port]/path into the downloader session fields.
+     * Host may be a DNS name or IPv4 literal (IPv6 is not supported).
+     * serverEndpoint and tlsHostname both receive the same host string: TCP
+     * connect and TLS SNI / Host header use the URL host (no endpoint override).
+     */
     CHIP_ERROR ComposeImageUri(CharSpan uri, MutableCharSpan & serverEndpoint, MutableCharSpan & tlsHostname, uint16_t & port,
                                MutableCharSpan & path) override
     {
         VerifyOrReturnError(uri.size() > 0 && uri.size() < HttpsDownloader::kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
+        VerifyOrReturnError(uri.size() >= kHttpsScheme.size(), CHIP_ERROR_INVALID_ARGUMENT);
+        VerifyOrReturnError(uri.SubSpan(0, kHttpsScheme.size()).data_equal(kHttpsScheme), CHIP_ERROR_INVALID_ARGUMENT);
 
-        char urlStorage[HttpsDownloader::kMaxUrlLen];
-        memcpy(urlStorage, uri.data(), uri.size());
-        urlStorage[uri.size()] = '\0';
+        // 1. Default port 443 until an explicit :port is seen in the authority.
+        port             = kDefaultHttpsPort;
+        CharSpan rest    = uri.SubSpan(kHttpsScheme.size());
+        size_t slashPos  = 0;
+        const bool hasSlash = FindFirst(rest, '/', slashPos);
 
-        const char * s = urlStorage;
-        VerifyOrReturnError(strncmp(s, "https://", 8) == 0, CHIP_ERROR_INVALID_ARGUMENT);
-        port = 443;
-        s += 8;
+        // 2. Split authority vs path. Optional :port must appear before the first '/'.
+        CharSpan authority = hasSlash ? rest.SubSpan(0, slashPos) : rest;
+        CharSpan pathSpan  = hasSlash ? rest.SubSpan(slashPos) : CharSpan();
 
-        const char * slash = strchr(s, '/');
-        const char * colon = strchr(s, ':');
-        size_t hostLen     = 0;
-
-        if ((colon != nullptr) && ((slash == nullptr) || (colon < slash)))
+        size_t colonPos = 0;
+        CharSpan host;
+        if (FindFirst(authority, ':', colonPos))
         {
-            hostLen = static_cast<size_t>(colon - s);
-            port    = static_cast<uint16_t>(atoi(colon + 1));
+            host = authority.SubSpan(0, colonPos);
+            ReturnErrorOnFailure(ParsePort(authority.SubSpan(colonPos + 1), port));
         }
         else
         {
-            hostLen = (slash != nullptr) ? static_cast<size_t>(slash - s) : strlen(s);
+            host = authority;
         }
 
-        VerifyOrReturnError(hostLen > 0 && hostLen < HttpsDownloader::kMaxHostLen, CHIP_ERROR_INVALID_ARGUMENT);
-        VerifyOrReturnError(tlsHostname.size() >= hostLen, CHIP_ERROR_BUFFER_TOO_SMALL);
-        memcpy(tlsHostname.data(), s, hostLen);
-        tlsHostname.reduce_size(hostLen);
+        // 3. Host → tlsHostname (SNI / Host) and serverEndpoint (DNS or IPv4 connect).
+        VerifyOrReturnError(host.size() > 0 && host.size() < HttpsDownloader::kMaxHostLen, CHIP_ERROR_INVALID_ARGUMENT);
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(host, tlsHostname));
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(host, serverEndpoint));
 
-        char hostNul[HttpsDownloader::kMaxHostLen];
-        memcpy(hostNul, s, hostLen);
-        hostNul[hostLen] = '\0';
-
-        const char * connectHost =
-            (SL_MATTER_HTTPS_OTA_ENDPOINT[0] != '\0') ? SL_MATTER_HTTPS_OTA_ENDPOINT : hostNul;
-        const size_t connectLen = strlen(connectHost);
-        VerifyOrReturnError(connectLen > 0 && connectLen < HttpsDownloader::kMaxHostLen, CHIP_ERROR_INVALID_ARGUMENT);
-        VerifyOrReturnError(serverEndpoint.size() >= connectLen, CHIP_ERROR_BUFFER_TOO_SMALL);
-        memcpy(serverEndpoint.data(), connectHost, connectLen);
-        serverEndpoint.reduce_size(connectLen);
-
-        if (slash != nullptr)
+        // 4. Path including leading '/', or "/" when the URL has no path component.
+        if (pathSpan.size() > 0)
         {
-            const size_t pathLen = strlen(slash);
-            VerifyOrReturnError(pathLen > 0 && pathLen < HttpsDownloader::kMaxPathLen, CHIP_ERROR_INVALID_ARGUMENT);
-            VerifyOrReturnError(path.size() >= pathLen, CHIP_ERROR_BUFFER_TOO_SMALL);
-            memcpy(path.data(), slash, pathLen);
-            path.reduce_size(pathLen);
+            VerifyOrReturnError(pathSpan.size() < HttpsDownloader::kMaxPathLen, CHIP_ERROR_INVALID_ARGUMENT);
+            ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(pathSpan, path));
         }
         else
         {
-            VerifyOrReturnError(path.size() >= 1, CHIP_ERROR_BUFFER_TOO_SMALL);
-            path.data()[0] = '/';
-            path.reduce_size(1);
+            ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan("/"_span, path));
         }
 
         return CHIP_NO_ERROR;
@@ -288,8 +294,8 @@ HttpsOtaApp gHttpsOtaApp;
 void RegisterHttpsOtaApp()
 {
     auto & req = VendorOTARequestor::GetInstance();
-    req.SetAppDelegate(&gHttpsOtaApp);
-    req.SetHttpClient(&gHttpsClient);
+    LogErrorOnFailure(req.SetAppDelegate(&gHttpsOtaApp));
+    LogErrorOnFailure(req.SetHttpClient(&gHttpsClient));
 }
 
 #endif // SL_MATTER_ENABLE_HTTPS_OTA
@@ -380,106 +386,9 @@ sl_status_t https_client_demo_run(void)
 
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
 
-void HttpsOtaUrlAppEvent(AppEvent * /* aEvent */)
+CHIP_ERROR HttpsOtaAppSetPeriodicUrl(chip::CharSpan url)
 {
-    // HttpClient + AppDelegate are registered from StartMatterServicesAppEvent /
-    // https_client_demo_start on connectivity. StartUpdate fails with incorrect-state
-    // if the client is not running yet (same contract as the periodic check).
-    CHIP_ERROR schedErr = chip::DeviceLayer::SystemLayer().ScheduleLambda([] {
-        CHIP_ERROR err =
-            chip::VendorOTARequestor::GetInstance().StartUpdate(chip::CharSpan(gPendingOtaUrl, gPendingOtaUrlLen));
-        if (err != CHIP_NO_ERROR)
-        {
-            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] StartUpdate failed: %" CHIP_ERROR_FORMAT, err.Format());
-        }
-    });
-    if (schedErr != CHIP_NO_ERROR)
-    {
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] ScheduleLambda failed: %" CHIP_ERROR_FORMAT, schedErr.Format());
-    }
-}
-
-CHIP_ERROR HttpsOtaQueueUrl(const char * url)
-{
-    VerifyOrReturnError(url != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    const size_t len = strlen(url);
-    VerifyOrReturnError(len > 0 && len < sizeof(gPendingOtaUrl), CHIP_ERROR_INVALID_ARGUMENT);
-    memcpy(gPendingOtaUrl, url, len);
-    gPendingOtaUrl[len] = '\0';
-    gPendingOtaUrlLen   = len;
-
-    ChipLogProgress(SoftwareUpdate, "[HTTPS-OTA] using passed url=%s", gPendingOtaUrl);
-
-    AppEvent event = {};
-    event.Type     = AppEvent::kEventType_Timer;
-    event.Handler  = HttpsOtaUrlAppEvent;
-    BaseApplication::PostEvent(&event);
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR HttpsOtaAbort(void)
-{
-    TEMPORARY_RETURN_IGNORED chip::DeviceLayer::SystemLayer().ScheduleLambda(
-        [] { chip::VendorOTARequestor::GetInstance().CancelImageUpdate(); });
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR HttpsOtaSetPeriodicUrl(const char * url)
-{
-    VerifyOrReturnError(url != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    const size_t len = strlen(url);
-    VerifyOrReturnError(len > 0 && len < HttpsDownloader::kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
-    return gHttpsOtaApp.SetPeriodicUrl(CharSpan(url, len));
-}
-
-CHIP_ERROR HttpsOtaStatusCommand(void)
-{
-    auto & req = VendorOTARequestor::GetInstance();
-    auto * dl  = req.GetHttpsDownloader();
-    auto * ip  = req.GetImageProcessor();
-
-    using OTAUpdateStateEnum = chip::OTARequestorInterface::OTAUpdateStateEnum;
-    const char * stateStr    = "idle";
-    switch (req.GetCurrentUpdateState())
-    {
-    case OTAUpdateStateEnum::kIdle:
-        stateStr = "idle";
-        break;
-    case OTAUpdateStateEnum::kQuerying:
-        stateStr = "querying";
-        break;
-    case OTAUpdateStateEnum::kDownloading:
-        stateStr = "downloading";
-        break;
-    case OTAUpdateStateEnum::kApplying:
-        stateStr = "applying";
-        break;
-    default:
-        stateStr = "other";
-        break;
-    }
-
-    const uint32_t offset = (dl != nullptr) ? dl->GetNextOffset() : 0;
-    const uint64_t bytes  = (ip != nullptr) ? ip->GetBytesDownloaded() : 0;
-    auto percent          = (ip != nullptr) ? ip->GetPercentComplete() : chip::app::DataModel::Nullable<uint8_t>{};
-
-    streamer_printf(streamer_get(), "HTTPS OTA state=%s offset=%" PRIu32 " downloaded=%" PRIu64, stateStr, offset, bytes);
-    if (percent.IsNull())
-    {
-        streamer_printf(streamer_get(), " total=unknown percent=n/a");
-    }
-    else
-    {
-        streamer_printf(streamer_get(), " percent=%u", percent.Value());
-    }
-    streamer_printf(streamer_get(), " target=%" PRIu32, req.GetTargetVersion());
-
-    CHIP_ERROR lastErr;
-    VendorOTARequestor::LastResultReason reason;
-    TEMPORARY_RETURN_IGNORED req.GetLastResult(lastErr, reason);
-    streamer_printf(streamer_get(), " last=%s 0x%08" PRIX32 "\r\n", VendorOTARequestor::LastResultReasonToString(reason),
-                    lastErr.AsInteger());
-    return CHIP_NO_ERROR;
+    return gHttpsOtaApp.SetPeriodicUrl(url);
 }
 
 #endif // SL_MATTER_ENABLE_HTTPS_OTA

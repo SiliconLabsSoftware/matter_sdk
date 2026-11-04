@@ -85,7 +85,7 @@ void SilabsOTARequestorDriver::Init(OTARequestorInterface * requestor, OTAImageP
 
     if (firstRun)
     {
-        TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([this] {
+        LogErrorOnFailure(DeviceLayer::SystemLayer().ScheduleLambda([this] {
             CHIP_ERROR error = mImageProcessor->ConfirmCurrentImage();
             if (error != CHIP_NO_ERROR)
             {
@@ -99,7 +99,7 @@ void SilabsOTARequestorDriver::Init(OTARequestorInterface * requestor, OTAImageP
                 SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_HttpsOtaSkipNotify, skipNotify);
             if ((skipErr == CHIP_NO_ERROR) && skipNotify)
             {
-                TEMPORARY_RETURN_IGNORED SilabsConfig::WriteConfigValue(SilabsConfig::kConfigKey_HttpsOtaSkipNotify, false);
+                LogErrorOnFailure(SilabsConfig::WriteConfigValue(SilabsConfig::kConfigKey_HttpsOtaSkipNotify, false));
                 ChipLogProgress(SoftwareUpdate, "HTTPS OTA: skipped NotifyUpdateApplied");
                 // Matter path leaves kApplying until NotifyUpdateApplied / Reset. HTTPS has no
                 // provider notify, so clear shared requestor state so announces are accepted.
@@ -107,9 +107,9 @@ void SilabsOTARequestorDriver::Init(OTARequestorInterface * requestor, OTAImageP
             }
             else if (mSendNotifyUpdateApplied)
             {
-                TEMPORARY_RETURN_IGNORED mRequestor->NotifyUpdateApplied();
+                mRequestor->NotifyUpdateApplied();
             }
-        });
+        }));
     }
     else if (state != OTAUpdateStateEnum::kIdle)
     {

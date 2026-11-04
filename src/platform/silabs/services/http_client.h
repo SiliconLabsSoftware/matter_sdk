@@ -221,6 +221,9 @@ public:
     /** HTTP response code from the last completed Get / GetRange (0 if none). */
     uint16_t GetLastHttpResponseCode() const { return mLastHttpResponseCode; }
 
+    /** HTTP 416 Range Not Satisfiable — treated as EOF for sequential Range GETs. */
+    static constexpr uint16_t kHttpRangeNotSatisfiable = 416;
+
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
     // "bytes=<10 digits>-<10 digits>\0" = 28 bytes; rounded up for alignment margin.

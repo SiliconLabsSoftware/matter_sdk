@@ -20,6 +20,7 @@
 
 #include "sl_status.h"
 #include <lib/core/CHIPError.h>
+#include <lib/support/Span.h>
 
 #ifndef HTTP_SERVER_ENDPOINT // DNS name or IPv4 of the HTTP server
 #error "HTTP_SERVER_ENDPOINT is not defined"
@@ -66,18 +67,6 @@ struct AppEvent;
 void HttpsRunAppEvent(AppEvent * aEvent);
 
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-/** Copy url and post AppTask work that ScheduleLambdas StartUpdate. */
-CHIP_ERROR HttpsOtaQueueUrl(const char * url);
-
-/** Schedule CancelImageUpdate on the CHIP thread. */
-CHIP_ERROR HttpsOtaAbort(void);
-
-/** RAM-only periodic check URL (lost on reboot). */
-CHIP_ERROR HttpsOtaSetPeriodicUrl(const char * url);
-
-/** Print state / progress / last result. */
-CHIP_ERROR HttpsOtaStatusCommand(void);
-
-/** AppTask handler: ScheduleLambda StartUpdate (client must already be running). */
-void HttpsOtaUrlAppEvent(AppEvent * aEvent);
+/** RAM-only periodic check URL store used by shell `https-ota default`. */
+CHIP_ERROR HttpsOtaAppSetPeriodicUrl(chip::CharSpan url);
 #endif // SL_MATTER_ENABLE_HTTPS_OTA

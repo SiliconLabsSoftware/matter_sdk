@@ -21,6 +21,19 @@
 #include <app/server/Server.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+#if !(defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR)
+#error "SL_MATTER_ENABLE_HTTPS_OTA requires SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR"
+#endif // SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
+#include <platform/silabs/services/https_downloader.h>
+#include <platform/silabs/services/vendor_ota_matter_gate.h>
+#include <platform/silabs/services/vendor_ota_requestor.h>
+#include <platform/silabs/services/vendor_ota_requestor_driver.h>
+#if (SL_MATTER_GN_BUILD == 0)
+#include "sl_matter_https_ota_config.h"
+#endif // SL_MATTER_GN_BUILD
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
+
 #ifndef SLI_SI91X_MCU_INTERFACE
 
 #include "api/application_properties.h"
@@ -133,9 +146,6 @@ void OTAConfig::Init()
     gDownloader.SetImageProcessorDelegate(&imageProcessor);
 
 #if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
-#if !(defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR)
-#error "SL_MATTER_ENABLE_HTTPS_OTA requires SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR"
-#endif // SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
     gVendorGate.Init(gRequestorUser);
     gVendorDriver.SetPeriodicCheckTimeout(SL_MATTER_HTTPS_OTA_PERIODIC_TIMEOUT);
 
