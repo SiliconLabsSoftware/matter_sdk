@@ -577,6 +577,8 @@ bool BaseApplication::ActivateStatusLedPatterns()
         // Apply different status feedbacks
         if (BaseApplication::sIsProvisioned && sIsEnabled)
         {
+            // This logic would override current cluster behavior
+#if !(defined(SL_MATTER_RGB_LED_ENABLED) && SL_MATTER_RGB_LED_ENABLED == 1)
             if (sIsAttached)
             {
                 sStatusLED.Set(true);
@@ -585,6 +587,7 @@ bool BaseApplication::ActivateStatusLedPatterns()
             {
                 sStatusLED.Blink(950, 50);
             }
+#endif
         }
         else if (sHaveBLEConnections)
         {
