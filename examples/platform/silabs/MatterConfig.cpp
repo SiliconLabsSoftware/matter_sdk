@@ -34,10 +34,14 @@
 #include "em_burtc.h"
 #include "em_cmu.h"
 #include "em_emu.h"
+#include "sl_power_manager.h"
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #include <sl_component_catalog.h>
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1) && defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
+#include "sl_gpio.h"
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1) && defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
 #ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
 #include <sl_watchdog_manager.h>
 #endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
@@ -66,7 +70,15 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
 #include <data-model-providers/codegen/Instance.h>
 #endif // !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
+#include "provision/ProvisionStorageReader.h"
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
+#include "provision/ProvisionChannel.h"
+#include "provision/ProvisionCrypto.h"
+#include "provision/ProvisionStorageWriter.h"
 #include <headers/ProvisionManager.h>
+#elif defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
+#include "provision/ProvisionStorageWriter.h"
+#endif
 #include <platform/DefaultTimerDelegate.h>
 
 #ifdef SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
@@ -99,6 +111,17 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 #if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
 #include <app/clusters/network-commissioning/network-commissioning.h>
 #endif
+
+#include <platform/silabs/tracing/SilabsTracingMacros.h>
+#if MATTER_TRACING_ENABLED
+#include <platform/silabs/tracing/BackendImpl.h> // nogncheck
+#include <tracing/registry.h>
+#endif // MATTER_TRACING_ENABLED
+
+#if defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
+#include <platform/silabs/tracing/SilabsPowerTracing.h> // nogncheck
+#endif                                                  // SL_TRACING_ENERGY_TRACES
+
 /**********************************************************
  * Defines
  *********************************************************/
@@ -109,6 +132,7 @@ using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::Credentials;
 using namespace chip::DeviceLayer::Silabs;
+using TimeTraceOperation = chip::Tracing::Silabs::TimeTraceOperation;
 
 #ifdef SL_WIFI
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
@@ -123,6 +147,10 @@ using namespace chip::DeviceLayer::Silabs;
 Clusters::NetworkCommissioning::InstanceAndDriver<NetworkCommissioning::SlWiFiDriver> sWifiNetworkDriver(kRootEndpointId);
 #endif // !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
 #endif /* SL_WIFI */
+
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#include "ApplicationSleepManager.h"
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
 
 #if CHIP_ENABLE_OPENTHREAD
 #include <inet/EndPointStateOpenThread.h>
@@ -199,16 +227,66 @@ constexpr osThreadAttr_t kMainTaskAttr = { .name       = "main",
 osThreadId_t sMainTaskHandle;
 static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+uint32_t sMatterEm4Duration = 0;
+bool sMatterEm4Pending      = false;
+
+void OnPowerManagerEnteringEm2(sl_power_manager_em_t, sl_power_manager_em_t)
+{
+    if (!sMatterEm4Pending)
+    {
+        return;
+    }
+
+    sMatterEm4Pending = false;
+
+    CMU_ClockSelectSet(cmuClock_EM4GRPACLK, cmuSelect_ULFRCO);
+    CMU_ClockEnable(cmuClock_BURTC, true);
+    CMU_ClockEnable(cmuClock_BURAM, true);
+
+    BURTC_Init_TypeDef burtcInit = BURTC_INIT_DEFAULT;
+    burtcInit.compare0Top        = true; // reset counter when counter reaches compare value
+    burtcInit.em4comp            = true; // BURTC compare interrupt wakes from EM4 (causes reset)
+    BURTC_Init(&burtcInit);
+
+    BURTC_CounterReset();
+    BURTC_CompareSet(0, sMatterEm4Duration);
+
+    BURTC_Enable(true);
+
+    EMU_EM4Init_TypeDef em4Init = EMU_EM4INIT_DEFAULT;
+    EMU_EM4Init(&em4Init);
+#if defined(SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT)
+    // Button init already enabled the BTN0 EM4 wake pin. Keep that pin state through EM4.
+    sl_gpio_set_pin_em4_retention(true);
+#endif // SL_CATALOG_SIMPLE_BUTTON_BTN0_PRESENT
+    BURTC_CounterReset();
+
+    BURTC_IntClear(BURTC_IF_COMP);
+    BURTC_IntEnable(BURTC_IEN_COMP); // compare match
+    NVIC_EnableIRQ(BURTC_IRQn);
+    sl_power_manager_enter_em4();
+}
+
+sl_power_manager_em_transition_event_handle_t sEm4TransitionEventHandle;
+const sl_power_manager_em_transition_event_info_t sEm4TransitionEventInfo = {
+    .event_mask = SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM2,
+    .on_event   = OnPowerManagerEnteringEm2,
+};
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+
 void ApplicationStart(void * unused)
 {
     CHIP_ERROR err = SilabsMatterConfig::InitMatter(BLE_DEV_NAME);
     if (err != CHIP_NO_ERROR)
         appError(err);
 
-    chip::DeviceLayer::PlatformMgr().LockChipStack();
-    // Initialize device attestation config
-    SetDeviceAttestationCredentialsProvider(&Provision::Manager::GetInstance().GetStorage());
-    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+    SILABS_TRACE_END(TimeTraceOperation::kMatterInit);
+    SILABS_TRACE_BEGIN(TimeTraceOperation::kAppInit);
+
+#if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
+    sl_power_manager_subscribe_em_transition_event(&sEm4TransitionEventHandle, &sEm4TransitionEventInfo);
+#endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 
     err = AppTask::GetAppTask().StartAppTask();
     if (err != CHIP_NO_ERROR)
@@ -281,6 +359,25 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 #endif // SL_WIFI
 
+    // The reader owns its singleton instance because Matter stores these
+    // provider pointers for the lifetime of the application. It requires no
+    // Provision Core initialization and exposes no write capability.
+    auto & provisionStorageReader = Provision::ProvisionStorageReader::GetInstance();
+#if SL_MATTER_PROVISION_CHANNEL_ENABLED
+    auto & provisionManager       = Provision::Manager::GetInstance();
+    auto & provisionStorageWriter = Provision::ProvisionStorageWriter::GetInstance();
+#if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
+    ReturnErrorOnFailure(provisionStorageWriter.Initialize());
+#endif
+    provisionManager.SetStorageBackend(provisionStorageReader, &provisionStorageWriter);
+    provisionManager.SetCryptoProvider(Provision::ProvisionCrypto::GetInstance());
+    provisionManager.SetChannel(Provision::ProvisionChannel::GetInstance());
+    provisionManager.SetResetHandler([]() { GetPlatform().SoftwareReset(); });
+    ReturnErrorOnFailure(provisionManager.Init(false /*provisionByDefault*/));
+#elif defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
+    ReturnErrorOnFailure(Provision::ProvisionStorageWriter::GetInstance().Initialize());
+#endif
+
     err = PlatformMgr().InitChipStack();
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Init Chip Stack: %" CHIP_ERROR_FORMAT, err.Format()));
@@ -289,13 +386,10 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     VerifyOrReturnError(err == CHIP_NO_ERROR, err,
                         ChipLogError(DeviceLayer, "Failed to Set BLE Device Name: %" CHIP_ERROR_FORMAT, err.Format()));
 #endif
-    // Provision Manager
-    Provision::Manager & provision = Provision::Manager::GetInstance();
-    ReturnErrorOnFailure(provision.Init());
-    SetDeviceInstanceInfoProvider(&provision.GetStorage());
-    SetCommissionableDataProvider(&provision.GetStorage());
-    SetDeviceAttestationCredentialsProvider(&provision.GetStorage());
-    ChipLogProgress(DeviceLayer, "Provision mode %s", provision.IsProvisionRequired() ? "ENABLED" : "disabled");
+
+    SetDeviceInstanceInfoProvider(&provisionStorageReader);
+    SetCommissionableDataProvider(&provisionStorageReader);
+    SetDeviceAttestationCredentialsProvider(&provisionStorageReader);
 
     // Create initParams with SDK example defaults here
     // TODO: replace with our own init param to avoid double allocation in examples
@@ -336,8 +430,7 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 
 #ifdef SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
     static SilabsTestEventTriggerDelegate sTestEventTriggerDelegate;
-    TEMPORARY_RETURN_IGNORED sTestEventTriggerDelegate.Init(&provision.GetStorage());
-
+    TEMPORARY_RETURN_IGNORED sTestEventTriggerDelegate.Init(&provisionStorageReader);
     initParams.testEventTriggerDelegate = &sTestEventTriggerDelegate;
 #endif // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
 
@@ -375,8 +468,35 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     gExampleDeviceInfoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
 
+    // [sl-only]: Configure Wi-Fi App Sleep Manager
+#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+    err = app::Silabs::ApplicationSleepManager::GetInstance()
+              .SetFabricTable(&Server::GetInstance().GetFabricTable())
+              .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
+              .SetWifiSleepManager(&WifiSleepManager::GetInstance())
+              .Init();
+    VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "ApplicationSleepManager init failed"));
+
+    // Register ReadHandler::ApplicationCallback
+    app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(
+        &app::Silabs::ApplicationSleepManager::GetInstance());
+
+    // Register ICDStateObserver
+    chip::Server::GetInstance().GetICDManager().RegisterObserver(&app::Silabs::ApplicationSleepManager::GetInstance());
+#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
+
+#if MATTER_TRACING_ENABLED
+    static Tracing::Silabs::BackendImpl backend;
+    Tracing::Register(backend);
+#endif // MATTER_TRACING_ENABLED
+
+#if defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
+    VerifyOrDo(chip::Tracing::Silabs::SilabsPowerTracing::Instance().Init() == CHIP_NO_ERROR,
+               ChipLogError(DeviceLayer, "SilabsPowerTracing init failed"));
+#endif // defined(SL_TRACING_ENERGY_TRACES) && SL_TRACING_ENERGY_TRACES == 1
 
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
@@ -387,37 +507,16 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
 
 #ifdef ENABLE_CHIP_SHELL
     chip::startShellTask();
-#endif
+#endif // ENABLE_CHIP_SHELL
 
     return CHIP_NO_ERROR;
 }
 
 #if defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
-void OnEM4Trigger(uint32_t duration)
+extern "C" void sl_matter_em4_cancel(void)
 {
-    CMU_ClockSelectSet(cmuClock_EM4GRPACLK, cmuSelect_ULFRCO);
-    CMU_ClockEnable(cmuClock_BURTC, true);
-    CMU_ClockEnable(cmuClock_BURAM, true);
-
-    BURTC_Init_TypeDef burtcInit = BURTC_INIT_DEFAULT;
-    burtcInit.compare0Top        = true; // reset counter when counter reaches compare value
-    burtcInit.em4comp            = true; // BURTC compare interrupt wakes from EM4 (causes reset)
-    BURTC_Init(&burtcInit);
-
-    BURTC_CounterReset();
-    BURTC_CompareSet(0, duration);
-
-    BURTC_Enable(true);
-    EMU_EM4Init_TypeDef em4Init = EMU_EM4INIT_DEFAULT;
-    EMU_EM4Init(&em4Init);
-    BURTC_CounterReset();
-
-    BURTC_IntClear(BURTC_IF_COMP);
-    BURTC_IntEnable(BURTC_IEN_COMP); // compare match
-    NVIC_EnableIRQ(BURTC_IRQn);
-    EMU_EnterEM4();
+    sMatterEm4Pending = false;
 }
-
 #endif // defined(SL_MATTER_EM4_SLEEP) && (SL_MATTER_EM4_SLEEP == 1)
 // ================================================================================
 // FreeRTOS Callbacks
@@ -456,7 +555,8 @@ extern "C" void sl_matter_em4_check(uint32_t expected_idle_time_ms)
         // Multiply by 10 to converts seconds into milliseconds (e.g. 90% of 1000sec in ms is 1000*90*10 = 900000ms)
         if (expected_idle_time_ms >= threshold_ms)
         {
-            OnEM4Trigger(expected_idle_time_ms);
+            sMatterEm4Duration = expected_idle_time_ms;
+            sMatterEm4Pending  = true;
         }
     }
 }

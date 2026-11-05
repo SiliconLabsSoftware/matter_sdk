@@ -45,6 +45,7 @@ public:
         std::string kvsPath;
         bool enableWiFi        = false;
         uint32_t bleController = 0;
+        uint8_t testEventTriggerEnableKey[16] = { 0 };
     };
 
     static chip::ArgParser::OptionSet * GetOptions();

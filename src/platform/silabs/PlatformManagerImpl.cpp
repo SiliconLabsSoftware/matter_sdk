@@ -195,7 +195,7 @@ void HandleWFXSystemEvent(sl_wfx_generic_message_t * eventData)
 
     ChipDeviceEvent event;
     memset(&event, 0, sizeof(event));
-    event.Type = DeviceEventType::kWFXSystemEvent;
+    event.Type = DeviceEventType::kPlatformSLEvent;
 
     switch (eventData->header.id)
     {

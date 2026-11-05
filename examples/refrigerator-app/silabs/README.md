@@ -7,6 +7,7 @@ Wi-Fi Boards.
 
 -   [Matter Refrigerator and Temperature Controlled Example](#matter-refrigerator-and-temperature-controlled-example)
     -   [Introduction](#introduction)
+    -   [Extending Base App Implementation](#extending-base-app-implementation)
     -   [Building](#building)
     -   [Flashing the Application](#flashing-the-application)
     -   [Viewing Logging Output](#viewing-logging-output)
@@ -52,6 +53,15 @@ representation of the refrigerator's temperature-controlled state.
 The Refrigerator and Temperature Controlled example is intended to serve both as
 a means to explore the workings of Matter as well as a template for creating
 real products based on the Silicon Labs platform.
+
+## Extending Base App Implementation
+
+See [Extending Base App Implementation](../../../docs/platforms/silabs/silabs_extending_base_app_implementation.md)
+for how to customize application behavior using `CustomerAppTask` and CRTP `*Impl()` hooks.
+
+Per-example override API references: [`include/AppTaskImpl.h`](include/AppTaskImpl.h),
+[`src/AppTask.cpp`](src/AppTask.cpp).
+
 
 ## Building
 
@@ -403,19 +413,19 @@ features can easily be toggled on or off. Here is a short list of options :
 
 chip_progress_logging, chip_detail_logging, chip_automation_logging
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/refrigerator-app/silabs ./out/refrigerator-app BRD4164A "chip_detail_logging=false chip_automation_logging=false chip_progress_logging=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/refrigerator-app/silabs ./out/refrigerator-app BRD4187C "chip_detail_logging=false chip_automation_logging=false chip_progress_logging=false"
 
 ### Debug build / release build
 
 is_debug
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/refrigerator-app/silabs ./out/refrigerator-app BRD4164A "is_debug=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/refrigerator-app/silabs ./out/refrigerator-app BRD4187C "is_debug=false"
 
 ### Disabling LCD
 
 show_qr_code
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/refrigerator-app/silabs ./out/refrigerator-app BRD4164A "show_qr_code=false"
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/refrigerator-app/silabs ./out/refrigerator-app BRD4187C "show_qr_code=false"
 
 ### KVS maximum entry count
 
@@ -424,4 +434,4 @@ kvs_max_entries
     Set the maximum Kvs entries that can be stored in NVM (Default 75)
     Thresholds: 30 <= kvs_max_entries <= 255
 
-    $ ./scripts/examples/gn_silabs_example.sh ./examples/refrigerator-app/silabs ./out/refrigerator-app BRD4164A kvs_max_entries=50
+    $ ./scripts/examples/gn_silabs_example.sh ./examples/refrigerator-app/silabs ./out/refrigerator-app BRD4187C kvs_max_entries=50

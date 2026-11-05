@@ -34,37 +34,19 @@
 
 // MATTER AWS Specific Configurations
 #ifdef SL_MATTER_ENABLE_AWS
-#define MBEDTLS_PKCS1_V15
-#define MBEDTLS_RSA_NO_CRT
+// TLS-only options; crypto options live in efr32-psa-crypto-config.h.
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
-#define MBEDTLS_RSA_C
+#ifndef MBEDTLS_SSL_IN_CONTENT_LEN
 #define MBEDTLS_SSL_IN_CONTENT_LEN 5120
+#endif // MBEDTLS_SSL_IN_CONTENT_LEN
+#ifndef MBEDTLS_SSL_OUT_CONTENT_LEN
 #define MBEDTLS_SSL_OUT_CONTENT_LEN 1560
-#define MBEDTLS_PSA_BUILTIN_ALG_TLS12_PRF
-#define MBEDTLS_MPI_MAX_SIZE 512
-#define MBEDTLS_CTR_DRBG_C
-#define MBEDTLS_NO_PLATFORM_ENTROPY
-#define MBEDTLS_ENTROPY_HARDWARE_ALT
-#define MBEDTLS_SSL_TLS_C
-#define MBEDTLS_SSL_CLI_C
-#define MBEDTLS_SSL_PROTO_TLS1_2
-#define MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
-#define MBEDTLS_SSL_PROTO_DTLS
-#define MBEDTLS_CIPHER_MODE_CBC
-#define MBEDTLS_CCM_C
-#define MBEDTLS_ECJPAKE_C
-#define MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
-#define MBEDTLS_PK_HAVE_CURVE_SECP256R1
-#define MBEDTLS_PK_HAVE_JPAKE
-#define PSA_WANT_ALG_SOME_PAKE
-#define MBEDTLS_SSL_MAX_CONTENT_LEN 768
+#endif // MBEDTLS_SSL_OUT_CONTENT_LEN
 
-/**
- * Enable H Crypto and Entropy modules
- */
-#define MBEDTLS_ECDH_C
-#define MBEDTLS_ENTROPY_C
-
+// Used by the AWS altcp transport; must be at least max(IN, OUT) content length.
+#ifndef MBEDTLS_SSL_MAX_CONTENT_LEN
+#define MBEDTLS_SSL_MAX_CONTENT_LEN 5120
+#endif // MBEDTLS_SSL_MAX_CONTENT_LEN
 #endif // SL_MATTER_ENABLE_AWS
 
 // Configurations necessary for ot coap cert libs
@@ -92,7 +74,9 @@
 #if SL_MATTER_PROVISION_FLASH
 #define MBEDTLS_SHA256_C
 #define MBEDTLS_HMAC_DRBG_C
+#ifndef SL_MATTER_ENABLE_AWS
 #define MBEDTLS_ECDSA_DETERMINISTIC
+#endif // !SL_MATTER_ENABLE_AWS
 #endif // SL_MATTER_PROVISION_FLASH
 
 // If defining snprintf we are also responsible for including its declaration
