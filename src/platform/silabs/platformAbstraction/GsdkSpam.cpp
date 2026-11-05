@@ -18,6 +18,8 @@
 #include <em_device.h>
 #include <lib/support/CodeUtils.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+
+#include "sl_component_catalog.h"
 #if defined(_SILICON_LABS_32B_SERIES_2)
 #include "em_msc.h"
 #include "em_rmu.h"
@@ -74,7 +76,6 @@ extern "C" {
 
 #endif // CHIP_ENABLE_OPENTHREAD
 
-#include "sl_component_catalog.h"
 #if SILABS_LOG_OUT_UART || (defined(ENABLE_CHIP_SHELL) && ENABLE_CHIP_SHELL) ||                                                    \
     defined(CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI) && CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
 #ifdef SL_CATALOG_CLI_PRESENT
@@ -93,6 +94,55 @@ extern "C" {
 #if SILABS_LOG_ENABLED
 #include "silabs_utils.h"
 #endif
+
+#ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+#if SL_MATTER_WATCHDOG_OWNERSHIP == 1
+#include "sl_watchdog_manager.h"
+#include <cinttypes>
+#include <cmsis_os2.h>
+#include <sl_cmsis_os2_common.h>
+
+/**
+ * @brief Implmentation of the sl_watchdog_manager_starve_callback function.
+ *        This function is called, if registered with sl_watchdog_manager_set_starve_callback, when the watchdog manager detects a
+ *        starvation. This function will collect and log information on where the starvation occured.
+ */
+extern "C" {
+static void OnWatchdogStarve(const sl_watchdog_manager_starve_context_t * context)
+{
+    void(context); // could be unused.
+#if SILABS_LOG_ENABLED
+    ChipLogError(DeviceLayer, "-- Watchdog starved -- \r\n");
+    if (context != nullptr)
+    {
+        ChipLogError(DeviceLayer,
+                     "Watchdog Manager context: uid:0x%08" PRIx32 " handle:%" PRIu32 " unfed:0x%08" PRIx32 " enabled:0x%08" PRIx32
+                     "\r\n",
+                     context->watchdog_uid, context->faulty_handle, context->unfed_mask, context->enabled_mask);
+    }
+
+    // When Bit 11 (RETTOBASE) is set, it means no other exception was active, therefore the starved occured in a task.
+    if (SCB->ICSR & SCB_ICSR_RETTOBASE_Msk)
+    {
+        const uint32_t * frame = reinterpret_cast<const uint32_t *>(__get_PSP()); // r0-r3, r12, lr, pc, psr
+        osThreadId_t tId       = osThreadGetId();
+        ChipLogError(DeviceLayer, "Starved in task:%s PC:0x%08" PRIx32 " LR:0x%08" PRIx32 "\r\n", tId ? osThreadGetName(tId) : "?",
+                     frame[6], frame[5]);
+    }
+    else
+    {
+        ChipLogError(DeviceLayer, "Starved while in another ISR (VECTACTIVE:%" PRIu32 ")\r\n",
+                     (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk));
+    }
+#if SILABS_LOG_OUT_UART
+    uartFlushTxQueue();
+#endif // SILABS_LOG_OUT_UART
+#endif // SILABS_LOG_ENABLED
+    chipAbort();
+}
+} // extern "C"
+#endif // SL_MATTER_WATCHDOG_OWNERSHIP == 1
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
 
 #if defined(_SILICON_LABS_32B_SERIES_3)
 // To remove any ambiguities regarding the Flash aliases, use the below macro to ignore the 8 MSB.
@@ -146,6 +196,19 @@ CHIP_ERROR SilabsPlatform::Init(void)
 #if SILABS_LOG_ENABLED
     silabsInitLog();
 #endif // SILABS_LOG_ENABLED
+
+#ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+#if SL_MATTER_WATCHDOG_OWNERSHIP == 1
+    // When SL Matter stack owns the watchdog, we disable the automatic reset on starvation and register our own starve callback.
+    sl_watchdog_manager_disable_reset();
+    sl_status_t status = sl_watchdog_manager_set_starve_callback(OnWatchdogStarve);
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(DeviceLayer, "Failed to set watchdog starve callback");
+    }
+#endif // SL_MATTER_WATCHDOG_OWNERSHIP == 1
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+
     return CHIP_NO_ERROR;
 }
 

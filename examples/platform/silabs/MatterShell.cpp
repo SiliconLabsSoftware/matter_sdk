@@ -30,9 +30,9 @@
 #include <lib/support/StringBuilder.h>
 #endif // SL_CATALOG_CLI_PRESENT
 #ifdef SL_WIFI
+#include <lib/shell/commands/WiFi.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
-#include <lib/shell/commands/WiFi.h>
 #endif // SL_WIFI
 
 using namespace ::chip;
@@ -163,7 +163,7 @@ CHIP_ERROR WatchdogCommandHandler(int argc, char ** argv)
 
 CHIP_ERROR ForceWatchdogStarvation([[maybe_unused]] int argc, [[maybe_unused]] char ** argv)
 {
-    streamer_printf(streamer_get(), "Watchdog being starved, expect a reboot\r\n");
+    streamer_printf(streamer_get(), "Watchdog starvation started\r\n");
     while (1)
     {
         __NOP();
