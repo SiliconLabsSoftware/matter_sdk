@@ -110,7 +110,7 @@ extern "C" {
 extern "C" {
 static void OnWatchdogStarve(const sl_watchdog_manager_starve_context_t * context)
 {
-    VerifyOrReturn(context != nullptr);
+    void(context); // could be unused.
 #if SILABS_LOG_ENABLED
     ChipLogError(DeviceLayer, "-- Watchdog starved -- \r\n");
     if (context != nullptr)
