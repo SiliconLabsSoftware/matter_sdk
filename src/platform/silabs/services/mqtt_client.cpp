@@ -511,28 +511,17 @@ CHIP_ERROR MqttClient::ProcessInit()
 {
     VerifyOrReturnError(!mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mConfig.clientId != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(mConfig.txBufferSize > 0 && mConfig.rxBufferSize > 0, CHIP_ERROR_INVALID_ARGUMENT);
 
     memset(&mClient, 0, sizeof(mClient));
     memset(&mNetwork, 0, sizeof(mNetwork));
-
-    mTxBuffer = static_cast<uint8_t *>(malloc(mConfig.txBufferSize));
-    mRxBuffer = static_cast<uint8_t *>(malloc(mConfig.rxBufferSize));
-    if (mTxBuffer == nullptr || mRxBuffer == nullptr)
-    {
-        free(mTxBuffer);
-        free(mRxBuffer);
-        mTxBuffer = nullptr;
-        mRxBuffer = nullptr;
-        return CHIP_ERROR_NO_MEMORY;
-    }
-    memset(mTxBuffer, 0, mConfig.txBufferSize);
-    memset(mRxBuffer, 0, mConfig.rxBufferSize);
+    memset(mTxBuffer, 0, sizeof(mTxBuffer));
+    memset(mRxBuffer, 0, sizeof(mRxBuffer));
 
     mNetwork.transport_type = MQTT_TRANSPORT_TCP;
     NetworkInit(&mNetwork);
 
-    MQTTClient(&mClient, &mNetwork, mConfig.commandTimeoutMs, mTxBuffer, mConfig.txBufferSize, mRxBuffer, mConfig.rxBufferSize);
+    MQTTClient(&mClient, &mNetwork, mConfig.commandTimeoutMs, mTxBuffer, MQTT_CLIENT_TX_BUFFER_SIZE, mRxBuffer,
+               MQTT_CLIENT_RX_BUFFER_SIZE);
 
     mInitialized  = true;
     mConnected    = false;
@@ -556,10 +545,6 @@ CHIP_ERROR MqttClient::ProcessDeinit()
 
     // Defensive: free any leftover pre-connect stub after NetworkDisconnect in ProcessDisconnect.
     FreeTlsContext();
-    free(mTxBuffer);
-    free(mRxBuffer);
-    mTxBuffer    = nullptr;
-    mRxBuffer    = nullptr;
     mInitialized = false;
     if (sActiveClient == this)
     {

@@ -43,6 +43,14 @@ extern "C" {
 #define MQTT_USE_HOST_LWIP_TLS 0
 #endif // MQTT_USE_HOST_LWIP_TLS
 
+#ifndef MQTT_CLIENT_TX_BUFFER_SIZE
+#define MQTT_CLIENT_TX_BUFFER_SIZE 1024
+#endif // MQTT_CLIENT_TX_BUFFER_SIZE
+
+#ifndef MQTT_CLIENT_RX_BUFFER_SIZE
+#define MQTT_CLIENT_RX_BUFFER_SIZE 1024
+#endif // MQTT_CLIENT_RX_BUFFER_SIZE
+
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -63,7 +71,8 @@ enum class MqttQoS : uint8_t
  * When @p useTls is true, Connect installs non-null CA and optional client cert/key PEMs
  * into the host LwIP TLS context before NetworkConnect.
  *
- * @p txBufferSize / @p rxBufferSize are applied at Init (change requires Deinit then Init).
+ * Paho TX/RX buffer sizes are compile-time via @ref MQTT_CLIENT_TX_BUFFER_SIZE /
+ * @ref MQTT_CLIENT_RX_BUFFER_SIZE.
  */
 struct MqttClientConfig
 {
@@ -76,8 +85,6 @@ struct MqttClientConfig
     uint8_t mqttVersion           = 4;
     bool cleanSession             = true;
     uint32_t idleYieldTimeoutMs   = 1000; // This is the timeout for the idle yield operation.
-    size_t txBufferSize           = 1024; ///< Paho TX buffer bytes allocated at Init.
-    size_t rxBufferSize           = 1024; ///< Paho RX buffer bytes allocated at Init.
 
     bool willEnable          = false;
     const char * willTopic   = nullptr;
@@ -160,8 +167,8 @@ public:
      * @brief Queue client buffer / Network / MQTTClient setup on the service thread.
      *
      * Applies @p config via @ref SetConfig (disconnected only), then queues Init.
-     * Allocates TX/RX buffers sized by @ref MqttClientConfig::txBufferSize /
-     * @ref MqttClientConfig::rxBufferSize.
+     * Uses static TX/RX buffers sized by @ref MQTT_CLIENT_TX_BUFFER_SIZE /
+     * @ref MQTT_CLIENT_RX_BUFFER_SIZE.
      */
     CHIP_ERROR Init(const MqttClientConfig & config, MqttOperationCallback callback, void * context = nullptr);
 
@@ -304,8 +311,8 @@ private:
 
     Client mClient{};
     Network mNetwork{};
-    uint8_t * mTxBuffer = nullptr;
-    uint8_t * mRxBuffer = nullptr;
+    uint8_t mTxBuffer[MQTT_CLIENT_TX_BUFFER_SIZE];
+    uint8_t mRxBuffer[MQTT_CLIENT_RX_BUFFER_SIZE];
 
     void * mThreadId     = nullptr; // osThreadId_t
     void * mMessageQueue = nullptr; // osMessageQueueId_t
