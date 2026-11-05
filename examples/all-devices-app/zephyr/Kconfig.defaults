@@ -200,4 +200,78 @@ config HWINFO_SHELL
 
 endif # SHELL
 
+# Silabs optimizations
+if SOC_FAMILY_SILABS_S2 && $(dt_chosen_enabled,$(DT_CHOSEN_IEEE802154))
+
+# OpenThread L2 still needs Zephyr networking without Matter socket endpoints.
+config NETWORKING
+	default y
+
+config CHIP_USE_ZEPHYR_NETWORKING
+	default n
+
+if NET_L2_OPENTHREAD
+
+config CHIP_USE_OT_ENDPOINT
+	default y
+
+config NET_IPV6_NBR_CACHE
+	default n
+
+config NET_PKT_RX_COUNT
+	default 8
+
+config NET_PKT_TX_COUNT
+	default 8
+
+config NET_BUF_RX_COUNT
+	default 16
+
+config NET_BUF_TX_COUNT
+	default 16
+
+config OPENTHREAD_NUM_MESSAGE_BUFFERS
+	default 64
+
+if CHIP_CRYPTO_PSA
+
+choice OPENTHREAD_SECURITY_CONFIG
+	default OPENTHREAD_SECURITY_CUSTOM_CONFIG
+endchoice
+
+# Custom Thread security does not imply PSA persistent-key storage.
+config SECURE_STORAGE
+	default y if !BUILD_WITH_TFM
+
+config PSA_WANT_KEY_TYPE_HMAC
+	default y
+
+config PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_IMPORT
+	default y
+
+config PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_EXPORT
+	default y
+
+config PSA_WANT_ALG_DETERMINISTIC_ECDSA
+	default y
+
+config MBEDTLS_ASN1_PARSE_C
+	default y
+
+config CHIP_CRYPTO_PSA_AEAD_SINGLE_PART
+	default y
+
+endif # CHIP_CRYPTO_PSA
+
+if MCUBOOT_IMG_MANAGER
+
+config IMG_ERASE_PROGRESSIVELY
+	default y
+
+endif # MCUBOOT_IMG_MANAGER
+
+endif # NET_L2_OPENTHREAD
+
+endif # SOC_FAMILY_SILABS_S2 && DT_CHOSEN_IEEE802154
+
 endif # CHIP
