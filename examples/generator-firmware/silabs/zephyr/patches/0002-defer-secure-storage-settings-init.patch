@@ -6,3 +6,4 @@ diff --git a/subsys/secure_storage/src/its/store/settings.c b/subsys/secure_stor
 +#ifndef CONFIG_MATTER_PROVISIONING_DEFER_SETTINGS_INIT
  SYS_INIT(init_settings_subsys, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 +#endif
+ 
