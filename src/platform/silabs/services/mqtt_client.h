@@ -43,6 +43,14 @@ extern "C" {
 #define MQTT_USE_HOST_LWIP_TLS 0
 #endif // MQTT_USE_HOST_LWIP_TLS
 
+#ifndef MQTT_CLIENT_TX_BUFFER_SIZE
+#define MQTT_CLIENT_TX_BUFFER_SIZE 1024
+#endif // MQTT_CLIENT_TX_BUFFER_SIZE
+
+#ifndef MQTT_CLIENT_RX_BUFFER_SIZE
+#define MQTT_CLIENT_RX_BUFFER_SIZE 1024
+#endif // MQTT_CLIENT_RX_BUFFER_SIZE
+
 namespace chip {
 namespace DeviceLayer {
 namespace Silabs {
@@ -62,6 +70,9 @@ enum class MqttQoS : uint8_t
  *
  * When @p useTls is true, Connect installs non-null CA and optional client cert/key PEMs
  * into the host LwIP TLS context before NetworkConnect.
+ *
+ * Paho TX/RX buffer sizes are compile-time via @ref MQTT_CLIENT_TX_BUFFER_SIZE /
+ * @ref MQTT_CLIENT_RX_BUFFER_SIZE.
  */
 struct MqttClientConfig
 {
@@ -156,6 +167,8 @@ public:
      * @brief Queue client buffer / Network / MQTTClient setup on the service thread.
      *
      * Applies @p config via @ref SetConfig (disconnected only), then queues Init.
+     * Uses static TX/RX buffers sized by @ref MQTT_CLIENT_TX_BUFFER_SIZE /
+     * @ref MQTT_CLIENT_RX_BUFFER_SIZE.
      */
     CHIP_ERROR Init(const MqttClientConfig & config, MqttOperationCallback callback, void * context = nullptr);
 
@@ -236,8 +249,6 @@ public:
     CHIP_ERROR Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context = nullptr);
 
 private:
-    static constexpr size_t kTxBufferSize           = 1024;
-    static constexpr size_t kRxBufferSize           = 1024;
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
     static constexpr size_t kQueueSize              = 4;
 
@@ -300,8 +311,8 @@ private:
 
     Client mClient{};
     Network mNetwork{};
-    uint8_t mTxBuffer[kTxBufferSize] = { 0 };
-    uint8_t mRxBuffer[kRxBufferSize] = { 0 };
+    uint8_t mTxBuffer[MQTT_CLIENT_TX_BUFFER_SIZE];
+    uint8_t mRxBuffer[MQTT_CLIENT_RX_BUFFER_SIZE];
 
     void * mThreadId     = nullptr; // osThreadId_t
     void * mMessageQueue = nullptr; // osMessageQueueId_t
