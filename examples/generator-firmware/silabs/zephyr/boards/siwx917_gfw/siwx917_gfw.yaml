@@ -1,0 +1,13 @@
+identifier: siwx917_gfw
+name: Matter SiWx917 Provisioning GFW
+type: mcu
+arch: arm
+ram: 191
+flash: 1024
+toolchain:
+    - zephyr
+    - gnuarmemb
+supported:
+    - flash
+    - gpio
+vendor: silabs

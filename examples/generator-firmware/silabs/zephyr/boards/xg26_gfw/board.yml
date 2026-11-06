@@ -1,0 +1,6 @@
+board:
+    name: xg26_gfw
+    full_name: Matter xG26/MGM26 Provisioning GFW
+    vendor: silabs
+    socs:
+        - name: efr32mg26b211f2048im68

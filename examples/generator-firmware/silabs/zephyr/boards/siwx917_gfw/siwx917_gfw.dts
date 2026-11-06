@@ -1,0 +1,76 @@
+/*******************************************************************************
+ * # License
+ * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc.  Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement.  This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
+
+/dts-v1/;
+#include <zephyr/dt-bindings/pinctrl/silabs/siwx91x-pinctrl.h>
+#include <silabs/siwg917m111mgtba.dtsi>
+
+/ {
+	model = "Matter provisioning GFW (SiWx917)";
+	compatible = "silabs,siwx917_gfw", "silabs,siwg917";
+
+	chosen {
+		zephyr,code-partition = &code_partition;
+		zephyr,settings-partition = &settings_partition;
+		zephyr,flash = &flash0;
+		zephyr,sram = &sram0;
+	};
+};
+
+&cpu0 {
+	clock-frequency = <180000000>;
+};
+
+/* NWP init requires pinctrl even when WiFi is off
+ * (flash driver selects SILABS_SIWX91X_NWP → sl_wifi_init).
+ */
+&pinctrl0 {
+	nwp_default: nwp_default {
+		group {
+			pinmux = <WIFI_ANT0_ULP0>, <WIFI_ANT1_ULP4>, <WIFI_ANT2_ULP5>;
+		};
+	};
+};
+
+&nwp {
+	pinctrl-0 = <&nwp_default>;
+	pinctrl-names = "default";
+	antenna-selection = "ext-gpios";
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		code_partition: partition@202000 {
+			reg = <0x00202000 DT_SIZE_K(1912)>;
+			label = "code_partition";
+		};
+
+		settings_partition: partition@3e1000 {
+			reg = <0x003e1000 DT_SIZE_K(32)>;
+			label = "settings";
+		};
+	};
+};
+
+&bt_hci0 {
+	status = "okay";
+};
+
+&wifi0 {
+	status = "okay";
+};
