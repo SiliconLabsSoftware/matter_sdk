@@ -57,6 +57,12 @@ ConnectivityManagerImpl ConnectivityManagerImpl::sInstance;
 
 CHIP_ERROR ConnectivityManagerImpl::_Init()
 {
+    // `mWiFiStationReconnectInterval` is a Milliseconds32 Timeout; verify the
+    // backoff multiply in DriveStationState cannot overflow uint32_t.
+    static_assert(UINT32_MAX / CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL >=
+                      (1u << CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF),
+                  "Our backoff calculation will overflow.");
+
     mWiFiStationMode              = kWiFiStationMode_Disabled;
     mWiFiStationState             = kWiFiStationState_NotConnected;
     mWiFiStationAutoConnect       = true;
@@ -342,12 +348,6 @@ void ConnectivityManagerImpl::DriveStationState()
     }
     break;
     case kWiFiStationState_Connecting_Failed: {
-
-        // verify that the backoff calculation will not overflow since `System::Clock::Timestamp` is a 64-bit value
-        static_assert(UINT64_MAX / CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL >=
-                          (1 << CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF),
-                      "Our backoff calculation will overflow.");
-
         // if the station is connecting failed,
         // arrange another connection attempt at a suitable point in the future
         // TODO: Verify why `mLastStationConnectFailTime` is not assigned the value of `now`
