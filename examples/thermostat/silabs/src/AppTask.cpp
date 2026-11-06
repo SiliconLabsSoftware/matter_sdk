@@ -384,14 +384,22 @@ void AppTask::DMThermostatClusterInit(chip::EndpointId endpoint)
 namespace {
 
 // Runs on AppTask thread so blocking MQTT connect/wait does not starve the CHIP stack.
+// Start each service independently: a MQTT failure must not skip HTTPS (periodic HTTPS OTA
+// relies on HttpClient already running; it does not call https_client_demo_start itself).
 void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
 {
 #if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_start(), ChipLogError(AppServer, "mqtt_client_demo_start failed"));
+    if (SL_STATUS_OK != mqtt_client_demo_start())
+    {
+        ChipLogError(AppServer, "mqtt_client_demo_start failed");
+    }
 #endif // SL_MATTER_ENABLE_MQTT_SERVICE
 
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-    VerifyOrReturn(SL_STATUS_OK == https_client_demo_start(), ChipLogError(AppServer, "https_client_demo_start failed"));
+    if (SL_STATUS_OK != https_client_demo_start())
+    {
+        ChipLogError(AppServer, "https_client_demo_start failed");
+    }
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 }
 
