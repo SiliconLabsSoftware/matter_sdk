@@ -520,7 +520,8 @@ CHIP_ERROR MqttClient::ProcessInit()
     mNetwork.transport_type = MQTT_TRANSPORT_TCP;
     NetworkInit(&mNetwork);
 
-    MQTTClient(&mClient, &mNetwork, mConfig.commandTimeoutMs, mTxBuffer, sizeof(mTxBuffer), mRxBuffer, sizeof(mRxBuffer));
+    MQTTClient(&mClient, &mNetwork, mConfig.commandTimeoutMs, mTxBuffer, MQTT_CLIENT_TX_BUFFER_SIZE, mRxBuffer,
+               MQTT_CLIENT_RX_BUFFER_SIZE);
 
     mInitialized  = true;
     mConnected    = false;
