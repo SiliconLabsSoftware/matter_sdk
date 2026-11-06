@@ -213,10 +213,10 @@ config CHIP_USE_ZEPHYR_NETWORKING
 if NET_L2_OPENTHREAD
 
 config CHIP_USE_OT_ENDPOINT
-	default y
+	default !CHIP_USE_ZEPHYR_NETWORKING
 
 config NET_IPV6_NBR_CACHE
-	default n
+	default n if CHIP_USE_OT_ENDPOINT
 
 config NET_PKT_RX_COUNT
 	default 8
