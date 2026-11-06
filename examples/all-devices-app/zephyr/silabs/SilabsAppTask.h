@@ -29,10 +29,9 @@ namespace chip::app::AllDevices {
 // Uses the example credentials if CONFIG_CHIP_FACTORY_DATA is not set.
 CHIP_ERROR InitSilabsCredentials();
 
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
-// Requires successful Thread-stack initialization.
-CHIP_ERROR InitSilabsThreadNetworking(ServerInitParams & initParams);
-#endif
+// Supplies the initialized Thread instance and locks, bypasses Zephyr's networking stack.
+// No-op when native Thread endpoints are disabled.
+CHIP_ERROR ConfigureOpenThreadEndpointParams(ServerInitParams & initParams);
 
 template <class Derived>
 class SilabsAppTask : public AppTaskBase<Derived>
@@ -42,10 +41,10 @@ public:
 
     CHIP_ERROR InitThreadNetworking()
     {
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
         ReturnErrorOnFailure(AppTaskBase<Derived>::InitThreadNetworking());
-        ReturnErrorOnFailure(InitSilabsThreadNetworking(this->mInitParams));
-#endif
+        if constexpr(CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT && CHIP_DEVICE_CONFIG_ENABLE_THREAD){
+            ReturnErrorOnFailure(ConfigureOpenThreadEndpointParams(this->mInitParams));
+        }
         return CHIP_NO_ERROR;
     }
 };
