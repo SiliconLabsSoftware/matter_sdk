@@ -106,6 +106,7 @@ protected:
     // Default power save configuration is High Performance as the device starts in high power mode and low power modes need to be
     // explicitly configured
     PowerSaveConfiguration mCurrentPowerSaveConfiguration = PowerSaveConfiguration::kHighPerformance;
+    uint32_t mCurrentListenInterval                       = 0;
     bool mBroadcastFilterEnabled                          = false;
 };
 
