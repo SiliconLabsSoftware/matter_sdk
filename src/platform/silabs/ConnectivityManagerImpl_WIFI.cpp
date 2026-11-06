@@ -449,6 +449,9 @@ void ConnectivityManagerImpl::ChangeWiFiStationState(WiFiStationState newState, 
     switch (newState)
     {
     case kWiFiStationState_NotConnected:
+        // Clear pending so a forced NotConnected (e.g. SetWiFiStationMode)
+        // cannot leave DisconnectNetwork stuck returning IN_PROGRESS.
+        mWiFiStationDisconnectPending = false;
         ResetReconnectionWiFiStationState();
         OnStationDisconnected();
         break;
