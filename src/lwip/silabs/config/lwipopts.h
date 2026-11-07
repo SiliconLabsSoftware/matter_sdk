@@ -68,8 +68,6 @@
 #define ARP_QUEUEING (0)
 #define TCPIP_THREAD_NAME "LWIP"
 
-#define LWIP_SOCKET 0
-
 // Setting the priority of the lwip thread to osPriorityAboveNormal
 #define TCPIP_THREAD_PRIO (32)
 
@@ -87,6 +85,15 @@
 // TCP_WND: leave undefined → opt.h default (4 * TCP_MSS)
 #endif /* SL_MATTER_ENABLE_AWS */
 
+#if defined(SL_MATTER_ENABLE_MQTT_OVER_LWIP_SOCKETS) && SL_MATTER_ENABLE_MQTT_OVER_LWIP_SOCKETS
+#define LWIP_FREERTOS_USE_STATIC_TCPIP_QUEUE (0)
+// LWIP_SOCKET: leave undefined → opt.h default (1)
+// MEMP_NUM_NETCONN: leave undefined → opt.h default (4)
+#else
+#define LWIP_SOCKET 0
+#define MEMP_NUM_NETCONN (0)
+#endif // SL_MATTER_ENABLE_MQTT_OVER_LWIP_SOCKETS
+
 #define LWIP_FREERTOS_USE_STATIC_TCPIP_TASK 1
 
 #define LWIP_RAW 1
@@ -98,8 +105,6 @@
 
 // TODO: not sure why this is disabled
 #define LWIP_NETIF_LOOPBACK (0)
-
-#define MEMP_NUM_NETCONN (0)
 
 #if CHIP_DEVICE_CONFIG_ENABLE_IPV4
 #define LWIP_IPV4 1

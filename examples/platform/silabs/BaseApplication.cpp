@@ -54,6 +54,9 @@
 
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+#include <HTTPSShellCommands.h>
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 #endif // ENABLE_CHIP_SHELL
 #include "provision/ProvisionStorageReader.h"
 
@@ -221,6 +224,13 @@ bool BaseApplication::sIsProvisioned                  = false;
 bool BaseApplication::sIsFactoryResetTriggered        = false;
 LEDWidget * BaseApplication::sAppActionLed            = nullptr;
 BaseApplicationDelegate BaseApplication::sAppDelegate = BaseApplicationDelegate();
+
+void BaseApplicationDelegate::OnCommissioningSessionEstablishmentStarted()
+{
+    ChipDeviceEvent event{};
+    event.Type = DeviceEventType::kSLSystemEventCommissioningStarted;
+    LogErrorOnFailure(PlatformMgr().PostEvent(&event));
+}
 
 void BaseApplicationDelegate::OnCommissioningSessionStarted()
 {
@@ -439,6 +449,9 @@ CHIP_ERROR BaseApplication::BaseInit()
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
     BLEShellCommands::RegisterCommands();
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    HTTPSShellCommands::RegisterCommands();
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
@@ -1165,6 +1178,7 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
                 chip::System::Clock::Seconds32(MATTER_AWS_INIT_DELAY_SEC), InitMatterAwsHandler, nullptr);
         }
 #endif // SL_MATTER_ENABLE_AWS
+
 #if SL_MATTER_DISPLAY_ENABLED
         SilabsLCD::Screen_e screen;
         AppTask::GetLCD().GetScreen(screen);
