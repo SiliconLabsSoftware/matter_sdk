@@ -36,7 +36,7 @@
 #include <nvm3_hal_flash.h>
 #include <nvm3_lock.h>
 #include <semphr.h>
-#include <sl_token_manager_interface.h>
+#include <sl_token_manager_api.h>
 
 namespace {
 // Substitute the GSDK weak nvm3_lockBegin and nvm3_lockEnd
@@ -102,9 +102,7 @@ CHIP_ERROR ReadConfigValueHelper(SilabsConfig::Key key, T & val)
     // Ensure the data size matches the expected size
     VerifyOrReturnError(dataLen == sizeof(T), CHIP_ERROR_INVALID_ARGUMENT);
 
-    // TODO: size_out from sl_token_manager_get_data is not used nor useful, remove once the API gets updated
-    uint32_t unusedSizeOut;
-    ReturnErrorOnFailure(MapNvm3Error(sl_token_manager_get_data(key, &tmpVal, dataLen, &unusedSizeOut)));
+    ReturnErrorOnFailure(MapNvm3Error(sl_token_manager_get_data(key, &tmpVal, dataLen)));
 
     val = tmpVal;
     return CHIP_NO_ERROR;
@@ -174,16 +172,13 @@ CHIP_ERROR SilabsConfig::ReadConfigValueStr(Key key, char * buf, size_t bufSize,
     SuccessOrExit(err);
     VerifyOrExit(dataLen > 0, err = CHIP_ERROR_INVALID_STRING_LENGTH);
 
-    if (buf != NULL)
+    if (buf != nullptr)
     {
         // Read nvm3 bytes directly into the output buffer- check buffer is
         // long enough to take the string (nvm3 string does not include the
         // terminator char).
         VerifyOrExit((bufSize > dataLen), err = CHIP_ERROR_BUFFER_TOO_SMALL);
-
-        // TODO: size_out from sl_token_manager_get_data is not used nor useful, remove once the API gets updated
-        uint32_t unusedSizeOut;
-        err = MapNvm3Error(sl_token_manager_get_data(key, buf, dataLen, &unusedSizeOut));
+        err = MapNvm3Error(sl_token_manager_get_data(key, buf, dataLen));
         SuccessOrExit(err);
 
         outLen      = ((dataLen == 1) && (buf[0] == 0)) ? 0 : dataLen;
@@ -199,9 +194,7 @@ CHIP_ERROR SilabsConfig::ReadConfigValueStr(Key key, char * buf, size_t bufSize,
         {
             // Read the first byte of the nvm3 string into a tmp var.
             char firstByte;
-            // TODO: size_out from sl_token_manager_get_data is not used nor useful, remove once the API gets updated
-            uint32_t unusedSizeOut;
-            err = MapNvm3Error(sl_token_manager_get_data(key, &firstByte, 1, &unusedSizeOut));
+            err = MapNvm3Error(sl_token_manager_get_data(key, &firstByte, 1));
             SuccessOrExit(err);
 
             outLen = (firstByte == 0) ? 0 : dataLen;
@@ -222,21 +215,19 @@ CHIP_ERROR SilabsConfig::ReadConfigValueBin(Key key, uint8_t * buf, size_t bufSi
     // Get nvm3 object info.
     ReturnErrorOnFailure(MapNvm3Error(sl_token_manager_get_size(key, &dataLen)));
 
-    if (buf != NULL)
+    if (buf != nullptr)
     {
         // Read nvm3 bytes directly into output buffer- check buffer is long enough to take the data
         // else read what we can but return CHIP_ERROR_BUFFER_TOO_SMALL.
         size_t maxReadLength = dataLen - offset;
         if (bufSize >= maxReadLength)
         {
-            // TODO: No API currently exist for partial reads in sl_token_manager_interface, replace this when available
-            ReturnErrorOnFailure(MapNvm3Error(nvm3_readPartialData(nvm3_defaultHandle, key, buf, offset, maxReadLength)));
+            ReturnErrorOnFailure(MapNvm3Error(sl_token_manager_get_partial_data(key, buf, offset, maxReadLength)));
             outLen = maxReadLength;
         }
         else
         {
-            // TODO: No API currently exist for partial reads in sl_token_manager_interface, replace this when available
-            ReturnErrorOnFailure(MapNvm3Error(nvm3_readPartialData(nvm3_defaultHandle, key, buf, offset, bufSize)));
+            ReturnErrorOnFailure(MapNvm3Error(sl_token_manager_get_partial_data(key, buf, offset, bufSize)));
             // read was successful, but we did not read all the data from the object.
             outLen = bufSize;
             return CHIP_ERROR_BUFFER_TOO_SMALL;
@@ -252,9 +243,7 @@ CHIP_ERROR SilabsConfig::ReadConfigValueCounter(uint8_t counterIdx, uint32_t & v
 
     VerifyOrReturnError(ValidConfigKey(key), CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND); // Verify key id.
 
-    // TODO: size_out from sl_token_manager_get_data is not used nor useful, remove once the API gets updated
-    uint32_t unusedSizeOut;
-    ReturnErrorOnFailure(MapNvm3Error(sl_token_manager_get_data(key, &tmpVal, sizeof(tmpVal), &unusedSizeOut)));
+    ReturnErrorOnFailure(MapNvm3Error(sl_token_manager_get_data(key, &tmpVal, sizeof(tmpVal))));
     val = tmpVal;
     return CHIP_NO_ERROR;
 }
