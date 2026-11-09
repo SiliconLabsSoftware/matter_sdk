@@ -123,9 +123,8 @@ private:
     void CleanupOnError(app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
 
     static constexpr uint16_t kHttpRangeNotSatisfiable = 416;
-    // Size of mRangeHeaderValue: worst case "bytes=<10 digits>-<10 digits>\0" is 28
-    // bytes (uint32_t max); rounded up to 32 for margin.
-    static constexpr size_t kRangeHeaderValueSize = 32;
+    // Size of mRangeHeaderValue: "bytes=<10 digits>-<10 digits>\0" is 28 bytes at uint32_t max.
+    static constexpr size_t kRangeHeaderValueSize = 28;
 
     StateDelegate * mStateDelegate                = nullptr;
     DeviceLayer::Silabs::HttpClient * mHttpClient = nullptr;

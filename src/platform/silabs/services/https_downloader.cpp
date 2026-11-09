@@ -152,8 +152,8 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(SoftwareUpdate, "[HTTPS-OTA] QueueRangeGet Get=%" CHIP_ERROR_FORMAT, err.Format());
+        return err;
     }
-    ReturnErrorOnFailure(err);
 
     mWaitingHttp = true;
     return CHIP_NO_ERROR;
@@ -184,10 +184,8 @@ void HttpsDownloader::OnRangeComplete(CHIP_ERROR result, void * context)
             return;
         }
 
-        // Generic Get reports 416 as failure; treat as EOF after a validated download.
-        // Empty body is intentional: 416 means the requested range is past EOF, so this
-        // response has no image bytes. The last block was already ProcessBlock'd on the
-        // prior successful Get; HandleRangeBodyChunk only Finalizes.
+        // After the last block was processed, the next Get returns HTTP 416 with an empty
+        // body. Treat that as EOF and call HandleRangeBodyChunk to Finalize the transfer.
         if ((result != CHIP_NO_ERROR) && (httpCode == kHttpRangeNotSatisfiable))
         {
             CHIP_ERROR err = self->HandleRangeBodyChunk(ByteSpan(), httpCode);
