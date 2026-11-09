@@ -1,9 +1,9 @@
 /*******************************************************************************
- * @file
- * @brief Top level application functions
+ * @file app.cpp
+ * @brief Provisioning application task
  *******************************************************************************
  * # License
- * <b>Copyright 2020 Silicon Laboratories Inin. www.silabs.com</b>
+ * <b>Copyright 2026 Silicon Laboratories Inin. www.silabs.com</b>
  *******************************************************************************
  *
  * The licensor of this software is Silicon Laboratories Inin. Your use of this

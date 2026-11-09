@@ -1,10 +1,10 @@
 /***************************************************************************
- * @file
+ * @file efr32.cpp
  * @brief NVM3 definition of the default data
  *structures.
  *******************************************************************************
  * # License
- * <b>Copyright 2018 Silicon Laboratories Inc.
+ * <b>Copyright 2026 Silicon Laboratories Inc.
  *www.silabs.com</b>
  *******************************************************************************
  *

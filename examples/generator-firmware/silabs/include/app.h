@@ -1,9 +1,9 @@
 /*****************************************************************************
- * @file
- * @brief Top level application functions
+ * @file app.h
+ * @brief Provisioning application header
  *******************************************************************************
  * # License
- * <b>Copyright 2020 Silicon Laboratories Inc.
+ * <b>Copyright 2026 Silicon Laboratories Inc.
  *www.silabs.com</b>
  *******************************************************************************
  *

@@ -37,15 +37,11 @@ int main()
     chip::Platform::MemoryInit();
     ChipLogError(DeviceLayer, "Starting Matter Provisioning");
 
-    Manager & manager    = Manager::GetInstance();
-    auto & storageWriter = ProvisionStorageWriter::GetInstance();
-    if (storageWriter.Initialize() != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "Failed to initialize provisioning storage");
-        return -1;
-    }
+    Manager & manager = Manager::GetInstance();
 
-    manager.SetStorageBackend(ProvisionStorageReader::GetInstance(), &storageWriter);
+    // NVS geometry comes from the first host packet (Protocol V2 calls
+    // ProvisionStorageWriter::Initialize). Do not initialize storage here.
+    manager.SetStorageBackend(ProvisionStorageReader::GetInstance(), &ProvisionStorageWriter::GetInstance());
     manager.SetCryptoProvider(ProvisionCrypto::GetInstance());
     manager.SetChannel(ProvisionChannel::GetInstance());
     manager.SetResetHandler(resetDevice);

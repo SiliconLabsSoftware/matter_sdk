@@ -1,9 +1,9 @@
 /*****************************************************************************
- * @file
+ * @file si917.cpp
  * @brief NVM3 definition of the default data structures.
  *******************************************************************************
  * # License
- * <b>Copyright 2018 Silicon Laboratories Inc. www.silabs.com</b>
+ * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
  *******************************************************************************
  *
  * The licensor of this software is Silicon Laboratories Inc.  Your use of this
