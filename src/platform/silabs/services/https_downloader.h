@@ -123,7 +123,8 @@ private:
     void CleanupOnError(app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
 
     static constexpr uint16_t kHttpRangeNotSatisfiable = 416;
-    // "bytes=<10 digits>-<10 digits>\0" = 28 bytes; rounded up for alignment margin.
+    // Size of mRangeHeaderValue: worst case "bytes=<10 digits>-<10 digits>\0" is 28
+    // bytes (uint32_t max); rounded up to 32 for margin.
     static constexpr size_t kRangeHeaderValueSize = 32;
 
     StateDelegate * mStateDelegate                = nullptr;
