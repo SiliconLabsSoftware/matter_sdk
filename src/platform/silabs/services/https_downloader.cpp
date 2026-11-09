@@ -26,11 +26,11 @@
 
 #include <algorithm>
 #include <cinttypes>
+#include <cstdio>
 #include <cstring>
 
 using chip::app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum;
 using chip::app::DataModel::Nullable;
-using chip::DeviceLayer::Silabs::HttpClient;
 using chip::DeviceLayer::Silabs::HttpHost;
 
 namespace chip {
@@ -140,7 +140,9 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
     const uint32_t endInclusive = mNextOffset + mBlockSize - 1;
     ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] range queued offset=%" PRIu32 "-%" PRIu32, mNextOffset, endInclusive);
 
-    CHIP_ERROR err = mHttpClient->GetRange(host, mPath, mNextOffset, endInclusive, mRxSpan, OnRangeComplete, this);
+    snprintf(mRangeHeaderValue, sizeof(mRangeHeaderValue), "bytes=%" PRIu32 "-%" PRIu32, mNextOffset, endInclusive);
+
+    CHIP_ERROR err = mHttpClient->Get(host, mPath, mRxSpan, &mRangeHeader, 1, OnRangeComplete, this);
     if (err == CHIP_ERROR_BUSY)
     {
         ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] busy retry scheduled");
@@ -149,7 +151,7 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
     }
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] QueueRangeGet GetRange=%" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] QueueRangeGet Get=%" CHIP_ERROR_FORMAT, err.Format());
     }
     ReturnErrorOnFailure(err);
 
@@ -182,12 +184,31 @@ void HttpsDownloader::OnRangeComplete(CHIP_ERROR result, void * context)
             return;
         }
 
+        // Generic Get reports 416 as failure; treat as EOF after a validated download.
+        // Empty body is intentional: 416 means the requested range is past EOF, so this
+        // response has no image bytes. The last block was already ProcessBlock'd on the
+        // prior successful Get; HandleRangeBodyChunk only Finalizes.
+        if ((result != CHIP_NO_ERROR) && (httpCode == kHttpRangeNotSatisfiable))
+        {
+            CHIP_ERROR err = self->HandleRangeBodyChunk(ByteSpan(), httpCode);
+            if (err != CHIP_NO_ERROR)
+            {
+                ChipLogError(SoftwareUpdate, "[HTTPS-OTA] HandleRangeBodyChunk=%" CHIP_ERROR_FORMAT, err.Format());
+                self->CleanupOnError(OTAChangeReasonEnum::kFailure);
+                if (self->mImageProcessor != nullptr)
+                {
+                    LogErrorOnFailure(self->mImageProcessor->Abort());
+                }
+            }
+            return;
+        }
+
         if (result != CHIP_NO_ERROR)
         {
             // Connectivity loss pauses the transfer; NoteConnectivityRestored re-arms and fetches.
             if (self->mConnectivityLost)
             {
-                ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] GetRange error during connectivity loss (ignored)");
+                ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] Get error during connectivity loss (ignored)");
                 return;
             }
             ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL http %" CHIP_ERROR_FORMAT, result.Format());
@@ -262,10 +283,8 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
     VerifyOrReturnError(mState == State::kInProgress, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mImageProcessor != nullptr, CHIP_ERROR_INCORRECT_STATE);
 
-    using DeviceLayer::Silabs::HttpClient;
-
     // 1. Treat HTTP 416 as EOF only after a validated header and at least one byte written.
-    if (httpCode == HttpClient::kHttpRangeNotSatisfiable)
+    if (httpCode == kHttpRangeNotSatisfiable)
     {
         VerifyOrReturnError(mHeaderValidated && (mNextOffset > 0), CHIP_ERROR_INVALID_ARGUMENT);
         ReturnErrorOnFailure(mImageProcessor->Finalize());
@@ -299,7 +318,7 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
     ReturnErrorOnFailure(CopySpanToMutableSpan(data.SubSpan(0, take), dest));
     mBlockFilled += static_cast<uint32_t>(dest.size());
 
-    // GetRange returns one complete response body per request (end_of_data handled in HttpClient).
+    // Get returns one complete response body per request (end_of_data handled in HttpClient).
     ByteSpan block(mBlockBuf, mBlockFilled);
     ByteSpan forValidate = block;
     {

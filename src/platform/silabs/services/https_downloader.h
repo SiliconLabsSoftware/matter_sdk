@@ -122,6 +122,10 @@ private:
     void SetState(State state, app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
     void CleanupOnError(app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
 
+    static constexpr uint16_t kHttpRangeNotSatisfiable = 416;
+    // "bytes=<10 digits>-<10 digits>\0" = 28 bytes; rounded up for alignment margin.
+    static constexpr size_t kRangeHeaderValueSize = 32;
+
     StateDelegate * mStateDelegate                = nullptr;
     DeviceLayer::Silabs::HttpClient * mHttpClient = nullptr;
     UriComposer * mUriComposer                    = nullptr;
@@ -149,6 +153,9 @@ private:
     uint8_t mRxStaging[kDefaultBlockSize]{};
     uint32_t mRxStagingLen = 0;
     MutableByteSpan mRxSpan{ mRxStaging };
+
+    char mRangeHeaderValue[kRangeHeaderValueSize]{};
+    DeviceLayer::Silabs::HttpHeader mRangeHeader{ "Range", mRangeHeaderValue };
 };
 
 } // namespace chip
