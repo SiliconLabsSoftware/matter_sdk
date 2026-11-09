@@ -1,0 +1,23 @@
+# *******************************************************************************
+# License
+# <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
+# *******************************************************************************
+# The licensor of this software is Silicon Laboratories Inc.  Your use of this
+# software is governed by the terms of Silicon Labs Master Software License
+# agreement (MSLA) available at
+# www.silabs.com/about-us/legal/master-software-license-agreement.  This
+# software is distributed to you in Source Code format and is governed by the
+# sections of the MSLA applicable to Source Code.
+# *******************************************************************************
+
+if BOARD_SIWX917_GFW
+
+DT_CHOSEN_Z_CODE_PARTITION := zephyr,code-partition
+
+config FLASH_LOAD_OFFSET
+	default $(dt_chosen_reg_addr_hex,$(DT_CHOSEN_Z_CODE_PARTITION))
+
+config FLASH_LOAD_SIZE
+	default $(dt_chosen_reg_size_hex,$(DT_CHOSEN_Z_CODE_PARTITION))
+
+endif # BOARD_SIWX917_GFW
