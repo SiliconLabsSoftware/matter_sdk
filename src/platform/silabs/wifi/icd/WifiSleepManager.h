@@ -45,9 +45,7 @@ public:
         kActiveMode            = 3,
         kIdleMode              = 4,
         kConnectedActiveMode   = 5,
-#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-        kOTAUpdateStart = 6,
-#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+        kOTAUpdateStart        = 6,
     };
 
     /**

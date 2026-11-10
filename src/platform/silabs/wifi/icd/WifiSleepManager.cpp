@@ -84,12 +84,12 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
     case PowerEvent::kGenericEvent:
         // Preserve mActiveMode; HP cycles and connectivity use these events.
         break;
-#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     case PowerEvent::kOTAUpdateStart:
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
         // Latch 300 ms LI sleep so later ICD/connectivity transitions keep it until StopOtaLIBasedSleep().
         mOtaLIBasedSleepActive = true;
-        break;
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+        break;
     case PowerEvent::kActiveMode:
     case PowerEvent::kConnectedActiveMode:
         mActiveMode = true;
@@ -156,11 +156,9 @@ CHIP_ERROR WifiSleepManager::VerifyAndTransitionToLowPowerMode(PowerEvent event)
             }
             return ConfigureLITDisconnect();
         }
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
         return ConfigureLIBasedSleep(listenIntervalMs);
-#else  // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-        return ConfigureLIBasedSleep(listenIntervalMs);
-#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
 
     return ConfigureDTIMBasedSleep();
