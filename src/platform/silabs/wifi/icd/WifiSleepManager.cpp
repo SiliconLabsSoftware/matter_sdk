@@ -85,8 +85,8 @@ CHIP_ERROR WifiSleepManager::HandlePowerEvent(PowerEvent event)
         // Preserve mActiveMode; HP cycles and connectivity use these events.
         break;
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-    case PowerEvent::kOTAEvent:
-        // Latch 300 ms LI sleep so later ICD/connectivity transitions keep it until ClearOtaLIBasedSleep().
+    case PowerEvent::kOTAUpdateStart:
+        // Latch 300 ms LI sleep so later ICD/connectivity transitions keep it until StopOtaLIBasedSleep().
         mOtaLIBasedSleepActive = true;
         break;
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI

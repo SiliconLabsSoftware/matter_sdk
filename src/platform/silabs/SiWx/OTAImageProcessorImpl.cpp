@@ -168,10 +168,11 @@ void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Neutral-less products must stay within 30 mA over any 250 ms window, so OTA uses
-    // associated LI sleep (300 ms) instead of high-performance / no-sleep. kOTAEvent latches
-    // that policy until ClearOtaLIBasedSleep() (Abort) or reboot after Apply.
-    LogErrorOnFailure(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kOTAEvent));
-#else  // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    // associated LI sleep (300 ms) instead of high-performance / no-sleep. kOTAUpdateStart latches
+    // that policy until StopOtaLIBasedSleep() (Abort) or reboot after Apply.
+    LogErrorOnFailure(
+        WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kOTAUpdateStart));
+#else
     // Setting the device in high performance - no-sleep mode during OTA tranfer
     TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RequestHighPerformanceWithTransition();
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
@@ -259,10 +260,10 @@ void OTAImageProcessorImpl::HandleAbort(intptr_t context)
 #if CHIP_CONFIG_ENABLE_ICD_SERVER
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     // Restore the normal low-power policy after an aborted OTA transfer.
-    WifiSleepManager::GetInstance().ClearOtaLIBasedSleep();
+    WifiSleepManager::GetInstance().StopOtaLIBasedSleep();
     LogErrorOnFailure(
         WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent));
-#else  // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+#else
     // Setting the device back to power save mode when transfer is aborted in the middle
     TEMPORARY_RETURN_IGNORED WifiSleepManager::GetInstance().RemoveHighPerformanceRequest();
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI

@@ -36,11 +36,11 @@ public:
         mIsStationConnecting            = false;
         mBroadcastFilterEnabled         = false;
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-        mConfigureLITConnectCalled    = false;
-        mConfigureLITDisconnectCalled = false;
+        mConfigureLITConnectCalled      = false;
+        mConfigureLITDisconnectCalled   = false;
         mCancelLitPrecheckInTimerCalled = false;
         mStartLitPrecheckInTimerCalled  = false;
-        mInitLitPrecheckInTimerCalled = false;
+        mInitLitPrecheckInTimerCalled   = false;
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     }
 
@@ -104,7 +104,7 @@ public:
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
     PowerSaveConfiguration GetLastPowerSaveConfiguration() const { return mLastPowerSaveConfiguration; }
-    uint32_t GetLastListenInterval() const { return mLastListenInterval; }
+    uint32_t GetCurrentListenInterval() const { return mCurrentListenInterval; }
 
     void SetIsWifiProvisioned(bool isProvisioned) { mIsWifiProvisioned = isProvisioned; }
     void SetIsStationConnected(bool isConnected) { mIsStationConnected = isConnected; }
@@ -114,7 +114,7 @@ public:
     {
         mConfigurePowerSaveCalled   = true;
         mLastPowerSaveConfiguration = configuration;
-        mLastListenInterval         = listenInterval;
+        mCurrentListenInterval      = listenInterval;
         return CHIP_NO_ERROR;
     }
 
@@ -163,16 +163,16 @@ private:
     bool mConfigureBroadcastFilterCalled = false;
     bool mBroadcastFilterEnabled         = false;
     PowerSaveConfiguration mLastPowerSaveConfiguration;
-    uint32_t mLastListenInterval = 0;
+    uint32_t mCurrentListenInterval = 0;
     bool mIsWifiProvisioned      = false;
     bool mIsStationConnected     = false;
     bool mIsStationConnecting    = false;
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
-    bool mConfigureLITConnectCalled    = false;
-    bool mConfigureLITDisconnectCalled = false;
+    bool mConfigureLITConnectCalled      = false;
+    bool mConfigureLITDisconnectCalled   = false;
     bool mCancelLitPrecheckInTimerCalled = false;
     bool mStartLitPrecheckInTimerCalled  = false;
-    bool mInitLitPrecheckInTimerCalled = false;
+    bool mInitLitPrecheckInTimerCalled   = false;
 #endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 };
 
@@ -299,20 +299,20 @@ TEST_F(TestWifiSleepManager, TestOtaLIBasedSleepRemainsStickyAcrossGenericEvent)
     mMock.SetIsWifiProvisioned(true);
     mMock.SetIsStationConnected(true);
 
-    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kOTAEvent),
+    EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kOTAUpdateStart),
               CHIP_NO_ERROR);
     EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kLIConnectedSleep);
-    EXPECT_EQ(mMock.GetLastListenInterval(), 300u);
+    EXPECT_EQ(mMock.GetCurrentListenInterval(), 300u);
     EXPECT_TRUE(mMock.WasConfigurePowerSaveCalled());
 
-    // Later transitions must keep the 300 ms OTA LI policy until ClearOtaLIBasedSleep().
+    // Later transitions must keep the 300 ms OTA LI policy until StopOtaLIBasedSleep().
     EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent),
               CHIP_NO_ERROR);
     EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kLIConnectedSleep);
-    EXPECT_EQ(mMock.GetLastListenInterval(), 300u);
+    EXPECT_EQ(mMock.GetCurrentListenInterval(), 300u);
     EXPECT_TRUE(mMock.WasConfigurePowerSaveCalled());
 
-    WifiSleepManager::GetInstance().ClearOtaLIBasedSleep();
+    WifiSleepManager::GetInstance().StopOtaLIBasedSleep();
     EXPECT_EQ(WifiSleepManager::GetInstance().VerifyAndTransitionToLowPowerMode(WifiSleepManager::PowerEvent::kGenericEvent),
               CHIP_NO_ERROR);
     EXPECT_EQ(mMock.GetLastPowerSaveConfiguration(), PowerSaveInterface::PowerSaveConfiguration::kConnectedSleep);

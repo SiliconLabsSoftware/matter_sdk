@@ -46,7 +46,7 @@ public:
         kIdleMode              = 4,
         kConnectedActiveMode   = 5,
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
-        kOTAEvent = 6,
+        kOTAUpdateStart = 6,
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     };
 
@@ -147,10 +147,10 @@ public:
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     /**
-     * @brief Clears the sticky OTA 300 ms LI sleep latch set by PowerEvent::kOTAEvent.
+     * @brief Clears the sticky OTA 300 ms LI sleep latch set by PowerEvent::kOTAUpdateStart.
      *        Call VerifyAndTransitionToLowPowerMode afterwards to apply the normal policy.
      */
-    void ClearOtaLIBasedSleep() { mOtaLIBasedSleepActive = false; }
+    void StopOtaLIBasedSleep() { mOtaLIBasedSleepActive = false; }
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
     /**
@@ -160,7 +160,7 @@ public:
      *        State machine logic:
      *        1. If there are high performance requests, configure high performance mode.
      *        2. If the device is unprovisioned, configure deep sleep.
-     *        3. If neutral-less OTA LI sleep is latched (kOTAEvent), configure 300 ms LI sleep.
+     *        3. If neutral-less OTA LI sleep is latched (kOTAUpdateStart), configure 300 ms LI sleep.
      *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
