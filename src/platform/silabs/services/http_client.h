@@ -261,29 +261,12 @@ public:
      */
     CHIP_ERROR Put(const HttpHost & host, const char * resource, ByteSpan body, const HttpHeader * headers, size_t headerCount,
                    HttpOperationCallback callback, void * context = nullptr);
-    /**
-     * @brief Start an HTTPS GET with a Range header (bytes=@p start-@p endInclusive).
-     *
-     * Runs on the HttpClient service thread. Resolves @p host.serverEndpoint via
-     * @ref ResolveServerEndpoint (IPv4 literal or DNS). HTTP 206, and 416 complete with
-     * CHIP_NO_ERROR; other 4xx/5xx fail. Call @ref GetLastHttpResponseCode from the completion
-     * callback to read the status (e.g. 416).
-     *
-     * @p responseBuffer must remain valid until @p callback is invoked.
-     */
-    CHIP_ERROR GetRange(const HttpHost & host, const char * resource, uint32_t start, uint32_t endInclusive,
-                        MutableByteSpan & responseBuffer, HttpOperationCallback callback, void * context = nullptr);
 
-    /** HTTP response code from the last completed Get / GetRange (0 if none). */
+    /** HTTP response code from the last completed Get (0 if none). */
     uint16_t GetLastHttpResponseCode() const { return mLastHttpResponseCode; }
-
-    /** HTTP 416 Range Not Satisfiable — treated as EOF for sequential Range GETs. */
-    static constexpr uint16_t kHttpRangeNotSatisfiable = 416;
 
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
-    // "bytes=<10 digits>-<10 digits>\0" = 28 bytes; rounded up for alignment margin.
-    static constexpr size_t kRangeHeaderValueSize = 32;
     // HTTP request status codes.
     static constexpr uint8_t kHttpSuccessResponse = 1;
     static constexpr uint8_t kHttpFailureResponse = 2;
@@ -319,7 +302,6 @@ private:
         Init,
         Deinit,
         Get,
-        GetRange,
         Post,
         Put,
         // TODO: Add Delete operation.
@@ -358,8 +340,6 @@ private:
 
     static sl_status_t GetResponseCallback(const sl_http_client_t * client, sl_http_client_event_t event, void * data,
                                            void * request_context);
-    static sl_status_t GetRangeResponseCallback(const sl_http_client_t * client, sl_http_client_event_t event, void * data,
-                                                void * request_context);
     static sl_status_t PostResponseCallback(const sl_http_client_t * client, sl_http_client_event_t event, void * data,
                                             void * request_context);
     static sl_status_t PutResponseCallback(const sl_http_client_t * client, sl_http_client_event_t event, void * data,
@@ -372,7 +352,6 @@ private:
     CHIP_ERROR ProcessInit();
     CHIP_ERROR ProcessDeinit();
     CHIP_ERROR ProcessGet();
-    CHIP_ERROR ProcessGetRange();
     CHIP_ERROR ProcessPost();
     CHIP_ERROR ProcessPut();
     CHIP_ERROR ProcessContinueChunkedBody();
@@ -381,7 +360,6 @@ private:
     static CHIP_ERROR CheckHeaders(const HttpHeader * headers, size_t headerCount);
     CHIP_ERROR ApplyHeaders(sl_http_client_request_t & request);
     void ReleaseRequestHeaders(sl_http_client_request_t & request);
-    void ClearRangeHeaders();
 
     /**
      * @brief Complete an operation.
@@ -428,10 +406,6 @@ private:
     const HttpHeader * mPendingHeaders = nullptr;
     size_t mPendingHeaderCount         = 0;
 
-    uint32_t mPendingRangeStart        = 0;
-    uint32_t mPendingRangeEndInclusive = 0;
-    char mRangeHeaderValue[kRangeHeaderValueSize]{};
-    sl_http_client_request_t mRangeRequest{};
     uint16_t mLastHttpResponseCode = 0;
 
     volatile bool mBusy         = false;
