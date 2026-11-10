@@ -97,13 +97,14 @@
 #define MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED
 #endif // SL_USE_COAP_CONFIG
 
-#if SL_MATTER_PROVISION_FLASH
+// TODO: remove SL_MATTER_PROVISION_FLASH after migration to SL_MATTER_USE_FLASH_STORE in GN build system
+#if (SL_MATTER_PROVISION_FLASH || SL_MATTER_USE_FLASH_STORE)
 #define MBEDTLS_SHA256_C
 #define MBEDTLS_HMAC_DRBG_C
 #ifndef SL_MATTER_ENABLE_AWS
 #define MBEDTLS_ECDSA_DETERMINISTIC
 #endif // !SL_MATTER_ENABLE_AWS
-#endif // SL_MATTER_PROVISION_FLASH
+#endif // SL_MATTER_PROVISION_FLASH || SL_MATTER_USE_FLASH_STORE
 
 // If defining snprintf we are also responsible for including its declaration
 #include <stdio.h>
