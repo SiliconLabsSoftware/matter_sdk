@@ -45,6 +45,7 @@ public:
         kActiveMode            = 3,
         kIdleMode              = 4,
         kConnectedActiveMode   = 5,
+        kOTAUpdateStart        = 6,
     };
 
     /**
@@ -142,6 +143,14 @@ public:
      */
     CHIP_ERROR RemoveHighPerformanceRequest();
 
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    /**
+     * @brief Clears the sticky OTA 300 ms LI sleep latch set by PowerEvent::kOTAUpdateStart.
+     *        Call VerifyAndTransitionToLowPowerMode afterwards to apply the normal policy.
+     */
+    void StopOtaLIBasedSleep() { mOtaLIBasedSleepActive = false; }
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+
     /**
      * @brief Public API to validate what is the lowest power mode the device can got to and transitions the device to the
      *        determined low power state.
@@ -149,7 +158,8 @@ public:
      *        State machine logic:
      *        1. If there are high performance requests, configure high performance mode.
      *        2. If the device is unprovisioned, configure deep sleep.
-     *        3. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
+     *        3. If neutral-less OTA LI sleep is latched (kOTAUpdateStart), configure 300 ms LI sleep.
+     *        4. If the application callback allows, configure LI sleep or LIT disconnect sleep (GN); otherwise, DTIM based sleep.
      *
      * @param event PowerEvent triggering the Verify and transition to low power mode processing
      *
@@ -203,11 +213,13 @@ private:
 
     /**
      * @brief Configures the Wi-Fi Chip to go to LI based sleep.
-     *        Function sets the listen interval the ICD Transort Slow Poll configuration and enables the broadcast filter.
+     *        Function sets the listen interval and enables the broadcast filter.
+     *
+     * @param listenIntervalMs Listen interval in milliseconds
      *
      * @return CHIP_ERROR CHIP_NO_ERROR if the configuration of the Wi-Fi chip was successful; otherwise CHIP_ERROR_INTERNAL
      */
-    CHIP_ERROR ConfigureLIBasedSleep();
+    CHIP_ERROR ConfigureLIBasedSleep(uint32_t listenIntervalMs);
 
 #if defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
     /**
@@ -216,7 +228,7 @@ private:
     CHIP_ERROR ConfigureLITDisconnect();
 
     CHIP_ERROR ConfigureLITConnect();
-    #endif // CHIP_CONFIG_ENABLE_ICD_LIT
+#endif // defined(CHIP_CONFIG_ENABLE_ICD_LIT) && (CHIP_CONFIG_ENABLE_ICD_LIT == 1)
 
     /**
      * @brief Increments the HighPerformance request counter and triggers the transition to High Performance if requested.
@@ -234,7 +246,10 @@ private:
     PowerSaveInterface * mPowerSaveInterface = nullptr;
     WifiStateProvider * mWifiStateProvider   = nullptr;
     uint8_t mHighPerformanceRequestCounter   = 0;
-    bool mActiveMode                         = false;
+#if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    bool mOtaLIBasedSleepActive = false;
+#endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
+    bool mActiveMode = false;
 
     ApplicationCallback * mCallback = nullptr;
 };
