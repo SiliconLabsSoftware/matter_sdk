@@ -48,6 +48,7 @@ void MigrateDacProvider(void);
 void MigrateCounterConfigs(void);
 void MigrateHardwareVersion(void);
 void MigrateS3Certificates(void);
+void MigrateCertificatesToStaticSecureTokens(void);
 
 } // namespace Silabs
 } // namespace DeviceLayer

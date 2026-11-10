@@ -27,9 +27,11 @@
 #include <functional>
 #include <platform/CHIPDeviceError.h>
 
-#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_DYNAMIC_TOKENS
+#if defined(SL_COMMON_TOKEN_MANAGER_ENABLE_DYNAMIC_TOKENS) || defined(SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS)
 #include <sl_token_manager_defines.h>
-#else
+#include <sl_token_manager_manufacturing.h>
+#endif
+#ifndef SL_COMMON_TOKEN_MANAGER_ENABLE_DYNAMIC_TOKENS
 #include "nvm3.h"
 #include "nvm3_hal_flash.h"
 #endif // SL_COMMON_TOKEN_MANAGER_ENABLE_DYNAMIC_TOKENS
@@ -74,10 +76,6 @@ constexpr inline uint32_t SilabsConfigKey(uint8_t keyBaseOffset, uint8_t id)
     return SL_TOKEN_TYPE_NVM3 | kMatterNvm3KeyDomain | static_cast<uint32_t>(keyBaseOffset) << 8 | id;
 }
 
-constexpr inline uint32_t SilabsSecureTokenKey(uint8_t keyBaseOffset, uint8_t id)
-{
-    return SL_TOKEN_TYPE_STATIC_SECURE | static_cast<uint32_t>(keyBaseOffset) << 8 | id;
-}
 #else
 // Silabs NVM3 objects use a 20-bit number,
 // NVM3 Key 19:16 Stack region
@@ -98,6 +96,56 @@ constexpr inline uint32_t SilabsConfigKey(uint8_t keyBaseOffset, uint8_t id)
 
 inline constexpr uint32_t kMatterNvm3KeyLoLimit = 0x087200U; // Do not modify without Silabs GSDK team approval
 inline constexpr uint32_t kMatterNvm3KeyHiLimit = 0x087FFFU; // Do not modify without Silabs GSDK team approval
+
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+// Common Token Manager static secure tokens (SST) holding the Matter attestation certificates.
+//
+// Series 3: the 16-bit value is a key in the KLV chain. Matter has a reserved Key range (SL_TOKEN_DOMAIN_STATIC_MATTER - 0x380 to
+// 0x3FF) as defined in sl_token_manager_defines.h.
+//
+// Series 2: the 16-bit value is a byte offset in the static secure (lockbits) page.
+// The first 0x200 bytes hold the lock words and the SDK tokens end at 0x470 (sl_token_manager_manufacturing.h).
+// Only the first 4 KB of the page are addressable. Offsets and sizes must be even.
+// Maximum slot sizes:
+// DAC and PAI: Credentials::kMaxDERCertLength, the specification limit for a DER certificate.
+// CD: Credentials::kMaxCMSSignedCDMessage, rounded up to an even size.
+#if defined(_SILICON_LABS_32B_SERIES_3)
+inline constexpr uint16_t kMatterSstId_DAC = SL_TOKEN_STATIC_SECURE_DATA_TOKENS | SL_TOKEN_DOMAIN_STATIC_MATTER | 0x00;
+inline constexpr uint16_t kMatterSstId_PAI = SL_TOKEN_STATIC_SECURE_DATA_TOKENS | SL_TOKEN_DOMAIN_STATIC_MATTER | 0x01;
+inline constexpr uint16_t kMatterSstId_CD  = SL_TOKEN_STATIC_SECURE_DATA_TOKENS | SL_TOKEN_DOMAIN_STATIC_MATTER | 0x02;
+#else
+inline constexpr uint16_t kMatterSstId_DAC = SL_TOKEN_STATIC_SECURE_DATA_TOKENS | 0x480;
+inline constexpr uint16_t kMatterSstId_PAI = SL_TOKEN_STATIC_SECURE_DATA_TOKENS | 0x6E0;
+inline constexpr uint16_t kMatterSstId_CD  = SL_TOKEN_STATIC_SECURE_DATA_TOKENS | 0x940;
+#endif // _SILICON_LABS_32B_SERIES_3
+inline constexpr uint32_t kMatterSstMaxSize_DAC = 600;
+inline constexpr uint32_t kMatterSstMaxSize_PAI = 600;
+inline constexpr uint32_t kMatterSstMaxSize_CD  = 792;
+
+// Builds the same 32-bit identifier as SL_TOKEN_GET_STATIC_SECURE_TOKEN(token): type | id | size << 16.
+constexpr inline uint32_t SilabsStaticSecureToken(uint16_t id, uint32_t size)
+{
+    return SL_TOKEN_TYPE_STATIC_SECURE | id | (size << SL_TOKEN_STATIC_TOKEN_SIZE_OFFSET);
+}
+
+// Slot size encoded in a static secure token identifier.
+constexpr inline uint32_t SilabsStaticSecureTokenSize(uint32_t token)
+{
+    return (token >> SL_TOKEN_STATIC_TOKEN_SIZE_OFFSET) & SL_TOKEN_STATIC_TOKEN_SIZE_MASK;
+}
+
+static_assert(kMatterSstMaxSize_CD <= SL_TOKEN_STATIC_TOKEN_SIZE_MASK, "SST size does not fit in the token identifier");
+
+#if defined(_SILICON_LABS_32B_SERIES_2)
+static_assert((kMatterSstId_DAC % 4) == 0 && (kMatterSstId_PAI % 4) == 0 && (kMatterSstId_CD % 4) == 0,
+              "Series 2 SST offsets must be word aligned");
+static_assert((kMatterSstMaxSize_DAC % 2) == 0 && (kMatterSstMaxSize_PAI % 2) == 0 && (kMatterSstMaxSize_CD % 2) == 0,
+              "Series 2 SST sizes must be even");
+static_assert((kMatterSstId_DAC & 0x0FFF) + kMatterSstMaxSize_DAC <= (kMatterSstId_PAI & 0x0FFF), "DAC slot overlaps PAI");
+static_assert((kMatterSstId_PAI & 0x0FFF) + kMatterSstMaxSize_PAI <= (kMatterSstId_CD & 0x0FFF), "PAI slot overlaps CD");
+static_assert((kMatterSstId_CD & 0x0FFF) + kMatterSstMaxSize_CD <= 0x1000, "CD slot exceeds the addressable SST page");
+#endif // defined(_SILICON_LABS_32B_SERIES_2)
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
 
 class SilabsConfig
 {
@@ -159,6 +207,13 @@ public:
     static constexpr Key kConfigKey_Provision_Request  = SilabsConfigKey(kMatterFactory_KeyBase, 0x28);
     static constexpr Key kConfigKey_Provision_Version  = SilabsConfigKey(kMatterFactory_KeyBase, 0x29);
     static constexpr Key kOtaTlvEncryption_KeyId       = SilabsConfigKey(kMatterFactory_KeyBase, 0x30);
+
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    // Static secure tokens (not NVM3). Accessed through the sl_token_manager_* APIs.
+    static constexpr Key kSstKey_DAC = SilabsStaticSecureToken(kMatterSstId_DAC, kMatterSstMaxSize_DAC);
+    static constexpr Key kSstKey_PAI = SilabsStaticSecureToken(kMatterSstId_PAI, kMatterSstMaxSize_PAI);
+    static constexpr Key kSstKey_CD  = SilabsStaticSecureToken(kMatterSstId_CD, kMatterSstMaxSize_CD);
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
 
     // Matter Config Keys
     static constexpr Key kConfigKey_ServiceConfig      = SilabsConfigKey(kMatterConfig_KeyBase, 0x01);

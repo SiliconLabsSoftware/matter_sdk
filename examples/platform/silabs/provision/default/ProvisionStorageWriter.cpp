@@ -29,6 +29,11 @@
 #include <platform/silabs/multi-ota/OtaTlvEncryptionKey.h>
 #endif
 
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+#include <lib/support/ScopedMemoryBuffer.h>
+#include <sl_token_manager_api.h>
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+
 using SilabsConfig = chip::DeviceLayer::Internal::SilabsConfig;
 
 #if defined(SL_PROVISION_GENERATOR) && SL_PROVISION_GENERATOR
@@ -51,17 +56,21 @@ ProvisionStorageWriter & ProvisionStorageWriter::GetInstance()
 }
 
 namespace {
-size_t sCredentialsOffset = 0;
-
-CHIP_ERROR ErasePage(uint32_t addr)
-{
-    return chip::DeviceLayer::Silabs::GetPlatform().FlashErasePage(addr);
-}
 
 size_t RoundNearest(size_t n, size_t multiple)
 {
     return (n % multiple) > 0 ? n + (multiple - n % multiple) : n;
 }
+
+#if !defined(SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS) || defined(_SILICON_LABS_32B_SERIES_2)
+CHIP_ERROR ErasePage(uint32_t addr)
+{
+    return chip::DeviceLayer::Silabs::GetPlatform().FlashErasePage(addr);
+}
+#endif
+
+#ifndef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+size_t sCredentialsOffset = 0;
 
 /**
  * Writes "size" bytes to the flash page. The data is padded with 0xff
@@ -85,6 +94,148 @@ CHIP_ERROR WritePage(uint32_t addr, const uint8_t * data, size_t size)
     chip::Platform::MemoryFree(p);
     return err;
 }
+#endif // !SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+
+#if defined(_SILICON_LABS_32B_SERIES_2)
+// Set once the Matter slots of the static secure page have been erased for the current provisioning session.
+bool sSstSlotsPrepared = false;
+
+// Only the first 4 KB of the Series 2 static secure page are addressable (12-bit offset in the token identifier).
+constexpr uint32_t kSstAddressableSize = 0x1000;
+constexpr uint32_t kMatterSstTokens[]  = { SilabsConfig::kSstKey_DAC, SilabsConfig::kSstKey_PAI, SilabsConfig::kSstKey_CD };
+
+bool IsErased(const uint8_t * data, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if (data[i] != 0xFF)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+CHIP_ERROR StaticSecurePageAddress(ProvisionStorageWriter & store, uint32_t & addr)
+{
+#if defined(SL_PROVISION_GENERATOR) && SL_PROVISION_GENERATOR
+    // The generator firmware serves several flash sizes: the page was detected at runtime (see Initialize).
+    return store.GetCredentialsBaseAddress(addr);
+#else
+    // Same page as the token manager's LOCKBITS_BASE.
+    (void) store;
+    addr = FLASH_BASE + FLASH_SIZE - FLASH_PAGE_SIZE;
+    return CHIP_NO_ERROR;
+#endif
+}
+
+/**
+ * Makes sure the Matter slots of the static secure page are erased. When they are not (legacy certificates
+ * or a previous provisioning), the addressable part of the page is copied, the page is erased and the copy
+ * is written back without the Matter slots, so that the tokens owned by other stacks survive.
+ * Bytes above kSstAddressableSize cannot hold tokens and are not preserved.
+ */
+CHIP_ERROR EraseMatterStaticSecureSlots(uint32_t page_addr)
+{
+    const uint8_t * page = reinterpret_cast<const uint8_t *>(static_cast<uintptr_t>(page_addr));
+    bool erased          = true;
+    for (uint32_t token : kMatterSstTokens)
+    {
+        erased = erased && IsErased(page + (token & 0x0FFF), Internal::SilabsStaticSecureTokenSize(token));
+    }
+    VerifyOrReturnError(!erased, CHIP_NO_ERROR);
+
+    Platform::ScopedMemoryBuffer<uint8_t> copy;
+    VerifyOrReturnError(copy.Alloc(kSstAddressableSize).Get() != nullptr, CHIP_ERROR_NO_MEMORY);
+    memcpy(copy.Get(), page, kSstAddressableSize);
+    for (uint32_t token : kMatterSstTokens)
+    {
+        memset(copy.Get() + (token & 0x0FFF), 0xFF, Internal::SilabsStaticSecureTokenSize(token));
+    }
+
+    ChipLogProgress(DeviceLayer, "Erasing Matter static secure slots, page:0x%08x", (unsigned) page_addr);
+    ReturnErrorOnFailure(chip::DeviceLayer::Silabs::GetPlatform().FlashInit());
+    ReturnErrorOnFailure(ErasePage(page_addr));
+    return chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(page_addr, copy.Get(), kSstAddressableSize);
+}
+#endif // _SILICON_LABS_32B_SERIES_2
+
+/**
+ * Writes the certificate bytes in the static secure token (padded to a word boundary).
+ * Static secure tokens are write-once: rewriting an existing token requires upgradable tokens (not supported yet).
+ */
+CHIP_ERROR WriteStaticSecureTokenData(ProvisionStorageWriter & store, uint32_t token, const ByteSpan & value)
+{
+    const uint32_t slotSize = Internal::SilabsStaticSecureTokenSize(token);
+    VerifyOrReturnError(!value.empty() && value.size() <= slotSize, CHIP_ERROR_INVALID_ARGUMENT);
+
+    // Flash writes need a word aligned length; pad with the erased value. The NVM3 size key holds the real length.
+    const size_t size = RoundNearest(value.size(), 4);
+    VerifyOrReturnError(size <= slotSize, CHIP_ERROR_INVALID_ARGUMENT);
+    Platform::ScopedMemoryBuffer<uint8_t> buffer;
+    VerifyOrReturnError(buffer.Alloc(size).Get() != nullptr, CHIP_ERROR_NO_MEMORY);
+    memcpy(buffer.Get(), value.data(), value.size());
+    memset(buffer.Get() + value.size(), 0xFF, size - value.size());
+
+#if defined(_SILICON_LABS_32B_SERIES_2)
+    uint32_t page_addr = 0;
+    ReturnErrorOnFailure(StaticSecurePageAddress(store, page_addr));
+    if (!sSstSlotsPrepared)
+    {
+        ReturnErrorOnFailure(EraseMatterStaticSecureSlots(page_addr));
+        sSstSlotsPrepared = true;
+    }
+#else
+    (void) store;
+#endif
+
+#if defined(SL_PROVISION_GENERATOR) && SL_PROVISION_GENERATOR && defined(_SILICON_LABS_32B_SERIES_2)
+    // The token manager resolves the static secure page at compile time, which does not match devices with a
+    // larger flash than the one the generator firmware was built for. Write the token layout at the runtime page.
+    const uint32_t addr = page_addr + (token & 0x0FFF);
+    ChipLogProgress(DeviceLayer, "Static secure token:0x%08x, addr:0x%08x, size:%u", (unsigned) token, (unsigned) addr,
+                    (unsigned) value.size());
+    return chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(addr, buffer.Get(), size);
+#else
+    ChipLogProgress(DeviceLayer, "Static secure token:0x%08x, size:%u", (unsigned) token, (unsigned) value.size());
+    sl_status_t status = sl_token_manager_set_data(token, buffer.Get(), static_cast<uint32_t>(size));
+    if (SL_STATUS_ALREADY_EXISTS == status)
+    {
+        ChipLogError(DeviceLayer, "Static secure token 0x%08x already provisioned, rewriting requires upgradable tokens",
+                     (unsigned) token);
+        return CHIP_ERROR_INCORRECT_STATE;
+    }
+    if (SL_STATUS_FULL == status || SL_STATUS_NO_MORE_RESOURCE == status)
+    {
+        ChipLogError(DeviceLayer, "Static secure token storage is full");
+        return CHIP_ERROR_NO_MEMORY;
+    }
+    if (status != SL_STATUS_OK)
+    {
+        // sl_status_t is not a CHIP_ERROR encoding, so the numeric code is logged and a generic error is returned.
+        ChipLogError(DeviceLayer, "Static secure token 0x%08x write failed: 0x%04lx", (unsigned) token, (unsigned long) status);
+        return CHIP_ERROR_INTERNAL;
+    }
+    return CHIP_NO_ERROR;
+#endif // SL_PROVISION_GENERATOR && _SILICON_LABS_32B_SERIES_2
+}
+
+/**
+ * Stores a certificate as a static secure token and records its length in NVM3.
+ * The legacy offset key is removed last: it designates the raw flash location the reader must use.
+ */
+CHIP_ERROR WriteStaticSecureToken(ProvisionStorageWriter & store, uint32_t token, SilabsConfig::Key offset_key,
+                                  SilabsConfig::Key size_key, const ByteSpan & value)
+{
+    ReturnErrorOnFailure(WriteStaticSecureTokenData(store, token, value));
+    ReturnErrorOnFailure(SilabsConfig::WriteConfigValue(size_key, static_cast<uint32_t>(value.size())));
+    RETURN_SAFELY_IGNORED SilabsConfig::ClearConfigValue(offset_key);
+    return CHIP_NO_ERROR;
+}
+
+#else // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
 
 CHIP_ERROR WriteFile(ProvisionStorageWriter & store, size_t & credentialsOffset, SilabsConfig::Key offset_key,
                      SilabsConfig::Key size_key, const ByteSpan & value)
@@ -106,6 +257,8 @@ CHIP_ERROR WriteFile(ProvisionStorageWriter & store, size_t & credentialsOffset,
     credentialsOffset = RoundNearest(credentialsOffset + value.size(), 64);
     return CHIP_NO_ERROR;
 }
+
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
 
 } // namespace
 
@@ -201,20 +354,35 @@ CHIP_ERROR ProvisionStorageWriter::SetFirmwareInformation(const ByteSpan & value
 
 CHIP_ERROR ProvisionStorageWriter::SetCertificationDeclaration(const ByteSpan & value)
 {
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    return WriteStaticSecureToken(*this, SilabsConfig::kSstKey_CD, SilabsConfig::kConfigKey_Creds_CD_Offset,
+                                  SilabsConfig::kConfigKey_Creds_CD_Size, value);
+#else
     return WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_CD_Offset, SilabsConfig::kConfigKey_Creds_CD_Size,
                      value);
+#endif
 }
 
 CHIP_ERROR ProvisionStorageWriter::SetProductAttestationIntermediateCert(const ByteSpan & value)
 {
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    return WriteStaticSecureToken(*this, SilabsConfig::kSstKey_PAI, SilabsConfig::kConfigKey_Creds_PAI_Offset,
+                                  SilabsConfig::kConfigKey_Creds_PAI_Size, value);
+#else
     return WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_PAI_Offset, SilabsConfig::kConfigKey_Creds_PAI_Size,
                      value);
+#endif
 }
 
 CHIP_ERROR ProvisionStorageWriter::SetDeviceAttestationCert(const ByteSpan & value)
 {
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    return WriteStaticSecureToken(*this, SilabsConfig::kSstKey_DAC, SilabsConfig::kConfigKey_Creds_DAC_Offset,
+                                  SilabsConfig::kConfigKey_Creds_DAC_Size, value);
+#else
     return WriteFile(*this, sCredentialsOffset, SilabsConfig::kConfigKey_Creds_DAC_Offset, SilabsConfig::kConfigKey_Creds_DAC_Size,
                      value);
+#endif
 }
 
 CHIP_ERROR ProvisionStorageWriter::SetProvisionVersion(const char * value, size_t size)
@@ -257,7 +425,13 @@ CHIP_ERROR ProvisionStorageWriter::SetSetupPayload(const uint8_t * value, size_t
 
 CHIP_ERROR ProvisionStorageWriter::Initialize(uint32_t flash_addr, uint32_t flash_size)
 {
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+#if defined(_SILICON_LABS_32B_SERIES_2)
+    sSstSlotsPrepared = false;
+#endif
+#else
     sCredentialsOffset = 0;
+#endif
 
     uint32_t base_addr = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(linker_nvm_end));
     if (flash_size > 0)
@@ -267,15 +441,30 @@ CHIP_ERROR ProvisionStorageWriter::Initialize(uint32_t flash_addr, uint32_t flas
 #endif
 #ifdef _SILICON_LABS_32B_SERIES_3
         uint32_t tokenStartAddr = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&linker_static_secure_tokens_begin));
-        base_addr               = tokenStartAddr + FLASH_PAGE_SIZE;
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+        // Certificates are KLV objects managed by the token manager inside the static secure region.
+        base_addr = tokenStartAddr;
+#else
+        base_addr = tokenStartAddr + FLASH_PAGE_SIZE;
+#endif
 #endif
         TEMPORARY_RETURN_IGNORED chip::DeviceLayer::Silabs::GetPlatform().FlashInit();
 #if defined(SL_PROVISION_GENERATOR) && SL_PROVISION_GENERATOR
         // TODO: Might be ok to move this to gfw only using Reader.GetCredentialsBaseAddress().
+        // Series 2 GFW learns NVM3 geometry from the host flash size; open NVM3 first, then
+        // init SilabsConfig to initialize CTM.
         setNvm3End(base_addr);
+        ReturnErrorOnFailure(SilabsConfig::Init());
 #endif // SL_PROVISION_GENERATOR
+        return SetCredentialsBaseAddress(base_addr);
     }
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    // No flash geometry given. Keep the base address written at provisioning time.
+    // The legacy reader and the migration to static secure tokens depend on it.
+    return CHIP_NO_ERROR;
+#else
     return SetCredentialsBaseAddress(base_addr);
+#endif
 }
 
 CHIP_ERROR ProvisionStorageWriter::Commit()

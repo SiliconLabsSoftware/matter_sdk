@@ -40,6 +40,10 @@
 #endif // NDEBUG
 #endif // !SL_MATTER_GN_BUILD
 
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+#include <sl_token_manager_api.h>
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+
 #include <cstring>
 
 using SilabsConfig = chip::DeviceLayer::Internal::SilabsConfig;
@@ -56,6 +60,48 @@ ProvisionStorageReader & ProvisionStorageReader::GetInstance()
 }
 
 namespace {
+
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+/**
+ * Reads a certificate stored as a Common Token Manager static secure token.
+ * The certificate length is held by the NVM3 size key, the token may be stored padded.
+ * Returns CHIP_ERROR_NOT_FOUND when the certificate is not provisioned, so that the caller can fall back.
+ */
+CHIP_ERROR ReadStaticSecureToken(uint32_t token, SilabsConfig::Key size_key, MutableByteSpan & value)
+{
+    uint32_t size = 0;
+    // ReadConfigValue reports a missing key as CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND. Callers fall back on CHIP_ERROR_NOT_FOUND.
+    CHIP_ERROR err = SilabsConfig::ReadConfigValue(size_key, size);
+    VerifyOrReturnError(err != CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND, CHIP_ERROR_NOT_FOUND);
+    ReturnErrorOnFailure(err);
+    VerifyOrReturnError(size > 0 && size <= Internal::SilabsStaticSecureTokenSize(token), CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(size <= value.size(), CHIP_ERROR_BUFFER_TOO_SMALL);
+
+#if defined(SL_PROVISION_GENERATOR) && SL_PROVISION_GENERATOR && defined(_SILICON_LABS_32B_SERIES_2)
+    // The generator firmware is built for the smallest flash part of a family, while the token manager
+    // resolves the static secure page at compile time. Read from the page detected at runtime instead.
+    uint32_t base_addr = 0;
+    VerifyOrReturnError(SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_Base_Addr), CHIP_ERROR_NOT_FOUND);
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_Base_Addr, base_addr));
+    const uint8_t * slot = reinterpret_cast<const uint8_t *>(static_cast<uintptr_t>(base_addr + (token & 0x0FFF)));
+    ChipLogProgress(DeviceLayer, "Static secure token:0x%08x, addr:0x%08x, size:%u", (unsigned) token,
+                    (unsigned) (base_addr + (token & 0x0FFF)), (unsigned) size);
+    return CopySpanToMutableSpan(ByteSpan(slot, size), value);
+#else
+    sl_status_t status = sl_token_manager_get_data(token, value.data(), size);
+    VerifyOrReturnError(status != SL_STATUS_NOT_FOUND && status != SL_STATUS_NOT_INITIALIZED, CHIP_ERROR_NOT_FOUND);
+    if (status != SL_STATUS_OK)
+    {
+        // sl_status_t is not a CHIP_ERROR encoding, so the numeric code is logged and a generic error is returned.
+        ChipLogError(DeviceLayer, "Static secure token 0x%08x read failed: 0x%04lx", (unsigned) token, (unsigned long) status);
+        return CHIP_ERROR_INTERNAL;
+    }
+    value.reduce_size(size);
+    ChipLogProgress(DeviceLayer, "Static secure token:0x%08x, size:%u", (unsigned) token, (unsigned) size);
+    return CHIP_NO_ERROR;
+#endif // SL_PROVISION_GENERATOR && _SILICON_LABS_32B_SERIES_2
+}
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
 
 CHIP_ERROR ReadFileByOffset(const char * description, uint32_t offset, uint32_t size, MutableByteSpan & value)
 {
@@ -263,8 +309,19 @@ CHIP_ERROR ProvisionStorageReader::GetFirmwareInformation(MutableByteSpan & valu
 
 CHIP_ERROR ProvisionStorageReader::GetCertificationDeclaration(MutableByteSpan & value)
 {
-    CHIP_ERROR err = ReadFileByKey("GetCertificationDeclaration", SilabsConfig::kConfigKey_Creds_CD_Offset,
-                                   SilabsConfig::kConfigKey_Creds_CD_Size, value);
+    CHIP_ERROR err;
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    // The offset key only exists while the certificate is still in the legacy raw flash location.
+    if (!SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_CD_Offset))
+    {
+        err = ReadStaticSecureToken(SilabsConfig::kSstKey_CD, SilabsConfig::kConfigKey_Creds_CD_Size, value);
+    }
+    else
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    {
+        err = ReadFileByKey("GetCertificationDeclaration", SilabsConfig::kConfigKey_Creds_CD_Offset,
+                            SilabsConfig::kConfigKey_Creds_CD_Size, value);
+    }
 #if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
     if (CHIP_ERROR_NOT_FOUND == err)
     {
@@ -283,8 +340,18 @@ CHIP_ERROR ProvisionStorageReader::GetCertificationDeclaration(MutableByteSpan &
 
 CHIP_ERROR ProvisionStorageReader::GetProductAttestationIntermediateCert(MutableByteSpan & value)
 {
-    CHIP_ERROR err = ReadFileByKey("GetProductAttestationIntermediateCert", SilabsConfig::kConfigKey_Creds_PAI_Offset,
-                                   SilabsConfig::kConfigKey_Creds_PAI_Size, value);
+    CHIP_ERROR err;
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    if (!SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_PAI_Offset))
+    {
+        err = ReadStaticSecureToken(SilabsConfig::kSstKey_PAI, SilabsConfig::kConfigKey_Creds_PAI_Size, value);
+    }
+    else
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    {
+        err = ReadFileByKey("GetProductAttestationIntermediateCert", SilabsConfig::kConfigKey_Creds_PAI_Offset,
+                            SilabsConfig::kConfigKey_Creds_PAI_Size, value);
+    }
 #if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
     if (CHIP_ERROR_NOT_FOUND == err)
     {
@@ -303,8 +370,18 @@ CHIP_ERROR ProvisionStorageReader::GetProductAttestationIntermediateCert(Mutable
 
 CHIP_ERROR ProvisionStorageReader::GetDeviceAttestationCert(MutableByteSpan & value)
 {
-    CHIP_ERROR err = ReadFileByKey("GetDeviceAttestationCert", SilabsConfig::kConfigKey_Creds_DAC_Offset,
-                                   SilabsConfig::kConfigKey_Creds_DAC_Size, value);
+    CHIP_ERROR err;
+#ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    if (!SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_DAC_Offset))
+    {
+        err = ReadStaticSecureToken(SilabsConfig::kSstKey_DAC, SilabsConfig::kConfigKey_Creds_DAC_Size, value);
+    }
+    else
+#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
+    {
+        err = ReadFileByKey("GetDeviceAttestationCert", SilabsConfig::kConfigKey_Creds_DAC_Offset,
+                            SilabsConfig::kConfigKey_Creds_DAC_Size, value);
+    }
 #if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
     if (CHIP_ERROR_NOT_FOUND == err)
     {
