@@ -673,12 +673,6 @@ template("efr32_sdk") {
       defines += [ "SL_USE_COAP_CONFIG=0" ]
     }
 
-    if (use_provision_flash_storage) {
-      defines += [ "SL_MATTER_PROVISION_FLASH=1" ]
-    } else {
-      defines += [ "SL_MATTER_PROVISION_FLASH=0" ]
-    }
-
     if (sl_use_provision_channel) {
       defines += [ "SL_MATTER_PROVISION_CHANNEL_ENABLED=1" ]
     } else {
