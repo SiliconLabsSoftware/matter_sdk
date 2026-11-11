@@ -84,8 +84,6 @@ CHIP_ERROR ReadStaticSecureToken(uint32_t token, SilabsConfig::Key size_key, Mut
     VerifyOrReturnError(SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_Base_Addr), CHIP_ERROR_NOT_FOUND);
     ReturnErrorOnFailure(SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_Base_Addr, base_addr));
     const uint8_t * slot = reinterpret_cast<const uint8_t *>(static_cast<uintptr_t>(base_addr + (token & 0x0FFF)));
-    ChipLogProgress(DeviceLayer, "Static secure token:0x%08x, addr:0x%08x, size:%u", (unsigned) token,
-                    (unsigned) (base_addr + (token & 0x0FFF)), (unsigned) size);
     return CopySpanToMutableSpan(ByteSpan(slot, size), value);
 #else
     sl_status_t status = sl_token_manager_get_data(token, value.data(), size);
@@ -97,7 +95,6 @@ CHIP_ERROR ReadStaticSecureToken(uint32_t token, SilabsConfig::Key size_key, Mut
         return CHIP_ERROR_INTERNAL;
     }
     value.reduce_size(size);
-    ChipLogProgress(DeviceLayer, "Static secure token:0x%08x, size:%u", (unsigned) token, (unsigned) size);
     return CHIP_NO_ERROR;
 #endif // SL_PROVISION_GENERATOR && _SILICON_LABS_32B_SERIES_2
 }

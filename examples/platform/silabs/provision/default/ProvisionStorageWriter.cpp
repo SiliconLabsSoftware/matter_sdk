@@ -57,17 +57,17 @@ ProvisionStorageWriter & ProvisionStorageWriter::GetInstance()
 
 namespace {
 
-size_t RoundNearest(size_t n, size_t multiple)
-{
-    return (n % multiple) > 0 ? n + (multiple - n % multiple) : n;
-}
-
 #if !defined(SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS) || defined(_SILICON_LABS_32B_SERIES_2)
 CHIP_ERROR ErasePage(uint32_t addr)
 {
     return chip::DeviceLayer::Silabs::GetPlatform().FlashErasePage(addr);
 }
 #endif
+
+size_t RoundNearest(size_t n, size_t multiple)
+{
+    return (n % multiple) > 0 ? n + (multiple - n % multiple) : n;
+}
 
 #ifndef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
 size_t sCredentialsOffset = 0;
@@ -108,9 +108,11 @@ constexpr uint32_t kMatterSstTokens[]  = { SilabsConfig::kSstKey_DAC, SilabsConf
 
 bool IsErased(const uint8_t * data, size_t size)
 {
-    for (size_t i = 0; i < size; i++)
+    // Matter SST slots are word aligned, so check each 32-bit word for non-FF.
+    const uint32_t * words = reinterpret_cast<const uint32_t *>(data);
+    for (size_t i = 0; i < size / sizeof(uint32_t); i++)
     {
-        if (data[i] != 0xFF)
+        if (words[i] != 0xFFFFFFFFu)
         {
             return false;
         }
@@ -155,7 +157,6 @@ CHIP_ERROR EraseMatterStaticSecureSlots(uint32_t page_addr)
         memset(copy.Get() + (token & 0x0FFF), 0xFF, Internal::SilabsStaticSecureTokenSize(token));
     }
 
-    ChipLogProgress(DeviceLayer, "Erasing Matter static secure slots, page:0x%08x", (unsigned) page_addr);
     ReturnErrorOnFailure(chip::DeviceLayer::Silabs::GetPlatform().FlashInit());
     ReturnErrorOnFailure(ErasePage(page_addr));
     return chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(page_addr, copy.Get(), kSstAddressableSize);
@@ -195,11 +196,8 @@ CHIP_ERROR WriteStaticSecureTokenData(ProvisionStorageWriter & store, uint32_t t
     // The token manager resolves the static secure page at compile time, which does not match devices with a
     // larger flash than the one the generator firmware was built for. Write the token layout at the runtime page.
     const uint32_t addr = page_addr + (token & 0x0FFF);
-    ChipLogProgress(DeviceLayer, "Static secure token:0x%08x, addr:0x%08x, size:%u", (unsigned) token, (unsigned) addr,
-                    (unsigned) value.size());
     return chip::DeviceLayer::Silabs::GetPlatform().FlashWritePage(addr, buffer.Get(), size);
 #else
-    ChipLogProgress(DeviceLayer, "Static secure token:0x%08x, size:%u", (unsigned) token, (unsigned) value.size());
     sl_status_t status = sl_token_manager_set_data(token, buffer.Get(), static_cast<uint32_t>(size));
     if (SL_STATUS_ALREADY_EXISTS == status)
     {
