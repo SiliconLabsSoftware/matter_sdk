@@ -86,47 +86,39 @@ CHIP_ERROR ReadStaticSecureToken(uint32_t token, SilabsConfig::Key size_key, Mut
     const uint8_t * slot = reinterpret_cast<const uint8_t *>(static_cast<uintptr_t>(base_addr + (token & 0x0FFF)));
     return CopySpanToMutableSpan(ByteSpan(slot, size), value);
 #else
-    sl_status_t status = sl_token_manager_get_data(token, value.data(), size);
+    const sl_status_t status = sl_token_manager_get_data(token, value.data(), size);
     VerifyOrReturnError(status != SL_STATUS_NOT_FOUND && status != SL_STATUS_NOT_INITIALIZED, CHIP_ERROR_NOT_FOUND);
-    if (status != SL_STATUS_OK)
-    {
-        // sl_status_t is not a CHIP_ERROR encoding, so the numeric code is logged and a generic error is returned.
-        ChipLogError(DeviceLayer, "Static secure token 0x%08x read failed: 0x%04lx", (unsigned) token, (unsigned long) status);
-        return CHIP_ERROR_INTERNAL;
-    }
+    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL);
     value.reduce_size(size);
     return CHIP_NO_ERROR;
 #endif // SL_PROVISION_GENERATOR && _SILICON_LABS_32B_SERIES_2
 }
 #endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
 
-CHIP_ERROR ReadFileByOffset(const char * description, uint32_t offset, uint32_t size, MutableByteSpan & value)
+#if !defined(SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS) || (defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0)
+CHIP_ERROR ReadFileByOffset(uint32_t offset, uint32_t size, MutableByteSpan & value)
 {
     uint32_t base_addr = 0;
     ReturnErrorOnFailure(SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_Base_Addr, base_addr));
-
-    uint8_t * address = reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(base_addr + offset));
-    ByteSpan span(address, size);
-    ChipLogProgress(DeviceLayer, "%s, addr:0x%06x+%03u, size:%u", description, (unsigned) base_addr, (unsigned) offset,
-                    (unsigned) size);
-    return CopySpanToMutableSpan(span, value);
+    return CopySpanToMutableSpan(ByteSpan(reinterpret_cast<const uint8_t *>(static_cast<uintptr_t>(base_addr + offset)), size),
+                                 value);
 }
+#endif // !STATIC_TOKENS || SL_PROVISION_VERSION_1_0
 
-CHIP_ERROR ReadFileByKey(const char * description, uint32_t offset_key, uint32_t size_key, MutableByteSpan & value)
+#if !defined(SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS)
+CHIP_ERROR ReadFileByKey(SilabsConfig::Key offset_key, SilabsConfig::Key size_key, MutableByteSpan & value)
 {
     uint32_t offset = 0;
     uint32_t size   = 0;
 
-    // Offset
     VerifyOrReturnError(SilabsConfig::ConfigValueExists(offset_key), CHIP_ERROR_NOT_FOUND);
     ReturnErrorOnFailure(SilabsConfig::ReadConfigValue(offset_key, offset));
-
-    // Size
     VerifyOrReturnError(SilabsConfig::ConfigValueExists(size_key), CHIP_ERROR_NOT_FOUND);
     ReturnErrorOnFailure(SilabsConfig::ReadConfigValue(size_key, size));
 
-    return ReadFileByOffset(description, offset, size, value);
+    return ReadFileByOffset(offset, size, value);
 }
+#endif // !SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
 
 } // namespace
 
@@ -306,24 +298,15 @@ CHIP_ERROR ProvisionStorageReader::GetFirmwareInformation(MutableByteSpan & valu
 
 CHIP_ERROR ProvisionStorageReader::GetCertificationDeclaration(MutableByteSpan & value)
 {
-    CHIP_ERROR err;
 #ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
-    // The offset key only exists while the certificate is still in the legacy raw flash location.
-    if (!SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_CD_Offset))
-    {
-        err = ReadStaticSecureToken(SilabsConfig::kSstKey_CD, SilabsConfig::kConfigKey_Creds_CD_Size, value);
-    }
-    else
-#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
-    {
-        err = ReadFileByKey("GetCertificationDeclaration", SilabsConfig::kConfigKey_Creds_CD_Offset,
-                            SilabsConfig::kConfigKey_Creds_CD_Size, value);
-    }
+    CHIP_ERROR err = ReadStaticSecureToken(SilabsConfig::kSstKey_CD, SilabsConfig::kConfigKey_Creds_CD_Size, value);
+#else
+    CHIP_ERROR err = ReadFileByKey(SilabsConfig::kConfigKey_Creds_CD_Offset, SilabsConfig::kConfigKey_Creds_CD_Size, value);
+#endif
 #if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
     if (CHIP_ERROR_NOT_FOUND == err)
     {
-        // Reading from the old script's location.
-        err = ReadFileByOffset("GetCertificationDeclaration", SL_CREDENTIALS_CD_OFFSET, SL_CREDENTIALS_CD_SIZE, value);
+        err = ReadFileByOffset(SL_CREDENTIALS_CD_OFFSET, SL_CREDENTIALS_CD_SIZE, value);
     }
 #endif
 #if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
@@ -337,23 +320,15 @@ CHIP_ERROR ProvisionStorageReader::GetCertificationDeclaration(MutableByteSpan &
 
 CHIP_ERROR ProvisionStorageReader::GetProductAttestationIntermediateCert(MutableByteSpan & value)
 {
-    CHIP_ERROR err;
 #ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
-    if (!SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_PAI_Offset))
-    {
-        err = ReadStaticSecureToken(SilabsConfig::kSstKey_PAI, SilabsConfig::kConfigKey_Creds_PAI_Size, value);
-    }
-    else
-#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
-    {
-        err = ReadFileByKey("GetProductAttestationIntermediateCert", SilabsConfig::kConfigKey_Creds_PAI_Offset,
-                            SilabsConfig::kConfigKey_Creds_PAI_Size, value);
-    }
+    CHIP_ERROR err = ReadStaticSecureToken(SilabsConfig::kSstKey_PAI, SilabsConfig::kConfigKey_Creds_PAI_Size, value);
+#else
+    CHIP_ERROR err = ReadFileByKey(SilabsConfig::kConfigKey_Creds_PAI_Offset, SilabsConfig::kConfigKey_Creds_PAI_Size, value);
+#endif
 #if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
     if (CHIP_ERROR_NOT_FOUND == err)
     {
-        // Reading from the old script's location.
-        err = ReadFileByOffset("GetProductAttestationIntermediateCert", SL_CREDENTIALS_PAI_OFFSET, SL_CREDENTIALS_PAI_SIZE, value);
+        err = ReadFileByOffset(SL_CREDENTIALS_PAI_OFFSET, SL_CREDENTIALS_PAI_SIZE, value);
     }
 #endif
 #if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS
@@ -367,23 +342,15 @@ CHIP_ERROR ProvisionStorageReader::GetProductAttestationIntermediateCert(Mutable
 
 CHIP_ERROR ProvisionStorageReader::GetDeviceAttestationCert(MutableByteSpan & value)
 {
-    CHIP_ERROR err;
 #ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
-    if (!SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_DAC_Offset))
-    {
-        err = ReadStaticSecureToken(SilabsConfig::kSstKey_DAC, SilabsConfig::kConfigKey_Creds_DAC_Size, value);
-    }
-    else
-#endif // SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
-    {
-        err = ReadFileByKey("GetDeviceAttestationCert", SilabsConfig::kConfigKey_Creds_DAC_Offset,
-                            SilabsConfig::kConfigKey_Creds_DAC_Size, value);
-    }
+    CHIP_ERROR err = ReadStaticSecureToken(SilabsConfig::kSstKey_DAC, SilabsConfig::kConfigKey_Creds_DAC_Size, value);
+#else
+    CHIP_ERROR err = ReadFileByKey(SilabsConfig::kConfigKey_Creds_DAC_Offset, SilabsConfig::kConfigKey_Creds_DAC_Size, value);
+#endif
 #if defined(SL_PROVISION_VERSION_1_0) && SL_PROVISION_VERSION_1_0
     if (CHIP_ERROR_NOT_FOUND == err)
     {
-        // Reading from the old script's location.
-        err = ReadFileByOffset("GetDeviceAttestationCert", SL_CREDENTIALS_DAC_OFFSET, SL_CREDENTIALS_DAC_SIZE, value);
+        err = ReadFileByOffset(SL_CREDENTIALS_DAC_OFFSET, SL_CREDENTIALS_DAC_SIZE, value);
     }
 #endif
 #if SL_MATTER_ENABLE_EXAMPLE_CREDENTIALS

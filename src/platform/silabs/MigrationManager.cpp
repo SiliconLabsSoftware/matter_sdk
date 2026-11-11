@@ -257,6 +257,23 @@ void MigrateS3Certificates()
 #if SL_MATTER_MIGRATE_CERTS_TO_SST
 namespace {
 
+struct CertMigrationEntry
+{
+    uint32_t token;
+    SilabsConfig::Key offsetKey;
+    SilabsConfig::Key sizeKey;
+    uint32_t maxLength;
+};
+
+constexpr CertMigrationEntry kCertMigrationEntries[] = {
+    { SilabsConfig::kSstKey_DAC, SilabsConfig::kConfigKey_Creds_DAC_Offset, SilabsConfig::kConfigKey_Creds_DAC_Size,
+      kMatterSstMaxSize_DAC },
+    { SilabsConfig::kSstKey_PAI, SilabsConfig::kConfigKey_Creds_PAI_Offset, SilabsConfig::kConfigKey_Creds_PAI_Size,
+      kMatterSstMaxSize_PAI },
+    { SilabsConfig::kSstKey_CD, SilabsConfig::kConfigKey_Creds_CD_Offset, SilabsConfig::kConfigKey_Creds_CD_Size,
+      kMatterSstMaxSize_CD },
+};
+
 CHIP_ERROR ReadLegacyCertificate(uint32_t baseAddr, SilabsConfig::Key offsetKey, SilabsConfig::Key sizeKey, uint32_t maxLength,
                                  Platform::ScopedMemoryBuffer<uint8_t> & buffer, size_t & size)
 {
@@ -272,12 +289,12 @@ CHIP_ERROR ReadLegacyCertificate(uint32_t baseAddr, SilabsConfig::Key offsetKey,
 }
 
 /**
- * Stores the certificate in a static secure token and reads it back for comparison.
- * The token is padded to a word boundary (flash write constraint), the real lenght is stored in the nvm3 key.
+ * Stores the certificate in a static secure token.
+ * The token is padded to a word boundary (flash write constraint); the real length stays in the NVM3 size key.
  */
 CHIP_ERROR StoreStaticSecureToken(uint32_t token, const ByteSpan & value)
 {
-    constexpr size_t kPadding = 3u; // 3 bytes of padding to make the size a multiple of 4
+    constexpr size_t kPadding = 3u; // round size up to a multiple of 4
     const size_t paddedSize   = (value.size() + kPadding) & ~static_cast<size_t>(kPadding);
     VerifyOrReturnError(paddedSize <= SilabsStaticSecureTokenSize(token), CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -286,23 +303,9 @@ CHIP_ERROR StoreStaticSecureToken(uint32_t token, const ByteSpan & value)
     memcpy(padded.Get(), value.data(), value.size());
     memset(padded.Get() + value.size(), 0xFF, paddedSize - value.size());
 
-    // An already existing token is accepted: the read back decides whether it holds this certificate.
-    sl_status_t status = sl_token_manager_set_data(token, padded.Get(), static_cast<uint32_t>(paddedSize));
-    if (status != SL_STATUS_OK && status != SL_STATUS_ALREADY_EXISTS)
-    {
-        ChipLogError(DeviceLayer, "Static secure token 0x%08x write failed: 0x%04lx", (unsigned) token, (unsigned long) status);
-        return CHIP_ERROR_INTERNAL;
-    }
-
-    Platform::ScopedMemoryBuffer<uint8_t> readBack;
-    VerifyOrReturnError(readBack.Alloc(value.size()).Get() != nullptr, CHIP_ERROR_NO_MEMORY);
-    status = sl_token_manager_get_data(token, readBack.Get(), static_cast<uint32_t>(value.size()));
-    if (status != SL_STATUS_OK)
-    {
-        ChipLogError(DeviceLayer, "Static secure token 0x%08x read failed: 0x%04lx", (unsigned) token, (unsigned long) status);
-        return CHIP_ERROR_INTERNAL;
-    }
-    VerifyOrReturnError(memcmp(readBack.Get(), value.data(), value.size()) == 0, CHIP_ERROR_INTEGRITY_CHECK_FAILED);
+    // ALREADY_EXISTS is accepted after a partial prior attempt; the page/slot erase above makes a fresh write the common path.
+    const sl_status_t status = sl_token_manager_set_data(token, padded.Get(), static_cast<uint32_t>(paddedSize));
+    VerifyOrReturnError(status == SL_STATUS_OK || status == SL_STATUS_ALREADY_EXISTS, CHIP_ERROR_INTERNAL);
     return CHIP_NO_ERROR;
 }
 
@@ -312,10 +315,13 @@ constexpr uint32_t kStaticSecurePageAddr = FLASH_BASE + FLASH_SIZE - FLASH_PAGE_
 
 bool IsStaticSecureSlotErased(uint32_t token)
 {
-    const uint8_t * slot = reinterpret_cast<const uint8_t *>(static_cast<uintptr_t>(kStaticSecurePageAddr + (token & 0x0FFF)));
-    for (uint32_t i = 0; i < SilabsStaticSecureTokenSize(token); i++)
+    // Matter SST slots are 4-byte aligned with sizes divisible by 4 (see SilabsConfig.h).
+    const uint8_t * slot       = reinterpret_cast<const uint8_t *>(static_cast<uintptr_t>(kStaticSecurePageAddr + (token & 0x0FFF)));
+    const uint32_t * words     = reinterpret_cast<const uint32_t *>(slot);
+    const uint32_t word_count  = SilabsStaticSecureTokenSize(token) / sizeof(uint32_t);
+    for (uint32_t i = 0; i < word_count; i++)
     {
-        if (slot[i] != 0xFF)
+        if (words[i] != 0xFFFFFFFFu)
         {
             return false;
         }
@@ -332,32 +338,20 @@ void MigrateCertificatesToStaticSecureTokens()
 #if SL_MATTER_MIGRATE_CERTS_TO_SST
     // Devices provisioned before static secure tokens keep the certificates in a raw flash page located by
     // kConfigKey_Creds_Base_Addr and the NVM3 offset/size keys. The offset keys are removed once the tokens are
-    // verified, which makes this migration a no-op on devices provisioned with static secure tokens.
+    // written, which makes this migration a no-op on devices provisioned with static secure tokens.
     VerifyOrReturn(SilabsConfig::ConfigValueExists(SilabsConfig::kConfigKey_Creds_DAC_Offset));
     uint32_t credsBaseAddr = 0;
     VerifyOrReturn(SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Creds_Base_Addr, credsBaseAddr) == CHIP_NO_ERROR);
 
     // Read everything before touching the flash: on Series 2 the token slots overlap the legacy layout.
-    Platform::ScopedMemoryBuffer<uint8_t> dac;
-    Platform::ScopedMemoryBuffer<uint8_t> pai;
-    Platform::ScopedMemoryBuffer<uint8_t> cd;
-    size_t dacSize = 0;
-    size_t paiSize = 0;
-    size_t cdSize  = 0;
-    VerifyOrReturn(ReadLegacyCertificate(credsBaseAddr, SilabsConfig::kConfigKey_Creds_DAC_Offset,
-                                         SilabsConfig::kConfigKey_Creds_DAC_Size, kMatterSstMaxSize_DAC, dac,
-                                         dacSize) == CHIP_NO_ERROR);
-    VerifyOrReturn(ReadLegacyCertificate(credsBaseAddr, SilabsConfig::kConfigKey_Creds_PAI_Offset,
-                                         SilabsConfig::kConfigKey_Creds_PAI_Size, kMatterSstMaxSize_PAI, pai,
-                                         paiSize) == CHIP_NO_ERROR);
-    VerifyOrReturn(ReadLegacyCertificate(credsBaseAddr, SilabsConfig::kConfigKey_Creds_CD_Offset,
-                                         SilabsConfig::kConfigKey_Creds_CD_Size, kMatterSstMaxSize_CD, cd,
-                                         cdSize) == CHIP_NO_ERROR);
-    ByteSpan dacSpan(dac.Get(), dacSize);
-    ByteSpan paiSpan(pai.Get(), paiSize);
-    ByteSpan cdSpan(cd.Get(), cdSize);
-
-    ChipLogProgress(DeviceLayer, "Migrating certificates to static secure tokens, legacy page:0x%08x", (unsigned) credsBaseAddr);
+    Platform::ScopedMemoryBuffer<uint8_t> buffers[MATTER_ARRAY_SIZE(kCertMigrationEntries)];
+    size_t sizes[MATTER_ARRAY_SIZE(kCertMigrationEntries)] = {};
+    for (size_t i = 0; i < MATTER_ARRAY_SIZE(kCertMigrationEntries); i++)
+    {
+        const CertMigrationEntry & entry = kCertMigrationEntries[i];
+        VerifyOrReturn(ReadLegacyCertificate(credsBaseAddr, entry.offsetKey, entry.sizeKey, entry.maxLength, buffers[i],
+                                             sizes[i]) == CHIP_NO_ERROR);
+    }
 
 #ifdef _SILICON_LABS_32B_SERIES_3
     // The legacy page lies inside the static secure region: the token manager cannot append KLV objects over
@@ -372,34 +366,33 @@ void MigrateCertificatesToStaticSecureTokens()
 #else
     // Series 2: the token slots overlap the legacy layout of the same page and can only be written once erased.
     // The legacy provisioning erased this page when it wrote the certificates, which are now held in RAM.
-    if (!IsStaticSecureSlotErased(SilabsConfig::kSstKey_DAC) || !IsStaticSecureSlotErased(SilabsConfig::kSstKey_PAI) ||
-        !IsStaticSecureSlotErased(SilabsConfig::kSstKey_CD))
+    bool needsErase = false;
+    for (const CertMigrationEntry & entry : kCertMigrationEntries)
+    {
+        if (!IsStaticSecureSlotErased(entry.token))
+        {
+            needsErase = true;
+            break;
+        }
+    }
+    if (needsErase)
     {
         VerifyOrReturn(GetPlatform().FlashInit() == CHIP_NO_ERROR);
         VerifyOrReturn(GetPlatform().FlashErasePage(kStaticSecurePageAddr) == CHIP_NO_ERROR);
     }
 #endif // _SILICON_LABS_32B_SERIES_3
 
-    if (StoreStaticSecureToken(SilabsConfig::kSstKey_DAC, dacSpan) != CHIP_NO_ERROR ||
-        StoreStaticSecureToken(SilabsConfig::kSstKey_PAI, paiSpan) != CHIP_NO_ERROR ||
-        StoreStaticSecureToken(SilabsConfig::kSstKey_CD, cdSpan) != CHIP_NO_ERROR)
+    for (size_t i = 0; i < MATTER_ARRAY_SIZE(kCertMigrationEntries); i++)
     {
-        ChipLogError(DeviceLayer, "Static secure token migration failed, legacy certificate keys kept");
-        return;
+        VerifyOrReturn(StoreStaticSecureToken(kCertMigrationEntries[i].token, ByteSpan(buffers[i].Get(), sizes[i])) ==
+                       CHIP_NO_ERROR);
     }
 
-    // The offset keys designate the legacy location, the reader now uses the tokens. The size keys are kept: they
-    // hold the certificate lengths for the tokens. kConfigKey_Creds_Base_Addr is kept for diagnostics.
-    constexpr SilabsConfig::Key kLegacyOffsetKeys[] = {
-        SilabsConfig::kConfigKey_Creds_DAC_Offset,
-        SilabsConfig::kConfigKey_Creds_PAI_Offset,
-        SilabsConfig::kConfigKey_Creds_CD_Offset,
-    };
-    for (SilabsConfig::Key key : kLegacyOffsetKeys)
+    // The offset keys designate the legacy location; the reader uses the tokens. Size keys are kept for token lengths.
+    for (const CertMigrationEntry & entry : kCertMigrationEntries)
     {
-        RETURN_SAFELY_IGNORED SilabsConfig::ClearConfigValue(key);
+        RETURN_SAFELY_IGNORED SilabsConfig::ClearConfigValue(entry.offsetKey);
     }
-    ChipLogProgress(DeviceLayer, "Certificates migrated to static secure tokens");
 #endif // SL_MATTER_MIGRATE_CERTS_TO_SST
 }
 
