@@ -19,6 +19,7 @@
 #include <app/MessageDef/StatusIB.h>
 #include <app/clusters/on-off-server/OnOffLightingCluster.h>
 #include <app/clusters/scenes-server/ScenesIntegrationDelegate.h>
+#include <app/data-model-provider/tests/ReadTesting.h>
 #include <app/persistence/AttributePersistence.h>
 #include <app/server-cluster/ServerClusterInterface.h>
 #include <app/server-cluster/testing/AttributeTesting.h>
@@ -30,6 +31,8 @@
 #include <lib/support/TimerDelegateMock.h>
 #include <lib/support/TypeTraits.h>
 #include <lib/support/logging/TextOnlyLogging.h>
+
+#include <vector>
 
 using namespace chip;
 using namespace chip::app;
@@ -153,6 +156,31 @@ public:
     }
 };
 
+class CountingTimerDelegate : public TimerDelegateMock
+{
+public:
+    CriticalFailure StartTimer(TimerContext * context, System::Clock::Timeout timeout) override
+    {
+        ++mStartCount;
+        return TimerDelegateMock::StartTimer(context, timeout);
+    }
+
+    System::Clock::Timestamp GetCurrentMonotonicTimestamp() override
+    {
+        const auto now        = TimerDelegateMock::GetCurrentMonotonicTimestamp();
+        const auto advance    = mAdvanceAfterNextRead;
+        mAdvanceAfterNextRead = System::Clock::kZero;
+        if (advance != System::Clock::kZero)
+        {
+            AdvanceClock(advance);
+        }
+        return now;
+    }
+
+    uint32_t mStartCount                         = 0;
+    System::Clock::Timeout mAdvanceAfterNextRead = System::Clock::kZero;
+};
+
 struct TestOnOffLightingCluster : public ::testing::Test
 {
     static void SetUpTestSuite() { ASSERT_EQ(Platform::MemoryInit(), CHIP_NO_ERROR); }
@@ -179,7 +207,7 @@ struct TestOnOffLightingCluster : public ::testing::Test
     }
 
     MockOnOffDelegate mMockDelegate;
-    TimerDelegateMock mMockTimerDelegate;
+    CountingTimerDelegate mMockTimerDelegate;
     MockOnOffEffectDelegate mMockEffectDelegate;
     MockScenesIntegrationDelegate mMockScenesIntegrationDelegate;
     OnOffLightingCluster mCluster{ kTestEndpointId,
@@ -529,6 +557,346 @@ TEST_F(TestOnOffLightingCluster, TestOffWaitTime)
     uint16_t offWaitTime = 1;
     EXPECT_EQ(mClusterTester.ReadAttribute(Attributes::OffWaitTime::Id, offWaitTime), CHIP_NO_ERROR);
     EXPECT_EQ(offWaitTime, 0);
+}
+
+TEST_F(TestOnOffLightingCluster, DelayedCountdownsRetainFractionalTicks)
+{
+    for (bool on : { true, false })
+    {
+        Commands::OnWithTimedOff::Type command;
+        command.onTime      = 300;
+        command.offWaitTime = 300;
+        ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+        if (!on)
+        {
+            ASSERT_TRUE(mClusterTester.Invoke(Commands::Off::Type()).IsSuccess());
+        }
+
+        const ConcreteClusterPath path(kTestEndpointId, OnOff::Id);
+        const DataVersion version  = mCluster.GetDataVersion(path);
+        const uint32_t timerStarts = mMockTimerDelegate.mStartCount;
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+        EXPECT_EQ(mMockTimerDelegate.mStartCount, timerStarts + 1);
+        EXPECT_EQ(mCluster.GetDataVersion(path), version + 1);
+        EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), 276);
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(49));
+        EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), 276);
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(1));
+        EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), 275);
+
+        mCluster.SetOnTime(0);
+        mCluster.SetOffWaitTime(0);
+    }
+}
+
+TEST_F(TestOnOffLightingCluster, IrregularCallbacksDoNotAccumulateDrift)
+{
+    ASSERT_TRUE(mClusterTester.Invoke(Commands::On::Type()).IsSuccess());
+    mCluster.SetOnTime(300);
+
+    uint32_t elapsedMs = 0;
+    for (uint32_t intervalMs : { 77u, 168u, 2407u, 1u, 349u, 98u, 2400u })
+    {
+        elapsedMs += intervalMs;
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(intervalMs));
+        EXPECT_EQ(mCluster.GetOnTime(), 300u - elapsedMs / 100u);
+    }
+}
+
+TEST_F(TestOnOffLightingCluster, EarlyCallbackDoesNotDecrementCountdown)
+{
+    ASSERT_TRUE(mClusterTester.Invoke(Commands::On::Type()).IsSuccess());
+    mCluster.SetOnTime(10);
+
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    mMockTimerDelegate.CancelTimer(&mCluster);
+    mCluster.TimerFired();
+    EXPECT_TRUE(mMockTimerDelegate.IsTimerActive(&mCluster));
+    EXPECT_EQ(mCluster.GetOnTime(), 10);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(49));
+    EXPECT_EQ(mCluster.GetOnTime(), 10);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(1));
+    EXPECT_EQ(mCluster.GetOnTime(), 9);
+}
+
+TEST_F(TestOnOffLightingCluster, DelayedExpiryClampsAndTransitionsOnce)
+{
+    Commands::OnWithTimedOff::Type command;
+    command.onTime      = 10;
+    command.offWaitTime = 20;
+    ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+    EXPECT_EQ(mCluster.GetOnTime(), 0);
+    EXPECT_EQ(mCluster.GetOffWaitTime(), 0);
+    EXPECT_FALSE(mCluster.GetOnOff());
+    EXPECT_FALSE(mMockTimerDelegate.IsTimerActive(&mCluster));
+
+    mMockDelegate.mCalled = false;
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(1000));
+    EXPECT_FALSE(mMockDelegate.mCalled);
+
+    mCluster.SetOffWaitTime(20);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+    EXPECT_EQ(mCluster.GetOffWaitTime(), 0);
+    EXPECT_FALSE(mCluster.GetOnOff());
+    EXPECT_FALSE(mMockDelegate.mCalled);
+    EXPECT_FALSE(mMockTimerDelegate.IsTimerActive(&mCluster));
+}
+
+TEST_F(TestOnOffLightingCluster, UnrelatedWritesPreserveCountdownPhase)
+{
+    for (bool on : { true, false })
+    {
+        Commands::OnWithTimedOff::Type command;
+        command.onTime      = 30;
+        command.offWaitTime = 30;
+        ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+        if (!on)
+        {
+            ASSERT_TRUE(mClusterTester.Invoke(Commands::Off::Type()).IsSuccess());
+        }
+
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+        ASSERT_EQ(mClusterTester.WriteAttribute(on ? Attributes::OffWaitTime::Id : Attributes::OnTime::Id, uint16_t(5)),
+                  CHIP_NO_ERROR);
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+        EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), 29);
+
+        mCluster.SetOnTime(0);
+        mCluster.SetOffWaitTime(0);
+    }
+}
+
+TEST_F(TestOnOffLightingCluster, UnchangedAndDiscardedCommandsPreserveCountdownPhase)
+{
+    for (bool on : { true, false })
+    {
+        Commands::OnWithTimedOff::Type command;
+        command.onTime      = 30;
+        command.offWaitTime = 30;
+        ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+        if (!on)
+        {
+            ASSERT_TRUE(mClusterTester.Invoke(Commands::Off::Type()).IsSuccess());
+            command.onOffControl.Set(OnOffControlBitmap::kAcceptOnlyWhenOn);
+        }
+
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+        ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+        EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), 29);
+
+        mCluster.SetOnTime(0);
+        mCluster.SetOffWaitTime(0);
+    }
+}
+
+TEST_F(TestOnOffLightingCluster, ReadsDoNotAdvancePendingCountdown)
+{
+    for (bool on : { true, false })
+    {
+        Commands::OnWithTimedOff::Type command;
+        command.onTime      = 300;
+        command.offWaitTime = 300;
+        ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+        if (!on)
+        {
+            ASSERT_TRUE(mClusterTester.Invoke(Commands::Off::Type()).IsSuccess());
+        }
+
+        // Suppress delivery while advancing the clock, as when another stack operation blocks the callback.
+        mMockTimerDelegate.CancelTimer(&mCluster);
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+        const ConcreteClusterPath path(kTestEndpointId, OnOff::Id);
+        const DataVersion version  = mCluster.GetDataVersion(path);
+        const uint32_t timerStarts = mMockTimerDelegate.mStartCount;
+        ReadOperation read(kTestEndpointId, OnOff::Id, on ? Attributes::OnTime::Id : Attributes::OffWaitTime::Id);
+        auto encoder = read.StartEncoding(ReadOperation::EncodingParams().SetDataVersion(version));
+        ASSERT_NE(encoder.get(), nullptr);
+        ASSERT_TRUE(mCluster.ReadAttribute(read.GetRequest(), *encoder).IsSuccess());
+        ASSERT_EQ(read.FinishEncoding(), CHIP_NO_ERROR);
+        std::vector<DecodedAttributeData> reports;
+        ASSERT_EQ(read.GetEncodedIBs().Decode(reports), CHIP_NO_ERROR);
+        ASSERT_EQ(reports.size(), 1u);
+        EXPECT_EQ(reports.front().dataVersion, version);
+        EXPECT_EQ(mCluster.GetDataVersion(path), version);
+        EXPECT_EQ(mMockTimerDelegate.mStartCount, timerStarts);
+        uint16_t remaining = 0;
+        ASSERT_EQ(reports.front().dataReader.Get(remaining), CHIP_NO_ERROR);
+        EXPECT_EQ(remaining, 300);
+        mCluster.TimerFired();
+        remaining = on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime();
+        EXPECT_EQ(remaining, 276);
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+        EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), 275);
+
+        mCluster.SetOnTime(0);
+        mCluster.SetOffWaitTime(0);
+    }
+}
+
+TEST_F(TestOnOffLightingCluster, CommandsUseElapsedCountdownBeforeApplyingMaximum)
+{
+    Commands::OnWithTimedOff::Type command;
+    command.onTime = 30;
+    ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+    mMockTimerDelegate.CancelTimer(&mCluster);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+
+    command.onTime = 10;
+    ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+    EXPECT_EQ(mCluster.GetOnTime(), 10);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    EXPECT_EQ(mCluster.GetOnTime(), 9);
+}
+
+TEST_F(TestOnOffLightingCluster, TimedCommandsUseOneCountdownSnapshot)
+{
+    for (bool on : { true, false })
+    {
+        Commands::OnWithTimedOff::Type command;
+        command.onTime      = 1;
+        command.offWaitTime = 2;
+        ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+        if (!on)
+        {
+            ASSERT_TRUE(mClusterTester.Invoke(Commands::Off::Type()).IsSuccess());
+        }
+
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+        // Cross a tick during command execution without delivering the pending timer.
+        mMockTimerDelegate.CancelTimer(&mCluster);
+        mMockTimerDelegate.mAdvanceAfterNextRead = System::Clock::Milliseconds32(100);
+        command.onTime                           = 10;
+        command.offWaitTime                      = 10;
+        ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+        EXPECT_EQ(mCluster.GetOnOff(), on);
+        EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), on ? 10 : 2);
+
+        mMockTimerDelegate.AdvanceClock(System::Clock::kZero);
+        EXPECT_EQ(mCluster.GetOnOff(), on);
+        EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), on ? 9 : 1);
+
+        mCluster.SetOnTime(0);
+        mCluster.SetOffWaitTime(0);
+    }
+}
+
+TEST_F(TestOnOffLightingCluster, WritesDoNotChargeOldElapsedTimeToNewValue)
+{
+    ASSERT_TRUE(mClusterTester.Invoke(Commands::On::Type()).IsSuccess());
+    mCluster.SetOnTime(30);
+    mMockTimerDelegate.CancelTimer(&mCluster);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+
+    ASSERT_EQ(mClusterTester.WriteAttribute(Attributes::OnTime::Id, uint16_t(100)), CHIP_NO_ERROR);
+    EXPECT_EQ(mCluster.GetOnTime(), 100);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    EXPECT_EQ(mCluster.GetOnTime(), 99);
+}
+
+TEST_F(TestOnOffLightingCluster, CommandsUseElapsedOffWaitTimeBeforeApplyingMinimum)
+{
+    Commands::OnWithTimedOff::Type command;
+    command.onTime      = 30;
+    command.offWaitTime = 30;
+    ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+    ASSERT_TRUE(mClusterTester.Invoke(Commands::Off::Type()).IsSuccess());
+    mMockTimerDelegate.CancelTimer(&mCluster);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+
+    command.offWaitTime = 20;
+    ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+    EXPECT_EQ(mCluster.GetOffWaitTime(), 6);
+    EXPECT_FALSE(mCluster.GetOnOff());
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    EXPECT_EQ(mCluster.GetOffWaitTime(), 5);
+}
+
+TEST_F(TestOnOffLightingCluster, ExpiredOnTimeIsAppliedBeforeAcceptOnlyWhenOn)
+{
+    Commands::OnWithTimedOff::Type command;
+    command.onTime = 10;
+    ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+    mMockTimerDelegate.CancelTimer(&mCluster);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+
+    command.onOffControl.Set(OnOffControlBitmap::kAcceptOnlyWhenOn);
+    ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+    EXPECT_EQ(mCluster.GetOnTime(), 0);
+    EXPECT_FALSE(mCluster.GetOnOff());
+    EXPECT_FALSE(mMockTimerDelegate.IsTimerActive(&mCluster));
+}
+
+TEST_F(TestOnOffLightingCluster, LevelControlTransitionStartsFreshCountdownPhase)
+{
+    Commands::OnWithTimedOff::Type command;
+    command.onTime      = 30;
+    command.offWaitTime = 20;
+    ASSERT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+
+    ASSERT_EQ(mCluster.SetOnOffWithTimeReset(false), CHIP_NO_ERROR);
+    EXPECT_EQ(mCluster.GetOnTime(), 0);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    EXPECT_EQ(mCluster.GetOffWaitTime(), 20);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    EXPECT_EQ(mCluster.GetOffWaitTime(), 19);
+}
+
+TEST_F(TestOnOffLightingCluster, StoppedAndInfiniteCountdownsRestartWithFreshPhase)
+{
+    for (bool on : { true, false })
+    {
+        ASSERT_EQ(mCluster.SetOnOffWithTimeReset(on), CHIP_NO_ERROR);
+        for (uint16_t stoppedValue : { uint16_t(0), uint16_t(0xFFFF) })
+        {
+            if (on)
+            {
+                mCluster.SetOnTime(stoppedValue);
+            }
+            else
+            {
+                mCluster.SetOffWaitTime(stoppedValue);
+            }
+            EXPECT_FALSE(mMockTimerDelegate.IsTimerActive(&mCluster));
+            mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+            mCluster.TimerFired();
+            EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), stoppedValue);
+
+            if (on)
+            {
+                mCluster.SetOnTime(10);
+            }
+            else
+            {
+                mCluster.SetOffWaitTime(10);
+            }
+            mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(99));
+            EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), 10);
+            mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(1));
+            EXPECT_EQ(on ? mCluster.GetOnTime() : mCluster.GetOffWaitTime(), 9);
+        }
+        mCluster.SetOnTime(0);
+        mCluster.SetOffWaitTime(0);
+    }
+}
+
+TEST_F(TestOnOffLightingCluster, CountdownShutdownCancelsAndRestartResetsPhase)
+{
+    ASSERT_TRUE(mClusterTester.Invoke(Commands::On::Type()).IsSuccess());
+    mCluster.SetOnTime(30);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    mCluster.Shutdown(ClusterShutdownType::kClusterShutdown);
+    EXPECT_FALSE(mMockTimerDelegate.IsTimerActive(&mCluster));
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(2450));
+
+    ASSERT_EQ(mCluster.Startup(mClusterTester.GetServerClusterContext()), CHIP_NO_ERROR);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    EXPECT_EQ(mCluster.GetOnTime(), 30);
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(50));
+    EXPECT_EQ(mCluster.GetOnTime(), 29);
 }
 
 TEST_F(TestOnOffLightingCluster, TestGlobalSceneControl)

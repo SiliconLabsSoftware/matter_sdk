@@ -28,12 +28,18 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+#include <algorithm>
+#include <chrono>
 #include <cstdint>
 
 using namespace chip::app::Clusters::OnOff;
 using chip::Protocols::InteractionModel::Status;
 
 namespace chip::app::Clusters {
+
+namespace {
+constexpr System::Clock::Milliseconds32 kCountdownInterval(100);
+}
 
 OnOffLightingCluster::OnOffLightingCluster(EndpointId endpointId, const Context & context) :
     OnOffCluster(endpointId,
@@ -110,7 +116,15 @@ CHIP_ERROR OnOffLightingCluster::Startup(ServerClusterContext & context)
         delegate.OnOffStartup(mOnOff);
     }
 
+    UpdateTimer();
     return CHIP_NO_ERROR;
+}
+
+void OnOffLightingCluster::Shutdown(ClusterShutdownType shutdownType)
+{
+    mTimerDelegate.CancelTimer(this);
+    mCountdownState = CountdownState::kStopped;
+    OnOffCluster::Shutdown(shutdownType);
 }
 
 CHIP_ERROR OnOffLightingCluster::AcceptedCommands(const ConcreteClusterPath & path,
@@ -164,6 +178,7 @@ DataModel::ActionReturnStatus OnOffLightingCluster::ReadAttribute(const DataMode
 DataModel::ActionReturnStatus OnOffLightingCluster::WriteAttribute(const DataModel::WriteAttributeRequest & request,
                                                                    AttributeValueDecoder & decoder)
 {
+    AdvanceCountdown();
     return NotifyAttributeChangedIfSuccess(request.path.mAttributeId, WriteImpl(request, decoder));
 }
 
@@ -201,6 +216,7 @@ std::optional<DataModel::ActionReturnStatus> OnOffLightingCluster::InvokeCommand
                                                                                  chip::TLV::TLVReader & input_arguments,
                                                                                  CommandHandler * handler)
 {
+    AdvanceCountdown();
     switch (request.path.mCommandId)
     {
     case Commands::Off::Id:
@@ -222,12 +238,14 @@ std::optional<DataModel::ActionReturnStatus> OnOffLightingCluster::InvokeCommand
 
 void OnOffLightingCluster::SetOnTime(uint16_t value)
 {
+    AdvanceCountdown();
     VerifyOrReturn(SetAttributeValue(mOnTime, value, Attributes::OnTime::Id));
     UpdateTimer();
 }
 
 void OnOffLightingCluster::SetOffWaitTime(uint16_t value)
 {
+    AdvanceCountdown();
     VerifyOrReturn(SetAttributeValue(mOffWaitTime, value, Attributes::OffWaitTime::Id));
     UpdateTimer();
 }
@@ -251,6 +269,7 @@ CHIP_ERROR OnOffLightingCluster::SetStartupOnOff(DataModel::Nullable<OnOff::Star
 
 CHIP_ERROR OnOffLightingCluster::SetOnOffWithTimeReset(bool on)
 {
+    AdvanceCountdown();
     ReturnErrorOnFailure(SetOnOff(on));
 
     // Spec: On receipt of a level control cluster command that:
@@ -261,7 +280,6 @@ CHIP_ERROR OnOffLightingCluster::SetOnOffWithTimeReset(bool on)
     if (!on && (mOnTime != 0))
     {
         mOnTime = 0;
-        UpdateTimer();
         NotifyAttributeChanged(Attributes::OnTime::Id);
     }
 
@@ -274,46 +292,57 @@ CHIP_ERROR OnOffLightingCluster::SetOnOffWithTimeReset(bool on)
     if (on && (mOnTime == 0) && (mOffWaitTime != 0))
     {
         mOffWaitTime = 0;
-        UpdateTimer();
         NotifyAttributeChanged(Attributes::OffWaitTime::Id);
     }
 
+    UpdateTimer();
     return CHIP_NO_ERROR;
 }
 
 void OnOffLightingCluster::TimerFired()
 {
-    if (GetOnOff())
+    if (!AdvanceCountdown())
     {
-        // we are on, see if we have to decrease the timer
-        VerifyOrReturn(mOnTime > 0);
-
-        // TIMED_ON state: we decrement OnTime  to see if we need to turn off
-        mOnTime--;
-        NotifyAttributeChanged(Attributes::OnTime::Id);
-
-        // If timer is not yet 0, update the timer and keep going. Otherwise move to off state.
-        VerifyOrReturn(mOnTime == 0, UpdateTimer());
-
-        // transition TIMED_ON to OFF - clear off wait time and turn off
-        SetOffWaitTime(0);
-        LogErrorOnFailure(SetOnOff(false));
-    }
-    else
-    {
-        VerifyOrReturn(mOffWaitTime > 0);
-
-        mOffWaitTime--;
-        NotifyAttributeChanged(Attributes::OffWaitTime::Id);
         UpdateTimer();
     }
+}
+
+bool OnOffLightingCluster::AdvanceCountdown()
+{
+    // Is there even a countdown active?
+    VerifyOrReturnValue(mCountdownState != CountdownState::kStopped, false);
+
+    // Does the countdown match the current device state?
+    const bool on            = GetOnOff();
+    const auto expectedState = on ? CountdownState::kOnTime : CountdownState::kOffWaitTime;
+    VerifyOrReturnValue(mCountdownState == expectedState, true, UpdateTimer());
+
+    // Has the next scheduled decrement become due?
+    const auto now = mTimerDelegate.GetCurrentMonotonicTimestamp();
+    VerifyOrReturnValue(now >= mNextTick, false);
+
+    // Apply elapsed decrements
+    uint16_t & remaining    = on ? mOnTime : mOffWaitTime;
+    const auto elapsedTicks = std::min<uint64_t>((now - mNextTick) / kCountdownInterval + 1, remaining);
+    mNextTick += kCountdownInterval * elapsedTicks;
+    remaining = static_cast<uint16_t>(remaining - elapsedTicks);
+    NotifyAttributeChanged(on ? Attributes::OnTime::Id : Attributes::OffWaitTime::Id);
+
+    if (on && remaining == 0)
+    {
+        mCountdownState = CountdownState::kStopped;
+        SetAttributeValue<uint16_t, uint16_t>(mOffWaitTime, 0, Attributes::OffWaitTime::Id);
+        LogErrorOnFailure(SetOnOff(false));
+    }
+    UpdateTimer();
+    return true;
 }
 
 void OnOffLightingCluster::UpdateTimer()
 {
     mTimerDelegate.CancelTimer(this);
 
-    bool on = GetOnOff();
+    const bool on = GetOnOff();
 
     const bool needTimer = [&]() {
         // Timer is needed if we did not reach 0 AND if value is not 0xFFFF (according to the spec):
@@ -327,10 +356,17 @@ void OnOffLightingCluster::UpdateTimer()
         return (mOffWaitTime != 0) && (mOffWaitTime != 0xFFFF);
     }();
 
-    VerifyOrReturn(needTimer);
+    VerifyOrReturn(needTimer, mCountdownState = CountdownState::kStopped);
 
-    // 100ms = 1/10th second
-    LogErrorOnFailure(mTimerDelegate.StartTimer(this, System::Clock::Milliseconds32(100)));
+    const auto now   = mTimerDelegate.GetCurrentMonotonicTimestamp();
+    const auto state = on ? CountdownState::kOnTime : CountdownState::kOffWaitTime;
+    if (mCountdownState != state)
+    {
+        mCountdownState = state;
+        mNextTick       = now + kCountdownInterval;
+    }
+    const auto delay = mNextTick > now ? mNextTick - now : System::Clock::kZero;
+    LogErrorOnFailure(mTimerDelegate.StartTimer(this, std::chrono::duration_cast<System::Clock::Timeout>(delay)));
 }
 
 DataModel::ActionReturnStatus OnOffLightingCluster::HandleOff()
@@ -485,16 +521,16 @@ DataModel::ActionReturnStatus OnOffLightingCluster::HandleOnWithTimedOff(chip::T
         if (mOnTime > 0)
         {
             // TIMED_ON state, stay here
-            SetOnTime(std::max(mOnTime, static_cast<uint16_t>(commandData.onTime)));
+            SetAttributeValue(mOnTime, std::max(mOnTime, static_cast<uint16_t>(commandData.onTime)), Attributes::OnTime::Id);
         }
         else
         {
             // ON -> TIMED_ON transition
-            SetOnTime(commandData.onTime);
+            SetAttributeValue(mOnTime, commandData.onTime, Attributes::OnTime::Id);
         }
 
         // in both cases, OffWaitTime stays to the user input value
-        SetOffWaitTime(commandData.offWaitTime);
+        SetAttributeValue(mOffWaitTime, commandData.offWaitTime, Attributes::OffWaitTime::Id);
     }
     else
     {
@@ -502,13 +538,13 @@ DataModel::ActionReturnStatus OnOffLightingCluster::HandleOnWithTimedOff(chip::T
         if (mOffWaitTime > 0)
         {
             // TIMED_OFF already, we IGNORE the OnTime (according to spec diagram)
-            SetOffWaitTime(std::min(mOffWaitTime, commandData.offWaitTime));
+            SetAttributeValue(mOffWaitTime, std::min(mOffWaitTime, commandData.offWaitTime), Attributes::OffWaitTime::Id);
         }
         else
         {
             // OFF -> TIMED_ON transition, keep user values
-            SetOnTime(commandData.onTime);
-            SetOffWaitTime(commandData.offWaitTime);
+            SetAttributeValue(mOnTime, commandData.onTime, Attributes::OnTime::Id);
+            SetAttributeValue(mOffWaitTime, commandData.offWaitTime, Attributes::OffWaitTime::Id);
         }
     }
 
@@ -526,12 +562,12 @@ CHIP_ERROR OnOffLightingCluster::SetOnOffFromCommand(bool on)
     if (on)
     {
         // device turned on. we stop waiting for on again
-        SetOffWaitTime(0);
+        SetAttributeValue<uint16_t, uint16_t>(mOffWaitTime, 0, Attributes::OffWaitTime::Id);
     }
     else
     {
         // device turned off. Stop waiting to turn off after a timer
-        SetOnTime(0);
+        SetAttributeValue<uint16_t, uint16_t>(mOnTime, 0, Attributes::OnTime::Id);
     }
 
     return SetOnOff(on);

@@ -80,6 +80,7 @@ public:
 
     // ServerClusterInterface implementation
     CHIP_ERROR Startup(ServerClusterContext & context) override;
+    void Shutdown(ClusterShutdownType shutdownType) override;
     CHIP_ERROR Attributes(const ConcreteClusterPath & path, ReadOnlyBufferBuilder<DataModel::AttributeEntry> & builder) override;
     CHIP_ERROR AcceptedCommands(const ConcreteClusterPath & path,
                                 ReadOnlyBufferBuilder<DataModel::AcceptedCommandEntry> & builder) override;
@@ -110,7 +111,7 @@ private:
     bool mGlobalSceneControl = true;
 
     // On/Off times represent delayed on/off timeouts in 1/10th second resolution.
-    // They are updated by the underlying timer context (see TimerFired) according to the spec.
+    // Complete elapsed 100 ms intervals are applied together; fractional intervals retain their original phase.
     //
     // The cluster may be in the following states:
     //   - ON        - On (no timers)
@@ -125,6 +126,15 @@ private:
     uint16_t mOnTime      = 0;
     uint16_t mOffWaitTime = 0;
 
+    enum class CountdownState : uint8_t
+    {
+        kStopped,
+        kOnTime,
+        kOffWaitTime,
+    };
+    CountdownState mCountdownState     = CountdownState::kStopped;
+    System::Clock::Timestamp mNextTick = System::Clock::kZero;
+
     // controlling cluster startup - these values are only used at startup however
     // user may modify mStartUpOnOff attribute as it is writable.
     DataModel::Nullable<OnOff::StartUpOnOffEnum> mStartUpOnOff;
@@ -133,6 +143,8 @@ private:
     DataModel::ActionReturnStatus WriteImpl(const DataModel::WriteAttributeRequest & request, AttributeValueDecoder & decoder);
 
     // Timer logic
+    // Returns true if the timer was updated.
+    bool AdvanceCountdown();
     void UpdateTimer();
 
     // Command Handlers
