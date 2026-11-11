@@ -38,6 +38,7 @@
 #include <semphr.h>
 #include <sl_token_manager_interface.h>
 
+#if defined(_SILICON_LABS_32B_SERIES_2)
 namespace {
 // Substitute the GSDK weak nvm3_lockBegin and nvm3_lockEnd
 // for an application controlled re-entrance protection
@@ -62,6 +63,7 @@ void nvm3_lockEnd(void)
     VerifyOrDie(nvm3_Sem != NULL);
     xSemaphoreGive(nvm3_Sem);
 }
+#endif // _SILICON_LABS_32B_SERIES_2
 
 namespace chip {
 namespace DeviceLayer {
@@ -135,7 +137,9 @@ CHIP_ERROR SilabsConfig::Init()
 
 void SilabsConfig::DeInit()
 {
+#if defined(_SILICON_LABS_32B_SERIES_2)
     vSemaphoreDelete(nvm3_Sem);
+#endif // _SILICON_LABS_32B_SERIES_2
     // TODO: We do not have an API for deinit with CTM, confirm needed and open ticket.
     nvm3_close(nvm3_defaultHandle);
 }

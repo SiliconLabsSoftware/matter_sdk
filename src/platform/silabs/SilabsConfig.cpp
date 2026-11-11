@@ -37,6 +37,7 @@
 #include <FreeRTOS.h>
 #include <semphr.h>
 
+#if defined(_SILICON_LABS_32B_SERIES_2)
 namespace {
 // Substitute the GSDK weak nvm3_lockBegin and nvm3_lockEnd
 // for an application controlled re-entrance protection
@@ -44,6 +45,8 @@ SemaphoreHandle_t nvm3_Sem;
 StaticSemaphore_t nvm3_SemStruct;
 } // namespace
 
+// For EFR32MG24, use a binary semaphore to protect the nvm3 access
+// For other series, use the default nvm3_lockBegin and nvm3_lockEnd from nvm3_lock.c
 void nvm3_lockBegin(void)
 {
     if (nvm3_Sem == NULL)
@@ -61,6 +64,7 @@ void nvm3_lockEnd(void)
     VerifyOrDie(nvm3_Sem != NULL);
     xSemaphoreGive(nvm3_Sem);
 }
+#endif // _SILICON_LABS_32B_SERIES_2
 
 namespace chip {
 namespace DeviceLayer {
@@ -133,7 +137,9 @@ CHIP_ERROR SilabsConfig::Init()
 
 void SilabsConfig::DeInit()
 {
+#if defined(_SILICON_LABS_32B_SERIES_2)
     vSemaphoreDelete(nvm3_Sem);
+#endif // _SILICON_LABS_32B_SERIES_2
     nvm3_close(nvm3_defaultHandle);
 }
 
