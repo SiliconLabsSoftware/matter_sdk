@@ -1,0 +1,30 @@
+# Patches applied to the silabs_zephyr west workspace for Matter provisioning GFW.
+# Apply once per checkout:
+#   west patch \
+#     -b /path/to/matter_provisioning/firmware/patch/zephyr \
+#     -l /path/to/matter_provisioning/firmware/patch/zephyr/patches.yml \
+#     -w /path/to/silabs_zephyr \
+#     apply
+
+patches:
+    - path: 0001-settings-nvs-runtime-geometry-hook.patch
+      sha256sum: 3c02707abbe8671fa34a0043f2933846c6e3337b68c669dc0f62c31c07c4b071
+      module: zephyr
+      author: Silicon Laboratories Inc.
+      email: matter@silabs.com
+      date: 2026-08-10
+      upstreamable: false
+      apply-command: git apply
+      comments: |
+          Add settings_nvs_set_runtime_geometry() to initialize the NVS offset and
+          geometry at runtime.
+    - path: 0002-defer-secure-storage-settings-init.patch
+      sha256sum: 49ca94520eca58984e7fcb34b674e25a02396e9f739f3772b31f290a2166c79c
+      module: zephyr
+      email: matter@silabs.com
+      author: Silicon Laboratories Inc.
+      date: 2026-08-11
+      upstreamable: false
+      apply-command: git apply
+      comments: |
+          Adds a condition to defer the secure-storage Settings init during the Zephyr startup.

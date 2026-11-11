@@ -25,6 +25,7 @@
 #include <data-model-providers/codedriven/CodeDrivenDataModelProvider.h>
 #include <device/api/Interface.h>
 #include <lib/core/CHIPError.h>
+#include <platform/CHIPDeviceEvent.h>
 #include <platform/DefaultTimerDelegate.h>
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include <platform/OpenThread/GenericNetworkCommissioningThreadDriver.h>
@@ -42,8 +43,7 @@
 #include <app/clusters/ota-requestor/DefaultOTARequestorDriver.h>
 #include <app/clusters/ota-requestor/DefaultOTARequestorStorage.h>
 #include <app/clusters/ota-requestor/OTARequestorAttributes.h>
-#include <app/clusters/ota-requestor/OTARequestorCluster.h>
-#include <app/server-cluster/ServerClusterInterfaceRegistry.h>
+#include <device/types/root-node/features/OtaFeature.h>
 #endif // CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
 
 #include <memory>
@@ -100,9 +100,6 @@ public:
     /// Substitutes board-specific implementations
     CHIP_ERROR RegisterDeviceCreators();
 
-    /// OTA Requestor cluster on the root endpoint, if enabled.
-    CHIP_ERROR RegisterOTACluster();
-
     /// Instantiates every type in DeviceFactory::SupportedDeviceTypes().
     CHIP_ERROR RegisterAppDevices();
 
@@ -113,6 +110,7 @@ public:
 
     CHIP_ERROR PostServerInit();
 
+    /// Called inside OnPlatformEvent when server is ready.
     CHIP_ERROR InitOTARequestor();
 
 protected:
@@ -120,6 +118,8 @@ protected:
     static constexpr EndpointId kFirstDeviceEndpointId = 1;
 
     Derived & Self() { return static_cast<Derived &>(*this); }
+
+    static void OnPlatformEvent(const DeviceLayer::ChipDeviceEvent * event, intptr_t context);
 
     chip::CommonCaseDeviceServerInitParams mInitParams;
     Credentials::GroupDataProviderImpl mGroupDataProvider;

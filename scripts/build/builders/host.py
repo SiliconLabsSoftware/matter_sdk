@@ -636,7 +636,7 @@ class HostBuilder(GnBuilder):
                 # case for pre-installed images), use it directly.
                 sdk_path = shlex.quote(os.environ['GSDK_ROOT'])
                 self.extra_gn_options.append(f"efr32_sdk_root=\"{sdk_path}\"")
-                self.extra_gn_options.append(f"openthread_root=\"{sdk_path}/openthread_stack/util/third_party/openthread\"")
+                self.extra_gn_options.append(f"openthread_root=\"{sdk_path}/openthread_forks/util/third_party/openthread\"")
 
         # Crypto library has per-platform defaults (like openssl for linux/mac
         # and mbedtls for android/freertos/zephyr/mbed/...)

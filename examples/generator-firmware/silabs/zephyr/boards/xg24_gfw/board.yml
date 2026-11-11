@@ -1,0 +1,6 @@
+board:
+    name: xg24_gfw
+    full_name: Matter xG24/MGM24 Provisioning GFW
+    vendor: silabs
+    socs:
+        - name: efr32mg24b010f1024im48

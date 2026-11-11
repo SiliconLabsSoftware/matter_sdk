@@ -1,0 +1,20 @@
+{
+    "standard": {
+        "default": [
+            {
+                "boards": ["BRD4338A", "BRD2605A", "BRD4343A", "BRD4342A"],
+                "arguments": ["--docker", "use_rps_extension=false"]
+            }
+        ],
+        "base-platform-app": [
+            {
+                "boards": ["BRD4338A"],
+                "arguments": [
+                    "--docker",
+                    "--lit-icd-internal-use-only", 
+                    "use_rps_extension=false"
+                ]
+            }
+        ]
+    }
+}

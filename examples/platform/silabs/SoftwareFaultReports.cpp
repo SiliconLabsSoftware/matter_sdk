@@ -29,6 +29,10 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/DiagnosticDataProvider.h>
 
+// Needed for vApplicationStackOverflowHook
+#include <FreeRTOS.h>
+#include <task.h>
+
 // Macro to flush UART TX queue if enabled
 #if SILABS_LOG_OUT_UART
 #include <uart.h>
@@ -196,8 +200,7 @@ alignas(4) static const uint32_t kFaultMagicUsage __attribute__((used)) = 0x5553
 #if (__CORTEX_M >= 23U)
 alignas(4) static const uint32_t kFaultMagicSecure __attribute__((used)) = 0x53434654; // 'SCFT'
 #endif
-alignas(4) static const uint32_t kFaultMagicDbg __attribute__((used))  = 0x44424D4E; // 'DBMN'
-alignas(4) static const uint32_t kFaultMagicWdog __attribute__((used)) = 0x57444F47; // 'WDOG'
+alignas(4) static const uint32_t kFaultMagicDbg __attribute__((used)) = 0x44424D4E; // 'DBMN'
 
 #ifndef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 extern "C" __attribute__((used, naked)) void HardFault_Handler(void)
@@ -227,11 +230,6 @@ extern "C" __attribute__((used, naked)) void DebugMon_Handler(void)
     SILABS_ASM_STORE_FAULT_ID_AND_BRANCH(kFaultMagicDbg);
 }
 #endif // !SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
-
-extern "C" __attribute__((used, naked)) void WDOG0_IRQHandler(void)
-{
-    SILABS_ASM_STORE_FAULT_ID_AND_BRANCH(kFaultMagicWdog);
-}
 
 extern "C" void vApplicationMallocFailedHook(void)
 {
@@ -327,6 +325,7 @@ extern "C" void vApplicationGetTimerTaskMemory(StaticTask_t ** ppxTimerTaskTCBBu
 }
 
 #if !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
+#ifndef SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 extern "C" void RAILCb_AssertFailed(RAIL_Handle_t railHandle, uint32_t errorCode)
 {
     char faultMessage[kMaxFaultStringLen] = { 0 };
@@ -351,5 +350,6 @@ extern "C" void RAILCb_AssertFailed(RAIL_Handle_t railHandle, uint32_t errorCode
 
     chipAbort();
 }
+#endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
 #endif // !defined(SLI_SI91X_MCU_INTERFACE) || !defined(SLI_SI91X_ENABLE_BLE)
 #endif // HARD_FAULT_LOG_ENABLE
