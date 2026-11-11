@@ -138,9 +138,9 @@ using MqttOperationCallback = void (*)(CHIP_ERROR result, void * context);
  * @brief Incoming publish handler.
  *
  * Invoked on the MqttClient service thread from Yield / Subscribe delivery.
- * @p topic and @p payload are valid only for the duration of the call.
+ * @p topic and @p payload are views into the RX buffer and valid only for the duration of the call.
  */
-using MqttSubscriptionCallback = void (*)(const char * topic, ByteSpan payload, void * context);
+using MqttSubscriptionCallback = void (*)(CharSpan topic, ByteSpan payload, void * context);
 
 /**
  * @brief Host LwIP Paho MQTT client usable from Matter C++ code.
