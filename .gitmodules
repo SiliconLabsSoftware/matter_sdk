@@ -182,7 +182,7 @@
 [submodule "third_party/silabs/matter_support"]
 	path = third_party/silabs/matter_support
 	url = https://github.com/SiliconLabsSoftware/matter_support.git
-	branch = main
+	branch = release_2.9-1.6
 	platforms = silabs,silabs_docker,unit_tests
 [submodule "editline"]
 	path = third_party/editline/repo

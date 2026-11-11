@@ -19,13 +19,15 @@
 #pragma once
 
 #include "sl_status.h"
+#include <lib/core/CHIPError.h>
+#include <lib/support/Span.h>
 
-#ifndef HTTP_SERVER_IP // IP address of the HTTP server
-#error "HTTP_SERVER_IP is not defined"
+#ifndef HTTP_SERVER_ENDPOINT // DNS name or IPv4 of the HTTP server
+#error "HTTP_SERVER_ENDPOINT is not defined"
 #endif
 
-#ifndef HTTP_HOSTNAME // used for SNI validation
-#error "HTTP_HOSTNAME is not defined"
+#ifndef HTTP_TLS_HOSTNAME // used for SNI / Host header
+#error "HTTP_TLS_HOSTNAME is not defined"
 #endif
 
 #ifndef HTTP_PORT // port of the HTTP server
@@ -63,3 +65,8 @@ struct AppEvent;
 
 /** AppTask-queue handler that runs https_client_demo_run(). */
 void HttpsRunAppEvent(AppEvent * aEvent);
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+/** RAM-only periodic check URL store used by shell `https-ota default`. */
+CHIP_ERROR HttpsOtaAppSetPeriodicUrl(chip::CharSpan url);
+#endif // SL_MATTER_ENABLE_HTTPS_OTA

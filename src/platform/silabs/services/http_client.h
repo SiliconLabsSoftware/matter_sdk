@@ -60,14 +60,15 @@ struct HttpClientConfig
 /**
  * @brief Per-request destination for Get / Post / Put.
  *
- * The SiWx917 NWP HTTP client needs a connect address (@p serverIp) and a Host / SNI
- * name (@p hostName) separately; they may be the same string.
+ * @p serverEndpoint is a DNS name or IPv4 string. Requests parse IPv4 via sl_net_inet_addr,
+ * otherwise resolve via DNS into an ASCII IP for the NWP. @p tlsHostname is Host / SNI;
+ * when unset, it defaults to @p serverEndpoint.
  */
 struct HttpHost
 {
-    const char * hostName = nullptr; ///< Host header / SNI name. Must not be nullptr for requests.
-    const char * serverIp = nullptr; ///< IP (or resolvable address) used to connect. Must not be nullptr.
-    uint16_t port         = 0;       ///< Destination port (e.g. 443 or 8443).
+    const char * serverEndpoint = nullptr; ///< Required DNS name or IPv4 string used to connect.
+    const char * tlsHostname    = nullptr; ///< Host header / SNI name; defaults to serverEndpoint.
+    uint16_t port               = 0;       ///< Destination port (e.g. 443 or 8443).
 };
 
 /**
@@ -79,6 +80,18 @@ struct HttpHost
  * @param[in] context User pointer passed to the operation that started this work.
  */
 using HttpOperationCallback = void (*)(CHIP_ERROR result, void * context);
+
+/**
+ * @brief One HTTP request header.
+ *
+ * Both strings must be non-null and NUL-terminated. The caller owns the array
+ * and both strings; they must remain valid until the verb callback runs.
+ */
+struct HttpHeader
+{
+    const char * key;
+    const char * value;
+};
 
 /**
  * @brief SiWx917 NWP offload HTTPS client usable from Matter C++ code.
@@ -166,6 +179,21 @@ public:
                    void * context = nullptr);
 
     /**
+     * @brief Start an HTTPS GET with caller-owned request headers.
+     *
+     * @p headers may be nullptr when @p headerCount is 0. The array and its strings must remain
+     * valid until @p callback is invoked.
+     *
+     * @param[in] headers      Request headers, or nullptr when @p headerCount is 0.
+     * @param[in] headerCount  Number of entries in @p headers.
+     *
+     * @retval CHIP_ERROR_INVALID_ARGUMENT Null host, resource, header key, or header value, or a
+     *                                     null @p headers with a non-zero @p headerCount.
+     */
+    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer, const HttpHeader * headers,
+                   size_t headerCount, HttpOperationCallback callback, void * context = nullptr);
+
+    /**
      * @brief Start an HTTPS POST.
      *
      * @p body must remain valid until @p callback is invoked. Bodies larger than
@@ -186,6 +214,21 @@ public:
                     void * context = nullptr);
 
     /**
+     * @brief Start an HTTPS POST with caller-owned request headers.
+     *
+     * @p headers may be nullptr when @p headerCount is 0. The array and its strings must remain
+     * valid until @p callback is invoked.
+     *
+     * @param[in] headers      Request headers, or nullptr when @p headerCount is 0.
+     * @param[in] headerCount  Number of entries in @p headers.
+     *
+     * @retval CHIP_ERROR_INVALID_ARGUMENT Null host, resource, header key, or header value, or a
+     *                                     null @p headers with a non-zero @p headerCount.
+     */
+    CHIP_ERROR Post(const HttpHost & host, const char * resource, ByteSpan body, const HttpHeader * headers, size_t headerCount,
+                    HttpOperationCallback callback, void * context = nullptr);
+
+    /**
      * @brief Start an HTTPS PUT with chunked body upload handled on the service thread.
      *
      * @p body must remain valid until @p callback is invoked.
@@ -203,6 +246,24 @@ public:
      */
     CHIP_ERROR Put(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
                    void * context = nullptr);
+
+    /**
+     * @brief Start an HTTPS PUT with caller-owned request headers.
+     *
+     * @p headers may be nullptr when @p headerCount is 0. The array and its strings must remain
+     * valid until @p callback is invoked.
+     *
+     * @param[in] headers      Request headers, or nullptr when @p headerCount is 0.
+     * @param[in] headerCount  Number of entries in @p headers.
+     *
+     * @retval CHIP_ERROR_INVALID_ARGUMENT Null host, resource, header key, or header value, or a
+     *                                     null @p headers with a non-zero @p headerCount.
+     */
+    CHIP_ERROR Put(const HttpHost & host, const char * resource, ByteSpan body, const HttpHeader * headers, size_t headerCount,
+                   HttpOperationCallback callback, void * context = nullptr);
+
+    /** HTTP response code from the last completed Get (0 if none). */
+    uint16_t GetLastHttpResponseCode() const { return mLastHttpResponseCode; }
 
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
@@ -294,7 +355,11 @@ private:
     CHIP_ERROR ProcessPost();
     CHIP_ERROR ProcessPut();
     CHIP_ERROR ProcessContinueChunkedBody();
+    CHIP_ERROR ResolveServerEndpoint();
     bool NeedsChunkedBody() const;
+    static CHIP_ERROR CheckHeaders(const HttpHeader * headers, size_t headerCount);
+    CHIP_ERROR ApplyHeaders(sl_http_client_request_t & request);
+    void ReleaseRequestHeaders(sl_http_client_request_t & request);
 
     /**
      * @brief Complete an operation.
@@ -334,8 +399,14 @@ private:
 
     MutableByteSpan * mActiveResponseBuffer = nullptr;
     HttpHost mPendingHost{};
+    char mResolvedServerIp[16]    = {}; ///< ASCII IPv4 ("a.b.c.d") after ResolveServerEndpoint.
     const char * mPendingResource = nullptr;
     ByteSpan mPendingBody;
+
+    const HttpHeader * mPendingHeaders = nullptr;
+    size_t mPendingHeaderCount         = 0;
+
+    uint16_t mLastHttpResponseCode = 0;
 
     volatile bool mBusy         = false;
     bool mChunkedActive         = false;

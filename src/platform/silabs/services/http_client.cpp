@@ -23,7 +23,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "sl_additional_status.h"
 #include "sl_net.h"
+#include "sl_net_dns.h"
 #ifdef __cplusplus
 }
 #endif
@@ -31,6 +33,8 @@ extern "C" {
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+#include <cinttypes>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -56,6 +60,9 @@ CHIP_ERROR HttpClient::MapStatus(sl_status_t status)
     {
         return CHIP_ERROR_NO_MEMORY;
     }
+    // MQTT holding SNI: same retry path as CHIP_ERROR_BUSY.
+    VerifyOrReturnError(status != SL_STATUS_SI91X_FEATURE_NOT_AVAILABLE, CHIP_ERROR_BUSY);
+
     return CHIP_ERROR_INTERNAL;
 }
 
@@ -114,9 +121,10 @@ CHIP_ERROR HttpClient::Start()
     VerifyOrReturnError(mEventFlags != nullptr, CHIP_ERROR_INTERNAL);
 
     osThreadAttr_t attrs = {};
-    attrs.name           = "http_client";
-    attrs.stack_size     = kDefaultThreadStackSize;
-    attrs.priority       = osPriorityBelowNormal;
+
+    attrs.name       = "http_client";
+    attrs.stack_size = kDefaultThreadStackSize;
+    attrs.priority   = osPriorityBelowNormal;
 
     mThreadId = osThreadNew(ServiceThread, this, &attrs);
     if (mThreadId == nullptr)
@@ -153,6 +161,10 @@ void HttpClient::ResetRequestState()
     mPendingResource      = nullptr;
     mBusy                 = false;
     mChunkedActive        = false;
+
+    mPendingHeaders        = nullptr;
+    mPendingHeaderCount    = 0;
+    mLastHttpResponseCode  = 0;
 }
 
 CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback callback, void * context)
@@ -343,6 +355,45 @@ CHIP_ERROR HttpClient::Deinit(HttpOperationCallback callback, void * context)
     return QueueOperation(Operation::Deinit, callback, context);
 }
 
+CHIP_ERROR HttpClient::CheckHeaders(const HttpHeader * headers, size_t headerCount)
+{
+    if (headerCount == 0)
+    {
+        return CHIP_NO_ERROR;
+    }
+
+    VerifyOrReturnError(headers != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    for (size_t index = 0; index < headerCount; ++index)
+    {
+        VerifyOrReturnError((headers[index].key != nullptr) && (headers[index].value != nullptr), CHIP_ERROR_INVALID_ARGUMENT);
+    }
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR HttpClient::ApplyHeaders(sl_http_client_request_t & request)
+{
+    for (size_t index = 0; index < mPendingHeaderCount; ++index)
+    {
+        const HttpHeader & header = mPendingHeaders[index];
+        const sl_status_t status  = sl_http_client_add_header(&request, header.key, header.value);
+        if (status != SL_STATUS_OK)
+        {
+            ReleaseRequestHeaders(request);
+            return MapStatus(status);
+        }
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+void HttpClient::ReleaseRequestHeaders(sl_http_client_request_t & request)
+{
+    if (request.extended_header != nullptr)
+    {
+        (void) sl_http_client_delete_all_headers(&request);
+    }
+}
+
 CHIP_ERROR HttpClient::ProcessDeinit()
 {
     if (mClientHandle != 0)
@@ -389,6 +440,8 @@ void HttpClient::CompleteOperation(CHIP_ERROR error)
     mUserCallback        = nullptr;
     mUserCallbackContext = nullptr;
     mPendingOperation    = Operation::None;
+    mPendingHeaders      = nullptr;
+    mPendingHeaderCount  = 0;
     mBusy                = false;
     // call the callback function if it is not nullptr
     if (callback != nullptr)
@@ -448,6 +501,7 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
 
     sl_http_client_response_t * getResponse = static_cast<sl_http_client_response_t *>(data);
     self->mCallbackStatus                   = getResponse->status;
+    self->mLastHttpResponseCode             = static_cast<uint16_t>(getResponse->http_response_code);
 
     ChipLogProgress(DeviceLayer, "HTTPS GET response: status=0x%lX http_code=%u data_len=%u end_of_data=%lu",
                     static_cast<unsigned long>(getResponse->status), getResponse->http_response_code, getResponse->data_length,
@@ -579,38 +633,100 @@ sl_status_t HttpClient::PutResponseCallback(const sl_http_client_t * client, sl_
     return SL_STATUS_OK;
 }
 
+CHIP_ERROR HttpClient::ResolveServerEndpoint()
+{
+    VerifyOrReturnError(mPendingHost.serverEndpoint != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    memset(mResolvedServerIp, 0, sizeof(mResolvedServerIp));
+
+    sl_ip_address_t serverIp = { 0 };
+    serverIp.type            = SL_IPV4;
+
+    // serverEndpoint may be an IPv4 literal or a hostname.
+    if (sl_net_inet_addr(mPendingHost.serverEndpoint, reinterpret_cast<uint32_t *>(&serverIp.ip.v4.value)) == SL_STATUS_OK)
+    {
+        strncpy(mResolvedServerIp, mPendingHost.serverEndpoint, sizeof(mResolvedServerIp) - 1);
+        ChipLogDetail(DeviceLayer, "[HTTP] using server IP %s", mResolvedServerIp);
+    }
+    else
+    {
+        // Blocking DNS: initial_timeout_sec in [5, 10], retry_count additional attempts.
+        constexpr uint8_t kDnsInitialTimeoutSec = 5;
+        constexpr uint8_t kDnsRetryCount        = 1;
+
+        const sl_status_t status = sl_net_dns_resolve_hostname_v2(mPendingHost.serverEndpoint, kDnsInitialTimeoutSec,
+                                                                  kDnsRetryCount, SL_NET_DNS_TYPE_IPV4, &serverIp);
+        if (status != SL_STATUS_OK)
+        {
+            ChipLogError(DeviceLayer, "[HTTP] DNS resolve failed for %s: 0x%" PRIx32, mPendingHost.serverEndpoint,
+                         static_cast<uint32_t>(status));
+            return MapStatus(status);
+        }
+
+        snprintf(mResolvedServerIp, sizeof(mResolvedServerIp), "%u.%u.%u.%u", serverIp.ip.v4.bytes[0], serverIp.ip.v4.bytes[1],
+                 serverIp.ip.v4.bytes[2], serverIp.ip.v4.bytes[3]);
+        ChipLogDetail(DeviceLayer, "[HTTP] resolved %s -> %s", mPendingHost.serverEndpoint, mResolvedServerIp);
+    }
+
+    if (mPendingHost.tlsHostname == nullptr)
+    {
+        mPendingHost.tlsHostname = mPendingHost.serverEndpoint;
+    }
+
+    return CHIP_NO_ERROR;
+}
+
 CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
                            HttpOperationCallback callback, void * context)
 {
+    return Get(host, resource, responseBuffer, nullptr, 0, callback, context);
+}
+
+CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
+                           const HttpHeader * headers, size_t headerCount, HttpOperationCallback callback, void * context)
+{
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
-    VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
-                        CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError((host.serverEndpoint != nullptr) && (resource != nullptr), CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorOnFailure(CheckHeaders(headers, headerCount));
 
     ResetRequestState();
     mActiveResponseBuffer = &responseBuffer;
     mPendingHost          = host;
     mPendingResource      = resource;
+    mPendingHeaders       = headers;
+    mPendingHeaderCount   = headerCount;
     return QueueOperation(Operation::Get, callback, context);
 }
 
 CHIP_ERROR HttpClient::ProcessGet()
 {
+    ReturnErrorOnFailure(ResolveServerEndpoint());
+
     sl_http_client_request_t request = {};
-    request.ip_address               = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.serverIp));
-    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.hostName));
-    request.port                     = mPendingHost.port;
-    request.resource                 = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
-    request.extended_header          = nullptr;
-    request.http_method_type         = SL_HTTP_GET;
-    request.body                     = nullptr;
-    request.body_length              = 0;
+
+    request.ip_address       = reinterpret_cast<uint8_t *>(mResolvedServerIp);
+    request.host_name        = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.tlsHostname));
+    request.port             = mPendingHost.port;
+    request.resource         = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
+    request.extended_header  = nullptr;
+    request.http_method_type = SL_HTTP_GET;
+    request.body             = nullptr;
+    request.body_length      = 0;
+
+    ReturnErrorOnFailure(ApplyHeaders(request));
 
     sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, GetResponseCallback, this);
-    VerifyOrReturnError(status == SL_STATUS_OK, MapStatus(status));
+    if (status != SL_STATUS_OK)
+    {
+        ReleaseRequestHeaders(request);
+        return MapStatus(status);
+    }
 
     status = sl_http_client_send_request(&mClientHandle, &request);
+    // Headers are copied into the NWP command buffer during send; free SDK nodes now.
+    ReleaseRequestHeaders(request);
     VerifyOrReturnError((status == SL_STATUS_OK) || (status == SL_STATUS_IN_PROGRESS), MapStatus(status));
 
     return CHIP_ERROR_IN_PROGRESS;
@@ -619,28 +735,41 @@ CHIP_ERROR HttpClient::ProcessGet()
 CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
                             void * context)
 {
+    return Post(host, resource, body, nullptr, 0, callback, context);
+}
+
+CHIP_ERROR HttpClient::Post(const HttpHost & host, const char * resource, ByteSpan body, const HttpHeader * headers,
+                            size_t headerCount, HttpOperationCallback callback, void * context)
+{
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
-    VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
-                        CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError((host.serverEndpoint != nullptr) && (resource != nullptr), CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorOnFailure(CheckHeaders(headers, headerCount));
 
     ResetRequestState();
-    mPendingHost     = host;
-    mPendingResource = resource;
-    mPendingBody     = body;
+
+    mPendingHost        = host;
+    mPendingResource    = resource;
+    mPendingBody        = body;
+    mPendingHeaders     = headers;
+    mPendingHeaderCount = headerCount;
+
     return QueueOperation(Operation::Post, callback, context);
 }
 
 CHIP_ERROR HttpClient::ProcessPost()
 {
+    ReturnErrorOnFailure(ResolveServerEndpoint());
+
     sl_http_client_request_t request = {};
-    request.ip_address               = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.serverIp));
-    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.hostName));
-    request.port                     = mPendingHost.port;
-    request.resource                 = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
-    request.extended_header          = nullptr;
-    request.http_method_type         = SL_HTTP_POST;
-    request.body_length              = static_cast<uint32_t>(mPendingBody.size());
+
+    request.ip_address       = reinterpret_cast<uint8_t *>(mResolvedServerIp);
+    request.host_name        = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.tlsHostname));
+    request.port             = mPendingHost.port;
+    request.resource         = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
+    request.extended_header  = nullptr;
+    request.http_method_type = SL_HTTP_POST;
+    request.body_length      = static_cast<uint32_t>(mPendingBody.size());
 
     if (NeedsChunkedBody())
     {
@@ -652,16 +781,27 @@ CHIP_ERROR HttpClient::ProcessPost()
         request.body = const_cast<uint8_t *>(mPendingBody.data());
     }
 
+    CHIP_ERROR err = ApplyHeaders(request);
+    if (err != CHIP_NO_ERROR)
+    {
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
+        return err;
+    }
+
     sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, PostResponseCallback, this);
     if (status != SL_STATUS_OK)
     {
+        ReleaseRequestHeaders(request);
         mChunkedActive = false;
         mPendingBody   = ByteSpan();
         return MapStatus(status);
     }
 
     status = sl_http_client_send_request(&mClientHandle, &request);
+    // Headers are copied into the NWP command buffer during send; free SDK nodes now.
+    ReleaseRequestHeaders(request);
     if ((status != SL_STATUS_OK) && (status != SL_STATUS_IN_PROGRESS))
     {
         mChunkedActive = false;
@@ -675,41 +815,65 @@ CHIP_ERROR HttpClient::ProcessPost()
 CHIP_ERROR HttpClient::Put(const HttpHost & host, const char * resource, ByteSpan body, HttpOperationCallback callback,
                            void * context)
 {
+    return Put(host, resource, body, nullptr, 0, callback, context);
+}
+
+CHIP_ERROR HttpClient::Put(const HttpHost & host, const char * resource, ByteSpan body, const HttpHeader * headers,
+                           size_t headerCount, HttpOperationCallback callback, void * context)
+{
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
-    VerifyOrReturnError((host.hostName != nullptr) && (host.serverIp != nullptr) && (resource != nullptr),
-                        CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError((host.serverEndpoint != nullptr) && (resource != nullptr), CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorOnFailure(CheckHeaders(headers, headerCount));
 
     ResetRequestState();
-    mPendingBody     = body;
-    mChunkedActive   = true;
-    mPendingHost     = host;
-    mPendingResource = resource;
+
+    mPendingBody        = body;
+    mChunkedActive      = true;
+    mPendingHost        = host;
+    mPendingResource    = resource;
+    mPendingHeaders     = headers;
+    mPendingHeaderCount = headerCount;
+
     return QueueOperation(Operation::Put, callback, context);
 }
 
 CHIP_ERROR HttpClient::ProcessPut()
 {
+    ReturnErrorOnFailure(ResolveServerEndpoint());
+
     sl_http_client_request_t request = {};
-    request.ip_address               = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.serverIp));
-    request.host_name                = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.hostName));
-    request.port                     = mPendingHost.port;
-    request.resource                 = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
-    request.extended_header          = nullptr;
-    request.http_method_type         = SL_HTTP_PUT;
-    request.body                     = nullptr;
-    request.body_length              = static_cast<uint32_t>(mPendingBody.size());
+
+    request.ip_address       = reinterpret_cast<uint8_t *>(mResolvedServerIp);
+    request.host_name        = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingHost.tlsHostname));
+    request.port             = mPendingHost.port;
+    request.resource         = reinterpret_cast<uint8_t *>(const_cast<char *>(mPendingResource));
+    request.extended_header  = nullptr;
+    request.http_method_type = SL_HTTP_PUT;
+    request.body             = nullptr;
+    request.body_length      = static_cast<uint32_t>(mPendingBody.size());
+
+    CHIP_ERROR err = ApplyHeaders(request);
+    if (err != CHIP_NO_ERROR)
+    {
+        mChunkedActive = false;
+        mPendingBody   = ByteSpan();
+        return err;
+    }
 
     sActiveClient      = this;
     sl_status_t status = sl_http_client_request_init(&request, PutResponseCallback, this);
     if (status != SL_STATUS_OK)
     {
+        ReleaseRequestHeaders(request);
         mChunkedActive = false;
         mPendingBody   = ByteSpan();
         return MapStatus(status);
     }
 
     status = sl_http_client_send_request(&mClientHandle, &request);
+    // Headers are copied into the NWP command buffer during send; free SDK nodes now.
+    ReleaseRequestHeaders(request);
     if ((status != SL_STATUS_OK) && (status != SL_STATUS_IN_PROGRESS))
     {
         mChunkedActive = false;

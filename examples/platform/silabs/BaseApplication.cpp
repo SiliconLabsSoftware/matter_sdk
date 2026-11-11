@@ -54,6 +54,9 @@
 
 #ifdef ENABLE_CHIP_SHELL
 #include <BLEShellCommands.h>
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+#include <HTTPSShellCommands.h>
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 #endif // ENABLE_CHIP_SHELL
 
 #include <assert.h>
@@ -449,6 +452,9 @@ CHIP_ERROR BaseApplication::BaseInit()
     TracingCommands::RegisterCommands();
 #endif // MATTER_TRACING_ENABLED
     BLEShellCommands::RegisterCommands();
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    HTTPSShellCommands::RegisterCommands();
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 #endif // ENABLE_CHIP_SHELL
 
 #ifdef PERFORMANCE_TEST_ENABLED
