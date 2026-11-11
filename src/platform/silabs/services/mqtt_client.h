@@ -43,6 +43,13 @@ extern "C" {
 #define MQTT_USE_HOST_LWIP_TLS 0
 #endif // MQTT_USE_HOST_LWIP_TLS
 
+// Paho MQTTClient TX/RX scratch buffers for one MQTT packet at a time.
+// These are the practical size limits for publish/subscribe traffic:
+//   topic + payload + PUBLISH framing must fit in the buffer.
+// Framing overhead is roughly: 1 fixed-header byte + 1-4 remaining-length bytes +
+// 2 topic-length bytes (+ 2 packet-id bytes when QoS > 0).
+// MQTT wire topic max is 65535 bytes; payload has no separate library cap beyond
+// remaining length. Increase these if larger topics or payloads are required.
 #ifndef MQTT_CLIENT_TX_BUFFER_SIZE
 #define MQTT_CLIENT_TX_BUFFER_SIZE 1024
 #endif // MQTT_CLIENT_TX_BUFFER_SIZE
