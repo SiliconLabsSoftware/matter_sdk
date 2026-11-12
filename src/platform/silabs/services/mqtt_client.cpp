@@ -178,35 +178,19 @@ void MqttClient::PahoMessageHandler(MessageData * md)
 {
     MqttClient * self = sActiveClient;
     VerifyOrReturn(self != nullptr);
-    VerifyOrReturn(md != nullptr && md->message != nullptr);
+    VerifyOrReturn(md != nullptr && md->message != nullptr && md->topicName != nullptr);
+    VerifyOrReturn(md->topicName->lenstring.data != nullptr);
+    VerifyOrReturn(md->topicName->lenstring.len >= 0);
+    VerifyOrReturn(static_cast<size_t>(md->topicName->lenstring.len) <= MQTT_CLIENT_RX_BUFFER_SIZE);
 
-    char * topic = nullptr;
-    if (md->topicName != nullptr)
-    {
-        if (md->topicName->cstring != nullptr)
-        {
-            topic = md->topicName->cstring;
-        }
-        else if (md->topicName->lenstring.data != nullptr && md->topicName->lenstring.len > 0)
-        {
-            topic = static_cast<char *>(malloc(md->topicName->lenstring.len + 1));
-            if (topic != nullptr)
-            {
-                memcpy(topic, md->topicName->lenstring.data, md->topicName->lenstring.len);
-                topic[md->topicName->lenstring.len] = '\0';
-            }
-        }
-    }
-    ChipLogDetail(DeviceLayer, "[MQTT] message received on topic: %s", topic != nullptr ? topic : "unknown");
+    // MQTT topic is length-prefixed in the RX buffer (not null-terminated); pass through as CharSpan.
+    const CharSpan topic(md->topicName->lenstring.data, static_cast<size_t>(md->topicName->lenstring.len));
+    ChipLogDetail(DeviceLayer, "[MQTT] message received on topic: %.*s", static_cast<int>(topic.size()), topic.data());
 
     const ByteSpan payload(static_cast<const uint8_t *>(md->message->payload), md->message->payloadlen);
     if (self->mMessageCallback != nullptr)
     {
         self->mMessageCallback(topic, payload, self->mMessageCallbackContext);
-    }
-    if (topic != nullptr && (md->topicName == nullptr || md->topicName->cstring == nullptr))
-    {
-        free(topic);
     }
 }
 

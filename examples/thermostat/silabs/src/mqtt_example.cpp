@@ -33,6 +33,7 @@
 namespace {
 
 using chip::ByteSpan;
+using chip::CharSpan;
 using chip::DeviceLayer::ChipDeviceEvent;
 using chip::DeviceLayer::kConnectivity_Established;
 using chip::DeviceLayer::kConnectivity_Lost;
@@ -125,10 +126,11 @@ void OnPublishDone(CHIP_ERROR result, void * /* context */)
     ChipLogDetail(DeviceLayer, "MQTT demo: OnPublishDone: %" CHIP_ERROR_FORMAT, result.Format());
 }
 
-void OnMqttMessage(const char * topic, ByteSpan payload, void * /* context */)
+void OnMqttMessage(CharSpan topic, ByteSpan payload, void * /* context */)
 {
-    ChipLogProgress(DeviceLayer, "MQTT demo: message on %s: %.*s", topic != nullptr ? topic : "(null)",
-                    static_cast<int>(payload.size()), reinterpret_cast<const char *>(payload.data()));
+    ChipLogProgress(DeviceLayer, "MQTT demo: message on %.*s: %.*s", static_cast<int>(topic.size()),
+                    topic.data() != nullptr ? topic.data() : "(null)", static_cast<int>(payload.size()),
+                    reinterpret_cast<const char *>(payload.data()));
 }
 
 CHIP_ERROR SubscribePublish()
