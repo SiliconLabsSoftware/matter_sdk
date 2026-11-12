@@ -666,6 +666,10 @@ sl_status_t WifiInterfaceImpl::JoinWifiNetwork(void)
     osDelay(kNeutralLessSwitchSettleDelayMs);
 #endif // defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
 
+    // Set the power save configuration to High Performance before calling sl_net_up
+    // this is to ensure the power save configuration is changed after the join is complete
+    mCurrentPowerSaveConfiguration = PowerSaveInterface::PowerSaveConfiguration::kHighPerformance;
+
     status = sl_net_up(SL_NET_WIFI_CLIENT_INTERFACE, SL_NET_DEFAULT_WIFI_CLIENT_PROFILE_ID);
 
     if (!(wfx_rsi.dev_state.Has(WifiInterface::WifiState::kStationConnecting)))
