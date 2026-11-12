@@ -131,9 +131,12 @@ using MqttOperationCallback = void (*)(CHIP_ERROR result, void * context);
  * @brief Incoming publish handler.
  *
  * Invoked on the MqttClient service thread from Yield / Subscribe delivery.
- * @p topic and @p payload are valid only for the duration of the call.
+ * @p topic is a length-delimited view (not null-terminated). @p topic and @p payload are valid only for the call duration.
  */
-using MqttSubscriptionCallback = void (*)(const char * topic, ByteSpan payload, void * context);
+using MqttSubscriptionCallback = void (*)(chip::CharSpan topic, chip::ByteSpan payload, void * context);
+
+/** Work item executed on the MqttClient service thread (@ref MqttClient::ScheduleWork). */
+using MqttWorkFn = void (*)(const uint8_t * data, size_t len);
 
 /**
  * @brief Host LwIP Paho MQTT client usable from Matter C++ code.
@@ -248,6 +251,15 @@ public:
      */
     CHIP_ERROR Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context = nullptr);
 
+    static constexpr size_t kWorkDataSize = 32;
+
+    /**
+     * @brief Queue a one-shot work item for the service thread.
+     *
+     * @p data is copied into the queue entry (at most @ref kWorkDataSize bytes).
+     */
+    CHIP_ERROR ScheduleWork(MqttWorkFn fn, const void * data, size_t len);
+
 private:
     static constexpr size_t kDefaultThreadStackSize = 4 * 1024;
     static constexpr size_t kQueueSize              = 4;
@@ -263,6 +275,7 @@ private:
         Unsubscribe,
         Publish,
         Yield,
+        Work,
     };
 
     struct ServiceMessage
@@ -275,6 +288,9 @@ private:
         MqttQoS qos                    = MqttQoS::QoS0;
         bool retained                  = false;
         uint32_t yieldTimeoutMs        = 0;
+        MqttWorkFn workFn              = nullptr;
+        uint8_t workData[kWorkDataSize];
+        size_t workDataLen             = 0;
     };
 
     static void ServiceThread(void * arg);
@@ -303,6 +319,7 @@ private:
     CHIP_ERROR ProcessUnsubscribe(const ServiceMessage & message);
     CHIP_ERROR ProcessPublish(const ServiceMessage & message);
     CHIP_ERROR ProcessYield(const ServiceMessage & message);
+    void ProcessWork(const ServiceMessage & message);
 
     void FreeTlsContext();
 
