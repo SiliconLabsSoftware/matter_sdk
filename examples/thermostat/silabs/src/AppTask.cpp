@@ -43,6 +43,7 @@
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/PlatformError.h>
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
+#include <sl_cmsis_os2_common.h>
 #include <thermostat-delegate-impl.h>
 
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
@@ -52,6 +53,16 @@
 #ifdef SL_MATTER_ENABLE_AWS
 #include "MatterAwsControl.h"
 #endif // SL_MATTER_ENABLE_AWS
+
+#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
+#include "https_offload_example.h"
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
+
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+#include "mqtt_example.h"
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+#endif // SL_MATTER_ENABLE_SERVICES
 
 #define APP_FUNCTION_BUTTON 0
 
@@ -110,6 +121,15 @@ CHIP_ERROR AppTask::AppInit()
         ChipLogError(AppServer, "InitThermostat() failed: %" CHIP_ERROR_FORMAT, err.Format());
         appError(err);
     }
+
+#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
+    err = PlatformMgr().AddEventHandler(MatterServicesEventHandler, 0);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "MatterServicesEventHandler register failed: %" CHIP_ERROR_FORMAT, err.Format());
+        appError(err);
+    }
+#endif // SL_MATTER_ENABLE_SERVICES
 
     return err;
 }
@@ -359,6 +379,77 @@ void AppTask::DMThermostatClusterInit(chip::EndpointId endpoint)
     auto & delegate = ThermostatDelegate::GetInstance();
     SetDefaultDelegate(endpoint, &delegate);
 }
+
+#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
+namespace {
+
+// Runs on AppTask thread so blocking MQTT connect/wait does not starve the CHIP stack.
+// Start each service independently: a MQTT failure must not skip HTTPS (periodic HTTPS OTA
+// relies on HttpClient already running; it does not call https_client_demo_start itself).
+void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
+{
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+    if (SL_STATUS_OK != mqtt_client_demo_start())
+    {
+        ChipLogError(AppServer, "mqtt_client_demo_start failed");
+    }
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
+    if (SL_STATUS_OK != https_client_demo_start())
+    {
+        ChipLogError(AppServer, "https_client_demo_start failed");
+    }
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
+}
+
+void StopMatterServicesAppEvent(AppEvent * /* aEvent */)
+{
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_stop(), ChipLogError(AppServer, "mqtt_client_demo_stop failed"));
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+}
+
+} // namespace
+
+void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t)
+{
+    VerifyOrReturn(event != nullptr);
+
+    switch (event->Type)
+    {
+    case DeviceEventType::kInternetConnectivityChange:
+        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
+#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
+            || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
+#endif // SL_MATTER_ENABLE_DUAL_STACK
+        )
+        {
+            // Post directly to AppTask; avoid SystemLayer timer re-entering the Matter stack just to PostEvent.
+            ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
+            AppEvent appEvent = {};
+            appEvent.Type     = AppEvent::kEventType_Timer;
+            appEvent.Handler  = StartMatterServicesAppEvent;
+            CustomerAppTask::GetAppTask().PostEvent(&appEvent);
+        }
+        break;
+
+    case DeviceEventType::kWiFiConnectivityChange:
+        if (event->WiFiConnectivityChange.Result == kConnectivity_Lost)
+        {
+            ChipLogProgress(AppServer, "Scheduling Matter Services teardown on Wi-Fi loss");
+            AppEvent appEvent = {};
+            appEvent.Type     = AppEvent::kEventType_Timer;
+            appEvent.Handler  = StopMatterServicesAppEvent;
+            CustomerAppTask::GetAppTask().PostEvent(&appEvent);
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+#endif // SL_MATTER_ENABLE_SERVICES
 
 // emberAfThermostatClusterInitCallback — weak ZAP entry point. CRTP forwarder into AppTask.
 void emberAfThermostatClusterInitCallback(chip::EndpointId endpoint)

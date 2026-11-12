@@ -19,6 +19,20 @@
 #include "OTAConfig.h"
 #include "silabs_utils.h"
 #include <app/server/Server.h>
+#include <platform/CHIPDeviceLayer.h>
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+#if !(defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR)
+#error "SL_MATTER_ENABLE_HTTPS_OTA requires SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR"
+#endif // SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
+#include <platform/silabs/services/https_downloader.h>
+#include <platform/silabs/services/vendor_ota_matter_gate.h>
+#include <platform/silabs/services/vendor_ota_requestor.h>
+#include <platform/silabs/services/vendor_ota_requestor_driver.h>
+#if (SL_MATTER_GN_BUILD == 0)
+#include "sl_matter_https_ota_config.h"
+#endif // SL_MATTER_GN_BUILD
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 
 #if defined(SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR) && SL_MATTER_ENABLE_MULTI_OTA_REQUESTOR
 #include <provision/ProvisionCrypto.h>
@@ -116,15 +130,34 @@ DefaultOTARequestorEventGenerator & GetDefaultOTARequestorEventGenerator()
 // Global OTA objects
 chip::DefaultOTARequestor gRequestorCore;
 chip::DefaultOTARequestorStorage gRequestorStorage;
-chip::DeviceLayer::DefaultOTARequestorDriver gRequestorUser;
 chip::BDXDownloader gDownloader;
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+chip::SilabsOTARequestorDriver gRequestorUser;
+chip::HttpsDownloader gHttpsDownloader;
+chip::VendorOTARequestorDriver gVendorDriver;
+chip::VendorOtaMatterGate gVendorGate;
+#else
+chip::DeviceLayer::DefaultOTARequestorDriver gRequestorUser;
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
 
 void OTAConfig::Init()
 {
+    // BaseApplication schedules this twice at boot (connectivity established and
+    // kDnssdInitialized, each after kInitOTARequestorDelaySec) and again on every
+    // later Wi-Fi/Thread reconnect. DNS-SD itself posts kDnssdInitialized only once
+    // per boot (DiscoveryImplPlatform::InitImpl returns early once initialized).
+    // Re-entry is not safe: SilabsOTARequestorDriver::Init calls Reset() whenever
+    // the requestor is not idle, which would abort an in-progress BDX or HTTPS OTA.
+    // AddEventHandler and StartTimer are idempotent; this guard exists for the Reset.
+    static bool sInitialized = false;
+    VerifyOrReturn(!sInitialized);
+
 #if SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
     VerifyOrReturn(chip::GetOTARequestorCluster().IsConstructed(),
                    ChipLogError(AppServer, "OTA Requestor cluster is not registered"));
 #endif // SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
+
     // Initialize and interconnect the Requestor and Image Processor objects -- START
     SetRequestorInstance(&gRequestorCore);
 
@@ -149,7 +182,7 @@ void OTAConfig::Init()
     CHIP_ERROR err = imageProcessor.Init(&gDownloader, chip::DeviceLayer::Silabs::Provision::ProvisionStorageWriter::GetInstance(),
                                          chip::DeviceLayer::Silabs::Provision::ProvisionCrypto::GetInstance());
 #else
-    CHIP_ERROR err        = imageProcessor.Init(&gDownloader);
+    CHIP_ERROR err = imageProcessor.Init(&gDownloader);
 #endif
     if (err != CHIP_NO_ERROR)
     {
@@ -159,5 +192,17 @@ void OTAConfig::Init()
 
     // Connect the Downloader and Image Processor objects
     gDownloader.SetImageProcessorDelegate(&imageProcessor);
+
+#if defined(SL_MATTER_ENABLE_HTTPS_OTA) && SL_MATTER_ENABLE_HTTPS_OTA
+    gVendorGate.Init(gRequestorUser);
+    gVendorDriver.SetPeriodicCheckTimeout(SL_MATTER_HTTPS_OTA_PERIODIC_TIMEOUT);
+
+    chip::VendorOTARequestor::GetInstance().Init(gHttpsDownloader, imageProcessor, gRequestorCore, gDownloader, gRequestorStorage,
+                                                 gVendorGate, gVendorDriver);
+    // Starts periodic timer + registers connectivity event handler.
+    // App binds HttpClient / UriComposer via VendorOTARequestor::SetHttpClient / SetAppDelegate.
+    gVendorDriver.Init(&chip::VendorOTARequestor::GetInstance());
+#endif // SL_MATTER_ENABLE_HTTPS_OTA
+    sInitialized = true;
     // Initialize and interconnect the Requestor and Image Processor objects -- END
 }
