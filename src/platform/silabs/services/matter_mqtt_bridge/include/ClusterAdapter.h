@@ -109,4 +109,3 @@ public:
 private:
     chip::Span<const ClusterAdapter> mAdapters;
 };
-
