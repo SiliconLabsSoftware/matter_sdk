@@ -16,7 +16,7 @@
  *    limitations under the License.
  */
 
-#if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER) || defined(MATTER_MQTT_BRIDGE_HOST_TEST)
+#if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
 
 #include "ClusterAdapter.h"
 
@@ -25,6 +25,27 @@
 using namespace chip::app::Clusters;
 
 namespace {
+
+const char * DoorLockLockStateName(chip::AttributeId attrId, uint32_t raw)
+{
+    if (attrId != DoorLock::Attributes::LockState::Id)
+    {
+        return nullptr;
+    }
+    switch (static_cast<DoorLock::DlLockState>(raw))
+    {
+    case DoorLock::DlLockState::kNotFullyLocked:
+        return "NotFullyLocked";
+    case DoorLock::DlLockState::kLocked:
+        return "Locked";
+    case DoorLock::DlLockState::kUnlocked:
+        return "Unlocked";
+    case DoorLock::DlLockState::kUnlatched:
+        return "Unlatched";
+    default:
+        return "Unknown";
+    }
+}
 
 constexpr MatterMqttAttributeEntry kDoorLockAttributes[] = {
     { "LockState", DoorLock::Attributes::LockState::Id, MatterMqttAttributeQuantity::kEnum },
@@ -50,7 +71,7 @@ const ClusterAdapter kDoorLockAdapter = {
     sizeof(kDoorLockAttributes) / sizeof(kDoorLockAttributes[0]),
     kDoorLockCommands,
     sizeof(kDoorLockCommands) / sizeof(kDoorLockCommands[0]),
-    nullptr,
+    DoorLockLockStateName,
 };
 
-#endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER || MATTER_MQTT_BRIDGE_HOST_TEST
+#endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER

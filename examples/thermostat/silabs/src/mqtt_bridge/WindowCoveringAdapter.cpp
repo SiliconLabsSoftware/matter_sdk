@@ -16,7 +16,7 @@
  *    limitations under the License.
  */
 
-#if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER) || defined(MATTER_MQTT_BRIDGE_HOST_TEST)
+#if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
 
 #include "ClusterAdapter.h"
 
@@ -56,4 +56,4 @@ const ClusterAdapter kWindowCoveringAdapter = {
     nullptr,
 };
 
-#endif // ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER || MATTER_MQTT_BRIDGE_HOST_TEST
+#endif // ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER

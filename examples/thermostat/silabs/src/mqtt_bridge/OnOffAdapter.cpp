@@ -16,7 +16,7 @@
  *    limitations under the License.
  */
 
-#if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER) || defined(MATTER_MQTT_BRIDGE_HOST_TEST)
+#if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
 
 // TODO(mqtt-bridge): Thermostat app currently omits OnOff from ZAP; enable ZCL_USING_ON_OFF_CLUSTER_SERVER
 // via Ember OnOff in the data model and/or a code-driven OnOff server for MQTT On/Off in and out.
@@ -55,4 +55,4 @@ const ClusterAdapter kOnOffAdapter = {
     nullptr,
 };
 
-#endif // ZCL_USING_ON_OFF_CLUSTER_SERVER || MATTER_MQTT_BRIDGE_HOST_TEST
+#endif // ZCL_USING_ON_OFF_CLUSTER_SERVER
