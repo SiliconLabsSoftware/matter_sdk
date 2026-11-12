@@ -46,17 +46,39 @@ bool ThermostatAllowsPublish(EndpointId ep, ClusterId cluster, AttributeId attr)
         return false;
     }
 
-    if (ep == kThermostatEndpoint && cluster == Thermostat::Id)
+    if (ep != kThermostatEndpoint)
+    {
+        return false;
+    }
+
+#if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
+    if (cluster == Thermostat::Id)
     {
         return attr == Thermostat::Attributes::LocalTemperature::Id ||
             attr == Thermostat::Attributes::OccupiedHeatingSetpoint::Id ||
             attr == Thermostat::Attributes::OccupiedCoolingSetpoint::Id || attr == Thermostat::Attributes::SystemMode::Id;
     }
+#endif
 
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
-    if (ep == kThermostatEndpoint && cluster == OnOff::Id && attr == OnOff::Attributes::OnOff::Id)
+    if (cluster == OnOff::Id)
     {
-        return true;
+        return attr == OnOff::Attributes::OnOff::Id;
+    }
+#endif
+
+#if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
+    if (cluster == DoorLock::Id)
+    {
+        return attr == DoorLock::Attributes::LockState::Id;
+    }
+#endif
+
+#if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
+    if (cluster == WindowCovering::Id)
+    {
+        return attr == WindowCovering::Attributes::CurrentPositionLiftPercent100ths::Id ||
+            attr == WindowCovering::Attributes::CurrentPositionTiltPercent100ths::Id;
     }
 #endif
 
@@ -101,6 +123,14 @@ bool ThermostatAllowsCommand(EndpointId ep, ClusterId cluster, CommandId cmd)
     }
 #endif
 
+#if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
+    if (cluster == WindowCovering::Id)
+    {
+        return cmd == WindowCovering::Commands::GoToLiftPercentage::Id ||
+            cmd == WindowCovering::Commands::GoToTiltPercentage::Id;
+    }
+#endif
+
     (void) cmd;
     return false;
 }
@@ -115,6 +145,13 @@ constexpr MatterMqttSnapshotPath kThermostatSnapshotPaths[] = {
 #endif
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
     { kThermostatEndpoint, OnOff::Id, OnOff::Attributes::OnOff::Id },
+#endif
+#if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
+    { kThermostatEndpoint, DoorLock::Id, DoorLock::Attributes::LockState::Id },
+#endif
+#if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
+    { kThermostatEndpoint, WindowCovering::Id, WindowCovering::Attributes::CurrentPositionLiftPercent100ths::Id },
+    { kThermostatEndpoint, WindowCovering::Id, WindowCovering::Attributes::CurrentPositionTiltPercent100ths::Id },
 #endif
 };
 

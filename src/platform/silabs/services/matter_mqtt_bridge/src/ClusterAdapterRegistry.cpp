@@ -207,7 +207,7 @@ CHIP_ERROR StaticClusterAdapterRegistry::PackCommandArgs(const MatterMqttCommand
         }
         case chip::TLV::TLVType::kTLVType_UnsignedInteger: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-            char * end           = nullptr;
+            char * end            = nullptr;
             const unsigned long v = strtoul(text, &end, 10);
             VerifyOrReturnError(end != text && *end == '\0', CHIP_ERROR_INVALID_ARGUMENT);
             VerifyOrReturnError(offset + sizeof(uint8_t) <= MATTER_MQTT_MAX_CMD_ARG_PACK, CHIP_ERROR_BUFFER_TOO_SMALL);

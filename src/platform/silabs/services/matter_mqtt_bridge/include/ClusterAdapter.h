@@ -32,10 +32,10 @@
 
 enum class MatterMqttAttributeQuantity : uint8_t
 {
-    kScalar,
+    kScalar, // Boolean MQTT strings "on"/"off" (e.g. OnOff::OnOff)
     kTemperatureDeciDegrees,
     kPercent100ths,
-    kEnum,
+    kEnum, // Enum name via ClusterAdapter::formatEnum
 };
 
 struct MatterMqttAttributeEntry

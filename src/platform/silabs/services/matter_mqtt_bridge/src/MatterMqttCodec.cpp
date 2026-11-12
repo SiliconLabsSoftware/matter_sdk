@@ -76,38 +76,6 @@ bool ParseQuotedString(const char *& p, const char * end, char * out, size_t out
     return true;
 }
 
-bool FindObjectKeyString(const char * json, size_t len, const char * key, char * out, size_t outLen)
-{
-    VerifyOrReturnError(json != nullptr && key != nullptr, false);
-
-    char pattern[64];
-    const int patternLen = snprintf(pattern, sizeof(pattern), "\"%s\"", key);
-    VerifyOrReturnError(patternLen > 0 && static_cast<size_t>(patternLen) < sizeof(pattern), false);
-
-    const char * end = json + len;
-    const char * pos = json;
-
-    // Find "\"key\"" then read the following quoted string value.
-    while (pos < end)
-    {
-        pos = static_cast<const char *>(memchr(pos, '"', static_cast<size_t>(end - pos)));
-        if (pos == nullptr)
-        {
-            break;
-        }
-        if (static_cast<size_t>(end - pos) >= static_cast<size_t>(patternLen) && memcmp(pos, pattern, patternLen) == 0)
-        {
-            const char * p = pos + patternLen;
-            p              = SkipWhitespace(p, end);
-            VerifyOrReturnError(p < end && *p == ':', false);
-            ++p;
-            return ParseQuotedString(p, end, out, outLen);
-        }
-        ++pos;
-    }
-    return false;
-}
-
 // Extract key/value pairs from top-level {"args":{...}}; missing "args" yields empty ArgsView (valid for no-arg commands).
 bool ParseArgsObject(const char * json, size_t len, MatterMqttCodecTypes::ArgsView & args)
 {

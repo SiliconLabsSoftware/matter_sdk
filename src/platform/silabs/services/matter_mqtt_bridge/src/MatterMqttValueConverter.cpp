@@ -25,22 +25,6 @@
 
 // Maps RawValue + adapter quantity metadata to MQTT report JSON value strings.
 
-namespace {
-
-#if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER) || defined(MATTER_MQTT_BRIDGE_HOST_TEST)
-using namespace chip::app::Clusters;
-
-bool FormatOnOffBool(bool value, char * out, size_t outLen)
-{
-    const char * text = value ? "on" : "off";
-    strncpy(out, text, outLen - 1);
-    out[outLen - 1] = '\0';
-    return true;
-}
-#endif
-
-} // namespace
-
 CHIP_ERROR MatterMqttFormatReportValue(const ClusterAdapter * adapter, const MatterMqttAttributeEntry * attr,
                                        const MatterMqttBridge::RawValue & raw, char * out, size_t outLen, bool & asNumber)
 {
@@ -56,15 +40,14 @@ CHIP_ERROR MatterMqttFormatReportValue(const ClusterAdapter * adapter, const Mat
         return CHIP_NO_ERROR;
     }
 
-#if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER) || defined(MATTER_MQTT_BRIDGE_HOST_TEST)
-    // Contract uses "on"/"off" strings for OnOff (not true/false).
-    if (adapter->clusterId == OnOff::Id && attr->id == OnOff::Attributes::OnOff::Id &&
+    if (attr->quantity == MatterMqttAttributeQuantity::kScalar &&
         raw.type == MatterMqttBridge::RawValueType::kBool)
     {
-        VerifyOrReturnError(FormatOnOffBool(raw.data.boolean, out, outLen), CHIP_ERROR_INTERNAL);
+        const char * text = raw.data.boolean ? "on" : "off";
+        strncpy(out, text, outLen - 1);
+        out[outLen - 1] = '\0';
         return CHIP_NO_ERROR;
     }
-#endif
 
     // e.g. SystemMode enum name instead of raw integer in JSON.
     if (attr->quantity == MatterMqttAttributeQuantity::kEnum && adapter->formatEnum != nullptr &&
