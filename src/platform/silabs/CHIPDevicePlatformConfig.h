@@ -127,8 +127,9 @@
 /**
  * CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL
  *
- * The interval at which the chip platform will attempt to reconnect to the configured WiFi
- * network (in milliseconds).
+ * Base delay, in milliseconds, before the first WiFi station reconnect attempt
+ * after a failed connection. Subsequent attempts use exponential backoff from
+ * this interval (see CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF).
  */
 #ifndef CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL
 #define CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL 1000
@@ -137,8 +138,9 @@
 /**
  * CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF
  *
- * The maximum number of times we back off, by a factor of 2 each time, from our
- * initial reconnect retry interval before we plateau.
+ * Maximum number of times the WiFi station reconnect delay doubles from
+ * CHIP_DEVICE_CONFIG_WIFI_STATION_RECONNECT_INTERVAL before the delay plateaus.
+ * Effective delay is: RECONNECT_INTERVAL * (1 << min(attempt, MAX_BACKOFF)).
  */
 #ifndef CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF
 #define CHIP_DEVICE_CONFIG_WIFI_STATION_AUTOMATIC_RECONNECT_RETRY_MAX_BACKOFF 6
