@@ -21,8 +21,8 @@
 #include "mqtt_client.h"
 
 #if SL_MATTER_ENABLE_MQTT_BRIDGE
-#include <MatterMqttBridge.h>
-#include <ThermostatMqttBridgeConfig.h>
+#include <matter_mqtt_bridge.h>
+#include <MatterMqttBridgeConfig.h>
 #endif
 
 #include "cacert.h"
@@ -47,6 +47,10 @@ using chip::DeviceLayer::Silabs::MqttBroker;
 using chip::DeviceLayer::Silabs::MqttClient;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
 namespace DeviceEventType = chip::DeviceLayer::DeviceEventType;
+
+#if SL_MATTER_ENABLE_MQTT_BRIDGE
+void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context);
+#endif
 
 // Please fill in the details for your own MQTT broker.
 constexpr char kMqttBrokerEndpoint[] = MQTT_BROKER_ENDPOINT; // DNS name or IPv4 of your MQTT broker
@@ -95,10 +99,6 @@ void OnPlatformEvent(const ChipDeviceEvent * event, intptr_t /* arg */)
     }
 }
 
-#if SL_MATTER_ENABLE_MQTT_BRIDGE
-void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context);
-#endif
-
 void OnConnectDone(CHIP_ERROR result, void * /* context */)
 {
     ChipLogDetail(DeviceLayer, "MQTT demo: OnConnectDone: %" CHIP_ERROR_FORMAT, result.Format());
@@ -106,7 +106,7 @@ void OnConnectDone(CHIP_ERROR result, void * /* context */)
     if (result == CHIP_NO_ERROR)
     {
         gMqttsClient.SetSubscriptionCallback(MqttInboundDispatcher, nullptr);
-        CHIP_ERROR err = MatterMqttBridge::Init(gMqttsClient, kThermostatBridgeConfig);
+        CHIP_ERROR err = MatterMqttBridge::Init(gMqttsClient, gPlatformMqttBridgeConfig);
         LogErrorOnFailure(err);
     }
 #endif
