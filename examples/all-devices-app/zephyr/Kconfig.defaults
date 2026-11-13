@@ -40,6 +40,14 @@ config CHIP_ENABLE_GROUPCAST
 config CHIP_PERSISTENT_SUBSCRIPTIONS
 	default y
 
+config NVS_LOOKUP_CACHE
+	default y
+	depends on NVS
+
+config NVS_LOOKUP_CACHE_SIZE
+	default 128
+	depends on NVS_LOOKUP_CACHE
+
 config CHIP_OTA_REQUESTOR
 	default n
 
