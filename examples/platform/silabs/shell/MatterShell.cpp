@@ -31,7 +31,10 @@
 #endif
 
 using namespace ::chip;
-using chip::Shell::Engine;
+using Shell::Engine;
+using Shell::shell_command_t;
+using Shell::streamer_get;
+using Shell::streamer_printf;
 
 namespace {
 
@@ -117,8 +120,8 @@ CHIP_ERROR MemoryCommandHandler(int argc, char ** argv)
 
 CHIP_ERROR DisplayHeapUsage([[maybe_unused]] int argc, [[maybe_unused]] char ** argv)
 {
-    streamer_printf(chip::Shell::streamer_get(), "%lu / %lu\r\n", sl_memory_get_used_heap_size(), sl_memory_get_total_heap_size());
-    streamer_printf(chip::Shell::streamer_get(), "High Watermark: %lu\r\n", sl_memory_get_heap_high_watermark());
+    streamer_printf(streamer_get(), "%lu / %lu\r\n", sl_memory_get_used_heap_size(), sl_memory_get_total_heap_size());
+    streamer_printf(streamer_get(), "High Watermark: %lu\r\n", sl_memory_get_heap_high_watermark());
     return CHIP_NO_ERROR;
 }
 
@@ -136,6 +139,49 @@ void RegisterCommands()
 
 } // namespace MemoryShellCommands
 
+#if defined(SL_CATALOG_WATCHDOG_MANAGER_PRESENT) && defined(SL_MATTER_TEST_WATCHDOG)
+#include "sl_watchdog_manager.h"
+
+namespace WatchdogShellCommands {
+
+Engine sShellWatchdogSubCommands;
+
+CHIP_ERROR WatchdogCommandHandler(int argc, char ** argv)
+{
+    if (argc == 0)
+    {
+        sShellWatchdogSubCommands.ForEachCommand(Shell::PrintCommandHelp, nullptr);
+        return CHIP_NO_ERROR;
+    }
+    return sShellWatchdogSubCommands.ExecCommand(argc, argv);
+}
+
+CHIP_ERROR ForceWatchdogStarvation([[maybe_unused]] int argc, [[maybe_unused]] char ** argv)
+{
+    streamer_printf(streamer_get(), "Watchdog being starved, expect a reboot\r\n");
+    while (1)
+    {
+        __NOP();
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+void RegisterCommands()
+{
+    static const Shell::shell_command_t cmds_watchdog = { &WatchdogCommandHandler, "watchdog",
+                                                          "Dispatch Silabs Watchdog Manager CLI commands" };
+
+    static const Shell::Command sWatchdogSubCommands[] = {
+        { &ForceWatchdogStarvation, "starve", "Force the watchdog to starve" },
+    };
+    sShellWatchdogSubCommands.RegisterCommands(sWatchdogSubCommands, MATTER_ARRAY_SIZE(sWatchdogSubCommands));
+    Engine::Root().RegisterCommands(&cmds_watchdog, 1);
+}
+
+} // namespace WatchdogShellCommands
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT && SL_MATTER_TEST_WATCHDOG
+
 void startShellTask()
 {
     int status = chip::Shell::Engine::Root().Init();
@@ -151,6 +197,10 @@ void startShellTask()
 #ifdef SL_CATALOG_CLI_PRESENT
     cmdSilabsInit();
 #endif
+
+#if defined(SL_CATALOG_WATCHDOG_MANAGER_PRESENT) && defined(SL_MATTER_TEST_WATCHDOG)
+    WatchdogShellCommands::RegisterCommands();
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT && SL_MATTER_TEST_WATCHDOG
 
     MemoryShellCommands::RegisterCommands();
     shellTaskHandle = osThreadNew(MatterShellTask, nullptr, &kShellTaskAttr);
