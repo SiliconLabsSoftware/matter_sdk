@@ -64,8 +64,19 @@ static chip::DeviceLayer::Internal::Efr32PsaOperationalKeystore gOperationalKeys
 
 #include <app/InteractionModelEngine.h>
 #if !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
+#include <app/util/config.h>
 #include <data-model-providers/codegen/Instance.h>
 #endif // !SL_MATTER_USE_CODE_DRIVEN_DATA_MODEL
+
+#if defined(MATTER_DM_PLUGIN_TIME_SYNCHRONIZATION_SERVER)
+#include "SilabsTimeSyncDelegate.h"
+#endif
+
+#if defined(SL_MATTER_ENABLE_CODEGEN_TIME_SYNC)
+#include <app/clusters/time-synchronization-server/CodegenIntegration.h>
+#include <app/static-cluster-config/TimeSynchronization.h>
+#endif
+
 #include "provision/ProvisionStorageReader.h"
 #if SL_MATTER_PROVISION_CHANNEL_ENABLED
 #include "provision/ProvisionChannel.h"
@@ -210,6 +221,17 @@ CHIP_ERROR SilabsMatterConfig::InitOpenThread(void)
 #endif // CHIP_ENABLE_OPENTHREAD
 
 namespace {
+
+#if defined(SL_MATTER_ENABLE_CODEGEN_TIME_SYNC)
+namespace TimeSync = Clusters::TimeSynchronization;
+
+static_assert(TimeSync::StaticApplicationConfig::kFixedClusterConfig.empty() ||
+                  !TimeSync::StaticApplicationConfig::kFixedClusterConfig[0].featureMap.Has(TimeSync::Feature::kTimeSyncClient) ||
+                  TIME_SYNC_ENABLE_TSC_FEATURE,
+              "TimeSyncClient requires time_sync_enable_tsc_feature=true");
+
+SilabsTimeSyncDelegate sTimeSyncDelegate;
+#endif
 
 constexpr uint32_t kMainTaskStackSize = (1024 * 5);
 // Task is dynamically allocated with max priority. This task gets deleted once the inits are completed.
@@ -413,22 +435,10 @@ CHIP_ERROR SilabsMatterConfig::InitMatter(const char * appName)
     gExampleDeviceInfoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
 
-    // [sl-only]: Configure Wi-Fi App Sleep Manager
-#if defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
-    err = app::Silabs::ApplicationSleepManager::GetInstance()
-              .SetFabricTable(&Server::GetInstance().GetFabricTable())
-              .SetSubscriptionInfoProvider(app::InteractionModelEngine::GetInstance())
-              .SetWifiSleepManager(&WifiSleepManager::GetInstance())
-              .Init();
-    VerifyOrReturnError(err == CHIP_NO_ERROR, err, ChipLogError(DeviceLayer, "ApplicationSleepManager init failed"));
-
-    // Register ReadHandler::ApplicationCallback
-    app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(
-        &app::Silabs::ApplicationSleepManager::GetInstance());
-
-    // Register ICDStateObserver
-    chip::Server::GetInstance().GetICDManager().RegisterObserver(&app::Silabs::ApplicationSleepManager::GetInstance());
-#endif // defined(SL_MATTER_ENABLE_APP_SLEEP_MANAGER) && SL_MATTER_ENABLE_APP_SLEEP_MANAGER
+#if defined(SL_MATTER_ENABLE_CODEGEN_TIME_SYNC)
+    // Directly constructed clusters receive this delegate through their startup configuration instead.
+    Clusters::TimeSynchronization::SetDefaultDelegate(&sTimeSyncDelegate);
+#endif
 
     // Init Matter Server and Start Event Loop
     err = chip::Server::GetInstance().Init(initParams);
