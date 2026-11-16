@@ -18,13 +18,9 @@
 
 #include "matter_mqtt_bridge.h"
 
-#include "matter_mqtt_attribute_listener.h"
+#include "matter_mqtt_log.h"
 #include "matter_mqtt_topic.h"
 #include "matter_mqtt_types.h"
-#include "matter_mqtt_value_converter.h"
-
-#include <app/InteractionModelEngine.h>
-#include <app/data-model-provider/Provider.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -32,43 +28,61 @@
 
 #include <lib/support/Span.h>
 
+#include <cinttypes>
+#include <cstdio>
 #include <cstring>
 
 namespace MatterMqttBridge {
 namespace {
 
-// Bridge runtime state; Init/Shutdown run from the app/MQTT callback thread; listener and invoke run on Matter thread.
+// --- File-local types (bridge TU only; not published in headers) ---
+
+/** Stable storage for JSON arg strings between MQTT-thread decode and Matter-thread invoke. */
+struct InboundArgsScratch
+{
+    char names[MATTER_MQTT_MAX_ARGS][MATTER_MQTT_MAX_ARG_NAME_LEN];
+    char values[MATTER_MQTT_MAX_ARGS][MATTER_MQTT_MAX_ARG_VALUE_LEN];
+    MatterMqttCodecTypes::ArgsView view{};
+};
+
+/** Owned MQTT packet buffers for async Publish (pointers valid until publish callback). */
+struct AttributePublishSlot
+{
+    bool inUse        = false;
+    char topic[MATTER_MQTT_MAX_TOPIC_LEN]{};
+    char payload[MATTER_MQTT_MAX_PAYLOAD_LEN]{};
+    size_t payloadLen = 0;
+};
+
+// Bridge runtime state; Init/Shutdown run from the app/MQTT callback thread; invoke runs on Matter thread.
 
 constexpr bool kUseWildcardSubscribe = SL_MATTER_MQTT_BRIDGE_WILDCARD_SUBSCRIBE;
+// Match MqttClient queue depth so burst attribute reports can each hold a stable topic/payload.
+constexpr size_t kAttributePublishSlotCount = 4;
 
 MatterMqttJsonCodec sCodec;
-CodeDrivenAttributeReader sReader;
 MqttCommandInjector sInjector;
 MqttClientTransportPort sTransport;
 
 MatterMqttBridgeConfig sConfig;
-MatterMqttAttributeListener sListener;
-bool sListenerRegistered = false;
 bool sSubscribed         = false;
 bool sSnapshotStarted    = false;
 size_t sSnapshotIndex    = 0;
 bool sSnapshotActive     = false;
 
 char sCommandFilterTopic[MATTER_MQTT_MAX_TOPIC_LEN] = {};
-char sOutboundTopic[MATTER_MQTT_MAX_TOPIC_LEN]      = {};
-char sOutboundPayload[MATTER_MQTT_MAX_PAYLOAD_LEN]  = {};
-
-struct InboundArgsScratch
-{
-    char names[MATTER_MQTT_MAX_ARGS][32];
-    char values[MATTER_MQTT_MAX_ARGS][64];
-    MatterMqttCodecTypes::ArgsView view{};
-};
 
 InboundArgsScratch sInboundArgs;
 InboundCommand sScheduledInbound;
 
+uint32_t sAttributePublishSeq = 0;
+AttributePublishSlot sAttributePublishSlots[kAttributePublishSlotCount];
+
 void Reject(const char * reason, const char * detail);
+
+AttributePublishSlot * AcquireAttributePublishSlot();
+void ReleaseAttributePublishSlot(AttributePublishSlot * slot);
+void OnAttributePublishDone(CHIP_ERROR result, void * context);
 
 CHIP_ERROR EnqueueReport(const MatterMqttBridgeConfig & config, const chip::app::ConcreteAttributePath & path);
 /** Matter thread: attribute read + queue publish work on the MQTT service thread. */
@@ -78,9 +92,94 @@ void ContinueSnapshot(intptr_t arg);
 void StartSnapshot(intptr_t arg);
 void SubscribeCommandsAndStartSnapshot();
 
+/** Maps RawValue + adapter quantity metadata to MQTT report JSON value strings. */
+CHIP_ERROR MatterMqttFormatReportValue(const ClusterAdapter * adapter, const MatterMqttAttributeEntry * attr,
+                                       const RawValue & raw, char * out, size_t outLen, bool & asNumber)
+{
+    VerifyOrReturnError(adapter != nullptr && attr != nullptr && out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    // asNumber true -> EncodeReport emits unquoted JSON number; false -> quoted string or enum name.
+    asNumber = false;
+
+    if (raw.type == RawValueType::kNull)
+    {
+        strncpy(out, "null", outLen - 1);
+        out[outLen - 1] = '\0';
+        return CHIP_NO_ERROR;
+    }
+
+    if (attr->quantity == MatterMqttAttributeQuantity::kScalar && raw.type == RawValueType::kBool)
+    {
+        const char * text = raw.data.boolean ? "on" : "off";
+        strncpy(out, text, outLen - 1);
+        out[outLen - 1] = '\0';
+        return CHIP_NO_ERROR;
+    }
+
+    if (attr->quantity == MatterMqttAttributeQuantity::kEnum && adapter->formatEnum != nullptr &&
+        raw.type == RawValueType::kUnsigned)
+    {
+        const char * name = adapter->formatEnum(attr->id, raw.data.unsignedValue);
+        VerifyOrReturnError(name != nullptr, CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE);
+        strncpy(out, name, outLen - 1);
+        out[outLen - 1] = '\0';
+        return CHIP_NO_ERROR;
+    }
+
+    if (raw.type == RawValueType::kSigned || raw.type == RawValueType::kUnsigned)
+    {
+        const int32_t value =
+            raw.type == RawValueType::kSigned ? raw.data.signedValue : static_cast<int32_t>(raw.data.unsignedValue);
+        const int n = snprintf(out, outLen, "%d", static_cast<int>(value));
+        VerifyOrReturnError(n >= 0 && static_cast<size_t>(n) < outLen, CHIP_ERROR_BUFFER_TOO_SMALL);
+        asNumber = true;
+        return CHIP_NO_ERROR;
+    }
+
+    if (raw.type == RawValueType::kBool)
+    {
+        strncpy(out, raw.data.boolean ? "true" : "false", outLen - 1);
+        out[outLen - 1] = '\0';
+        return CHIP_NO_ERROR;
+    }
+
+    return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
+}
+
 void Reject(const char * reason, const char * detail)
 {
-    ChipLogError(AppServer, "MatterMqttBridge: rejected %s (%s)", reason, detail);
+    MATTER_MQTT_LOG_ERROR("command rejected %s (%s)", reason, detail);
+}
+
+AttributePublishSlot * AcquireAttributePublishSlot()
+{
+    for (size_t i = 0; i < kAttributePublishSlotCount; ++i)
+    {
+        if (!sAttributePublishSlots[i].inUse)
+        {
+            sAttributePublishSlots[i].inUse      = true;
+            sAttributePublishSlots[i].payloadLen = 0;
+            return &sAttributePublishSlots[i];
+        }
+    }
+    return nullptr;
+}
+
+void ReleaseAttributePublishSlot(AttributePublishSlot * slot)
+{
+    if (slot != nullptr)
+    {
+        slot->inUse = false;
+    }
+}
+
+void OnAttributePublishDone(CHIP_ERROR result, void * context)
+{
+    ReleaseAttributePublishSlot(static_cast<AttributePublishSlot *>(context));
+    if (result != CHIP_NO_ERROR)
+    {
+        MATTER_MQTT_LOG_ERROR("attribute publish async failed err=%" CHIP_ERROR_FORMAT, result.Format());
+    }
 }
 
 // Copy decoded JSON arg strings into static storage so they survive the cross-thread lambda to HandleInboundCommand.
@@ -151,7 +250,8 @@ void ReportWorkHandler(const uint8_t * data, size_t len)
     VerifyOrReturn(profile->IsMqttDeviceIdKnown());
     VerifyOrReturn(len == sizeof(ReportWork));
 
-    const auto * work        = reinterpret_cast<const ReportWork *>(data);
+    const auto * work = reinterpret_cast<const ReportWork *>(data);
+
     const ClusterAdapter * adapter = sConfig.adapters->FindByClusterId(work->clusterId);
     const MatterMqttAttributeEntry * attr = adapter != nullptr ? sConfig.adapters->FindAttribute(adapter, work->attributeId) : nullptr;
     char valueText[MATTER_MQTT_MAX_VALUE_LEN];
@@ -159,10 +259,14 @@ void ReportWorkHandler(const uint8_t * data, size_t len)
     bool asNumber            = false;
     const char * attrName    = nullptr;
 
-    VerifyOrReturn(adapter != nullptr);
-    VerifyOrReturn(attr != nullptr);
+    if (adapter == nullptr || attr == nullptr)
+    {
+        MATTER_MQTT_LOG_ERROR("attribute report skipped: no adapter/attribute mapping");
+        return;
+    }
     if (MatterMqttFormatReportValue(adapter, attr, RawFromWork(*work), valueText, sizeof(valueText), asNumber) != CHIP_NO_ERROR)
     {
+        MATTER_MQTT_LOG_ERROR("attribute report skipped: value format failed ep=%u", static_cast<unsigned>(work->endpoint));
         return;
     }
 
@@ -174,28 +278,47 @@ void ReportWorkHandler(const uint8_t * data, size_t len)
     attrName = sConfig.adapters->AttributeNameOf(adapter, work->attributeId);
     VerifyOrReturn(attrName != nullptr);
 
-    // matter/v1/{deviceId}/ep/{ep}/cluster/{name}/attr/{name}
-    if (MatterMqttTopic::BuildAttributeTopic(chip::CharSpan::fromCharString(profile->GetMqttDeviceId()), work->endpoint,
-                                             chip::CharSpan::fromCharString(adapter->clusterName),
-                                             chip::CharSpan::fromCharString(attrName), sOutboundTopic,
-                                             sizeof(sOutboundTopic)) != CHIP_NO_ERROR)
+    AttributePublishSlot * slot = AcquireAttributePublishSlot();
+    if (slot == nullptr)
     {
+        MATTER_MQTT_LOG_ERROR("attribute report skipped: publish slot pool full");
+        if (sSnapshotActive)
+        {
+            LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(AdvanceSnapshot, 0));
+        }
         return;
     }
 
-    strncpy(sOutboundPayload, json, sizeof(sOutboundPayload) - 1);
-    sOutboundPayload[sizeof(sOutboundPayload) - 1] = '\0';
-    const chip::ByteSpan payload(reinterpret_cast<uint8_t *>(sOutboundPayload), strlen(sOutboundPayload));
-    const auto qos = static_cast<chip::DeviceLayer::Silabs::MqttQoS>(sConfig.reportQos);
-    if (sConfig.transport->Publish(sOutboundTopic, payload, qos, sConfig.reportRetained) != CHIP_NO_ERROR)
+    // matter/v1/{deviceId}/ep/{ep}/cluster/{name}/attr/{name}
+    if (MatterMqttTopic::BuildAttributeTopic(chip::CharSpan::fromCharString(profile->GetMqttDeviceId()), work->endpoint,
+                                             chip::CharSpan::fromCharString(adapter->clusterName),
+                                             chip::CharSpan::fromCharString(attrName), slot->topic, sizeof(slot->topic)) !=
+        CHIP_NO_ERROR)
     {
-        ChipLogError(AppServer, "MatterMqttBridge: Publish failed");
+        ReleaseAttributePublishSlot(slot);
+        return;
+    }
+
+    strncpy(slot->payload, json, sizeof(slot->payload) - 1);
+    slot->payload[sizeof(slot->payload) - 1] = '\0';
+    slot->payloadLen                         = strlen(slot->payload);
+    const chip::ByteSpan payload(reinterpret_cast<uint8_t *>(slot->payload), slot->payloadLen);
+    const auto qos = static_cast<chip::DeviceLayer::Silabs::MqttQoS>(sConfig.reportQos);
+    const uint32_t publishSeq = ++sAttributePublishSeq;
+    MATTER_MQTT_LOG("attribute publish #%" PRIu32 " topic=%s payload=%s", publishSeq, slot->topic, slot->payload);
+
+    const CHIP_ERROR publishErr =
+        sConfig.transport->Publish(slot->topic, payload, qos, sConfig.reportRetained, OnAttributePublishDone, slot);
+    if (publishErr != CHIP_NO_ERROR)
+    {
+        MATTER_MQTT_LOG_ERROR("attribute publish #%" PRIu32 " queue failed topic=%s", publishSeq, slot->topic);
+        ReleaseAttributePublishSlot(slot);
     }
 
     // Snapshot stepping reads attributes on the Matter thread; schedule there after each MQTT publish.
     if (sSnapshotActive)
     {
-        chip::DeviceLayer::PlatformMgr().ScheduleWork(AdvanceSnapshot, 0);
+        LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(AdvanceSnapshot, 0));
     }
 }
 
@@ -212,10 +335,24 @@ CHIP_ERROR EnqueueReport(const MatterMqttBridgeConfig & config, const chip::app:
 
     // Read on Matter thread; publish work runs on MQTT thread.
     RawValue raw;
-    ReturnErrorOnFailure(config.reader->Read(path, raw));
+    const CHIP_ERROR readErr = config.reader->Read(path, raw);
+    if (readErr != CHIP_NO_ERROR)
+    {
+        MATTER_MQTT_LOG_ERROR("attribute read failed ep=%u err=%" CHIP_ERROR_FORMAT, static_cast<unsigned>(path.mEndpointId),
+                              readErr.Format());
+        return readErr;
+    }
 
-    const ReportWork work = MakeReportWork(path, raw);
-    ReturnErrorOnFailure(config.transport->ScheduleWork(ReportWorkHandler, &work, sizeof(work)));
+    const ReportWork work     = MakeReportWork(path, raw);
+    const CHIP_ERROR schedErr = config.transport->ScheduleWork(ReportWorkHandler, &work, sizeof(work));
+    if (schedErr != CHIP_NO_ERROR)
+    {
+        MATTER_MQTT_LOG_ERROR("attribute report schedule failed ep=%u err=%" CHIP_ERROR_FORMAT,
+                              static_cast<unsigned>(path.mEndpointId), schedErr.Format());
+        return schedErr;
+    }
+    MATTER_MQTT_LOG_DETAIL("attribute report queued ep=%u attr=" ChipLogFormatMEI, static_cast<unsigned>(path.mEndpointId),
+                           ChipLogValueMEI(path.mAttributeId));
     return CHIP_NO_ERROR;
 }
 
@@ -223,7 +360,7 @@ void PublishPath(const chip::app::ConcreteAttributePath & path)
 {
     if (EnqueueReport(sConfig, path) != CHIP_NO_ERROR && sSnapshotActive)
     {
-        chip::DeviceLayer::PlatformMgr().ScheduleWork(AdvanceSnapshot, 0);
+        LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(AdvanceSnapshot, 0));
     }
 }
 
@@ -261,6 +398,10 @@ void HandleInboundCommand(InboundCommand command)
 {
     VerifyOrReturn(sConfig.injector != nullptr && sConfig.adapters != nullptr);
 
+    MATTER_MQTT_LOG("inbound command ep=%u cluster=" ChipLogFormatMEI " cmd=" ChipLogFormatMEI,
+                    static_cast<unsigned>(command.endpoint), ChipLogValueMEI(command.clusterId),
+                    ChipLogValueMEI(command.commandId));
+
     const ClusterAdapter * adapter = sConfig.adapters->FindByClusterId(command.clusterId);
     VerifyOrReturn(adapter != nullptr);
 
@@ -269,7 +410,7 @@ void HandleInboundCommand(InboundCommand command)
 
     if (sConfig.injector->Invoke(command, *entry, &sInboundArgs.view) != CHIP_NO_ERROR)
     {
-        ChipLogError(AppServer, "MatterMqttBridge: command inject failed");
+        MATTER_MQTT_LOG_ERROR("command inject failed");
     }
 }
 
@@ -363,7 +504,7 @@ void SubscribeCommandsAndStartSnapshot()
 
     if (profile->RefreshMqttDeviceId() != CHIP_NO_ERROR || !profile->IsMqttDeviceIdKnown())
     {
-        ChipLogProgress(AppServer, "MatterMqttBridge: MQTT connected; waiting for Matter fabric NodeId");
+        MATTER_MQTT_LOG("MQTT connected; waiting for Matter fabric NodeId");
         return;
     }
 
@@ -372,59 +513,30 @@ void SubscribeCommandsAndStartSnapshot()
         if (MatterMqttTopic::BuildCommandFilter(chip::CharSpan::fromCharString(profile->GetMqttDeviceId()), kUseWildcardSubscribe,
                                                 sCommandFilterTopic, sizeof(sCommandFilterTopic)) != CHIP_NO_ERROR)
         {
-            ChipLogError(AppServer, "MatterMqttBridge: command filter build failed");
+            MATTER_MQTT_LOG_ERROR("command filter topic build failed");
             return;
         }
 
         const auto qos = static_cast<chip::DeviceLayer::Silabs::MqttQoS>(sConfig.commandQos);
         if (sConfig.transport->Subscribe(sCommandFilterTopic, qos) != CHIP_NO_ERROR)
         {
-            ChipLogError(AppServer, "MatterMqttBridge: Subscribe failed");
+            MATTER_MQTT_LOG_ERROR("command filter subscribe failed topic=%s", sCommandFilterTopic);
             return;
         }
         sSubscribed = true;
+        MATTER_MQTT_LOG("subscribed command filter deviceId=%s topic=%s", profile->GetMqttDeviceId(), sCommandFilterTopic);
     }
 
     if (!sSnapshotStarted && profile->SupportsAttributePublishing() && profile->SnapshotPathCount() > 0)
     {
         sSnapshotStarted = true;
-        chip::DeviceLayer::PlatformMgr().ScheduleWork(StartSnapshot, 0);
-    }
-}
-
-void RegisterListener()
-{
-    // Attribute notifications from InteractionModelEngine::GetDataModelProvider().
-    chip::app::DataModel::Provider * provider = chip::app::InteractionModelEngine::GetInstance()->GetDataModelProvider();
-    VerifyOrReturn(provider != nullptr);
-
-    if (!sListenerRegistered)
-    {
-        provider->RegisterAttributeChangeListener(sListener);
-        sListenerRegistered = true;
-    }
-}
-
-void UnregisterListener()
-{
-    chip::app::DataModel::Provider * provider = chip::app::InteractionModelEngine::GetInstance()->GetDataModelProvider();
-    VerifyOrReturn(provider != nullptr);
-
-    if (sListenerRegistered)
-    {
-        provider->UnregisterAttributeChangeListener(sListener);
-        sListenerRegistered = false;
+        MATTER_MQTT_LOG("starting attribute snapshot (%u paths)", static_cast<unsigned>(profile->SnapshotPathCount()));
+        LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(StartSnapshot, 0));
     }
 }
 
 void InitOnMatterThread(intptr_t /* arg */)
 {
-    if (sConfig.profile != nullptr && sConfig.profile->SupportsAttributePublishing())
-    {
-        sListener.Configure(sConfig, EnqueueReport);
-        RegisterListener();
-    }
-
     if (sConfig.transport != nullptr && sConfig.transport->IsConnected())
     {
         SubscribeCommandsAndStartSnapshot();
@@ -448,6 +560,9 @@ CHIP_ERROR MatterMqttBridge::Init(chip::DeviceLayer::Silabs::MqttClient & client
 {
     VerifyOrReturnError(config.profile != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(config.adapters != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(config.reader != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    MATTER_MQTT_LOG("Init (mqtt connected=%d)", client.IsConnected());
 
     sTransport.Bind(client);
     sConfig           = config;
@@ -462,10 +577,6 @@ CHIP_ERROR MatterMqttBridge::Init(chip::DeviceLayer::Silabs::MqttClient & client
     if (sConfig.codec == nullptr)
     {
         sConfig.codec = &sCodec;
-    }
-    if (sConfig.reader == nullptr)
-    {
-        sConfig.reader = &sReader;
     }
     if (sConfig.injector == nullptr)
     {
@@ -485,26 +596,25 @@ CHIP_ERROR MatterMqttBridge::Init(chip::DeviceLayer::Silabs::MqttClient & client
 
 void MatterMqttBridge::Shutdown()
 {
-    sSubscribed      = false;
-    sSnapshotStarted = false;
-    sSnapshotActive  = false;
-
-    chip::DeviceLayer::PlatformMgr().ScheduleWork(
-        [](intptr_t) {
-            UnregisterListener();
-        },
-        0);
+    sSubscribed          = false;
+    sSnapshotStarted     = false;
+    sSnapshotActive      = false;
+    sAttributePublishSeq = 0;
+    for (size_t i = 0; i < kAttributePublishSlotCount; ++i)
+    {
+        sAttributePublishSlots[i].inUse = false;
+    }
 }
 
-#if SL_MATTER_MQTT_BRIDGE_POST_ATTRIBUTE_HOOK
 void MatterMqttBridge::NotifyReportableAttributeChange(const chip::app::ConcreteAttributePath & path)
 {
     DeviceMqttProfile * profile = sConfig.profile;
     VerifyOrReturn(profile != nullptr && profile->SupportsAttributePublishing());
     VerifyOrReturn(profile->IsEndpointAllowed(path.mEndpointId));
     VerifyOrReturn(profile->IsAttributeAllowed(path.mEndpointId, path.mClusterId, path.mAttributeId));
+    MATTER_MQTT_LOG_DETAIL("attribute change ep=%u attr=" ChipLogFormatMEI, static_cast<unsigned>(path.mEndpointId),
+                           ChipLogValueMEI(path.mAttributeId));
     (void) EnqueueReport(sConfig, path);
 }
-#endif
 
 } // namespace MatterMqttBridge

@@ -15,13 +15,11 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+#pragma once
 
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
 
-// TODO(mqtt-bridge): Thermostat app currently omits OnOff from ZAP; enable ZCL_USING_ON_OFF_CLUSTER_SERVER
-// via Ember OnOff in the data model and/or a code-driven OnOff server for MQTT On/Off in and out.
-
-#include "cluster_adapter.h"
+#include <cluster_adapter.h>
 
 #include <app-common/zap-generated/cluster-objects.h>
 
@@ -33,9 +31,9 @@ constexpr MatterMqttAttributeEntry kOnOffAttributes[] = {
     { "OnOff", OnOff::Attributes::OnOff::Id, MatterMqttAttributeQuantity::kScalar },
 };
 
-constexpr const char * kOnAliases[]  = { nullptr };
-constexpr const char * kOffAliases[] = { nullptr };
-constexpr const char * kToggleAliases[] = { "toggle", nullptr };
+constexpr const char * kOnAliases[]      = { nullptr };
+constexpr const char * kOffAliases[]     = { nullptr };
+constexpr const char * kToggleAliases[]  = { "toggle", nullptr };
 
 constexpr MatterMqttCommandEntry kOnOffCommands[] = {
     { "On", kOnAliases, OnOff::Commands::On::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },

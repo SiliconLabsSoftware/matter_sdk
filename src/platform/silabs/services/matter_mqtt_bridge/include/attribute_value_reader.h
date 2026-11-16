@@ -25,10 +25,7 @@
 
 /**
  * Reads Matter attribute values for MQTT outbound reports (Matter platform thread).
- *
- * The abstract base exists for dependency injection and host tests, not because Ember and code-driven
- * clusters use different reader subclasses: @ref CodeDrivenAttributeReader handles both via
- * EncodeReadBestEffort (registry ReadAttribute first, else CodegenDataModelProvider::ReadAttribute).
+ * Product code supplies a concrete implementation via MatterMqttBridgeConfig::reader.
  */
 class AttributeValueReader
 {
@@ -37,14 +34,4 @@ public:
 
     /** Fills @p out with a primitive scalar read from @p path. */
     virtual CHIP_ERROR Read(const chip::app::ConcreteAttributePath & path, MatterMqttBridge::RawValue & out) = 0;
-};
-
-/**
- * Uses CodegenDataModelProvider: ServerClusterInterface::ReadAttribute when the cluster
- * is in the code-driven registry, otherwise CodegenDataModelProvider::ReadAttribute.
- */
-class CodeDrivenAttributeReader final : public AttributeValueReader
-{
-public:
-    CHIP_ERROR Read(const chip::app::ConcreteAttributePath & path, MatterMqttBridge::RawValue & out) override;
 };

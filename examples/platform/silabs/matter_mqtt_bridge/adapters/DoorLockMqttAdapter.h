@@ -15,10 +15,11 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+#pragma once
 
 #if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
 
-#include "cluster_adapter.h"
+#include <cluster_adapter.h>
 
 #include <app-common/zap-generated/cluster-objects.h>
 

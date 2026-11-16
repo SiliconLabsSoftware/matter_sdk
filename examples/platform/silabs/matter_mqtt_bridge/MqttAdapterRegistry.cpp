@@ -17,18 +17,19 @@
  */
 
 #include <cluster_adapter.h>
+#include <zap-generated/gen_config.h>
 
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
-extern const ClusterAdapter kOnOffAdapter;
+#include "adapters/OnOffMqttAdapter.h"
 #endif
 #if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
-extern const ClusterAdapter kThermostatAdapter;
+#include "adapters/ThermostatMqttAdapter.h"
 #endif
 #if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
-extern const ClusterAdapter kDoorLockAdapter;
+#include "adapters/DoorLockMqttAdapter.h"
 #endif
 #if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
-extern const ClusterAdapter kWindowCoveringAdapter;
+#include "adapters/WindowCoveringMqttAdapter.h"
 #endif
 
 namespace {

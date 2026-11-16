@@ -181,21 +181,23 @@ CHIP_ERROR ClusterAdapterRegistry::PackCommandArgs(const MatterMqttCommandEntry 
 
         switch (field.tlvType)
         {
-        // Strings are not packed; CommandInjector reads them from ArgsView by name.
+        // UTF-8: not packed; CommandInjector reads JSON text from ArgsView by field name.
         case chip::TLV::TLVType::kTLVType_UTF8String:
             if (text == nullptr && field.optional)
             {
+                // Optional string absent from JSON — skip field.
                 continue;
             }
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             continue;
-        // Numeric/bool fields: parse JSON text to bytes in field order for BuildCommandReader.
+        // Boolean: parse JSON "true"/"1" into one byte for BuildCommandReader.
         case chip::TLV::TLVType::kTLVType_Boolean: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             VerifyOrReturnError(offset + 1 <= MATTER_MQTT_MAX_CMD_ARG_PACK, CHIP_ERROR_BUFFER_TOO_SMALL);
             out[offset++] = (strcmp(text, "true") == 0 || strcmp(text, "1") == 0) ? 1 : 0;
             break;
         }
+        // Signed integer: parse JSON decimal into one int8-sized byte.
         case chip::TLV::TLVType::kTLVType_SignedInteger: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             char * end          = nullptr;
@@ -205,6 +207,7 @@ CHIP_ERROR ClusterAdapterRegistry::PackCommandArgs(const MatterMqttCommandEntry 
             out[offset++] = static_cast<uint8_t>(static_cast<int8_t>(v));
             break;
         }
+        // Unsigned integer: parse JSON decimal into one byte.
         case chip::TLV::TLVType::kTLVType_UnsignedInteger: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             char * end            = nullptr;
@@ -214,6 +217,7 @@ CHIP_ERROR ClusterAdapterRegistry::PackCommandArgs(const MatterMqttCommandEntry 
             out[offset++] = static_cast<uint8_t>(v);
             break;
         }
+        // Unknown TLV type in adapter command schema.
         default:
             return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
         }

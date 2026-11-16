@@ -18,11 +18,15 @@
 
 #include "MatterMqttBridgeConfig.h"
 
+#include <matter_mqtt_log.h>
+#include <zap-generated/gen_config.h>
+
 #include <app-common/zap-generated/cluster-objects.h>
-#include <app/data-model-provider/Provider.h>
+#include <app/util/attribute-storage.h>
 #include <data-model-providers/codegen/CodegenDataModelProvider.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/ReadOnlyBuffer.h>
+#include <lib/support/logging/CHIPLogging.h>
 #include <server/Server.h>
 
 namespace {
@@ -64,7 +68,7 @@ bool PlatformDeviceMqttProfile::MatchesPublishTemplate(chip::ClusterId cluster, 
     return false;
 }
 
-void PlatformDeviceMqttProfile::EnsureSnapshotPathsBuilt() const
+void PlatformDeviceMqttProfile::BuildSnapshotPaths()
 {
     if (mSnapshotPathsBuilt)
     {
@@ -72,9 +76,11 @@ void PlatformDeviceMqttProfile::EnsureSnapshotPathsBuilt() const
     }
 
     mSnapshotPathCount = 0;
+
     chip::ReadOnlyBufferBuilder<chip::app::DataModel::EndpointEntry> endpoints;
     if (chip::app::CodegenDataModelProvider::Instance().Endpoints(endpoints) != CHIP_NO_ERROR)
     {
+        MATTER_MQTT_LOG_ERROR("snapshot path build: Endpoints() failed");
         mSnapshotPathsBuilt = true;
         return;
     }
@@ -83,17 +89,22 @@ void PlatformDeviceMqttProfile::EnsureSnapshotPathsBuilt() const
     {
         for (size_t t = 0; t < kPublishTemplateCount; ++t)
         {
+            if (!emberAfContainsServer(endpoint.id, kPublishTemplates[t].clusterId))
+            {
+                continue;
+            }
             if (mSnapshotPathCount >= MATTER_MQTT_MAX_SNAPSHOT_PATHS)
             {
                 mSnapshotPathsBuilt = true;
                 return;
             }
-            mSnapshotPaths[mSnapshotPathCount].endpoint    = endpoint.id;
-            mSnapshotPaths[mSnapshotPathCount].clusterId     = kPublishTemplates[t].clusterId;
-            mSnapshotPaths[mSnapshotPathCount].attributeId = kPublishTemplates[t].attributeId;
+            mSnapshotPaths[mSnapshotPathCount].endpoint     = endpoint.id;
+            mSnapshotPaths[mSnapshotPathCount].clusterId    = kPublishTemplates[t].clusterId;
+            mSnapshotPaths[mSnapshotPathCount].attributeId  = kPublishTemplates[t].attributeId;
             ++mSnapshotPathCount;
         }
     }
+    MATTER_MQTT_LOG("snapshot paths built: %u", static_cast<unsigned>(mSnapshotPathCount));
     mSnapshotPathsBuilt = true;
 }
 
@@ -108,7 +119,7 @@ bool PlatformDeviceMqttProfile::IsAttributeAllowed(chip::EndpointId endpoint, ch
 }
 
 bool PlatformDeviceMqttProfile::IsCommandAllowed(chip::EndpointId endpoint, chip::ClusterId cluster,
-                                                 chip::CommandId command) const
+                                               chip::CommandId command) const
 {
     if (!IsEndpointAllowed(endpoint))
     {
@@ -151,13 +162,11 @@ bool PlatformDeviceMqttProfile::IsCommandAllowed(chip::EndpointId endpoint, chip
 
 const MatterMqttSnapshotPath * PlatformDeviceMqttProfile::SnapshotPaths() const
 {
-    EnsureSnapshotPathsBuilt();
     return mSnapshotPathCount > 0 ? mSnapshotPaths : nullptr;
 }
 
 size_t PlatformDeviceMqttProfile::SnapshotPathCount() const
 {
-    EnsureSnapshotPathsBuilt();
     return mSnapshotPathCount;
 }
 
@@ -172,6 +181,8 @@ CHIP_ERROR PlatformDeviceMqttProfile::RefreshMqttDeviceId()
     VerifyOrReturnError(nodeId != chip::kUndefinedNodeId, CHIP_ERROR_INCORRECT_STATE);
     ReturnErrorOnFailure(FormatMqttDeviceId(nodeId, mMqttDeviceId, sizeof(mMqttDeviceId)));
     mMqttDeviceIdKnown = true;
+    BuildSnapshotPaths();
+    MATTER_MQTT_LOG("MQTT device id ready: %s", mMqttDeviceId);
     return CHIP_NO_ERROR;
 }
 
@@ -189,6 +200,7 @@ PlatformMqttBridgeConfig::PlatformMqttBridgeConfig() : mAdapters(GetPlatformMqtt
 {
     profile  = &mProfile;
     adapters = &mAdapters;
+    reader   = &mAttributeReader;
 }
 
 PlatformMqttBridgeConfig gPlatformMqttBridgeConfig;

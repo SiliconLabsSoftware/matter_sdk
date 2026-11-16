@@ -20,10 +20,10 @@
 
 #include "mqtt_client.h"
 
-#if SL_MATTER_ENABLE_MQTT_BRIDGE
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
 #include <matter_mqtt_bridge.h>
 #include <MatterMqttBridgeConfig.h>
-#endif
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 #include "cacert.h"
 #include "cmsis_os2.h"
@@ -48,9 +48,9 @@ using chip::DeviceLayer::Silabs::MqttClient;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
 namespace DeviceEventType = chip::DeviceLayer::DeviceEventType;
 
-#if SL_MATTER_ENABLE_MQTT_BRIDGE
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
 void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context);
-#endif
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 // Please fill in the details for your own MQTT broker.
 constexpr char kMqttBrokerEndpoint[] = MQTT_BROKER_ENDPOINT; // DNS name or IPv4 of your MQTT broker
@@ -102,14 +102,14 @@ void OnPlatformEvent(const ChipDeviceEvent * event, intptr_t /* arg */)
 void OnConnectDone(CHIP_ERROR result, void * /* context */)
 {
     ChipLogDetail(DeviceLayer, "MQTT demo: OnConnectDone: %" CHIP_ERROR_FORMAT, result.Format());
-#if SL_MATTER_ENABLE_MQTT_BRIDGE
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
     if (result == CHIP_NO_ERROR)
     {
         gMqttsClient.SetSubscriptionCallback(MqttInboundDispatcher, nullptr);
         CHIP_ERROR err = MatterMqttBridge::Init(gMqttsClient, gPlatformMqttBridgeConfig);
         LogErrorOnFailure(err);
     }
-#endif
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 }
 
 void OnInitDone(CHIP_ERROR result, void * /* context */)
@@ -131,10 +131,10 @@ void OnInitDone(CHIP_ERROR result, void * /* context */)
 void OnDisconnectDone(CHIP_ERROR result, void * /* context */)
 {
     ChipLogDetail(DeviceLayer, "MQTT demo: OnDisconnectDone: %" CHIP_ERROR_FORMAT, result.Format());
-#if SL_MATTER_ENABLE_MQTT_BRIDGE
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
     MatterMqttBridge::Shutdown();
     (void) result;
-#endif
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 }
 
 void OnSubscribeDone(CHIP_ERROR result, void * /* context */)
@@ -154,7 +154,7 @@ void OnMqttMessage(CharSpan topic, ByteSpan payload, void * /* context */)
                     reinterpret_cast<const char *>(payload.data()));
 }
 
-#if SL_MATTER_ENABLE_MQTT_BRIDGE
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
 // Bridge first; demo logger only for non-command topics (e.g. kMqttTopic) or pre-subscribe noise.
 void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context)
 {
@@ -164,7 +164,7 @@ void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context)
     }
     OnMqttMessage(topic, payload, context);
 }
-#endif
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 CHIP_ERROR SubscribePublish()
 {
@@ -195,6 +195,7 @@ sl_status_t mqtt_client_demo_start(void)
             err == CHIP_NO_ERROR, SL_STATUS_FAIL,
             ChipLogError(DeviceLayer, "MQTT demo: OnPlatformEvent register failed: %" CHIP_ERROR_FORMAT, err.Format()));
 
+        // Init is queued to the service thread, so Start must happen first when needed.
         if (!gMqttsClient.IsRunning())
         {
             ChipLogProgress(DeviceLayer, "MQTT demo: starting service");
@@ -204,9 +205,10 @@ sl_status_t mqtt_client_demo_start(void)
 
 #if !SL_MATTER_ENABLE_MQTT_BRIDGE
             gMqttsClient.SetSubscriptionCallback(OnMqttMessage, nullptr);
-#endif
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
         }
 
+        // Subscribe/Publish without an explicit QoS use MqttClientConfig::subQoS / pubQoS.
         const MqttClientConfig config = {
             .useTls               = true,
             .clientId             = kMqttClientId,
@@ -233,6 +235,7 @@ sl_status_t mqtt_client_demo_start(void)
     }
 
     ChipLogProgress(DeviceLayer, "MQTT demo: ready (use demo mqtt for subscribe/publish)");
+    // Prior attempt may have connected then failed on subscribe/publish; skip reconnect.
     return SL_STATUS_OK;
 }
 
@@ -250,6 +253,7 @@ sl_status_t mqtt_client_demo_run(void)
 
 sl_status_t mqtt_client_demo_stop(void)
 {
+    // Keep Start/Init state so a later connectivity event only needs Connect+Subscribe+Publish.
     VerifyOrReturnError(gMqttsClient.IsRunning() && gMqttsClient.IsConnected(), SL_STATUS_OK);
 
     const CHIP_ERROR err = gMqttsClient.Disconnect(OnDisconnectDone);

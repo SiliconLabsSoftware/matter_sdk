@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "EmberMqttAttributeValueReader.h"
+
 #include <cluster_adapter.h>
 #include <device_mqtt_profile.h>
 #include <lib/support/Span.h>
@@ -46,13 +48,13 @@ public:
 private:
     static bool MatchesPublishTemplate(chip::ClusterId cluster, chip::AttributeId attribute);
 
-    void EnsureSnapshotPathsBuilt() const;
+    void BuildSnapshotPaths();
 
     char mMqttDeviceId[MATTER_MQTT_DEVICE_ID_LEN] = {};
-    bool mMqttDeviceIdKnown                       = false;
-    mutable MatterMqttSnapshotPath mSnapshotPaths[MATTER_MQTT_MAX_SNAPSHOT_PATHS]{};
-    mutable size_t mSnapshotPathCount = 0;
-    mutable bool mSnapshotPathsBuilt  = false;
+    bool mMqttDeviceIdKnown                         = false;
+    MatterMqttSnapshotPath mSnapshotPaths[MATTER_MQTT_MAX_SNAPSHOT_PATHS]{};
+    size_t mSnapshotPathCount = 0;
+    bool mSnapshotPathsBuilt  = false;
 };
 
 class PlatformMqttBridgeConfig final : public MatterMqttBridgeConfig
@@ -63,6 +65,7 @@ public:
 private:
     PlatformDeviceMqttProfile mProfile;
     ClusterAdapterRegistry mAdapters;
+    EmberMqttAttributeValueReader mAttributeReader;
 };
 
 extern PlatformMqttBridgeConfig gPlatformMqttBridgeConfig;

@@ -160,6 +160,11 @@ class MqttClient : public MatterService
 {
 public:
     /**
+     * Max bytes copied per @ref ScheduleWork item (sized for Matter MQTT bridge ReportWork; see static_assert in matter_mqtt_types.h).
+     */
+    static constexpr size_t kWorkDataSize = 32;
+
+    /**
      * @brief Update client config. Allowed only while disconnected.
      *
      * Pointer fields must remain valid for as long as the config is in use (through Connect / session).
@@ -257,8 +262,6 @@ public:
      * @brief Queue a one-shot MQTTYield (optional; idle auto-yield covers keepalive/receive).
      */
     CHIP_ERROR Yield(uint32_t timeoutMs, MqttOperationCallback callback, void * context = nullptr);
-
-    static constexpr size_t kWorkDataSize = 32;
 
     /**
      * @brief Queue a one-shot work item for the service thread.

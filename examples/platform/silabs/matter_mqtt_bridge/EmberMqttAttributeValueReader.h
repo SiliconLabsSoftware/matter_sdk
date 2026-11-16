@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include "cluster_adapter.h"
-#include "matter_mqtt_types.h"
+#include <attribute_value_reader.h>
 
-#include <cstddef>
-
-/** Default: raw Matter units / enum strings via adapter tables. Seam for product conversion. */
-CHIP_ERROR MatterMqttFormatReportValue(const ClusterAdapter * adapter, const MatterMqttAttributeEntry * attr,
-                                       const MatterMqttBridge::RawValue & raw, char * out, size_t outLen, bool & asNumber);
+/** Ember attribute-table read path for MQTT outbound reports (Silabs platform default). */
+class EmberMqttAttributeValueReader final : public AttributeValueReader
+{
+public:
+    CHIP_ERROR Read(const chip::app::ConcreteAttributePath & path, MatterMqttBridge::RawValue & out) override;
+};

@@ -25,15 +25,30 @@
 inline constexpr uint8_t MATTER_MQTT_CONTRACT_VERSION = 1;
 inline constexpr size_t MATTER_MQTT_MAX_TOPIC_LEN     = 160;
 inline constexpr size_t MATTER_MQTT_MAX_PAYLOAD_LEN   = 256;
-inline constexpr size_t MATTER_MQTT_MAX_VALUE_LEN     = 64;
-inline constexpr size_t MATTER_MQTT_MAX_ARGS          = 8;
-inline constexpr size_t MATTER_MQTT_DEVICE_ID_LEN     = 20; // "0x" + 16 hex + NUL
-inline constexpr size_t MATTER_MQTT_MAX_CMD_ARG_PACK  = 12;
+/** Max JSON report/command scalar string (e.g. enum name or integer text). */
+inline constexpr size_t MATTER_MQTT_MAX_VALUE_LEN = 64;
+/**
+ * Max JSON object keys in inbound command `"args"` (ArgsView items).
+ * Platform v1 adapters expose at most two scalar fields per command (e.g. Thermostat SetpointRaiseLower).
+ * Headroom covers future multi-field commands without resizing static scratch buffers.
+ */
+inline constexpr size_t MATTER_MQTT_MAX_ARGS = 8;
+/** Max length of one inbound JSON arg name (NUL-terminated scratch in matter_mqtt_bridge.cpp). */
+inline constexpr size_t MATTER_MQTT_MAX_ARG_NAME_LEN = 32;
+/** Inbound arg JSON text uses the same bound as outbound report scalars. */
+inline constexpr size_t MATTER_MQTT_MAX_ARG_VALUE_LEN = MATTER_MQTT_MAX_VALUE_LEN;
+inline constexpr size_t MATTER_MQTT_DEVICE_ID_LEN       = 20; // "0x" + 16 hex + NUL
+/**
+ * Max packed numeric/bool bytes for one command (PackCommandArgs).
+ * Two bytes per small-integer TLV field; 12 fits six fields with margin.
+ */
+inline constexpr size_t MATTER_MQTT_MAX_CMD_ARG_PACK = 12;
 inline constexpr size_t MATTER_MQTT_MAX_SNAPSHOT_PATHS = 32;
-
-#ifndef SL_MATTER_MQTT_BRIDGE_POST_ATTRIBUTE_HOOK
-#define SL_MATTER_MQTT_BRIDGE_POST_ATTRIBUTE_HOOK 0
-#endif
+/**
+ * Stack buffer for invoke-structure TLV built before CodegenDataModelProvider::InvokeCommand.
+ * Observed scalar-only commands encode to well under 32 B; 96 B leaves room for short UTF-8 strings in the same structure.
+ */
+inline constexpr size_t MATTER_MQTT_MAX_INVOKE_TLV = 96;
 
 #ifndef SL_MATTER_MQTT_BRIDGE_WILDCARD_SUBSCRIBE
 #define SL_MATTER_MQTT_BRIDGE_WILDCARD_SUBSCRIBE 1

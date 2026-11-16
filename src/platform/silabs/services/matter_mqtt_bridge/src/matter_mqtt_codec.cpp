@@ -126,12 +126,13 @@ bool ParseArgsObject(const char * json, size_t len, MatterMqttCodecTypes::ArgsVi
                         numBuf[i] = cursor[i];
                         ++i;
                     }
-                    numBuf[i] = '\0';
+                    numBuf[i]            = '\0';
                     strncpy(sDecodeScratch.argValueStorage[args.count], numBuf, sizeof(sDecodeScratch.argValueStorage[0]) - 1);
+                    cursor += i;
                 }
 
-                sDecodeScratch.argItems[args.count].name  = sDecodeScratch.argNameStorage[args.count];
-                sDecodeScratch.argItems[args.count].value = sDecodeScratch.argValueStorage[args.count];
+                args.items[args.count].name  = sDecodeScratch.argNameStorage[args.count];
+                args.items[args.count].value = sDecodeScratch.argValueStorage[args.count];
                 ++args.count;
 
                 cursor = SkipWhitespace(cursor, end);

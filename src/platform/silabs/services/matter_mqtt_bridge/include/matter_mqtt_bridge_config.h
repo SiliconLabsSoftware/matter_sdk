@@ -23,7 +23,6 @@
 #include "command_injector.h"
 #include "device_mqtt_profile.h"
 #include "matter_mqtt_codec.h"
-#include "matter_mqtt_value_converter.h"
 #include "mqtt_transport_port.h"
 
 #include <cstdint>
@@ -42,7 +41,7 @@ public:
     ClusterAdapterRegistry * adapters   = nullptr;
     DeviceMqttProfile * profile         = nullptr;
     AttributeValueReader * reader       = nullptr;
-    CommandInjector * injector          = nullptr;
+    MqttCommandInjector * injector      = nullptr;
     uint8_t commandQos                  = 0;
     uint8_t reportQos                   = 0;
     bool reportRetained                 = false;

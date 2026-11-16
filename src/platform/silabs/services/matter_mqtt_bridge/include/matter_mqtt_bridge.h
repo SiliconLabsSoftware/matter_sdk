@@ -43,7 +43,7 @@ public:
      */
     static CHIP_ERROR Init(chip::DeviceLayer::Silabs::MqttClient & client, const MatterMqttBridgeConfig & config);
 
-    /** Tear down attribute listener and MQTT subscribe state until the next Init. */
+    /** Tear down MQTT subscribe / snapshot state until the next Init. */
     static void Shutdown();
 
     /**
@@ -53,13 +53,8 @@ public:
      */
     static bool DispatchInbound(chip::CharSpan topic, chip::ByteSpan payload);
 
-#if SL_MATTER_MQTT_BRIDGE_POST_ATTRIBUTE_HOOK
-    /**
-     * Optional hook from MatterPostAttributeChangeCallback when provider listeners did not run
-     * (e.g. MarkAttributeDirty::kNo). Uses the same EnqueueReport path as the attribute listener.
-     */
+    /** Ember post-write path (BaseApplication::MatterPostAttributeChangeCallback) -> EnqueueReport. */
     static void NotifyReportableAttributeChange(const chip::app::ConcreteAttributePath & path);
-#endif
 };
 
 // Public entry points: types live in namespace MatterMqttBridge; orchestration is class MatterMqttBridge.
@@ -78,11 +73,9 @@ inline bool DispatchInbound(chip::CharSpan topic, chip::ByteSpan payload)
     return ::MatterMqttBridge::MatterMqttBridge::DispatchInbound(topic, payload);
 }
 
-#if SL_MATTER_MQTT_BRIDGE_POST_ATTRIBUTE_HOOK
 inline void NotifyReportableAttributeChange(const chip::app::ConcreteAttributePath & path)
 {
     ::MatterMqttBridge::MatterMqttBridge::NotifyReportableAttributeChange(path);
 }
-#endif
 
 } // namespace MatterMqttBridge

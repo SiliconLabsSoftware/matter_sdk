@@ -23,20 +23,10 @@
 
 #include <lib/core/CHIPError.h>
 
-/** Applies an inbound MQTT command to the Matter data model (product supplies implementation). */
-class CommandInjector
-{
-public:
-    virtual ~CommandInjector() = default;
-
-    virtual CHIP_ERROR Invoke(const MatterMqttBridge::InboundCommand & command, const MatterMqttCommandEntry & entry,
-                              const MatterMqttCodecTypes::ArgsView * decodedArgs = nullptr) = 0;
-};
-
 /** Injects commands through CodegenDataModelProvider::InvokeCommand on the Matter thread. */
-class MqttCommandInjector final : public CommandInjector
+class MqttCommandInjector
 {
 public:
     CHIP_ERROR Invoke(const MatterMqttBridge::InboundCommand & command, const MatterMqttCommandEntry & entry,
-                      const MatterMqttCodecTypes::ArgsView * decodedArgs = nullptr) override;
+                      const MatterMqttCodecTypes::ArgsView * decodedArgs = nullptr);
 };
