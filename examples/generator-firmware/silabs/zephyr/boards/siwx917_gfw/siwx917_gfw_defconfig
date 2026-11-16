@@ -10,6 +10,7 @@
 # sections of the MSLA applicable to Source Code.
 # *******************************************************************************
 
+CONFIG_USE_DT_CODE_PARTITION=y
 CONFIG_CONSOLE=n
 CONFIG_UART_CONSOLE=n
 CONFIG_SERIAL=n
