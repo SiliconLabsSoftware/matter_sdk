@@ -74,6 +74,7 @@ jobs:
             build-type: "standard"
 
     build-window-app:
+        if: false # window-app removed as unmaintained
         name: Build Window-App variations
         uses: ./.github/workflows/silabs-common-build.yaml
         with:
