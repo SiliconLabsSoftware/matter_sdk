@@ -18,6 +18,8 @@
 
 #include "device_mqtt_profile.h"
 
+#include "matter_mqtt_topic.h"
+
 #include <app/data-model-provider/Provider.h>
 #include <data-model-providers/codegen/CodegenDataModelProvider.h>
 #include <lib/support/CodeUtils.h>
@@ -56,14 +58,10 @@ bool MatterMqttIsEndpointInDataModel(chip::EndpointId endpoint)
     return false;
 }
 
-// MQTT device id: fixed-width 0x + 16 hex digits (64-bit NodeId).
+// MQTT device id: 64-bit NodeId as uppercase hex without leading zeros (matches cluster/attr/cmd topic ids).
 CHIP_ERROR FormatMqttDeviceId(chip::NodeId nodeId, char * out, size_t outLen)
 {
     VerifyOrReturnError(out != nullptr && outLen >= MATTER_MQTT_DEVICE_ID_LEN, CHIP_ERROR_BUFFER_TOO_SMALL);
 
-    const uint32_t high = static_cast<uint32_t>(nodeId >> 32);
-    const uint32_t low  = static_cast<uint32_t>(nodeId & 0xffffffffULL);
-    const int n         = snprintf(out, outLen, "0x%08" PRIX32 "%08" PRIX32, high, low);
-    VerifyOrReturnError(n >= 0 && static_cast<size_t>(n) < outLen, CHIP_ERROR_BUFFER_TOO_SMALL);
-    return CHIP_NO_ERROR;
+    return MatterMqttTopic::FormatTopicIdUint64(static_cast<uint64_t>(nodeId), out, outLen);
 }

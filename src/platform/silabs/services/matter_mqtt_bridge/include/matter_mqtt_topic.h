@@ -22,29 +22,33 @@
 
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
+#include <lib/core/NodeId.h>
 #include <lib/support/Span.h>
 
 #include <cstddef>
 
 /**
- * Builds and parses MQTT topics for the Matter MQTT bridge v1 contract
- * (matter/v1/{deviceId}/ep/...).
+ * Builds and parses MQTT topics for the Matter MQTT bridge v1 contract.
+ * Path ids use uppercase hex without a "0x" prefix or leading zeros.
  */
 namespace MatterMqttTopic {
 
-CHIP_ERROR BuildAttributeTopic(chip::CharSpan deviceId, chip::EndpointId ep, chip::CharSpan clusterName, chip::CharSpan attrName,
-                               char * out, size_t outLen);
+/** Formats one numeric id for a topic segment (uppercase hex, no 0x, no leading zeros). */
+CHIP_ERROR FormatTopicIdUint64(uint64_t value, char * out, size_t outLen);
 
-CHIP_ERROR BuildCommandFilter(chip::CharSpan deviceId, bool useWildcard, char * out, size_t outLen);
+CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, chip::ClusterId clusterId,
+                               chip::AttributeId attributeId, char * out, size_t outLen);
+
+CHIP_ERROR BuildCommandFilter(chip::NodeId deviceNodeId, char * out, size_t outLen);
 
 struct ParsedCommandTopic
 {
-    chip::EndpointId endpoint   = 0;
-    const char * clusterName    = nullptr;
-    const char * commandName    = nullptr;
+    chip::EndpointId endpoint  = 0;
+    chip::ClusterId clusterId    = 0;
+    chip::CommandId commandId    = 0;
 };
 
-/** Validates @p topic against @p expectedDeviceId and fills @p out with command path fields. */
-CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, chip::CharSpan expectedDeviceId, ParsedCommandTopic & out);
+/** Validates @p topic against @p expectedDeviceNodeId and fills @p out with command path fields. */
+CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, chip::NodeId expectedDeviceNodeId, ParsedCommandTopic & out);
 
 } // namespace MatterMqttTopic

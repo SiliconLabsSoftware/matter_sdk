@@ -179,11 +179,17 @@ CHIP_ERROR PlatformDeviceMqttProfile::RefreshMqttDeviceId()
         break;
     }
     VerifyOrReturnError(nodeId != chip::kUndefinedNodeId, CHIP_ERROR_INCORRECT_STATE);
+    mMqttDeviceNodeId = nodeId;
     ReturnErrorOnFailure(FormatMqttDeviceId(nodeId, mMqttDeviceId, sizeof(mMqttDeviceId)));
     mMqttDeviceIdKnown = true;
     BuildSnapshotPaths();
     MATTER_MQTT_LOG("MQTT device id ready: %s", mMqttDeviceId);
     return CHIP_NO_ERROR;
+}
+
+chip::NodeId PlatformDeviceMqttProfile::GetMqttDeviceNodeId() const
+{
+    return mMqttDeviceNodeId;
 }
 
 const char * PlatformDeviceMqttProfile::GetMqttDeviceId() const

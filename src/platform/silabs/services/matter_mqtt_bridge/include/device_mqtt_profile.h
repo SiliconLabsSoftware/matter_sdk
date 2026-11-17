@@ -59,6 +59,7 @@ public:
     virtual size_t SnapshotPathCount() const { return 0; }
 
     virtual CHIP_ERROR RefreshMqttDeviceId() = 0;
+    virtual chip::NodeId GetMqttDeviceNodeId() const       = 0;
     virtual const char * GetMqttDeviceId() const           = 0;
     virtual bool IsMqttDeviceIdKnown() const               = 0;
 };

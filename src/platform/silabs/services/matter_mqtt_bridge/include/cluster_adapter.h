@@ -22,13 +22,12 @@
 #include "matter_mqtt_types.h"
 
 #include <lib/core/DataModelTypes.h>
-#include <lib/core/TLV.h>
 #include <lib/support/Span.h>
 
 #include <cstddef>
 #include <cstdint>
 
-/** Product-specific mapping between MQTT cluster/command names and Matter data model paths. */
+/** Product-specific Matter cluster metadata for MQTT value formatting and command JSON packing. */
 
 enum class MatterMqttAttributeQuantity : uint8_t
 {
@@ -40,23 +39,29 @@ enum class MatterMqttAttributeQuantity : uint8_t
 
 struct MatterMqttAttributeEntry
 {
-    const char * name;
     chip::AttributeId id;
     MatterMqttAttributeQuantity quantity;
+};
+
+/** JSON command arg shape for PackCommandArgs / CommandInjector (maps to invoke TLV field encoding). */
+enum class MatterMqttArgKind : uint8_t
+{
+    kUtf8String,
+    kBoolean,
+    kSignedInteger,
+    kUnsignedInteger,
 };
 
 struct MatterMqttArgField
 {
     const char * name;
     uint8_t fieldId;
-    chip::TLV::TLVType tlvType;
+    MatterMqttArgKind kind;
     bool optional = false;
 };
 
 struct MatterMqttCommandEntry
 {
-    const char * name;
-    const char * const * aliases;
     chip::CommandId id;
     MatterMqttBridge::CommandFlags flags;
     const MatterMqttArgField * argSchema;
@@ -66,7 +71,6 @@ struct MatterMqttCommandEntry
 struct ClusterAdapter
 {
     chip::ClusterId clusterId;
-    const char * clusterName;
     const MatterMqttAttributeEntry * attributes;
     size_t attributeCount;
     const MatterMqttCommandEntry * commands;
@@ -74,18 +78,13 @@ struct ClusterAdapter
     const char * (*formatEnum)(chip::AttributeId attrId, uint32_t raw);
 };
 
-/** Resolves MQTT names to Matter paths and packs JSON args for command invoke. */
+/** Resolves Matter paths and packs JSON args for command invoke. */
 class ClusterAdapterRegistry
 {
 public:
     explicit ClusterAdapterRegistry(chip::Span<const ClusterAdapter> adapters);
 
     const ClusterAdapter * FindByClusterId(chip::ClusterId id) const;
-    const ClusterAdapter * FindByClusterName(chip::CharSpan name) const;
-    bool ResolveAttributeId(const ClusterAdapter * adapter, chip::CharSpan name, chip::AttributeId & out) const;
-    bool ResolveCommandId(const ClusterAdapter * adapter, chip::CharSpan name, chip::CommandId & out,
-                          const MatterMqttCommandEntry ** outEntry) const;
-    const char * AttributeNameOf(const ClusterAdapter * adapter, chip::AttributeId id) const;
     const MatterMqttAttributeEntry * FindAttribute(const ClusterAdapter * adapter, chip::AttributeId id) const;
     const MatterMqttCommandEntry * FindCommand(const ClusterAdapter * adapter, chip::CommandId id) const;
     CHIP_ERROR PackCommandArgs(const MatterMqttCommandEntry & entry, const MatterMqttCodecTypes::ArgsView & args, uint8_t * out,

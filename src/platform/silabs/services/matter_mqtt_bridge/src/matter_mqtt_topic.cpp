@@ -20,12 +20,44 @@
 
 #include <lib/support/CodeUtils.h>
 
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 
 namespace {
 
 constexpr char kTopicPrefix[] = "matter/v1/";
+constexpr char kHexUpper[]      = "0123456789ABCDEF";
+
+/** Uppercase hex without 0x or leading zeros */
+CHIP_ERROR FormatTopicHexU64(uint64_t value, char * out, size_t outLen)
+{
+    VerifyOrReturnError(out != nullptr && outLen > 0, CHIP_ERROR_INVALID_ARGUMENT);
+
+    if (value == 0)
+    {
+        VerifyOrReturnError(outLen >= 2, CHIP_ERROR_BUFFER_TOO_SMALL);
+        out[0] = '0';
+        out[1] = '\0';
+        return CHIP_NO_ERROR;
+    }
+
+    char reversed[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    size_t digitCount = 0;
+    while (value > 0)
+    {
+        VerifyOrReturnError(digitCount + 1 < sizeof(reversed), CHIP_ERROR_BUFFER_TOO_SMALL);
+        reversed[digitCount++] = kHexUpper[value & 0xFu];
+        value >>= 4;
+    }
+    VerifyOrReturnError(digitCount + 1 <= outLen, CHIP_ERROR_BUFFER_TOO_SMALL);
+    for (size_t i = 0; i < digitCount; ++i)
+    {
+        out[i] = reversed[digitCount - 1 - i];
+    }
+    out[digitCount] = '\0';
+    return CHIP_NO_ERROR;
+}
 
 bool AppendChecked(int written, size_t outLen)
 {
@@ -61,59 +93,108 @@ bool CopySegment(const char * start, const char * end, char * out, size_t outLen
     return true;
 }
 
-bool DeviceIdMatches(const char * begin, const char * end, chip::CharSpan expectedDeviceId)
+bool IsHexDigit(char c)
 {
-    const size_t devLen = static_cast<size_t>(end - begin);
-    VerifyOrReturnError(devLen == expectedDeviceId.size(), false);
-    return memcmp(begin, expectedDeviceId.data(), devLen) == 0;
+    return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+}
+
+CHIP_ERROR ParseTopicHexU64(const char * begin, const char * end, uint64_t & out)
+{
+    VerifyOrReturnError(begin != nullptr && begin < end, CHIP_ERROR_INVALID_ARGUMENT);
+
+    for (const char * p = begin; p < end; ++p)
+    {
+        VerifyOrReturnError(IsHexDigit(*p), CHIP_ERROR_INVALID_ARGUMENT);
+    }
+
+    char scratch[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    VerifyOrReturnError(CopySegment(begin, end, scratch, sizeof(scratch)), CHIP_ERROR_INVALID_ARGUMENT);
+    char * parseEnd              = nullptr;
+    const unsigned long long v   = strtoull(scratch, &parseEnd, 16);
+    VerifyOrReturnError(parseEnd != scratch && *parseEnd == '\0', CHIP_ERROR_INVALID_ARGUMENT);
+    out = v;
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR ParseTopicHexU32(const char * begin, const char * end, uint32_t & out)
+{
+    uint64_t wide = 0;
+    ReturnErrorOnFailure(ParseTopicHexU64(begin, end, wide));
+    VerifyOrReturnError(wide <= UINT32_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+    out = static_cast<uint32_t>(wide);
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR ParseTopicHexEndpoint(const char * begin, const char * end, chip::EndpointId & out)
+{
+    uint64_t wide = 0;
+    ReturnErrorOnFailure(ParseTopicHexU64(begin, end, wide));
+    VerifyOrReturnError(wide <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+    out = static_cast<chip::EndpointId>(wide);
+    return CHIP_NO_ERROR;
+}
+
+bool DeviceNodeIdMatches(const char * begin, const char * end, chip::NodeId expectedNodeId)
+{
+    uint64_t parsed = 0;
+    if (ParseTopicHexU64(begin, end, parsed) != CHIP_NO_ERROR)
+    {
+        return false;
+    }
+    return parsed == static_cast<uint64_t>(expectedNodeId);
 }
 
 } // namespace
 
 namespace MatterMqttTopic {
 
-// Outbound attribute report: matter/v1/{deviceId}/ep/{ep}/cluster/{cluster}/attr/{attr}
-CHIP_ERROR BuildAttributeTopic(chip::CharSpan deviceId, chip::EndpointId ep, chip::CharSpan clusterName, chip::CharSpan attrName,
-                               char * out, size_t outLen)
+CHIP_ERROR FormatTopicIdUint64(uint64_t value, char * out, size_t outLen)
 {
-    VerifyOrReturnError(!deviceId.empty() && !clusterName.empty() && !attrName.empty() && out != nullptr,
-                        CHIP_ERROR_INVALID_ARGUMENT);
+    return FormatTopicHexU64(value, out, outLen);
+}
 
-    const int n = snprintf(out, outLen, "%.*s%.*s/ep/%u/cluster/%.*s/attr/%.*s", static_cast<int>(sizeof(kTopicPrefix) - 1),
-                           kTopicPrefix, static_cast<int>(deviceId.size()), deviceId.data(), static_cast<unsigned>(ep),
-                           static_cast<int>(clusterName.size()), clusterName.data(), static_cast<int>(attrName.size()),
-                           attrName.data());
+// Outbound attribute report: matter/v1/{nodeId}/ep/{ep}/cluster/{clusterId}/attr/{attributeId}
+CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, chip::ClusterId clusterId,
+                               chip::AttributeId attributeId, char * out, size_t outLen)
+{
+    VerifyOrReturnError(out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+
+    char deviceHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    char epHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    char clusterHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    char attrHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+
+    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
+    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(ep), epHex, sizeof(epHex)));
+    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(clusterId), clusterHex, sizeof(clusterHex)));
+    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(attributeId), attrHex, sizeof(attrHex)));
+
+    const int n = snprintf(out, outLen, "%.*s%s/ep/%s/cluster/%s/attr/%s", static_cast<int>(sizeof(kTopicPrefix) - 1),
+                           kTopicPrefix, deviceHex, epHex, clusterHex, attrHex);
     VerifyOrReturnError(AppendChecked(n, outLen), CHIP_ERROR_BUFFER_TOO_SMALL);
     return CHIP_NO_ERROR;
 }
 
-// Inbound command subscription filter for this device (Paho '+' wildcards in ep/cluster/cmd segments).
-CHIP_ERROR BuildCommandFilter(chip::CharSpan deviceId, bool useWildcard, char * out, size_t outLen)
+// Inbound command subscription filter: matter/v1/{nodeId}/ep/+/cluster/+/cmd/+
+CHIP_ERROR BuildCommandFilter(chip::NodeId deviceNodeId, char * out, size_t outLen)
 {
-    VerifyOrReturnError(!deviceId.empty() && out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    int n;
-    if (useWildcard)
-    {
-        n = snprintf(out, outLen, "%.*s%.*s/ep/+/cluster/+/cmd/+", static_cast<int>(sizeof(kTopicPrefix) - 1), kTopicPrefix,
-                     static_cast<int>(deviceId.size()), deviceId.data());
-    }
-    else
-    {
-        n = snprintf(out, outLen, "%.*s%.*s/ep/+/cluster/+/cmd/", static_cast<int>(sizeof(kTopicPrefix) - 1), kTopicPrefix,
-                     static_cast<int>(deviceId.size()), deviceId.data());
-    }
+    char deviceHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
+
+    const int n = snprintf(out, outLen, "%.*s%s/ep/+/cluster/+/cmd/+", static_cast<int>(sizeof(kTopicPrefix) - 1),
+                           kTopicPrefix, deviceHex);
     VerifyOrReturnError(AppendChecked(n, outLen), CHIP_ERROR_BUFFER_TOO_SMALL);
     return CHIP_NO_ERROR;
 }
 
-// Inbound command topic: matter/v1/{deviceId}/ep/{n}/cluster/{name}/cmd/{command}; @p topic may be non-null-terminated.
-CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, chip::CharSpan expectedDeviceId, ParsedCommandTopic & out)
+// Inbound command topic: matter/v1/{nodeId}/ep/{hex}/cluster/{hex}/cmd/{hex}; @p topic may be non-null-terminated.
+CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, chip::NodeId expectedDeviceNodeId, ParsedCommandTopic & out)
 {
     VerifyOrReturnError(!topic.empty() && topic.size() < MATTER_MQTT_MAX_TOPIC_LEN, CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(!expectedDeviceId.empty(), CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(expectedDeviceNodeId != chip::kUndefinedNodeId, CHIP_ERROR_INVALID_ARGUMENT);
 
-    // Copy into scratch so segment parsers can use C-style scans; RX topic is often lenstring without trailing NUL.
     char scratch[MATTER_MQTT_MAX_TOPIC_LEN];
     memcpy(scratch, topic.data(), topic.size());
     scratch[topic.size()] = '\0';
@@ -121,43 +202,29 @@ CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, chip::CharSpan expectedDevice
     const char * begin = scratch;
     const char * end   = scratch + topic.size();
 
-    // matter/v1/
     VerifyOrReturnError(static_cast<size_t>(end - begin) >= strlen(kTopicPrefix), CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(memcmp(begin, kTopicPrefix, strlen(kTopicPrefix)) == 0, CHIP_ERROR_INVALID_ARGUMENT);
     begin += strlen(kTopicPrefix);
 
-    // {deviceId}/  (must match commissioned node id string, length compared without requiring NUL on input topic)
     const char * afterDevice = static_cast<const char *>(memchr(begin, '/', static_cast<size_t>(end - begin)));
     VerifyOrReturnError(afterDevice != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(DeviceIdMatches(begin, afterDevice, expectedDeviceId), CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(DeviceNodeIdMatches(begin, afterDevice, expectedDeviceNodeId), CHIP_ERROR_INVALID_ARGUMENT);
 
-    // /ep/{endpointId}/
     const char * epKey = FindSegment(afterDevice, end, "/ep/");
     VerifyOrReturnError(epKey != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     const char * afterEp = static_cast<const char *>(memchr(epKey, '/', static_cast<size_t>(end - epKey)));
     VerifyOrReturnError(afterEp != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    char epBuf[8];
-    VerifyOrReturnError(CopySegment(epKey, afterEp, epBuf, sizeof(epBuf)), CHIP_ERROR_INVALID_ARGUMENT);
-    char * epEnd              = nullptr;
-    const unsigned long epVal = strtoul(epBuf, &epEnd, 10);
-    VerifyOrReturnError(epEnd != epBuf && *epEnd == '\0' && epVal <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
-    out.endpoint = static_cast<chip::EndpointId>(epVal);
+    ReturnErrorOnFailure(ParseTopicHexEndpoint(epKey, afterEp, out.endpoint));
 
-    // /cluster/{ClusterName}/
     const char * clusterKey = FindSegment(afterEp, end, "/cluster/");
     VerifyOrReturnError(clusterKey != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     const char * afterCluster = static_cast<const char *>(memchr(clusterKey, '/', static_cast<size_t>(end - clusterKey)));
     VerifyOrReturnError(afterCluster != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    static char clusterName[48];
-    VerifyOrReturnError(CopySegment(clusterKey, afterCluster, clusterName, sizeof(clusterName)), CHIP_ERROR_INVALID_ARGUMENT);
-    out.clusterName = clusterName;
+    ReturnErrorOnFailure(ParseTopicHexU32(clusterKey, afterCluster, out.clusterId));
 
-    // /cmd/{CommandName}  (no further path segments)
     const char * cmdKey = FindSegment(afterCluster, end, "/cmd/");
     VerifyOrReturnError(cmdKey != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    static char commandName[48];
-    VerifyOrReturnError(CopySegment(cmdKey, end, commandName, sizeof(commandName)), CHIP_ERROR_INVALID_ARGUMENT);
-    out.commandName = commandName;
+    ReturnErrorOnFailure(ParseTopicHexU32(cmdKey, end, out.commandId));
 
     return CHIP_NO_ERROR;
 }

@@ -28,29 +28,22 @@ using namespace chip::app::Clusters;
 namespace {
 
 constexpr MatterMqttAttributeEntry kOnOffAttributes[] = {
-    { "OnOff", OnOff::Attributes::OnOff::Id, MatterMqttAttributeQuantity::kScalar },
+    { OnOff::Attributes::OnOff::Id, MatterMqttAttributeQuantity::kScalar },
 };
 
-constexpr const char * kOnAliases[]      = { nullptr };
-constexpr const char * kOffAliases[]     = { nullptr };
-constexpr const char * kToggleAliases[]  = { "toggle", nullptr };
-
 constexpr MatterMqttCommandEntry kOnOffCommands[] = {
-    { "On", kOnAliases, OnOff::Commands::On::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
-    { "Off", kOffAliases, OnOff::Commands::Off::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
-    { "Toggle", kToggleAliases, OnOff::Commands::Toggle::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
+    { OnOff::Commands::On::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
+    { OnOff::Commands::Off::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
+    { OnOff::Commands::Toggle::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
 };
 
 } // namespace
 
-const ClusterAdapter kOnOffAdapter = {
-    OnOff::Id,
-    "OnOff",
-    kOnOffAttributes,
-    sizeof(kOnOffAttributes) / sizeof(kOnOffAttributes[0]),
-    kOnOffCommands,
-    sizeof(kOnOffCommands) / sizeof(kOnOffCommands[0]),
-    nullptr,
-};
+const ClusterAdapter kOnOffAdapter = { OnOff::Id,
+                                         kOnOffAttributes,
+                                         sizeof(kOnOffAttributes) / sizeof(kOnOffAttributes[0]),
+                                         kOnOffCommands,
+                                         sizeof(kOnOffCommands) / sizeof(kOnOffCommands[0]),
+                                         nullptr };
 
 #endif // ZCL_USING_ON_OFF_CLUSTER_SERVER

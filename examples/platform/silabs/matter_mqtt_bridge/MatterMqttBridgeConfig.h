@@ -42,6 +42,7 @@ public:
     size_t SnapshotPathCount() const override;
 
     CHIP_ERROR RefreshMqttDeviceId() override;
+    chip::NodeId GetMqttDeviceNodeId() const override;
     const char * GetMqttDeviceId() const override;
     bool IsMqttDeviceIdKnown() const override;
 
@@ -50,7 +51,8 @@ private:
 
     void BuildSnapshotPaths();
 
-    char mMqttDeviceId[MATTER_MQTT_DEVICE_ID_LEN] = {};
+    chip::NodeId mMqttDeviceNodeId                  = chip::kUndefinedNodeId;
+    char mMqttDeviceId[MATTER_MQTT_DEVICE_ID_LEN]   = {};
     bool mMqttDeviceIdKnown                         = false;
     MatterMqttSnapshotPath mSnapshotPaths[MATTER_MQTT_MAX_SNAPSHOT_PATHS]{};
     size_t mSnapshotPathCount = 0;

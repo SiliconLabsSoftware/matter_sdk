@@ -82,10 +82,10 @@ CHIP_ERROR BuildCommandReader(uint8_t * tlvBuffer, size_t tlvBufferSize, const M
         const MatterMqttArgField & field = entry.argSchema[i];
         const char * text                = ArgText(decodedArgs, field.name);
 
-        switch (field.tlvType)
+        switch (field.kind)
         {
         // Boolean arg: next packed byte from PackCommandArgs.
-        case TLVType::kTLVType_Boolean: {
+        case MatterMqttArgKind::kBoolean: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             VerifyOrReturnError(offset < command.argsLen, CHIP_ERROR_INVALID_ARGUMENT);
             const uint8_t raw = command.args[offset++];
@@ -93,7 +93,7 @@ CHIP_ERROR BuildCommandReader(uint8_t * tlvBuffer, size_t tlvBufferSize, const M
             break;
         }
         // Signed integer arg: one packed int8-sized byte from PackCommandArgs.
-        case TLVType::kTLVType_SignedInteger: {
+        case MatterMqttArgKind::kSignedInteger: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             VerifyOrReturnError(offset < command.argsLen, CHIP_ERROR_INVALID_ARGUMENT);
             const uint8_t raw = command.args[offset++];
@@ -101,7 +101,7 @@ CHIP_ERROR BuildCommandReader(uint8_t * tlvBuffer, size_t tlvBufferSize, const M
             break;
         }
         // Unsigned integer arg: one packed byte from PackCommandArgs.
-        case TLVType::kTLVType_UnsignedInteger: {
+        case MatterMqttArgKind::kUnsignedInteger: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             VerifyOrReturnError(offset < command.argsLen, CHIP_ERROR_INVALID_ARGUMENT);
             const uint8_t raw = command.args[offset++];
@@ -109,7 +109,7 @@ CHIP_ERROR BuildCommandReader(uint8_t * tlvBuffer, size_t tlvBufferSize, const M
             break;
         }
         // UTF-8 arg: value stays in decoded JSON (not in packed bytes).
-        case TLVType::kTLVType_UTF8String: {
+        case MatterMqttArgKind::kUtf8String: {
             if (text == nullptr)
             {
                 // Optional string omitted from JSON.
@@ -123,7 +123,7 @@ CHIP_ERROR BuildCommandReader(uint8_t * tlvBuffer, size_t tlvBufferSize, const M
                 writer.Put(ArgFieldTag(field.fieldId), ByteSpan(reinterpret_cast<const uint8_t *>(text), strlen(text))));
             break;
         }
-        // Adapter schema must use only the TLV types handled above.
+        // Adapter schema must use only the arg kinds handled above.
         default:
             return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
         }

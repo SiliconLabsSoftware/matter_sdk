@@ -56,8 +56,8 @@ struct ReportWork
 {
     chip::EndpointId endpoint     = 0;
     chip::ClusterId clusterId     = 0;
-    chip::AttributeId attributeId   = 0;
-    RawValueType valueType          = RawValueType::kNull;
+    chip::AttributeId attributeId = 0;
+    RawValueType valueType        = RawValueType::kNull;
     union
     {
         uint8_t boolean;

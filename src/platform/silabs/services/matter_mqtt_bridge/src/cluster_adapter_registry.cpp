@@ -23,38 +23,9 @@
 #include <cstdlib>
 #include <cstring>
 
-// ClusterAdapterRegistry: name/id resolution and MQTT JSON arg packing for command invoke.
+// ClusterAdapterRegistry: Matter path lookup and MQTT JSON arg packing for command invoke.
 
 namespace {
-
-bool SpanEqualsCString(chip::CharSpan span, const char * cstr)
-{
-    if (cstr == nullptr)
-    {
-        return false;
-    }
-    const size_t len = strlen(cstr);
-    return span.size() == len && memcmp(span.data(), cstr, len) == 0;
-}
-
-bool NameMatches(const MatterMqttCommandEntry & entry, chip::CharSpan name)
-{
-    if (SpanEqualsCString(name, entry.name))
-    {
-        return true;
-    }
-    if (entry.aliases != nullptr)
-    {
-        for (size_t i = 0; entry.aliases[i] != nullptr; ++i)
-        {
-            if (SpanEqualsCString(name, entry.aliases[i]))
-            {
-                return true;
-            }
-        }
-    }
-    return false;
-}
 
 const char * ArgValueForName(const MatterMqttCodecTypes::ArgsView & args, const char * name)
 {
@@ -84,61 +55,8 @@ const ClusterAdapter * ClusterAdapterRegistry::FindByClusterId(chip::ClusterId i
     return nullptr;
 }
 
-const ClusterAdapter * ClusterAdapterRegistry::FindByClusterName(chip::CharSpan name) const
-{
-    VerifyOrReturnError(!name.empty(), nullptr);
-    for (const ClusterAdapter & adapter : mAdapters)
-    {
-        if (SpanEqualsCString(name, adapter.clusterName))
-        {
-            return &adapter;
-        }
-    }
-    return nullptr;
-}
-
-bool ClusterAdapterRegistry::ResolveAttributeId(const ClusterAdapter * adapter, chip::CharSpan name,
-                                                      chip::AttributeId & out) const
-{
-    VerifyOrReturnError(adapter != nullptr && !name.empty(), false);
-    for (size_t i = 0; i < adapter->attributeCount; ++i)
-    {
-        if (SpanEqualsCString(name, adapter->attributes[i].name))
-        {
-            out = adapter->attributes[i].id;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool ClusterAdapterRegistry::ResolveCommandId(const ClusterAdapter * adapter, chip::CharSpan name, chip::CommandId & out,
-                                                    const MatterMqttCommandEntry ** outEntry) const
-{
-    VerifyOrReturnError(adapter != nullptr && !name.empty(), false);
-    for (size_t i = 0; i < adapter->commandCount; ++i)
-    {
-        if (NameMatches(adapter->commands[i], name))
-        {
-            out = adapter->commands[i].id;
-            if (outEntry != nullptr)
-            {
-                *outEntry = &adapter->commands[i];
-            }
-            return true;
-        }
-    }
-    return false;
-}
-
-const char * ClusterAdapterRegistry::AttributeNameOf(const ClusterAdapter * adapter, chip::AttributeId id) const
-{
-    const MatterMqttAttributeEntry * entry = FindAttribute(adapter, id);
-    return entry != nullptr ? entry->name : nullptr;
-}
-
 const MatterMqttAttributeEntry * ClusterAdapterRegistry::FindAttribute(const ClusterAdapter * adapter,
-                                                                             chip::AttributeId id) const
+                                                                       chip::AttributeId id) const
 {
     VerifyOrReturnError(adapter != nullptr, nullptr);
     for (size_t i = 0; i < adapter->attributeCount; ++i)
@@ -151,8 +69,7 @@ const MatterMqttAttributeEntry * ClusterAdapterRegistry::FindAttribute(const Clu
     return nullptr;
 }
 
-const MatterMqttCommandEntry * ClusterAdapterRegistry::FindCommand(const ClusterAdapter * adapter,
-                                                                         chip::CommandId id) const
+const MatterMqttCommandEntry * ClusterAdapterRegistry::FindCommand(const ClusterAdapter * adapter, chip::CommandId id) const
 {
     VerifyOrReturnError(adapter != nullptr, nullptr);
     for (size_t i = 0; i < adapter->commandCount; ++i)
@@ -167,8 +84,8 @@ const MatterMqttCommandEntry * ClusterAdapterRegistry::FindCommand(const Cluster
 
 // JSON arg strings -> compact byte packing consumed by CommandInjector (UTF-8 fields read from ArgsView directly).
 CHIP_ERROR ClusterAdapterRegistry::PackCommandArgs(const MatterMqttCommandEntry & entry,
-                                                         const MatterMqttCodecTypes::ArgsView & args, uint8_t * out,
-                                                         uint8_t & outLen) const
+                                                   const MatterMqttCodecTypes::ArgsView & args, uint8_t * out,
+                                                   uint8_t & outLen) const
 {
     VerifyOrReturnError(out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     outLen = 0;
@@ -179,26 +96,25 @@ CHIP_ERROR ClusterAdapterRegistry::PackCommandArgs(const MatterMqttCommandEntry 
         const MatterMqttArgField & field = entry.argSchema[i];
         const char * text                = ArgValueForName(args, field.name);
 
-        switch (field.tlvType)
+        switch (field.kind)
         {
         // UTF-8: not packed; CommandInjector reads JSON text from ArgsView by field name.
-        case chip::TLV::TLVType::kTLVType_UTF8String:
+        case MatterMqttArgKind::kUtf8String:
             if (text == nullptr && field.optional)
             {
-                // Optional string absent from JSON — skip field.
                 continue;
             }
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             continue;
         // Boolean: parse JSON "true"/"1" into one byte for BuildCommandReader.
-        case chip::TLV::TLVType::kTLVType_Boolean: {
+        case MatterMqttArgKind::kBoolean: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             VerifyOrReturnError(offset + 1 <= MATTER_MQTT_MAX_CMD_ARG_PACK, CHIP_ERROR_BUFFER_TOO_SMALL);
             out[offset++] = (strcmp(text, "true") == 0 || strcmp(text, "1") == 0) ? 1 : 0;
             break;
         }
         // Signed integer: parse JSON decimal into one int8-sized byte.
-        case chip::TLV::TLVType::kTLVType_SignedInteger: {
+        case MatterMqttArgKind::kSignedInteger: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             char * end          = nullptr;
             const long v        = strtol(text, &end, 10);
@@ -208,7 +124,7 @@ CHIP_ERROR ClusterAdapterRegistry::PackCommandArgs(const MatterMqttCommandEntry 
             break;
         }
         // Unsigned integer: parse JSON decimal into one byte.
-        case chip::TLV::TLVType::kTLVType_UnsignedInteger: {
+        case MatterMqttArgKind::kUnsignedInteger: {
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             char * end            = nullptr;
             const unsigned long v = strtoul(text, &end, 10);
@@ -217,7 +133,6 @@ CHIP_ERROR ClusterAdapterRegistry::PackCommandArgs(const MatterMqttCommandEntry 
             out[offset++] = static_cast<uint8_t>(v);
             break;
         }
-        // Unknown TLV type in adapter command schema.
         default:
             return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
         }

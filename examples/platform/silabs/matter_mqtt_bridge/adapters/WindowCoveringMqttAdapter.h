@@ -28,33 +28,28 @@ using namespace chip::app::Clusters;
 namespace {
 
 constexpr MatterMqttAttributeEntry kWindowAttributes[] = {
-    { "CurrentPositionLiftPercent100ths", WindowCovering::Attributes::CurrentPositionLiftPercent100ths::Id,
-      MatterMqttAttributeQuantity::kPercent100ths },
-    { "CurrentPositionTiltPercent100ths", WindowCovering::Attributes::CurrentPositionTiltPercent100ths::Id,
-      MatterMqttAttributeQuantity::kPercent100ths },
+    { WindowCovering::Attributes::CurrentPositionLiftPercent100ths::Id, MatterMqttAttributeQuantity::kPercent100ths },
+    { WindowCovering::Attributes::CurrentPositionTiltPercent100ths::Id, MatterMqttAttributeQuantity::kPercent100ths },
 };
 
 constexpr MatterMqttArgField kPercentArgs[] = {
-    { "liftPercent100thsValue", 0, chip::TLV::TLVType::kTLVType_UnsignedInteger },
+    { "liftPercent100thsValue", 0, MatterMqttArgKind::kUnsignedInteger },
 };
 
 constexpr MatterMqttCommandEntry kWindowCommands[] = {
-    { "GoToLiftPercentage", nullptr, WindowCovering::Commands::GoToLiftPercentage::Id, MatterMqttBridge::kCommandFlagNone,
-      kPercentArgs, sizeof(kPercentArgs) / sizeof(kPercentArgs[0]) },
-    { "GoToTiltPercentage", nullptr, WindowCovering::Commands::GoToTiltPercentage::Id, MatterMqttBridge::kCommandFlagNone,
-      kPercentArgs, sizeof(kPercentArgs) / sizeof(kPercentArgs[0]) },
+    { WindowCovering::Commands::GoToLiftPercentage::Id, MatterMqttBridge::kCommandFlagNone, kPercentArgs,
+      sizeof(kPercentArgs) / sizeof(kPercentArgs[0]) },
+    { WindowCovering::Commands::GoToTiltPercentage::Id, MatterMqttBridge::kCommandFlagNone, kPercentArgs,
+      sizeof(kPercentArgs) / sizeof(kPercentArgs[0]) },
 };
 
 } // namespace
 
-const ClusterAdapter kWindowCoveringAdapter = {
-    WindowCovering::Id,
-    "WindowCovering",
-    kWindowAttributes,
-    sizeof(kWindowAttributes) / sizeof(kWindowAttributes[0]),
-    kWindowCommands,
-    sizeof(kWindowCommands) / sizeof(kWindowCommands[0]),
-    nullptr,
-};
+const ClusterAdapter kWindowCoveringAdapter = { WindowCovering::Id,
+                                                kWindowAttributes,
+                                                sizeof(kWindowAttributes) / sizeof(kWindowAttributes[0]),
+                                                kWindowCommands,
+                                                sizeof(kWindowCommands) / sizeof(kWindowCommands[0]),
+                                                nullptr };
 
 #endif // ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER

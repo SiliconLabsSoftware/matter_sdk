@@ -54,11 +54,12 @@ struct AttributePublishSlot
     size_t payloadLen = 0;
 };
 
-// Bridge runtime state; Init/Shutdown run from the app/MQTT callback thread; invoke runs on Matter thread.
+// --- Constants ---
 
-constexpr bool kUseWildcardSubscribe = SL_MATTER_MQTT_BRIDGE_WILDCARD_SUBSCRIBE;
 // Match MqttClient queue depth so burst attribute reports can each hold a stable topic/payload.
 constexpr size_t kAttributePublishSlotCount = 4;
+
+// --- Static state (Init/Shutdown on app/MQTT paths; invoke on Matter thread) ---
 
 MatterMqttJsonCodec sCodec;
 MqttCommandInjector sInjector;
@@ -78,21 +79,137 @@ InboundCommand sScheduledInbound;
 uint32_t sAttributePublishSeq = 0;
 AttributePublishSlot sAttributePublishSlots[kAttributePublishSlotCount];
 
-void Reject(const char * reason, const char * detail);
+// --- Forward declarations ---
+
+void Reject(chip::CommandId commandId, const char * reason);
 
 AttributePublishSlot * AcquireAttributePublishSlot();
 void ReleaseAttributePublishSlot(AttributePublishSlot * slot);
 void OnAttributePublishDone(CHIP_ERROR result, void * context);
 
+void StashInboundArgs(const MatterMqttCodecTypes::ArgsView & src);
+ReportWork MakeReportWork(const chip::app::ConcreteAttributePath & path, const RawValue & raw);
+RawValue RawFromWork(const ReportWork & work);
+
+CHIP_ERROR MatterMqttFormatReportValue(const ClusterAdapter * adapter, const MatterMqttAttributeEntry * attr,
+                                       const RawValue & raw, char * out, size_t outLen, bool & asNumber);
+
+void ReportWorkHandler(const uint8_t * data, size_t len);
+
 CHIP_ERROR EnqueueReport(const MatterMqttBridgeConfig & config, const chip::app::ConcreteAttributePath & path);
-/** Matter thread: attribute read + queue publish work on the MQTT service thread. */
 void PublishPath(const chip::app::ConcreteAttributePath & path);
 void AdvanceSnapshot(intptr_t arg);
 void ContinueSnapshot(intptr_t arg);
 void StartSnapshot(intptr_t arg);
-void SubscribeCommandsAndStartSnapshot();
 
-/** Maps RawValue + adapter quantity metadata to MQTT report JSON value strings. */
+void HandleInboundCommand(InboundCommand command);
+bool OnInboundMessage(chip::CharSpan topic, chip::ByteSpan payload);
+
+void SubscribeCommandsAndStartSnapshot();
+void InitOnMatterThread(intptr_t arg);
+
+// --- Inbound command reject logging ---
+
+void Reject(chip::CommandId commandId, const char * reason)
+{
+    MATTER_MQTT_LOG_ERROR("command rejected cmd=" ChipLogFormatMEI " (%s)", ChipLogValueMEI(commandId), reason);
+}
+
+// --- Publish slot pool (MQTT thread) ---
+
+AttributePublishSlot * AcquireAttributePublishSlot()
+{
+    for (size_t i = 0; i < kAttributePublishSlotCount; ++i)
+    {
+        if (!sAttributePublishSlots[i].inUse)
+        {
+            sAttributePublishSlots[i].inUse      = true;
+            sAttributePublishSlots[i].payloadLen = 0;
+            return &sAttributePublishSlots[i];
+        }
+    }
+    return nullptr;
+}
+
+void ReleaseAttributePublishSlot(AttributePublishSlot * slot)
+{
+    if (slot != nullptr)
+    {
+        slot->inUse = false;
+    }
+}
+
+void OnAttributePublishDone(CHIP_ERROR result, void * context)
+{
+    ReleaseAttributePublishSlot(static_cast<AttributePublishSlot *>(context));
+    if (result != CHIP_NO_ERROR)
+    {
+        MATTER_MQTT_LOG_ERROR("attribute publish async failed err=%" CHIP_ERROR_FORMAT, result.Format());
+    }
+}
+
+// --- Cross-thread command arg stash ---
+
+void StashInboundArgs(const MatterMqttCodecTypes::ArgsView & src)
+{
+    sInboundArgs.view.count = 0;
+    for (size_t i = 0; i < src.count && i < MATTER_MQTT_MAX_ARGS; ++i)
+    {
+        strncpy(sInboundArgs.names[i], src.items[i].name, sizeof(sInboundArgs.names[i]) - 1);
+        strncpy(sInboundArgs.values[i], src.items[i].value, sizeof(sInboundArgs.values[i]) - 1);
+        sInboundArgs.view.items[i].name  = sInboundArgs.names[i];
+        sInboundArgs.view.items[i].value = sInboundArgs.values[i];
+        ++sInboundArgs.view.count;
+    }
+}
+
+// --- ReportWork helpers ---
+
+ReportWork MakeReportWork(const chip::app::ConcreteAttributePath & path, const RawValue & raw)
+{
+    ReportWork work;
+    work.endpoint    = path.mEndpointId;
+    work.clusterId   = path.mClusterId;
+    work.attributeId = path.mAttributeId;
+    work.valueType   = raw.type;
+    switch (raw.type)
+    {
+    case RawValueType::kBool:
+        work.value.boolean = raw.data.boolean ? 1 : 0;
+        break;
+    case RawValueType::kSigned:
+        work.value.signedValue = raw.data.signedValue;
+        break;
+    case RawValueType::kUnsigned:
+        work.value.unsignedValue = raw.data.unsignedValue;
+        break;
+    default:
+        break;
+    }
+    return work;
+}
+
+RawValue RawFromWork(const ReportWork & work)
+{
+    RawValue raw;
+    raw.type = work.valueType;
+    switch (work.valueType)
+    {
+    case RawValueType::kBool:
+        raw.data.boolean = work.value.boolean != 0;
+        break;
+    case RawValueType::kSigned:
+        raw.data.signedValue = work.value.signedValue;
+        break;
+    case RawValueType::kUnsigned:
+        raw.data.unsignedValue = work.value.unsignedValue;
+        break;
+    default:
+        break;
+    }
+    return raw;
+}
+
 CHIP_ERROR MatterMqttFormatReportValue(const ClusterAdapter * adapter, const MatterMqttAttributeEntry * attr,
                                        const RawValue & raw, char * out, size_t outLen, bool & asNumber)
 {
@@ -146,102 +263,6 @@ CHIP_ERROR MatterMqttFormatReportValue(const ClusterAdapter * adapter, const Mat
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
 
-void Reject(const char * reason, const char * detail)
-{
-    MATTER_MQTT_LOG_ERROR("command rejected %s (%s)", reason, detail);
-}
-
-AttributePublishSlot * AcquireAttributePublishSlot()
-{
-    for (size_t i = 0; i < kAttributePublishSlotCount; ++i)
-    {
-        if (!sAttributePublishSlots[i].inUse)
-        {
-            sAttributePublishSlots[i].inUse      = true;
-            sAttributePublishSlots[i].payloadLen = 0;
-            return &sAttributePublishSlots[i];
-        }
-    }
-    return nullptr;
-}
-
-void ReleaseAttributePublishSlot(AttributePublishSlot * slot)
-{
-    if (slot != nullptr)
-    {
-        slot->inUse = false;
-    }
-}
-
-void OnAttributePublishDone(CHIP_ERROR result, void * context)
-{
-    ReleaseAttributePublishSlot(static_cast<AttributePublishSlot *>(context));
-    if (result != CHIP_NO_ERROR)
-    {
-        MATTER_MQTT_LOG_ERROR("attribute publish async failed err=%" CHIP_ERROR_FORMAT, result.Format());
-    }
-}
-
-// Copy decoded JSON arg strings into static storage so they survive the cross-thread lambda to HandleInboundCommand.
-void StashInboundArgs(const MatterMqttCodecTypes::ArgsView & src)
-{
-    sInboundArgs.view.count = 0;
-    for (size_t i = 0; i < src.count && i < MATTER_MQTT_MAX_ARGS; ++i)
-    {
-        strncpy(sInboundArgs.names[i], src.items[i].name, sizeof(sInboundArgs.names[i]) - 1);
-        strncpy(sInboundArgs.values[i], src.items[i].value, sizeof(sInboundArgs.values[i]) - 1);
-        sInboundArgs.view.items[i].name  = sInboundArgs.names[i];
-        sInboundArgs.view.items[i].value = sInboundArgs.values[i];
-        ++sInboundArgs.view.count;
-    }
-}
-
-// Flatten Matter path + scalar value into a POD copy for MqttClient::ScheduleWork (MQTT thread must not read attributes).
-ReportWork MakeReportWork(const chip::app::ConcreteAttributePath & path, const RawValue & raw)
-{
-    ReportWork work;
-    work.endpoint     = path.mEndpointId;
-    work.clusterId    = path.mClusterId;
-    work.attributeId  = path.mAttributeId;
-    work.valueType    = raw.type;
-    switch (raw.type)
-    {
-    case RawValueType::kBool:
-        work.value.boolean = raw.data.boolean ? 1 : 0;
-        break;
-    case RawValueType::kSigned:
-        work.value.signedValue = raw.data.signedValue;
-        break;
-    case RawValueType::kUnsigned:
-        work.value.unsignedValue = raw.data.unsignedValue;
-        break;
-    default:
-        break;
-    }
-    return work;
-}
-
-RawValue RawFromWork(const ReportWork & work)
-{
-    RawValue raw;
-    raw.type = work.valueType;
-    switch (work.valueType)
-    {
-    case RawValueType::kBool:
-        raw.data.boolean = work.value.boolean != 0;
-        break;
-    case RawValueType::kSigned:
-        raw.data.signedValue = work.value.signedValue;
-        break;
-    case RawValueType::kUnsigned:
-        raw.data.unsignedValue = work.value.unsignedValue;
-        break;
-    default:
-        break;
-    }
-    return raw;
-}
-
 /** Runs on the MQTT service thread: build attribute report topic + JSON payload, then Publish. */
 void ReportWorkHandler(const uint8_t * data, size_t len)
 {
@@ -250,33 +271,19 @@ void ReportWorkHandler(const uint8_t * data, size_t len)
     VerifyOrReturn(profile->IsMqttDeviceIdKnown());
     VerifyOrReturn(len == sizeof(ReportWork));
 
-    const auto * work = reinterpret_cast<const ReportWork *>(data);
-
+    const auto * work              = reinterpret_cast<const ReportWork *>(data);
     const ClusterAdapter * adapter = sConfig.adapters->FindByClusterId(work->clusterId);
-    const MatterMqttAttributeEntry * attr = adapter != nullptr ? sConfig.adapters->FindAttribute(adapter, work->attributeId) : nullptr;
+    const MatterMqttAttributeEntry * attr = sConfig.adapters->FindAttribute(adapter, work->attributeId);
+    VerifyOrReturn(adapter != nullptr && attr != nullptr);
+
     char valueText[MATTER_MQTT_MAX_VALUE_LEN];
     char json[MATTER_MQTT_MAX_PAYLOAD_LEN];
-    bool asNumber            = false;
-    const char * attrName    = nullptr;
+    bool asNumber = false;
 
-    if (adapter == nullptr || attr == nullptr)
-    {
-        MATTER_MQTT_LOG_ERROR("attribute report skipped: no adapter/attribute mapping");
-        return;
-    }
-    if (MatterMqttFormatReportValue(adapter, attr, RawFromWork(*work), valueText, sizeof(valueText), asNumber) != CHIP_NO_ERROR)
-    {
-        MATTER_MQTT_LOG_ERROR("attribute report skipped: value format failed ep=%u", static_cast<unsigned>(work->endpoint));
-        return;
-    }
-
-    if (sConfig.codec->EncodeReport(asNumber, chip::CharSpan::fromCharString(valueText), json, sizeof(json)) != CHIP_NO_ERROR)
-    {
-        return;
-    }
-
-    attrName = sConfig.adapters->AttributeNameOf(adapter, work->attributeId);
-    VerifyOrReturn(attrName != nullptr);
+    VerifyOrReturn(MatterMqttFormatReportValue(adapter, attr, RawFromWork(*work), valueText, sizeof(valueText), asNumber) ==
+                   CHIP_NO_ERROR);
+    VerifyOrReturn(sConfig.codec->EncodeReport(asNumber, chip::CharSpan::fromCharString(valueText), json, sizeof(json)) ==
+                   CHIP_NO_ERROR);
 
     AttributePublishSlot * slot = AcquireAttributePublishSlot();
     if (slot == nullptr)
@@ -289,11 +296,8 @@ void ReportWorkHandler(const uint8_t * data, size_t len)
         return;
     }
 
-    // matter/v1/{deviceId}/ep/{ep}/cluster/{name}/attr/{name}
-    if (MatterMqttTopic::BuildAttributeTopic(chip::CharSpan::fromCharString(profile->GetMqttDeviceId()), work->endpoint,
-                                             chip::CharSpan::fromCharString(adapter->clusterName),
-                                             chip::CharSpan::fromCharString(attrName), slot->topic, sizeof(slot->topic)) !=
-        CHIP_NO_ERROR)
+    if (MatterMqttTopic::BuildAttributeTopic(profile->GetMqttDeviceNodeId(), work->endpoint, work->clusterId,
+                                             work->attributeId, slot->topic, sizeof(slot->topic)) != CHIP_NO_ERROR)
     {
         ReleaseAttributePublishSlot(slot);
         return;
@@ -303,7 +307,7 @@ void ReportWorkHandler(const uint8_t * data, size_t len)
     slot->payload[sizeof(slot->payload) - 1] = '\0';
     slot->payloadLen                         = strlen(slot->payload);
     const chip::ByteSpan payload(reinterpret_cast<uint8_t *>(slot->payload), slot->payloadLen);
-    const auto qos = static_cast<chip::DeviceLayer::Silabs::MqttQoS>(sConfig.reportQos);
+    const auto qos            = static_cast<chip::DeviceLayer::Silabs::MqttQoS>(sConfig.reportQos);
     const uint32_t publishSeq = ++sAttributePublishSeq;
     MATTER_MQTT_LOG("attribute publish #%" PRIu32 " topic=%s payload=%s", publishSeq, slot->topic, slot->payload);
 
@@ -351,6 +355,7 @@ CHIP_ERROR EnqueueReport(const MatterMqttBridgeConfig & config, const chip::app:
                               static_cast<unsigned>(path.mEndpointId), schedErr.Format());
         return schedErr;
     }
+
     MATTER_MQTT_LOG_DETAIL("attribute report queued ep=%u attr=" ChipLogFormatMEI, static_cast<unsigned>(path.mEndpointId),
                            ChipLogValueMEI(path.mAttributeId));
     return CHIP_NO_ERROR;
@@ -421,42 +426,40 @@ bool OnInboundMessage(chip::CharSpan topic, chip::ByteSpan payload)
     VerifyOrReturnError(sConfig.codec != nullptr && sConfig.adapters != nullptr && profile != nullptr, false);
     VerifyOrReturnError(profile->IsMqttDeviceIdKnown(), false);
 
-    // --- Topic: extract endpoint, MQTT cluster name, command name; reject wrong device id ---
+    // --- Topic: extract endpoint, cluster id, command id; reject wrong device id ---
     MatterMqttTopic::ParsedCommandTopic parsed;
-    if (MatterMqttTopic::ParseCommandTopic(topic, chip::CharSpan::fromCharString(profile->GetMqttDeviceId()), parsed) !=
-        CHIP_NO_ERROR)
+    if (MatterMqttTopic::ParseCommandTopic(topic, profile->GetMqttDeviceNodeId(), parsed) != CHIP_NO_ERROR)
     {
         return false;
     }
 
+    const chip::CommandId commandId = parsed.commandId;
+
     if (!profile->IsEndpointAllowed(parsed.endpoint))
     {
-        Reject(parsed.commandName, "endpoint");
+        Reject(commandId, "endpoint");
         return true;
     }
 
-    // --- Map MQTT names to Matter cluster adapter + command id ---
-    const ClusterAdapter * adapter = sConfig.adapters->FindByClusterName(chip::CharSpan::fromCharString(parsed.clusterName));
+    // --- Map topic ids to Matter cluster adapter + command entry ---
+    const ClusterAdapter * adapter = sConfig.adapters->FindByClusterId(parsed.clusterId);
     if (adapter == nullptr)
     {
-        Reject(parsed.commandName, "unknown_cluster");
+        Reject(commandId, "unknown_cluster");
         return true;
     }
 
-    chip::CommandId commandId = 0;
-    const MatterMqttCommandEntry * commandEntry = nullptr;
-    if (!sConfig.adapters->ResolveCommandId(adapter, chip::CharSpan::fromCharString(parsed.commandName), commandId,
-                                          &commandEntry) ||
-        commandEntry == nullptr)
+    const MatterMqttCommandEntry * commandEntry = sConfig.adapters->FindCommand(adapter, commandId);
+    if (commandEntry == nullptr)
     {
-        Reject(parsed.commandName, "unknown_command");
+        Reject(commandId, "unknown_command");
         return true;
     }
 
     // --- Product ACL (IsCommandAllowed) ---
     if (!profile->IsCommandAllowed(parsed.endpoint, adapter->clusterId, commandId))
     {
-        Reject(parsed.commandName, "denied");
+        Reject(commandId, "denied");
         return true;
     }
 
@@ -464,7 +467,7 @@ bool OnInboundMessage(chip::CharSpan topic, chip::ByteSpan payload)
     if ((commandEntry->flags & kCommandFlagUnsupported) != 0 || (commandEntry->flags & kCommandFlagFabricScoped) != 0 ||
         (commandEntry->flags & kCommandFlagHasResponse) != 0)
     {
-        Reject(parsed.commandName, "unsupported");
+        Reject(commandId, "unsupported");
         return true;
     }
 
@@ -472,7 +475,7 @@ bool OnInboundMessage(chip::CharSpan topic, chip::ByteSpan payload)
     MatterMqttCodecTypes::ArgsView args;
     if (sConfig.codec->DecodeArgs(payload, args) != CHIP_NO_ERROR)
     {
-        Reject(parsed.commandName, "args");
+        Reject(commandId, "args");
         return true;
     }
 
@@ -484,7 +487,7 @@ bool OnInboundMessage(chip::CharSpan topic, chip::ByteSpan payload)
 
     if (sConfig.adapters->PackCommandArgs(*commandEntry, args, inbound.args, inbound.argsLen) != CHIP_NO_ERROR)
     {
-        Reject(parsed.commandName, "args_pack");
+        Reject(commandId, "args_pack");
         return true;
     }
 
@@ -495,7 +498,7 @@ bool OnInboundMessage(chip::CharSpan topic, chip::ByteSpan payload)
     return true;
 }
 
-// Subscribe to matter/v1/{deviceId}/ep/+/cluster/+/cmd/[+] and kick off attribute snapshot.
+// Subscribe to matter/v1/{deviceId}/ep/+/cluster/+/cmd/+ and kick off attribute snapshot.
 void SubscribeCommandsAndStartSnapshot()
 {
     DeviceMqttProfile * profile = sConfig.profile;
@@ -510,8 +513,8 @@ void SubscribeCommandsAndStartSnapshot()
 
     if (!sSubscribed)
     {
-        if (MatterMqttTopic::BuildCommandFilter(chip::CharSpan::fromCharString(profile->GetMqttDeviceId()), kUseWildcardSubscribe,
-                                                sCommandFilterTopic, sizeof(sCommandFilterTopic)) != CHIP_NO_ERROR)
+        if (MatterMqttTopic::BuildCommandFilter(profile->GetMqttDeviceNodeId(), sCommandFilterTopic,
+                                                sizeof(sCommandFilterTopic)) != CHIP_NO_ERROR)
         {
             MATTER_MQTT_LOG_ERROR("command filter topic build failed");
             return;
@@ -565,10 +568,10 @@ CHIP_ERROR MatterMqttBridge::Init(chip::DeviceLayer::Silabs::MqttClient & client
     MATTER_MQTT_LOG("Init (mqtt connected=%d)", client.IsConnected());
 
     sTransport.Bind(client);
-    sConfig           = config;
-    sSubscribed       = false;
-    sSnapshotStarted  = false;
-    sSnapshotActive   = false;
+    sConfig          = config;
+    sSubscribed      = false;
+    sSnapshotStarted = false;
+    sSnapshotActive  = false;
 
     if (sConfig.transport == nullptr)
     {
@@ -596,9 +599,9 @@ CHIP_ERROR MatterMqttBridge::Init(chip::DeviceLayer::Silabs::MqttClient & client
 
 void MatterMqttBridge::Shutdown()
 {
-    sSubscribed          = false;
-    sSnapshotStarted     = false;
-    sSnapshotActive      = false;
+    sSubscribed            = false;
+    sSnapshotStarted       = false;
+    sSnapshotActive        = false;
     sAttributePublishSeq = 0;
     for (size_t i = 0; i < kAttributePublishSlotCount; ++i)
     {

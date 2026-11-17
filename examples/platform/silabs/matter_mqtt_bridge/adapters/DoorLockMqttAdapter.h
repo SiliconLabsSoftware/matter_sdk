@@ -49,30 +49,27 @@ const char * DoorLockLockStateName(chip::AttributeId attrId, uint32_t raw)
 }
 
 constexpr MatterMqttAttributeEntry kDoorLockAttributes[] = {
-    { "LockState", DoorLock::Attributes::LockState::Id, MatterMqttAttributeQuantity::kEnum },
+    { DoorLock::Attributes::LockState::Id, MatterMqttAttributeQuantity::kEnum },
 };
 
 constexpr MatterMqttArgField kDoorLockPinArgs[] = {
-    { "PINCode", 0, chip::TLV::TLVType::kTLVType_UTF8String, true },
+    { "PINCode", 0, MatterMqttArgKind::kUtf8String, true },
 };
 
 constexpr MatterMqttCommandEntry kDoorLockCommands[] = {
-    { "LockDoor", nullptr, DoorLock::Commands::LockDoor::Id, MatterMqttBridge::kCommandFlagTimed, kDoorLockPinArgs,
+    { DoorLock::Commands::LockDoor::Id, MatterMqttBridge::kCommandFlagTimed, kDoorLockPinArgs,
       sizeof(kDoorLockPinArgs) / sizeof(kDoorLockPinArgs[0]) },
-    { "UnlockDoor", nullptr, DoorLock::Commands::UnlockDoor::Id, MatterMqttBridge::kCommandFlagTimed, kDoorLockPinArgs,
+    { DoorLock::Commands::UnlockDoor::Id, MatterMqttBridge::kCommandFlagTimed, kDoorLockPinArgs,
       sizeof(kDoorLockPinArgs) / sizeof(kDoorLockPinArgs[0]) },
 };
 
 } // namespace
 
-const ClusterAdapter kDoorLockAdapter = {
-    DoorLock::Id,
-    "DoorLock",
-    kDoorLockAttributes,
-    sizeof(kDoorLockAttributes) / sizeof(kDoorLockAttributes[0]),
-    kDoorLockCommands,
-    sizeof(kDoorLockCommands) / sizeof(kDoorLockCommands[0]),
-    DoorLockLockStateName,
-};
+const ClusterAdapter kDoorLockAdapter = { DoorLock::Id,
+                                          kDoorLockAttributes,
+                                          sizeof(kDoorLockAttributes) / sizeof(kDoorLockAttributes[0]),
+                                          kDoorLockCommands,
+                                          sizeof(kDoorLockCommands) / sizeof(kDoorLockCommands[0]),
+                                          DoorLockLockStateName };
 
 #endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER

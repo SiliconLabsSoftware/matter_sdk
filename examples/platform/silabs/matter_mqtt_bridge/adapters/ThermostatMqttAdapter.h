@@ -45,34 +45,29 @@ const char * ThermostatSystemModeName(chip::AttributeId attrId, uint32_t raw)
 }
 
 constexpr MatterMqttAttributeEntry kThermostatAttributes[] = {
-    { "LocalTemperature", Thermostat::Attributes::LocalTemperature::Id, MatterMqttAttributeQuantity::kTemperatureDeciDegrees },
-    { "OccupiedHeatingSetpoint", Thermostat::Attributes::OccupiedHeatingSetpoint::Id,
-      MatterMqttAttributeQuantity::kTemperatureDeciDegrees },
-    { "OccupiedCoolingSetpoint", Thermostat::Attributes::OccupiedCoolingSetpoint::Id,
-      MatterMqttAttributeQuantity::kTemperatureDeciDegrees },
-    { "SystemMode", Thermostat::Attributes::SystemMode::Id, MatterMqttAttributeQuantity::kEnum },
+    { Thermostat::Attributes::LocalTemperature::Id, MatterMqttAttributeQuantity::kTemperatureDeciDegrees },
+    { Thermostat::Attributes::OccupiedHeatingSetpoint::Id, MatterMqttAttributeQuantity::kTemperatureDeciDegrees },
+    { Thermostat::Attributes::OccupiedCoolingSetpoint::Id, MatterMqttAttributeQuantity::kTemperatureDeciDegrees },
+    { Thermostat::Attributes::SystemMode::Id, MatterMqttAttributeQuantity::kEnum },
 };
 
 constexpr MatterMqttArgField kSetpointRaiseLowerArgs[] = {
-    { "mode", 0, chip::TLV::TLVType::kTLVType_UnsignedInteger },
-    { "amount", 1, chip::TLV::TLVType::kTLVType_SignedInteger },
+    { "mode", 0, MatterMqttArgKind::kUnsignedInteger },
+    { "amount", 1, MatterMqttArgKind::kSignedInteger },
 };
 
 constexpr MatterMqttCommandEntry kThermostatCommands[] = {
-    { "SetpointRaiseLower", nullptr, Thermostat::Commands::SetpointRaiseLower::Id, MatterMqttBridge::kCommandFlagNone,
-      kSetpointRaiseLowerArgs, sizeof(kSetpointRaiseLowerArgs) / sizeof(kSetpointRaiseLowerArgs[0]) },
+    { Thermostat::Commands::SetpointRaiseLower::Id, MatterMqttBridge::kCommandFlagNone, kSetpointRaiseLowerArgs,
+      sizeof(kSetpointRaiseLowerArgs) / sizeof(kSetpointRaiseLowerArgs[0]) },
 };
 
 } // namespace
 
-const ClusterAdapter kThermostatAdapter = {
-    Thermostat::Id,
-    "Thermostat",
-    kThermostatAttributes,
-    sizeof(kThermostatAttributes) / sizeof(kThermostatAttributes[0]),
-    kThermostatCommands,
-    sizeof(kThermostatCommands) / sizeof(kThermostatCommands[0]),
-    ThermostatSystemModeName,
-};
+const ClusterAdapter kThermostatAdapter = { Thermostat::Id,
+                                            kThermostatAttributes,
+                                            sizeof(kThermostatAttributes) / sizeof(kThermostatAttributes[0]),
+                                            kThermostatCommands,
+                                            sizeof(kThermostatCommands) / sizeof(kThermostatCommands[0]),
+                                            ThermostatSystemModeName };
 
 #endif // ZCL_USING_THERMOSTAT_CLUSTER_SERVER

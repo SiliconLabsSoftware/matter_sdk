@@ -37,7 +37,10 @@ inline constexpr size_t MATTER_MQTT_MAX_ARGS = 8;
 inline constexpr size_t MATTER_MQTT_MAX_ARG_NAME_LEN = 32;
 /** Inbound arg JSON text uses the same bound as outbound report scalars. */
 inline constexpr size_t MATTER_MQTT_MAX_ARG_VALUE_LEN = MATTER_MQTT_MAX_VALUE_LEN;
-inline constexpr size_t MATTER_MQTT_DEVICE_ID_LEN       = 20; // "0x" + 16 hex + NUL
+/** Max MQTT topic device id: up to 16 uppercase hex digits (uint64 NodeId) plus NUL; was 20 with a 2-char "0x" prefix. */
+inline constexpr size_t MATTER_MQTT_DEVICE_ID_LEN = 18;
+/** Topic segment parse scratch: longest id is 16 hex digits (uint64) plus NUL. */
+inline constexpr size_t MATTER_MQTT_TOPIC_ID_HEX_SCRATCH = 17;
 /**
  * Max packed numeric/bool bytes for one command (PackCommandArgs).
  * Two bytes per small-integer TLV field; 12 fits six fields with margin.
@@ -49,7 +52,3 @@ inline constexpr size_t MATTER_MQTT_MAX_SNAPSHOT_PATHS = 32;
  * Observed scalar-only commands encode to well under 32 B; 96 B leaves room for short UTF-8 strings in the same structure.
  */
 inline constexpr size_t MATTER_MQTT_MAX_INVOKE_TLV = 96;
-
-#ifndef SL_MATTER_MQTT_BRIDGE_WILDCARD_SUBSCRIBE
-#define SL_MATTER_MQTT_BRIDGE_WILDCARD_SUBSCRIBE 1
-#endif
