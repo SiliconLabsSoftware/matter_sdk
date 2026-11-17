@@ -8,7 +8,7 @@ RUN set -x \
     && ZEPHYR_SDK_VERSION=1.0.1 \
     # Zephyr Silabs commit hash silabs/dev branch September 3 2026:
     # v4.4.2 + other fixes
-    && ZEPHYR_SILABS_HASH=4a0002ab7125da92f8194b9b7e54c03fcd8f22d9 \
+    && ZEPHYR_SILABS_HASH=7b18aad030054c4bfc4a24243f3c1827f34d089b \
     && python3 -m venv venv \
     && . venv/bin/activate \
     && pip3 install west \
