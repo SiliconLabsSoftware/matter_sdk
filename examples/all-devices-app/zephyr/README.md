@@ -98,6 +98,16 @@ west build ... -- -DFILE_SUFFIX=debug
 west build ... -- -DFILE_SUFFIX=release
 ```
 
+## Zephyr Networking
+
+On Silicon Labs Series 2 boards with an enabled IEEE 802.15.4 radio,
+`CONFIG_CHIP_USE_ZEPHYR_NETWORKING=n` is the default: Matter uses native
+OpenThread endpoints instead of Zephyr sockets, reducing flash usage. To use
+Zephyr sockets instead, set `CONFIG_CHIP_USE_ZEPHYR_NETWORKING=y`; this is
+required for Matter over Wi-Fi and is the default on Wi-Fi-only boards. Leave
+`CONFIG_CHIP_USE_OT_ENDPOINT` unset; its default follows this selection
+automatically.
+
 ## Device Selection
 
 Device types are Kconfig options (`CONFIG_ALL_DEVICES_DEVICE_*`, see

@@ -21,6 +21,10 @@
 #include <device-factory/DeviceFactory.h>
 #include <lib/support/CodeUtils.h>
 
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
+#include <inet/EndPointStateOpenThread.h>
+#endif
+
 #include <credentials/DeviceAttestationCredsProvider.h>
 #ifdef CONFIG_CHIP_FACTORY_DATA
 #include <platform/CommissionableDataProvider.h>
@@ -48,6 +52,19 @@ CHIP_ERROR InitSilabsCredentials()
     DeviceLayer::SetDeviceInstanceInfoProvider(&DeviceLayer::DeviceInstanceInfoProviderMgrImpl());
 
 #endif // CONFIG_CHIP_FACTORY_DATA
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR ConfigureOpenThreadEndpointParams(ServerInitParams & initParams)
+{
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
+    static Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;
+    nativeParams.openThreadInstancePtr = DeviceLayer::ThreadStackMgrImpl().OTInstance();
+    VerifyOrReturnError(nativeParams.openThreadInstancePtr != nullptr, CHIP_ERROR_INCORRECT_STATE);
+    nativeParams.lockCb             = [] { DeviceLayer::ThreadStackMgr().LockThreadStack(); };
+    nativeParams.unlockCb           = [] { DeviceLayer::ThreadStackMgr().UnlockThreadStack(); };
+    initParams.endpointNativeParams = &nativeParams;
+#endif
     return CHIP_NO_ERROR;
 }
 
