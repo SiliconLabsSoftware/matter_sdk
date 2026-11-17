@@ -49,6 +49,7 @@
 #endif
 
 #if defined(SILABS_OTA_ENABLED) && SILABS_OTA_ENABLED
+#include "OTAConfig.h"
 #include <app/clusters/ota-requestor/CodegenIntegration.h>  // nogncheck
 #include <app/clusters/ota-requestor/DefaultOTARequestor.h> // nogncheck
 #include <device/types/root-node/features/OtaFeature.h>     // nogncheck
@@ -139,8 +140,7 @@ void AppTask::ButtonEventHandler(uint8_t button, uint8_t btnAction)
 }
 
 CHIP_ERROR AppTask::InitCodeDrivenDataModel(chip::PersistentStorageDelegate & storage,
-                                            chip::Credentials::GroupDataProvider * groupDataProvider,
-                                            chip::Crypto::SessionKeystore * /* sessionKeyStore */)
+                                            chip::Credentials::GroupDataProvider * groupDataProvider)
 {
     VerifyOrReturnError(groupDataProvider != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -189,6 +189,7 @@ CHIP_ERROR AppTask::InitCodeDrivenDataModel(chip::PersistentStorageDelegate & st
     OtaFeature::Context otaContext{
         .otaCommands = gRequestorCore,
         .attributes  = chip::GetOTARequestorAttributes(),
+        .cluster     = chip::GetOTARequestorCluster(),
     };
     sRootNode = std::make_unique<RootNodeWith<NetworkFeature, OtaFeature>>(rootNodeContext, networkContext, otaContext);
 #else
