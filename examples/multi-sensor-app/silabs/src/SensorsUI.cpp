@@ -24,6 +24,7 @@
 #include "lcd.h"
 #include "sl_memlcd.h"
 #include <app/data-model/Nullable.h>
+#include <app/util/config.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -69,12 +70,12 @@ struct WorkContext
 
 void GetTemperatureHumidityWork(intptr_t contextPtr)
 {
-    Status status = Status::Success;
-
     WorkContext * context = reinterpret_cast<WorkContext *>(contextPtr);
 
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
     {
         chip::app::DataModel::Nullable<int16_t> value;
+        Status status = Status::Success;
 
         GLIB_drawStringOnLine(context->glibContext, "Temp. Sensor", context->line++, GLIB_ALIGN_LEFT, 0, 0, true);
 
@@ -102,11 +103,16 @@ void GetTemperatureHumidityWork(intptr_t contextPtr)
             value.SetNull();
         }
     }
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 
+#if defined(MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER) && defined(MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER)
     GLIB_drawStringOnLine(context->glibContext, "", context->line++, GLIB_ALIGN_LEFT, 0, 0, true);
+#endif // both measurement clusters
 
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     {
         chip::app::DataModel::Nullable<uint16_t> value;
+        Status status = Status::Success;
         GLIB_drawStringOnLine(context->glibContext, "Humidity Sensor", context->line++, GLIB_ALIGN_LEFT, 0, 0, true);
 
         // Get and write humidity measured value
@@ -133,6 +139,11 @@ void GetTemperatureHumidityWork(intptr_t contextPtr)
             value.SetNull();
         }
     }
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+
+#if !defined(MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER) && !defined(MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER)
+    (void) context;
+#endif
 
 #if defined (SL_LCDCTRL_MUX) && SL_LCDCTRL_MUX
     VerifyOrReturn(sl_wfx_host_pre_lcd_spi_transfer == SL_STATUS_OK);

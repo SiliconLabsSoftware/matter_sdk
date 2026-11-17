@@ -22,6 +22,7 @@
 #include <app/ConcreteAttributePath.h>
 #include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/data-model/Nullable.h>
+#include <app/util/config.h>
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -179,15 +180,15 @@ protected:
 private:
     enum class kSensorUIEnum : uint8_t
     {
-        kOccupancySensor = 0,
-        kSensor          = 1,
-        kStatusScreen    = 2,
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
+        kOccupancySensor,
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
+        kSensor,
+        kStatusScreen,
 #if SL_MATTER_QR_CODE_ENABLED
-        kQrCode = 3,
-        kCount  = 4,
-#else
-        kCount = 3,
-#endif
+        kQrCode,
+#endif // SL_MATTER_QR_CODE_ENABLED
+        kCount,
     };
 
     kSensorUIEnum mCurrentSensorUI;

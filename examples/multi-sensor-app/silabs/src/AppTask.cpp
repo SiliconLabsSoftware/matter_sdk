@@ -29,9 +29,16 @@
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
+#include <app/util/config.h>
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
 #include <app/clusters/occupancy-sensor-server/CodegenIntegration.h>
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 #include <app/clusters/relative-humidity-measurement-server/CodegenIntegration.h>
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 #include <app/clusters/temperature-measurement-server/CodegenIntegration.h>
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 #include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
@@ -81,9 +88,15 @@ constexpr uint8_t kOccupancyLedId = 1;
 constexpr uint8_t kOccupancyLedId = 0;
 #endif
 
-constexpr EndpointId kOccupancySensorEndpoint   = OCCUPANCY_SENSOR_ENDPOINT;
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
+constexpr EndpointId kOccupancySensorEndpoint = OCCUPANCY_SENSOR_ENDPOINT;
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 constexpr EndpointId kTemperatureSensorEndpoint = TEMPERATURE_SENSOR_ENDPOINT;
-constexpr EndpointId kHumiditySensorEndpoint    = HUMIDITY_SENSOR_ENDPOINT;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+constexpr EndpointId kHumiditySensorEndpoint = HUMIDITY_SENSOR_ENDPOINT;
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 
 // The > 0 is necessary to avoid causing a type-limits compilation error when the threshold is equal to 0
 // which is specific to the uint8_t data type
@@ -93,6 +106,7 @@ static_assert((SL_MATTER_SENSOR_REPORT_THRESHOLD <= std::numeric_limits<uint8_t>
 #endif // SL_MATTER_SENSOR_REPORT_THRESHOLD > 0
 static_assert((SL_MATTER_SENSOR_REPORT_THRESHOLD >= std::numeric_limits<uint8_t>::min()),
               "The value for SL_MATTER_SENSOR_REPORT_THRESHOLD is inferior to the allowed minimum value (0).");
+#if defined(MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER) || defined(MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER)
 constexpr uint8_t kAttributeChangeReportThreshold = (SL_MATTER_SENSOR_REPORT_THRESHOLD);
 
 static_assert((std::numeric_limits<uint32_t>::min() <= SL_MATTER_SENSOR_TIMER_PERIOD_S),
@@ -101,24 +115,33 @@ static_assert((SL_MATTER_SENSOR_TIMER_PERIOD_S <= std::numeric_limits<uint32_t>:
               "The value for SL_MATTER_SENSOR_TIMER_PERIOD_S is greater to the allowed maximum value (4294967295).");
 constexpr chip::System::Clock::Seconds32 kSensorReadPeriod = chip::System::Clock::Seconds32(SL_MATTER_SENSOR_TIMER_PERIOD_S);
 
-uint16_t mLastReportedHumidityValue   = 0;
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+uint16_t mLastReportedHumidityValue = 0;
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 int16_t mLastReportedTemperatureValue = 0;
-bool isInitialised                    = false;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+bool isInitialised = false;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER || MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 
 CustomerAppTask & AppInstance()
 {
     return CustomerAppTask::GetAppTask();
 }
 
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 TemperatureMeasurementCluster * GetTemperatureCluster()
 {
     return TemperatureMeasurement::FindClusterOnEndpoint(kTemperatureSensorEndpoint);
 }
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 RelativeHumidityMeasurementCluster * GetHumidityCluster()
 {
     return RelativeHumidityMeasurement::FindClusterOnEndpoint(kHumiditySensorEndpoint);
 }
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 
 } // namespace
 
@@ -138,7 +161,11 @@ CHIP_ERROR AppTask::AppInit()
     }
 
 #if SL_MATTER_DISPLAY_ENABLED
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     mCurrentSensorUI = kSensorUIEnum::kOccupancySensor;
+#else
+    mCurrentSensorUI = kSensorUIEnum::kSensor;
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
 
 // Show QR Code if not provisioned
 #if SL_MATTER_QR_CODE_ENABLED
@@ -202,10 +229,12 @@ void AppTask::UpdateSensorDisplay()
 {
     switch (mCurrentSensorUI)
     {
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     case kSensorUIEnum::kOccupancySensor:
         GetLCD().SetCustomUI(nullptr);
         GetLCD().WriteDemoUI(IsOccupancyDetected());
         break;
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     case kSensorUIEnum::kSensor:
         GetLCD().SetCustomUI(SensorsUI::SensorUI);
         GetLCD().WriteDemoUI();
@@ -257,24 +286,21 @@ void AppTask::ProcessButtonEvent(AppEvent * aEvent)
     VerifyOrReturn(aEvent != nullptr);
     VerifyOrReturn(aEvent->Type == AppEvent::kEventType_Button);
 
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     TEMPORARY_RETURN_IGNORED DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
         OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(kOccupancySensorEndpoint);
         VerifyOrReturn(cluster != nullptr);
         bool state = cluster->IsOccupied();
         cluster->SetOccupancy(!state);
     });
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
 }
 
 void AppTask::OnAttributeChanged(const ConcreteAttributePath & path, DataModel::AttributeChangeType)
 {
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     const bool isOccupancyUpdate = path.mEndpointId == kOccupancySensorEndpoint && path.mClusterId == OccupancySensing::Id &&
         path.mAttributeId == OccupancySensing::Attributes::Occupancy::Id;
-    const bool isTemperatureUpdate = path.mEndpointId == kTemperatureSensorEndpoint &&
-        path.mClusterId == TemperatureMeasurement::Id && path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id;
-    const bool isHumidityUpdate = path.mEndpointId == kHumiditySensorEndpoint &&
-        path.mClusterId == RelativeHumidityMeasurement::Id &&
-        path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id;
-
     if (isOccupancyUpdate)
     {
         ChipLogProgress(AppServer, "Occupancy attribute updated");
@@ -288,14 +314,33 @@ void AppTask::OnAttributeChanged(const ConcreteAttributePath & path, DataModel::
         AppTask::GetAppTask().PostEvent(&event);
         return;
     }
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
 
-    if (isTemperatureUpdate || isHumidityUpdate)
+#if defined(MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER) || defined(MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER)
+    bool isMeasurementUpdate = false;
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+    isMeasurementUpdate = path.mEndpointId == kTemperatureSensorEndpoint && path.mClusterId == TemperatureMeasurement::Id &&
+        path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+    isMeasurementUpdate = isMeasurementUpdate ||
+        (path.mEndpointId == kHumiditySensorEndpoint && path.mClusterId == RelativeHumidityMeasurement::Id &&
+         path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id);
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+
+    if (isMeasurementUpdate)
     {
         AppEvent event = {};
         event.Type     = AppEvent::kEventType_SensorAttributeUpdate;
         event.Handler  = CustomerAppTask::SensorAttributeUpdateEvent;
         AppTask::GetAppTask().PostEvent(&event);
     }
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER || MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+
+#if !defined(MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER) && !defined(MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER) &&               \
+    !defined(MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER)
+    (void) path;
+#endif
 }
 
 void AppTask::SensorAttributeUpdateEvent(AppEvent * aEvent)
@@ -322,6 +367,7 @@ void AppTask::OccupancyAttributeUpdateEvent(AppEvent * aEvent)
 
 void AppTask::TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState)
 {
+#if defined(MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER) || defined(MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER)
     VerifyOrDieWithMsg(isInitialised, AppServer, "Sensor Action was triggered before the Sensor Manager was initialised!");
 
     int16_t temperature = 0;
@@ -329,6 +375,7 @@ void AppTask::TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState
 
     VerifyOrReturn(AppInstance().GetTemperatureAndHumidity(temperature, humidity) == CHIP_NO_ERROR);
 
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
     if (abs(mLastReportedTemperatureValue - temperature) > kAttributeChangeReportThreshold)
     {
         mLastReportedTemperatureValue = temperature;
@@ -338,7 +385,10 @@ void AppTask::TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState
         tempVal.SetNonNull(temperature);
         VerifyOrReturn(TemperatureMeasurement::SetMeasuredValue(kTemperatureSensorEndpoint, tempVal) == CHIP_NO_ERROR);
     }
+    ChipLogDetail(AppServer, "Current temperature value: %d", temperature);
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     if (abs(mLastReportedHumidityValue - humidity) > kAttributeChangeReportThreshold)
     {
         mLastReportedHumidityValue = humidity;
@@ -348,12 +398,15 @@ void AppTask::TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState
         humVal.SetNonNull(humidity);
         VerifyOrReturn(RelativeHumidityMeasurement::SetMeasuredValue(kHumiditySensorEndpoint, humVal) == CHIP_NO_ERROR);
     }
+    ChipLogDetail(AppServer, "Current humidity value: %d", humidity);
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 
     VerifyOrDieWithMsg(aLayer->StartTimer(kSensorReadPeriod, CustomerAppTask::TriggerSensorAction, nullptr) == CHIP_NO_ERROR,
                        AppServer, "Failed to start recurring timer!");
-
-    ChipLogDetail(AppServer, "Current temperature value: %d", temperature);
-    ChipLogDetail(AppServer, "Current humidity value: %d", humidity);
+#else
+    (void) aLayer;
+    (void) aAppState;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER || MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 }
 
 CHIP_ERROR AppTask::GetTemperatureAndHumidity(int16_t & temperature, uint16_t & humidity)
@@ -366,13 +419,10 @@ CHIP_ERROR AppTask::GetTemperatureAndHumidity(int16_t & temperature, uint16_t & 
         return MATTER_PLATFORM_ERROR(status);
     }
 #else
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
     TemperatureMeasurementCluster * tempCluster = GetTemperatureCluster();
     DataModel::Nullable<int16_t> maxTempMeasuredValue =
         (tempCluster != nullptr) ? tempCluster->GetMaxMeasuredValue() : DataModel::Nullable<int16_t>{};
-
-    RelativeHumidityMeasurementCluster * rhCluster = GetHumidityCluster();
-    DataModel::Nullable<uint16_t> maxMeasuredHumidityValue =
-        (rhCluster != nullptr) ? rhCluster->GetMaxMeasuredValue() : DataModel::Nullable<uint16_t>{};
 
     DataModel::Nullable<int16_t> currentTempValue;
     if (tempCluster != nullptr)
@@ -383,6 +433,23 @@ CHIP_ERROR AppTask::GetTemperatureAndHumidity(int16_t & temperature, uint16_t & 
     {
         currentTempValue.SetNonNull(Crypto::GetRandU16() % maxTempMeasuredValue.Value());
     }
+
+    if (kAttributeChangeReportThreshold > 3)
+    {
+        temperature = (currentTempValue.Value() + kAttributeChangeReportThreshold / 3) % maxTempMeasuredValue.Value();
+    }
+    else
+    {
+        temperature = (currentTempValue.Value() + 1) % maxTempMeasuredValue.Value();
+    }
+#else
+    (void) temperature;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+    RelativeHumidityMeasurementCluster * rhCluster = GetHumidityCluster();
+    DataModel::Nullable<uint16_t> maxMeasuredHumidityValue =
+        (rhCluster != nullptr) ? rhCluster->GetMaxMeasuredValue() : DataModel::Nullable<uint16_t>{};
 
     DataModel::Nullable<uint16_t> currentHumidityValue;
     if (rhCluster != nullptr)
@@ -396,14 +463,15 @@ CHIP_ERROR AppTask::GetTemperatureAndHumidity(int16_t & temperature, uint16_t & 
 
     if (kAttributeChangeReportThreshold > 3)
     {
-        humidity    = (currentHumidityValue.Value() + kAttributeChangeReportThreshold / 3) % maxMeasuredHumidityValue.Value();
-        temperature = (currentTempValue.Value() + kAttributeChangeReportThreshold / 3) % maxTempMeasuredValue.Value();
+        humidity = (currentHumidityValue.Value() + kAttributeChangeReportThreshold / 3) % maxMeasuredHumidityValue.Value();
     }
     else
     {
-        humidity    = (currentHumidityValue.Value() + 1) % maxMeasuredHumidityValue.Value();
-        temperature = (currentTempValue.Value() + 1) % maxTempMeasuredValue.Value();
+        humidity = (currentHumidityValue.Value() + 1) % maxMeasuredHumidityValue.Value();
     }
+#else
+    (void) humidity;
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
 
     return CHIP_NO_ERROR;
@@ -411,80 +479,118 @@ CHIP_ERROR AppTask::GetTemperatureAndHumidity(int16_t & temperature, uint16_t & 
 
 CHIP_ERROR AppTask::InitSensorManager()
 {
+#if defined(MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER) || defined(MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER)
 #if defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
     VerifyOrDieWithMsg(Si70xxSensor::Init() == SL_STATUS_OK, AppServer, "Failed to initialize the sensor!");
 #endif // defined(SL_MATTER_USE_SI70XX_SENSOR) && SL_MATTER_USE_SI70XX_SENSOR
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER || MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 
     DeviceLayer::PlatformMgr().LockChipStack();
     CodegenDataModelProvider::Instance().RegisterAttributeChangeListener(AppInstance());
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
+#if defined(MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER) || defined(MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER)
     isInitialised = true;
 
     VerifyOrDieWithMsg(DeviceLayer::PlatformMgr().ScheduleWork([](intptr_t arg) {
         CustomerAppTask::TriggerSensorAction(&chip::DeviceLayer::SystemLayer(), nullptr);
     }) == CHIP_NO_ERROR,
                        AppServer, "Failed to schedule the first SensorCallback!");
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER || MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 
     return CHIP_NO_ERROR;
 }
 
 Status AppTask::GetMeasuredTemperature(DataModel::Nullable<int16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
     TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMeasuredValue();
     return Status::Success;
+#else
+    (void) value;
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 }
 
 Status AppTask::GetMaxMeasuredTemperature(DataModel::Nullable<int16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
     TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMaxMeasuredValue();
     return Status::Success;
+#else
+    (void) value;
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 }
 
 Status AppTask::GetMinMeasuredTemperature(DataModel::Nullable<int16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
     TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMinMeasuredValue();
     return Status::Success;
+#else
+    (void) value;
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 }
 
 Status AppTask::GetMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMeasuredValue();
     return Status::Success;
+#else
+    (void) value;
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 }
 
 Status AppTask::GetMaxMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMaxMeasuredValue();
     return Status::Success;
+#else
+    (void) value;
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 }
 
 Status AppTask::GetMinMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMinMeasuredValue();
     return Status::Success;
+#else
+    (void) value;
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 }
 
 bool AppTask::IsOccupancyDetected()
 {
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     DeviceLayer::PlatformMgr().LockChipStack();
     OccupancySensingCluster * cluster = OccupancySensing::FindClusterOnEndpoint(kOccupancySensorEndpoint);
     bool occupied = (cluster != nullptr) ? cluster->IsOccupied() : false;
     DeviceLayer::PlatformMgr().UnlockChipStack();
 
     return occupied;
+#else
+    return false;
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
 }
 
 void AppTask::DMPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & attributePath, uint8_t type, uint16_t size,
