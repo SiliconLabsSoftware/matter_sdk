@@ -45,7 +45,7 @@ namespace DeviceEventType = chip::DeviceLayer::DeviceEventType;
 
 // Please fill in the details for your own MQTT broker.
 constexpr char kMqttBrokerEndpoint[] = SL_MATTER_MQTT_BROKER_ENDPOINT; // DNS name or IPv4 of your MQTT broker
-constexpr char kMqttTlsHostname[]    = SL_MATTER_MQTT_TLS_HOSTNAME; // The TLS hostname of your MQTT broker
+constexpr char kMqttTlsHostname[]    = SL_MATTER_MQTT_TLS_HOSTNAME;    // The TLS hostname of your MQTT broker
 constexpr uint16_t kMqttBrokerPort   = SL_MATTER_MQTT_BROKER_PORT;
 constexpr uint16_t kMqttClientPort   = SL_MATTER_MQTT_CLIENT_PORT;
 constexpr char kMqttClientId[]       = SL_MATTER_MQTT_CLIENT_ID;
@@ -184,8 +184,12 @@ sl_status_t mqtt_client_demo_start(void)
             .mqttVersion          = 4,
             .cleanSession         = true,
             .willEnable           = false,
-            .tlsCaCert            = reinterpret_cast<const uint8_t *>(kCaCertExample),
-            .tlsCaCertLen         = sizeof(kCaCertExample),
+            .tlsCaCert            = reinterpret_cast<const uint8_t *>(SL_MATTER_MQTT_TLS_CA_CERTIFICATE),
+            .tlsCaCertLen         = sizeof(SL_MATTER_MQTT_TLS_CA_CERTIFICATE),
+            .clientKey            = reinterpret_cast<const uint8_t *>(SL_MATTER_MQTT_TLS_CLIENT_KEY),
+            .clientKeyLen         = sizeof(SL_MATTER_MQTT_TLS_CLIENT_KEY),
+            .clientCert           = reinterpret_cast<const uint8_t *>(SL_MATTER_MQTT_TLS_CLIENT_CERTIFICATE),
+            .clientCertLen        = sizeof(SL_MATTER_MQTT_TLS_CLIENT_CERTIFICATE),
         };
 
         ChipLogProgress(DeviceLayer, "MQTT demo: initializing client");
