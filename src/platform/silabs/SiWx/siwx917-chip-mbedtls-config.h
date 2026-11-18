@@ -21,7 +21,23 @@
 // are defined in the sli_mbedtls_config_autogen.h file
 // see sli_mbedtls_config_autogen.h for more details
 
-#pragma once
+// #pragma once
+#ifndef SIWX917_CHIP_MBEDTLS_CONFIG_EARLY
+#define SIWX917_CHIP_MBEDTLS_CONFIG_EARLY
+
+// Included as TF_PSA_CRYPTO_USER_CONFIG_FILE, after sli_psa_acceleration.h
+// and before software builtins are selected. ECB stays marked accelerated
+// while sl_si91x_psa_aes is not linked, so CCM's PSA ECB call returns
+// PSA_ERROR_NOT_SUPPORTED (-134) and AES-CCM fails with -0x6080.
+#if defined(SL_MBEDTLS_USE_TINYCRYPT) && !defined(SLI_CIPHER_DEVICE_SI91X)
+#undef MBEDTLS_PSA_ACCEL_ALG_ECB_NO_PADDING
+#endif
+
+#endif // SIWX917_CHIP_MBEDTLS_CONFIG_EARLY
+
+#if defined(TF_PSA_CRYPTO_CONFIG_FILES_READ) || !defined(TF_PSA_CRYPTO_USER_CONFIG_FILE)
+#ifndef SIWX917_CHIP_MBEDTLS_CONFIG_BODY
+#define SIWX917_CHIP_MBEDTLS_CONFIG_BODY
 
 // ChipCryptoPAL tinycrypt config
 #ifdef SL_MBEDTLS_USE_TINYCRYPT
@@ -83,3 +99,6 @@
 
 // SLC GENERATED
 #include "sl_mbedtls_config.h"
+
+#endif // SIWX917_CHIP_MBEDTLS_CONFIG_BODY
+#endif // TF_PSA_CRYPTO_CONFIG_FILES_READ || !TF_PSA_CRYPTO_USER_CONFIG_FILE
