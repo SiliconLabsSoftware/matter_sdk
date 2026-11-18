@@ -104,7 +104,6 @@ public:
     void FactoryResetThreadStack();
 
 #if SL_USE_THREAD_DIRECT
-    CHIP_ERROR ThreadDirectInit();
     void ThreadDirectSendWakeup();
     void SetThreadDirectDelegate(ThreadDirectDelegate * delegate) { mThreadDirectDelegate = delegate; }
 
@@ -144,6 +143,9 @@ private:
 #endif
 
 #if SL_USE_THREAD_DIRECT
+    CHIP_ERROR ThreadDirectInit();
+    bool _IsThreadEnabled();
+    CHIP_ERROR _SetThreadEnabled(bool val);
     static void HandleDirectEvent(otThreadDirectEvent aEvent, const otThreadDirectPeerInfo * aPeerInfo, void * aContext);
 
     ThreadDirectDelegate * mThreadDirectDelegate = nullptr;

@@ -129,6 +129,9 @@ CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
     {
         // To make sure that timeout is set with OT libraries
         otThreadSetChildTimeout(otInst, OPENTHREAD_CONFIG_MLE_CHILD_TIMEOUT_DEFAULT);
+#if SL_USE_THREAD_DIRECT
+        err = ThreadDirectInit();
+#endif
     }
 
     return err;
@@ -148,26 +151,83 @@ bool ThreadStackManagerImpl::IsInitialized()
 #if SL_USE_THREAD_DIRECT
 CHIP_ERROR ThreadStackManagerImpl::ThreadDirectInit()
 {
-    VerifyOrReturnError(sOTInstance, CHIP_ERROR_INTERNAL);
-// #if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
-    //otExtAddress     extAddress;
-    // TODO: This needs to be the target ext address, not the current one.
-    // ReturnErrorOnFailure(Internal::PreCommissioning::GetInstance().GetTargetExtAddress(extAddress));
-    // VerifyOrReturnError(otLinkSetExtendedAddress(sOTInstance, &extAddress) == OT_ERROR_NONE, CHIP_ERROR_INTERNAL);
-// #endif
-    VerifyOrReturnError(otThreadDirectSetSlwSchedule(sOTInstance, TD_SLW_PERIOD_SLOT) == OT_ERROR_NONE, CHIP_ERROR_INTERNAL);
+    // IPv6 activation latches the link mode, so select SED before bringing the interface up.
+    const otLinkModeConfig linkMode = {};
 
-    // TODO: Asses if necessary since this is done by ConnectivityMgr().SetThreadDeviceType
-    //otLinkModeConfig config;
-    // Set link mode: rx-off-when-idle sleepy end device.
-    // config.mRxOnWhenIdle = false;
-    // config.mDeviceType   = false;
-    // config.mNetworkData  = false;
-    // VerifyOrReturnError(otThreadSetLinkMode(sOTInstance, config) == OT_ERROR_NONE, CHIP_ERROR_INTERNAL);
+    _LockThreadStack();
+    otError otErr = otThreadSetLinkMode(OTInstance(), linkMode);
+    if (otErr == OT_ERROR_NONE)
+    {
+        otErr = otThreadDirectSetSlwSchedule(OTInstance(), TD_SLW_PERIOD_SLOT);
+    }
+    if (otErr == OT_ERROR_NONE)
+    {
+        otThreadDirectSetEventCallback(OTInstance(), HandleDirectEvent, nullptr);
+    }
+    _UnlockThreadStack();
+    ReturnErrorOnFailure(MapOpenThreadError(otErr));
 
-    otThreadDirectSetEventCallback(sOTInstance, HandleDirectEvent, nullptr);
+    if (IsThreadProvisioned())
+    {
+        ReturnErrorOnFailure(_SetThreadEnabled(true));
+    }
 
     return CHIP_NO_ERROR;
+}
+
+bool ThreadStackManagerImpl::_IsThreadEnabled()
+{
+    VerifyOrReturnValue(OTInstance(), false);
+    _LockThreadStack();
+    bool enabled = otIp6IsEnabled(OTInstance());
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
+    enabled = enabled && otThreadDirectIsWakeListenerEnabled(OTInstance());
+#endif
+    _UnlockThreadStack();
+    return enabled;
+}
+
+CHIP_ERROR ThreadStackManagerImpl::_SetThreadEnabled(bool val)
+{
+    VerifyOrReturnError(OTInstance(), CHIP_ERROR_INCORRECT_STATE);
+    otError otErr = OT_ERROR_NONE;
+
+    _LockThreadStack();
+    const bool wasIp6Enabled = otIp6IsEnabled(OTInstance());
+
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
+    if (!val)
+    {
+        otErr = otThreadDirectWakeListenerEnable(OTInstance(), false);
+        VerifyOrExit(otErr == OT_ERROR_NONE, );
+    }
+#endif
+
+    if (val != wasIp6Enabled)
+    {
+        otErr = otIp6SetEnabled(OTInstance(), val);
+        VerifyOrExit(otErr == OT_ERROR_NONE, );
+    }
+
+#if OPENTHREAD_CONFIG_THREAD_DIRECT_WAKE_LISTENER_ENABLE
+    if (val)
+    {
+        otErr = otThreadDirectWakeListenerEnable(OTInstance(), true);
+        if (otErr != OT_ERROR_NONE && !wasIp6Enabled)
+        {
+            otError rollbackErr = otIp6SetEnabled(OTInstance(), false);
+            if (rollbackErr != OT_ERROR_NONE)
+            {
+                ChipLogError(DeviceLayer, "Failed to disable TD IPv6 after listener startup failure: %s",
+                             otThreadErrorToString(rollbackErr));
+            }
+        }
+    }
+#endif
+
+exit:
+    _UnlockThreadStack();
+    return MapOpenThreadError(otErr);
 }
 
 void ThreadStackManagerImpl::ThreadDirectSendWakeup()

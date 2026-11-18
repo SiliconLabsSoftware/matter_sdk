@@ -24,6 +24,7 @@ thread_direct_defines = []
 if (sl_use_thread_direct) {
   thread_direct_defines += [
     "SL_USE_THREAD_DIRECT=1",
+    "CHIP_DEVICE_CONFIG_ENABLE_THREAD_AUTOSTART=0",
     "OPENTHREAD_CONFIG_PLATFORM_USEC_TIMER_ENABLE=1",
     "OPENTHREAD_CONFIG_THREAD_DIRECT_SLW_TIMEOUT=200",
   ]
