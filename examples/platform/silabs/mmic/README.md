@@ -82,6 +82,56 @@ Optionally pass the cpcd instance name (defaults to `cpcd_0`):
 `mmic_host` opens CPC endpoint 90 and exchanges the same framed
 command/response bytes as in UART mode.
 
+## Device side
+
+### Transports
+
+The device-side MMIC core (`mmic.cpp`, `mmic_task.cpp`, `mmic_forward.cpp`) is
+transport agnostic (`mmic_transport.h`). Exactly one transport is linked:
+
+| SLC component      | Source                    | Notes                                                                                     |
+| ------------------ | ------------------------- | ----------------------------------------------------------------------------------------- |
+| `matter_mmic_cpc`  | `mmic_transport_cpc.cpp`  | Default, over the `matter_cpc` endpoint.                                                  |
+| `matter_mmic_uart` | `mmic_transport_uart.cpp` | Raw UART through the `matter_uart` console driver. Excludes the Matter shell and UART logs. |
+
+Use the `mmic_host` UART build with `matter_mmic_uart`, and the CPC build with
+`matter_mmic_cpc`.
+
+### Cluster commands and attribute changes
+
+Either side can initiate a request (`0xF1`), answered with the same op code
+(`0xF2`). The device uses this to forward Matter commands and attribute changes
+to the host, and the host to have the device send commands on the Matter
+network:
+
+- `cluster_command` (both directions): `clusterCommandHeader_t` (transaction id,
+  flags, endpoint, cluster, command) followed by the command parameters as
+  Matter TLV.
+  - Device to host: when `MMIC_CLUSTER_COMMAND_FLAG_ANSWER_EXPECTED` is set, the
+    host answers with `clusterCommandAnswerHeader_t` (transaction id, status)
+    followed by optional TLV response data.
+  - Host to device: always answered with `clusterCommandAnswerHeader_t`. The
+    request is handled by the function registered with
+    `mmic_set_cluster_command_handler()` (status `UNSUPPORTED_CLUSTER` when
+    none). It runs on the MMIC task and must not block.
+- `attribute_changed` (device to host): `attributeChangedHeader_t` (endpoint,
+  cluster, attribute) followed by the new value as Matter TLV. No answer.
+
+The device API is in `mmic_forward.h` (C) and `mmic_matter_forward.h` (typed
+C++ helpers encoding Matter types as TLV). `mmic_host` currently only prints
+the device requests (cluster, command or attribute names) and does not answer
+them. The camera forwarding can be validated with `mmic_host --test-camera`, see
+[../test/README.md](../test/README.md). The camera host application, which
+handles these messages, is in
+[examples/camera-app/silabs/host](../../../camera-app/silabs/host/README.md).
+
+MMIC frames are limited to a few kilobytes (2048 bytes over the raw UART
+transport): it is a control link, large payloads such as images must use
+another path.
+
+Application specific request op codes are handled by implementing
+`mmic_app_handle_command()` (see `mmic_wake_on_matter.cpp`).
+
 ## Tests
 
 Host-side tests live under [test/](test/) and are enabled by default

@@ -29,6 +29,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 
 #if MMIC_USE_CPC
 #include <sl_cpc.h>
@@ -39,6 +40,13 @@
 #include "mmic.h"
 #include "chip_tool_storage.h"
 #include "matter_cert_issuer.h"
+
+#if MMIC_CAMERA_TEST
+#include "mmic_camera_test.h"
+
+/* Set by --test-camera: device requests are checked by the camera test. */
+static std::atomic<bool> g_camera_test{false};
+#endif
 
 #if MMIC_USE_CPC
 /* CPC endpoint the device-side mmic task exposes. */
@@ -311,13 +319,30 @@ static constexpr int kResponseTimeoutSec = 20;
 /* Forward declaration; defined per transport (CPC / UART) below. */
 int serial_write(const uint8_t * data, size_t len);
 
-/* Route a received chunk. In interactive mode, decode + print directly. In
- * one-shot mode, accumulate (UART reads may split a frame) until a complete
- * response frame is present, then signal main(). */
-static void deliverResponse(const uint8_t * buf, size_t n)
+/* Route one complete frame. Requests initiated by the device are printed.
+ * Answers are decoded + printed in interactive mode, or handed to main() in
+ * one-shot mode. */
+static void dispatchFrame(const uint8_t * frame, size_t len)
 {
+    if (frame[0] == MMIC_HEADER_CMD) {
+#if MMIC_CAMERA_TEST
+        if (g_camera_test.load()) {
+            uint8_t * answer    = NULL;
+            size_t    answerLen = 0;
+            mmic_camera_test_handle_request(frame, len, &answer, &answerLen);
+            if (answer != NULL) {
+                (void) serial_write(answer, answerLen);
+                free(answer);
+            }
+            return;
+        }
+#endif
+        decodeAndPrintDeviceRequest(frame, len);
+        return;
+    }
+
     if (!g_one_shot.load()) {
-        decodeAndPrintResponse(const_cast<uint8_t *>(buf), n);
+        decodeAndPrintResponse(const_cast<uint8_t *>(frame), len);
         return;
     }
 
@@ -325,18 +350,50 @@ static void deliverResponse(const uint8_t * buf, size_t n)
     if (g_resp_ready) {
         return;
     }
-    size_t space = sizeof(g_resp_buf) - g_resp_len;
-    size_t copy  = (n < space) ? n : space;
-    memcpy(g_resp_buf + g_resp_len, buf, copy);
-    g_resp_len += copy;
+    size_t copy = (len < sizeof(g_resp_buf)) ? len : sizeof(g_resp_buf);
+    memcpy(g_resp_buf, frame, copy);
+    g_resp_len   = copy;
+    g_resp_ready = true;
+    g_resp_cv.notify_one();
+}
 
-    if (g_resp_len >= MMIC_PACKET_OVERHEAD && g_resp_buf[0] == MMIC_HEADER_ANS) {
-        uint16_t frameLen = mmic_read_length(g_resp_buf);
-        if (frameLen >= MMIC_PACKET_OVERHEAD && (size_t)frameLen <= g_resp_len) {
-            g_resp_ready = true;
-            g_resp_cv.notify_one();
-        }
+/* Reassembly buffer for the received byte stream: UART reads may split or
+ * merge frames, CPC reads deliver whole frames. Only used by the reader thread. */
+static uint8_t g_rx_buf[4096];
+static size_t  g_rx_len = 0;
+
+/* Accumulate a received chunk and dispatch every complete frame it holds. */
+static void deliverResponse(const uint8_t * buf, size_t n)
+{
+    if (n > sizeof(g_rx_buf)) {
+        return;
     }
+    if (n > sizeof(g_rx_buf) - g_rx_len) {
+        g_rx_len = 0; // Overflow: drop pending bytes and resynchronize
+    }
+    memcpy(g_rx_buf + g_rx_len, buf, n);
+    g_rx_len += n;
+
+    size_t start = 0;
+    while (g_rx_len - start >= MMIC_PACKET_OVERHEAD) {
+        const uint8_t * p = g_rx_buf + start;
+        if (p[0] != MMIC_HEADER_CMD && p[0] != MMIC_HEADER_ANS) {
+            start++;
+            continue;
+        }
+        uint16_t frameLen = mmic_read_length(p);
+        if (frameLen < MMIC_PACKET_OVERHEAD || frameLen > sizeof(g_rx_buf)) {
+            start++;
+            continue;
+        }
+        if (g_rx_len - start < frameLen) {
+            break;
+        }
+        dispatchFrame(p, frameLen);
+        start += frameLen;
+    }
+    memmove(g_rx_buf, g_rx_buf + start, g_rx_len - start);
+    g_rx_len -= start;
 }
 
 /* Return index of first argv token matching a known command name, else -1. */
@@ -572,6 +629,24 @@ int main(int argc, char **argv)
         commissionAvailable = false;
     }
 
+    /* Extract --test-camera from the arguments. */
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--test-camera") != 0) {
+            continue;
+        }
+#if MMIC_CAMERA_TEST
+        g_camera_test.store(true);
+        for (int j = i; j < argc - 1; j++) {
+            argv[j] = argv[j + 1];
+        }
+        argc--;
+        break;
+#else
+        fprintf(stderr, "--test-camera requires the test build, see examples/platform/silabs/test/README.md\n");
+        return 1;
+#endif
+    }
+
     /* Argv layout: [transport args...] [<cmd> <cmd-args...>].
      * If any argv token matches a known command name, we enter one-shot mode:
      * everything before it is transport (existing semantics), everything from
@@ -682,6 +757,20 @@ int main(int argc, char **argv)
 #endif
 
     int exit_code = 0;
+
+#if MMIC_CAMERA_TEST
+    if (g_camera_test.load()) {
+        mmic_camera_test_begin();
+        while (!g_stop.load() && !mmic_camera_test_complete()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        bool passed = mmic_camera_test_complete();
+        mmic_camera_test_print_summary(!passed);
+        exit_code = passed ? 0 : 1;
+        g_stop.store(1);
+        goto shutdown;
+    }
+#endif
 
     if (one_shot) {
         int     cmd_argc = argc - cmd_index;

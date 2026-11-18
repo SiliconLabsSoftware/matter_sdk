@@ -19,7 +19,8 @@
 #include "AppTask.h"
 #include "AppConfig.h"
 #include "AppEvent.h"
-#include "LoggingCamera.h"
+#include "ForwardingCamera.h"
+#include "mmic_task.h"
 
 #include <memory>
 
@@ -70,7 +71,7 @@ DefaultAttributePersistenceProvider sAttributePersistenceProvider;
 DefaultSafeAttributePersistenceProvider sSafeAttributePersistenceProvider;
 std::unique_ptr<CodeDrivenDataModelProvider> sDataModelProvider;
 std::unique_ptr<RootNode> sRootNode;
-LoggingCamera sCamera;
+ForwardingCamera sCamera;
 
 #if CHIP_ENABLE_OPENTHREAD
 DeviceLayer::NetworkCommissioning::GenericThreadDriver sThreadDriver;
@@ -119,6 +120,13 @@ void AppTask::AppTaskMain(void * pvParameter)
 CHIP_ERROR AppTask::AppInit()
 {
     chip::DeviceLayer::Silabs::GetPlatform().SetButtonsCb(&AppTask::ButtonEventHandler);
+
+    // Link to the camera host. The data model keeps working without it; forwarded commands are then dropped.
+    sl_status_t status = mmic_init();
+    if (status != SL_STATUS_OK)
+    {
+        ChipLogError(AppServer, "MMIC init failed: 0x%04lx", static_cast<unsigned long>(status));
+    }
 
     // The camera clusters are started by Server::Init(), which has completed by the time the app task runs.
     PlatformMgr().LockChipStack();

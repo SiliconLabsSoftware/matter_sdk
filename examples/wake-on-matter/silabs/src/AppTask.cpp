@@ -47,6 +47,7 @@
 #include "sl_gpio.h"
 
 #include "mmic_task.h"
+#include "mmic_wake_on_matter.h"
 
 using namespace chip;
 using namespace chip::app;
@@ -349,7 +350,8 @@ CHIP_ERROR AppTask::StartAppTask()
 
     ReturnErrorOnFailure(WakeUpMgr::Instance().Init());
 
-    sl_status_t status = mmic_init(subscriptionCallback);
+    mmic_set_subscription_callback(subscriptionCallback);
+    sl_status_t status = mmic_init();
     VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
                        ChipLogError(DeviceLayer, "Failed to Init Matter MMIC: 0x%02x", status));
 

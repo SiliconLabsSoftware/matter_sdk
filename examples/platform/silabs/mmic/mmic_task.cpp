@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @file
- * @brief MMIC task using the matter_cpc transport.
+ * @brief MMIC task: receives host requests/answers and sends frames to the host.
  *******************************************************************************
  * # License
  * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
@@ -21,9 +21,10 @@
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
 
-#include "matter_cpc.h"
 #include "mmic.h"
+#include "mmic_forward.h"
 #include "mmic_task.h"
+#include "mmic_transport.h"
 
 /*******************************************************************************
  *******************************   DEFINES   ***********************************
@@ -53,6 +54,10 @@ static const osThreadAttr_t sTerminalTaskAttr = {
 };
 static osThreadId_t sTerminalTaskHandle;
 
+// Serializes frames sent by the MMIC task and by application threads.
+static osMutexId_t sTxMutex;
+static volatile bool sReady = false;
+
 /*******************************************************************************
  *********************   LOCAL FUNCTION PROTOTYPES   ***************************
  ******************************************************************************/
@@ -63,25 +68,62 @@ void mmic_task(void *pvParameters);
  ******************************************************************************/
 
 /*******************************************************************************
- * Initialize example.
+ * Initialize the MMIC transport and task.
  ******************************************************************************/
-sl_status_t mmic_init(mmic_subscription_cb_t subscriptionCallback)
+sl_status_t mmic_init(void)
 {
-  sl_status_t status;
-  mmic_set_subscription_callback(subscriptionCallback);
-  // Initialize the matter_cpc transport that backs the MMIC protocol.
-  status=sl_matter_cpc_init();
-  if(status != SL_STATUS_OK)
-  {
+  if (sReady) {
+    return SL_STATUS_OK;
+  }
+
+  sTxMutex = osMutexNew(NULL);
+  if (sTxMutex == NULL) {
+    return SL_STATUS_ALLOCATION_FAILED;
+  }
+
+  sl_status_t status = mmic_forward_init();
+  if (status != SL_STATUS_OK) {
     return status;
   }
-  // Create terminal task (CMSIS-OS 2)
+
+  status = mmic_transport_init();
+  if (status != SL_STATUS_OK) {
+    return status;
+  }
+
+  // Ready before the task starts so that its first answer can be sent.
+  sReady = true;
   sTerminalTaskHandle = osThreadNew(mmic_task, NULL, &sTerminalTaskAttr);
-  return (sTerminalTaskHandle != NULL) ? SL_STATUS_OK : SL_STATUS_FAIL;
+  if (sTerminalTaskHandle == NULL) {
+    sReady = false;
+    return SL_STATUS_FAIL;
+  }
+  return SL_STATUS_OK;
+}
+
+bool mmic_is_ready(void)
+{
+  return sReady;
+}
+
+uint8_t mmic_send_frame(const uint8_t * frame, uint16_t len)
+{
+  if (frame == NULL || len == 0) {
+    return MMIC_ERROR_INVALID_ARG;
+  }
+  if (!sReady) {
+    return MMIC_ERROR_NOT_READY;
+  }
+
+  osMutexAcquire(sTxMutex, osWaitForever);
+  sl_status_t status = mmic_transport_send(frame, len);
+  osMutexRelease(sTxMutex);
+
+  return (status == SL_STATUS_OK) ? MMIC_ERROR_OK : MMIC_ERROR_TRANSPORT;
 }
 
 /*******************************************************************************
- * Terminal task.
+ * MMIC task.
  ******************************************************************************/
 
 void mmic_task(void *pvParameters)
@@ -93,37 +135,30 @@ void mmic_task(void *pvParameters)
   (void)pvParameters;
 
   while (1) {
-    // Ensure the CPC endpoint is connected before any I/O attempt.
-    if (!sl_matter_is_cpc_connected() && !sl_matter_is_cpc_waiting()) {
-      sl_matter_reconnect_cpc();
-    }
-
+    rxBuffer = NULL;
     // Blocking call.
-    sl_matter_cpc_wait_for_activity();
-
-
-    // matter_cpc delivers a full frame per read; no byte-level state machine needed.
-    rxLen = sl_matter_cpc_read(&rxBuffer);
+    rxLen = mmic_transport_receive(&rxBuffer);
     if (rxLen <= 0 || rxBuffer == NULL) {
-      if (rxBuffer != NULL) {
-        sl_matter_cpc_free(rxBuffer);
-      }
+      mmic_transport_release(rxBuffer);
       continue;
     }
 
     // Basic length sanity check against the MMIC framing (header + advertised length).
-    if (rxLen >= (int)MMIC_PACKET_OVERHEAD && rxBuffer[0] == MMIC_HEADER_CMD) {
+    if (rxLen >= (int)MMIC_PACKET_OVERHEAD) {
       const uint16_t frameLen = mmic_read_length(rxBuffer);
       if (frameLen >= MMIC_PACKET_OVERHEAD && (uint16_t)rxLen >= frameLen) {
-        parseAndRunCommand(rxBuffer, frameLen, &responseBuffer, &responseSize);
+        if (rxBuffer[0] == MMIC_HEADER_CMD) {
+          parseAndRunCommand(rxBuffer, frameLen, &responseBuffer, &responseSize);
+        } else if (rxBuffer[0] == MMIC_HEADER_ANS) {
+          mmic_forward_handle_answer(rxBuffer, frameLen);
+        }
       }
     }
 
-    sl_matter_cpc_free(rxBuffer);
-    rxBuffer = NULL;
+    mmic_transport_release(rxBuffer);
 
     if (responseBuffer != NULL) {
-      (void)sl_matter_cpc_write(responseBuffer, (uint16_t)responseSize);
+      (void)mmic_send_frame(responseBuffer, (uint16_t)responseSize);
       free(responseBuffer);
       responseBuffer = NULL;
       responseSize = 0;

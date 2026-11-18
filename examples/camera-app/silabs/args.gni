@@ -16,7 +16,9 @@ import("${chip_root}/config/standalone/args.gni")
 import("${chip_root}/src/platform/silabs/efr32/args.gni")
 
 silabs_sdk_target = get_label_info(":sdk", "label_no_toolchain")
-chip_build_libshell = true
+# The console UART carries the MMIC link to the camera host.
+chip_build_libshell = false
+enable_openthread_cli = false
 
 chip_openthread_ftd = true
 chip_enable_thread = true

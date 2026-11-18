@@ -93,20 +93,26 @@ if (wifi_soc) {
   }
 }
 
-source_set("logging-camera") {
+source_set("forwarding-camera") {
   sources = [
-    "src/LoggingCamera.cpp",
-    "src/LoggingCamera.h",
+    "src/ForwardingCamera.cpp",
+    "src/ForwardingCamera.h",
   ]
+
+  include_dirs = [ "${examples_common_plat_dir}/mmic" ]
+
+  deps = [ ":sdk" ]
 
   public_deps = [
     "${chip_root}/examples/all-devices-app/all-devices-common/device/api:single-endpoint-device",
+    "${chip_root}/src/app/clusters/camera-av-settings-user-level-management-server",
     "${chip_root}/src/app/clusters/camera-av-stream-management-server",
     "${chip_root}/src/app/clusters/webrtc-transport-provider-server",
+    "${chip_root}/src/controller:interactions",
     "${chip_root}/src/data-model-providers/codedriven",
     "${chip_root}/src/lib/core:error",
     "${chip_root}/src/lib/support",
-    "${chip_root}/zzz_generated/app-common/clusters/WebRTCTransportRequestor:ids",
+    "${chip_root}/zzz_generated/app-common/clusters/WebRTCTransportRequestor",
     "${chip_root}/zzz_generated/app-common/devices/",
   ]
 }
@@ -117,6 +123,7 @@ silabs_executable("camera_app") {
   include_dirs = [
     "include",
     "src",
+    "${examples_common_plat_dir}/mmic",
     "${chip_root}/examples/all-devices-app/all-devices-common",
     "${chip_root}/src/data-model-providers/codedriven",
     "${chip_root}/src/data-model-providers",
@@ -127,10 +134,25 @@ silabs_executable("camera_app") {
     "include/AppEvent.h",
     "include/AppTask.h",
     "src/AppTask.cpp",
+
+    # MMIC link to the camera host, over the console UART.
+    "${examples_common_plat_dir}/mmic/mmic.cpp",
+    "${examples_common_plat_dir}/mmic/mmic_forward.cpp",
+    "${examples_common_plat_dir}/mmic/mmic_task.cpp",
+    "${examples_common_plat_dir}/mmic/mmic_transport_uart.cpp",
   ]
 
+  # The platform only builds uart.cpp when the shell, the OpenThread CLI or UART logs use it.
+  _platform_has_uart = chip_build_libshell || sl_uart_log_output
+  if (!wifi_soc) {
+    _platform_has_uart = _platform_has_uart || enable_openthread_cli
+  }
+  if (!_platform_has_uart) {
+    sources += [ "${examples_common_plat_dir}/uart.cpp" ]
+  }
+
   deps = [
-    ":logging-camera",
+    ":forwarding-camera",
     ":sdk",
     "${chip_root}/src/data-model-providers/codedriven",
     "${chip_root}/src/platform/logging:default",

@@ -39,6 +39,10 @@ typedef enum mmic_error : uint8_t
     MMIC_ERROR_NO_MEMORY       = 2,
     MMIC_ERROR_INVALID_PACKET  = 3,
     MMIC_ERROR_NOT_IMPLEMENTED = 4,
+    MMIC_ERROR_NOT_READY       = 5,
+    MMIC_ERROR_TIMEOUT         = 6,
+    MMIC_ERROR_TRANSPORT       = 7,
+    MMIC_ERROR_BUSY            = 8,
 } mmic_error_t;
 
 #define MMIC_VERSION_STRING "0.0.0.2"
@@ -85,8 +89,12 @@ static inline mmic_error_t mmic_write_length(uint8_t * pkt, uint16_t len)
     X(decommission, "Delete all fabrics on the device", 0, uint8_t)\
     X(addWakeUp, "Install a wake-up trigger (usage: addWakeUp <clusterId> <attributeId> <mode:0=Bool,1=Bitmask,2=Equal> <operand>)", 1, wakeUpEntry_t)\
     X(removeWakeUp, "Remove a wake-up trigger (usage: removeWakeUp <clusterId> <attributeId>)", 1, wakeUpRemoveArgs_t)\
-    X(wakeUpList, "List active wake-up triggers", 0, uint8_t)
+    X(wakeUpList, "List active wake-up triggers", 0, uint8_t)\
+    X(cluster_command, "Cluster command exchanged between the SoC and the host (both directions)", 0, uint8_t)\
+    X(attribute_changed, "(SoC -> host) Forwarded attribute change notification", 0, uint8_t)
 
+// Frames can be initiated by either side: MMIC_HEADER_CMD carries a request and
+// MMIC_HEADER_ANS the answer to it, using the same op code.
 typedef enum mmic_command_id : uint8_t
 {
     #define X(a,b,c, d) a,
@@ -170,6 +178,40 @@ struct __attribute__((packed)) wakeUpRemoveArgs_t
 // Cap for wire encoding of wakeUpList. Must match WakeUpMgr::kMaxTriggers.
 #define MMIC_WAKEUP_MAX_ENTRIES 25
 
+// cluster_command request (MMIC_HEADER_CMD), little-endian, packed. Sent in both directions:
+//   - SoC -> host: a Matter command received by the SoC, forwarded to the host.
+//   - host -> SoC: a command the host asks the SoC to send on the Matter network. The SoC
+//     always answers, the ANSWER_EXPECTED flag is ignored.
+// Followed by the command parameters encoded as Matter TLV (one or more anonymous
+// elements, may be empty). The TLV layout of each command is defined by the application.
+#define MMIC_CLUSTER_COMMAND_FLAG_ANSWER_EXPECTED 0x01
+struct __attribute__((packed)) clusterCommandHeader_t
+{
+    uint16_t transactionId; // Echoed back in clusterCommandAnswerHeader_t
+    uint8_t  flags;         // MMIC_CLUSTER_COMMAND_FLAG_*
+    uint16_t endpointId;
+    uint32_t clusterId;
+    uint32_t commandId;
+};
+
+// cluster_command answer (MMIC_HEADER_ANS), little-endian, packed.
+// Followed by optional response data encoded as Matter TLV.
+struct __attribute__((packed)) clusterCommandAnswerHeader_t
+{
+    uint16_t transactionId;
+    uint8_t  status; // Matter Interaction Model status code (0 = Success)
+};
+
+// attribute_changed notification (SoC -> host, MMIC_HEADER_CMD), little-endian, packed.
+// Followed by the new attribute value encoded as one anonymous Matter TLV element
+// (empty when the value is not provided). No answer is expected.
+struct __attribute__((packed)) attributeChangedHeader_t
+{
+    uint16_t endpointId;
+    uint32_t clusterId;
+    uint32_t attributeId;
+};
+
 typedef struct mmic
 {
     uint8_t argsCnt;
@@ -249,6 +291,8 @@ void printHelp(void);
  // TODO find a way to either do a map or find the max string len
 extern const char commandsString[][255];
 uint8_t decodeAndPrintResponse(uint8_t * buffer, size_t len);
+// Decodes and prints a request initiated by the SoC (cluster_command, attribute_changed).
+uint8_t decodeAndPrintDeviceRequest(const uint8_t * buffer, size_t len);
 
 
 #else
@@ -257,14 +301,11 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
 
 uint8_t encodeMatterState(matterState_t * state);
 
-// Invoked from OnAttributeData on the CHIP stack thread for every subscription report.
-// value carries the primitive attribute value decoded from the TLV payload:
-//   - boolean:          0 or 1
-//   - unsigned integer: raw value
-//   - signed integer:   reinterpreted as uint64_t (two's complement)
-//   - anything else:    0
-typedef void (*mmic_subscription_cb_t)(uint16_t endpointId, uint32_t clusterId, uint32_t attributeId, uint64_t value);
-void mmic_set_subscription_callback(mmic_subscription_cb_t cb);
+// Application hook for request op codes not handled by the MMIC core. The default
+// (weak) implementation returns MMIC_ERROR_NOT_IMPLEMENTED. On success, *response must
+// be allocated with encodeResponse() and is freed by the caller.
+uint8_t mmic_app_handle_command(mmic_command_id_e opcode, const uint8_t * payload, uint16_t payloadLen,
+                                uint8_t ** response, size_t * packetSize);
 
 #endif // HOST_SIDE
 

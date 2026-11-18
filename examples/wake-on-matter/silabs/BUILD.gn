@@ -99,7 +99,10 @@ silabs_executable("wake-on-matter") {
   sources = [
     "${chip_root}/examples/platform/silabs/matter_cpc.cpp",
     "${chip_root}/examples/platform/silabs/mmic/mmic.cpp",
+    "${chip_root}/examples/platform/silabs/mmic/mmic_forward.cpp",
     "${chip_root}/examples/platform/silabs/mmic/mmic_task.cpp",
+    "${chip_root}/examples/platform/silabs/mmic/mmic_transport_cpc.cpp",
+    "${chip_root}/examples/platform/silabs/mmic/mmic_wake_on_matter.cpp",
     "${chip_root}/examples/platform/silabs/subscription/SubscriptionManager.cpp",
     "${chip_root}/examples/platform/silabs/subscription/SubscriptionManager.h",
     "src/AppTask.cpp",

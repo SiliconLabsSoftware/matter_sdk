@@ -37,6 +37,7 @@ find_package(OpenSSL REQUIRED)
 # OBJECT library so tests can reuse them without recompiling.
 add_library(mmic_core OBJECT
     mmic.cpp
+    mmic_cluster_names.cpp
     chip_tool_storage.cpp
     matter_cert_issuer.cpp
 )

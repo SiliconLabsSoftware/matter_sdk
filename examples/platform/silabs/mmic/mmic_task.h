@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @file
- * @brief MMIC task using the matter_cpc transport.
+ * @brief MMIC task: receives host requests/answers and sends frames to the host.
  *******************************************************************************
  * # License
  * <b>Copyright 2026 Silicon Laboratories Inc. www.silabs.com</b>
@@ -20,4 +20,10 @@
 #include "sl_status.h"
 #include "mmic.h"
 
-sl_status_t mmic_init(mmic_subscription_cb_t subscriptionCallback);
+// Initializes the linked MMIC transport and starts the MMIC task.
+sl_status_t mmic_init(void);
+
+bool mmic_is_ready(void);
+
+// Sends one complete MMIC frame to the host. Thread-safe.
+uint8_t mmic_send_frame(const uint8_t * frame, uint16_t len);
