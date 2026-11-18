@@ -18,13 +18,15 @@
 
 #pragma once
 
-#include "matter_mqtt_types.h"
+#include "matter_mqtt_contract.h"
 
 #include <app/ConcreteAttributePath.h>
 #include <lib/core/CHIPError.h>
 
+#include <cstddef>
+
 /**
- * Reads Matter attribute values for MQTT outbound reports (Matter platform thread).
+ * Reads Matter attribute values as MQTT v1 decimal/bool/null strings (Matter platform thread).
  * Product code supplies a concrete implementation via MatterMqttBridgeConfig::reader.
  */
 class AttributeValueReader
@@ -32,6 +34,6 @@ class AttributeValueReader
 public:
     virtual ~AttributeValueReader() = default;
 
-    /** Fills @p out with a primitive scalar read from @p path. */
-    virtual CHIP_ERROR Read(const chip::app::ConcreteAttributePath & path, MatterMqttBridge::RawValue & out) = 0;
+    /** Writes MQTT wire text into @p out (NUL-terminated). */
+    virtual CHIP_ERROR ReadAsString(const chip::app::ConcreteAttributePath & path, char * out, size_t outLen) = 0;
 };

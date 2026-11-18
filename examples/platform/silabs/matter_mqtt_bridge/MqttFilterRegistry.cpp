@@ -16,42 +16,43 @@
  *    limitations under the License.
  */
 
-#include <cluster_adapter.h>
+#include <matter_mqtt_cluster_filter.h>
 #include <zap-generated/gen_config.h>
 
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
-#include "adapters/OnOffMqttAdapter.h"
+#include "filters/OnOffMqttFilter.h"
 #endif
 #if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
-#include "adapters/ThermostatMqttAdapter.h"
+#include "filters/ThermostatMqttFilter.h"
 #endif
 #if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
-#include "adapters/DoorLockMqttAdapter.h"
+#include "filters/DoorLockMqttFilter.h"
 #endif
 #if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
-#include "adapters/WindowCoveringMqttAdapter.h"
+#include "filters/WindowCoveringMqttFilter.h"
 #endif
 
 namespace {
 
-const ClusterAdapter kPlatformMqttAdapters[] = {
+const MatterMqttClusterFilter kPlatformMqttClusterFilters[] = {
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
-    kOnOffAdapter,
+    kOnOffMqttClusterFilter,
 #endif
 #if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
-    kThermostatAdapter,
+    kThermostatMqttClusterFilter,
 #endif
 #if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
-    kDoorLockAdapter,
+    kDoorLockMqttClusterFilter,
 #endif
 #if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
-    kWindowCoveringAdapter,
+    kWindowCoveringMqttClusterFilter,
 #endif
 };
 
 } // namespace
 
-chip::Span<const ClusterAdapter> GetPlatformMqttAdapters()
+chip::Span<const MatterMqttClusterFilter> GetPlatformMqttClusterFilters()
 {
-    return chip::Span<const ClusterAdapter>(kPlatformMqttAdapters, sizeof(kPlatformMqttAdapters) / sizeof(kPlatformMqttAdapters[0]));
+    return chip::Span<const MatterMqttClusterFilter>(kPlatformMqttClusterFilters,
+                                                     sizeof(kPlatformMqttClusterFilters) / sizeof(kPlatformMqttClusterFilters[0]));
 }

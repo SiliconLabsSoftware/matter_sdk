@@ -18,23 +18,18 @@
 
 #pragma once
 
-#include "EmberMqttAttributeValueReader.h"
+#include "EmberMqttBridgePlatform.h"
 
-#include <cluster_adapter.h>
+#include <matter_mqtt_cluster_filter.h>
 #include <device_mqtt_profile.h>
 #include <lib/support/Span.h>
 #include <matter_mqtt_bridge_config.h>
 
-/** Matter cluster/attribute pair allowed for MQTT publish (endpoints resolved from the data model). */
-struct MatterMqttPublishTemplate
-{
-    chip::ClusterId clusterId;
-    chip::AttributeId attributeId;
-};
-
 class PlatformDeviceMqttProfile final : public DeviceMqttProfile
 {
 public:
+    explicit PlatformDeviceMqttProfile(const MatterMqttClusterFilterRegistry * filterRegistry);
+
     bool IsAttributeAllowed(chip::EndpointId endpoint, chip::ClusterId cluster, chip::AttributeId attribute) const override;
     bool IsCommandAllowed(chip::EndpointId endpoint, chip::ClusterId cluster, chip::CommandId command) const override;
 
@@ -47,13 +42,12 @@ public:
     bool IsMqttDeviceIdKnown() const override;
 
 private:
-    static bool MatchesPublishTemplate(chip::ClusterId cluster, chip::AttributeId attribute);
-
     void BuildSnapshotPaths();
 
-    chip::NodeId mMqttDeviceNodeId                  = chip::kUndefinedNodeId;
-    char mMqttDeviceId[MATTER_MQTT_DEVICE_ID_LEN]   = {};
-    bool mMqttDeviceIdKnown                         = false;
+    const MatterMqttClusterFilterRegistry * mFilterRegistry;
+    chip::NodeId mMqttDeviceNodeId                        = chip::kUndefinedNodeId;
+    char mMqttDeviceId[MATTER_MQTT_DEVICE_ID_LEN]         = {};
+    bool mMqttDeviceIdKnown                               = false;
     MatterMqttSnapshotPath mSnapshotPaths[MATTER_MQTT_MAX_SNAPSHOT_PATHS]{};
     size_t mSnapshotPathCount = 0;
     bool mSnapshotPathsBuilt  = false;
@@ -65,11 +59,12 @@ public:
     PlatformMqttBridgeConfig();
 
 private:
+    MatterMqttClusterFilterRegistry mFilterRegistry;
     PlatformDeviceMqttProfile mProfile;
-    ClusterAdapterRegistry mAdapters;
+    PlatformMqttCommandInjector mCommandInjector;
     EmberMqttAttributeValueReader mAttributeReader;
 };
 
 extern PlatformMqttBridgeConfig gPlatformMqttBridgeConfig;
 
-chip::Span<const ClusterAdapter> GetPlatformMqttAdapters();
+chip::Span<const MatterMqttClusterFilter> GetPlatformMqttClusterFilters();

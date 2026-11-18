@@ -33,6 +33,7 @@
 class MqttNoopCommandHandler : public chip::app::CommandHandler
 {
 public:
+    void SetTimedInvoke(bool timed) { mTimedInvoke = timed; }
     CHIP_ERROR FallibleAddStatus(const chip::app::ConcreteCommandPath & aRequestCommandPath,
                                  const chip::Protocols::InteractionModel::ClusterStatusCode & aStatus,
                                  const char * context = nullptr) override
@@ -57,11 +58,14 @@ public:
                      const chip::app::DataModel::EncodableToTLV & aEncodable) override
     {}
 
-    bool IsTimedInvoke() const override { return false; }
+    bool IsTimedInvoke() const override { return mTimedInvoke; }
 
     void FlushAcksRightAwayOnSlowCommand() override {}
 
     chip::Access::SubjectDescriptor GetSubjectDescriptor() const override { return chip::Access::SubjectDescriptor(); }
 
     chip::Messaging::ExchangeContext * GetExchangeContext() const override { return nullptr; }
+
+private:
+    bool mTimedInvoke = false;
 };

@@ -19,30 +19,28 @@
 #pragma once
 
 #include "attribute_value_reader.h"
-#include "cluster_adapter.h"
 #include "command_injector.h"
 #include "device_mqtt_profile.h"
-#include "matter_mqtt_codec.h"
+#include "matter_mqtt_cluster_filter.h"
 #include "mqtt_transport_port.h"
 
 #include <cstdint>
 
 /**
- * Dependency injection bundle for MatterMqttBridge::Init. Null port pointers select built-in defaults
- * in the bridge implementation. @p profile must be a non-null DeviceMqttProfile subclass.
+ * Dependency injection bundle for MatterMqttBridge::Init. Null @p transport selects the built-in port.
+ * @p profile must be a non-null DeviceMqttProfile subclass. JSON codec is fixed (MatterMqttJsonCodec) in the bridge.
  */
 class MatterMqttBridgeConfig
 {
 public:
     virtual ~MatterMqttBridgeConfig() = default;
 
-    MqttTransportPort * transport       = nullptr;
-    MatterMqttCodec * codec             = nullptr;
-    ClusterAdapterRegistry * adapters   = nullptr;
-    DeviceMqttProfile * profile         = nullptr;
-    AttributeValueReader * reader       = nullptr;
-    MqttCommandInjector * injector      = nullptr;
-    uint8_t commandQos                  = 0;
-    uint8_t reportQos                   = 0;
-    bool reportRetained                 = false;
+    MqttTransportPort * transport                    = nullptr;
+    MatterMqttClusterFilterRegistry * filterRegistry = nullptr;
+    DeviceMqttProfile * profile                      = nullptr;
+    AttributeValueReader * reader                    = nullptr;
+    MqttCommandInjector * injector                   = nullptr;
+    uint8_t commandQos                               = 0;
+    uint8_t reportQos                                = 0;
+    bool reportRetained                              = false;
 };

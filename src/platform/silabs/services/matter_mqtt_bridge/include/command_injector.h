@@ -18,15 +18,30 @@
 
 #pragma once
 
-#include "cluster_adapter.h"
+#include "matter_mqtt_cluster_filter.h"
+#include "matter_mqtt_codec.h"
 #include "matter_mqtt_types.h"
 
 #include <lib/core/CHIPError.h>
+#include <lib/core/DataModelTypes.h>
+#include <lib/core/TLV.h>
 
-/** Injects commands through CodegenDataModelProvider::InvokeCommand on the Matter thread. */
+/**
+ * JSON command args to invoke TLV, then CodegenDataModelProvider::InvokeCommand (Matter thread).
+ * Product code subclasses and implements BuildInvokeReader.
+ */
 class MqttCommandInjector
 {
 public:
-    CHIP_ERROR Invoke(const MatterMqttBridge::InboundCommand & command, const MatterMqttCommandEntry & entry,
+    virtual ~MqttCommandInjector() = default;
+
+    CHIP_ERROR ValidateArgs(chip::ClusterId clusterId, chip::CommandId commandId,
+                            const MatterMqttCodecTypes::ArgsView * args) const;
+
+    virtual CHIP_ERROR BuildInvokeReader(chip::ClusterId clusterId, chip::CommandId commandId,
+                                         const MatterMqttCodecTypes::ArgsView * args, uint8_t * tlvBuffer, size_t tlvBufferSize,
+                                         chip::TLV::TLVReader & reader) const = 0;
+
+    CHIP_ERROR Invoke(const MatterMqttBridge::InboundCommand & command, const MatterMqttFilterCommandEntry & entry,
                       const MatterMqttCodecTypes::ArgsView * decodedArgs = nullptr);
 };

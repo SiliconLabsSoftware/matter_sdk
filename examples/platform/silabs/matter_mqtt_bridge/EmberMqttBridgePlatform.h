@@ -19,10 +19,21 @@
 #pragma once
 
 #include <attribute_value_reader.h>
+#include <command_injector.h>
+#include <matter_mqtt_codec.h>
 
-/** Ember attribute-table read path for MQTT outbound reports (Silabs platform default). */
+/** Ember attribute-table read path for MQTT outbound reports. */
 class EmberMqttAttributeValueReader final : public AttributeValueReader
 {
 public:
-    CHIP_ERROR Read(const chip::app::ConcreteAttributePath & path, MatterMqttBridge::RawValue & out) override;
+    CHIP_ERROR ReadAsString(const chip::app::ConcreteAttributePath & path, char * out, size_t outLen) override;
+};
+
+/** Ember/codegen path: MQTT JSON command args to invoke TLV. */
+class PlatformMqttCommandInjector final : public MqttCommandInjector
+{
+public:
+    CHIP_ERROR BuildInvokeReader(chip::ClusterId clusterId, chip::CommandId commandId,
+                                 const MatterMqttCodecTypes::ArgsView * args, uint8_t * tlvBuffer, size_t tlvBufferSize,
+                                 chip::TLV::TLVReader & reader) const override;
 };

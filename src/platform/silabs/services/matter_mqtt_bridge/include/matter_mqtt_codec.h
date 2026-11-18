@@ -43,21 +43,11 @@ struct ArgsView
 
 } // namespace MatterMqttCodecTypes
 
-/** Encodes attribute reports and decodes command payloads for the MQTT contract. */
-class MatterMqttCodec
+/** Minimal JSON codec for {"value":...} reports and {"args":{...}} command payloads. */
+class MatterMqttJsonCodec
 {
 public:
-    virtual ~MatterMqttCodec() = default;
+    CHIP_ERROR EncodeReport(chip::CharSpan valueText, char * outJson, size_t outLen);
 
-    virtual CHIP_ERROR EncodeReport(bool asNumber, chip::CharSpan valueText, char * outJson, size_t outLen) = 0;
-
-    virtual CHIP_ERROR DecodeArgs(chip::ByteSpan json, MatterMqttCodecTypes::ArgsView & out) = 0;
-};
-
-class MatterMqttJsonCodec final : public MatterMqttCodec
-{
-public:
-    CHIP_ERROR EncodeReport(bool asNumber, chip::CharSpan valueText, char * outJson, size_t outLen) override;
-
-    CHIP_ERROR DecodeArgs(chip::ByteSpan json, MatterMqttCodecTypes::ArgsView & out) override;
+    CHIP_ERROR DecodeArgs(chip::ByteSpan json, MatterMqttCodecTypes::ArgsView & out);
 };

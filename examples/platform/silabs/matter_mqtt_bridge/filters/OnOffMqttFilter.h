@@ -15,11 +15,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+
 #pragma once
 
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
 
-#include <cluster_adapter.h>
+#include <matter_mqtt_cluster_filter.h>
 
 #include <app-common/zap-generated/cluster-objects.h>
 
@@ -27,23 +28,22 @@ using namespace chip::app::Clusters;
 
 namespace {
 
-constexpr MatterMqttAttributeEntry kOnOffAttributes[] = {
-    { OnOff::Attributes::OnOff::Id, MatterMqttAttributeQuantity::kScalar },
+constexpr MatterMqttFilterAttributeEntry kOnOffAttributes[] = {
+    { OnOff::Attributes::OnOff::Id },
 };
 
-constexpr MatterMqttCommandEntry kOnOffCommands[] = {
-    { OnOff::Commands::On::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
-    { OnOff::Commands::Off::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
-    { OnOff::Commands::Toggle::Id, MatterMqttBridge::kCommandFlagNone, nullptr, 0 },
+constexpr MatterMqttFilterCommandEntry kOnOffCommands[] = {
+    { OnOff::Commands::On::Id, MatterMqttBridge::kCommandFlagNone },
+    { OnOff::Commands::Off::Id, MatterMqttBridge::kCommandFlagNone },
+    { OnOff::Commands::Toggle::Id, MatterMqttBridge::kCommandFlagNone },
 };
 
 } // namespace
 
-const ClusterAdapter kOnOffAdapter = { OnOff::Id,
-                                         kOnOffAttributes,
-                                         sizeof(kOnOffAttributes) / sizeof(kOnOffAttributes[0]),
-                                         kOnOffCommands,
-                                         sizeof(kOnOffCommands) / sizeof(kOnOffCommands[0]),
-                                         nullptr };
+const MatterMqttClusterFilter kOnOffMqttClusterFilter = { OnOff::Id,
+                                                         kOnOffAttributes,
+                                                         sizeof(kOnOffAttributes) / sizeof(kOnOffAttributes[0]),
+                                                         kOnOffCommands,
+                                                         sizeof(kOnOffCommands) / sizeof(kOnOffCommands[0]) };
 
 #endif // ZCL_USING_ON_OFF_CLUSTER_SERVER

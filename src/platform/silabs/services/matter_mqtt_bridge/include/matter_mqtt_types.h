@@ -29,25 +29,6 @@
 /** POD types exchanged across the Matter MQTT bridge threads. */
 namespace MatterMqttBridge {
 
-enum class RawValueType : uint8_t
-{
-    kNull     = 0,
-    kBool     = 1,
-    kSigned   = 2,
-    kUnsigned = 3,
-};
-
-struct RawValue
-{
-    RawValueType type = RawValueType::kNull;
-    union
-    {
-        bool boolean;
-        int32_t signedValue;
-        uint32_t unsignedValue;
-    } data{};
-};
-
 /**
  * MQTT-thread work payload for attribute reports. NodeId is omitted: attribute/command topics use
  * DeviceMqttProfile when building/parsing MQTT topics (bind time), not when queuing this struct.
@@ -57,13 +38,7 @@ struct ReportWork
     chip::EndpointId endpoint     = 0;
     chip::ClusterId clusterId     = 0;
     chip::AttributeId attributeId = 0;
-    RawValueType valueType        = RawValueType::kNull;
-    union
-    {
-        uint8_t boolean;
-        int32_t signedValue;
-        uint32_t unsignedValue;
-    } value{};
+    char value[MATTER_MQTT_REPORT_WORK_VALUE_LEN]{};
 };
 
 static_assert(sizeof(ReportWork) <= chip::DeviceLayer::Silabs::MqttClient::kWorkDataSize,
@@ -75,11 +50,9 @@ static_assert(sizeof(ReportWork) <= chip::DeviceLayer::Silabs::MqttClient::kWork
  */
 struct InboundCommand
 {
-    chip::EndpointId endpoint   = 0;
-    chip::ClusterId clusterId   = 0;
-    chip::CommandId commandId   = 0;
-    uint8_t args[MATTER_MQTT_MAX_CMD_ARG_PACK]{};
-    uint8_t argsLen             = 0;
+    chip::EndpointId endpoint = 0;
+    chip::ClusterId clusterId = 0;
+    chip::CommandId commandId = 0;
 };
 
 enum CommandFlags : uint8_t

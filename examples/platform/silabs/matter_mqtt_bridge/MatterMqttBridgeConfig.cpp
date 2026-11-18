@@ -21,7 +21,6 @@
 #include <matter_mqtt_log.h>
 #include <zap-generated/gen_config.h>
 
-#include <app-common/zap-generated/cluster-objects.h>
 #include <app/util/attribute-storage.h>
 #include <data-model-providers/codegen/CodegenDataModelProvider.h>
 #include <lib/support/CodeUtils.h>
@@ -29,49 +28,15 @@
 #include <lib/support/logging/CHIPLogging.h>
 #include <server/Server.h>
 
-namespace {
-
-constexpr MatterMqttPublishTemplate kPublishTemplates[] = {
-#if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
-    { chip::app::Clusters::Thermostat::Id, chip::app::Clusters::Thermostat::Attributes::LocalTemperature::Id },
-    { chip::app::Clusters::Thermostat::Id, chip::app::Clusters::Thermostat::Attributes::OccupiedHeatingSetpoint::Id },
-    { chip::app::Clusters::Thermostat::Id, chip::app::Clusters::Thermostat::Attributes::OccupiedCoolingSetpoint::Id },
-    { chip::app::Clusters::Thermostat::Id, chip::app::Clusters::Thermostat::Attributes::SystemMode::Id },
-#endif
-#if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
-    { chip::app::Clusters::OnOff::Id, chip::app::Clusters::OnOff::Attributes::OnOff::Id },
-#endif
-#if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
-    { chip::app::Clusters::DoorLock::Id, chip::app::Clusters::DoorLock::Attributes::LockState::Id },
-#endif
-#if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
-    { chip::app::Clusters::WindowCovering::Id,
-      chip::app::Clusters::WindowCovering::Attributes::CurrentPositionLiftPercent100ths::Id },
-    { chip::app::Clusters::WindowCovering::Id,
-      chip::app::Clusters::WindowCovering::Attributes::CurrentPositionTiltPercent100ths::Id },
-#endif
-};
-
-constexpr size_t kPublishTemplateCount = sizeof(kPublishTemplates) / sizeof(kPublishTemplates[0]);
-
-} // namespace
-
-bool PlatformDeviceMqttProfile::MatchesPublishTemplate(chip::ClusterId cluster, chip::AttributeId attribute)
-{
-    for (size_t i = 0; i < kPublishTemplateCount; ++i)
-    {
-        if (kPublishTemplates[i].clusterId == cluster && kPublishTemplates[i].attributeId == attribute)
-        {
-            return true;
-        }
-    }
-    return false;
-}
+PlatformDeviceMqttProfile::PlatformDeviceMqttProfile(const MatterMqttClusterFilterRegistry * filterRegistry)
+    : mFilterRegistry(filterRegistry)
+{}
 
 void PlatformDeviceMqttProfile::BuildSnapshotPaths()
 {
-    if (mSnapshotPathsBuilt)
+    if (mSnapshotPathsBuilt || mFilterRegistry == nullptr)
     {
+        mSnapshotPathsBuilt = true;
         return;
     }
 
@@ -87,21 +52,24 @@ void PlatformDeviceMqttProfile::BuildSnapshotPaths()
 
     for (const chip::app::DataModel::EndpointEntry & endpoint : endpoints.TakeBuffer())
     {
-        for (size_t t = 0; t < kPublishTemplateCount; ++t)
+        for (const MatterMqttClusterFilter & filter : mFilterRegistry->Filters())
         {
-            if (!emberAfContainsServer(endpoint.id, kPublishTemplates[t].clusterId))
+            if (!emberAfContainsServer(endpoint.id, filter.clusterId))
             {
                 continue;
             }
-            if (mSnapshotPathCount >= MATTER_MQTT_MAX_SNAPSHOT_PATHS)
+            for (size_t a = 0; a < filter.attributeCount; ++a)
             {
-                mSnapshotPathsBuilt = true;
-                return;
+                if (mSnapshotPathCount >= MATTER_MQTT_MAX_SNAPSHOT_PATHS)
+                {
+                    mSnapshotPathsBuilt = true;
+                    return;
+                }
+                mSnapshotPaths[mSnapshotPathCount].endpoint    = endpoint.id;
+                mSnapshotPaths[mSnapshotPathCount].clusterId   = filter.clusterId;
+                mSnapshotPaths[mSnapshotPathCount].attributeId = filter.attributes[a].id;
+                ++mSnapshotPathCount;
             }
-            mSnapshotPaths[mSnapshotPathCount].endpoint     = endpoint.id;
-            mSnapshotPaths[mSnapshotPathCount].clusterId    = kPublishTemplates[t].clusterId;
-            mSnapshotPaths[mSnapshotPathCount].attributeId  = kPublishTemplates[t].attributeId;
-            ++mSnapshotPathCount;
         }
     }
     MATTER_MQTT_LOG("snapshot paths built: %u", static_cast<unsigned>(mSnapshotPathCount));
@@ -111,53 +79,28 @@ void PlatformDeviceMqttProfile::BuildSnapshotPaths()
 bool PlatformDeviceMqttProfile::IsAttributeAllowed(chip::EndpointId endpoint, chip::ClusterId cluster,
                                                    chip::AttributeId attribute) const
 {
-    if (!IsEndpointAllowed(endpoint))
+    if (!IsEndpointAllowed(endpoint) || mFilterRegistry == nullptr)
     {
         return false;
     }
-    return MatchesPublishTemplate(cluster, attribute);
+    const MatterMqttClusterFilter * clusterFilter = mFilterRegistry->FindByClusterId(cluster);
+    return clusterFilter != nullptr && mFilterRegistry->FindAttribute(clusterFilter, attribute) != nullptr;
 }
 
 bool PlatformDeviceMqttProfile::IsCommandAllowed(chip::EndpointId endpoint, chip::ClusterId cluster,
-                                               chip::CommandId command) const
+                                                 chip::CommandId command) const
 {
-    if (!IsEndpointAllowed(endpoint))
+    if (!IsEndpointAllowed(endpoint) || mFilterRegistry == nullptr)
     {
         return false;
     }
-#if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
-    if (cluster == chip::app::Clusters::OnOff::Id)
+    const MatterMqttClusterFilter * clusterFilter = mFilterRegistry->FindByClusterId(cluster);
+    if (clusterFilter == nullptr)
     {
-        return command == chip::app::Clusters::OnOff::Commands::On::Id ||
-            command == chip::app::Clusters::OnOff::Commands::Off::Id ||
-            command == chip::app::Clusters::OnOff::Commands::Toggle::Id;
+        return false;
     }
-#endif
-#if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
-    if (cluster == chip::app::Clusters::Thermostat::Id)
-    {
-        return command == chip::app::Clusters::Thermostat::Commands::SetpointRaiseLower::Id;
-    }
-#endif
-#if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
-    if (cluster == chip::app::Clusters::DoorLock::Id)
-    {
-        if (command == chip::app::Clusters::DoorLock::Commands::UnlockDoor::Id)
-        {
-            return false;
-        }
-        return command == chip::app::Clusters::DoorLock::Commands::LockDoor::Id;
-    }
-#endif
-#if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
-    if (cluster == chip::app::Clusters::WindowCovering::Id)
-    {
-        return command == chip::app::Clusters::WindowCovering::Commands::GoToLiftPercentage::Id ||
-            command == chip::app::Clusters::WindowCovering::Commands::GoToTiltPercentage::Id;
-    }
-#endif
-    (void) command;
-    return false;
+    const MatterMqttFilterCommandEntry * entry = mFilterRegistry->FindCommand(clusterFilter, command);
+    return entry != nullptr && (entry->flags & MatterMqttBridge::kCommandFlagUnsupported) == 0;
 }
 
 const MatterMqttSnapshotPath * PlatformDeviceMqttProfile::SnapshotPaths() const
@@ -202,11 +145,13 @@ bool PlatformDeviceMqttProfile::IsMqttDeviceIdKnown() const
     return mMqttDeviceIdKnown;
 }
 
-PlatformMqttBridgeConfig::PlatformMqttBridgeConfig() : mAdapters(GetPlatformMqttAdapters())
+PlatformMqttBridgeConfig::PlatformMqttBridgeConfig()
+    : mFilterRegistry(GetPlatformMqttClusterFilters()), mProfile(&mFilterRegistry)
 {
-    profile  = &mProfile;
-    adapters = &mAdapters;
-    reader   = &mAttributeReader;
+    profile        = &mProfile;
+    filterRegistry = &mFilterRegistry;
+    injector       = &mCommandInjector;
+    reader         = &mAttributeReader;
 }
 
 PlatformMqttBridgeConfig gPlatformMqttBridgeConfig;

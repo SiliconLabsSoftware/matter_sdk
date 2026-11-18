@@ -157,20 +157,13 @@ bool AppendChecked(int written, size_t outLen)
 
 } // namespace
 
-// Attribute report body: {"value":<number>} or {"value":"<string>"}.
-CHIP_ERROR MatterMqttJsonCodec::EncodeReport(bool asNumber, chip::CharSpan valueText, char * outJson, size_t outLen)
+// Attribute report body: {"value":"<string>"}.
+CHIP_ERROR MatterMqttJsonCodec::EncodeReport(chip::CharSpan valueText, char * outJson, size_t outLen)
 {
     VerifyOrReturnError(!valueText.empty() && outJson != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    int n;
-    if (asNumber)
-    {
-        n = snprintf(outJson, outLen, R"({"value":%.*s})", static_cast<int>(valueText.size()), valueText.data());
-    }
-    else
-    {
-        n = snprintf(outJson, outLen, R"({"value":"%.*s"})", static_cast<int>(valueText.size()), valueText.data());
-    }
+    const int n =
+        snprintf(outJson, outLen, R"({"value":"%.*s"})", static_cast<int>(valueText.size()), valueText.data());
     VerifyOrReturnError(AppendChecked(n, outLen), CHIP_ERROR_BUFFER_TOO_SMALL);
     return CHIP_NO_ERROR;
 }

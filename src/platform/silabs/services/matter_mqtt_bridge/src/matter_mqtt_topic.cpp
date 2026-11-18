@@ -42,7 +42,7 @@ CHIP_ERROR FormatTopicHexU64(uint64_t value, char * out, size_t outLen)
         return CHIP_NO_ERROR;
     }
 
-    char reversed[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    char reversed[MATTER_MQTT_DEVICE_ID_LEN];
     size_t digitCount = 0;
     while (value > 0)
     {
@@ -87,7 +87,7 @@ bool CopySegment(const char * start, const char * end, char * out, size_t outLen
     {
         ++len;
     }
-    VerifyOrReturnError(len + 1 < outLen, false);
+    VerifyOrReturnError(len + 1 <= outLen, false);
     memcpy(out, start, len);
     out[len] = '\0';
     return true;
@@ -107,7 +107,7 @@ CHIP_ERROR ParseTopicHexU64(const char * begin, const char * end, uint64_t & out
         VerifyOrReturnError(IsHexDigit(*p), CHIP_ERROR_INVALID_ARGUMENT);
     }
 
-    char scratch[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    char scratch[MATTER_MQTT_DEVICE_ID_LEN];
     VerifyOrReturnError(CopySegment(begin, end, scratch, sizeof(scratch)), CHIP_ERROR_INVALID_ARGUMENT);
     char * parseEnd              = nullptr;
     const unsigned long long v   = strtoull(scratch, &parseEnd, 16);
@@ -159,10 +159,10 @@ CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, c
 {
     VerifyOrReturnError(out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    char deviceHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
-    char epHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
-    char clusterHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
-    char attrHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    char deviceHex[MATTER_MQTT_DEVICE_ID_LEN];
+    char epHex[MATTER_MQTT_DEVICE_ID_LEN];
+    char clusterHex[MATTER_MQTT_DEVICE_ID_LEN];
+    char attrHex[MATTER_MQTT_DEVICE_ID_LEN];
 
     ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
     ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(ep), epHex, sizeof(epHex)));
@@ -180,7 +180,7 @@ CHIP_ERROR BuildCommandFilter(chip::NodeId deviceNodeId, char * out, size_t outL
 {
     VerifyOrReturnError(out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
-    char deviceHex[MATTER_MQTT_TOPIC_ID_HEX_SCRATCH];
+    char deviceHex[MATTER_MQTT_DEVICE_ID_LEN];
     ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
 
     const int n = snprintf(out, outLen, "%.*s%s/ep/+/cluster/+/cmd/+", static_cast<int>(sizeof(kTopicPrefix) - 1),
