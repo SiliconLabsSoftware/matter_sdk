@@ -1,7 +1,6 @@
 /*
  *
- *    Copyright (c) 2020 Project CHIP Authors
- *    Copyright (c) 2019 Nest Labs, Inc.
+ *    Copyright (c) 2026 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,39 +31,6 @@
 #include <nvm3.h>
 #include <nvm3_default.h>
 #include <nvm3_hal_flash.h>
-#include <nvm3_lock.h>
-
-#include <FreeRTOS.h>
-#include <semphr.h>
-
-#if defined(_SILICON_LABS_32B_SERIES_2)
-namespace {
-// Substitute the GSDK weak nvm3_lockBegin and nvm3_lockEnd
-// for an application controlled re-entrance protection
-SemaphoreHandle_t nvm3_Sem;
-StaticSemaphore_t nvm3_SemStruct;
-} // namespace
-
-// For EFR32MG24, use a binary semaphore to protect the nvm3 access
-// For other series, use the default nvm3_lockBegin and nvm3_lockEnd from nvm3_lock.c
-void nvm3_lockBegin(void)
-{
-    if (nvm3_Sem == NULL)
-    {
-        nvm3_Sem = xSemaphoreCreateBinaryStatic(&nvm3_SemStruct);
-        xSemaphoreGive(nvm3_Sem);
-    }
-
-    VerifyOrDie(nvm3_Sem != NULL);
-    xSemaphoreTake(nvm3_Sem, portMAX_DELAY);
-}
-
-void nvm3_lockEnd(void)
-{
-    VerifyOrDie(nvm3_Sem != NULL);
-    xSemaphoreGive(nvm3_Sem);
-}
-#endif // _SILICON_LABS_32B_SERIES_2
 
 namespace chip {
 namespace DeviceLayer {
@@ -130,16 +96,11 @@ CHIP_ERROR WriteConfigValueHelper(SilabsConfig::Key key, const T & val)
 
 CHIP_ERROR SilabsConfig::Init()
 {
-    // nvm3_Sem is created in nvm3_lockBegin()
-
     return MapNvm3Error(nvm3_open(nvm3_defaultHandle, nvm3_defaultInit));
 }
 
 void SilabsConfig::DeInit()
 {
-#if defined(_SILICON_LABS_32B_SERIES_2)
-    vSemaphoreDelete(nvm3_Sem);
-#endif // _SILICON_LABS_32B_SERIES_2
     nvm3_close(nvm3_defaultHandle);
 }
 

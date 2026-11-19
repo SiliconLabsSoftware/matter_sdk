@@ -74,6 +74,10 @@ static_library("efr32") {
     "../../SingletonConfigurationManager.cpp",
   ]
 
+  if (silabs_family == "efr32mg24" || silabs_family == "efr32mg26" || silabs_family == "mgm24") {
+    sources += ["../Nvm3LockOverride.cpp"]
+  }
+
   public_deps = [
     "${chip_root}/src/platform:platform_base",
     "${chip_root}/src/platform/logging:headers",
