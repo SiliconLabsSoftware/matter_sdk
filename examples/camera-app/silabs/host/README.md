@@ -62,6 +62,28 @@ sudo apt install \
 -   `libcamera-v4l2` provides `libcamerify`, required by the Raspberry Pi
     camera (see [Running](#running)).
 
+If apt reports unmet dependencies between a `-dev` package and its library,
+for example:
+
+```
+libselinux1-dev : Depends: libselinux1 (= 3.5-2ubuntu2) but 3.5-2ubuntu2.1 is to be installed
+libzstd-dev : Depends: libzstd1 (= 1.5.5+dfsg2-2build1) but 1.5.5+dfsg2-2build1.1 is to be installed
+```
+
+the installed libraries come from `noble-updates` but apt does not see that
+pocket, so it only finds the older `-dev` packages of `noble`. Check that the
+`Suites:` line of `/etc/apt/sources.list.d/ubuntu.sources` contains
+`noble noble-updates noble-backports` (and that the security entry contains
+`noble-security`), then refresh the package lists before installing:
+
+```sh
+sudo apt update
+apt-cache policy libselinux1 libselinux1-dev # Both candidates must have the same version
+```
+
+The CMake error `The following required packages were not found: gstreamer-1.0`
+means that `libgstreamer1.0-dev` is not installed: fix the apt errors first.
+
 Give the user access to the camera and to the UART:
 
 ```sh
