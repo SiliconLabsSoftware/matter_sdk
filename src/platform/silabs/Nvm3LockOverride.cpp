@@ -33,8 +33,6 @@ osMutexId_t gNvm3Mutex             = nullptr;
 const osMutexAttr_t kNvm3MutexAttr = { "nvm3_mutex", osMutexRecursive | osMutexPrioInherit, NULL, 0 };
 } // namespace
 
-// For EFR32MG24, use a binary semaphore to protect the nvm3 access
-// For other series, use the default nvm3_lockBegin and nvm3_lockEnd from nvm3_lock.c
 void nvm3_lockBegin(void)
 {
     // if kernel is not running yet, we don't need to lock.
