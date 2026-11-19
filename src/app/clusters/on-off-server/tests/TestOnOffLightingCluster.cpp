@@ -437,6 +437,29 @@ TEST_F(TestOnOffLightingCluster, TestOnWithTimedOff)
     EXPECT_EQ(offWaitTime, 0);
 }
 
+TEST_F(TestOnOffLightingCluster, TestOnWithTimedOff_LateTimerCallbackDoesNotExtendOnTime)
+{
+    Commands::OnWithTimedOff::Type command;
+    command.onTime      = 10;
+    command.offWaitTime = 0;
+    EXPECT_TRUE(mClusterTester.Invoke(command).IsSuccess());
+    EXPECT_TRUE(mMockDelegate.mOnOff);
+
+    // The first 100 ms tick is delivered 250 ms late.
+    mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(350));
+    uint32_t elapsedMs = 350;
+
+    while (mMockDelegate.mOnOff && elapsedMs < 2000)
+    {
+        mMockTimerDelegate.AdvanceClock(System::Clock::Milliseconds32(1));
+        elapsedMs++;
+    }
+
+    // OnTime = 10 means 1 second, regardless of callback latency.
+    EXPECT_FALSE(mMockDelegate.mOnOff);
+    EXPECT_EQ(elapsedMs, 1000u);
+}
+
 TEST_F(TestOnOffLightingCluster, TestOffWithEffect)
 {
     // Step 1: Turn On
