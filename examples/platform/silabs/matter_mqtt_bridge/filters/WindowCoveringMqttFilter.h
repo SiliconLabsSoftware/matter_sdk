@@ -20,7 +20,7 @@
 
 #if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
 
-#include <matter_mqtt_cluster_filter.h>
+#include <MatterMqttClusterFilter.h>
 
 #include <app-common/zap-generated/cluster-objects.h>
 
@@ -28,14 +28,14 @@ using namespace chip::app::Clusters;
 
 namespace {
 
-constexpr MatterMqttFilterAttributeEntry kWindowAttributes[] = {
+constexpr MatterMqttAttributeFilter kWindowAttributes[] = {
     { WindowCovering::Attributes::CurrentPositionLiftPercent100ths::Id },
     { WindowCovering::Attributes::CurrentPositionTiltPercent100ths::Id },
 };
 
-constexpr MatterMqttFilterCommandEntry kWindowCommands[] = {
-    { WindowCovering::Commands::GoToLiftPercentage::Id, MatterMqttBridge::kCommandFlagNone },
-    { WindowCovering::Commands::GoToTiltPercentage::Id, MatterMqttBridge::kCommandFlagNone },
+constexpr MatterMqttCommandFilter kWindowCommands[] = {
+    { WindowCovering::Commands::GoToLiftPercentage::Id },
+    { WindowCovering::Commands::GoToTiltPercentage::Id },
 };
 
 } // namespace

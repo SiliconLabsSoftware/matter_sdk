@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "matter_mqtt_contract.h"
+#include "MatterMqttContract.h"
 
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
@@ -33,9 +33,6 @@ struct MatterMqttSnapshotPath
     chip::AttributeId attributeId;
 };
 
-/** MQTT device id formatting (matter/v1/{deviceId}/...). */
-CHIP_ERROR FormatMqttDeviceId(chip::NodeId nodeId, char * out, size_t outLen);
-
 /**
  * Product ACL and MQTT topic device id. Applications supply a concrete subclass
  */
@@ -44,25 +41,24 @@ class DeviceMqttProfile
 public:
     virtual ~DeviceMqttProfile() = default;
 
-    /** True when @ref SnapshotPathCount is non-zero (bridge skips listener/snapshot otherwise). */
-    bool SupportsAttributePublishing() const { return SnapshotPathCount() > 0; }
-
+    /** Applies product attribute allow-list; must include endpoint policy (e.g. @ref IsEndpointAllowed). */
     virtual bool IsAttributeAllowed(chip::EndpointId endpoint, chip::ClusterId cluster,
                                     chip::AttributeId attribute) const;
 
-    virtual bool IsCommandAllowed(chip::EndpointId endpoint, chip::ClusterId cluster, chip::CommandId command) const = 0;
-
-    /** Checked on inbound commands after topic parse; endpoint policy is product-defined. */
+    /**
+     * Endpoint policy for attributes and command validation.
+     * Reads the data model; call on the Matter thread or under chip::DeviceLayer::StackLock.
+     */
     virtual bool IsEndpointAllowed(chip::EndpointId endpoint) const;
 
     virtual const MatterMqttSnapshotPath * SnapshotPaths() const { return nullptr; }
     virtual size_t SnapshotPathCount() const { return 0; }
 
-    virtual CHIP_ERROR RefreshMqttDeviceId() = 0;
-    virtual chip::NodeId GetMqttDeviceNodeId() const       = 0;
-    virtual const char * GetMqttDeviceId() const           = 0;
-    virtual bool IsMqttDeviceIdKnown() const               = 0;
+    /** Resolves fabric NodeId for MQTT topics; safe to call until a fabric is commissioned. */
+    virtual CHIP_ERROR ResolveMqttDeviceNodeId() = 0;
+    virtual chip::NodeId GetMqttDeviceNodeId() const = 0;
+    virtual bool IsMqttDeviceIdKnown() const         = 0;
 };
 
-/** Returns whether @p endpoint is an enabled entry from CodegenDataModelProvider::Endpoints(). */
+/** Reads CodegenDataModelProvider::Endpoints(); use under chip::DeviceLayer::StackLock off the Matter thread. */
 bool MatterMqttIsEndpointInDataModel(chip::EndpointId endpoint);

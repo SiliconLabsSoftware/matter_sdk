@@ -20,10 +20,10 @@
 
 #include "EmberMqttBridgePlatform.h"
 
-#include <matter_mqtt_cluster_filter.h>
-#include <device_mqtt_profile.h>
+#include <MatterMqttClusterFilter.h>
+#include <DeviceMqttProfile.h>
 #include <lib/support/Span.h>
-#include <matter_mqtt_bridge_config.h>
+#include <MatterMqttBridgeConfig.h>
 
 class PlatformDeviceMqttProfile final : public DeviceMqttProfile
 {
@@ -31,23 +31,20 @@ public:
     explicit PlatformDeviceMqttProfile(const MatterMqttClusterFilterRegistry * filterRegistry);
 
     bool IsAttributeAllowed(chip::EndpointId endpoint, chip::ClusterId cluster, chip::AttributeId attribute) const override;
-    bool IsCommandAllowed(chip::EndpointId endpoint, chip::ClusterId cluster, chip::CommandId command) const override;
 
     const MatterMqttSnapshotPath * SnapshotPaths() const override;
     size_t SnapshotPathCount() const override;
 
-    CHIP_ERROR RefreshMqttDeviceId() override;
+    CHIP_ERROR ResolveMqttDeviceNodeId() override;
     chip::NodeId GetMqttDeviceNodeId() const override;
-    const char * GetMqttDeviceId() const override;
     bool IsMqttDeviceIdKnown() const override;
 
 private:
     void BuildSnapshotPaths();
 
     const MatterMqttClusterFilterRegistry * mFilterRegistry;
-    chip::NodeId mMqttDeviceNodeId                        = chip::kUndefinedNodeId;
-    char mMqttDeviceId[MATTER_MQTT_DEVICE_ID_LEN]         = {};
-    bool mMqttDeviceIdKnown                               = false;
+    chip::NodeId mMqttDeviceNodeId = chip::kUndefinedNodeId;
+    bool mMqttDeviceIdKnown        = false;
     MatterMqttSnapshotPath mSnapshotPaths[MATTER_MQTT_MAX_SNAPSHOT_PATHS]{};
     size_t mSnapshotPathCount = 0;
     bool mSnapshotPathsBuilt  = false;

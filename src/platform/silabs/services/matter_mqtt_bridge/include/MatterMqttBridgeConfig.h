@@ -18,16 +18,15 @@
 
 #pragma once
 
-#include "attribute_value_reader.h"
-#include "command_injector.h"
-#include "device_mqtt_profile.h"
-#include "matter_mqtt_cluster_filter.h"
-#include "mqtt_transport_port.h"
+#include "AttributeValueReader.h"
+#include "CommandInjector.h"
+#include "DeviceMqttProfile.h"
+#include "MatterMqttClusterFilter.h"
 
 #include <cstdint>
 
 /**
- * Dependency injection bundle for MatterMqttBridge::Init. Null @p transport selects the built-in port.
+ * Dependency injection bundle for @ref MatterMqttBridge::Init.
  * @p profile must be a non-null DeviceMqttProfile subclass. JSON codec is fixed (MatterMqttJsonCodec) in the bridge.
  */
 class MatterMqttBridgeConfig
@@ -35,7 +34,6 @@ class MatterMqttBridgeConfig
 public:
     virtual ~MatterMqttBridgeConfig() = default;
 
-    MqttTransportPort * transport                    = nullptr;
     MatterMqttClusterFilterRegistry * filterRegistry = nullptr;
     DeviceMqttProfile * profile                      = nullptr;
     AttributeValueReader * reader                    = nullptr;

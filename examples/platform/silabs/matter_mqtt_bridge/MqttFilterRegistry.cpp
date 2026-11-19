@@ -16,7 +16,7 @@
  *    limitations under the License.
  */
 
-#include <matter_mqtt_cluster_filter.h>
+#include <MatterMqttClusterFilter.h>
 #include <zap-generated/gen_config.h>
 
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)

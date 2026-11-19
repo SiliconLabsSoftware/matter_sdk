@@ -20,7 +20,7 @@
 
 #if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
 
-#include <matter_mqtt_cluster_filter.h>
+#include <MatterMqttClusterFilter.h>
 
 #include <app-common/zap-generated/cluster-objects.h>
 
@@ -28,15 +28,15 @@ using namespace chip::app::Clusters;
 
 namespace {
 
-constexpr MatterMqttFilterAttributeEntry kThermostatAttributes[] = {
+constexpr MatterMqttAttributeFilter kThermostatAttributes[] = {
     { Thermostat::Attributes::LocalTemperature::Id },
     { Thermostat::Attributes::OccupiedHeatingSetpoint::Id },
     { Thermostat::Attributes::OccupiedCoolingSetpoint::Id },
     { Thermostat::Attributes::SystemMode::Id },
 };
 
-constexpr MatterMqttFilterCommandEntry kThermostatCommands[] = {
-    { Thermostat::Commands::SetpointRaiseLower::Id, MatterMqttBridge::kCommandFlagNone },
+constexpr MatterMqttCommandFilter kThermostatCommands[] = {
+    { Thermostat::Commands::SetpointRaiseLower::Id },
 };
 
 } // namespace

@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "matter_mqtt_contract.h"
+#include "MatterMqttContract.h"
 
 #include <app/ConcreteAttributePath.h>
 #include <lib/core/CHIPError.h>

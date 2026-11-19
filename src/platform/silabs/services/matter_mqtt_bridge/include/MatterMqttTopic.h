@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "matter_mqtt_contract.h"
+#include "MatterMqttContract.h"
 
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
@@ -39,16 +39,17 @@ CHIP_ERROR FormatTopicIdUint64(uint64_t value, char * out, size_t outLen);
 CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, chip::ClusterId clusterId,
                                chip::AttributeId attributeId, char * out, size_t outLen);
 
-CHIP_ERROR BuildCommandFilter(chip::NodeId deviceNodeId, char * out, size_t outLen);
+CHIP_ERROR BuildCommandSubscriptionTopic(chip::NodeId deviceNodeId, char * out, size_t outLen);
 
 struct ParsedCommandTopic
 {
-    chip::EndpointId endpoint  = 0;
-    chip::ClusterId clusterId    = 0;
-    chip::CommandId commandId    = 0;
+    chip::NodeId nodeId       = chip::kUndefinedNodeId;
+    chip::EndpointId endpoint = 0;
+    chip::ClusterId clusterId = 0;
+    chip::CommandId commandId = 0;
 };
 
-/** Validates @p topic against @p expectedDeviceNodeId and fills @p out with command path fields. */
-CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, chip::NodeId expectedDeviceNodeId, ParsedCommandTopic & out);
+/** Parses a command topic into @p out. The caller checks @p out.nodeId against the device. */
+CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, ParsedCommandTopic & out);
 
 } // namespace MatterMqttTopic

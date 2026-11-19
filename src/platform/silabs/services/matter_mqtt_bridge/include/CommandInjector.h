@@ -18,9 +18,8 @@
 
 #pragma once
 
-#include "matter_mqtt_cluster_filter.h"
-#include "matter_mqtt_codec.h"
-#include "matter_mqtt_types.h"
+#include "MatterMqttCodec.h"
+#include "MatterMqttTopic.h"
 
 #include <lib/core/CHIPError.h>
 #include <lib/core/DataModelTypes.h>
@@ -35,13 +34,14 @@ class MqttCommandInjector
 public:
     virtual ~MqttCommandInjector() = default;
 
-    CHIP_ERROR ValidateArgs(chip::ClusterId clusterId, chip::CommandId commandId,
-                            const MatterMqttCodecTypes::ArgsView * args) const;
+    /** MQTT thread: validate JSON args and write invoke-structure TLV into tlvBuffer. */
+    CHIP_ERROR EncodeInvokeTlv(chip::ClusterId clusterId, chip::CommandId commandId,
+                               const MatterMqttCodecTypes::ArgsView * args, uint8_t * tlvBuffer, size_t tlvBufferSize,
+                               size_t & tlvLen) const;
 
     virtual CHIP_ERROR BuildInvokeReader(chip::ClusterId clusterId, chip::CommandId commandId,
                                          const MatterMqttCodecTypes::ArgsView * args, uint8_t * tlvBuffer, size_t tlvBufferSize,
-                                         chip::TLV::TLVReader & reader) const = 0;
+                                         chip::TLV::TLVReader & reader, size_t & tlvLen) const = 0;
 
-    CHIP_ERROR Invoke(const MatterMqttBridge::InboundCommand & command, const MatterMqttFilterCommandEntry & entry,
-                      const MatterMqttCodecTypes::ArgsView * decodedArgs = nullptr);
+    CHIP_ERROR Invoke(const MatterMqttTopic::ParsedCommandTopic & command, const uint8_t * invokeTlv, size_t invokeTlvLen);
 };

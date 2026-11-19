@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "matter_mqtt_contract.h"
+#include "MatterMqttContract.h"
 
 #include <lib/core/DataModelTypes.h>
 #include <platform/silabs/services/mqtt_client.h>
@@ -26,7 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 
-/** POD types exchanged across the Matter MQTT bridge threads. */
+/** Cross-thread work payload types for the Matter MQTT bridge. */
 namespace MatterMqttBridge {
 
 /**
@@ -39,29 +39,10 @@ struct ReportWork
     chip::ClusterId clusterId     = 0;
     chip::AttributeId attributeId = 0;
     char value[MATTER_MQTT_REPORT_WORK_VALUE_LEN]{};
+    uint8_t forSnapshot           = 0;
 };
 
 static_assert(sizeof(ReportWork) <= chip::DeviceLayer::Silabs::MqttClient::kWorkDataSize,
               "ReportWork must fit MqttClient::ScheduleWork payload");
-
-/**
- * Matter-thread command inject payload. Queued via a static slot in MatterMqttBridge (not ScheduleLambda memcpy).
- * device NodeId comes from the inbound MQTT topic via DeviceMqttProfile, not stored here.
- */
-struct InboundCommand
-{
-    chip::EndpointId endpoint = 0;
-    chip::ClusterId clusterId = 0;
-    chip::CommandId commandId = 0;
-};
-
-enum CommandFlags : uint8_t
-{
-    kCommandFlagNone         = 0x00,
-    kCommandFlagTimed        = 0x01, /**< Timed invoke required (e.g. Door Lock PIN). */
-    kCommandFlagFabricScoped = 0x02,
-    kCommandFlagHasResponse  = 0x04,
-    kCommandFlagUnsupported  = 0x08,
-};
 
 } // namespace MatterMqttBridge

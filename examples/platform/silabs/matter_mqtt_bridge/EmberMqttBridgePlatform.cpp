@@ -18,17 +18,19 @@
 
 #include "EmberMqttBridgePlatform.h"
 
-#include <matter_mqtt_contract.h>
-#include <matter_mqtt_log.h>
+#include <MatterMqttContract.h>
+#include <MatterMqttLog.h>
 
-#include <app-common/zap-generated/attribute-type.h>
+#include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-objects.h>
+#include <zap-generated/gen_config.h>
 #include <app/data-model/Encode.h>
-#include <app/util/attribute-storage.h>
-#include <app/util/attribute-table.h>
-#include <lib/core/CHIPEncoding.h>
-#include <lib/support/attribute-storage-null-handling.h>
+#include <app/data-model/Nullable.h>
 #include <lib/support/CodeUtils.h>
+#include <lib/support/SafeInt.h>
+#include <lib/support/TypeTraits.h>
+
+#include <type_traits>
 #include <lib/support/logging/CHIPLogging.h>
 #include <protocols/interaction_model/StatusCode.h>
 
@@ -42,28 +44,23 @@ namespace {
 
 using namespace chip;
 using namespace chip::app;
+using namespace chip::app::Clusters;
 using namespace chip::TLV;
+using chip::Protocols::InteractionModel::Status;
 
-constexpr size_t kEmberScalarReadSize = 2;
-
-template <typename T>
-bool IsStoredNullValue(const EmberAfAttributeMetadata * meta, T stored)
+CHIP_ERROR ImStatusToChipError(Status status)
 {
-    return meta->IsNullable() && chip::app::NumericAttributeTraits<T>::IsNullValue(stored);
+    if (status == Status::Success)
+    {
+        return CHIP_NO_ERROR;
+    }
+    return CHIP_ERROR_IM_GLOBAL_STATUS_VALUE(status);
 }
 
 CHIP_ERROR WriteMqttNull(char * out, size_t outLen)
 {
     VerifyOrReturnError(out != nullptr && outLen > 0, CHIP_ERROR_INVALID_ARGUMENT);
     strncpy(out, "null", outLen - 1);
-    out[outLen - 1] = '\0';
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR WriteMqttBool(uint8_t stored, char * out, size_t outLen)
-{
-    VerifyOrReturnError(out != nullptr && outLen > 0, CHIP_ERROR_INVALID_ARGUMENT);
-    strncpy(out, stored != 0 ? "1" : "0", outLen - 1);
     out[outLen - 1] = '\0';
     return CHIP_NO_ERROR;
 }
@@ -76,58 +73,97 @@ CHIP_ERROR WriteMqttDecimal(int32_t value, char * out, size_t outLen)
     return CHIP_NO_ERROR;
 }
 
-/** Ember read path scoped to MQTT filter-registry attribute ZCL types (v1 demo clusters). */
+template <typename T>
+CHIP_ERROR WriteNullableAsDecimal(const DataModel::Nullable<T> & value, char * out, size_t outLen)
+{
+    if (value.IsNull())
+    {
+        return WriteMqttNull(out, outLen);
+    }
+    if constexpr (std::is_enum_v<T>)
+    {
+        return WriteMqttDecimal(static_cast<int32_t>(to_underlying(value.Value())), out, outLen);
+    }
+    return WriteMqttDecimal(static_cast<int32_t>(value.Value()), out, outLen);
+}
+
+/** Codegen accessor path for MQTT filter-registry attributes (v1 demo clusters). */
 CHIP_ERROR ReadViaEmberAsString(const chip::app::ConcreteAttributePath & path, char * out, size_t outLen)
 {
-    const EmberAfAttributeMetadata * meta =
-        emberAfLocateAttributeMetadata(path.mEndpointId, path.mClusterId, path.mAttributeId);
-    VerifyOrReturnError(meta != nullptr, CHIP_ERROR_NOT_FOUND);
+    const EndpointId endpoint = path.mEndpointId;
 
-    const uint16_t attrSize = emberAfAttributeSize(meta);
-    VerifyOrReturnError(attrSize <= kEmberScalarReadSize, CHIP_ERROR_BUFFER_TOO_SMALL);
-
-    uint8_t buffer[kEmberScalarReadSize] = {};
-    const auto status                    = emberAfReadAttribute(path.mEndpointId, path.mClusterId, path.mAttributeId, buffer, attrSize);
-    VerifyOrReturnError(status == Protocols::InteractionModel::Status::Success,
-                        CHIP_ERROR_IM_GLOBAL_STATUS_VALUE(status));
-
-    switch (meta->attributeType)
+#if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
+    if (path.mClusterId == OnOff::Id)
     {
-    case ZCL_BOOLEAN_ATTRIBUTE_TYPE:
-        return WriteMqttBool(buffer[0], out, outLen);
-    case ZCL_ENUM8_ATTRIBUTE_TYPE:
-    case ZCL_BITMAP8_ATTRIBUTE_TYPE:
-    case ZCL_INT8U_ATTRIBUTE_TYPE:
-    case ZCL_PERCENT_ATTRIBUTE_TYPE: {
-        const uint8_t stored = buffer[0];
-        if (IsStoredNullValue(meta, stored))
+        if (path.mAttributeId == OnOff::Attributes::OnOff::Id)
         {
-            return WriteMqttNull(out, outLen);
+            bool value = false;
+            ReturnErrorOnFailure(ImStatusToChipError(OnOff::Attributes::OnOff::Get(endpoint, &value)));
+            return WriteMqttDecimal(value ? 1 : 0, out, outLen);
         }
-        return WriteMqttDecimal(static_cast<int32_t>(stored), out, outLen);
     }
-    case ZCL_TEMPERATURE_ATTRIBUTE_TYPE:
-    case ZCL_INT16S_ATTRIBUTE_TYPE: {
-        const int16_t stored = static_cast<int16_t>(chip::Encoding::LittleEndian::Get16(buffer));
-        if (IsStoredNullValue(meta, stored))
+#endif
+
+#if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
+    if (path.mClusterId == Thermostat::Id)
+    {
+        if (path.mAttributeId == Thermostat::Attributes::LocalTemperature::Id)
         {
-            return WriteMqttNull(out, outLen);
+            DataModel::Nullable<int16_t> value;
+            ReturnErrorOnFailure(ImStatusToChipError(Thermostat::Attributes::LocalTemperature::Get(endpoint, value)));
+            return WriteNullableAsDecimal(value, out, outLen);
         }
-        return WriteMqttDecimal(static_cast<int32_t>(stored), out, outLen);
-    }
-    case ZCL_PERCENT100THS_ATTRIBUTE_TYPE:
-    case ZCL_INT16U_ATTRIBUTE_TYPE: {
-        const uint16_t stored = chip::Encoding::LittleEndian::Get16(buffer);
-        if (IsStoredNullValue(meta, stored))
+        if (path.mAttributeId == Thermostat::Attributes::OccupiedHeatingSetpoint::Id)
         {
-            return WriteMqttNull(out, outLen);
+            int16_t value = 0;
+            ReturnErrorOnFailure(ImStatusToChipError(Thermostat::Attributes::OccupiedHeatingSetpoint::Get(endpoint, &value)));
+            return WriteMqttDecimal(static_cast<int32_t>(value), out, outLen);
         }
-        return WriteMqttDecimal(static_cast<int32_t>(stored), out, outLen);
+        if (path.mAttributeId == Thermostat::Attributes::OccupiedCoolingSetpoint::Id)
+        {
+            int16_t value = 0;
+            ReturnErrorOnFailure(ImStatusToChipError(Thermostat::Attributes::OccupiedCoolingSetpoint::Get(endpoint, &value)));
+            return WriteMqttDecimal(static_cast<int32_t>(value), out, outLen);
+        }
+        if (path.mAttributeId == Thermostat::Attributes::SystemMode::Id)
+        {
+            Thermostat::SystemModeEnum value = Thermostat::SystemModeEnum::kOff;
+            ReturnErrorOnFailure(ImStatusToChipError(Thermostat::Attributes::SystemMode::Get(endpoint, &value)));
+            return WriteMqttDecimal(static_cast<int32_t>(to_underlying(value)), out, outLen);
+        }
     }
-    default:
-        MATTER_MQTT_LOG_ERROR("ember read unsupported type 0x%02x", meta->attributeType);
-        return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
+#endif
+
+#if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
+    if (path.mClusterId == DoorLock::Id && path.mAttributeId == DoorLock::Attributes::LockState::Id)
+    {
+        DataModel::Nullable<DoorLock::DlLockState> value;
+        ReturnErrorOnFailure(ImStatusToChipError(DoorLock::Attributes::LockState::Get(endpoint, value)));
+        return WriteNullableAsDecimal(value, out, outLen);
     }
+#endif
+
+#if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
+    if (path.mClusterId == WindowCovering::Id)
+    {
+        if (path.mAttributeId == WindowCovering::Attributes::CurrentPositionLiftPercent100ths::Id)
+        {
+            DataModel::Nullable<Percent100ths> value;
+            ReturnErrorOnFailure(
+                ImStatusToChipError(WindowCovering::Attributes::CurrentPositionLiftPercent100ths::Get(endpoint, value)));
+            return WriteNullableAsDecimal(value, out, outLen);
+        }
+        if (path.mAttributeId == WindowCovering::Attributes::CurrentPositionTiltPercent100ths::Id)
+        {
+            DataModel::Nullable<Percent100ths> value;
+            ReturnErrorOnFailure(
+                ImStatusToChipError(WindowCovering::Attributes::CurrentPositionTiltPercent100ths::Get(endpoint, value)));
+            return WriteNullableAsDecimal(value, out, outLen);
+        }
+    }
+#endif
+
+    return CHIP_ERROR_NOT_FOUND;
 }
 
 const char * ArgText(const MatterMqttCodecTypes::ArgsView * args, const char * name)
@@ -192,23 +228,9 @@ CHIP_ERROR EncodeInvokePayload(chip::ClusterId clusterId, chip::CommandId comman
         long amount = 0;
         ReturnErrorOnFailure(ParseDecimalString(modeText, mode));
         ReturnErrorOnFailure(ParseDecimalString(amountText, amount));
-        VerifyOrReturnError(mode >= 0 && mode <= 255, CHIP_ERROR_INVALID_ARGUMENT);
-        VerifyOrReturnError(amount >= INT8_MIN && amount <= INT8_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+        VerifyOrReturnError(chip::CanCastTo<uint8_t>(mode) && chip::CanCastTo<int8_t>(amount), CHIP_ERROR_INVALID_ARGUMENT);
         cmd.mode   = static_cast<Clusters::Thermostat::SetpointRaiseLowerModeEnum>(mode);
         cmd.amount = static_cast<int8_t>(amount);
-        return DataModel::Encode(writer, TLV::AnonymousTag(), cmd);
-    }
-#endif
-#if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
-    using namespace Clusters::DoorLock::Commands;
-    if (clusterId == Clusters::DoorLock::Id && commandId == LockDoor::Id)
-    {
-        LockDoor::Type cmd;
-        const char * pin = ArgText(args, "PINCode");
-        if (pin != nullptr && pin[0] != '\0')
-        {
-            cmd.PINCode.SetValue(ByteSpan(reinterpret_cast<const uint8_t *>(pin), strlen(pin)));
-        }
         return DataModel::Encode(writer, TLV::AnonymousTag(), cmd);
     }
 #endif
@@ -223,7 +245,7 @@ CHIP_ERROR EncodeInvokePayload(chip::ClusterId clusterId, chip::CommandId comman
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             long v = 0;
             ReturnErrorOnFailure(ParseDecimalString(text, v));
-            VerifyOrReturnError(v >= 0 && v <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+            VerifyOrReturnError(chip::CanCastTo<Percent100ths>(v), CHIP_ERROR_INVALID_ARGUMENT);
             cmd.liftPercent100thsValue = static_cast<Percent100ths>(v);
             return DataModel::Encode(writer, TLV::AnonymousTag(), cmd);
         }
@@ -234,7 +256,7 @@ CHIP_ERROR EncodeInvokePayload(chip::ClusterId clusterId, chip::CommandId comman
             VerifyOrReturnError(text != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
             long v = 0;
             ReturnErrorOnFailure(ParseDecimalString(text, v));
-            VerifyOrReturnError(v >= 0 && v <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+            VerifyOrReturnError(chip::CanCastTo<Percent100ths>(v), CHIP_ERROR_INVALID_ARGUMENT);
             cmd.tiltPercent100thsValue = static_cast<Percent100ths>(v);
             return DataModel::Encode(writer, TLV::AnonymousTag(), cmd);
         }
@@ -243,10 +265,11 @@ CHIP_ERROR EncodeInvokePayload(chip::ClusterId clusterId, chip::CommandId comman
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
 
-CHIP_ERROR FinalizeInvokeReader(TLVWriter & writer, uint8_t * tlvBuffer, TLVReader & reader)
+CHIP_ERROR FinalizeInvokeReader(TLVWriter & writer, uint8_t * tlvBuffer, TLVReader & reader, size_t & tlvLen)
 {
     ReturnErrorOnFailure(writer.Finalize());
-    reader.Init(tlvBuffer, writer.GetLengthWritten());
+    tlvLen = writer.GetLengthWritten();
+    reader.Init(tlvBuffer, tlvLen);
     ReturnErrorOnFailure(reader.Next());
     VerifyOrReturnError(reader.GetType() == TLVType::kTLVType_Structure, CHIP_ERROR_INVALID_ARGUMENT);
     return CHIP_NO_ERROR;
@@ -261,17 +284,17 @@ CHIP_ERROR EmberMqttAttributeValueReader::ReadAsString(const chip::app::Concrete
     {
         return CHIP_NO_ERROR;
     }
-    MATTER_MQTT_LOG_DETAIL("ember read failed ep=%u attr=" ChipLogFormatMEI " err=%" CHIP_ERROR_FORMAT,
+    MATTER_MQTT_LOG_DETAIL("attribute read failed ep=%u attr=" ChipLogFormatMEI " err=%" CHIP_ERROR_FORMAT,
                            static_cast<unsigned>(path.mEndpointId), ChipLogValueMEI(path.mAttributeId), err.Format());
     return err;
 }
 
 CHIP_ERROR PlatformMqttCommandInjector::BuildInvokeReader(chip::ClusterId clusterId, chip::CommandId commandId,
                                                           const MatterMqttCodecTypes::ArgsView * args, uint8_t * tlvBuffer,
-                                                          size_t tlvBufferSize, TLVReader & reader) const
+                                                          size_t tlvBufferSize, TLVReader & reader, size_t & tlvLen) const
 {
     TLVWriter writer;
     writer.Init(tlvBuffer, tlvBufferSize);
     ReturnErrorOnFailure(EncodeInvokePayload(clusterId, commandId, args, writer));
-    return FinalizeInvokeReader(writer, tlvBuffer, reader);
+    return FinalizeInvokeReader(writer, tlvBuffer, reader, tlvLen);
 }

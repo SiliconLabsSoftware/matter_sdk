@@ -20,7 +20,8 @@
 
 #if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
 
-#include <matter_mqtt_cluster_filter.h>
+// Attributes only: timed-invoke commands (e.g. LockDoor) are not MQTT-injectable; add filter + Invoke support to enable.
+#include <MatterMqttClusterFilter.h>
 
 #include <app-common/zap-generated/cluster-objects.h>
 
@@ -28,12 +29,8 @@ using namespace chip::app::Clusters;
 
 namespace {
 
-constexpr MatterMqttFilterAttributeEntry kDoorLockAttributes[] = {
+constexpr MatterMqttAttributeFilter kDoorLockAttributes[] = {
     { DoorLock::Attributes::LockState::Id },
-};
-
-constexpr MatterMqttFilterCommandEntry kDoorLockCommands[] = {
-    { DoorLock::Commands::LockDoor::Id, MatterMqttBridge::kCommandFlagTimed },
 };
 
 } // namespace
@@ -41,7 +38,7 @@ constexpr MatterMqttFilterCommandEntry kDoorLockCommands[] = {
 const MatterMqttClusterFilter kDoorLockMqttClusterFilter = { DoorLock::Id,
                                                              kDoorLockAttributes,
                                                              sizeof(kDoorLockAttributes) / sizeof(kDoorLockAttributes[0]),
-                                                             kDoorLockCommands,
-                                                             sizeof(kDoorLockCommands) / sizeof(kDoorLockCommands[0]) };
+                                                             nullptr,
+                                                             0 };
 
 #endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER

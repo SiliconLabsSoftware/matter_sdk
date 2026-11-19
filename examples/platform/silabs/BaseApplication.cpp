@@ -30,7 +30,7 @@
 #include <app/server/Dnssd.h>
 #include <app/server/Server.h>
 #if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
-#include <matter_mqtt_bridge.h>
+#include <MatterMqttBridge.h>
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 #define APP_ACTION_BUTTON 1

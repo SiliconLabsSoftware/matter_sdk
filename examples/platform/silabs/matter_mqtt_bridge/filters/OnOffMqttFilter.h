@@ -20,7 +20,7 @@
 
 #if defined(ZCL_USING_ON_OFF_CLUSTER_SERVER)
 
-#include <matter_mqtt_cluster_filter.h>
+#include <MatterMqttClusterFilter.h>
 
 #include <app-common/zap-generated/cluster-objects.h>
 
@@ -28,14 +28,14 @@ using namespace chip::app::Clusters;
 
 namespace {
 
-constexpr MatterMqttFilterAttributeEntry kOnOffAttributes[] = {
+constexpr MatterMqttAttributeFilter kOnOffAttributes[] = {
     { OnOff::Attributes::OnOff::Id },
 };
 
-constexpr MatterMqttFilterCommandEntry kOnOffCommands[] = {
-    { OnOff::Commands::On::Id, MatterMqttBridge::kCommandFlagNone },
-    { OnOff::Commands::Off::Id, MatterMqttBridge::kCommandFlagNone },
-    { OnOff::Commands::Toggle::Id, MatterMqttBridge::kCommandFlagNone },
+constexpr MatterMqttCommandFilter kOnOffCommands[] = {
+    { OnOff::Commands::On::Id },
+    { OnOff::Commands::Off::Id },
+    { OnOff::Commands::Toggle::Id },
 };
 
 } // namespace

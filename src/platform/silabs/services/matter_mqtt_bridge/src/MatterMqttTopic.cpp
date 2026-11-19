@@ -16,7 +16,7 @@
  *    limitations under the License.
  */
 
-#include "matter_mqtt_topic.h"
+#include "MatterMqttTopic.h"
 
 #include <lib/support/CodeUtils.h>
 
@@ -59,11 +59,6 @@ CHIP_ERROR FormatTopicHexU64(uint64_t value, char * out, size_t outLen)
     return CHIP_NO_ERROR;
 }
 
-bool AppendChecked(int written, size_t outLen)
-{
-    return written >= 0 && static_cast<size_t>(written) < outLen;
-}
-
 const char * FindSegment(const char * start, const char * end, const char * label)
 {
     const size_t labelLen = strlen(label);
@@ -79,40 +74,41 @@ const char * FindSegment(const char * start, const char * end, const char * labe
     return nullptr;
 }
 
-bool CopySegment(const char * start, const char * end, char * out, size_t outLen)
+bool HexNibbleValue(char c, uint8_t & nibble)
 {
-    VerifyOrReturnError(out != nullptr && outLen > 0, false);
-    size_t len = 0;
-    while (start + len < end && start[len] != '/')
+    if (c >= '0' && c <= '9')
     {
-        ++len;
+        nibble = static_cast<uint8_t>(c - '0');
+        return true;
     }
-    VerifyOrReturnError(len + 1 <= outLen, false);
-    memcpy(out, start, len);
-    out[len] = '\0';
-    return true;
-}
-
-bool IsHexDigit(char c)
-{
-    return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+    if (c >= 'A' && c <= 'F')
+    {
+        nibble = static_cast<uint8_t>(c - 'A' + 10);
+        return true;
+    }
+    if (c >= 'a' && c <= 'f')
+    {
+        nibble = static_cast<uint8_t>(c - 'a' + 10);
+        return true;
+    }
+    return false;
 }
 
 CHIP_ERROR ParseTopicHexU64(const char * begin, const char * end, uint64_t & out)
 {
     VerifyOrReturnError(begin != nullptr && begin < end, CHIP_ERROR_INVALID_ARGUMENT);
 
+    uint64_t value  = 0;
+    size_t digitCount = 0;
     for (const char * p = begin; p < end; ++p)
     {
-        VerifyOrReturnError(IsHexDigit(*p), CHIP_ERROR_INVALID_ARGUMENT);
+        uint8_t nibble = 0;
+        VerifyOrReturnError(HexNibbleValue(*p, nibble), CHIP_ERROR_INVALID_ARGUMENT);
+        VerifyOrReturnError(digitCount < 16, CHIP_ERROR_INVALID_ARGUMENT);
+        value = (value << 4) | nibble;
+        ++digitCount;
     }
-
-    char scratch[MATTER_MQTT_DEVICE_ID_LEN];
-    VerifyOrReturnError(CopySegment(begin, end, scratch, sizeof(scratch)), CHIP_ERROR_INVALID_ARGUMENT);
-    char * parseEnd              = nullptr;
-    const unsigned long long v   = strtoull(scratch, &parseEnd, 16);
-    VerifyOrReturnError(parseEnd != scratch && *parseEnd == '\0', CHIP_ERROR_INVALID_ARGUMENT);
-    out = v;
+    out = value;
     return CHIP_NO_ERROR;
 }
 
@@ -132,16 +128,6 @@ CHIP_ERROR ParseTopicHexEndpoint(const char * begin, const char * end, chip::End
     VerifyOrReturnError(wide <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
     out = static_cast<chip::EndpointId>(wide);
     return CHIP_NO_ERROR;
-}
-
-bool DeviceNodeIdMatches(const char * begin, const char * end, chip::NodeId expectedNodeId)
-{
-    uint64_t parsed = 0;
-    if (ParseTopicHexU64(begin, end, parsed) != CHIP_NO_ERROR)
-    {
-        return false;
-    }
-    return parsed == static_cast<uint64_t>(expectedNodeId);
 }
 
 } // namespace
@@ -171,12 +157,12 @@ CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, c
 
     const int n = snprintf(out, outLen, "%.*s%s/ep/%s/cluster/%s/attr/%s", static_cast<int>(sizeof(kTopicPrefix) - 1),
                            kTopicPrefix, deviceHex, epHex, clusterHex, attrHex);
-    VerifyOrReturnError(AppendChecked(n, outLen), CHIP_ERROR_BUFFER_TOO_SMALL);
+    VerifyOrReturnError(n >= 0 && static_cast<size_t>(n) < outLen, CHIP_ERROR_BUFFER_TOO_SMALL);
     return CHIP_NO_ERROR;
 }
 
 // Inbound command subscription filter: matter/v1/{nodeId}/ep/+/cluster/+/cmd/+
-CHIP_ERROR BuildCommandFilter(chip::NodeId deviceNodeId, char * out, size_t outLen)
+CHIP_ERROR BuildCommandSubscriptionTopic(chip::NodeId deviceNodeId, char * out, size_t outLen)
 {
     VerifyOrReturnError(out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
@@ -185,15 +171,14 @@ CHIP_ERROR BuildCommandFilter(chip::NodeId deviceNodeId, char * out, size_t outL
 
     const int n = snprintf(out, outLen, "%.*s%s/ep/+/cluster/+/cmd/+", static_cast<int>(sizeof(kTopicPrefix) - 1),
                            kTopicPrefix, deviceHex);
-    VerifyOrReturnError(AppendChecked(n, outLen), CHIP_ERROR_BUFFER_TOO_SMALL);
+    VerifyOrReturnError(n >= 0 && static_cast<size_t>(n) < outLen, CHIP_ERROR_BUFFER_TOO_SMALL);
     return CHIP_NO_ERROR;
 }
 
 // Inbound command topic: matter/v1/{nodeId}/ep/{hex}/cluster/{hex}/cmd/{hex}; @p topic may be non-null-terminated.
-CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, chip::NodeId expectedDeviceNodeId, ParsedCommandTopic & out)
+CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, ParsedCommandTopic & out)
 {
     VerifyOrReturnError(!topic.empty() && topic.size() < MATTER_MQTT_MAX_TOPIC_LEN, CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(expectedDeviceNodeId != chip::kUndefinedNodeId, CHIP_ERROR_INVALID_ARGUMENT);
 
     char scratch[MATTER_MQTT_MAX_TOPIC_LEN];
     memcpy(scratch, topic.data(), topic.size());
@@ -208,7 +193,7 @@ CHIP_ERROR ParseCommandTopic(chip::CharSpan topic, chip::NodeId expectedDeviceNo
 
     const char * afterDevice = static_cast<const char *>(memchr(begin, '/', static_cast<size_t>(end - begin)));
     VerifyOrReturnError(afterDevice != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(DeviceNodeIdMatches(begin, afterDevice, expectedDeviceNodeId), CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorOnFailure(ParseTopicHexU64(begin, afterDevice, out.nodeId));
 
     const char * epKey = FindSegment(afterDevice, end, "/ep/");
     VerifyOrReturnError(epKey != nullptr, CHIP_ERROR_INVALID_ARGUMENT);

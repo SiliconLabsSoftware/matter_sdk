@@ -21,8 +21,8 @@
 #include "mqtt_client.h"
 
 #if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
-#include <matter_mqtt_bridge.h>
-#include <MatterMqttBridgeConfig.h>
+#include <MatterMqttBridge.h>
+#include <MatterMqttBridgeConfigImpl.h>
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 #include "cacert.h"
@@ -84,6 +84,9 @@ void OnPlatformEvent(const ChipDeviceEvent * event, intptr_t /* arg */)
 
     case DeviceEventType::kCommissioningComplete:
         ChipLogProgress(DeviceLayer, "MQTT demo: Commissioning Complete");
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
+        MatterMqttBridge::OnMatterFabricReady();
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
         break;
 
     case DeviceEventType::kSLSystemEventCommissioningStarted:
@@ -114,8 +117,13 @@ void OnConnectDone(CHIP_ERROR result, void * /* context */)
 
 void OnInitDone(CHIP_ERROR result, void * /* context */)
 {
+    if (result != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "MQTT demo: OnInitDone: %" CHIP_ERROR_FORMAT, result.Format());
+        return;
+    }
     ChipLogDetail(DeviceLayer, "MQTT demo: OnInitDone: %" CHIP_ERROR_FORMAT, result.Format());
-    if (result == CHIP_NO_ERROR && !gMqttsClient.IsConnected())
+    if (!gMqttsClient.IsConnected())
     {
         const MqttBroker broker = {
             .brokerEndpoint = kMqttBrokerEndpoint,
@@ -133,7 +141,6 @@ void OnDisconnectDone(CHIP_ERROR result, void * /* context */)
     ChipLogDetail(DeviceLayer, "MQTT demo: OnDisconnectDone: %" CHIP_ERROR_FORMAT, result.Format());
 #if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
     MatterMqttBridge::Shutdown();
-    (void) result;
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 }
 
@@ -155,7 +162,8 @@ void OnMqttMessage(CharSpan topic, ByteSpan payload, void * /* context */)
 }
 
 #if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
-// Bridge first; demo logger only for non-command topics (e.g. kMqttTopic) or pre-subscribe noise.
+// Bridge first; demo logger only when DispatchInbound returns false (non-command topic or pre-subscribe).
+// Command topics are consumed (accepted or rejected with a logged reason).
 void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context)
 {
     if (MatterMqttBridge::DispatchInbound(topic, payload))

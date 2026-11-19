@@ -16,11 +16,11 @@
  *    limitations under the License.
  */
 
-#include "command_injector.h"
+#include "CommandInjector.h"
 
-#include "matter_mqtt_contract.h"
-#include "matter_mqtt_log.h"
-#include "mqtt_noop_command_handler.h"
+#include "MatterMqttContract.h"
+#include "MatterMqttLog.h"
+#include "MqttNoopCommandHandler.h"
 
 #include <app/ConcreteClusterPath.h>
 #include <app/data-model-provider/ActionReturnStatus.h>
@@ -37,38 +37,47 @@ using namespace chip::TLV;
 
 MqttNoopCommandHandler sCommandHandler;
 
-} // namespace
-
-CHIP_ERROR MqttCommandInjector::ValidateArgs(chip::ClusterId clusterId, chip::CommandId commandId,
-                                            const MatterMqttCodecTypes::ArgsView * args) const
+CHIP_ERROR InitInvokeTlvReader(const uint8_t * tlv, size_t tlvLen, TLVReader & reader)
 {
-    uint8_t tlvBuffer[MATTER_MQTT_MAX_INVOKE_TLV];
-    TLVReader reader;
-    return BuildInvokeReader(clusterId, commandId, args, tlvBuffer, sizeof(tlvBuffer), reader);
+    VerifyOrReturnError(tlv != nullptr && tlvLen > 0, CHIP_ERROR_INVALID_ARGUMENT);
+    reader.Init(tlv, tlvLen);
+    ReturnErrorOnFailure(reader.Next());
+    VerifyOrReturnError(reader.GetType() == TLVType::kTLVType_Structure, CHIP_ERROR_INVALID_ARGUMENT);
+    return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR MqttCommandInjector::Invoke(const MatterMqttBridge::InboundCommand & command,
-                                      const MatterMqttFilterCommandEntry & entry,
-                                      const MatterMqttCodecTypes::ArgsView * decodedArgs)
+} // namespace
+
+CHIP_ERROR MqttCommandInjector::EncodeInvokeTlv(chip::ClusterId clusterId, chip::CommandId commandId,
+                                                const MatterMqttCodecTypes::ArgsView * args, uint8_t * tlvBuffer,
+                                                size_t tlvBufferSize, size_t & tlvLen) const
 {
-    uint8_t tlvBuffer[MATTER_MQTT_MAX_INVOKE_TLV];
+    TLVReader reader;
+    tlvLen = 0;
+    return BuildInvokeReader(clusterId, commandId, args, tlvBuffer, tlvBufferSize, reader, tlvLen);
+}
+
+CHIP_ERROR MqttCommandInjector::Invoke(const MatterMqttTopic::ParsedCommandTopic & command, const uint8_t * invokeTlv,
+                                       size_t invokeTlvLen)
+{
     TLVReader cmdReader;
-    ReturnErrorOnFailure(
-        BuildInvokeReader(command.clusterId, command.commandId, decodedArgs, tlvBuffer, sizeof(tlvBuffer), cmdReader));
+    ReturnErrorOnFailure(InitInvokeTlvReader(invokeTlv, invokeTlvLen, cmdReader));
 
     chip::Access::SubjectDescriptor subject;
     DataModel::InvokeRequest request(ConcreteCommandPath(command.endpoint, command.clusterId, command.commandId), subject);
-    const bool timed = (entry.flags & MatterMqttBridge::kCommandFlagTimed) != 0;
-    if (timed)
-    {
-        request.invokeFlags.Set(DataModel::InvokeFlags::kTimed);
-    }
-    sCommandHandler.SetTimedInvoke(timed);
 
+    sCommandHandler.Reset();
     const auto status = CodegenDataModelProvider::Instance().InvokeCommand(request, cmdReader, &sCommandHandler);
-    sCommandHandler.SetTimedInvoke(false);
     if (!status.has_value())
     {
+        const auto & captured = sCommandHandler.LastStatus();
+        if (captured.has_value() && !captured->IsSuccess())
+        {
+            const CHIP_ERROR err = DataModel::ActionReturnStatus(*captured).GetUnderlyingError();
+            MATTER_MQTT_LOG_ERROR("InvokeCommand failed ep=%u cmd=" ChipLogFormatMEI " err=%" CHIP_ERROR_FORMAT,
+                                  static_cast<unsigned>(command.endpoint), ChipLogValueMEI(command.commandId), err.Format());
+            return err;
+        }
         return CHIP_NO_ERROR;
     }
     if (status->IsError())

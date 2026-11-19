@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "matter_mqtt_contract.h"
+#include "MatterMqttContract.h"
 
 #include <lib/core/CHIPError.h>
 #include <lib/support/Span.h>
@@ -43,7 +43,13 @@ struct ArgsView
 
 } // namespace MatterMqttCodecTypes
 
-/** Minimal JSON codec for {"value":...} reports and {"args":{...}} command payloads. */
+/**
+ * Minimal JSON codec for attribute reports and command args.
+ *
+ * Inbound command args grammar (no whitespace; string values only):
+ *   payload := "{}" | "{\"args\":{" [ pair ( "," pair )* ] "}}"
+ *   pair    := "\"" name "\"" ":" "\"" value "\""
+ */
 class MatterMqttJsonCodec
 {
 public:

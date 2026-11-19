@@ -18,33 +18,36 @@
 
 #pragma once
 
-#include "matter_mqtt_types.h"
-
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/Span.h>
 
 #include <cstddef>
 #include <cstdint>
 
+class DeviceMqttProfile;
+
+namespace MatterMqttTopic {
+    struct ParsedCommandTopic;
+}
+
 /** Product-specific MQTT allow-lists for Matter attribute reports and commands. */
 
-struct MatterMqttFilterAttributeEntry
+struct MatterMqttAttributeFilter
 {
     chip::AttributeId id;
 };
 
-struct MatterMqttFilterCommandEntry
+struct MatterMqttCommandFilter
 {
     chip::CommandId id;
-    MatterMqttBridge::CommandFlags flags;
 };
 
 struct MatterMqttClusterFilter
 {
     chip::ClusterId clusterId;
-    const MatterMqttFilterAttributeEntry * attributes;
+    const MatterMqttAttributeFilter * attributes;
     size_t attributeCount;
-    const MatterMqttFilterCommandEntry * commands;
+    const MatterMqttCommandFilter * commands;
     size_t commandCount;
 };
 
@@ -55,11 +58,19 @@ public:
     explicit MatterMqttClusterFilterRegistry(chip::Span<const MatterMqttClusterFilter> filters);
 
     const MatterMqttClusterFilter * FindByClusterId(chip::ClusterId id) const;
-    const MatterMqttFilterAttributeEntry * FindAttribute(const MatterMqttClusterFilter * filter, chip::AttributeId id) const;
-    const MatterMqttFilterCommandEntry * FindCommand(const MatterMqttClusterFilter * filter, chip::CommandId id) const;
+    const MatterMqttAttributeFilter * FindAttribute(const MatterMqttClusterFilter * filter, chip::AttributeId id) const;
+    const MatterMqttCommandFilter * FindCommand(const MatterMqttClusterFilter * filter, chip::CommandId id) const;
 
     chip::Span<const MatterMqttClusterFilter> Filters() const { return mFilters; }
 
 private:
     chip::Span<const MatterMqttClusterFilter> mFilters;
 };
+
+/**
+ * Command allow-list for a parsed topic: endpoint (under StackLock), cluster, and command registry lookup.
+ * Logs `command rejected ... (reason)` and returns false on failure. Node-id match is the caller's job.
+ */
+bool ValidateParsedCommand(const DeviceMqttProfile & profile, const MatterMqttClusterFilterRegistry * registry,
+                           const MatterMqttTopic::ParsedCommandTopic & parsed);
+

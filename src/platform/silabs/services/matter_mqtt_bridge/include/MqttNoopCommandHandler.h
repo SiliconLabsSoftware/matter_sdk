@@ -26,6 +26,8 @@
 #include <messaging/ExchangeContext.h>
 #include <protocols/interaction_model/StatusCode.h>
 
+#include <optional>
+
 /**
  * Stub Interaction Model command handler for MQTT-initiated InvokeCommand.
  * Ember dispatch calls AddStatus on the handler even though there is no IM exchange.
@@ -33,18 +35,24 @@
 class MqttNoopCommandHandler : public chip::app::CommandHandler
 {
 public:
-    void SetTimedInvoke(bool timed) { mTimedInvoke = timed; }
+    void Reset() { mLastStatus.reset(); }
+
+    const std::optional<chip::Protocols::InteractionModel::ClusterStatusCode> & LastStatus() const { return mLastStatus; }
+
     CHIP_ERROR FallibleAddStatus(const chip::app::ConcreteCommandPath & aRequestCommandPath,
                                  const chip::Protocols::InteractionModel::ClusterStatusCode & aStatus,
                                  const char * context = nullptr) override
     {
+        mLastStatus = aStatus;
         return CHIP_NO_ERROR;
     }
 
     void AddStatus(const chip::app::ConcreteCommandPath & aRequestCommandPath,
                    const chip::Protocols::InteractionModel::ClusterStatusCode & aStatus,
                    const char * context = nullptr) override
-    {}
+    {
+        mLastStatus = aStatus;
+    }
 
     chip::FabricIndex GetAccessingFabricIndex() const override { return chip::kUndefinedFabricIndex; }
 
@@ -58,7 +66,7 @@ public:
                      const chip::app::DataModel::EncodableToTLV & aEncodable) override
     {}
 
-    bool IsTimedInvoke() const override { return mTimedInvoke; }
+    bool IsTimedInvoke() const override { return false; }
 
     void FlushAcksRightAwayOnSlowCommand() override {}
 
@@ -67,5 +75,5 @@ public:
     chip::Messaging::ExchangeContext * GetExchangeContext() const override { return nullptr; }
 
 private:
-    bool mTimedInvoke = false;
+    std::optional<chip::Protocols::InteractionModel::ClusterStatusCode> mLastStatus;
 };

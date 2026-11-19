@@ -16,9 +16,9 @@
  *    limitations under the License.
  */
 
-#include "MatterMqttBridgeConfig.h"
+#include "MatterMqttBridgeConfigImpl.h"
 
-#include <matter_mqtt_log.h>
+#include <MatterMqttLog.h>
 #include <zap-generated/gen_config.h>
 
 #include <app/util/attribute-storage.h>
@@ -87,22 +87,6 @@ bool PlatformDeviceMqttProfile::IsAttributeAllowed(chip::EndpointId endpoint, ch
     return clusterFilter != nullptr && mFilterRegistry->FindAttribute(clusterFilter, attribute) != nullptr;
 }
 
-bool PlatformDeviceMqttProfile::IsCommandAllowed(chip::EndpointId endpoint, chip::ClusterId cluster,
-                                                 chip::CommandId command) const
-{
-    if (!IsEndpointAllowed(endpoint) || mFilterRegistry == nullptr)
-    {
-        return false;
-    }
-    const MatterMqttClusterFilter * clusterFilter = mFilterRegistry->FindByClusterId(cluster);
-    if (clusterFilter == nullptr)
-    {
-        return false;
-    }
-    const MatterMqttFilterCommandEntry * entry = mFilterRegistry->FindCommand(clusterFilter, command);
-    return entry != nullptr && (entry->flags & MatterMqttBridge::kCommandFlagUnsupported) == 0;
-}
-
 const MatterMqttSnapshotPath * PlatformDeviceMqttProfile::SnapshotPaths() const
 {
     return mSnapshotPathCount > 0 ? mSnapshotPaths : nullptr;
@@ -113,7 +97,7 @@ size_t PlatformDeviceMqttProfile::SnapshotPathCount() const
     return mSnapshotPathCount;
 }
 
-CHIP_ERROR PlatformDeviceMqttProfile::RefreshMqttDeviceId()
+CHIP_ERROR PlatformDeviceMqttProfile::ResolveMqttDeviceNodeId()
 {
     chip::NodeId nodeId = chip::kUndefinedNodeId;
     for (const chip::FabricInfo & fabric : chip::Server::GetInstance().GetFabricTable())
@@ -122,22 +106,16 @@ CHIP_ERROR PlatformDeviceMqttProfile::RefreshMqttDeviceId()
         break;
     }
     VerifyOrReturnError(nodeId != chip::kUndefinedNodeId, CHIP_ERROR_INCORRECT_STATE);
-    mMqttDeviceNodeId = nodeId;
-    ReturnErrorOnFailure(FormatMqttDeviceId(nodeId, mMqttDeviceId, sizeof(mMqttDeviceId)));
+    mMqttDeviceNodeId  = nodeId;
     mMqttDeviceIdKnown = true;
     BuildSnapshotPaths();
-    MATTER_MQTT_LOG("MQTT device id ready: %s", mMqttDeviceId);
+    MATTER_MQTT_LOG("MQTT device id ready: 0x" ChipLogFormatX64, ChipLogValueX64(mMqttDeviceNodeId));
     return CHIP_NO_ERROR;
 }
 
 chip::NodeId PlatformDeviceMqttProfile::GetMqttDeviceNodeId() const
 {
     return mMqttDeviceNodeId;
-}
-
-const char * PlatformDeviceMqttProfile::GetMqttDeviceId() const
-{
-    return mMqttDeviceId;
 }
 
 bool PlatformDeviceMqttProfile::IsMqttDeviceIdKnown() const
