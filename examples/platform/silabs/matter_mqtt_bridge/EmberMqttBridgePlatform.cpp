@@ -280,10 +280,7 @@ CHIP_ERROR FinalizeInvokeReader(TLVWriter & writer, uint8_t * tlvBuffer, TLVRead
 CHIP_ERROR EmberMqttAttributeValueReader::ReadAsString(const chip::app::ConcreteAttributePath & path, char * out, size_t outLen)
 {
     const CHIP_ERROR err = ReadViaEmberAsString(path, out, outLen);
-    if (err == CHIP_NO_ERROR)
-    {
-        return CHIP_NO_ERROR;
-    }
+    VerifyOrReturnError(err != CHIP_NO_ERROR, CHIP_NO_ERROR);
     MATTER_MQTT_LOG_DETAIL("attribute read failed ep=%u attr=" ChipLogFormatMEI " err=%" CHIP_ERROR_FORMAT,
                            static_cast<unsigned>(path.mEndpointId), ChipLogValueMEI(path.mAttributeId), err.Format());
     return err;

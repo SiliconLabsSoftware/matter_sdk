@@ -1291,11 +1291,6 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
 
-    // Verify that the App layer is initialized before propagating attribute changes callback to it.
-    VerifyOrReturn(CustomerAppTask::GetAppTask().IsApplicationInitialized());
-    // Route through CustomerAppTask / AppTaskImpl (CRTP) so overrides use DMPostAttributeChangeCallbackImpl.
-    CustomerAppTask::GetAppTask().DMPostAttributeChangeCallback(attributePath, type, size, value);
-
 #if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
     MatterMqttBridge::NotifyReportableAttributeChange(attributePath);
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE

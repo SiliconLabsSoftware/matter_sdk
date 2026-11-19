@@ -18,14 +18,10 @@
 
 #include "DeviceMqttProfile.h"
 
-#include <app/data-model-provider/Provider.h>
-#include <data-model-providers/codegen/CodegenDataModelProvider.h>
-#include <lib/support/CodeUtils.h>
-#include <lib/support/ReadOnlyBuffer.h> // IWYU pragma: keep
+#include <app/util/attribute-storage.h>
 
-bool DeviceMqttProfile::IsAttributeAllowed(chip::EndpointId endpoint, chip::ClusterId cluster, chip::AttributeId attribute) const
+bool DeviceMqttProfile::IsAttributeAllowed(chip::ClusterId cluster, chip::AttributeId attribute) const
 {
-    (void) endpoint;
     (void) cluster;
     (void) attribute;
     return false;
@@ -33,22 +29,5 @@ bool DeviceMqttProfile::IsAttributeAllowed(chip::EndpointId endpoint, chip::Clus
 
 bool DeviceMqttProfile::IsEndpointAllowed(chip::EndpointId endpoint) const
 {
-    return MatterMqttIsEndpointInDataModel(endpoint);
-}
-
-bool MatterMqttIsEndpointInDataModel(chip::EndpointId endpoint)
-{
-    chip::ReadOnlyBufferBuilder<chip::app::DataModel::EndpointEntry> builder;
-    if (chip::app::CodegenDataModelProvider::Instance().Endpoints(builder) != CHIP_NO_ERROR)
-    {
-        return false;
-    }
-    for (const chip::app::DataModel::EndpointEntry & entry : builder.TakeBuffer())
-    {
-        if (entry.id == endpoint)
-        {
-            return true;
-        }
-    }
-    return false;
+    return emberAfIndexFromEndpoint(endpoint) != kEmberInvalidEndpointIndex;
 }

@@ -39,7 +39,6 @@ struct ReportWork
     chip::ClusterId clusterId     = 0;
     chip::AttributeId attributeId = 0;
     char value[MATTER_MQTT_REPORT_WORK_VALUE_LEN]{};
-    uint8_t forSnapshot           = 0;
 };
 
 static_assert(sizeof(ReportWork) <= chip::DeviceLayer::Silabs::MqttClient::kWorkDataSize,

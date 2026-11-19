@@ -23,7 +23,6 @@
 
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
-#include <platform/CHIPDeviceLayer.h>
 
 MatterMqttClusterFilterRegistry::MatterMqttClusterFilterRegistry(chip::Span<const MatterMqttClusterFilter> filters)
     : mFilters(filters)
@@ -78,12 +77,7 @@ bool ValidateParsedCommand(const DeviceMqttProfile & profile, const MatterMqttCl
         return false;
     }
 
-    bool endpointAllowed = false;
-    {
-        chip::DeviceLayer::StackLock lock;
-        endpointAllowed = profile.IsEndpointAllowed(parsed.endpoint);
-    }
-    if (!endpointAllowed)
+    if (!profile.IsEndpointAllowed(parsed.endpoint))
     {
         MATTER_MQTT_LOG_ERROR("command rejected cmd=" ChipLogFormatMEI " (endpoint)", ChipLogValueMEI(parsed.commandId));
         return false;

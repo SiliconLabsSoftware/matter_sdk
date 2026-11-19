@@ -68,9 +68,8 @@ private:
 };
 
 /**
- * Command allow-list for a parsed topic: endpoint (under StackLock), cluster, and command registry lookup.
+ * Command allow-list for a parsed topic: endpoint, cluster, and command registry lookup.
  * Logs `command rejected ... (reason)` and returns false on failure. Node-id match is the caller's job.
  */
 bool ValidateParsedCommand(const DeviceMqttProfile & profile, const MatterMqttClusterFilterRegistry * registry,
                            const MatterMqttTopic::ParsedCommandTopic & parsed);
-

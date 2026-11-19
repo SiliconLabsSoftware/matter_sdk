@@ -35,14 +35,14 @@
 namespace MatterMqttBridge {
 
 /**
- * Wire the bridge to @p client and @p config. MQTT subscribe/publish and snapshot run when the client
+ * Wire the bridge to @p client and @p config. Command subscribe runs when the client
  * connects (@ref Shutdown on disconnect). @p config.profile must be non-null (product-defined).
- * Call from the MqttClient service thread (not the Matter thread). Uses StackLock; the mutex is not recursive.
+ * Call from the MqttClient service thread (not the Matter thread). Uses LockChipStack/UnlockChipStack; not recursive.
  */
 CHIP_ERROR Init(chip::DeviceLayer::Silabs::MqttClient & client, const MatterMqttBridgeConfig & config);
 
 /**
- * Tear down MQTT subscribe / snapshot state until the next Init.
+ * Tear down MQTT subscribe state until the next Init.
  * Call from the MqttClient service thread. MqttClient drains queued publish callbacks before disconnect.
  * Slot release is idempotent.
  */
@@ -58,7 +58,7 @@ bool DispatchInbound(chip::CharSpan topic, chip::ByteSpan payload);
 /** Ember post-write path (BaseApplication::MatterPostAttributeChangeCallback) -> EnqueueReport. */
 void NotifyReportableAttributeChange(const chip::app::ConcreteAttributePath & path);
 
-/** Re-run command subscribe and attribute snapshot when fabric NodeId becomes available (Matter thread). */
+/** Re-run command subscribe when fabric NodeId becomes available (Matter thread). */
 void OnMatterFabricReady();
 
 } // namespace MatterMqttBridge

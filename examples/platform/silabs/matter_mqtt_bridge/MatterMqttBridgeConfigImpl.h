@@ -30,24 +30,16 @@ class PlatformDeviceMqttProfile final : public DeviceMqttProfile
 public:
     explicit PlatformDeviceMqttProfile(const MatterMqttClusterFilterRegistry * filterRegistry);
 
-    bool IsAttributeAllowed(chip::EndpointId endpoint, chip::ClusterId cluster, chip::AttributeId attribute) const override;
-
-    const MatterMqttSnapshotPath * SnapshotPaths() const override;
-    size_t SnapshotPathCount() const override;
+    bool IsAttributeAllowed(chip::ClusterId cluster, chip::AttributeId attribute) const override;
 
     CHIP_ERROR ResolveMqttDeviceNodeId() override;
     chip::NodeId GetMqttDeviceNodeId() const override;
     bool IsMqttDeviceIdKnown() const override;
 
 private:
-    void BuildSnapshotPaths();
-
     const MatterMqttClusterFilterRegistry * mFilterRegistry;
     chip::NodeId mMqttDeviceNodeId = chip::kUndefinedNodeId;
     bool mMqttDeviceIdKnown        = false;
-    MatterMqttSnapshotPath mSnapshotPaths[MATTER_MQTT_MAX_SNAPSHOT_PATHS]{};
-    size_t mSnapshotPathCount = 0;
-    bool mSnapshotPathsBuilt  = false;
 };
 
 class PlatformMqttBridgeConfig final : public MatterMqttBridgeConfig

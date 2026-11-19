@@ -39,7 +39,6 @@ inline constexpr size_t MATTER_MQTT_MAX_ARG_NAME_LEN = 32;
 inline constexpr size_t MATTER_MQTT_MAX_ARG_VALUE_LEN = MATTER_MQTT_MAX_VALUE_LEN;
 /** NUL-terminated device id and stack scratch for one topic hex segment (max 16 uint64 hex digits + NUL). */
 inline constexpr size_t MATTER_MQTT_DEVICE_ID_LEN = 17;
-inline constexpr size_t MATTER_MQTT_MAX_SNAPSHOT_PATHS = 32;
 /**
  * Stack buffer for invoke-structure TLV built before CodegenDataModelProvider::InvokeCommand.
  * Observed scalar-only commands encode to well under 32 B; 96 B leaves room for short UTF-8 strings in the same structure.

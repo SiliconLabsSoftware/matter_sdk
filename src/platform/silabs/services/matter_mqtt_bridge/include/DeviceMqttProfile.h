@@ -24,17 +24,8 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/core/NodeId.h>
 
-#include <cstddef>
-
-struct MatterMqttSnapshotPath
-{
-    chip::EndpointId endpoint;
-    chip::ClusterId clusterId;
-    chip::AttributeId attributeId;
-};
-
 /**
- * Product ACL and MQTT topic device id. Applications supply a concrete subclass
+ * Product ACL and MQTT topic device id. Applications supply a concrete subclass.
  */
 class DeviceMqttProfile
 {
@@ -42,23 +33,16 @@ public:
     virtual ~DeviceMqttProfile() = default;
 
     /** Applies product attribute allow-list; must include endpoint policy (e.g. @ref IsEndpointAllowed). */
-    virtual bool IsAttributeAllowed(chip::EndpointId endpoint, chip::ClusterId cluster,
-                                    chip::AttributeId attribute) const;
+    virtual bool IsAttributeAllowed(chip::ClusterId cluster, chip::AttributeId attribute) const;
 
     /**
-     * Endpoint policy for attributes and command validation.
-     * Reads the data model; call on the Matter thread or under chip::DeviceLayer::StackLock.
+     * True when @p endpoint is a configured, enabled Ember endpoint (emberAfIndexFromEndpoint).
+     * Default uses the static endpoint table; safe from the MQTT thread for fixed topologies.
      */
     virtual bool IsEndpointAllowed(chip::EndpointId endpoint) const;
-
-    virtual const MatterMqttSnapshotPath * SnapshotPaths() const { return nullptr; }
-    virtual size_t SnapshotPathCount() const { return 0; }
 
     /** Resolves fabric NodeId for MQTT topics; safe to call until a fabric is commissioned. */
     virtual CHIP_ERROR ResolveMqttDeviceNodeId() = 0;
     virtual chip::NodeId GetMqttDeviceNodeId() const = 0;
     virtual bool IsMqttDeviceIdKnown() const         = 0;
 };
-
-/** Reads CodegenDataModelProvider::Endpoints(); use under chip::DeviceLayer::StackLock off the Matter thread. */
-bool MatterMqttIsEndpointInDataModel(chip::EndpointId endpoint);

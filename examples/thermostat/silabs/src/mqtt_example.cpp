@@ -84,9 +84,6 @@ void OnPlatformEvent(const ChipDeviceEvent * event, intptr_t /* arg */)
 
     case DeviceEventType::kCommissioningComplete:
         ChipLogProgress(DeviceLayer, "MQTT demo: Commissioning Complete");
-#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
-        MatterMqttBridge::OnMatterFabricReady();
-#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
         break;
 
     case DeviceEventType::kSLSystemEventCommissioningStarted:
