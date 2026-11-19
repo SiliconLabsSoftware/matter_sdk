@@ -751,15 +751,12 @@ CHIP_ERROR WifiInterfaceImpl::GetAccessPointInfo(NetworkCommissioning::WiFiScanR
     // TODO: Convert this to a int8
     int32_t rssi = 0;
 
-    // TODO: sl_wifi_get_wireless_info API is being deprecated with WiseConnect v4.0.x, we need to use the new API
-    // sl_wifi_get_interface_info after upgrading to WiseConnect v4.0.x
-    sl_si91x_rsp_wireless_info_t wireless_info = { 0 };
-    if (sl_wifi_get_wireless_info(&wireless_info) == SL_STATUS_OK)
+    sl_wifi_interface_info_t wireless_info = {};
+    if (sl_wifi_get_interface_info(SL_WIFI_CLIENT_INTERFACE, &wireless_info) == SL_STATUS_OK)
     {
         size_t ssid_len = strnlen(reinterpret_cast<const char *>(wireless_info.ssid), kMaxWiFiSSIDLength);
         VerifyOrReturnError(ssid_len <= kMaxWiFiSSIDLength, CHIP_ERROR_INVALID_STRING_LENGTH);
 
-        // Update wfx_rsi with values from sl_wifi_get_wireless_info
         wfx_rsi.ap_chan = static_cast<uint16_t>(wireless_info.channel_number & 0xFF);
 
         chip::ByteSpan bssidSrc(wireless_info.bssid, kWiFiBSSIDLength);
