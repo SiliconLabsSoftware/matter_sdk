@@ -102,7 +102,7 @@ CHIP_ERROR ReadViaEmberAsString(const chip::app::ConcreteAttributePath & path, c
             return WriteMqttDecimal(value ? 1 : 0, out, outLen);
         }
     }
-#endif
+#endif // ZCL_USING_ON_OFF_CLUSTER_SERVER
 
 #if defined(ZCL_USING_THERMOSTAT_CLUSTER_SERVER)
     if (path.mClusterId == Thermostat::Id)
@@ -132,7 +132,7 @@ CHIP_ERROR ReadViaEmberAsString(const chip::app::ConcreteAttributePath & path, c
             return WriteMqttDecimal(static_cast<int32_t>(to_underlying(value)), out, outLen);
         }
     }
-#endif
+#endif // ZCL_USING_THERMOSTAT_CLUSTER_SERVER
 
 #if defined(ZCL_USING_DOOR_LOCK_CLUSTER_SERVER)
     if (path.mClusterId == DoorLock::Id && path.mAttributeId == DoorLock::Attributes::LockState::Id)
@@ -141,7 +141,7 @@ CHIP_ERROR ReadViaEmberAsString(const chip::app::ConcreteAttributePath & path, c
         ReturnErrorOnFailure(ImStatusToChipError(DoorLock::Attributes::LockState::Get(endpoint, value)));
         return WriteNullableAsDecimal(value, out, outLen);
     }
-#endif
+#endif // ZCL_USING_DOOR_LOCK_CLUSTER_SERVER
 
 #if defined(ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER)
     if (path.mClusterId == WindowCovering::Id)
@@ -161,7 +161,7 @@ CHIP_ERROR ReadViaEmberAsString(const chip::app::ConcreteAttributePath & path, c
             return WriteNullableAsDecimal(value, out, outLen);
         }
     }
-#endif
+#endif // ZCL_USING_WINDOW_COVERING_CLUSTER_SERVER
 
     return CHIP_ERROR_NOT_FOUND;
 }
