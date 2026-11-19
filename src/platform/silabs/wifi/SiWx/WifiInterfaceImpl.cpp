@@ -67,16 +67,13 @@ extern "C" {
 #include <sl_net_constants.h>
 #include <sl_net_for_lwip.h>
 #include <sl_net_wifi_types.h>
+
+#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
+#include "sl_si91x_ble.h"
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 }
 
-#if SLI_SI91X_MCU_INTERFACE
-#include "rsi_wisemcu_hardware_setup.h"
-#endif // SLI_SI91X_MCU_INTERFACE
-
 #if (EXP_BOARD)
-#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
-#include "rsi_bt_common_apis.h"
-#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "sl_board_configuration.h"
 #endif
 
@@ -950,9 +947,10 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
     VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration || mCurrentListenInterval != listenInterval, CHIP_NO_ERROR);
 
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
-    int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
-    VerifyOrReturnError(error == RSI_SUCCESS, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %" PRIu32, error));
+    sl_bt_performance_profile_t bt_profile = { .profile = ASSOCIATED_POWER_SAVE_LOW_LATENCY };
+    sl_status_t bt_status                  = sl_si91x_bt_set_performance_profile(&bt_profile);
+    VerifyOrReturnError(bt_status == SL_STATUS_OK, CHIP_ERROR_INTERNAL,
+                        ChipLogError(DeviceLayer, "sl_si91x_bt_set_performance_profile failed: 0x%" PRIx32, bt_status));
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 
     sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
