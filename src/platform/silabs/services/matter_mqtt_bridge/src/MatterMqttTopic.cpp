@@ -161,16 +161,18 @@ CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, c
     return CHIP_NO_ERROR;
 }
 
-// Inbound command subscription filter: matter/v1/{nodeId}/ep/+/cluster/+/cmd/+
-CHIP_ERROR BuildCommandSubscriptionTopic(chip::NodeId deviceNodeId, char * out, size_t outLen)
+// Inbound command subscription filter: matter/v1/{nodeId}/ep/{endpoint}/cluster/+/cmd/+
+CHIP_ERROR BuildCommandSubscriptionTopic(chip::NodeId deviceNodeId, chip::EndpointId endpoint, char * out, size_t outLen)
 {
     VerifyOrReturnError(out != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
     char deviceHex[MATTER_MQTT_DEVICE_ID_LEN];
+    char endpointHex[MATTER_MQTT_DEVICE_ID_LEN];
     ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
+    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(endpoint), endpointHex, sizeof(endpointHex)));
 
-    const int n = snprintf(out, outLen, "%.*s%s/ep/+/cluster/+/cmd/+", static_cast<int>(sizeof(kTopicPrefix) - 1),
-                           kTopicPrefix, deviceHex);
+    const int n = snprintf(out, outLen, "%.*s%s/ep/%s/cluster/+/cmd/+", static_cast<int>(sizeof(kTopicPrefix) - 1), kTopicPrefix,
+                           deviceHex, endpointHex);
     VerifyOrReturnError(n >= 0 && static_cast<size_t>(n) < outLen, CHIP_ERROR_BUFFER_TOO_SMALL);
     return CHIP_NO_ERROR;
 }

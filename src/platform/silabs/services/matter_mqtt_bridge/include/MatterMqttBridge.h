@@ -24,6 +24,7 @@
 #include <app/ConcreteAttributePath.h>
 
 #include <lib/core/CHIPError.h>
+#include <lib/core/DataModelTypes.h>
 #include <lib/support/Span.h>
 #include <platform/silabs/services/mqtt_client.h>
 
@@ -33,6 +34,21 @@
  * the MqttClient service thread.
  */
 namespace MatterMqttBridge {
+
+/**
+ * MQTT-thread work payload for attribute reports. NodeId is omitted: attribute/command topics use
+ * DeviceMqttProfile when building/parsing MQTT topics (bind time), not when queuing this struct.
+ */
+struct ReportWork
+{
+    chip::EndpointId endpoint     = 0;
+    chip::ClusterId clusterId     = 0;
+    chip::AttributeId attributeId = 0;
+    char value[MATTER_MQTT_REPORT_WORK_VALUE_LEN]{};
+};
+
+static_assert(sizeof(ReportWork) <= chip::DeviceLayer::Silabs::MqttClient::kWorkDataSize,
+              "ReportWork must fit MqttClient::ScheduleWork payload");
 
 /**
  * Wire the bridge to @p client and @p config. Command subscribe runs when the client

@@ -20,7 +20,6 @@
 
 #include "MatterMqttContract.h"
 #include "MatterMqttLog.h"
-#include "MqttNoopCommandHandler.h"
 
 #include <app/ConcreteClusterPath.h>
 #include <app/data-model-provider/ActionReturnStatus.h>

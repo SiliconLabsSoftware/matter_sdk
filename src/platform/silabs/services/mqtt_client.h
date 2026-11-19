@@ -160,7 +160,7 @@ class MqttClient : public MatterService
 {
 public:
     /**
-     * Max bytes copied per @ref ScheduleWork item (sized for Matter MQTT bridge ReportWork; see static_assert in MatterMqttTypes.h).
+     * Max bytes copied per @ref ScheduleWork item (sized for Matter MQTT bridge ReportWork; see static_assert in MatterMqttBridge.h).
      */
     static constexpr size_t kWorkDataSize = 32;
 

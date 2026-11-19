@@ -39,7 +39,7 @@ CHIP_ERROR FormatTopicIdUint64(uint64_t value, char * out, size_t outLen);
 CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, chip::ClusterId clusterId,
                                chip::AttributeId attributeId, char * out, size_t outLen);
 
-CHIP_ERROR BuildCommandSubscriptionTopic(chip::NodeId deviceNodeId, char * out, size_t outLen);
+CHIP_ERROR BuildCommandSubscriptionTopic(chip::NodeId deviceNodeId, chip::EndpointId endpoint, char * out, size_t outLen);
 
 struct ParsedCommandTopic
 {

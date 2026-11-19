@@ -19,11 +19,12 @@
 #include "MatterMqttBridge.h"
 #include "MatterMqttLog.h"
 #include "MatterMqttTopic.h"
-#include "MatterMqttTypes.h"
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#include <app/util/attribute-storage.h>
+#include <app/util/endpoint-config-api.h>
 #include <lib/support/Span.h>
 #include <platform/silabs/services/mqtt_client.h>
 
@@ -63,9 +64,9 @@ MatterMqttJsonCodec sCodec;
 chip::DeviceLayer::Silabs::MqttClient * sClient = nullptr;
 
 MatterMqttBridgeConfig sConfig;
-bool sSubscribed = false;
 
-char sCommandSubscriptionTopic[MATTER_MQTT_MAX_TOPIC_LEN] = {};
+// Subscribe stores the topic pointer until the MQTT thread handles it, so each endpoint keeps its own buffer.
+char sCommandSubscriptionTopics[MAX_ENDPOINT_COUNT][MATTER_MQTT_MAX_TOPIC_LEN] = {};
 
 uint32_t sAttributePublishSeq = 0;
 BridgeSlot sBridgeSlots[kBridgeSlotCount];
@@ -290,13 +291,12 @@ bool OnInboundMessage(chip::CharSpan topic, chip::ByteSpan payload)
     return true;
 }
 
-// Subscribe to matter/v1/{deviceId}/ep/+/cluster/+/cmd/+.
+// Subscribe to matter/v1/{deviceId}/ep/{endpoint}/cluster/+/cmd/+ for each registered endpoint except root.
 void SubscribeCommands()
 {
     DeviceMqttProfile * profile = sConfig.profile;
     VerifyOrReturn(sClient != nullptr && profile != nullptr);
     VerifyOrReturn(sClient->IsConnected());
-    VerifyOrReturn(!sSubscribed);
 
     if (profile->ResolveMqttDeviceNodeId() != CHIP_NO_ERROR)
     {
@@ -304,22 +304,32 @@ void SubscribeCommands()
         return;
     }
 
-    if (MatterMqttTopic::BuildCommandSubscriptionTopic(profile->GetMqttDeviceNodeId(), sCommandSubscriptionTopic,
-                                                       sizeof(sCommandSubscriptionTopic)) != CHIP_NO_ERROR)
+    const uint16_t endpointCount = emberAfEndpointCount();
+    const auto qos               = static_cast<chip::DeviceLayer::Silabs::MqttQoS>(sConfig.commandQos);
+    for (uint16_t index = 0; index < endpointCount && index < MAX_ENDPOINT_COUNT; ++index)
     {
-        MATTER_MQTT_LOG_ERROR("command subscription topic build failed");
-        return;
-    }
+        const chip::EndpointId endpoint = emberAfEndpointFromIndex(index);
+        if (endpoint == chip::kInvalidEndpointId || endpoint == chip::kRootEndpointId)
+        {
+            continue;
+        }
 
-    const auto qos = static_cast<chip::DeviceLayer::Silabs::MqttQoS>(sConfig.commandQos);
-    if (sClient->Subscribe(sCommandSubscriptionTopic, qos, nullptr) != CHIP_NO_ERROR)
-    {
-        MATTER_MQTT_LOG_ERROR("command subscription subscribe failed topic=%s", sCommandSubscriptionTopic);
-        return;
+        char * topic = sCommandSubscriptionTopics[index];
+        if (MatterMqttTopic::BuildCommandSubscriptionTopic(profile->GetMqttDeviceNodeId(), endpoint, topic,
+                                                           MATTER_MQTT_MAX_TOPIC_LEN) != CHIP_NO_ERROR)
+        {
+            MATTER_MQTT_LOG_ERROR("command subscription topic build failed ep=%u", static_cast<unsigned>(endpoint));
+            continue;
+        }
+
+        if (sClient->Subscribe(topic, qos, nullptr) != CHIP_NO_ERROR)
+        {
+            MATTER_MQTT_LOG_ERROR("command subscription subscribe failed topic=%s", topic);
+            continue;
+        }
+        MATTER_MQTT_LOG("subscribed command subscription nodeId=0x" ChipLogFormatX64 " ep=%u topic=%s",
+                        ChipLogValueX64(profile->GetMqttDeviceNodeId()), static_cast<unsigned>(endpoint), topic);
     }
-    sSubscribed = true;
-    MATTER_MQTT_LOG("subscribed command subscription nodeId=0x" ChipLogFormatX64 " topic=%s",
-                    ChipLogValueX64(profile->GetMqttDeviceNodeId()), sCommandSubscriptionTopic);
 }
 
 void InitOnMatterThread(intptr_t /* arg */)
@@ -339,8 +349,7 @@ void FabricReadyOnMatterThread(intptr_t /* arg */)
 
 bool DispatchInbound(chip::CharSpan topic, chip::ByteSpan payload)
 {
-    // Ignore stray publishes until command subscription is active (avoids parsing during bootstrap).
-    if (!sSubscribed || sConfig.profile == nullptr || !sConfig.profile->IsMqttDeviceIdKnown() || topic.empty())
+    if (sConfig.profile == nullptr || !sConfig.profile->IsMqttDeviceIdKnown() || topic.empty())
     {
         return false;
     }
@@ -358,9 +367,8 @@ CHIP_ERROR Init(chip::DeviceLayer::Silabs::MqttClient & client, const MatterMqtt
     MATTER_MQTT_LOG("Init (mqtt connected=%d)", client.IsConnected());
 
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    sClient     = &client;
-    sConfig     = config;
-    sSubscribed = false;
+    sClient = &client;
+    sConfig = config;
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
     ReturnErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(InitOnMatterThread, 0));
 
@@ -370,7 +378,6 @@ CHIP_ERROR Init(chip::DeviceLayer::Silabs::MqttClient & client, const MatterMqtt
 void Shutdown()
 {
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    sSubscribed          = false;
     sAttributePublishSeq = 0;
     for (size_t i = 0; i < kBridgeSlotCount; ++i)
     {
@@ -378,6 +385,11 @@ void Shutdown()
         sBridgeSlots[i].inUse.store(false, std::memory_order_relaxed);
     }
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+}
+
+void OnMatterFabricReady()
+{
+    LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(FabricReadyOnMatterThread, 0));
 }
 
 void NotifyReportableAttributeChange(const chip::app::ConcreteAttributePath & path)
