@@ -37,21 +37,35 @@ namespace {
 
 // --- File-local types (bridge TU only; not published in headers) ---
 
+/** Attribute-publish buffers. Overlays the command buffers; a slot is never both. */
+struct BridgeReportBuffers
+{
+    char topic[MATTER_MQTT_MAX_TOPIC_LEN];
+    char payload[MATTER_MQTT_MAX_PAYLOAD_LEN];
+    size_t payloadLen;
+};
+
+/** Inbound command + invoke TLV held until the Matter thread finishes Invoke. */
+struct BridgeCommandBuffers
+{
+    MatterMqttTopic::ParsedCommandTopic command;
+    uint8_t invokeTlv[MATTER_MQTT_MAX_INVOKE_TLV];
+    size_t invokeTlvLen;
+};
+
 /**
- * Shared bridge slot pool (depth matches MqttClient work queue): async attribute publish buffers on the MQTT thread,
- * or inbound command + invoke TLV held until Matter-thread invoke completes.
+ * Shared bridge slot pool (depth matches MqttClient work queue).
+ * Acquire on the MQTT service thread only; release on MQTT or Matter thread (idempotent).
  */
-// Slot pool: acquire on the MQTT service thread only; release on MQTT or Matter thread (idempotent).
 struct BridgeSlot
 {
     std::atomic<bool> inUse{ false };
     std::atomic<bool> commandHeld{ false };
-    char topic[MATTER_MQTT_MAX_TOPIC_LEN]{};
-    char payload[MATTER_MQTT_MAX_PAYLOAD_LEN]{};
-    size_t payloadLen  = 0;
-    MatterMqttTopic::ParsedCommandTopic command;
-    uint8_t invokeTlv[MATTER_MQTT_MAX_INVOKE_TLV]{};
-    size_t invokeTlvLen = 0;
+    union
+    {
+        BridgeReportBuffers report{};
+        BridgeCommandBuffers inbound;
+    };
 };
 
 // --- Constants ---
@@ -97,8 +111,6 @@ BridgeSlot * AcquireBridgeSlot()
         if (sBridgeSlots[i].inUse.compare_exchange_strong(expected, true, std::memory_order_acq_rel))
         {
             sBridgeSlots[i].commandHeld.store(false, std::memory_order_relaxed);
-            sBridgeSlots[i].payloadLen   = 0;
-            sBridgeSlots[i].invokeTlvLen = 0;
             return &sBridgeSlots[i];
         }
     }
@@ -145,30 +157,32 @@ void ReportWorkHandler(const uint8_t * data, size_t len)
         MATTER_MQTT_LOG_ERROR("attribute report skipped: bridge slot pool full");
         return;
     }
+    slot->report = {};
 
-    if (MatterMqttTopic::BuildAttributeTopic(profile->GetMqttDeviceNodeId(), work.endpoint, work.clusterId,
-                                             work.attributeId, slot->topic, sizeof(slot->topic)) != CHIP_NO_ERROR)
+    if (MatterMqttTopic::BuildAttributeTopic(profile->GetMqttDeviceNodeId(), work.endpoint, work.clusterId, work.attributeId,
+                                             slot->report.topic, sizeof(slot->report.topic)) != CHIP_NO_ERROR)
     {
         ReleaseBridgeSlot(slot);
         return;
     }
 
-    if (sCodec.EncodeReport(chip::CharSpan::fromCharString(work.value), slot->payload, sizeof(slot->payload)) != CHIP_NO_ERROR)
+    if (sCodec.EncodeReport(chip::CharSpan::fromCharString(work.value), slot->report.payload, sizeof(slot->report.payload)) !=
+        CHIP_NO_ERROR)
     {
         ReleaseBridgeSlot(slot);
         return;
     }
-    slot->payloadLen = strlen(slot->payload);
-    const chip::ByteSpan payload(reinterpret_cast<uint8_t *>(slot->payload), slot->payloadLen);
+    slot->report.payloadLen = strlen(slot->report.payload);
+    const chip::ByteSpan payload(reinterpret_cast<uint8_t *>(slot->report.payload), slot->report.payloadLen);
     const auto qos            = static_cast<chip::DeviceLayer::Silabs::MqttQoS>(sConfig.reportQos);
     const uint32_t publishSeq = ++sAttributePublishSeq;
-    MATTER_MQTT_LOG("attribute publish #%" PRIu32 " topic=%s payload=%s", publishSeq, slot->topic, slot->payload);
+    MATTER_MQTT_LOG("attribute publish #%" PRIu32 " topic=%s payload=%s", publishSeq, slot->report.topic, slot->report.payload);
 
     const CHIP_ERROR publishErr =
-        sClient->Publish(slot->topic, payload, qos, sConfig.reportRetained, OnAttributePublishDone, slot);
+        sClient->Publish(slot->report.topic, payload, qos, sConfig.reportRetained, OnAttributePublishDone, slot);
     if (publishErr != CHIP_NO_ERROR)
     {
-        MATTER_MQTT_LOG_ERROR("attribute publish #%" PRIu32 " queue failed topic=%s", publishSeq, slot->topic);
+        MATTER_MQTT_LOG_ERROR("attribute publish #%" PRIu32 " queue failed topic=%s", publishSeq, slot->report.topic);
         ReleaseBridgeSlot(slot);
     }
 }
@@ -220,12 +234,12 @@ void HandleInboundCommandSlot(intptr_t arg)
     VerifyOrReturn(slot->inUse.load(std::memory_order_acquire) && slot->commandHeld.load(std::memory_order_acquire));
     VerifyOrReturn(sConfig.injector != nullptr);
 
-    const MatterMqttTopic::ParsedCommandTopic & command = slot->command;
+    const MatterMqttTopic::ParsedCommandTopic & command = slot->inbound.command;
     MATTER_MQTT_LOG("inbound command ep=%u cluster=" ChipLogFormatMEI " cmd=" ChipLogFormatMEI,
                     static_cast<unsigned>(command.endpoint), ChipLogValueMEI(command.clusterId),
                     ChipLogValueMEI(command.commandId));
 
-    if (sConfig.injector->Invoke(command, slot->invokeTlv, slot->invokeTlvLen) != CHIP_NO_ERROR)
+    if (sConfig.injector->Invoke(command, slot->inbound.invokeTlv, slot->inbound.invokeTlvLen) != CHIP_NO_ERROR)
     {
         MATTER_MQTT_LOG_ERROR("command inject failed");
     }
@@ -269,16 +283,17 @@ bool OnInboundMessage(chip::CharSpan topic, chip::ByteSpan payload)
         return true;
     }
 
-    if (sConfig.injector->EncodeInvokeTlv(parsed.clusterId, commandId, &args, slot->invokeTlv, sizeof(slot->invokeTlv),
-                                          slot->invokeTlvLen) != CHIP_NO_ERROR)
+    slot->inbound = {};
+    if (sConfig.injector->EncodeInvokeTlv(parsed.clusterId, commandId, &args, slot->inbound.invokeTlv,
+                                          sizeof(slot->inbound.invokeTlv), slot->inbound.invokeTlvLen) != CHIP_NO_ERROR)
     {
         ReleaseBridgeSlot(slot);
         MATTER_MQTT_LOG_ERROR("command rejected cmd=" ChipLogFormatMEI " (args_pack)", ChipLogValueMEI(commandId));
         return true;
     }
 
+    slot->inbound.command = parsed;
     slot->commandHeld.store(true, std::memory_order_release);
-    slot->command = parsed;
 
     // Cross to Matter thread on CHIP stack; InvokeCommand must not run on the MQTT service thread.
     const size_t slotIndex = static_cast<size_t>(slot - sBridgeSlots);
@@ -340,11 +355,6 @@ void InitOnMatterThread(intptr_t /* arg */)
     }
 }
 
-void FabricReadyOnMatterThread(intptr_t /* arg */)
-{
-    SubscribeCommands();
-}
-
 } // namespace
 
 bool DispatchInbound(chip::CharSpan topic, chip::ByteSpan payload)
@@ -385,11 +395,6 @@ void Shutdown()
         sBridgeSlots[i].inUse.store(false, std::memory_order_relaxed);
     }
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
-}
-
-void OnMatterFabricReady()
-{
-    LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(FabricReadyOnMatterThread, 0));
 }
 
 void NotifyReportableAttributeChange(const chip::app::ConcreteAttributePath & path)

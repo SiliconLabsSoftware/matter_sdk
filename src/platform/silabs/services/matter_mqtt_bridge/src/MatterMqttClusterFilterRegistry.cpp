@@ -21,6 +21,8 @@
 #include "MatterMqttLog.h"
 #include "MatterMqttTopic.h"
 
+#include <app/util/attribute-storage.h>
+#include <app/util/endpoint-config-api.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 
@@ -87,6 +89,29 @@ bool ValidateParsedCommand(const DeviceMqttProfile & profile, const MatterMqttCl
     if (clusterFilter == nullptr)
     {
         MATTER_MQTT_LOG_ERROR("command rejected cmd=" ChipLogFormatMEI " (unknown_cluster)", ChipLogValueMEI(parsed.commandId));
+        return false;
+    }
+
+    // The filter is global. Confirm its attributes are present on this endpoint.
+    bool attributesOnEndpoint = true;
+    if (clusterFilter->attributeCount == 0)
+    {
+        attributesOnEndpoint = emberAfContainsServer(parsed.endpoint, parsed.clusterId);
+    }
+    else
+    {
+        for (size_t i = 0; i < clusterFilter->attributeCount; ++i)
+        {
+            if (!emberAfContainsAttribute(parsed.endpoint, parsed.clusterId, clusterFilter->attributes[i].id))
+            {
+                attributesOnEndpoint = false;
+                break;
+            }
+        }
+    }
+    if (!attributesOnEndpoint)
+    {
+        MATTER_MQTT_LOG_ERROR("command rejected cmd=" ChipLogFormatMEI " (denied)", ChipLogValueMEI(parsed.commandId));
         return false;
     }
 

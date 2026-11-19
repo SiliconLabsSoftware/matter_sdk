@@ -74,7 +74,4 @@ bool DispatchInbound(chip::CharSpan topic, chip::ByteSpan payload);
 /** Ember post-write path (BaseApplication::MatterPostAttributeChangeCallback) -> EnqueueReport. */
 void NotifyReportableAttributeChange(const chip::app::ConcreteAttributePath & path);
 
-/** Re-run command subscribe when fabric NodeId becomes available (Matter thread). */
-void OnMatterFabricReady();
-
 } // namespace MatterMqttBridge

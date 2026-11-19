@@ -33,9 +33,6 @@
  */
 namespace MatterMqttTopic {
 
-/** Formats one numeric id for a topic segment (uppercase hex, no 0x, no leading zeros). */
-CHIP_ERROR FormatTopicIdUint64(uint64_t value, char * out, size_t outLen);
-
 CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, chip::ClusterId clusterId,
                                chip::AttributeId attributeId, char * out, size_t outLen);
 

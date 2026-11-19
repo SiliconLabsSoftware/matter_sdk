@@ -134,11 +134,6 @@ CHIP_ERROR ParseTopicHexEndpoint(const char * begin, const char * end, chip::End
 
 namespace MatterMqttTopic {
 
-CHIP_ERROR FormatTopicIdUint64(uint64_t value, char * out, size_t outLen)
-{
-    return FormatTopicHexU64(value, out, outLen);
-}
-
 // Outbound attribute report: matter/v1/{nodeId}/ep/{ep}/cluster/{clusterId}/attr/{attributeId}
 CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, chip::ClusterId clusterId,
                                chip::AttributeId attributeId, char * out, size_t outLen)
@@ -150,10 +145,10 @@ CHIP_ERROR BuildAttributeTopic(chip::NodeId deviceNodeId, chip::EndpointId ep, c
     char clusterHex[MATTER_MQTT_DEVICE_ID_LEN];
     char attrHex[MATTER_MQTT_DEVICE_ID_LEN];
 
-    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
-    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(ep), epHex, sizeof(epHex)));
-    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(clusterId), clusterHex, sizeof(clusterHex)));
-    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(attributeId), attrHex, sizeof(attrHex)));
+    ReturnErrorOnFailure(FormatTopicHexU64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
+    ReturnErrorOnFailure(FormatTopicHexU64(static_cast<uint64_t>(ep), epHex, sizeof(epHex)));
+    ReturnErrorOnFailure(FormatTopicHexU64(static_cast<uint64_t>(clusterId), clusterHex, sizeof(clusterHex)));
+    ReturnErrorOnFailure(FormatTopicHexU64(static_cast<uint64_t>(attributeId), attrHex, sizeof(attrHex)));
 
     const int n = snprintf(out, outLen, "%.*s%s/ep/%s/cluster/%s/attr/%s", static_cast<int>(sizeof(kTopicPrefix) - 1),
                            kTopicPrefix, deviceHex, epHex, clusterHex, attrHex);
@@ -168,8 +163,8 @@ CHIP_ERROR BuildCommandSubscriptionTopic(chip::NodeId deviceNodeId, chip::Endpoi
 
     char deviceHex[MATTER_MQTT_DEVICE_ID_LEN];
     char endpointHex[MATTER_MQTT_DEVICE_ID_LEN];
-    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
-    ReturnErrorOnFailure(FormatTopicIdUint64(static_cast<uint64_t>(endpoint), endpointHex, sizeof(endpointHex)));
+    ReturnErrorOnFailure(FormatTopicHexU64(static_cast<uint64_t>(deviceNodeId), deviceHex, sizeof(deviceHex)));
+    ReturnErrorOnFailure(FormatTopicHexU64(static_cast<uint64_t>(endpoint), endpointHex, sizeof(endpointHex)));
 
     const int n = snprintf(out, outLen, "%.*s%s/ep/%s/cluster/+/cmd/+", static_cast<int>(sizeof(kTopicPrefix) - 1), kTopicPrefix,
                            deviceHex, endpointHex);
