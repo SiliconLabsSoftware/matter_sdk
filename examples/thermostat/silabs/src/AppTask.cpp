@@ -58,10 +58,6 @@
 #if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
 #include "https_offload_example.h"
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
-
-#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-#include "mqtt_example.h"
-#endif // SL_MATTER_ENABLE_MQTT_SERVICE
 #endif // SL_MATTER_ENABLE_SERVICES
 
 #define APP_FUNCTION_BUTTON 0
@@ -381,36 +377,20 @@ void AppTask::DMThermostatClusterInit(chip::EndpointId endpoint)
 }
 
 #if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
 namespace {
 
-// Runs on AppTask thread so blocking MQTT connect/wait does not starve the CHIP stack.
-// Start each service independently: a MQTT failure must not skip HTTPS (periodic HTTPS OTA
-// relies on HttpClient already running; it does not call https_client_demo_start itself).
+// Runs on AppTask thread so blocking HTTPS work does not starve the CHIP stack.
 void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
 {
-#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-    if (SL_STATUS_OK != mqtt_client_demo_start())
-    {
-        ChipLogError(AppServer, "mqtt_client_demo_start failed");
-    }
-#endif // SL_MATTER_ENABLE_MQTT_SERVICE
-
-#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
     if (SL_STATUS_OK != https_client_demo_start())
     {
         ChipLogError(AppServer, "https_client_demo_start failed");
     }
-#endif // SL_MATTER_ENABLE_HTTP_SERVICE
-}
-
-void StopMatterServicesAppEvent(AppEvent * /* aEvent */)
-{
-#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-    VerifyOrReturn(SL_STATUS_OK == mqtt_client_demo_stop(), ChipLogError(AppServer, "mqtt_client_demo_stop failed"));
-#endif // SL_MATTER_ENABLE_MQTT_SERVICE
 }
 
 } // namespace
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
 void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t)
 {
@@ -418,6 +398,7 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
 
     switch (event->Type)
     {
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
     case DeviceEventType::kInternetConnectivityChange:
         if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
 #if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
@@ -426,24 +407,14 @@ void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t
         )
         {
             // Post directly to AppTask; avoid SystemLayer timer re-entering the Matter stack just to PostEvent.
-            ChipLogProgress(AppServer, "Scheduling Matter Services initialization");
+            ChipLogProgress(AppServer, "Scheduling Matter HTTPS service initialization");
             AppEvent appEvent = {};
             appEvent.Type     = AppEvent::kEventType_Timer;
             appEvent.Handler  = StartMatterServicesAppEvent;
             CustomerAppTask::GetAppTask().PostEvent(&appEvent);
         }
         break;
-
-    case DeviceEventType::kWiFiConnectivityChange:
-        if (event->WiFiConnectivityChange.Result == kConnectivity_Lost)
-        {
-            ChipLogProgress(AppServer, "Scheduling Matter Services teardown on Wi-Fi loss");
-            AppEvent appEvent = {};
-            appEvent.Type     = AppEvent::kEventType_Timer;
-            appEvent.Handler  = StopMatterServicesAppEvent;
-            CustomerAppTask::GetAppTask().PostEvent(&appEvent);
-        }
-        break;
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
     default:
         break;

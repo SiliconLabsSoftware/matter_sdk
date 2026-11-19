@@ -29,9 +29,6 @@
 #endif // SILABS_OTA_ENABLED
 #include <app/server/Dnssd.h>
 #include <app/server/Server.h>
-#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
-#include <MatterMqttBridge.h>
-#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 #define APP_ACTION_BUTTON 1
 
@@ -97,6 +94,14 @@
 #include "MatterAws.h"
 #include "MatterAwsControl.h"
 #endif // SL_MATTER_ENABLE_AWS
+
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+#include "MatterMqttClient.h"
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
+#include <MatterMqttBridge.h>
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 #ifdef PERFORMANCE_TEST_ENABLED
 #include <performance_test_commands.h>
@@ -1167,6 +1172,25 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
     }
     break;
 
+    case DeviceEventType::kWiFiConnectivityChange: {
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+        if (event->WiFiConnectivityChange.Result == kConnectivity_Established)
+        {
+            if (BaseApplication::sIsProvisioned)
+            {
+                ChipLogProgress(AppServer, "Matter MQTT: Wi-Fi connected, initializing client");
+                LogErrorOnFailure(MatterMqttClient::Init());
+            }
+        }
+        else if (event->WiFiConnectivityChange.Result == kConnectivity_Lost)
+        {
+            ChipLogProgress(AppServer, "Matter MQTT: Wi-Fi lost, disconnecting client");
+            LogErrorOnFailure(MatterMqttClient::Disconnect());
+        }
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
+    }
+    break;
+
     case DeviceEventType::kThreadConnectivityChange:
     case DeviceEventType::kInternetConnectivityChange: {
 #ifdef SL_MATTER_ENABLE_AWS
@@ -1235,6 +1259,11 @@ void BaseApplication::OnPlatformEvent(const ChipDeviceEvent * event, intptr_t)
         RETURN_SAFELY_IGNORED DeviceLayer::SystemLayer().StartTimer(
             kZbLeaveAnnouceDelay, [](System::Layer *, void *) { Zigbee::ZLLNotFactoryNew(); }, nullptr);
 #endif // SL_CATALOG_ZIGBEE_STACK_COMMON_PRESENT
+
+#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
+        ChipLogProgress(AppServer, "Matter MQTT: Commissioning complete, initializing client");
+        LogErrorOnFailure(MatterMqttClient::Init());
+#endif // SL_MATTER_ENABLE_MQTT_SERVICE
     }
     break;
     default:
