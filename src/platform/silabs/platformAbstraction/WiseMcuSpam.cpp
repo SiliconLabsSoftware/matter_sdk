@@ -23,6 +23,7 @@
 #include <app/icd/server/ICDServerConfig.h>
 
 #include <lib/support/CodeUtils.h>
+#include <platform/PlatformError.h>
 #if SILABS_LOG_ENABLED
 #include "silabs_utils.h"
 #endif // SILABS_LOG_ENABLED
@@ -292,9 +293,9 @@ CHIP_ERROR SilabsPlatform::FlashInit()
 CHIP_ERROR SilabsPlatform::FlashErasePage(uint32_t addr)
 {
     // SiWx917 common-flash sector size; erase length must be a multiple of 4 KB.
+    // Erase path sends only a command header; write_data is unused (nullptr).
     constexpr uint16_t kSiWxFlashSectorSize = 4096;
     constexpr uint8_t kFlashSectorErase     = 1;
-    uint8_t dummy_buff[1]                   = { 0 };
 
 #if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
     // Keep PS4 while the blocking NWP flash command can yield to tickless idle.
@@ -302,13 +303,13 @@ CHIP_ERROR SilabsPlatform::FlashErasePage(uint32_t addr)
 #endif
 
     sl_status_t status =
-        sl_si91x_command_to_write_common_flash(addr, dummy_buff, kSiWxFlashSectorSize, kFlashSectorErase);
+        sl_si91x_command_to_write_common_flash(addr, nullptr, kSiWxFlashSectorSize, kFlashSectorErase);
 
 #if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
     sl_si91x_power_manager_remove_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
 #endif
 
-    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR(status));
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status));
     return CHIP_NO_ERROR;
 }
 
@@ -328,7 +329,7 @@ CHIP_ERROR SilabsPlatform::FlashWritePage(uint32_t addr, const uint8_t * data, s
     sl_si91x_power_manager_remove_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
 #endif
 
-    VerifyOrReturnError(status == SL_STATUS_OK, CHIP_ERROR(status));
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status));
     return CHIP_NO_ERROR;
 }
 
