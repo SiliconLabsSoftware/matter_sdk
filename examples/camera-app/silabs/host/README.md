@@ -32,6 +32,7 @@ peer.
 -   [Running](#running)
 -   [Supported commands](#supported-commands)
 -   [Example: live view](#example-live-view)
+-   [Testing without the SoC](#testing-without-the-soc)
 -   [Limitations](#limitations)
 
 ## Requirements
@@ -210,6 +211,12 @@ With chip-tool, the stream commands can be checked individually, for example
 chip-tool cameraavstreammanagement video-stream-allocate 3 0 15 30 '{"width":640,"height":360}' '{"width":1280,"height":720}' 10000 2000000 1000 ${NODE} 1
 chip-tool cameraavstreammanagement video-stream-deallocate 0 ${NODE} 1
 ```
+
+## Testing without the SoC
+
+[test/](test/README.md) contains a PyQt5 tester that replaces the SoC: run
+`camera_host` on a virtual UART bridged to TCP by socat, then run the test suite
+or view the stream from a PC.
 
 ## Limitations
 

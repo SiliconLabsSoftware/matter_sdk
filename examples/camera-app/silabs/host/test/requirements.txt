@@ -1,0 +1,4 @@
+PyQt5>=5.15
+qasync>=0.27
+aiortc>=1.9
+numpy
