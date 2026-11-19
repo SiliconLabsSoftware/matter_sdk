@@ -36,7 +36,10 @@ source_set("common") {
 source_set("wisemcu") {
   sources =
       [ "${chip_root}/src/platform/silabs/platformAbstraction/WiseMcuSpam.cpp" ]
-  public_deps = [ ":common" ]
+  public_deps = [
+    ":common",
+    "${chip_root}/src/platform:platform_error",
+  ]
   public_configs = [ ":platform_abstraction_includes" ]
 }
 
