@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <inttypes.h>
 
 #include <lib/support/CodeUtils.h>
@@ -37,6 +38,8 @@
 
 namespace {
 
+using chip::ByteSpan;
+using chip::CharSpan;
 using chip::DeviceLayer::ConnectivityMgr;
 using chip::DeviceLayer::Silabs::MqttBroker;
 using chip::DeviceLayer::Silabs::MqttClientConfig;
@@ -181,7 +184,7 @@ void MatterMqttClient::OnConnectDone(CHIP_ERROR result, void * /* context */)
         ResetReconnectState();
 #if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
         sMqttClient.SetSubscriptionCallback(MqttInboundDispatcher, nullptr);
-        LogErrorOnFailure(MatterMqttBridge::Init(sMqttClient, gPlatformMqttBridgeConfig);
+        LogErrorOnFailure(MatterMqttBridge::Init(sMqttClient, gPlatformMqttBridgeConfig));
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE
         return;
     }
@@ -208,6 +211,8 @@ void MatterMqttClient::RetryConnectHandler(void * /* argument */)
 }
 
 #if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
+namespace {
+
 // Bridge first; log only when DispatchInbound returns false (non-command topic or pre-subscribe).
 // Command topics are consumed (accepted or rejected with a logged reason).
 void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context)
@@ -215,4 +220,6 @@ void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context)
     bool status = MatterMqttBridge::DispatchInbound(topic, payload);
     VerifyOrReturn(status, ChipLogDetail(DeviceLayer, "MqttInboundDispatcher: topic %s not handled by bridge", topic.data()));
 }
+
+} // namespace
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE
