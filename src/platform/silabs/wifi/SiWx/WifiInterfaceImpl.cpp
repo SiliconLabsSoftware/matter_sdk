@@ -60,9 +60,9 @@ extern "C" {
 #include "sl_si91x_trng.h"
 #endif // SL_MBEDTLS_USE_TINYCRYPT
 
-#if !defined(SL_MBEDTLS_USE_TINYCRYPT) || defined(SLI_PAHO_MQTT_OVER_LWIP)
+#if !defined(SL_MBEDTLS_USE_TINYCRYPT)
 #include <psa/crypto.h>
-#endif // !defined(SL_MBEDTLS_USE_TINYCRYPT) || defined(SLI_PAHO_MQTT_OVER_LWIP)
+#endif // !defined(SL_MBEDTLS_USE_TINYCRYPT)
 
 #include <sl_net.h>
 #include <sl_net_constants.h>
@@ -553,11 +553,11 @@ CHIP_ERROR WifiInterfaceImpl::InitWiFiStack(void)
     sWifiEventQueue = osMessageQueueNew(kWfxQueueSize, sizeof(WifiPlatformEvent), nullptr);
     VerifyOrReturnError(sWifiEventQueue != nullptr, CHIP_ERROR_NO_MEMORY);
 
-#if !defined(SL_MBEDTLS_USE_TINYCRYPT) || defined(SLI_PAHO_MQTT_OVER_LWIP)
+#if !defined(SL_MBEDTLS_USE_TINYCRYPT)
     // PSA Crypto initialization
     VerifyOrReturnError(psa_crypto_init() == PSA_SUCCESS, CHIP_ERROR_INTERNAL,
                         ChipLogError(DeviceLayer, "psa_crypto_init failed: 0x%" PRIx32, static_cast<uint32_t>(status)));
-#endif // !defined(SL_MBEDTLS_USE_TINYCRYPT) || defined(SLI_PAHO_MQTT_OVER_LWIP)
+#endif // !defined(SL_MBEDTLS_USE_TINYCRYPT)
 
 #if defined(SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI) && SL_MATTER_NEUTRAL_LESS_SWITCH_WIFI
     status = sl_net_set_application_profile_config(SL_NET_APP_PROFILE_NEUTRAL_LESS_POWER_SAVE);
