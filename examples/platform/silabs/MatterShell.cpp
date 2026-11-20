@@ -46,10 +46,6 @@
 #include "https_offload_example.h"
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
-#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-#include "mqtt_example.h"
-#endif // SL_MATTER_ENABLE_MQTT_SERVICE
-
 #endif // SL_MATTER_ENABLE_SERVICES
 
 using namespace ::chip;
@@ -173,10 +169,6 @@ CHIP_ERROR DemoHelpHandler(int /* argc */, char ** /* argv */)
     streamer_printf(streamer_get(), "  http  Run HTTPS PUT/GET/POST on the AppTask thread\r\n");
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
-#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-    streamer_printf(streamer_get(), "  mqtt  Run MQTT connect/subscribe/publish on the AppTask thread\r\n");
-#endif // SL_MATTER_ENABLE_MQTT_SERVICE
-
     return CHIP_NO_ERROR;
 }
 
@@ -202,23 +194,13 @@ CHIP_ERROR DemoCommandHandler(int argc, char ** argv)
     }
 #endif // SL_MATTER_ENABLE_HTTP_SERVICE
 
-#if defined(SL_MATTER_ENABLE_MQTT_SERVICE) && SL_MATTER_ENABLE_MQTT_SERVICE
-    if (strcmp(argv[0], "mqtt") == 0)
-    {
-        streamer_printf(streamer_get(), "Posting MQTT connect/subscribe/publish to AppTask\r\n");
-        event.Handler = MqttRunAppEvent;
-        BaseApplication::PostEvent(&event);
-        return CHIP_NO_ERROR;
-    }
-#endif // SL_MATTER_ENABLE_MQTT_SERVICE
-
     streamer_printf(streamer_get(), "Unknown service: %s\r\n", argv[0]);
     return DemoHelpHandler(0, nullptr);
 }
 
 void RegisterCommands()
 {
-    static const Shell::Command sDemoCmd = { &DemoCommandHandler, "demo", "Run a Matter service demo: demo <http|mqtt>" };
+    static const Shell::Command sDemoCmd = { &DemoCommandHandler, "demo", "Run a Matter service demo: demo <http>" };
     Engine::Root().RegisterCommands(&sDemoCmd, 1);
 }
 
