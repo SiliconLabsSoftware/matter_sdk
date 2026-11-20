@@ -4804,7 +4804,7 @@
         }
       ],
       "deviceVersions": [
-        5,
+        4,
         1
       ],
       "deviceIdentifiers": [
