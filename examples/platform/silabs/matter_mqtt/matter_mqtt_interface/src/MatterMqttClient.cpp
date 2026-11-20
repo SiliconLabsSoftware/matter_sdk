@@ -59,6 +59,13 @@ constexpr char kMqttTlsCaCertificate[]     = SL_MATTER_MQTT_TLS_CA_CERTIFICATE;
 constexpr char kMqttTlsClientCertificate[] = SL_MATTER_MQTT_TLS_CLIENT_CERTIFICATE;
 constexpr char kMqttTlsClientKey[]         = SL_MATTER_MQTT_TLS_CLIENT_KEY;
 
+// Empty string -> 0 (unused); otherwise include the trailing NUL for PEM parsers.
+size_t PemCredentialLen(const char * pem, size_t maxLen)
+{
+    const size_t len = strnlen(pem, maxLen);
+    return len == 0 ? 0 : len + 1;
+}
+
 #if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
 void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context);
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE
@@ -95,11 +102,11 @@ CHIP_ERROR MatterMqttClient::Init()
         .willEnable           = false,
         // Empty string means not provided; MqttClient skips zero-length credentials.
         .tlsCaCert     = reinterpret_cast<const uint8_t *>(kMqttTlsCaCertificate),
-        .tlsCaCertLen  = strnlen(kMqttTlsCaCertificate, sizeof(kMqttTlsCaCertificate)),
+        .tlsCaCertLen  = PemCredentialLen(kMqttTlsCaCertificate, sizeof(kMqttTlsCaCertificate)),
         .clientCert    = reinterpret_cast<const uint8_t *>(kMqttTlsClientCertificate),
-        .clientCertLen = strnlen(kMqttTlsClientCertificate, sizeof(kMqttTlsClientCertificate)),
+        .clientCertLen = PemCredentialLen(kMqttTlsClientCertificate, sizeof(kMqttTlsClientCertificate)),
         .clientKey     = reinterpret_cast<const uint8_t *>(kMqttTlsClientKey),
-        .clientKeyLen  = strnlen(kMqttTlsClientKey, sizeof(kMqttTlsClientKey)),
+        .clientKeyLen  = PemCredentialLen(kMqttTlsClientKey, sizeof(kMqttTlsClientKey)),
     };
 
     ChipLogProgress(DeviceLayer, "MatterMqttClient: initializing client");
