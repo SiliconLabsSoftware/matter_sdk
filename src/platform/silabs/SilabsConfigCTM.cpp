@@ -1,7 +1,6 @@
 /*
  *
- *    Copyright (c) 2020 Project CHIP Authors
- *    Copyright (c) 2019 Nest Labs, Inc.
+ *    Copyright (c) 2026 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,41 +28,10 @@
 #include <platform/internal/testing/ConfigUnitTest.h>
 #include <platform/silabs/CHIPDevicePlatformConfig.h>
 
-#include "uart.h"
-#include <FreeRTOS.h>
 #include <nvm3.h>
 #include <nvm3_default.h>
 #include <nvm3_hal_flash.h>
-#include <nvm3_lock.h>
-#include <semphr.h>
 #include <sl_token_manager_api.h>
-
-#if defined(_SILICON_LABS_32B_SERIES_2)
-namespace {
-// Substitute the GSDK weak nvm3_lockBegin and nvm3_lockEnd
-// for an application controlled re-entrance protection
-SemaphoreHandle_t nvm3_Sem;
-StaticSemaphore_t nvm3_SemStruct;
-} // namespace
-
-void nvm3_lockBegin(void)
-{
-    if (nvm3_Sem == NULL)
-    {
-        nvm3_Sem = xSemaphoreCreateBinaryStatic(&nvm3_SemStruct);
-        xSemaphoreGive(nvm3_Sem);
-    }
-
-    VerifyOrDie(nvm3_Sem != NULL);
-    xSemaphoreTake(nvm3_Sem, portMAX_DELAY);
-}
-
-void nvm3_lockEnd(void)
-{
-    VerifyOrDie(nvm3_Sem != NULL);
-    xSemaphoreGive(nvm3_Sem);
-}
-#endif // _SILICON_LABS_32B_SERIES_2
 
 namespace chip {
 namespace DeviceLayer {
@@ -135,9 +103,6 @@ CHIP_ERROR SilabsConfig::Init()
 
 void SilabsConfig::DeInit()
 {
-#if defined(_SILICON_LABS_32B_SERIES_2)
-    vSemaphoreDelete(nvm3_Sem);
-#endif // _SILICON_LABS_32B_SERIES_2
     // TODO: We do not have an API for deinit with CTM, confirm needed and open ticket.
     nvm3_close(nvm3_defaultHandle);
 }
