@@ -184,7 +184,8 @@ void MqttClient::PahoMessageHandler(MessageData * md)
     VerifyOrReturn(static_cast<size_t>(md->topicName->lenstring.len) <= MQTT_CLIENT_RX_BUFFER_SIZE);
 
     // MQTT topic is length-prefixed in the RX buffer (not null-terminated); pass through as CharSpan.
-    const CharSpan topic(md->topicName->lenstring.data, static_cast<size_t>(md->topicName->lenstring.len));
+    const chip::CharSpan topic(md->topicName->lenstring.data, static_cast<size_t>(md->topicName->lenstring.len));
+
     ChipLogDetail(DeviceLayer, "[MQTT] message received on topic: %.*s", static_cast<int>(topic.size()), topic.data());
 
     const ByteSpan payload(static_cast<const uint8_t *>(md->message->payload), md->message->payloadlen);
@@ -359,6 +360,9 @@ void MqttClient::ProcessMessage(const ServiceMessage & message)
     case Operation::Yield:
         err = ProcessYield(message);
         break;
+    case Operation::Work:
+        ProcessWork(message);
+        return;
     case Operation::Stop:
     default:
         err = CHIP_ERROR_INCORRECT_STATE;
@@ -685,6 +689,7 @@ CHIP_ERROR MqttClient::ProcessSubscribe(const ServiceMessage & message)
     VerifyOrReturnError(mConnected, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(message.topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
+    // Paho expects a null-terminated filter string; see also PahoMessageHandler for inbound lenstring topics.
     const int status = MQTTSubscribe(&mClient, const_cast<char *>(message.topic), ToPahoQos(message.qos), PahoMessageHandler);
     if (status != SUCCESS)
     {
@@ -717,6 +722,7 @@ CHIP_ERROR MqttClient::ProcessPublish(const ServiceMessage & message)
     VerifyOrReturnError(mConnected, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(message.topic != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
 
+    // Topic is caller-owned C string; payload is a span into caller memory until publish completes.
     MQTTMessage mqttMessage = {};
     mqttMessage.qos         = ToPahoQos(message.qos);
     mqttMessage.retained    = message.retained ? 1 : 0;
@@ -904,6 +910,32 @@ CHIP_ERROR MqttClient::Yield(uint32_t timeoutMs, MqttOperationCallback callback,
     message.callback       = callback;
     message.context        = context;
     message.yieldTimeoutMs = timeoutMs;
+    return PostMessage(message);
+}
+
+void MqttClient::ProcessWork(const ServiceMessage & message)
+{
+    const MqttWorkFn fn = message.workFn;
+    if (fn != nullptr)
+    {
+        fn(message.workData, message.workDataLen);
+    }
+}
+
+CHIP_ERROR MqttClient::ScheduleWork(MqttWorkFn fn, const void * data, size_t len)
+{
+    VerifyOrReturnError(IsRunning(), CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(fn != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(len <= kWorkDataSize, CHIP_ERROR_BUFFER_TOO_SMALL);
+
+    ServiceMessage message{};
+    message.operation    = Operation::Work;
+    message.workFn       = fn;
+    message.workDataLen    = len;
+    if (len > 0 && data != nullptr)
+    {
+        memcpy(message.workData, data, len);
+    }
     return PostMessage(message);
 }
 

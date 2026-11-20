@@ -29,6 +29,9 @@
 #endif // SILABS_OTA_ENABLED
 #include <app/server/Dnssd.h>
 #include <app/server/Server.h>
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
+#include <MatterMqttBridge.h>
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 #define APP_ACTION_BUTTON 1
 
@@ -1287,5 +1290,9 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     AttributeId attributeId = attributePath.mAttributeId;
     MultiProtocolDataModel::WriteMatterAttributeValueToZigbee(endpointId, clusterId, attributeId, value, type);
 #endif // SL_CATALOG_ZIGBEE_ZCL_FRAMEWORK_CORE_PRESENT
+
+#if defined(SL_MATTER_ENABLE_MQTT_BRIDGE) && SL_MATTER_ENABLE_MQTT_BRIDGE
+    MatterMqttBridge::NotifyReportableAttributeChange(attributePath);
+#endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 }
 #endif // defined(CHIP_SILABS_APP_USE_CUSTOMER_APP_TASK) && !defined(CHIP_SILABS_APP_NO_DM_IMPLEMENTATION)
