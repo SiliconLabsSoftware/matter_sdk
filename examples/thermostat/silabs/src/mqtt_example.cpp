@@ -20,7 +20,6 @@
 
 #include "mqtt_client.h"
 
-#include "cacert.h"
 #include "cmsis_os2.h"
 
 #include <lib/support/CodeUtils.h>
@@ -45,7 +44,7 @@ namespace DeviceEventType = chip::DeviceLayer::DeviceEventType;
 
 // Please fill in the details for your own MQTT broker.
 constexpr char kMqttBrokerEndpoint[] = SL_MATTER_MQTT_BROKER_ENDPOINT; // DNS name or IPv4 of your MQTT broker
-constexpr char kMqttTlsHostname[]    = SL_MATTER_MQTT_TLS_HOSTNAME; // The TLS hostname of your MQTT broker
+constexpr char kMqttTlsHostname[]    = SL_MATTER_MQTT_TLS_HOSTNAME;    // The TLS hostname of your MQTT broker
 constexpr uint16_t kMqttBrokerPort   = SL_MATTER_MQTT_BROKER_PORT;
 constexpr uint16_t kMqttClientPort   = SL_MATTER_MQTT_CLIENT_PORT;
 constexpr char kMqttClientId[]       = SL_MATTER_MQTT_CLIENT_ID;
@@ -53,6 +52,10 @@ constexpr char kMqttUsername[]       = SL_MATTER_MQTT_CLIENT_USERNAME;
 constexpr char kMqttPassword[]       = SL_MATTER_MQTT_CLIENT_PASSWORD;
 constexpr char kMqttTopic[]          = MQTT_TOPIC;
 constexpr char kMqttPublishMessage[] = MQTT_PUBLISH_MESSAGE;
+
+constexpr char kMqttTlsCaCertificate[]     = SL_MATTER_MQTT_TLS_CA_CERTIFICATE;
+constexpr char kMqttTlsClientCertificate[] = SL_MATTER_MQTT_TLS_CLIENT_CERTIFICATE;
+constexpr char kMqttTlsClientKey[]         = SL_MATTER_MQTT_TLS_CLIENT_KEY;
 
 MqttClient gMqttsClient;
 
@@ -184,8 +187,13 @@ sl_status_t mqtt_client_demo_start(void)
             .mqttVersion          = 4,
             .cleanSession         = true,
             .willEnable           = false,
-            .tlsCaCert            = reinterpret_cast<const uint8_t *>(kCaCertExample),
-            .tlsCaCertLen         = sizeof(kCaCertExample),
+            // Empty string means not provided; MqttClient skips zero-length credentials.
+            .tlsCaCert            = reinterpret_cast<const uint8_t *>(kMqttTlsCaCertificate),
+            .tlsCaCertLen         = strnlen(kMqttTlsCaCertificate, sizeof(kMqttTlsCaCertificate)),
+            .clientCert           = reinterpret_cast<const uint8_t *>(kMqttTlsClientCertificate),
+            .clientCertLen        = strnlen(kMqttTlsClientCertificate, sizeof(kMqttTlsClientCertificate)),
+            .clientKey            = reinterpret_cast<const uint8_t *>(kMqttTlsClientKey),
+            .clientKeyLen         = strnlen(kMqttTlsClientKey, sizeof(kMqttTlsClientKey)),
         };
 
         ChipLogProgress(DeviceLayer, "MQTT demo: initializing client");
