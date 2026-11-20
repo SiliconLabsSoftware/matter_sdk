@@ -497,9 +497,12 @@ CHIP_ERROR BLEManagerImpl::CloseConnection(BLE_CONNECTION_OBJECT conId)
 
     ChipLogProgress(DeviceLayer, "Closing BLE GATT connection (con %u)", conId);
 
+    int32_t status = rsi_ble_disconnect(reinterpret_cast<const int8_t *>(dev_address));
+    err            = MapBLEError(static_cast<int>(status));
+
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "sl_bt_connection_close() failed: %" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(DeviceLayer, "rsi_ble_disconnect() failed: %" CHIP_ERROR_FORMAT, err.Format());
     }
 
     return err;
@@ -537,7 +540,7 @@ CHIP_ERROR BLEManagerImpl::SendWriteRequest(BLE_CONNECTION_OBJECT conId, const C
 
 void BLEManagerImpl::NotifyChipConnectionClosed(BLE_CONNECTION_OBJECT conId)
 {
-    // Nothing to do
+    VerifyOrReturn(CloseConnection(conId) == CHIP_NO_ERROR, ChipLogError(DeviceLayer, "BLEManagerImpl::NotifyChipConnectionClosed: CloseConnection failed"));
 }
 
 // TODO: Need to add RSI BLE STATUS codes

@@ -23,32 +23,8 @@
 
 #pragma once
 
+#include "sl_matter_mqtt_config.h"
 #include "sl_status.h"
-
-
-#ifndef MQTT_BROKER_ENDPOINT
-#error "MQTT_BROKER_ENDPOINT is not defined"
-#endif
-
-#ifndef MQTT_BROKER_PORT // The port of your MQTT broker
-#error "MQTT_BROKER_PORT is not defined"
-#endif
-
-#ifndef MQTT_CLIENT_PORT // The port of your MQTT client
-#define MQTT_CLIENT_PORT 5003
-#endif
-
-#ifndef MQTT_CLIENT_ID // The ID of your MQTT client
-#define MQTT_CLIENT_ID "MQTT_CLIENT_ID"
-#endif
-
-#ifndef MQTT_USERNAME // The username of your MQTT client
-#define MQTT_USERNAME "john"
-#endif
-
-#ifndef MQTT_PASSWORD // The password of your MQTT client
-#define MQTT_PASSWORD "doe"
-#endif
 
 #ifndef MQTT_TOPIC // The topic of your MQTT client
 #define MQTT_TOPIC "MQTT_TOPIC"

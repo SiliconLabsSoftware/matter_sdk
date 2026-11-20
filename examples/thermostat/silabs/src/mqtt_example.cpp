@@ -53,15 +53,15 @@ void MqttInboundDispatcher(CharSpan topic, ByteSpan payload, void * context);
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
 // Please fill in the details for your own MQTT broker.
-constexpr char kMqttBrokerEndpoint[] = MQTT_BROKER_ENDPOINT; // DNS name or IPv4 of your MQTT broker
-constexpr char kMqttTlsHostname[]      = MQTT_TLS_HOSTNAME;    // The TLS hostname of your MQTT broker
-constexpr uint16_t kMqttBrokerPort     = MQTT_BROKER_PORT;
-constexpr uint16_t kMqttClientPort     = MQTT_CLIENT_PORT;
-constexpr char kMqttClientId[]         = MQTT_CLIENT_ID;
-constexpr char kMqttUsername[]         = MQTT_USERNAME;
-constexpr char kMqttPassword[]         = MQTT_PASSWORD;
-constexpr char kMqttTopic[]            = MQTT_TOPIC;
-constexpr char kMqttPublishMessage[]   = MQTT_PUBLISH_MESSAGE;
+constexpr char kMqttBrokerEndpoint[] = SL_MATTER_MQTT_BROKER_ENDPOINT; // DNS name or IPv4 of your MQTT broker
+constexpr char kMqttTlsHostname[]    = SL_MATTER_MQTT_TLS_HOSTNAME; // The TLS hostname of your MQTT broker
+constexpr uint16_t kMqttBrokerPort   = SL_MATTER_MQTT_BROKER_PORT;
+constexpr uint16_t kMqttClientPort   = SL_MATTER_MQTT_CLIENT_PORT;
+constexpr char kMqttClientId[]       = SL_MATTER_MQTT_CLIENT_ID;
+constexpr char kMqttUsername[]       = SL_MATTER_MQTT_CLIENT_USERNAME;
+constexpr char kMqttPassword[]       = SL_MATTER_MQTT_CLIENT_PASSWORD;
+constexpr char kMqttTopic[]          = MQTT_TOPIC;
+constexpr char kMqttPublishMessage[] = MQTT_PUBLISH_MESSAGE;
 
 MqttClient gMqttsClient;
 
@@ -215,7 +215,7 @@ sl_status_t mqtt_client_demo_start(void)
 
         // Subscribe/Publish without an explicit QoS use MqttClientConfig::subQoS / pubQoS.
         const MqttClientConfig config = {
-            .useTls               = true,
+            .useTls               = SL_MATTER_MQTT_TLS_ENABLED,
             .clientId             = kMqttClientId,
             .username             = kMqttUsername,
             .password             = kMqttPassword,

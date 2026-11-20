@@ -16,7 +16,6 @@
  */
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-#include <sl_si91x_common_flash_intf.h>
 
 #include <cmsis_os2.h>
 #include <sl_cmsis_os2_common.h>
@@ -24,6 +23,7 @@
 #include <app/icd/server/ICDServerConfig.h>
 
 #include <lib/support/CodeUtils.h>
+#include <platform/PlatformError.h>
 #if SILABS_LOG_ENABLED
 #include "silabs_utils.h"
 #endif // SILABS_LOG_ENABLED
@@ -33,12 +33,8 @@
 
 // TODO add includes ?
 extern "C" {
-#if defined(SL_SI91X_BOARD_INIT)
-#include "rsi_board.h"
-#endif // SL_SI91X_BOARD_INIT
-
 #include "sl_si91x_hal_soc_soft_reset.h"
-
+#include "sl_si91x_common_flash.h"
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
 #include "sl_si91x_button.h"
 #include "sl_si91x_button_pin_config.h"
@@ -120,10 +116,6 @@ CHIP_ERROR SilabsPlatform::Init(void)
 #ifdef ENABLE_WSTK_LEDS
 void SilabsPlatform::InitLed(void)
 {
-    // TODO
-#if defined(SL_SI91X_BOARD_INIT)
-    RSI_Board_Init();
-#endif // SL_SI91X_BOARD_INIT
     SilabsPlatformAbstractionBase::InitLed();
 }
 
@@ -300,13 +292,44 @@ CHIP_ERROR SilabsPlatform::FlashInit()
 
 CHIP_ERROR SilabsPlatform::FlashErasePage(uint32_t addr)
 {
-    rsi_flash_erase_sector((uint32_t *) addr);
+    // SiWx917 common-flash sector size; erase length must be a multiple of 4 KB.
+    // Erase path sends only a command header; write_data is unused (nullptr).
+    constexpr uint16_t kSiWxFlashSectorSize = 4096;
+    constexpr uint8_t kFlashSectorErase     = 1;
+
+#if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
+    // Keep PS4 while the blocking NWP flash command can yield to tickless idle.
+    sl_si91x_power_manager_add_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    sl_status_t status =
+        sl_si91x_command_to_write_common_flash(addr, nullptr, kSiWxFlashSectorSize, kFlashSectorErase);
+
+#if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
+    sl_si91x_power_manager_remove_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status));
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR SilabsPlatform::FlashWritePage(uint32_t addr, const uint8_t * data, size_t size)
 {
-    rsi_flash_write((uint32_t *) addr, (unsigned char *) data, size);
+    constexpr uint8_t kFlashWrite = 0;
+
+    VerifyOrReturnError(size <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+
+#if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
+    sl_si91x_power_manager_add_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    sl_status_t status = sl_si91x_command_to_write_common_flash(addr, data, static_cast<uint16_t>(size), kFlashWrite);
+
+#if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
+    sl_si91x_power_manager_remove_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status));
     return CHIP_NO_ERROR;
 }
 

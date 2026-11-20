@@ -41,6 +41,7 @@
 #include <lib/support/CHIPMemString.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/NetworkCommissioning.h>
+#include <platform/PlatformError.h>
 #include <platform/silabs/wifi/SiWx/WifiInterfaceImpl.h>
 #include <sl_cmsis_os2_common.h>
 #include <sl_mbedtls_config.h>
@@ -67,16 +68,13 @@ extern "C" {
 #include <sl_net_constants.h>
 #include <sl_net_for_lwip.h>
 #include <sl_net_wifi_types.h>
-}
 
-#if SLI_SI91X_MCU_INTERFACE
-#include "rsi_wisemcu_hardware_setup.h"
-#endif // SLI_SI91X_MCU_INTERFACE
+#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
+#include "sl_si91x_ble.h"
+#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
+} // extern "C"
 
 #if (EXP_BOARD)
-#if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
-#include "rsi_bt_common_apis.h"
-#endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 #include "sl_board_configuration.h"
 #endif
 
@@ -754,15 +752,12 @@ CHIP_ERROR WifiInterfaceImpl::GetAccessPointInfo(NetworkCommissioning::WiFiScanR
     // TODO: Convert this to a int8
     int32_t rssi = 0;
 
-    // TODO: sl_wifi_get_wireless_info API is being deprecated with WiseConnect v4.0.x, we need to use the new API
-    // sl_wifi_get_interface_info after upgrading to WiseConnect v4.0.x
-    sl_si91x_rsp_wireless_info_t wireless_info = { 0 };
-    if (sl_wifi_get_wireless_info(&wireless_info) == SL_STATUS_OK)
+    sl_wifi_interface_info_t wireless_info = {};
+    if (sl_wifi_get_interface_info(SL_WIFI_CLIENT_INTERFACE, &wireless_info) == SL_STATUS_OK)
     {
         size_t ssid_len = strnlen(reinterpret_cast<const char *>(wireless_info.ssid), kMaxWiFiSSIDLength);
         VerifyOrReturnError(ssid_len <= kMaxWiFiSSIDLength, CHIP_ERROR_INVALID_STRING_LENGTH);
 
-        // Update wfx_rsi with values from sl_wifi_get_wireless_info
         wfx_rsi.ap_chan = static_cast<uint16_t>(wireless_info.channel_number & 0xFF);
 
         chip::ByteSpan bssidSrc(wireless_info.bssid, kWiFiBSSIDLength);
@@ -950,9 +945,9 @@ CHIP_ERROR WifiInterfaceImpl::ConfigurePowerSave(PowerSaveInterface::PowerSaveCo
     VerifyOrReturnValue(mCurrentPowerSaveConfiguration != configuration || mCurrentListenInterval != listenInterval, CHIP_NO_ERROR);
 
 #if defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
-    int32_t error = rsi_bt_power_save_profile(RSI_SLEEP_MODE_2, RSI_MAX_PSP);
-    VerifyOrReturnError(error == RSI_SUCCESS, CHIP_ERROR_INTERNAL,
-                        ChipLogError(DeviceLayer, "rsi_bt_power_save_profile failed: %" PRIu32, error));
+    sl_bt_performance_profile_t bt_profile = { .profile = ASSOCIATED_POWER_SAVE_LOW_LATENCY };
+    sl_status_t bt_status                  = sl_si91x_bt_set_performance_profile(&bt_profile);
+    VerifyOrReturnError(bt_status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(bt_status));
 #endif // defined(SLI_SI91X_ENABLE_BLE) && SLI_SI91X_ENABLE_BLE
 
     sl_wifi_performance_profile_v2_t wifi_profile = { .profile           = ConvertPowerSaveConfiguration(configuration),
