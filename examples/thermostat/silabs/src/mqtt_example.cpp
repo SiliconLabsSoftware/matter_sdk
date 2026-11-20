@@ -25,7 +25,6 @@
 #include <MatterMqttBridgeConfigImpl.h>
 #endif // SL_MATTER_ENABLE_MQTT_BRIDGE
 
-#include "cacert.h"
 #include "cmsis_os2.h"
 
 #include <lib/support/CodeUtils.h>
