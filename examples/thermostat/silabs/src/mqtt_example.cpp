@@ -57,12 +57,6 @@ constexpr char kMqttTlsCaCertificate[]     = SL_MATTER_MQTT_TLS_CA_CERTIFICATE;
 constexpr char kMqttTlsClientCertificate[] = SL_MATTER_MQTT_TLS_CLIENT_CERTIFICATE;
 constexpr char kMqttTlsClientKey[]         = SL_MATTER_MQTT_TLS_CLIENT_KEY;
 
-// Empty string means not provided; MqttClient skips zero-length credentials.
-constexpr size_t PemLength(size_t size)
-{
-    return size > 1 ? size : 0;
-}
-
 MqttClient gMqttsClient;
 
 void OnPlatformEvent(const ChipDeviceEvent * event, intptr_t /* arg */)
@@ -193,12 +187,13 @@ sl_status_t mqtt_client_demo_start(void)
             .mqttVersion          = 4,
             .cleanSession         = true,
             .willEnable           = false,
+            // Empty string means not provided; MqttClient skips zero-length credentials.
             .tlsCaCert            = reinterpret_cast<const uint8_t *>(kMqttTlsCaCertificate),
-            .tlsCaCertLen         = PemLength(sizeof(kMqttTlsCaCertificate)),
+            .tlsCaCertLen         = strnlen(kMqttTlsCaCertificate, sizeof(kMqttTlsCaCertificate)),
             .clientCert           = reinterpret_cast<const uint8_t *>(kMqttTlsClientCertificate),
-            .clientCertLen        = PemLength(sizeof(kMqttTlsClientCertificate)),
+            .clientCertLen        = strnlen(kMqttTlsClientCertificate, sizeof(kMqttTlsClientCertificate)),
             .clientKey            = reinterpret_cast<const uint8_t *>(kMqttTlsClientKey),
-            .clientKeyLen         = PemLength(sizeof(kMqttTlsClientKey)),
+            .clientKeyLen         = strnlen(kMqttTlsClientKey, sizeof(kMqttTlsClientKey)),
         };
 
         ChipLogProgress(DeviceLayer, "MQTT demo: initializing client");
