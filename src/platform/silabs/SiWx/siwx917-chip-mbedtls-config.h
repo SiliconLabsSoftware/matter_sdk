@@ -25,11 +25,15 @@
 #ifndef SIWX917_CHIP_MBEDTLS_CONFIG_EARLY
 #define SIWX917_CHIP_MBEDTLS_CONFIG_EARLY
 
+// TODO: This is a temporary fix to allow the use of TinyCrypt on the SiWx917.
+// This should be removed when this is analysed further.
+// This is only applicable to the dual stack build.
+
 // Included as TF_PSA_CRYPTO_USER_CONFIG_FILE, after sli_psa_acceleration.h
 // and before software builtins are selected. ECB stays marked accelerated
 // while sl_si91x_psa_aes is not linked, so CCM's PSA ECB call returns
 // PSA_ERROR_NOT_SUPPORTED (-134) and AES-CCM fails with -0x6080.
-#if defined(SL_MBEDTLS_USE_TINYCRYPT) && !defined(SLI_CIPHER_DEVICE_SI91X)
+#if defined(SL_MBEDTLS_USE_TINYCRYPT) && !defined(SLI_CIPHER_DEVICE_SI91X) && defined(SL_MATTER_ENABLE_DUAL_STACK)
 #undef MBEDTLS_PSA_ACCEL_ALG_ECB_NO_PADDING
 #endif
 
