@@ -16,12 +16,17 @@
  *    limitations under the License.
  */
 
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+#include <sli_watchdog_manager.h>
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+
 #include <app/clusters/ota-requestor/OTADownloader.h>
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 #include <cinttypes>
+#include <platform/silabs/BootloaderError.h>
 #include <platform/silabs/OTAImageProcessorImpl.h>
 #include <platform/silabs/SilabsConfig.h>
-#include <platform/silabs/BootloaderError.h>
 
 #if defined(SL_WIFI) && SL_WIFI
 #include <platform/silabs/wifi/ncp/spi_multiplex.h>
@@ -286,11 +291,17 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
     osDelay(100); // sl-temp: delay for uart print before verifyImage
 #endif            // _SILICON_LABS_32B_SERIES_3 && CHIP_PROGRESS_LOGGING
     LockRadioProcessing();
+#ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+    sli_watchdog_manager_hal_disable(); // Disable the watchdog to avoid it from triggering during the verifyImage call.
+#endif                                  // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
 #if defined(SL_TRUSTZONE_NONSECURE)
     WRAP_BL_DFU_CALL(err = bootloader_verifyImage(mSlotId))
 #else
     WRAP_BL_DFU_CALL(err = bootloader_verifyImage(mSlotId, NULL))
 #endif
+#ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+    sli_watchdog_manager_hal_enable(); // Re-enable the watchdog.
+#endif                                 // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
     UnlockRadioProcessing();
 
     if (err != SL_BOOTLOADER_OK)
