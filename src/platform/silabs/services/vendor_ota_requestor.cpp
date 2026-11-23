@@ -66,6 +66,15 @@ VendorOTARequestor gVendorOTARequestor;
 constexpr CharSpan kHttpsScheme     = "https://"_span;
 constexpr uint16_t kDefaultHttpsPort = 443;
 
+constexpr char kHttpTlsCaCertificate[] = SL_MATTER_HTTP_TLS_CA_CERTIFICATE;
+
+// Empty string -> 0 (unused); otherwise include the trailing NUL for PEM parsers.
+size_t PemCredentialLen(const char * pem, size_t maxLen)
+{
+    const size_t len = strnlen(pem, maxLen);
+    return len == 0 ? 0 : len + 1;
+}
+
 bool FindFirst(CharSpan span, char ch, size_t & outIndex)
 {
     for (size_t i = 0; i < span.size(); ++i)
@@ -260,15 +269,14 @@ CHIP_ERROR VendorOTARequestor::EnsureHttpClientStarted()
         }
     }
 
-    const char * caPem  = SL_MATTER_HTTP_TLS_CA_CERTIFICATE;
-    const size_t caLen  = strlen(caPem);
-    const char * user   = SL_MATTER_HTTP_CLIENT_USERNAME;
-    const char * pass   = SL_MATTER_HTTP_CLIENT_PASSWORD;
+    const char * user = SL_MATTER_HTTP_CLIENT_USERNAME;
+    const char * pass = SL_MATTER_HTTP_CLIENT_PASSWORD;
+    const size_t caLen = PemCredentialLen(kHttpTlsCaCertificate, sizeof(kHttpTlsCaCertificate));
     const HttpClientConfig config = {
         .httpsEnable  = true,
         .username     = (user[0] != '\0') ? user : nullptr,
         .password     = (pass[0] != '\0') ? pass : nullptr,
-        .tlsCaCert    = (caLen > 0) ? reinterpret_cast<const uint8_t *>(caPem) : nullptr,
+        .tlsCaCert    = (caLen > 0) ? reinterpret_cast<const uint8_t *>(kHttpTlsCaCertificate) : nullptr,
         .tlsCaCertLen = caLen,
     };
 
