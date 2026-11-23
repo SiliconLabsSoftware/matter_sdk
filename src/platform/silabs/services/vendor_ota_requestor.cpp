@@ -37,8 +37,20 @@
 #ifndef SL_MATTER_HTTPS_OTA_DEFAULT_URL
 #define SL_MATTER_HTTPS_OTA_DEFAULT_URL ""
 #endif
+#ifndef SL_MATTER_HTTP_TLS_ENABLED
+#define SL_MATTER_HTTP_TLS_ENABLED 1
+#endif
+#ifndef SL_MATTER_HTTP_TLS_HOSTNAME
+#define SL_MATTER_HTTP_TLS_HOSTNAME ""
+#endif
 #ifndef SL_MATTER_HTTP_TLS_CA_CERTIFICATE
 #define SL_MATTER_HTTP_TLS_CA_CERTIFICATE ""
+#endif
+#ifndef SL_MATTER_HTTP_CLIENT_USERNAME
+#define SL_MATTER_HTTP_CLIENT_USERNAME ""
+#endif
+#ifndef SL_MATTER_HTTP_CLIENT_PASSWORD
+#define SL_MATTER_HTTP_CLIENT_PASSWORD ""
 #endif
 
 using namespace chip::app::Clusters::OtaSoftwareUpdateRequestor;
@@ -202,8 +214,17 @@ CHIP_ERROR VendorOTARequestor::ComposeImageUri(CharSpan uri, MutableCharSpan & s
     }
 
     VerifyOrReturnError(host.size() > 0 && host.size() < HttpsDownloader::kMaxHostLen, CHIP_ERROR_INVALID_ARGUMENT);
-    ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(host, tlsHostname));
     ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(host, serverEndpoint));
+
+    // Optional compile-time SNI / Host override (e.g. URL uses IPv4, cert uses DNS name).
+    if (SL_MATTER_HTTP_TLS_HOSTNAME[0] != '\0')
+    {
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(CharSpan::fromCharString(SL_MATTER_HTTP_TLS_HOSTNAME), tlsHostname));
+    }
+    else
+    {
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(host, tlsHostname));
+    }
 
     if (pathSpan.size() > 0)
     {
@@ -242,10 +263,14 @@ CHIP_ERROR VendorOTARequestor::EnsureHttpClientStarted()
         }
     }
 
-    const char * caPem   = SL_MATTER_HTTP_TLS_CA_CERTIFICATE;
-    const size_t caLen   = strlen(caPem);
+    const char * caPem  = SL_MATTER_HTTP_TLS_CA_CERTIFICATE;
+    const size_t caLen  = strlen(caPem);
+    const char * user   = SL_MATTER_HTTP_CLIENT_USERNAME;
+    const char * pass   = SL_MATTER_HTTP_CLIENT_PASSWORD;
     const HttpClientConfig config = {
-        .httpsEnable  = true,
+        .httpsEnable  = (SL_MATTER_HTTP_TLS_ENABLED != 0),
+        .username     = (user[0] != '\0') ? user : nullptr,
+        .password     = (pass[0] != '\0') ? pass : nullptr,
         .tlsCaCert    = (caLen > 0) ? reinterpret_cast<const uint8_t *>(caPem) : nullptr,
         .tlsCaCertLen = caLen,
     };
