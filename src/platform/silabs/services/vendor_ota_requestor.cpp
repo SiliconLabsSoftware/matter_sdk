@@ -37,9 +37,6 @@
 #ifndef SL_MATTER_HTTPS_OTA_DEFAULT_URL
 #define SL_MATTER_HTTPS_OTA_DEFAULT_URL ""
 #endif
-#ifndef SL_MATTER_HTTP_TLS_ENABLED
-#define SL_MATTER_HTTP_TLS_ENABLED 1
-#endif
 #ifndef SL_MATTER_HTTP_TLS_HOSTNAME
 #define SL_MATTER_HTTP_TLS_HOSTNAME ""
 #endif
@@ -268,7 +265,7 @@ CHIP_ERROR VendorOTARequestor::EnsureHttpClientStarted()
     const char * user   = SL_MATTER_HTTP_CLIENT_USERNAME;
     const char * pass   = SL_MATTER_HTTP_CLIENT_PASSWORD;
     const HttpClientConfig config = {
-        .httpsEnable  = (SL_MATTER_HTTP_TLS_ENABLED != 0),
+        .httpsEnable  = true,
         .username     = (user[0] != '\0') ? user : nullptr,
         .password     = (pass[0] != '\0') ? pass : nullptr,
         .tlsCaCert    = (caLen > 0) ? reinterpret_cast<const uint8_t *>(caPem) : nullptr,
