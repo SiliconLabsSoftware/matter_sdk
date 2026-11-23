@@ -20,7 +20,6 @@
 
 #include "AppEvent.h"
 #include "BaseApplication.h"
-#include "https_offload_example.h"
 
 #include <cinttypes>
 #include <cstring>
@@ -48,9 +47,8 @@ size_t gPendingOtaUrlLen = 0;
 
 void HttpsOtaUrlAppEvent(AppEvent * /* aEvent */)
 {
-    // HttpClient + AppDelegate are registered from StartMatterServicesAppEvent /
-    // https_client_demo_start on connectivity. StartUpdate fails with incorrect-state
-    // if the client is not running yet (same contract as the periodic check).
+    // HttpClient Start+Init runs from VendorOTARequestor on connectivity.
+    // StartUpdate fails with incorrect-state if the client is not ready yet.
     CHIP_ERROR schedErr = chip::DeviceLayer::SystemLayer().ScheduleLambda([] {
         CHIP_ERROR err =
             chip::VendorOTARequestor::GetInstance().StartUpdate(chip::CharSpan(gPendingOtaUrl, gPendingOtaUrlLen));
@@ -94,7 +92,7 @@ CHIP_ERROR HttpsOtaSetPeriodicUrl(const char * url)
     VerifyOrReturnError(url != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
     const size_t len = strlen(url);
     VerifyOrReturnError(len > 0 && len < HttpsDownloader::kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
-    return HttpsOtaAppSetPeriodicUrl(CharSpan(url, len));
+    return VendorOTARequestor::GetInstance().SetPeriodicUrl(CharSpan(url, len));
 }
 
 CHIP_ERROR HttpsOtaStatusCommand(void)

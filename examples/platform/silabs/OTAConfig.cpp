@@ -199,8 +199,7 @@ void OTAConfig::Init()
 
     chip::VendorOTARequestor::GetInstance().Init(gHttpsDownloader, imageProcessor, gRequestorCore, gDownloader, gRequestorStorage,
                                                  gVendorGate, gVendorDriver);
-    // Starts periodic timer + registers connectivity event handler.
-    // App binds HttpClient / UriComposer via VendorOTARequestor::SetHttpClient / SetAppDelegate.
+    // Starts periodic timer + registers connectivity event handler (HttpClient start/init).
     gVendorDriver.Init(&chip::VendorOTARequestor::GetInstance());
 #endif // SL_MATTER_ENABLE_HTTPS_OTA
     sInitialized = true;
