@@ -113,6 +113,34 @@ CHIP_ERROR EncodeTlv(MutableByteSpan & buffer, const Ts &... values)
     return CHIP_NO_ERROR;
 }
 
+namespace detail {
+
+template <typename... Ts>
+CHIP_ERROR Request(EndpointId endpoint, ClusterId cluster, CommandId command, System::Clock::Milliseconds32 timeout,
+                   Protocols::InteractionModel::Status & hostStatus, MutableByteSpan & response, const mmic_bulk_sink_t * bulk,
+                   uint32_t & bulkLength, const Ts &... params)
+{
+    VerifyOrReturnError(response.size() <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+
+    Platform::ScopedMemoryBuffer<uint8_t> buffer;
+    VerifyOrReturnError(buffer.Alloc(kMaxParamsSize), CHIP_ERROR_NO_MEMORY);
+    MutableByteSpan encoded(buffer.Get(), kMaxParamsSize);
+    ReturnErrorOnFailure(EncodeTlv(encoded, params...));
+
+    uint8_t status       = 0;
+    uint16_t responseLen = 0;
+    bulkLength           = 0;
+    ReturnErrorOnFailure(ToChipError(mmic_request_cluster_command_bulk(
+        endpoint, cluster, command, encoded.data(), static_cast<uint16_t>(encoded.size()), timeout.count(), &status,
+        response.data(), static_cast<uint16_t>(response.size()), &responseLen, bulk, (bulk != nullptr) ? &bulkLength : nullptr)));
+
+    hostStatus = static_cast<Protocols::InteractionModel::Status>(status);
+    response.reduce_size(responseLen);
+    return CHIP_NO_ERROR;
+}
+
+} // namespace detail
+
 /// Forwards a cluster command to the host without waiting for an answer.
 /// params are encoded, in order, as anonymous TLV elements.
 template <typename... Ts>
@@ -134,22 +162,27 @@ CHIP_ERROR RequestClusterCommand(EndpointId endpoint, ClusterId cluster, Command
                                  Protocols::InteractionModel::Status & hostStatus, MutableByteSpan & response,
                                  const Ts &... params)
 {
-    VerifyOrReturnError(response.size() <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+    uint32_t bulkLength = 0;
+    return detail::Request(endpoint, cluster, command, timeout, hostStatus, response, nullptr, bulkLength, params...);
+}
 
-    Platform::ScopedMemoryBuffer<uint8_t> buffer;
-    VerifyOrReturnError(buffer.Alloc(kMaxParamsSize), CHIP_ERROR_NO_MEMORY);
-    MutableByteSpan encoded(buffer.Get(), kMaxParamsSize);
-    ReturnErrorOnFailure(EncodeTlv(encoded, params...));
-
-    uint8_t status       = 0;
-    uint16_t responseLen = 0;
-    ReturnErrorOnFailure(ToChipError(mmic_request_cluster_command(
-        endpoint, cluster, command, encoded.data(), static_cast<uint16_t>(encoded.size()), timeout.count(), &status,
-        response.data(), static_cast<uint16_t>(response.size()), &responseLen)));
-
-    hostStatus = static_cast<Protocols::InteractionModel::Status>(status);
-    response.reduce_size(responseLen);
-    return CHIP_NO_ERROR;
+/// Same as RequestClusterCommand(), the host may also send a large answer with bulk_data frames.
+/// allocBulk(uint32_t totalLength) returns the destination buffer (uint8_t *), or nullptr to refuse
+/// the transfer. It runs on the MMIC task while the caller is blocked: it must not block nor take
+/// the Matter stack lock. timeout is the longest time without progress. bulkLength is the size of
+/// the bulk data received (0 when the host sent none).
+template <typename AllocBulk, typename... Ts>
+CHIP_ERROR RequestClusterCommandWithBulk(EndpointId endpoint, ClusterId cluster, CommandId command,
+                                         System::Clock::Milliseconds32 timeout, Protocols::InteractionModel::Status & hostStatus,
+                                         MutableByteSpan & response, AllocBulk & allocBulk, uint32_t & bulkLength,
+                                         const Ts &... params)
+{
+    mmic_bulk_sink_t sink;
+    sink.alloc   = [](void * context, uint32_t totalLength) -> uint8_t * {
+        return (*static_cast<AllocBulk *>(context))(totalLength);
+    };
+    sink.context = &allocBulk;
+    return detail::Request(endpoint, cluster, command, timeout, hostStatus, response, &sink, bulkLength, params...);
 }
 
 /// Notifies the host that an attribute changed, with its new value encoded as one anonymous TLV element.

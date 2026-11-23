@@ -22,7 +22,9 @@
 #include "mmic.h"
 #include "mmic_cluster_names.h"
 
+#include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
@@ -33,6 +35,9 @@
 namespace {
 
 constexpr int kReadPollTimeoutMs = 200;
+
+// A 2 KB chunk takes about 180 ms at 115200 baud.
+constexpr std::chrono::milliseconds kBulkAckTimeout(2000);
 
 const char * NameOrUnknown(const char * name)
 {
@@ -187,6 +192,14 @@ void MmicLink::OnBytes(const uint8_t * data, size_t length)
             continue;
         }
 
+        // Handled right away: the dispatcher thread may be the one waiting for it.
+        if (frame[0] == MMIC_HEADER_ANS && frame[MMIC_OFFSET_OP] == bulk_data)
+        {
+            OnBulkAck(frame, frameLength);
+            start += frameLength;
+            continue;
+        }
+
         {
             std::lock_guard<std::mutex> lock(mQueueMutex);
             mQueue.emplace_back(frame, frame + frameLength);
@@ -312,6 +325,84 @@ bool MmicLink::SendAnswer(uint16_t transactionId, uint8_t status, const std::vec
     std::memcpy(payload.data(), &header, sizeof(header));
     payload.insert(payload.end(), data.begin(), data.end());
     return SendFrame(MMIC_HEADER_ANS, cluster_command, payload);
+}
+
+bool MmicLink::SendBulk(uint16_t transactionId, const std::vector<uint8_t> & data, uint8_t & mmicError)
+{
+    constexpr size_t kChunkSize = kMaxFrameSize - MMIC_PACKET_OVERHEAD - sizeof(bulkDataHeader_t);
+    const auto start            = std::chrono::steady_clock::now();
+
+    mmicError = MMIC_ERROR_OK;
+    if (data.empty() || data.size() > UINT32_MAX)
+    {
+        mmicError = MMIC_ERROR_INVALID_ARG;
+        return false;
+    }
+
+    for (size_t offset = 0; offset < data.size(); offset += kChunkSize)
+    {
+        const size_t length = std::min(kChunkSize, data.size() - offset);
+
+        bulkDataHeader_t header;
+        header.transactionId = transactionId;
+        header.totalLength   = static_cast<uint32_t>(data.size());
+        header.offset        = static_cast<uint32_t>(offset);
+
+        std::vector<uint8_t> payload(sizeof(header));
+        std::memcpy(payload.data(), &header, sizeof(header));
+        payload.insert(payload.end(), data.begin() + static_cast<std::ptrdiff_t>(offset),
+                       data.begin() + static_cast<std::ptrdiff_t>(offset + length));
+
+        {
+            std::lock_guard<std::mutex> lock(mBulkMutex);
+            mBulkAckReceived = false;
+        }
+        if (!SendFrame(MMIC_HEADER_CMD, bulk_data, payload))
+        {
+            mmicError = MMIC_ERROR_TRANSPORT;
+            return false;
+        }
+
+        std::unique_lock<std::mutex> lock(mBulkMutex);
+        if (!mBulkCondition.wait_for(lock, kBulkAckTimeout, [&] { return mBulkAckReceived && mBulkAckTid == transactionId; }))
+        {
+            LogError("Bulk transfer %u: no acknowledgement at offset %zu", transactionId, offset);
+            mmicError = MMIC_ERROR_TIMEOUT;
+            return false;
+        }
+        if (mBulkAckStatus != MMIC_ERROR_OK)
+        {
+            LogError("Bulk transfer %u: refused by the SoC at offset %zu, error %u", transactionId, offset,
+                     static_cast<unsigned>(mBulkAckStatus));
+            mmicError = mBulkAckStatus;
+            return false;
+        }
+    }
+
+    const auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
+    LogInfo("Bulk transfer %u: %zu bytes sent in %lld ms", transactionId, data.size(), static_cast<long long>(elapsedMs));
+    return true;
+}
+
+void MmicLink::OnBulkAck(const uint8_t * frame, uint16_t length)
+{
+    mmic_command_id_e opcode = INVALID_COMMAND_ID;
+    const uint8_t * payload  = nullptr;
+    uint16_t payloadLength   = 0;
+    if (mmic_deserialize_packet(frame, length, MMIC_HEADER_ANS, &opcode, &payload, &payloadLength) != MMIC_ERROR_OK ||
+        payloadLength < sizeof(bulkDataAnswerHeader_t))
+    {
+        return;
+    }
+    bulkDataAnswerHeader_t answer;
+    std::memcpy(&answer, payload, sizeof(answer));
+    {
+        std::lock_guard<std::mutex> lock(mBulkMutex);
+        mBulkAckReceived = true;
+        mBulkAckTid      = answer.transactionId;
+        mBulkAckStatus   = answer.status;
+    }
+    mBulkCondition.notify_all();
 }
 
 bool MmicLink::SendClusterCommand(uint16_t endpointId, uint32_t clusterId, uint32_t commandId,

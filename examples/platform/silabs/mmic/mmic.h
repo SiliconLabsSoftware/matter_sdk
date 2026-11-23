@@ -91,7 +91,8 @@ static inline mmic_error_t mmic_write_length(uint8_t * pkt, uint16_t len)
     X(removeWakeUp, "Remove a wake-up trigger (usage: removeWakeUp <clusterId> <attributeId>)", 1, wakeUpRemoveArgs_t)\
     X(wakeUpList, "List active wake-up triggers", 0, uint8_t)\
     X(cluster_command, "Cluster command exchanged between the SoC and the host (both directions)", 0, uint8_t)\
-    X(attribute_changed, "(SoC -> host) Forwarded attribute change notification", 0, uint8_t)
+    X(attribute_changed, "(SoC -> host) Forwarded attribute change notification", 0, uint8_t)\
+    X(bulk_data, "(host -> SoC) Chunk of a large cluster_command answer", 0, uint8_t)
 
 // Frames can be initiated by either side: MMIC_HEADER_CMD carries a request and
 // MMIC_HEADER_ANS the answer to it, using the same op code.
@@ -210,6 +211,28 @@ struct __attribute__((packed)) attributeChangedHeader_t
     uint16_t endpointId;
     uint32_t clusterId;
     uint32_t attributeId;
+};
+
+// bulk_data request (host -> SoC, MMIC_HEADER_CMD), little-endian, packed. Carries data too
+// large for one frame, in order, before the cluster_command answer of the same transaction:
+//   1. The host sends the chunks one at a time; offset is the number of bytes already sent.
+//   2. The SoC acknowledges each chunk with a bulk_data answer. A non-OK status aborts the
+//      transfer: the host then answers the cluster_command with an error status.
+//   3. The host sends the cluster_command answer (status and small TLV response data).
+// Only accepted while the SoC waits for the answer of that transaction with a bulk sink.
+// Followed by the chunk data.
+struct __attribute__((packed)) bulkDataHeader_t
+{
+    uint16_t transactionId; // transactionId of the cluster_command being answered
+    uint32_t totalLength;   // Same value in every chunk
+    uint32_t offset;
+};
+
+// bulk_data answer (SoC -> host, MMIC_HEADER_ANS), little-endian, packed.
+struct __attribute__((packed)) bulkDataAnswerHeader_t
+{
+    uint16_t transactionId;
+    uint8_t  status; // mmic_error_t
 };
 
 typedef struct mmic

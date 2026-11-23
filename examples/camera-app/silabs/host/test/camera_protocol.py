@@ -121,6 +121,11 @@ REQUESTOR_NODE_ID = 0x1122334455667788
 REQUESTOR_ENDPOINT = 1
 FABRIC_INDEX = 1
 
+# Approximate image size limits the SoC sends with CaptureSnapshot (the SoC logs the exact value):
+# TCP session with the 40 KB large buffers of the Wi-Fi camera app, or MRP session (single UDP packet).
+SNAPSHOT_MAX_SIZE_TCP = 40000
+SNAPSHOT_MAX_SIZE_MRP = 1000
+
 
 def _resolution(writer: Writer, tag: int, width: int, height: int):
     writer.start_struct(tag).put_uint(0, width).put_uint(1, height).end()
@@ -182,14 +187,15 @@ def set_stream_priorities(usages: Sequence[int]) -> bytes:
     return w.end().end().data()
 
 
-def capture_snapshot(stream_id: Optional[int], resolution=(640, 480)) -> bytes:
+def capture_snapshot(stream_id: Optional[int], resolution=(640, 480), max_size: int = SNAPSHOT_MAX_SIZE_TCP) -> bytes:
+    """CaptureSnapshot request, then the largest image the SoC can return (uint32, added by the SoC)."""
     w = Writer().start_struct()
     if stream_id is None:
         w.put_null(0)
     else:
         w.put_uint(0, stream_id)
     _resolution(w, 1, *resolution)
-    return w.end().data()
+    return w.end().put_uint(None, max_size).data()
 
 
 def mptz(pan: Optional[int] = None, tilt: Optional[int] = None, zoom: Optional[int] = None) -> bytes:

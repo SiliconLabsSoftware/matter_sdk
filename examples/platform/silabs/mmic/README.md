@@ -116,6 +116,17 @@ network:
     none). It runs on the MMIC task and must not block.
 - `attribute_changed` (device to host): `attributeChangedHeader_t` (endpoint,
   cluster, attribute) followed by the new value as Matter TLV. No answer.
+- `bulk_data` (host to device): `bulkDataHeader_t` (transaction id, total
+  length, offset) followed by a chunk of data too large for one frame. The host
+  sends the chunks in order, before the answer to the `cluster_command` of that
+  transaction, and waits for each `bulkDataAnswerHeader_t` (transaction id,
+  `mmic_error_t` status) before sending the next one. A non-OK status aborts the
+  transfer, the host then answers with an error status. Only accepted while the
+  device waits with `mmic_request_cluster_command_bulk()` (or
+  `RequestClusterCommandWithBulk()`): its sink allocates the destination buffer
+  on the first chunk and may refuse the transfer (`MMIC_ERROR_NO_MEMORY`). The
+  answer timeout is then the longest time without progress. The camera app uses
+  it for the snapshot images.
 
 The device API is in `mmic_forward.h` (C) and `mmic_matter_forward.h` (typed
 C++ helpers encoding Matter types as TLV). `mmic_host` currently only prints
@@ -126,8 +137,8 @@ handles these messages, is in
 [examples/camera-app/silabs/host](../../../camera-app/silabs/host/README.md).
 
 MMIC frames are limited to a few kilobytes (2048 bytes over the raw UART
-transport): it is a control link, large payloads such as images must use
-another path.
+transport, the host must not send larger frames). Data above that size goes
+with `bulk_data`, at the speed of the link (about 11 kB/s at 115200 baud).
 
 Application specific request op codes are handled by implementing
 `mmic_app_handle_command()` (see `mmic_wake_on_matter.cpp`).

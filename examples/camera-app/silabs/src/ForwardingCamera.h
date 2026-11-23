@@ -26,6 +26,7 @@
 #include <system/SystemLayer.h>
 
 #include <map>
+#include <optional>
 #include <vector>
 
 namespace chip {
@@ -163,6 +164,23 @@ private:
         EndpointId peerEndpointId = kInvalidEndpointId;
     };
 
+    /// Records whether the session of a CaptureSnapshot allows large payloads (TCP), which the
+    /// delegate cannot see, to bound the image to what the CaptureSnapshotResponse can carry.
+    class AvStreamManagementCluster : public Clusters::CameraAvStreamManagement::CameraAVStreamManagementCluster
+    {
+    public:
+        using CameraAVStreamManagementCluster::CameraAVStreamManagementCluster;
+
+        std::optional<DataModel::ActionReturnStatus> InvokeCommand(const DataModel::InvokeRequest & request,
+                                                                   TLV::TLVReader & input_arguments,
+                                                                   CommandHandler * handler) override;
+
+        bool SnapshotSessionAllowsLargePayload() const { return mSnapshotLargePayload; }
+
+    private:
+        bool mSnapshotLargePayload = false;
+    };
+
     void FillSession(const OfferRequestArgs & args, WebRTCSessionStruct & outSession);
     void ReleaseSessionStreams(uint16_t sessionId);
     void ForwardAttributeChange(AttributeId attributeId);
@@ -175,7 +193,7 @@ private:
 
     static ForwardingCamera * sInstance;
 
-    LazyRegisteredServerCluster<Clusters::CameraAvStreamManagement::CameraAVStreamManagementCluster> mAvStreamManagementCluster;
+    LazyRegisteredServerCluster<AvStreamManagementCluster> mAvStreamManagementCluster;
     LazyRegisteredServerCluster<Clusters::WebRTCTransportProvider::WebRTCTransportProviderCluster> mWebRTCTransportProviderCluster;
     LazyRegisteredServerCluster<Clusters::CameraAvSettingsUserLevelManagementCluster> mAvSettingsCluster;
     AvSettingsDelegate mAvSettingsDelegate{ *this };

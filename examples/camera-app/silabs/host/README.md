@@ -156,8 +156,8 @@ client through the SoC.
 | --------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | VideoStreamAllocate         | H.264 only (`CONSTRAINT_ERROR` otherwise). Encodes the largest resolution of the requested range up to 1280x720 and up to 30 fps, `RESOURCE_EXHAUSTED` when the range is above. One video stream at a time (`RESOURCE_EXHAUSTED`). |
 | AudioStreamAllocate         | Opus, 1 or 2 channels, 8 to 48 kHz. `RESOURCE_EXHAUSTED` when no microphone is detected.                     |
-| SnapshotStreamAllocate      | JPEG only. Accepted, but snapshots are not captured yet.                                                       |
-| CaptureSnapshot             | Not implemented yet: `UNSUPPORTED_COMMAND`.                                                                    |
+| SnapshotStreamAllocate      | JPEG only (`CONSTRAINT_ERROR` otherwise). The maximum resolution and quality are used by CaptureSnapshot.     |
+| CaptureSnapshot             | JPEG image, see [Snapshots](#snapshots). `NOT_FOUND` for an unknown stream, `RESOURCE_EXHAUSTED` when the image cannot fit the size limit of the SoC. |
 | Video/SnapshotStreamModify  | Watermark and OSD are not supported (`CONSTRAINT_ERROR`).                                                      |
 | *StreamDeallocate           | Stops the stream.                                                                                              |
 | SetStreamPriorities         | Accepted.                                                                                                      |
@@ -191,6 +191,39 @@ closed by the peer, the host sends `End` to the requestor through the SoC.
 | DPTZSetViewport         | Crops the video stream to the viewport.                     |
 | DPTZRelativeMove        | Crops the video stream to the viewport resolved by the SoC. |
 
+## Snapshots
+
+The Matter specification carries the image in the `Data` field of the
+CaptureSnapshotResponse: the whole image is one Matter message, sent by the SoC.
+
+1.  The SoC forwards CaptureSnapshot with the largest image the response can
+    carry on the session of the client: about 40 kB on a TCP session (Wi-Fi
+    app, set by `CHIP_SYSTEM_CONFIG_MAX_LARGE_BUFFER_SIZE_BYTES` in
+    `include/CHIPProjectConfig.h`), about 1 kB on an MRP (UDP) session, the only
+    one available on Thread. The SoC logs the exact limit.
+2.  The host takes the latest frame of the running video stream, or starts the
+    camera for a few frames when there is none. It encodes a JPEG image at the
+    requested resolution, capped by the maximum resolution of the snapshot
+    stream, with the quality of the stream. Until the image fits the limit, the
+    quality is lowered (60, 40, 20), then the resolution is halved (down to 80
+    pixels wide). `RESOURCE_EXHAUSTED` is returned when it never fits.
+3.  The image is sent to the SoC with MMIC `bulk_data` frames (2 kB chunks, each
+    acknowledged by the SoC), then the answer carries the codec and resolution.
+    The SoC returns the image to the client in the CaptureSnapshotResponse.
+
+At 115200 baud the link carries about 11 kB/s: a 40 kB image takes about 4
+seconds, during which the Matter thread of the SoC is blocked.
+
+With chip-tool (Wi-Fi SoC, TCP session):
+
+```sh
+chip-tool cameraavstreammanagement snapshot-stream-allocate 0 30 '{"width":640,"height":480}' '{"width":640,"height":480}' 90 ${NODE} 1
+chip-tool cameraavstreammanagement capture-snapshot null '{"width":640,"height":480}' ${NODE} 1 --allow-large-payload 1 --timeout 20
+```
+
+Without `--allow-large-payload 1`, chip-tool uses MRP and gets a much smaller
+image, or `RESOURCE_EXHAUSTED`.
+
 ## Example: live view
 
 The `camera-controller` example of the Matter SDK
@@ -220,15 +253,16 @@ or view the stream from a PC.
 
 ## Limitations
 
--   **Matter message size**: the Silabs SoCs build Matter without TCP, so every
-    command must fit in a single Matter message (about 1.1 kB). The host removes
-    the ICE candidates from the SDP and sends them in batches, but an SDP offer or
-    answer (camera or controller side) can still exceed that size: the SoC then
-    fails to send or receive it. The host logs a warning for SDPs above 1000
-    bytes.
--   **Snapshots**: `CaptureSnapshot` is not implemented. An image does not fit in
-    a Matter message without TCP, and the MMIC UART link is not meant for large
-    payloads.
+-   **Matter message size**: the Thread camera app builds Matter without TCP, so
+    every command must fit in a single Matter message (about 1.1 kB). The Wi-Fi
+    app enables TCP for large messages, but a controller may still use MRP (UDP).
+    The host removes the ICE candidates from the SDP and sends them in batches,
+    but an SDP offer or answer (camera or controller side) can still exceed that
+    size: the SoC then fails to send or receive it. The host logs a warning for
+    SDPs above 1000 bytes.
+-   **Snapshots**: limited to what one CaptureSnapshotResponse can carry, see
+    [Snapshots](#snapshots). The one-frame capture used without a video stream
+    does not apply the viewport.
 -   **Encoding**: software H.264 (`x264enc`), one video stream at a time, up to
     1280x720 at 30 fps.
 -   **Audio**: capture only (no speaker, no two-way talk), requires a microphone

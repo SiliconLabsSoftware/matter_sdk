@@ -99,14 +99,17 @@ The tester reads the MMIC op codes from
 3. **Run Test Suite** runs every test one by one. Each line shows ✅ when
    `camera_host` answers with the expected status, ❌ otherwise with the expected
    and received status. The last line reads, for example,
-   `36 of 36 commands succeeded`. The video panel shows the stream while the
+   `41 of 41 commands succeeded`. The video panel shows the stream while the
    WebRTC tests run.
 4. **Start Stream** allocates a video stream (and an audio stream with a
    microphone), opens a WebRTC session (camera offer) and displays the video.
    **Stop Stream** ends the session and releases the streams.
-5. **Take Snapshot** allocates a snapshot stream and sends `CaptureSnapshot`.
-   The image is displayed when `camera_host` returns one. Snapshots are not
-   implemented by `camera_host` yet: the panel shows `UNSUPPORTED_COMMAND`.
+5. **Take Snapshot** allocates a snapshot stream and sends `CaptureSnapshot`
+   with the size limit set next to the button (40000 bytes by default, about
+   what the Wi-Fi SoC accepts over TCP; set about 1000 to mimic an MRP
+   session). The image is displayed with its resolution, size and capture time.
+   The image comes from the video stream when one runs (**Start Stream**),
+   otherwise `camera_host` starts the camera for it.
 
 Each test suite run starts and ends by releasing the streams it uses. Disconnect
 before starting another tester: `camera_host` restarts for every connection.
@@ -115,7 +118,7 @@ before starting another tester: `camera_host` restarts for every connection.
 
 The expected statuses follow the current `camera_host` behavior (see
 [../README.md](../README.md#supported-commands)). Update `test_suite.py` when
-`camera_host` changes, for example when snapshots get implemented.
+`camera_host` changes.
 
 | Test                                                    | Expected                                        |
 | ------------------------------------------------------- | ----------------------------------------------- |
@@ -127,7 +130,11 @@ The expected statuses follow the current `camera_host` behavior (see
 | VideoStreamModify / with watermark                      | `SUCCESS` / `CONSTRAINT_ERROR`                  |
 | AudioStreamAllocate                                     | `SUCCESS` with a microphone, `RESOURCE_EXHAUSTED` without |
 | SnapshotStreamAllocate JPEG / HEIC                      | `SUCCESS` / `CONSTRAINT_ERROR`                  |
-| CaptureSnapshot                                         | `UNSUPPORTED_COMMAND` (not implemented yet)     |
+| CaptureSnapshot, 40000 bytes limit (from the video stream) | `SUCCESS`, JPEG image within the limit and the requested 640x480 |
+| CaptureSnapshot, 1000 bytes limit (MRP)                 | `SUCCESS` with a small image, or `RESOURCE_EXHAUSTED` |
+| CaptureSnapshot, 200 bytes limit                        | `RESOURCE_EXHAUSTED` (no JPEG image is that small) |
+| CaptureSnapshot, image refused by the SoC               | `RESOURCE_EXHAUSTED` (the tester refuses the first `bulk_data` chunk) |
+| CaptureSnapshot unknown stream                          | `NOT_FOUND`                                     |
 | DPTZSetViewport, DPTZRelativeMove                       | `SUCCESS`, `NOT_FOUND` for an unknown stream    |
 | MPTZSetPosition, RelativeMove, MoveToPreset, SavePreset, RemovePreset | `UNSUPPORTED_COMMAND` (no mechanical PTZ) |
 | SolicitOffer, ProvideAnswer, ProvideICECandidates, EndSession | `SUCCESS`                                  |
@@ -136,10 +143,12 @@ The expected statuses follow the current `camera_host` behavior (see
 | Answer and video received (requestor offer)             | Received from `camera_host` in time             |
 | ProvideAnswer unknown session                           | `NOT_FOUND`                                     |
 | SolicitOffer unallocated stream                         | `NOT_FOUND`                                     |
-| Video, Audio, SnapshotStreamDeallocate                  | `SUCCESS`                                       |
+| Video, AudioStreamDeallocate                            | `SUCCESS`                                       |
+| CaptureSnapshot, no video stream (camera started)       | `SUCCESS`, JPEG image                           |
+| SnapshotStreamDeallocate                                | `SUCCESS`                                       |
 
 The signaling checks wait up to 10 seconds, the video checks up to 20 seconds
-(pipeline start and WebRTC connection).
+(pipeline start and WebRTC connection), the snapshots up to 15 seconds.
 
 ## Troubleshooting
 

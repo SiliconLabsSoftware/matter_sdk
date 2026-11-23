@@ -465,6 +465,8 @@ uint8_t parseAndRunCommand(uint8_t * buffer, uint16_t len, uint8_t ** response, 
             break;
         case cluster_command:
             return mmic_forward_handle_request(payload, payloadLen, response, packetSize);
+        case bulk_data:
+            return mmic_forward_handle_bulk_data(payload, payloadLen, response, packetSize);
         default:
             return mmic_app_handle_command(opcode, payload, payloadLen, response, packetSize);
     };

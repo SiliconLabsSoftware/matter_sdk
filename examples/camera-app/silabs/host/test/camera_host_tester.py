@@ -36,7 +36,6 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel, QLine
 
 import camera_protocol as proto
 from camera_tester import MEDIA_TIMEOUT, CameraTester
-from matter_tlv import TlvError, decode
 from requestor import RequestorSession
 from test_suite import AUDIO_STREAM, SNAPSHOT_STREAM, VIDEO_STREAM, TestResult, TestSuite
 
@@ -45,7 +44,7 @@ FAILED = "\u274C"
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, snapshot_max_size: int):
         super().__init__()
         self.setWindowTitle("camera_host tester")
         self.resize(1280, 820)
@@ -101,16 +100,24 @@ class MainWindow(QMainWindow):
         self._stop_stream_button.clicked.connect(self._on_stop_stream)
         self._snapshot_button = QPushButton("Take Snapshot")
         self._snapshot_button.clicked.connect(self._on_snapshot)
+        # Image size limit the SoC announces: about 40 KB over TCP (Wi-Fi app), 1 KB over MRP.
+        self._snapshot_limit = QSpinBox()
+        self._snapshot_limit.setRange(100, 10 * 1024 * 1024)
+        self._snapshot_limit.setSingleStep(1000)
+        self._snapshot_limit.setValue(snapshot_max_size)
+        self._snapshot_limit.setSuffix(" bytes max")
         self._stream_status = QLabel("")
         buttons = QHBoxLayout()
         buttons.addWidget(self._start_stream_button)
         buttons.addWidget(self._stop_stream_button)
         buttons.addWidget(self._snapshot_button)
+        buttons.addWidget(self._snapshot_limit)
         buttons.addStretch()
         self._snapshot = QLabel("No snapshot")
         self._snapshot.setAlignment(Qt.AlignCenter)
         self._snapshot.setMinimumSize(320, 180)
         self._snapshot.setStyleSheet("background-color: #202020; color: gray;")
+        self._snapshot_info = QLabel("")
         right = QVBoxLayout()
         right.addWidget(QLabel("Stream"))
         right.addWidget(self._video, 3)
@@ -118,6 +125,7 @@ class MainWindow(QMainWindow):
         right.addWidget(self._stream_status)
         right.addWidget(QLabel("Snapshot"))
         right.addWidget(self._snapshot, 1)
+        right.addWidget(self._snapshot_info)
         right_widget = QWidget()
         right_widget.setLayout(right)
 
@@ -169,6 +177,7 @@ class MainWindow(QMainWindow):
         self._start_stream_button.setEnabled(connected and not self._busy and self._live_session is None)
         self._stop_stream_button.setEnabled(connected and not self._busy and self._live_session is not None)
         self._snapshot_button.setEnabled(connected and not self._busy)
+        self._snapshot_limit.setEnabled(not self._busy)
         self._microphone.setEnabled(not self._busy and self._live_session is None)
         self._connection_status.setText("Connected" if connected else "Disconnected")
 
@@ -301,6 +310,7 @@ class MainWindow(QMainWindow):
         self._set_busy(True)
         self._snapshot.clear()
         self._snapshot.setText("Capturing...")
+        self._snapshot_info.setText("")
         try:
             if not self._snapshot_allocated:
                 status, _ = await self._tester.command("SnapshotStreamAllocate", proto.AV_STREAM_MANAGEMENT,
@@ -310,27 +320,24 @@ class MainWindow(QMainWindow):
                     return
                 self._snapshot_allocated = True
 
-            status, data = await self._tester.command("CaptureSnapshot", proto.AV_STREAM_MANAGEMENT,
-                                                      proto.CAPTURE_SNAPSHOT, proto.capture_snapshot(None))
-            if status != proto.SUCCESS:
-                note = " (not implemented by camera_host yet)" if status == proto.UNSUPPORTED_COMMAND else ""
-                self._snapshot.setText(f"{FAILED} CaptureSnapshot: {proto.status_name(status)}{note}")
+            max_size = self._snapshot_limit.value()
+            started = time.monotonic()
+            status, snapshot, error = await self._tester.capture_snapshot(None, max_size=max_size)
+            elapsed = time.monotonic() - started
+            if status != proto.SUCCESS or snapshot is None:
+                self._snapshot.setText(f"{FAILED} CaptureSnapshot: {proto.status_name(status)} {error}")
                 return
-            self._show_snapshot(data)
+            self._show_snapshot(snapshot.image)
+            self._snapshot_info.setText(f"{PASSED} {snapshot.width}x{snapshot.height} JPEG, {len(snapshot.image)} bytes "
+                                        f"(limit {max_size}), {elapsed:.1f} s")
         except ConnectionError as error:
             self._snapshot.setText(f"{FAILED} {error}")
         finally:
             self._set_busy(False)
 
-    def _show_snapshot(self, data: bytes):
-        """Displays a CaptureSnapshotResponse: { 0: image data, 1: image codec, 2: resolution }."""
-        try:
-            response = decode(data)[0]
-        except (TlvError, IndexError):
-            self._snapshot.setText(f"{FAILED} Invalid CaptureSnapshotResponse")
-            return
+    def _show_snapshot(self, image: bytes):
         pixmap = QPixmap()
-        if not pixmap.loadFromData(response.get(0, b"")):
+        if not pixmap.loadFromData(image):
             self._snapshot.setText(f"{FAILED} Cannot decode the image")
             return
         self._snapshot.setPixmap(pixmap.scaled(self._snapshot.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
@@ -344,12 +351,14 @@ def main():
     parser = argparse.ArgumentParser(description="camera_host tester, plays the camera SoC role over TCP")
     parser.add_argument("--host", default="127.0.0.1", help="address of the machine running camera_host and socat")
     parser.add_argument("--port", type=int, default=5555, help="TCP port of the socat bridge")
+    parser.add_argument("--snapshot-max-size", type=int, default=proto.SNAPSHOT_MAX_SIZE_TCP,
+                        help="initial image size limit announced with CaptureSnapshot (bytes)")
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
     loop = qasync.QEventLoop(app)
     asyncio.set_event_loop(loop)
-    window = MainWindow(args.host, args.port)
+    window = MainWindow(args.host, args.port, args.snapshot_max_size)
     window.show()
     with loop:
         loop.run_forever()

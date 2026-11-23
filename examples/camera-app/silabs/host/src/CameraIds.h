@@ -131,6 +131,17 @@ constexpr uint8_t kWidth  = 0;
 constexpr uint8_t kHeight = 1;
 } // namespace VideoResolutionStruct
 
+namespace CaptureSnapshotRequest {
+constexpr uint8_t kSnapshotStreamID    = 0; // Nullable
+constexpr uint8_t kRequestedResolution = 1;
+} // namespace CaptureSnapshotRequest
+
+namespace CaptureSnapshotResponse {
+constexpr uint8_t kData       = 0;
+constexpr uint8_t kImageCodec = 1;
+constexpr uint8_t kResolution = 2;
+} // namespace CaptureSnapshotResponse
+
 // VideoStreamModify / VideoStreamDeallocate / AudioStreamDeallocate / SnapshotStreamModify /
 // SnapshotStreamDeallocate: the stream ID is field 0, watermarkEnabled 1, OSDEnabled 2.
 namespace StreamRequest {

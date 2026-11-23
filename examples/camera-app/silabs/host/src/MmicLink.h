@@ -74,6 +74,12 @@ public:
     // Answers a cluster_command received from the SoC.
     bool SendAnswer(uint16_t transactionId, uint8_t status, const std::vector<uint8_t> & data = {});
 
+    // Sends data too large for one frame with bulk_data frames, before answering the cluster_command
+    // transactionId. Each chunk waits for the SoC acknowledgement. On failure, mmicError holds the
+    // status returned by the SoC (MMIC_ERROR_TIMEOUT when it did not answer). May be called from
+    // the command handler.
+    bool SendBulk(uint16_t transactionId, const std::vector<uint8_t> & data, uint8_t & mmicError);
+
     // Asks the SoC to send a cluster command on the Matter network. The SoC answer is logged.
     bool SendClusterCommand(uint16_t endpointId, uint32_t clusterId, uint32_t commandId, const std::vector<uint8_t> & params);
 
@@ -82,6 +88,7 @@ private:
     void DispatchLoop();
     void OnBytes(const uint8_t * data, size_t length);
     void OnFrame(const std::vector<uint8_t> & frame);
+    void OnBulkAck(const uint8_t * frame, uint16_t length);
     bool SendFrame(uint8_t header, uint8_t opcode, const std::vector<uint8_t> & payload);
     bool Write(const uint8_t * data, size_t length);
 
@@ -101,6 +108,13 @@ private:
     std::mutex mRequestMutex;
     uint16_t mNextTransactionId = 0;
     std::map<uint16_t, std::string> mPendingRequests; // Description of the requests sent to the SoC, for logs
+
+    // Acknowledgement of the bulk_data chunk in flight, set by the reader thread.
+    std::mutex mBulkMutex;
+    std::condition_variable mBulkCondition;
+    bool mBulkAckReceived  = false;
+    uint16_t mBulkAckTid   = 0;
+    uint8_t mBulkAckStatus = 0;
 
     CommandHandler mCommandHandler;
     AttributeHandler mAttributeHandler;

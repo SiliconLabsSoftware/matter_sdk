@@ -21,6 +21,7 @@
 #include "CameraDevice.h"
 #include "Log.h"
 #include "WebRtcManager.h"
+#include "mmic.h"
 
 #include <algorithm>
 
@@ -145,10 +146,15 @@ CameraHost::CameraHost(MmicLink & link, CameraDevice & camera, WebRtcManager & w
 void CameraHost::OnCommand(const MmicLink::ClusterCommand & command)
 {
     std::vector<tlv::Element> params;
+    std::vector<uint8_t> answer;
     Status status = Status::kInvalidCommand;
     if (!tlv::Parse(command.params.data(), command.params.size(), params))
     {
         LogError("Malformed TLV parameters");
+    }
+    else if (command.clusterId == ClusterId::kCameraAvStreamManagement && command.commandId == Avsm::Commands::kCaptureSnapshot)
+    {
+        status = CaptureSnapshot(command, params, answer);
     }
     else if (command.clusterId == ClusterId::kCameraAvStreamManagement)
     {
@@ -174,7 +180,11 @@ void CameraHost::OnCommand(const MmicLink::ClusterCommand & command)
     }
     if (command.answerExpected)
     {
-        mLink.SendAnswer(command.transactionId, static_cast<uint8_t>(status));
+        if (status != Status::kSuccess)
+        {
+            answer.clear();
+        }
+        mLink.SendAnswer(command.transactionId, static_cast<uint8_t>(status), answer);
     }
 }
 
@@ -238,11 +248,6 @@ Status CameraHost::HandleAvStreamManagement(uint32_t commandId, const std::vecto
     case Avsm::Commands::kSetStreamPriorities:
         // Only one stream of each type runs at a time: priorities do not change the behavior.
         return Status::kSuccess;
-
-    case Avsm::Commands::kCaptureSnapshot:
-        // TODO: transfer the image outside of MMIC (large payload).
-        LogError("CaptureSnapshot is not implemented yet");
-        return Status::kUnsupportedCommand;
 
     default:
         return Status::kUnsupportedCommand;
@@ -363,8 +368,71 @@ Status CameraHost::SnapshotStreamAllocate(const tlv::Element & stream)
         LogError("Image codec %u not supported, JPEG only", static_cast<unsigned>(*codec));
         return Status::kConstraintError;
     }
-    // Tracked only, capture is not implemented yet.
-    mSnapshotStreams[static_cast<uint16_t>(*id)] = static_cast<uint8_t>(stream.UInt(Fields::kQuality).value_or(0));
+
+    SnapshotStream snapshot;
+    snapshot.quality = static_cast<uint8_t>(stream.UInt(Fields::kQuality).value_or(0));
+    if (!ReadResolution(&stream, Fields::kMaxResolution, snapshot.maxWidth, snapshot.maxHeight))
+    {
+        return Status::kInvalidCommand;
+    }
+    mSnapshotStreams[static_cast<uint16_t>(*id)] = snapshot;
+    LogInfo("Snapshot stream %u: JPEG up to %ux%u, quality %u", static_cast<unsigned>(*id), snapshot.maxWidth,
+            snapshot.maxHeight, snapshot.quality);
+    return Status::kSuccess;
+}
+
+Status CameraHost::CaptureSnapshot(const MmicLink::ClusterCommand & command, const std::vector<tlv::Element> & params,
+                                   std::vector<uint8_t> & answer)
+{
+    namespace Request  = Avsm::CaptureSnapshotRequest;
+    namespace Response = Avsm::CaptureSnapshotResponse;
+
+    // CaptureSnapshot request, then the largest image the SoC can return to the client.
+    const tlv::Element * request = StructureAt(params, 0);
+    auto maxSize                 = (params.size() > 1) ? params[1].AsUInt() : std::nullopt;
+    uint16_t width = 0, height = 0;
+    if (request == nullptr || !maxSize || *maxSize == 0 ||
+        !ReadResolution(request, Request::kRequestedResolution, width, height))
+    {
+        return Status::kInvalidCommand;
+    }
+
+    // Null stream ID: any allocated snapshot stream.
+    auto streamId = request->UInt(Request::kSnapshotStreamID);
+    auto stream   = streamId ? mSnapshotStreams.find(static_cast<uint16_t>(*streamId)) : mSnapshotStreams.begin();
+    if (stream == mSnapshotStreams.end())
+    {
+        LogError("CaptureSnapshot: no such snapshot stream");
+        return Status::kNotFound;
+    }
+    width  = std::min(width, stream->second.maxWidth);
+    height = std::min(height, stream->second.maxHeight);
+
+    SnapshotImage image;
+    Status status = mCamera.CaptureSnapshot(width, height, stream->second.quality, static_cast<size_t>(*maxSize), image);
+    if (status != Status::kSuccess || !command.answerExpected)
+    {
+        return status;
+    }
+
+    uint8_t error = MMIC_ERROR_OK;
+    if (!mLink.SendBulk(command.transactionId, image.jpeg, error))
+    {
+        // The SoC refuses images it cannot allocate or return.
+        return (error == MMIC_ERROR_NO_MEMORY) ? Status::kResourceExhausted : Status::kFailure;
+    }
+
+    // Data is empty: the image went with bulk_data.
+    tlv::Writer writer;
+    writer.StartStructure()
+        .PutBytes(tlv::ContextTag(Response::kData), nullptr, 0)
+        .PutUInt(tlv::ContextTag(Response::kImageCodec), static_cast<uint64_t>(Avsm::ImageCodec::kJpeg))
+        .StartStructure(tlv::ContextTag(Response::kResolution))
+        .PutUInt(tlv::ContextTag(Avsm::VideoResolutionStruct::kWidth), image.width)
+        .PutUInt(tlv::ContextTag(Avsm::VideoResolutionStruct::kHeight), image.height)
+        .EndContainer()
+        .EndContainer();
+    answer = writer.Data();
     return Status::kSuccess;
 }
 

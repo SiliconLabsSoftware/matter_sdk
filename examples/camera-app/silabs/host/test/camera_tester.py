@@ -19,6 +19,7 @@
 of camera_host to local requestor sessions (aiortc) instead of a Matter controller."""
 
 import asyncio
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Tuple
 
 import camera_protocol as proto
@@ -29,6 +30,16 @@ from requestor import FrameCallback, RequestorSession
 # Time camera_host is given to start the camera and establish the WebRTC connection.
 SIGNALING_TIMEOUT = 10.0
 MEDIA_TIMEOUT = 20.0
+# Camera start (when no video stream runs), encoding and transfer of the image.
+SNAPSHOT_TIMEOUT = 15.0
+
+
+@dataclass
+class Snapshot:
+    image: bytes
+    codec: int
+    width: int
+    height: int
 
 
 class CameraTester:
@@ -49,6 +60,33 @@ class CameraTester:
 
     async def notify_attribute(self, attribute: int, value: bytes):
         await self.client.send_attribute_changed(proto.CAMERA_ENDPOINT, proto.AV_STREAM_MANAGEMENT, attribute, value)
+
+    async def capture_snapshot(self, stream_id: Optional[int], resolution=(640, 480),
+                               max_size: int = proto.SNAPSHOT_MAX_SIZE_TCP,
+                               accepted_size: Optional[int] = None) -> Tuple[Optional[int], Optional[Snapshot], str]:
+        """CaptureSnapshot as sent by the SoC: max_size is announced to camera_host, accepted_size is what
+        this side accepts to receive (max_size by default). Returns (status, snapshot, error message)."""
+        accepted = max_size if accepted_size is None else accepted_size
+        status, answer, bulk = await self.client.send_command_bulk(
+            proto.CAMERA_ENDPOINT, proto.AV_STREAM_MANAGEMENT, proto.CAPTURE_SNAPSHOT,
+            proto.capture_snapshot(stream_id, resolution, max_size), accepted, SNAPSHOT_TIMEOUT)
+        self._log(f"CaptureSnapshot -> {proto.status_name(status)}" + (f", {len(bulk)} bytes" if bulk else ""))
+        if status != proto.SUCCESS:
+            return status, None, ""
+        try:
+            elements = decode(answer)
+        except TlvError as error:
+            return status, None, f"invalid answer: {error}"
+        if not elements or elements[0].kind != "struct":
+            return status, None, "invalid answer"
+        response = elements[0]
+        resolution_struct = response.get(2)
+        if resolution_struct is None:
+            return status, None, "no resolution in the answer"
+        # Image sent with bulk_data, or inline in Data for a small one.
+        image = bulk or response.get(0, b"")
+        snapshot = Snapshot(image, response.get(1, -1), resolution_struct.get(0, 0), resolution_struct.get(1, 0))
+        return status, snapshot, ""
 
     # WebRTC sessions
 

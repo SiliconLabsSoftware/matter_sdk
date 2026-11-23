@@ -37,6 +37,14 @@ ANSWER_EXPECTED = 0x01
 CLUSTER_COMMAND_HEADER = struct.Struct("<HBHII")  # transactionId, flags, endpointId, clusterId, commandId
 CLUSTER_ANSWER_HEADER = struct.Struct("<HB")  # transactionId, status
 ATTRIBUTE_CHANGED_HEADER = struct.Struct("<HII")  # endpointId, clusterId, attributeId
+BULK_DATA_HEADER = struct.Struct("<HII")  # transactionId, totalLength, offset
+BULK_ANSWER_HEADER = struct.Struct("<HB")  # transactionId, status (mmic_error_t)
+
+# mmic_error_t values returned in bulk_data answers.
+MMIC_ERROR_OK = 0
+MMIC_ERROR_INVALID_ARG = 1
+MMIC_ERROR_NO_MEMORY = 2
+MMIC_ERROR_NOT_READY = 5
 
 _MMIC_HEADER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..", "platform", "silabs",
                             "mmic", "mmic.h")
@@ -58,6 +66,7 @@ def _load_op_codes() -> Dict[str, int]:
 _OP_CODES = _load_op_codes()
 OP_CLUSTER_COMMAND = _OP_CODES.get("cluster_command", 11)
 OP_ATTRIBUTE_CHANGED = _OP_CODES.get("attribute_changed", 12)
+OP_BULK_DATA = _OP_CODES.get("bulk_data", 13)
 
 
 def crc16(data: bytes) -> int:
@@ -80,6 +89,35 @@ def encode_frame(header: int, op_code: int, payload: bytes) -> bytes:
 RequestHandler = Callable[[int, int, int, bytes], Awaitable[int]]
 
 
+class _BulkTransfer:
+    """bulk_data reception for one pending request, with the checks of the SoC (mmic_forward.cpp)."""
+
+    def __init__(self, limit: int):
+        self.limit = limit
+        self.total: Optional[int] = None
+        self.data = bytearray()
+
+    def store(self, total: int, offset: int, chunk: bytes) -> int:
+        if total == 0:
+            return MMIC_ERROR_INVALID_ARG
+        if self.total is None:
+            if offset != 0:
+                return MMIC_ERROR_INVALID_ARG
+            if total > self.limit:
+                return MMIC_ERROR_NO_MEMORY
+            self.total = total
+        elif offset == 0 and total == self.total:
+            self.data.clear()  # Transfer restarted
+        if total != self.total or offset != len(self.data) or len(chunk) > self.total - len(self.data):
+            return MMIC_ERROR_INVALID_ARG
+        self.data += chunk
+        return MMIC_ERROR_OK
+
+    @property
+    def complete(self) -> bool:
+        return self.total is None or len(self.data) == self.total
+
+
 class MmicClient:
     def __init__(self, request_handler: RequestHandler, log: Callable[[str], None]):
         self._request_handler = request_handler
@@ -88,6 +126,7 @@ class MmicClient:
         self._writer: Optional[asyncio.StreamWriter] = None
         self._read_task: Optional[asyncio.Task] = None
         self._pending: Dict[int, asyncio.Future] = {}
+        self._bulk: Dict[int, _BulkTransfer] = {}
         self._next_transaction = 0
         self._buffer = bytearray()
 
@@ -116,25 +155,40 @@ class MmicClient:
             if not future.done():
                 future.set_result((None, b""))
         self._pending.clear()
+        self._bulk.clear()
 
     async def send_command(self, endpoint: int, cluster: int, command: int, params: bytes,
                            timeout: float = 3.0) -> Tuple[Optional[int], bytes]:
         """Sends a cluster_command and waits for the host answer: (status or None on timeout, response TLV)."""
+        status, data, _ = await self.send_command_bulk(endpoint, cluster, command, params, 0, timeout)
+        return status, data
+
+    async def send_command_bulk(self, endpoint: int, cluster: int, command: int, params: bytes, bulk_limit: int,
+                                timeout: float = 3.0) -> Tuple[Optional[int], bytes, bytes]:
+        """Same as send_command(), also accepting up to bulk_limit bytes of bulk_data before the answer
+        (0 refuses any bulk transfer). Returns (status, response TLV, bulk data)."""
         if not self.connected:
             raise ConnectionError("not connected")
         transaction = self._next_transaction
         self._next_transaction = (self._next_transaction + 1) & 0xFFFF
         future = asyncio.get_running_loop().create_future()
         self._pending[transaction] = future
+        bulk = _BulkTransfer(bulk_limit)
+        self._bulk[transaction] = bulk
 
         header = CLUSTER_COMMAND_HEADER.pack(transaction, ANSWER_EXPECTED, endpoint, cluster, command)
         await self._write(encode_frame(HEADER_REQUEST, OP_CLUSTER_COMMAND, header + params))
         try:
-            return await asyncio.wait_for(future, timeout)
+            status, data = await asyncio.wait_for(future, timeout)
         except asyncio.TimeoutError:
-            return None, b""
+            return None, b"", b""
         finally:
             self._pending.pop(transaction, None)
+            self._bulk.pop(transaction, None)
+        if status == 0 and not bulk.complete:
+            self._log(f"Incomplete bulk transfer: {len(bulk.data)} of {bulk.total} bytes")
+            return 0x01, data, bytes(bulk.data)
+        return status, data, bytes(bulk.data)
 
     async def send_attribute_changed(self, endpoint: int, cluster: int, attribute: int, value: bytes):
         """attribute_changed notification, not answered by the host."""
@@ -184,6 +238,9 @@ class MmicClient:
             await self._on_frame(header, frame[3], frame[4:-2])
 
     async def _on_frame(self, header: int, op_code: int, payload: bytes):
+        if header == HEADER_REQUEST and op_code == OP_BULK_DATA:
+            await self._on_bulk_data(payload)
+            return
         if op_code != OP_CLUSTER_COMMAND:
             self._log(f"Ignored frame 0x{header:02x} op code {op_code}")
             return
@@ -207,3 +264,17 @@ class MmicClient:
             self._log(f"Request handler error: {error}")
             status = 0x01
         await self._write(encode_frame(HEADER_ANSWER, OP_CLUSTER_COMMAND, CLUSTER_ANSWER_HEADER.pack(transaction, status)))
+
+    async def _on_bulk_data(self, payload: bytes):
+        """Stores a bulk_data chunk of a pending request and acknowledges it."""
+        if len(payload) < BULK_DATA_HEADER.size:
+            return
+        transaction, total, offset = BULK_DATA_HEADER.unpack_from(payload)
+        bulk = self._bulk.get(transaction)
+        if bulk is None:
+            status = MMIC_ERROR_NOT_READY
+        else:
+            status = bulk.store(total, offset, payload[BULK_DATA_HEADER.size:])
+        if status != MMIC_ERROR_OK:
+            self._log(f"bulk_data refused at offset {offset} of {total}: error {status}")
+        await self._write(encode_frame(HEADER_ANSWER, OP_BULK_DATA, BULK_ANSWER_HEADER.pack(transaction, status)))

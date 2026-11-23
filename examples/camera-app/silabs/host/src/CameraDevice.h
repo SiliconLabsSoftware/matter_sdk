@@ -18,7 +18,7 @@
 
 /**
  * Camera hardware: V4L2 capture (through libcamerify on a Raspberry Pi camera), H.264 and Opus
- * encoding with GStreamer, image controls.
+ * encoding with GStreamer, JPEG snapshots, image controls.
  *
  * Requests are validated synchronously against the camera capabilities, the GStreamer pipelines
  * are then (re)built on a worker thread so that callers are never blocked by a pipeline start.
@@ -39,6 +39,7 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <vector>
 
 struct VideoStreamConfig
 {
@@ -67,6 +68,13 @@ struct Viewport
     uint16_t y2 = 0;
 };
 
+struct SnapshotImage
+{
+    std::vector<uint8_t> jpeg;
+    uint16_t width  = 0;
+    uint16_t height = 0;
+};
+
 class CameraDevice
 {
 public:
@@ -77,6 +85,8 @@ public:
     static constexpr uint16_t kMaxEncodeWidth  = 1280;
     static constexpr uint16_t kMaxEncodeHeight = 720;
     static constexpr uint16_t kMaxFrameRate    = 30;
+    // Smallest snapshot width tried when lowering the resolution to fit the size limit.
+    static constexpr uint16_t kMinSnapshotWidth = 80;
 
     // Encoded frame (H.264 access unit or Opus packet) and its capture time.
     using FrameCallback =
@@ -101,6 +111,12 @@ public:
     // Asks the encoder for a key frame, e.g. when a WebRTC peer connects.
     void RequestKeyFrame();
 
+    // Captures a JPEG image of at most maxWidth x maxHeight (aspect ratio of the capture kept) and
+    // maxSize bytes: the quality, then the resolution, are lowered until the image fits. Uses the
+    // running video stream when there is one, otherwise starts the camera for one frame. Blocks
+    // for up to a few seconds.
+    camera::Status CaptureSnapshot(uint16_t maxWidth, uint16_t maxHeight, uint8_t quality, size_t maxSize, SnapshotImage & out);
+
     // Default viewport (Viewport attribute) and per-stream viewport (digital PTZ).
     void SetDefaultViewport(const Viewport & viewport);
     camera::Status SetStreamViewport(uint16_t videoStreamId, const Viewport & viewport);
@@ -121,9 +137,11 @@ private:
     void RebuildAudioPipeline();
     void ApplyViewportLocked();
     void ApplyOrientationLocked();
+    int VideoDirectionLocked() const;
     void ApplyVolumeLocked();
     void ReleaseVideoElementsLocked();
     void ReleaseAudioElementsLocked();
+    GstSample * GrabFrame(uint16_t width, uint16_t height);
 
     std::string mDevicePath;
     bool mHasMicrophone = false;
@@ -146,6 +164,7 @@ private:
     // Running pipelines and the elements changed at runtime, protected by mMutex.
     GstElement * mVideoPipeline = nullptr;
     GstElement * mVideoSink     = nullptr;
+    GstElement * mSnapshotSink  = nullptr; // Latest raw frame of the video stream
     GstElement * mCrop          = nullptr;
     GstElement * mFlip          = nullptr;
     GstElement * mAudioPipeline = nullptr;

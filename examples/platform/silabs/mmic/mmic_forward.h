@@ -35,6 +35,24 @@ uint8_t mmic_request_cluster_command(uint16_t endpointId, uint32_t clusterId, ui
                                      uint16_t paramsLen, uint32_t timeoutMs, uint8_t * hostStatus, uint8_t * response,
                                      uint16_t responseCapacity, uint16_t * responseLen);
 
+// Destination of the bulk data sent by the host before its answer (bulk_data frames).
+typedef struct
+{
+    // Returns a buffer of totalLength bytes, or NULL to refuse the transfer (e.g. too large).
+    // Called once per transfer from the MMIC task: it must not block nor take the Matter stack lock.
+    uint8_t * (*alloc)(void * context, uint32_t totalLength);
+    void * context;
+} mmic_bulk_sink_t;
+
+// Same as mmic_request_cluster_command(), the host may also send bulk data to bulk before
+// answering. timeoutMs is then the longest time without progress (bulk chunk or answer).
+// On MMIC_ERROR_OK, *bulkLen holds the bulk data length (0 when none was sent). A bulk
+// transfer left incomplete by a Success answer is reported as MMIC_ERROR_INVALID_PACKET.
+uint8_t mmic_request_cluster_command_bulk(uint16_t endpointId, uint32_t clusterId, uint32_t commandId, const uint8_t * params,
+                                          uint16_t paramsLen, uint32_t timeoutMs, uint8_t * hostStatus, uint8_t * response,
+                                          uint16_t responseCapacity, uint16_t * responseLen, const mmic_bulk_sink_t * bulk,
+                                          uint32_t * bulkLen);
+
 // Notifies the host that an attribute changed. value may be NULL when not provided.
 uint8_t mmic_send_attribute_changed(uint16_t endpointId, uint32_t clusterId, uint32_t attributeId, const uint8_t * value,
                                     uint16_t valueLen);
@@ -52,3 +70,6 @@ void mmic_forward_handle_answer(const uint8_t * frame, uint16_t len);
 
 // Internal, used by the MMIC core to answer a cluster_command request received from the host.
 uint8_t mmic_forward_handle_request(const uint8_t * payload, uint16_t payloadLen, uint8_t ** response, size_t * packetSize);
+
+// Internal, used by the MMIC core to store and acknowledge a bulk_data chunk received from the host.
+uint8_t mmic_forward_handle_bulk_data(const uint8_t * payload, uint16_t payloadLen, uint8_t ** response, size_t * packetSize);

@@ -33,6 +33,11 @@ struct PendingRequest
     uint8_t * response;
     uint16_t responseCapacity;
     uint16_t responseLen;
+    const mmic_bulk_sink_t * bulk;
+    uint8_t * bulkBuffer; // Allocated by the sink on the first chunk
+    uint32_t bulkTotal;
+    uint32_t bulkReceived;
+    uint32_t progress; // Number of chunks received, extends the answer timeout
 };
 
 osMutexId_t sRequestMutex;  // One blocking request at a time
@@ -105,6 +110,78 @@ uint16_t NextTransactionId()
     return id;
 }
 
+uint32_t PendingProgress()
+{
+    osMutexAcquire(sPendingMutex, osWaitForever);
+    const uint32_t progress = sPending.progress;
+    osMutexRelease(sPendingMutex);
+    return progress;
+}
+
+// Waits for the answer, as long as bulk chunks keep arriving within timeoutMs of each other.
+uint8_t WaitForAnswer(uint32_t timeoutMs)
+{
+    uint32_t lastProgress = 0;
+    while (osSemaphoreAcquire(sAnswerSem, MsToTicks(timeoutMs)) != osOK)
+    {
+        const uint32_t progress = PendingProgress();
+        if (progress == lastProgress)
+        {
+            return MMIC_ERROR_TIMEOUT;
+        }
+        lastProgress = progress;
+    }
+    return MMIC_ERROR_OK;
+}
+
+// Stores one bulk_data chunk for the pending request. Called with sPendingMutex held.
+uint8_t StoreBulkChunk(const bulkDataHeader_t & header, const uint8_t * data, uint32_t dataLen)
+{
+    if (!sPending.active || sPending.transactionId != header.transactionId || sPending.bulk == NULL ||
+        sPending.bulk->alloc == NULL)
+    {
+        return MMIC_ERROR_NOT_READY;
+    }
+    if (header.totalLength == 0)
+    {
+        return MMIC_ERROR_INVALID_ARG;
+    }
+
+    if (sPending.bulkBuffer == NULL)
+    {
+        if (header.offset != 0)
+        {
+            return MMIC_ERROR_INVALID_ARG;
+        }
+        sPending.bulkBuffer = sPending.bulk->alloc(sPending.bulk->context, header.totalLength);
+        if (sPending.bulkBuffer == NULL)
+        {
+            return MMIC_ERROR_NO_MEMORY;
+        }
+        sPending.bulkTotal    = header.totalLength;
+        sPending.bulkReceived = 0;
+    }
+    else if (header.offset == 0 && header.totalLength == sPending.bulkTotal)
+    {
+        // The host restarted the transfer.
+        sPending.bulkReceived = 0;
+    }
+
+    if (header.totalLength != sPending.bulkTotal || header.offset != sPending.bulkReceived ||
+        dataLen > sPending.bulkTotal - sPending.bulkReceived)
+    {
+        return MMIC_ERROR_INVALID_ARG;
+    }
+
+    if (dataLen > 0)
+    {
+        memcpy(sPending.bulkBuffer + sPending.bulkReceived, data, dataLen);
+    }
+    sPending.bulkReceived += dataLen;
+    sPending.progress++;
+    return MMIC_ERROR_OK;
+}
+
 } // namespace
 
 sl_status_t mmic_forward_init(void)
@@ -134,7 +211,17 @@ uint8_t mmic_request_cluster_command(uint16_t endpointId, uint32_t clusterId, ui
                                      uint16_t paramsLen, uint32_t timeoutMs, uint8_t * hostStatus, uint8_t * response,
                                      uint16_t responseCapacity, uint16_t * responseLen)
 {
-    if (hostStatus == NULL || responseLen == NULL || (responseCapacity > 0 && response == NULL))
+    return mmic_request_cluster_command_bulk(endpointId, clusterId, commandId, params, paramsLen, timeoutMs, hostStatus, response,
+                                             responseCapacity, responseLen, NULL, NULL);
+}
+
+uint8_t mmic_request_cluster_command_bulk(uint16_t endpointId, uint32_t clusterId, uint32_t commandId, const uint8_t * params,
+                                          uint16_t paramsLen, uint32_t timeoutMs, uint8_t * hostStatus, uint8_t * response,
+                                          uint16_t responseCapacity, uint16_t * responseLen, const mmic_bulk_sink_t * bulk,
+                                          uint32_t * bulkLen)
+{
+    if (hostStatus == NULL || responseLen == NULL || (responseCapacity > 0 && response == NULL) ||
+        (bulk != NULL && (bulk->alloc == NULL || bulkLen == NULL)))
     {
         return MMIC_ERROR_INVALID_ARG;
     }
@@ -158,13 +245,18 @@ uint8_t mmic_request_cluster_command(uint16_t endpointId, uint32_t clusterId, ui
     sPending.response         = response;
     sPending.responseCapacity = responseCapacity;
     sPending.responseLen      = 0;
+    sPending.bulk             = bulk;
+    sPending.bulkBuffer       = NULL;
+    sPending.bulkTotal        = 0;
+    sPending.bulkReceived     = 0;
+    sPending.progress         = 0;
     osMutexRelease(sPendingMutex);
 
     uint8_t err = SendClusterCommand(transactionId, MMIC_CLUSTER_COMMAND_FLAG_ANSWER_EXPECTED, endpointId, clusterId, commandId,
                                      params, paramsLen);
-    if (err == MMIC_ERROR_OK && osSemaphoreAcquire(sAnswerSem, MsToTicks(timeoutMs)) != osOK)
+    if (err == MMIC_ERROR_OK)
     {
-        err = MMIC_ERROR_TIMEOUT;
+        err = WaitForAnswer(timeoutMs);
     }
 
     osMutexAcquire(sPendingMutex, osWaitForever);
@@ -181,8 +273,18 @@ uint8_t mmic_request_cluster_command(uint16_t endpointId, uint32_t clusterId, ui
     {
         *hostStatus  = sPending.status;
         *responseLen = sPending.responseLen;
+        if (bulkLen != NULL)
+        {
+            *bulkLen = sPending.bulkReceived;
+        }
+        if (sPending.status == 0 && sPending.bulkReceived != sPending.bulkTotal)
+        {
+            err = MMIC_ERROR_INVALID_PACKET;
+        }
     }
-    sPending.response = NULL;
+    sPending.response   = NULL;
+    sPending.bulk       = NULL;
+    sPending.bulkBuffer = NULL;
     osMutexRelease(sPendingMutex);
 
     osMutexRelease(sRequestMutex);
@@ -229,6 +331,25 @@ uint8_t mmic_forward_handle_request(const uint8_t * payload, uint16_t payloadLen
     }
 
     return mmic_serialize_packet(MMIC_HEADER_ANS, cluster_command, &answer, sizeof(answer), response, packetSize);
+}
+
+uint8_t mmic_forward_handle_bulk_data(const uint8_t * payload, uint16_t payloadLen, uint8_t ** response, size_t * packetSize)
+{
+    if (payload == NULL || payloadLen < sizeof(bulkDataHeader_t))
+    {
+        return MMIC_ERROR_INVALID_PACKET;
+    }
+
+    bulkDataHeader_t header;
+    memcpy(&header, payload, sizeof(header));
+
+    bulkDataAnswerHeader_t answer;
+    answer.transactionId = header.transactionId;
+    osMutexAcquire(sPendingMutex, osWaitForever);
+    answer.status = StoreBulkChunk(header, payload + sizeof(header), static_cast<uint32_t>(payloadLen - sizeof(header)));
+    osMutexRelease(sPendingMutex);
+
+    return mmic_serialize_packet(MMIC_HEADER_ANS, bulk_data, &answer, sizeof(answer), response, packetSize);
 }
 
 void mmic_forward_handle_answer(const uint8_t * frame, uint16_t len)

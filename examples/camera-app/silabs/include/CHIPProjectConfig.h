@@ -57,3 +57,13 @@
 
 // Skip app-specific generated headers since this is a code-driven app without ZAP
 #define CHIP_CONFIG_SKIP_APP_SPECIFIC_GENERATED_HEADER_INCLUDES 1
+
+#ifdef SL_WIFI
+// Snapshots are sent in a single CaptureSnapshotResponse, over TCP (large messages). With TCP, every
+// PacketBuffer is allocated from the heap with CHIP_SYSTEM_CONFIG_MAX_LARGE_BUFFER_SIZE_BYTES, which
+// also bounds the snapshot size (minus about 150 bytes of headers). Pool buffers cannot exceed 1520 bytes.
+#define CHIP_SYSTEM_CONFIG_PACKETBUFFER_LWIP_PBUF_RAM 1
+#ifndef CHIP_SYSTEM_CONFIG_MAX_LARGE_BUFFER_SIZE_BYTES
+#define CHIP_SYSTEM_CONFIG_MAX_LARGE_BUFFER_SIZE_BYTES (40 * 1024)
+#endif
+#endif // SL_WIFI

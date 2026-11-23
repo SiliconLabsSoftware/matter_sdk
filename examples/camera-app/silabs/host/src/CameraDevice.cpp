@@ -21,9 +21,12 @@
 #include "Log.h"
 
 #include <gst/app/gstappsink.h>
+#include <gst/app/gstappsrc.h>
 #include <gst/video/video.h>
 
 #include <algorithm>
+#include <future>
+#include <memory>
 #include <sstream>
 #include <sys/stat.h>
 
@@ -38,6 +41,13 @@ constexpr int kDirectionHorizontal = 4;
 constexpr int kDirectionVertical   = 5;
 
 constexpr uint8_t kMaxVolumeLevel = 254;
+
+// Frames skipped when the camera is started for a snapshot, while exposure settles.
+constexpr int kSnapshotWarmupFrames = 5;
+constexpr GstClockTime kFrameTimeout  = 3 * GST_SECOND;
+constexpr int kDefaultJpegQuality     = 85;
+// Qualities tried, below the requested one, before lowering the resolution.
+constexpr int kFallbackJpegQualities[] = { 60, 40, 20 };
 
 struct SinkContext
 {
@@ -199,6 +209,57 @@ bool DetectMicrophone()
     return found;
 }
 
+// Encodes one raw frame as a width x height JPEG image.
+bool EncodeJpeg(GstSample * frame, uint16_t width, uint16_t height, int quality, std::vector<uint8_t> & out)
+{
+    std::ostringstream description;
+    description << "appsrc name=src format=time ! videoconvert ! videoscale ! video/x-raw,width=" << width
+                << ",height=" << height << " ! jpegenc quality=" << quality << " ! appsink name=sink sync=false";
+    GstElement * pipeline = LaunchPipeline(description.str(), "snapshot");
+    if (pipeline == nullptr)
+    {
+        return false;
+    }
+    GstElement * src  = gst_bin_get_by_name(GST_BIN(pipeline), "src");
+    GstElement * sink = gst_bin_get_by_name(GST_BIN(pipeline), "sink");
+    gst_app_src_set_caps(GST_APP_SRC(src), gst_sample_get_caps(frame));
+
+    bool encoded = false;
+    if (gst_element_set_state(pipeline, GST_STATE_PLAYING) != GST_STATE_CHANGE_FAILURE)
+    {
+        // Shallow copy: the timestamps of the capture pipeline are meaningless here.
+        GstBuffer * buffer          = gst_buffer_copy(gst_sample_get_buffer(frame));
+        GST_BUFFER_PTS(buffer)      = 0;
+        GST_BUFFER_DTS(buffer)      = GST_CLOCK_TIME_NONE;
+        GST_BUFFER_DURATION(buffer) = GST_CLOCK_TIME_NONE;
+        gst_app_src_push_buffer(GST_APP_SRC(src), buffer);
+        gst_app_src_end_of_stream(GST_APP_SRC(src));
+
+        GstSample * jpeg = gst_app_sink_try_pull_sample(GST_APP_SINK(sink), kFrameTimeout);
+        GstMapInfo map;
+        if (jpeg != nullptr && gst_buffer_map(gst_sample_get_buffer(jpeg), &map, GST_MAP_READ))
+        {
+            out.assign(map.data, map.data + map.size);
+            gst_buffer_unmap(gst_sample_get_buffer(jpeg), &map);
+            encoded = !out.empty();
+        }
+        if (jpeg != nullptr)
+        {
+            gst_sample_unref(jpeg);
+        }
+    }
+
+    gst_object_unref(src);
+    gst_object_unref(sink);
+    StopPipeline(pipeline);
+    return encoded;
+}
+
+uint16_t EvenDimension(double value)
+{
+    return static_cast<uint16_t>(std::max(2, static_cast<int>(value / 2 + 0.5) * 2));
+}
+
 } // namespace
 
 CameraDevice::~CameraDevice()
@@ -217,7 +278,8 @@ bool CameraDevice::Init(const std::string & devicePath)
     mDevicePath = devicePath;
 
     gst_init(nullptr, nullptr);
-    if (!HasElement("v4l2src") || !HasElement("x264enc") || !HasElement("videocrop") || !HasElement("videoflip"))
+    if (!HasElement("v4l2src") || !HasElement("x264enc") || !HasElement("videocrop") || !HasElement("videoflip") ||
+        !HasElement("jpegenc"))
     {
         LogError("Install the GStreamer good and ugly plugins");
         return false;
@@ -407,6 +469,161 @@ void CameraDevice::RequestKeyFrame()
     }
 }
 
+Status CameraDevice::CaptureSnapshot(uint16_t maxWidth, uint16_t maxHeight, uint8_t quality, size_t maxSize, SnapshotImage & out)
+{
+    if (maxWidth == 0 || maxHeight == 0 || maxSize == 0)
+    {
+        return Status::kConstraintError;
+    }
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        if (mPrivacyMode)
+        {
+            return Status::kInvalidInState;
+        }
+    }
+
+    // On the worker thread, so that the camera is not used by a pipeline being rebuilt.
+    auto grab = std::make_shared<std::packaged_task<GstSample *()>>(
+        [this, maxWidth, maxHeight] { return GrabFrame(maxWidth, maxHeight); });
+    std::future<GstSample *> result = grab->get_future();
+    Post([grab] { (*grab)(); });
+    GstSample * frame = nullptr;
+    try
+    {
+        frame = result.get();
+    }
+    catch (const std::future_error &)
+    {
+        // Worker stopped before running the task.
+    }
+    if (frame == nullptr)
+    {
+        LogError("Snapshot: no frame captured");
+        return Status::kFailure;
+    }
+
+    GstVideoInfo info;
+    if (!gst_video_info_from_caps(&info, gst_sample_get_caps(frame)) || info.width <= 0 || info.height <= 0)
+    {
+        gst_sample_unref(frame);
+        return Status::kFailure;
+    }
+
+    // Fit in maxWidth x maxHeight, keeping the aspect ratio of the capture.
+    const double scale =
+        std::min({ 1.0, static_cast<double>(maxWidth) / info.width, static_cast<double>(maxHeight) / info.height });
+    uint16_t width  = EvenDimension(info.width * scale);
+    uint16_t height = EvenDimension(info.height * scale);
+
+    const int requestedQuality = (quality == 0) ? kDefaultJpegQuality : std::min<int>(quality, 100);
+    std::vector<int> qualities = { requestedQuality };
+    for (int fallback : kFallbackJpegQualities)
+    {
+        if (fallback < requestedQuality)
+        {
+            qualities.push_back(fallback);
+        }
+    }
+
+    Status status           = Status::kResourceExhausted;
+    size_t smallest         = 0;
+    const uint16_t minWidth = std::min(width, kMinSnapshotWidth);
+    while (width >= minWidth && status != Status::kSuccess)
+    {
+        for (int q : qualities)
+        {
+            std::vector<uint8_t> jpeg;
+            if (!EncodeJpeg(frame, width, height, q, jpeg))
+            {
+                LogError("Snapshot: JPEG encoding failed");
+                gst_sample_unref(frame);
+                return Status::kFailure;
+            }
+            smallest = (smallest == 0) ? jpeg.size() : std::min(smallest, jpeg.size());
+            if (jpeg.size() <= maxSize)
+            {
+                LogInfo("Snapshot: %ux%u JPEG, quality %d, %zu bytes (limit %zu)", width, height, q, jpeg.size(), maxSize);
+                out.jpeg   = std::move(jpeg);
+                out.width  = width;
+                out.height = height;
+                status     = Status::kSuccess;
+                break;
+            }
+        }
+        width  = EvenDimension(width / 2.0);
+        height = EvenDimension(height / 2.0);
+    }
+    gst_sample_unref(frame);
+
+    if (status != Status::kSuccess)
+    {
+        LogError("Snapshot: smallest image is %zu bytes, above the %zu bytes limit", smallest, maxSize);
+    }
+    return status;
+}
+
+GstSample * CameraDevice::GrabFrame(uint16_t width, uint16_t height)
+{
+    GstElement * sink = nullptr;
+    int direction     = kDirectionIdentity;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        if (mSnapshotSink != nullptr)
+        {
+            sink = GST_ELEMENT(gst_object_ref(mSnapshotSink));
+        }
+        direction = VideoDirectionLocked();
+    }
+
+    if (sink != nullptr)
+    {
+        // Latest frame of the running video stream, already cropped and oriented.
+        GstSample * sample = gst_app_sink_try_pull_sample(GST_APP_SINK(sink), kFrameTimeout);
+        gst_object_unref(sink);
+        return sample;
+    }
+
+    // No video stream: start the camera for a few frames.
+    std::ostringstream description;
+    description << "v4l2src device=" << mDevicePath << " num-buffers=" << (kSnapshotWarmupFrames + 1)
+                << " ! video/x-raw,width=" << width << ",height=" << height << " ! videoconvert"
+                << " ! videoflip video-direction=" << direction << " ! video/x-raw,format=I420"
+                << " ! appsink name=sink sync=false";
+    GstElement * pipeline = LaunchPipeline(description.str(), "snapshot capture");
+    if (pipeline == nullptr)
+    {
+        return nullptr;
+    }
+    sink = gst_bin_get_by_name(GST_BIN(pipeline), "sink");
+
+    GstSample * last = nullptr;
+    if (gst_element_set_state(pipeline, GST_STATE_PLAYING) != GST_STATE_CHANGE_FAILURE)
+    {
+        for (int i = 0; i <= kSnapshotWarmupFrames; i++)
+        {
+            GstSample * sample = gst_app_sink_try_pull_sample(GST_APP_SINK(sink), kFrameTimeout);
+            if (sample == nullptr)
+            {
+                break;
+            }
+            if (last != nullptr)
+            {
+                gst_sample_unref(last);
+            }
+            last = sample;
+        }
+    }
+    else
+    {
+        LogError("Cannot start the snapshot capture on %s", mDevicePath.c_str());
+    }
+
+    gst_object_unref(sink);
+    StopPipeline(pipeline);
+    return last;
+}
+
 void CameraDevice::SetDefaultViewport(const Viewport & viewport)
 {
     std::lock_guard<std::mutex> lock(mMutex);
@@ -521,27 +738,30 @@ void CameraDevice::ApplyViewportLocked()
 
 void CameraDevice::ApplyOrientationLocked()
 {
-    if (mFlip == nullptr)
+    if (mFlip != nullptr)
     {
-        return;
+        g_object_set(mFlip, "video-direction", VideoDirectionLocked(), nullptr);
     }
+}
+
+int CameraDevice::VideoDirectionLocked() const
+{
     // Combination of a 0/180 degree rotation and the flips.
     const bool horizontal = mFlipHorizontal != (mRotation == 180);
     const bool vertical   = mFlipVertical != (mRotation == 180);
-    int direction         = kDirectionIdentity;
     if (horizontal && vertical)
     {
-        direction = kDirectionRotate180;
+        return kDirectionRotate180;
     }
-    else if (horizontal)
+    if (horizontal)
     {
-        direction = kDirectionHorizontal;
+        return kDirectionHorizontal;
     }
-    else if (vertical)
+    if (vertical)
     {
-        direction = kDirectionVertical;
+        return kDirectionVertical;
     }
-    g_object_set(mFlip, "video-direction", direction, nullptr);
+    return kDirectionIdentity;
 }
 
 void CameraDevice::ApplyVolumeLocked()
@@ -555,6 +775,7 @@ void CameraDevice::ApplyVolumeLocked()
 void CameraDevice::ReleaseVideoElementsLocked()
 {
     UnrefElement(mVideoSink);
+    UnrefElement(mSnapshotSink);
     UnrefElement(mCrop);
     UnrefElement(mFlip);
 }
@@ -581,18 +802,22 @@ void CameraDevice::RebuildVideoPipeline()
     }
 
     // Capture at the stream resolution. The crop applies the viewport, the scaler restores the
-    // stream resolution (with borders when the viewport aspect ratio differs).
+    // stream resolution (with borders when the viewport aspect ratio differs). The tee keeps the
+    // latest raw frame for snapshots.
     std::ostringstream description;
     description << "v4l2src device=" << mDevicePath << " do-timestamp=true"
                 << " ! video/x-raw,width=" << stream->width << ",height=" << stream->height
                 << ",framerate=" << stream->frameRate << "/1"
                 << " ! videoconvert ! videoflip name=flip ! videocrop name=crop ! videoscale"
                 << " ! video/x-raw,width=" << stream->width << ",height=" << stream->height
-                << ",format=I420,pixel-aspect-ratio=1/1"
+                << ",format=I420,pixel-aspect-ratio=1/1 ! tee name=raw"
+                << " raw. ! queue max-size-buffers=4 max-size-bytes=0 max-size-time=0 leaky=downstream"
                 << " ! x264enc tune=zerolatency speed-preset=ultrafast insert-vui=true byte-stream=true"
                 << " bitrate=" << stream->bitRateKbps << " key-int-max=" << stream->keyFrameFrames
                 << " ! video/x-h264,profile=constrained-baseline,stream-format=byte-stream,alignment=au"
-                << " ! appsink name=video_sink sync=false max-buffers=8 drop=true";
+                << " ! appsink name=video_sink sync=false max-buffers=8 drop=true"
+                << " raw. ! queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=downstream"
+                << " ! appsink name=snapshot_sink sync=false async=false max-buffers=1 drop=true";
 
     GstElement * pipeline = LaunchPipeline(description.str(), "video");
     if (pipeline == nullptr)
@@ -604,9 +829,10 @@ void CameraDevice::RebuildVideoPipeline()
 
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        mVideoSink = sink;
-        mCrop      = gst_bin_get_by_name(GST_BIN(pipeline), "crop");
-        mFlip      = gst_bin_get_by_name(GST_BIN(pipeline), "flip");
+        mVideoSink    = sink;
+        mSnapshotSink = gst_bin_get_by_name(GST_BIN(pipeline), "snapshot_sink");
+        mCrop         = gst_bin_get_by_name(GST_BIN(pipeline), "crop");
+        mFlip         = gst_bin_get_by_name(GST_BIN(pipeline), "flip");
         ApplyViewportLocked();
         ApplyOrientationLocked();
         mVideoPipeline = pipeline;

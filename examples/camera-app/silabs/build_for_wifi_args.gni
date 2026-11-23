@@ -21,6 +21,9 @@ sl_uart_log_output = false
 chip_enable_thread = false
 import("${chip_root}/src/platform/silabs/wifi/args.gni")
 
+# Large messages (CaptureSnapshotResponse) over TCP, see include/CHIPProjectConfig.h for the buffer size.
+chip_inet_config_enable_tcp_endpoint = true
+
 chip_enable_read_client = false
 
 sl_matter_use_code_driven_dm = true

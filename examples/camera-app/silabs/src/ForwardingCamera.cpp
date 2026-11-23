@@ -21,16 +21,20 @@
 #include "mmic_matter_forward.h"
 
 #include <app/CASESessionManager.h>
+#include <app/CommandHandler.h>
+#include <app/StatusResponse.h>
 #include <app/data-model/Decode.h>
 #include <app/server/Server.h>
 #include <clusters/WebRTCTransportRequestor/ClusterId.h>
 #include <clusters/WebRTCTransportRequestor/Commands.h>
 #include <controller/InvokeInteraction.h>
 #include <devices/Types.h>
+#include <lib/support/CHIPMem.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/ScopedMemoryBuffer.h>
 #include <lib/support/TypeTraits.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <messaging/ExchangeContext.h>
 #include <platform/CHIPDeviceLayer.h>
 
 #include <algorithm>
@@ -61,8 +65,11 @@
  *   SnapshotStreamModify      Blocking. SnapshotStreamModify request
  *   SnapshotStreamDeallocate  Blocking. SnapshotStreamDeallocate request
  *   SetStreamPriorities       SetStreamPriorities request
- *   CaptureSnapshot           Blocking. CaptureSnapshot request. On success the host answer carries a
- *                             CaptureSnapshotResponse TLV structure.
+ *   CaptureSnapshot           Blocking. CaptureSnapshot request, then the largest image size (uint32) the
+ *                             CaptureSnapshotResponse can carry on the session of the client (TCP or
+ *                             MRP). On success the host sends the image with bulk_data frames, then
+ *                             answers with a CaptureSnapshotResponse TLV structure whose Data is empty
+ *                             (a small image may instead be carried in Data, without bulk_data).
  *   Attribute changes         attribute_changed with the new value (no value for unhandled attributes)
  *
  * WebRTCTransportProvider (SoC -> host)
@@ -133,8 +140,14 @@ constexpr System::Clock::Milliseconds32 kPhysicalMoveDuration(2000);
 // Maximum time the Matter thread waits for the host to answer a blocking request.
 constexpr System::Clock::Milliseconds32 kHostAnswerTimeout(2000);
 
-// Largest CaptureSnapshotResponse accepted from the host. Must fit in the MMIC transport frame.
-constexpr size_t kMaxSnapshotResponseSize = 2048;
+// Longest time without progress (capture, then each image chunk) while waiting for a snapshot.
+constexpr System::Clock::Milliseconds32 kSnapshotAnswerTimeout(5000);
+
+// CaptureSnapshotResponse answer of the host, without the image (sent with bulk_data).
+constexpr size_t kSnapshotAnswerSize = 128;
+
+// Room left in the response message for everything but the image (same margin as the cluster server).
+constexpr size_t kSnapshotResponseOverhead = 100;
 
 const AudioCodecEnum kAudioCodecs[]            = { AudioCodecEnum::kOpus };
 const uint32_t kAudioSampleRates[]             = { 48000 };
@@ -791,45 +804,107 @@ void ForwardingCamera::ForwardAttributeChange(AttributeId attributeId)
     }
 }
 
+std::optional<DataModel::ActionReturnStatus>
+ForwardingCamera::AvStreamManagementCluster::InvokeCommand(const DataModel::InvokeRequest & request,
+                                                           TLV::TLVReader & input_arguments, CommandHandler * handler)
+{
+    if (request.path.mCommandId == Avsm::Commands::CaptureSnapshot::Id && handler != nullptr)
+    {
+        Messaging::ExchangeContext * exchange = handler->GetExchangeContext();
+        mSnapshotLargePayload =
+            exchange != nullptr && exchange->HasSessionHandle() && exchange->GetSessionHandle()->AllowsLargePayload();
+        // The host takes a while to capture and transfer the image: acknowledge the request now (MRP).
+        handler->FlushAcksRightAwayOnSlowCommand();
+    }
+    return CameraAVStreamManagementCluster::InvokeCommand(request, input_arguments, handler);
+}
+
 Status ForwardingCamera::CaptureSnapshot(const DataModel::Nullable<uint16_t> streamID, const VideoResolutionStruct & resolution,
                                          ImageSnapshot & outImageSnapshot)
 {
+    VerifyOrReturnValue(mAvStreamManagementCluster.IsConstructed(), Status::Failure);
+
     Avsm::Commands::CaptureSnapshot::Type request;
     request.snapshotStreamID    = streamID;
     request.requestedResolution = resolution;
 
-    Platform::ScopedMemoryBuffer<uint8_t> responseBuffer;
-    VerifyOrReturnValue(responseBuffer.Alloc(kMaxSnapshotResponseSize), Status::ResourceExhausted);
-    MutableByteSpan response(responseBuffer.Get(), kMaxSnapshotResponseSize);
+    // The whole image must fit in the CaptureSnapshotResponse message of the client session.
+    const bool largePayload = mAvStreamManagementCluster.Cluster().SnapshotSessionAllowsLargePayload();
+    const size_t sduLength  = largePayload ? kMaxLargeSecureSduLengthBytes : kMaxSecureSduLengthBytes;
+    const uint32_t maxImageSize =
+        static_cast<uint32_t>(std::min(kMaxSnapshotImageSize, sduLength - kSnapshotResponseOverhead));
 
-    // The image is produced by the host: wait for its answer.
-    Status hostStatus = Status::Failure;
-    CHIP_ERROR err    = ::chip::Silabs::Mmic::RequestClusterCommand(mEndpointId, Avsm::Id, Avsm::Commands::CaptureSnapshot::Id,
-                                                            kHostAnswerTimeout, hostStatus, response, request);
-    VerifyOrReturnValue(err == CHIP_NO_ERROR, Status::Failure,
-                        ChipLogError(Camera, "ForwardingCamera: CaptureSnapshot not answered by host: %" CHIP_ERROR_FORMAT,
-                                     err.Format()));
-    VerifyOrReturnValue(hostStatus == Status::Success, hostStatus,
-                        ChipLogError(Camera, "ForwardingCamera: CaptureSnapshot rejected by host, status 0x%02x",
-                                     to_underlying(hostStatus)));
+    // Runs on the MMIC task when the first image chunk arrives, while this thread is blocked.
+    auto allocImage = [&outImageSnapshot, maxImageSize](uint32_t totalLength) -> uint8_t * {
+        if (totalLength > maxImageSize)
+        {
+            return nullptr;
+        }
+        // Without exceptions, std::vector cannot report an allocation failure: check the heap first.
+        void * probe = Platform::MemoryAlloc(totalLength);
+        if (probe == nullptr)
+        {
+            return nullptr;
+        }
+        Platform::MemoryFree(probe);
+        outImageSnapshot.data.resize(totalLength);
+        return outImageSnapshot.data.data();
+    };
 
-    TLV::TLVReader reader;
-    reader.Init(response);
-    Avsm::Commands::CaptureSnapshotResponse::DecodableType snapshot;
-    err = reader.Next();
-    if (err == CHIP_NO_ERROR)
+    uint8_t answerBuffer[kSnapshotAnswerSize];
+    MutableByteSpan answer(answerBuffer);
+    uint32_t imageLength = 0;
+    Status hostStatus    = Status::Failure;
+    CHIP_ERROR err       = ::chip::Silabs::Mmic::RequestClusterCommandWithBulk(
+        mEndpointId, Avsm::Id, Avsm::Commands::CaptureSnapshot::Id, kSnapshotAnswerTimeout, hostStatus, answer, allocImage,
+        imageLength, request, maxImageSize);
+    if (err == CHIP_NO_ERROR && hostStatus == Status::Success)
     {
-        err = DataModel::Decode(reader, snapshot);
+        TLV::TLVReader reader;
+        reader.Init(answer);
+        Avsm::Commands::CaptureSnapshotResponse::DecodableType snapshot;
+        err = reader.Next();
+        if (err == CHIP_NO_ERROR)
+        {
+            err = DataModel::Decode(reader, snapshot);
+        }
+        if (err == CHIP_NO_ERROR && imageLength == 0)
+        {
+            // Small image carried in the answer itself.
+            outImageSnapshot.data.assign(snapshot.data.begin(), snapshot.data.end());
+        }
+        if (err == CHIP_NO_ERROR && outImageSnapshot.data.empty())
+        {
+            err = CHIP_ERROR_INVALID_ARGUMENT;
+        }
+        if (err == CHIP_NO_ERROR)
+        {
+            outImageSnapshot.imageRes.width  = snapshot.resolution.width;
+            outImageSnapshot.imageRes.height = snapshot.resolution.height;
+            outImageSnapshot.imageCodec      = snapshot.imageCodec;
+            ChipLogProgress(Camera, "ForwardingCamera: snapshot %ux%u, %u bytes (limit %u, %s session)",
+                            static_cast<unsigned>(snapshot.resolution.width), static_cast<unsigned>(snapshot.resolution.height),
+                            static_cast<unsigned>(outImageSnapshot.data.size()), static_cast<unsigned>(maxImageSize),
+                            largePayload ? "TCP" : "MRP");
+            return Status::Success;
+        }
+        ChipLogError(Camera, "ForwardingCamera: invalid CaptureSnapshot answer from host: %" CHIP_ERROR_FORMAT, err.Format());
+        hostStatus = Status::Failure;
     }
-    VerifyOrReturnValue(err == CHIP_NO_ERROR, Status::Failure,
-                        ChipLogError(Camera, "ForwardingCamera: invalid CaptureSnapshot answer from host: %" CHIP_ERROR_FORMAT,
-                                     err.Format()));
+    else if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(Camera, "ForwardingCamera: CaptureSnapshot not answered by host: %" CHIP_ERROR_FORMAT, err.Format());
+        hostStatus = Status::Failure;
+    }
+    else
+    {
+        ChipLogError(Camera, "ForwardingCamera: CaptureSnapshot rejected by host, status 0x%02x", to_underlying(hostStatus));
+    }
 
-    outImageSnapshot.data.assign(snapshot.data.begin(), snapshot.data.end());
-    outImageSnapshot.imageRes.width  = snapshot.resolution.width;
-    outImageSnapshot.imageRes.height = snapshot.resolution.height;
-    outImageSnapshot.imageCodec      = snapshot.imageCodec;
-    return Status::Success;
+    // Release the partial image right away.
+    outImageSnapshot.data.clear();
+    outImageSnapshot.data.shrink_to_fit();
+    return hostStatus;
 }
 
 CHIP_ERROR ForwardingCamera::PersistentAttributesLoadedCallback()

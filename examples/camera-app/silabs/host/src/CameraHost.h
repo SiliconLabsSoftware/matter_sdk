@@ -42,6 +42,13 @@ public:
     void OnAttributeChange(const MmicLink::AttributeChange & change);
 
 private:
+    struct SnapshotStream
+    {
+        uint8_t quality    = 0;
+        uint16_t maxWidth  = 0;
+        uint16_t maxHeight = 0;
+    };
+
     camera::Status HandleAvStreamManagement(uint32_t commandId, const std::vector<tlv::Element> & params);
     camera::Status HandleWebRtcProvider(uint16_t endpointId, uint32_t commandId, const std::vector<tlv::Element> & params);
     camera::Status HandleAvSettings(uint32_t commandId, const std::vector<tlv::Element> & params);
@@ -49,11 +56,13 @@ private:
     camera::Status VideoStreamAllocate(const tlv::Element & stream);
     camera::Status AudioStreamAllocate(const tlv::Element & stream);
     camera::Status SnapshotStreamAllocate(const tlv::Element & stream);
+    // Sends the image with bulk_data frames, answer is the CaptureSnapshotResponse without the image.
+    camera::Status CaptureSnapshot(const MmicLink::ClusterCommand & command, const std::vector<tlv::Element> & params,
+                                   std::vector<uint8_t> & answer);
 
     MmicLink & mLink;
     CameraDevice & mCamera;
     WebRtcManager & mWebRtc;
 
-    // Snapshot streams are only tracked: capture is not supported yet.
-    std::map<uint16_t, uint8_t> mSnapshotStreams;
+    std::map<uint16_t, SnapshotStream> mSnapshotStreams;
 };

@@ -180,6 +180,36 @@ class TestSuite:
             return False, f"expected NOT_FOUND, got {proto.status_name(status)}"
         return TestCase(name, run)
 
+    def _snapshot(self, name: str, max_size: int, resolution=(640, 480), may_not_fit: bool = False) -> TestCase:
+        """CaptureSnapshot returning a JPEG image within max_size and resolution. may_not_fit also accepts
+        RESOURCE_EXHAUSTED, when the camera cannot shrink the image enough."""
+        async def run():
+            status, snapshot, error = await self._tester.capture_snapshot(None, resolution, max_size)
+            if may_not_fit and status == proto.RESOURCE_EXHAUSTED:
+                return True, "RESOURCE_EXHAUSTED (image cannot be made small enough)"
+            if status != proto.SUCCESS:
+                return False, f"expected SUCCESS, got {proto.status_name(status)}"
+            if snapshot is None:
+                return False, error
+            image = snapshot.image
+            if snapshot.codec != proto.IMAGE_CODEC_JPEG or image[:2] != b"\xff\xd8" or image[-2:] != b"\xff\xd9":
+                return False, "not a JPEG image"
+            if len(image) > max_size:
+                return False, f"{len(image)} bytes, above the {max_size} bytes limit"
+            if not (0 < snapshot.width <= resolution[0] and 0 < snapshot.height <= resolution[1]):
+                return False, f"unexpected resolution {snapshot.width}x{snapshot.height}"
+            return True, f"{snapshot.width}x{snapshot.height}, {len(image)} bytes"
+        return TestCase(name, run)
+
+    def _snapshot_error(self, name: str, expected: int, stream_id: Optional[int] = None,
+                        max_size: int = proto.SNAPSHOT_MAX_SIZE_TCP, accepted_size: Optional[int] = None) -> TestCase:
+        async def run():
+            status, _, _ = await self._tester.capture_snapshot(stream_id, max_size=max_size, accepted_size=accepted_size)
+            if status == expected:
+                return True, proto.status_name(status)
+            return False, f"expected {proto.status_name(expected)}, got {proto.status_name(status)}"
+        return TestCase(name, run)
+
     # Test list
 
     def _cases(self) -> List[TestCase]:
@@ -205,8 +235,11 @@ class TestSuite:
                        proto.SUCCESS),
             self._avsm("SnapshotStreamAllocate HEIC (unsupported codec)", proto.SNAPSHOT_STREAM_ALLOCATE,
                        proto.snapshot_stream(1, codec=proto.IMAGE_CODEC_HEIC), proto.CONSTRAINT_ERROR),
-            self._avsm("CaptureSnapshot (not implemented)", proto.CAPTURE_SNAPSHOT, proto.capture_snapshot(None),
-                       proto.UNSUPPORTED_COMMAND),
+            self._snapshot("CaptureSnapshot (TCP size limit, from the video stream)", proto.SNAPSHOT_MAX_SIZE_TCP),
+            self._snapshot("CaptureSnapshot (MRP size limit)", proto.SNAPSHOT_MAX_SIZE_MRP, may_not_fit=True),
+            self._snapshot_error("CaptureSnapshot size limit too small", proto.RESOURCE_EXHAUSTED, max_size=200),
+            self._snapshot_error("CaptureSnapshot image refused by the SoC", proto.RESOURCE_EXHAUSTED, accepted_size=0),
+            self._snapshot_error("CaptureSnapshot unknown stream", proto.NOT_FOUND, stream_id=7),
             # Camera AV Settings User Level Management
             self._settings("DPTZSetViewport", proto.DPTZ_SET_VIEWPORT, proto.dptz(VIDEO_STREAM, (0, 0, 1280, 720)),
                            proto.SUCCESS),
@@ -246,6 +279,7 @@ class TestSuite:
                        proto.SUCCESS),
             self._avsm("AudioStreamDeallocate", proto.AUDIO_STREAM_DEALLOCATE, proto.stream_request(AUDIO_STREAM),
                        proto.SUCCESS),
+            self._snapshot("CaptureSnapshot (no video stream, camera started)", proto.SNAPSHOT_MAX_SIZE_TCP),
             self._avsm("SnapshotStreamDeallocate", proto.SNAPSHOT_STREAM_DEALLOCATE, proto.stream_request(SNAPSHOT_STREAM),
                        proto.SUCCESS),
         ]
