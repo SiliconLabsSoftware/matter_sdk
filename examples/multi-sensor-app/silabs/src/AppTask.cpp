@@ -409,32 +409,35 @@ CHIP_ERROR AppTask::GetTemperatureAndHumidity([[maybe_unused]] int16_t & tempera
 
 #ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
     TemperatureMeasurementCluster * tempCluster = GetTemperatureCluster();
-    DataModel::Nullable<int16_t> maxTempMeasuredValue =
-        (tempCluster != nullptr) ? tempCluster->GetMaxMeasuredValue() : DataModel::Nullable<int16_t>{};
+    VerifyOrReturnError(tempCluster != nullptr, CHIP_ERROR_NOT_FOUND,
+                        ChipLogError(AppServer, "Temperature cluster not found on endpoint %u", kTemperatureSensorEndpoint));
 
-    DataModel::Nullable<int16_t> currentTempValue;
-    if (tempCluster != nullptr)
-    {
-        currentTempValue = tempCluster->GetMeasuredValue();
-    }
+    DataModel::Nullable<int16_t> maxTempMeasuredValue = tempCluster->GetMaxMeasuredValue();
+    // Value() on a null Nullable asserts, and a non-positive max makes the modulo below invalid.
+    VerifyOrReturnError(!maxTempMeasuredValue.IsNull() && maxTempMeasuredValue.Value() > 0, CHIP_ERROR_INCORRECT_STATE,
+                        ChipLogError(AppServer, "Temperature MaxMeasuredValue on endpoint %u is null or not positive",
+                                     kTemperatureSensorEndpoint));
+
+    DataModel::Nullable<int16_t> currentTempValue = tempCluster->GetMeasuredValue();
     if (currentTempValue.IsNull())
     {
-        currentTempValue.SetNonNull(Crypto::GetRandU16() % maxTempMeasuredValue.Value());
+        currentTempValue.SetNonNull(
+            static_cast<int16_t>(Crypto::GetRandU16() % static_cast<uint16_t>(maxTempMeasuredValue.Value())));
     }
 
-    temperature = (currentTempValue.Value() + kSimulationStep) % maxTempMeasuredValue.Value();
+    temperature = static_cast<int16_t>((currentTempValue.Value() + kSimulationStep) % maxTempMeasuredValue.Value());
 #endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 
 #ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     RelativeHumidityMeasurementCluster * rhCluster = GetHumidityCluster();
-    DataModel::Nullable<uint16_t> maxMeasuredHumidityValue =
-        (rhCluster != nullptr) ? rhCluster->GetMaxMeasuredValue() : DataModel::Nullable<uint16_t>{};
+    VerifyOrReturnError(rhCluster != nullptr, CHIP_ERROR_NOT_FOUND,
+                        ChipLogError(AppServer, "Humidity cluster not found on endpoint %u", kHumiditySensorEndpoint));
 
-    DataModel::Nullable<uint16_t> currentHumidityValue;
-    if (rhCluster != nullptr)
-    {
-        currentHumidityValue = rhCluster->GetMeasuredValue();
-    }
+    DataModel::Nullable<uint16_t> maxMeasuredHumidityValue = rhCluster->GetMaxMeasuredValue();
+    VerifyOrReturnError(!maxMeasuredHumidityValue.IsNull() && maxMeasuredHumidityValue.Value() > 0, CHIP_ERROR_INCORRECT_STATE,
+                        ChipLogError(AppServer, "Humidity MaxMeasuredValue on endpoint %u is null or zero", kHumiditySensorEndpoint));
+
+    DataModel::Nullable<uint16_t> currentHumidityValue = rhCluster->GetMeasuredValue();
     if (currentHumidityValue.IsNull())
     {
         currentHumidityValue.SetNonNull(Crypto::GetRandU16() % maxMeasuredHumidityValue.Value());
