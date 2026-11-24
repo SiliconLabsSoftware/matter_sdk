@@ -153,7 +153,11 @@ CHIP_ERROR AppTask::AppInit()
     }
 
 #if SL_MATTER_DISPLAY_ENABLED
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     mCurrentSensorUI = kSensorUIEnum::kOccupancySensor;
+#else
+    mCurrentSensorUI = kSensorUIEnum::kSensor;
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
 
 // Show QR Code if not provisioned
 #if SL_MATTER_QR_CODE_ENABLED
@@ -217,10 +221,12 @@ void AppTask::UpdateSensorDisplay()
 {
     switch (mCurrentSensorUI)
     {
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     case kSensorUIEnum::kOccupancySensor:
         GetLCD().SetCustomUI(nullptr);
         GetLCD().WriteDemoUI(IsOccupancyDetected());
         break;
+#endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
     case kSensorUIEnum::kSensor:
         GetLCD().SetCustomUI(SensorsUI::SensorUI);
         GetLCD().WriteDemoUI();
