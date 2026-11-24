@@ -274,10 +274,16 @@ CHIP_ERROR HttpClient::ProcessInit()
         ChipLogProgress(DeviceLayer, "[HTTPS] TLS CA loaded at index: %u", mConfig.certificateIndex);
     }
 
-    if ((mConfig.username != nullptr) && (mConfig.password != nullptr))
+    // NWP sl_http_client_init always sl_net_get_credential(HTTP_CLIENT_ID(0)).
+    // Empty user/pass still must be registered or init returns SL_STATUS_NOT_FOUND.
     {
-        const uint16_t usernameLength = static_cast<uint16_t>(strlen(mConfig.username));
-        const uint16_t passwordLength = static_cast<uint16_t>(strlen(mConfig.password));
+        // Max credential length is 139 bytes, as per sl_http_client_credentials_t.
+        const size_t kMaxCredentialLength = 139;
+
+        const char * username         = (mConfig.username != nullptr) ? mConfig.username : "";
+        const char * password         = (mConfig.password != nullptr) ? mConfig.password : "";
+        const uint16_t usernameLength = static_cast<uint16_t>(strnlen(username, kMaxCredentialLength));
+        const uint16_t passwordLength = static_cast<uint16_t>(strnlen(password, kMaxCredentialLength));
         const uint32_t credentialSize = sizeof(sl_http_client_credentials_t) + usernameLength + passwordLength;
 
         auto * credentials = static_cast<sl_http_client_credentials_t *>(malloc(credentialSize));
@@ -285,8 +291,8 @@ CHIP_ERROR HttpClient::ProcessInit()
         memset(credentials, 0, credentialSize);
         credentials->username_length = usernameLength;
         credentials->password_length = passwordLength;
-        memcpy(&credentials->data[0], mConfig.username, usernameLength);
-        memcpy(&credentials->data[usernameLength], mConfig.password, passwordLength);
+        memcpy(&credentials->data[0], username, usernameLength);
+        memcpy(&credentials->data[usernameLength], password, passwordLength);
 
         sl_status_t status = sl_net_set_credential(static_cast<sl_net_credential_id_t>(SL_NET_HTTP_CLIENT_CREDENTIAL_ID(0)),
                                                    SL_NET_HTTP_CLIENT_CREDENTIAL, credentials, credentialSize);
