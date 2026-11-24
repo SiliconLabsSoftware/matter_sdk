@@ -62,7 +62,8 @@ CHIP_ERROR HttpClient::MapStatus(sl_status_t status)
     }
     // MQTT holding SNI: same retry path as CHIP_ERROR_BUSY.
     VerifyOrReturnError(status != SL_STATUS_SI91X_FEATURE_NOT_AVAILABLE, CHIP_ERROR_BUSY);
-
+    // added since MATTER_ERROR_PLATFORM is not available in the SDK
+    ChipLogDetail(DeviceLayer, "[HTTPS] unknown status: %ld", status);
     return CHIP_ERROR_INTERNAL;
 }
 
