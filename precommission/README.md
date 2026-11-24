@@ -68,8 +68,7 @@ default attached device. Sample YAMLs (`provisioning-config-closure.yaml` /
 
 `generate_precommission.py` generates a fresh Thread Direct initiator/listener
 pair. For the sample applications, the switch is the initiator and the closure
-is the listener. The generated YAML is flashed with `precommission.py`
-unchanged.
+is the listener. The generated YAML can then be flashed with `precommission.py`.
 
 It needs the `chip-cert` tool, passed with `--chip-cert`.
 
