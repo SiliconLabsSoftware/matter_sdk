@@ -63,7 +63,7 @@ namespace {
 
 VendorOTARequestor gVendorOTARequestor;
 
-constexpr CharSpan kHttpsScheme     = "https://"_span;
+constexpr CharSpan kHttpsScheme      = "https://"_span;
 constexpr uint16_t kDefaultHttpsPort = 443;
 
 constexpr char kHttpTlsCaCertificate[] = SL_MATTER_HTTP_TLS_CA_CERTIFICATE;
@@ -269,9 +269,9 @@ CHIP_ERROR VendorOTARequestor::EnsureHttpClientStarted()
         }
     }
 
-    const char * user = SL_MATTER_HTTP_CLIENT_USERNAME;
-    const char * pass = SL_MATTER_HTTP_CLIENT_PASSWORD;
-    const size_t caLen = PemCredentialLen(kHttpTlsCaCertificate, sizeof(kHttpTlsCaCertificate));
+    const char * user             = SL_MATTER_HTTP_CLIENT_USERNAME;
+    const char * pass             = SL_MATTER_HTTP_CLIENT_PASSWORD;
+    const size_t caLen            = PemCredentialLen(kHttpTlsCaCertificate, sizeof(kHttpTlsCaCertificate));
     const HttpClientConfig config = {
         .httpsEnable  = true,
         .username     = (user[0] != '\0') ? user : nullptr,
@@ -294,7 +294,7 @@ CHIP_ERROR VendorOTARequestor::EnsureHttpClientStarted()
 
 void VendorOTARequestor::OnHttpClientInitDone(CHIP_ERROR result, void * context)
 {
-    auto * self             = static_cast<VendorOTARequestor *>(context);
+    auto * self              = static_cast<VendorOTARequestor *>(context);
     self->mClientInitPending = false;
     if (result == CHIP_NO_ERROR)
     {
@@ -486,8 +486,7 @@ void VendorOTARequestor::CancelImageUpdate()
     RecordState(OTAUpdateStateEnum::kIdle, OTAChangeReasonEnum::kFailure);
     RestoreMatterOwnership();
     SetLastResult(CHIP_ERROR_CONNECTION_ABORTED, LastResultReason::kAborted);
-    ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL aborted %" CHIP_ERROR_FORMAT,
-                 CHIP_ERROR_CONNECTION_ABORTED.Format());
+    ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL aborted %" CHIP_ERROR_FORMAT, CHIP_ERROR_CONNECTION_ABORTED.Format());
 
     if (mVendorDriver != nullptr)
     {
@@ -505,7 +504,7 @@ void VendorOTARequestor::OnDownloadStateChanged(OTADownloader::State state, OTAC
     // 1. Download complete: persist apply markers and hand off to the image processor.
     if (state == OTADownloader::State::kComplete)
     {
-        mTargetVersion            = mHttpsDownloader->GetTargetVersion();
+        mTargetVersion        = mHttpsDownloader->GetTargetVersion();
         CHIP_ERROR persistErr = PersistApplyingForConfirm(mTargetVersion);
         if (persistErr != CHIP_NO_ERROR)
         {
