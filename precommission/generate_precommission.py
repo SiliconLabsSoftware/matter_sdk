@@ -452,13 +452,13 @@ def existing_file(value: str) -> Path:
     path = Path(value).expanduser()
     if not path.is_file():
         raise argparse.ArgumentTypeError(f"{value} is not a file")
-    return path
+    return path.resolve()
 
 
-def inputs_to_argv(path: Path) -> list[str]:
+def inputs_to_argv(path: Path, overrides: set[str]) -> list[str]:
     """Converts a flat JSON object of {option: value} into CLI arguments.
 
-    Keys are the CLI option names (`chip_cert` or `chip-cert`); null values are skipped.
+    Keys are the CLI option names (`chip_cert` or `chip-cert`); null and overridden values are skipped.
     Path options are resolved relative to the JSON file.
     """
     with path.open(encoding="utf-8") as file:
@@ -469,6 +469,8 @@ def inputs_to_argv(path: Path) -> list[str]:
         if value is None:
             continue
         name = key.replace("-", "_")
+        if name in overrides:
+            continue
         if name in {"chip_cert", "rcac", "icac", "ca_key", "out"}:
             value = (path.parent / Path(str(value)).expanduser()).resolve()
         argv.append(f"--{name.replace('_', '-')}={value}")
@@ -476,7 +478,7 @@ def inputs_to_argv(path: Path) -> list[str]:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parses CLI options; `--inputs` values are inserted first, so explicit CLI options override them."""
+    """Parses CLI options, excluding overridden profile values before validation."""
     argv = sys.argv[1:] if argv is None else argv
     pre_parser = argparse.ArgumentParser(add_help=False)
     pre_parser.add_argument("--inputs", type=existing_file)
@@ -506,7 +508,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--mrp-active", type=auto_int, default=DEFAULT_MRP_ACTIVE_MS)
     parser.add_argument("--mrp-active-threshold", type=auto_int, default=DEFAULT_MRP_ACTIVE_THRESHOLD_MS)
     parser.add_argument("--seed", type=int, help="deterministic RNG seed (testing only)")
-    return parser.parse_args((inputs_to_argv(inputs) if inputs else []) + argv)
+    profile_args = []
+    if inputs:
+        cli_parser = argparse.ArgumentParser(add_help=False, argument_default=argparse.SUPPRESS)
+        for action in parser._actions:
+            if action.dest != "help":
+                cli_parser.add_argument(*action.option_strings, dest=action.dest)
+        cli_values, _ = cli_parser.parse_known_args(argv)
+        profile_args = inputs_to_argv(inputs, set(vars(cli_values)))
+    return parser.parse_args(profile_args + argv)
 
 
 def main(argv: list[str] | None = None) -> None:
