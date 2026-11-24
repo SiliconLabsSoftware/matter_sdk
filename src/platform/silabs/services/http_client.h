@@ -82,6 +82,19 @@ struct HttpHost
 using HttpOperationCallback = void (*)(CHIP_ERROR result, void * context);
 
 /**
+ * @brief Optional per-chunk callback for @ref HttpClient::Get body data.
+ *
+ * Invoked on the NWP response path after each successful copy into @p responseBuffer.
+ * @p chunk is the bytes just written (a subspan of the response buffer). Use it to flush
+ * to flash or another sink. On success with a non-null data callback, the client reuses
+ * the response buffer for the next chunk (write offset reset). Return an error to abort.
+ *
+ * @param[in] chunk   Bytes just received for this NWP response.
+ * @param[in] context Same user pointer passed to @ref HttpClient::Get.
+ */
+using HttpGetDataCallback = CHIP_ERROR (*)(ByteSpan chunk, void * context);
+
+/**
  * @brief One HTTP request header.
  *
  * Both strings must be non-null and NUL-terminated. The caller owns the array
@@ -192,6 +205,19 @@ public:
      */
     CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer, const HttpHeader * headers,
                    size_t headerCount, HttpOperationCallback callback, void * context = nullptr);
+
+    /**
+     * @brief Start an HTTPS GET with optional per-chunk body callback.
+     *
+     * When @p dataCallback is non-null, it runs after each NWP data copy into @p responseBuffer
+     * so the caller can flush those bytes (e.g. to flash). The buffer is then reused for the
+     * next chunk; size it for one NWP response, not the full body. @p callback still runs once
+     * when the GET completes. When @p dataCallback is null, body bytes accumulate as usual.
+     *
+     * @param[in] dataCallback Per-chunk body callback; nullptr disables streaming flush.
+     */
+    CHIP_ERROR Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer, const HttpHeader * headers,
+                   size_t headerCount, HttpGetDataCallback dataCallback, HttpOperationCallback callback, void * context = nullptr);
 
     /**
      * @brief Start an HTTPS POST.
@@ -412,8 +438,9 @@ private:
     bool mChunkedActive         = false;
     Operation mPendingOperation = Operation::None;
 
-    HttpOperationCallback mUserCallback = nullptr;
-    void * mUserCallbackContext         = nullptr;
+    HttpGetDataCallback mGetDataCallback = nullptr;
+    HttpOperationCallback mUserCallback  = nullptr;
+    void * mUserCallbackContext          = nullptr;
 
     bool mInitialized = false;
     static bool sNwpCaLoaded;
