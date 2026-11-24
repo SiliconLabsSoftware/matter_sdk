@@ -269,9 +269,10 @@ CHIP_ERROR VendorOTARequestor::EnsureHttpClientStarted()
         }
     }
 
-    const char * user             = SL_MATTER_HTTP_CLIENT_USERNAME;
-    const char * pass             = SL_MATTER_HTTP_CLIENT_PASSWORD;
-    const size_t caLen            = PemCredentialLen(kHttpTlsCaCertificate, sizeof(kHttpTlsCaCertificate));
+    const char * user  = SL_MATTER_HTTP_CLIENT_USERNAME;
+    const char * pass  = SL_MATTER_HTTP_CLIENT_PASSWORD;
+    const size_t caLen = PemCredentialLen(kHttpTlsCaCertificate, sizeof(kHttpTlsCaCertificate));
+
     const HttpClientConfig config = {
         .httpsEnable  = true,
         .username     = (user[0] != '\0') ? user : nullptr,
