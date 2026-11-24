@@ -79,11 +79,10 @@ scripts/run_in_build_env.sh "gn gen out/chip-cert --args='chip_crypto=\"boringss
 The script does not create a CA. It issues each device's NOC from an existing
 one:
 
-- **Production:** the fabric's root certificate (`--rcac`), its intermediate
-  (`--icac`, when NOCs are issued by an ICAC) and the private key of the
-  certificate that directly issued the NOC (`--ca-key`). If the production PKI
-  uses an intermediate, include it; the generator stores it as `f/1/i` and
-  validates the NOC chain against it and the root.
+- **Production:** Provide the root certificate (`--rcac`) and the private key
+  used to sign each device's Node Operational Certificate (`--ca-key`). If an
+  intermediate certificate signs the NOCs, also provide it with `--icac`; if the
+  root signs them directly, omit `--icac` and use the root's private key.
 - **Development:** the SDK test root
   `credentials/test/operational-certificates/Chip-Test-Root01-Cert.pem` and its
   key, with no ICAC. Its private key is public, so use it for development only.
