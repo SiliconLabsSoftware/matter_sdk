@@ -293,7 +293,7 @@ void OnOffLightingCluster::TimerFired()
         NotifyAttributeChanged(Attributes::OnTime::Id);
 
         // If timer is not yet 0, update the timer and keep going. Otherwise move to off state.
-        VerifyOrReturn(mOnTime == 0, UpdateTimer());
+        VerifyOrReturn(mOnTime == 0, ScheduleNextTick());
 
         // transition TIMED_ON to OFF - clear off wait time and turn off
         SetOffWaitTime(0);
@@ -305,11 +305,17 @@ void OnOffLightingCluster::TimerFired()
 
         mOffWaitTime--;
         NotifyAttributeChanged(Attributes::OffWaitTime::Id);
-        UpdateTimer();
+        ScheduleNextTick();
     }
 }
 
 void OnOffLightingCluster::UpdateTimer()
+{
+    mNextTickTime = mTimerDelegate.GetCurrentMonotonicTimestamp();
+    ScheduleNextTick();
+}
+
+void OnOffLightingCluster::ScheduleNextTick()
 {
     mTimerDelegate.CancelTimer(this);
 
@@ -329,8 +335,11 @@ void OnOffLightingCluster::UpdateTimer()
 
     VerifyOrReturn(needTimer);
 
-    // 100ms = 1/10th second
-    LogErrorOnFailure(mTimerDelegate.StartTimer(this, System::Clock::Milliseconds32(100)));
+    // Schedule relative to when the previous tick was due, so late callbacks do not extend the countdown.
+    mNextTickTime += System::Clock::Milliseconds32(100);
+    const System::Clock::Timestamp now   = mTimerDelegate.GetCurrentMonotonicTimestamp();
+    const System::Clock::Timestamp delay = (mNextTickTime > now) ? (mNextTickTime - now) : System::Clock::Milliseconds64(1);
+    LogErrorOnFailure(mTimerDelegate.StartTimer(this, std::chrono::duration_cast<System::Clock::Timeout>(delay)));
 }
 
 DataModel::ActionReturnStatus OnOffLightingCluster::HandleOff()

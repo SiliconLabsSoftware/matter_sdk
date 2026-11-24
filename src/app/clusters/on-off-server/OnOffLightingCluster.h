@@ -125,6 +125,9 @@ private:
     uint16_t mOnTime      = 0;
     uint16_t mOffWaitTime = 0;
 
+    // Monotonic time at which the next 1/10th second decrement is due.
+    System::Clock::Timestamp mNextTickTime = System::Clock::kZero;
+
     // controlling cluster startup - these values are only used at startup however
     // user may modify mStartUpOnOff attribute as it is writable.
     DataModel::Nullable<OnOff::StartUpOnOffEnum> mStartUpOnOff;
@@ -133,7 +136,10 @@ private:
     DataModel::ActionReturnStatus WriteImpl(const DataModel::WriteAttributeRequest & request, AttributeValueDecoder & decoder);
 
     // Timer logic
+    // Restarts the 1/10th second countdown from the current time.
     void UpdateTimer();
+    // Continues the countdown relative to mNextTickTime.
+    void ScheduleNextTick();
 
     // Command Handlers
     DataModel::ActionReturnStatus HandleOffWithEffect(const DataModel::InvokeRequest & request,
