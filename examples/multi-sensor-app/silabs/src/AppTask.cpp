@@ -29,6 +29,7 @@
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
+#include <app/util/config.h>
 #ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
 #include <app/clusters/occupancy-sensor-server/CodegenIntegration.h>
 #endif // MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
@@ -41,7 +42,6 @@
 #include <app/data-model-provider/AttributeChangeListener.h>
 #include <app/server/Server.h>
 #include <app/util/attribute-storage.h>
-#include <app/util/config.h>
 #include <assert.h>
 #include <cmsis_os2.h>
 #include <data-model-providers/codegen/CodegenDataModelProvider.h>
@@ -88,9 +88,9 @@ constexpr uint8_t kOccupancyLedId = 1;
 constexpr uint8_t kOccupancyLedId = 0;
 #endif
 
-constexpr EndpointId kOccupancySensorEndpoint   = OCCUPANCY_SENSOR_ENDPOINT;
-constexpr EndpointId kTemperatureSensorEndpoint = TEMPERATURE_SENSOR_ENDPOINT;
-constexpr EndpointId kHumiditySensorEndpoint    = HUMIDITY_SENSOR_ENDPOINT;
+[[maybe_unused]] constexpr EndpointId kOccupancySensorEndpoint   = OCCUPANCY_SENSOR_ENDPOINT;
+[[maybe_unused]] constexpr EndpointId kTemperatureSensorEndpoint = TEMPERATURE_SENSOR_ENDPOINT;
+[[maybe_unused]] constexpr EndpointId kHumiditySensorEndpoint    = HUMIDITY_SENSOR_ENDPOINT;
 
 // The > 0 is necessary to avoid causing a type-limits compilation error when the threshold is equal to 0
 // which is specific to the uint8_t data type
@@ -305,14 +305,12 @@ void AppTask::OnAttributeChanged([[maybe_unused]] const ConcreteAttributePath & 
 
     bool isMeasurementUpdate = false;
 #ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
-    isMeasurementUpdate = isMeasurementUpdate ||
-        (path.mEndpointId == kTemperatureSensorEndpoint && path.mClusterId == TemperatureMeasurement::Id &&
-         path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id);
+    isMeasurementUpdate |= (path.mEndpointId == kTemperatureSensorEndpoint && path.mClusterId == TemperatureMeasurement::Id &&
+                            path.mAttributeId == TemperatureMeasurement::Attributes::MeasuredValue::Id);
 #endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
 #ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
-    isMeasurementUpdate = isMeasurementUpdate ||
-        (path.mEndpointId == kHumiditySensorEndpoint && path.mClusterId == RelativeHumidityMeasurement::Id &&
-         path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id);
+    isMeasurementUpdate |= (path.mEndpointId == kHumiditySensorEndpoint && path.mClusterId == RelativeHumidityMeasurement::Id &&
+                            path.mAttributeId == RelativeHumidityMeasurement::Attributes::MeasuredValue::Id);
 #endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 
     if (isMeasurementUpdate)
@@ -463,87 +461,77 @@ CHIP_ERROR AppTask::InitSensorManager()
     return CHIP_NO_ERROR;
 }
 
+Status AppTask::GetMeasuredTemperature([[maybe_unused]] DataModel::Nullable<int16_t> & value)
+{
 #ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
-Status AppTask::GetMeasuredTemperature(DataModel::Nullable<int16_t> & value)
-{
     TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMeasuredValue();
     return Status::Success;
-}
-
-Status AppTask::GetMaxMeasuredTemperature(DataModel::Nullable<int16_t> & value)
-{
-    TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
-    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
-    value = cluster->GetMaxMeasuredValue();
-    return Status::Success;
-}
-
-Status AppTask::GetMinMeasuredTemperature(DataModel::Nullable<int16_t> & value)
-{
-    TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
-    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
-    value = cluster->GetMinMeasuredValue();
-    return Status::Success;
-}
 #else
-Status AppTask::GetMeasuredTemperature(DataModel::Nullable<int16_t> &)
-{
     return Status::UnsupportedEndpoint;
-}
-
-Status AppTask::GetMaxMeasuredTemperature(DataModel::Nullable<int16_t> &)
-{
-    return Status::UnsupportedEndpoint;
-}
-
-Status AppTask::GetMinMeasuredTemperature(DataModel::Nullable<int16_t> &)
-{
-    return Status::UnsupportedEndpoint;
-}
 #endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+}
 
-#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
-Status AppTask::GetMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
+Status AppTask::GetMaxMeasuredTemperature([[maybe_unused]] DataModel::Nullable<int16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+    TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
+    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
+    value = cluster->GetMaxMeasuredValue();
+    return Status::Success;
+#else
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+}
+
+Status AppTask::GetMinMeasuredTemperature([[maybe_unused]] DataModel::Nullable<int16_t> & value)
+{
+#ifdef MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+    TemperatureMeasurementCluster * cluster = GetTemperatureCluster();
+    VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
+    value = cluster->GetMinMeasuredValue();
+    return Status::Success;
+#else
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_TEMPERATURE_MEASUREMENT_SERVER
+}
+
+Status AppTask::GetMeasuredHumidity([[maybe_unused]] DataModel::Nullable<uint16_t> & value)
+{
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMeasuredValue();
     return Status::Success;
+#else
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 }
 
-Status AppTask::GetMaxMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
+Status AppTask::GetMaxMeasuredHumidity([[maybe_unused]] DataModel::Nullable<uint16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMaxMeasuredValue();
     return Status::Success;
+#else
+    return Status::UnsupportedEndpoint;
+#endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
 }
 
-Status AppTask::GetMinMeasuredHumidity(DataModel::Nullable<uint16_t> & value)
+Status AppTask::GetMinMeasuredHumidity([[maybe_unused]] DataModel::Nullable<uint16_t> & value)
 {
+#ifdef MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
     RelativeHumidityMeasurementCluster * cluster = GetHumidityCluster();
     VerifyOrReturnError(cluster != nullptr, Status::UnsupportedEndpoint);
     value = cluster->GetMinMeasuredValue();
     return Status::Success;
-}
 #else
-Status AppTask::GetMeasuredHumidity(DataModel::Nullable<uint16_t> &)
-{
     return Status::UnsupportedEndpoint;
-}
-
-Status AppTask::GetMaxMeasuredHumidity(DataModel::Nullable<uint16_t> &)
-{
-    return Status::UnsupportedEndpoint;
-}
-
-Status AppTask::GetMinMeasuredHumidity(DataModel::Nullable<uint16_t> &)
-{
-    return Status::UnsupportedEndpoint;
-}
 #endif // MATTER_DM_PLUGIN_RELATIVE_HUMIDITY_MEASUREMENT_SERVER
+}
 
 bool AppTask::IsOccupancyDetected()
 {
