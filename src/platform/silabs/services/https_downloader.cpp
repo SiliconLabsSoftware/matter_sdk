@@ -18,6 +18,8 @@
 
 #include "https_downloader.h"
 
+#include "cmsis_os2.h"
+
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -26,7 +28,6 @@
 
 #include <algorithm>
 #include <cinttypes>
-#include <cstdio>
 #include <cstring>
 
 using chip::app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum;
@@ -78,7 +79,7 @@ void HttpsDownloader::BusyRetryTimerHandler(System::Layer * /* layer */, void * 
     auto * self = static_cast<HttpsDownloader *>(appState);
     VerifyOrReturn(self != nullptr);
     VerifyOrReturn(self->mState == State::kInProgress);
-    ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] busy/SNI retry at offset %" PRIu32, self->mNextOffset);
+    ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] busy/SNI retry");
     LogErrorOnFailure(self->FetchNextData());
 }
 
@@ -101,6 +102,28 @@ void HttpsDownloader::ClearSessionTarget()
     mPort = 0;
 }
 
+CHIP_ERROR HttpsDownloader::EnsureChunkSlotSem()
+{
+    if (mChunkSlotSem != nullptr)
+    {
+        osSemaphoreDelete(static_cast<osSemaphoreId_t>(mChunkSlotSem));
+        mChunkSlotSem = nullptr;
+    }
+
+    // max_count=1, initial_count=1: first OnGetData Acquire succeeds; CHIP Releases after ProcessBlock is queued.
+    mChunkSlotSem = osSemaphoreNew(1, 1, nullptr);
+    VerifyOrReturnError(mChunkSlotSem != nullptr, CHIP_ERROR_NO_MEMORY);
+    return CHIP_NO_ERROR;
+}
+
+void HttpsDownloader::ReleaseChunkSlot()
+{
+    if (mChunkSlotSem != nullptr)
+    {
+        osSemaphoreRelease(static_cast<osSemaphoreId_t>(mChunkSlotSem));
+    }
+}
+
 CHIP_ERROR HttpsDownloader::SetImageURI(CharSpan uri)
 {
     VerifyOrReturnError(mUriComposer != nullptr, CHIP_ERROR_INCORRECT_STATE);
@@ -121,12 +144,13 @@ CHIP_ERROR HttpsDownloader::SetImageURI(CharSpan uri)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR HttpsDownloader::QueueRangeGet()
+CHIP_ERROR HttpsDownloader::QueueGet()
 {
     VerifyOrReturnError(mHttpClient != nullptr, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mHttpClient->IsRunning(), CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mWaitingHttp, CHIP_ERROR_BUSY);
     VerifyOrReturnError(mServerEndpoint[0] != '\0' && mPath[0] != '\0', CHIP_ERROR_INCORRECT_STATE);
+    ReturnErrorOnFailure(EnsureChunkSlotSem());
 
     mRxSpan       = MutableByteSpan(mRxStaging, sizeof(mRxStaging));
     mRxStagingLen = 0;
@@ -137,12 +161,9 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
         .port           = mPort,
     };
 
-    const uint32_t endInclusive = mNextOffset + mBlockSize - 1;
-    ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] range queued offset=%" PRIu32 "-%" PRIu32, mNextOffset, endInclusive);
+    ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] GET queued path=%s", mPath);
 
-    snprintf(mRangeHeaderValue, sizeof(mRangeHeaderValue), "bytes=%" PRIu32 "-%" PRIu32, mNextOffset, endInclusive);
-
-    CHIP_ERROR err = mHttpClient->Get(host, mPath, mRxSpan, &mRangeHeader, 1, OnRangeComplete, this);
+    CHIP_ERROR err = mHttpClient->Get(host, mPath, mRxSpan, nullptr, 0, OnGetData, OnGetComplete, this);
     if (err == CHIP_ERROR_BUSY)
     {
         ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] busy retry scheduled");
@@ -151,7 +172,7 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
     }
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] QueueRangeGet Get=%" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] QueueGet Get=%" CHIP_ERROR_FORMAT, err.Format());
         return err;
     }
 
@@ -159,17 +180,68 @@ CHIP_ERROR HttpsDownloader::QueueRangeGet()
     return CHIP_NO_ERROR;
 }
 
-void HttpsDownloader::OnRangeComplete(CHIP_ERROR result, void * context)
+CHIP_ERROR HttpsDownloader::OnGetData(ByteSpan chunk, void * context)
+{
+    auto * self = static_cast<HttpsDownloader *>(context);
+    VerifyOrReturnError(self != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(chunk.size() > 0, CHIP_NO_ERROR);
+    VerifyOrReturnError(chunk.size() <= sizeof(self->mRxStaging), CHIP_ERROR_BUFFER_TOO_SMALL);
+    VerifyOrReturnError(self->mChunkSlotSem != nullptr, CHIP_ERROR_INCORRECT_STATE);
+
+    // Wait until CHIP finished the previous chunk so mRxStaging is free.
+    const osStatus_t wait = osSemaphoreAcquire(static_cast<osSemaphoreId_t>(self->mChunkSlotSem), osWaitForever);
+    VerifyOrReturnError(wait == osOK, CHIP_ERROR_INTERNAL);
+
+    memcpy(self->mRxStaging, chunk.data(), chunk.size());
+    self->mRxStagingLen = static_cast<uint32_t>(chunk.size());
+
+    const CHIP_ERROR schedErr = DeviceLayer::SystemLayer().ScheduleLambda([self] {
+        if (self->mState != State::kInProgress)
+        {
+            self->ReleaseChunkSlot();
+            return;
+        }
+
+        ByteSpan data(self->mRxStaging, self->mRxStagingLen);
+        CHIP_ERROR err = self->HandleBodyChunk(data);
+        self->ReleaseChunkSlot();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] HandleBodyChunk=%" CHIP_ERROR_FORMAT, err.Format());
+            self->CleanupOnError(OTAChangeReasonEnum::kFailure);
+            if (self->mImageProcessor != nullptr)
+            {
+                LogErrorOnFailure(self->mImageProcessor->Abort());
+            }
+        }
+    });
+    if (schedErr != CHIP_NO_ERROR)
+    {
+        self->ReleaseChunkSlot();
+        return schedErr;
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+void HttpsDownloader::OnGetComplete(CHIP_ERROR result, void * context)
 {
     auto * self = static_cast<HttpsDownloader *>(context);
     VerifyOrReturn(self != nullptr);
 
-    // Completion callback runs on http_client; hop ProcessBlock work to CHIP.
-    const uint16_t httpCode =
-        (self->mHttpClient != nullptr) ? self->mHttpClient->GetLastHttpResponseCode() : 0;
-    const uint32_t len = static_cast<uint32_t>(self->mRxSpan.size());
+    const uint16_t httpCode = (self->mHttpClient != nullptr) ? self->mHttpClient->GetLastHttpResponseCode() : 0;
 
-    LogErrorOnFailure(DeviceLayer::SystemLayer().ScheduleLambda([self, result, httpCode, len]() {
+    LogErrorOnFailure(DeviceLayer::SystemLayer().ScheduleLambda([self, result, httpCode]() {
+        // Drain the last in-flight chunk (if any) before finalize / cleanup.
+        if (self->mChunkSlotSem != nullptr)
+        {
+            const osStatus_t wait = osSemaphoreAcquire(static_cast<osSemaphoreId_t>(self->mChunkSlotSem), osWaitForever);
+            if (wait == osOK)
+            {
+                osSemaphoreRelease(static_cast<osSemaphoreId_t>(self->mChunkSlotSem));
+            }
+        }
+
         self->mWaitingHttp = false;
 
         if (self->mState != State::kInProgress)
@@ -184,32 +256,15 @@ void HttpsDownloader::OnRangeComplete(CHIP_ERROR result, void * context)
             return;
         }
 
-        // After the last block was processed, the next Get returns HTTP 416 with an empty
-        // body. Treat that as EOF and call HandleRangeBodyChunk to Finalize the transfer.
-        if ((result != CHIP_NO_ERROR) && (httpCode == kHttpRangeNotSatisfiable))
-        {
-            CHIP_ERROR err = self->HandleRangeBodyChunk(ByteSpan(), httpCode);
-            if (err != CHIP_NO_ERROR)
-            {
-                ChipLogError(SoftwareUpdate, "[HTTPS-OTA] HandleRangeBodyChunk=%" CHIP_ERROR_FORMAT, err.Format());
-                self->CleanupOnError(OTAChangeReasonEnum::kFailure);
-                if (self->mImageProcessor != nullptr)
-                {
-                    LogErrorOnFailure(self->mImageProcessor->Abort());
-                }
-            }
-            return;
-        }
-
         if (result != CHIP_NO_ERROR)
         {
-            // Connectivity loss pauses the transfer; NoteConnectivityRestored re-arms and fetches.
             if (self->mConnectivityLost)
             {
                 ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] Get error during connectivity loss (ignored)");
                 return;
             }
-            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL http %" CHIP_ERROR_FORMAT, result.Format());
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL http %" CHIP_ERROR_FORMAT " code=%u", result.Format(),
+                         httpCode);
             self->CleanupOnError(OTAChangeReasonEnum::kFailure);
             if (self->mImageProcessor != nullptr)
             {
@@ -218,18 +273,44 @@ void HttpsDownloader::OnRangeComplete(CHIP_ERROR result, void * context)
             return;
         }
 
-        self->mRxStagingLen = len;
-        ByteSpan data(self->mRxStaging, self->mRxStagingLen);
-        CHIP_ERROR err = self->HandleRangeBodyChunk(data, httpCode);
-        if (err != CHIP_NO_ERROR)
+        if ((httpCode != 0) && (httpCode != 200))
         {
-            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] HandleRangeBodyChunk=%" CHIP_ERROR_FORMAT, err.Format());
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL http-code=%u", httpCode);
             self->CleanupOnError(OTAChangeReasonEnum::kFailure);
             if (self->mImageProcessor != nullptr)
             {
                 LogErrorOnFailure(self->mImageProcessor->Abort());
             }
+            return;
         }
+
+        if (!self->mHeaderValidated || (self->mNextOffset == 0))
+        {
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL empty-or-incomplete");
+            self->CleanupOnError(OTAChangeReasonEnum::kFailure);
+            if (self->mImageProcessor != nullptr)
+            {
+                LogErrorOnFailure(self->mImageProcessor->Abort());
+            }
+            return;
+        }
+
+        CHIP_ERROR err = self->mImageProcessor->Finalize();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] Finalize=%" CHIP_ERROR_FORMAT, err.Format());
+            self->CleanupOnError(OTAChangeReasonEnum::kFailure);
+            if (self->mImageProcessor != nullptr)
+            {
+                LogErrorOnFailure(self->mImageProcessor->Abort());
+            }
+            return;
+        }
+
+        self->CancelStallTimer();
+        self->CancelBusyRetryTimer();
+        self->ClearSessionTarget();
+        self->SetState(State::kComplete, OTAChangeReasonEnum::kSuccess);
     }));
 }
 
@@ -276,49 +357,23 @@ CHIP_ERROR HttpsDownloader::ValidateHeaderIncremental(ByteSpan & block)
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCode)
+CHIP_ERROR HttpsDownloader::HandleBodyChunk(ByteSpan data)
 {
     VerifyOrReturnError(mState == State::kInProgress, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mImageProcessor != nullptr, CHIP_ERROR_INCORRECT_STATE);
 
-    // 1. Treat HTTP 416 as EOF only after a validated header and at least one byte written.
-    if (httpCode == kHttpRangeNotSatisfiable)
+    if (mBytesToSkip > 0)
     {
-        VerifyOrReturnError(mHeaderValidated && (mNextOffset > 0), CHIP_ERROR_INVALID_ARGUMENT);
-        ReturnErrorOnFailure(mImageProcessor->Finalize());
-        CancelStallTimer();
-        CancelBusyRetryTimer();
-        ClearSessionTarget();
-        SetState(State::kComplete, OTAChangeReasonEnum::kSuccess);
-        return CHIP_NO_ERROR;
-    }
-
-    // Allow HTTP 200 only for a single-block whole object at offset 0. Mid-file / multi-block
-    // 200 means the server ignored Range; require 206 Partial Content otherwise.
-    if (httpCode == 200)
-    {
-        if ((mNextOffset != 0) || (data.size() > mBlockSize))
+        const size_t skip = std::min(data.size(), static_cast<size_t>(mBytesToSkip));
+        data              = data.SubSpan(skip);
+        mBytesToSkip -= static_cast<uint32_t>(skip);
+        if (data.size() == 0)
         {
-            ChipLogError(SoftwareUpdate,
-                         "[HTTPS-OTA] RESULT: FAIL range-unsupported (HTTP 200; need 206 Partial Content)");
-            return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
+            return CHIP_NO_ERROR;
         }
     }
-    else
-    {
-        VerifyOrReturnError(httpCode == 206, CHIP_ERROR_INVALID_ARGUMENT);
-    }
 
-    // 2. Accumulate this Range response into the download block.
-    const uint32_t space = mBlockSize - mBlockFilled;
-    const size_t take    = std::min(data.size(), static_cast<size_t>(space));
-    MutableByteSpan dest(mBlockBuf + mBlockFilled, take);
-    ReturnErrorOnFailure(CopySpanToMutableSpan(data.SubSpan(0, take), dest));
-    mBlockFilled += static_cast<uint32_t>(dest.size());
-
-    // Get returns one complete response body per request (end_of_data handled in HttpClient).
-    ByteSpan block(mBlockBuf, mBlockFilled);
-    ByteSpan forValidate = block;
+    ByteSpan forValidate = data;
     {
         CHIP_ERROR headerErr = ValidateHeaderIncremental(forValidate);
         if (headerErr == CHIP_ERROR_VERSION_MISMATCH)
@@ -338,30 +393,16 @@ CHIP_ERROR HttpsDownloader::HandleRangeBodyChunk(ByteSpan data, uint16_t httpCod
         ReturnErrorOnFailure(headerErr);
     }
 
-    ByteSpan processSpan(mBlockBuf, mBlockFilled);
-    CHIP_ERROR procErr = mImageProcessor->ProcessBlock(processSpan);
+    ByteSpan processSpan = data;
+    CHIP_ERROR procErr   = mImageProcessor->ProcessBlock(processSpan);
     if (procErr != CHIP_NO_ERROR)
     {
         ChipLogError(SoftwareUpdate, "[HTTPS-OTA] ProcessBlock=%" CHIP_ERROR_FORMAT, procErr.Format());
     }
     ReturnErrorOnFailure(procErr);
 
-    mNextOffset += mBlockFilled;
+    mNextOffset += static_cast<uint32_t>(data.size());
     NotifyProgress();
-
-    // 3. Finalize on short read (last Range returned fewer bytes than requested).
-    const bool shortRead = (mBlockFilled < mBlockSize);
-    mBlockFilled         = 0;
-
-    if (shortRead)
-    {
-        ReturnErrorOnFailure(mImageProcessor->Finalize());
-        CancelStallTimer();
-        CancelBusyRetryTimer();
-        ClearSessionTarget();
-        SetState(State::kComplete, OTAChangeReasonEnum::kSuccess);
-    }
-
     return CHIP_NO_ERROR;
 }
 
@@ -381,13 +422,14 @@ CHIP_ERROR HttpsDownloader::BeginPrepareDownload()
 
     mNextOffset          = 0;
     mPrevOffset          = 0;
+    mBytesToSkip         = 0;
     mHeaderValidated     = false;
     mTargetVersion       = 0;
     mLastFailureNotNewer = false;
     mHeaderParser.Init();
     mConnectivityLost = false;
     mWaitingHttp      = false;
-    mBlockFilled      = 0;
+    mRxStagingLen     = 0;
 
     ArmStallTimer();
     SetState(State::kPreparing, OTAChangeReasonEnum::kSuccess);
@@ -419,14 +461,22 @@ CHIP_ERROR HttpsDownloader::FetchNextData()
         return CHIP_NO_ERROR;
     }
 
-    return QueueRangeGet();
+    // Image processor pulls FetchNextData after each ProcessBlock; the body stream is already
+    // in flight after the first QueueGet.
+    if (mWaitingHttp)
+    {
+        return CHIP_NO_ERROR;
+    }
+
+    return QueueGet();
 }
 
 CHIP_ERROR HttpsDownloader::SkipData(uint32_t numBytes)
 {
     VerifyOrReturnError(mState == State::kInProgress, CHIP_ERROR_INCORRECT_STATE);
+    mBytesToSkip += numBytes;
     mNextOffset += numBytes;
-    return FetchNextData();
+    return CHIP_NO_ERROR;
 }
 
 void HttpsDownloader::OnDownloadTimeout()
@@ -495,6 +545,19 @@ CHIP_ERROR HttpsDownloader::NoteConnectivityRestored()
     }
 
     mConnectivityLost = false;
+
+    // Full-body GET cannot resume mid-file without Range; fail the session.
+    if (mWaitingHttp || (mNextOffset > 0))
+    {
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL no-resume-after-disconnect");
+        CleanupOnError(OTAChangeReasonEnum::kFailure);
+        if (mImageProcessor != nullptr)
+        {
+            LogErrorOnFailure(mImageProcessor->Abort());
+        }
+        return CHIP_ERROR_CONNECTION_ABORTED;
+    }
+
     ArmStallTimer();
     return FetchNextData();
 }
