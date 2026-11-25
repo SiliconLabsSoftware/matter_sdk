@@ -34,6 +34,20 @@ config CHIP_ENABLE_PAIRING_AUTOSTART
 config CHIP_DATA_MODEL_CODEDRIVEN
 	default y
 
+config CHIP_ENABLE_GROUPCAST
+	default y
+
+config CHIP_PERSISTENT_SUBSCRIPTIONS
+	default y
+
+config NVS_LOOKUP_CACHE
+	default y
+	depends on NVS
+
+config NVS_LOOKUP_CACHE_SIZE
+	default 128
+	depends on NVS_LOOKUP_CACHE
+
 config CHIP_OTA_REQUESTOR
 	default n
 
@@ -195,5 +209,85 @@ config HWINFO_SHELL
     default n
 
 endif # SHELL
+
+# Silabs optimizations
+if SOC_FAMILY_SILABS_S2 && $(dt_chosen_enabled,$(DT_CHOSEN_IEEE802154))
+
+config NETWORKING
+	default y
+
+config CHIP_USE_ZEPHYR_NETWORKING
+	default n
+
+if NET_L2_OPENTHREAD
+
+config CHIP_USE_OT_ENDPOINT
+	default !CHIP_USE_ZEPHYR_NETWORKING
+
+config NET_IPV6_NBR_CACHE
+	default n if CHIP_USE_OT_ENDPOINT
+
+config NET_PKT_RX_COUNT
+	default 8
+
+config NET_PKT_TX_COUNT
+	default 8
+
+config NET_BUF_RX_COUNT
+	default 16
+
+config NET_BUF_TX_COUNT
+	default 16
+
+config OPENTHREAD_NUM_MESSAGE_BUFFERS
+	default 64
+
+if CHIP_CRYPTO_PSA
+
+choice OPENTHREAD_SECURITY_CONFIG
+	default OPENTHREAD_SECURITY_CUSTOM_CONFIG if !OPENTHREAD_JOINER && !OPENTHREAD_COMMISSIONER && \
+		!OPENTHREAD_COAPS && !OPENTHREAD_BORDER_AGENT && !OPENTHREAD_BLE_TCAT && !OPENTHREAD_TREL
+endchoice
+
+# Custom Thread security does not imply PSA persistent-key storage.
+config SECURE_STORAGE
+	default y if !BUILD_WITH_TFM
+
+config MBEDTLS_PSA_STATIC_KEY_SLOTS
+    default n
+
+config PSA_WANT_KEY_TYPE_HMAC
+	default y
+
+config PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_IMPORT
+	default y
+
+config PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_EXPORT
+	default y
+
+config PSA_WANT_ALG_DETERMINISTIC_ECDSA
+	default y
+
+config PSA_WANT_ALG_ECB_NO_PADDING
+	default y
+
+config MBEDTLS_ASN1_PARSE_C
+	default y
+
+config CHIP_CRYPTO_PSA_AEAD_SINGLE_PART
+	default y
+
+endif # CHIP_CRYPTO_PSA
+
+if MCUBOOT_IMG_MANAGER
+
+config IMG_ERASE_PROGRESSIVELY
+	default y
+
+endif # MCUBOOT_IMG_MANAGER
+
+endif # NET_L2_OPENTHREAD
+
+endif # SOC_FAMILY_SILABS_S2 && DT_CHOSEN_IEEE802154
 
 endif # CHIP

@@ -263,6 +263,7 @@ jobs:
                       src/app/zap-templates/zcl/data-model/chip/wake-on-lan-cluster.xml \
                       src/app/zap-templates/zcl/data-model/chip/washer-controls-cluster.xml \
                       src/app/zap-templates/zcl/data-model/chip/water-heater-management-cluster.xml \
+                      src/app/zap-templates/zcl/data-model/chip/water-heater-mode-cluster.xml \
                       src/app/zap-templates/zcl/data-model/chip/webrtc-requestor-cluster.xml \
                       src/app/zap-templates/zcl/data-model/chip/webrtc-provider-cluster.xml \
                       src/app/zap-templates/zcl/data-model/chip/wifi-network-diagnostics-cluster.xml \
@@ -782,7 +783,8 @@ jobs:
     repl_tests_linux_build:
         name: REPL Tests - Linux (BUILD)
 
-        if: github.actor != 'restyled-io[bot]'
+        # [SL-ONLY]Disable this test as it runs using namespace-profile a CSA Paid for runener
+        if: false
 
         env:
             BUILD_VARIANT: ipv6only-no-ble-no-wifi-asan
@@ -1043,7 +1045,8 @@ jobs:
         # Updating the timeout for REPL Tests - Linux (RUN) since splits now run in under 30 minutes
         timeout-minutes: 45
 
-        if: github.actor != 'restyled-io[bot]'
+        # [SL-ONLY]Disable this test as it runs using namespace-profile a CSA Paid for runener
+        if: false
 
         strategy:
             # Since some of these tests can be flaky, do not fail all matrix parts when a single one fails

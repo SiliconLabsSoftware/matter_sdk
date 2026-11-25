@@ -21,7 +21,27 @@
 // are defined in the sli_mbedtls_config_autogen.h file
 // see sli_mbedtls_config_autogen.h for more details
 
-#pragma once
+// #pragma once
+#ifndef SIWX917_CHIP_MBEDTLS_CONFIG_EARLY
+#define SIWX917_CHIP_MBEDTLS_CONFIG_EARLY
+
+// TODO: This is a temporary fix to allow the use of TinyCrypt on the SiWx917.
+// This should be removed when this is analysed further.
+// This is only applicable to the dual stack build.
+
+// Included as TF_PSA_CRYPTO_USER_CONFIG_FILE, after sli_psa_acceleration.h
+// and before software builtins are selected. ECB stays marked accelerated
+// while sl_si91x_psa_aes is not linked, so CCM's PSA ECB call returns
+// PSA_ERROR_NOT_SUPPORTED (-134) and AES-CCM fails with -0x6080.
+#if defined(SL_MBEDTLS_USE_TINYCRYPT) && !defined(SLI_CIPHER_DEVICE_SI91X) && defined(SL_MATTER_ENABLE_DUAL_STACK)
+#undef MBEDTLS_PSA_ACCEL_ALG_ECB_NO_PADDING
+#endif
+
+#endif // SIWX917_CHIP_MBEDTLS_CONFIG_EARLY
+
+#if defined(TF_PSA_CRYPTO_CONFIG_FILES_READ) || !defined(TF_PSA_CRYPTO_USER_CONFIG_FILE)
+#ifndef SIWX917_CHIP_MBEDTLS_CONFIG_BODY
+#define SIWX917_CHIP_MBEDTLS_CONFIG_BODY
 
 // ChipCryptoPAL tinycrypt config
 #ifdef SL_MBEDTLS_USE_TINYCRYPT
@@ -31,8 +51,6 @@
 #define OPTIMIZE_TINYCRYPT_ASM
 
 #define MBEDTLS_FREERTOS
-
-#define MBEDTLS_MPI_WINDOW_SIZE 1
 
 // Added for codesize optimizations
 #define MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
@@ -70,36 +88,21 @@
 #define MBEDTLS_SSL_OUT_CONTENT_LEN 1560
 #endif // MBEDTLS_SSL_OUT_CONTENT_LEN
 
-// TODO: Optimize these configurations for SL_MATTER_ENABLE_AWS codebase.
-#define MBEDTLS_PK_C
-#define MBEDTLS_PK_PARSE_C
-#define MBEDTLS_PK_WRITE_C
-#define MBEDTLS_CIPHER_MODE_CBC
-#define MBEDTLS_GCM_C
-#define MBEDTLS_RSA_C
-#define MBEDTLS_SHA1_C
-#define MBEDTLS_ECJPAKE_C
-#define MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
-#define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+// TLS options not selected through the Mbed TLS 4 component graph.
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
-#define MBEDTLS_PKCS1_V15
-#define MBEDTLS_SSL_TLS_C
-#define MBEDTLS_SSL_CLI_C
-#define MBEDTLS_SSL_PROTO_TLS1_2
-#define MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
-
-// TODO: Remove `MBEDTLS_DEBUG_C` for SL_MATTER_ENABLE_AWS codebase.
-#define MBEDTLS_DEBUG_C
 
 #endif // SL_MATTER_ENABLE_AWS
 
-#if SL_MATTER_PROVISION_FLASH
+#if (SL_MATTER_USE_FLASH_STORE)
 #define MBEDTLS_SHA256_C
 #define MBEDTLS_HMAC_DRBG_C
 #if !defined(SL_MATTER_ENABLE_AWS)
 #define MBEDTLS_ECDSA_DETERMINISTIC
 #endif // !(SL_MATTER_ENABLE_AWS)
-#endif // SL_MATTER_PROVISION_FLASH
+#endif // SL_MATTER_USE_FLASH_STORE
 
 // SLC GENERATED
 #include "sl_mbedtls_config.h"
+
+#endif // SIWX917_CHIP_MBEDTLS_CONFIG_BODY
+#endif // TF_PSA_CRYPTO_CONFIG_FILES_READ || !TF_PSA_CRYPTO_USER_CONFIG_FILE

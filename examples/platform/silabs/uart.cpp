@@ -49,11 +49,7 @@ extern "C" {
 
 #if defined(SLI_SI91X_MCU_INTERFACE) && SLI_SI91X_MCU_INTERFACE
 #include "USART.h"
-#if defined(SL_SI91X_BOARD_INIT)
-#include "rsi_board.h"
-#endif // SL_SI91X_BOARD_INIT
 #include "rsi_debug.h"
-#include "rsi_rom_egpio.h"
 extern osMutexId_t si91x_prints_mutex;
 #else // For EFR32
 #if (_SILICON_LABS_32B_SERIES < 3)

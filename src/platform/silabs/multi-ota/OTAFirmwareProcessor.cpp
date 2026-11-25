@@ -15,7 +15,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+#include "sl_component_catalog.h"
+#ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+#include <sli_watchdog_manager.h>
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
 
+#include <platform/silabs/BootloaderError.h>
 #include <platform/silabs/multi-ota/OTAFirmwareProcessor.h>
 #include <platform/silabs/multi-ota/OTAMultiImageProcessorImpl.h>
 
@@ -112,7 +117,7 @@ CHIP_ERROR OTAFirmwareProcessor::ProcessInternal(ByteSpan & block)
 #endif // SL_BTLCTRL_MUX
             if (err)
             {
-                ChipLogError(SoftwareUpdate, "bootloader_eraseWriteStorage() error: %ld", err);
+                LogBootloaderApiError("bootloader_eraseWriteStorage", static_cast<int32_t>(err));
                 return CHIP_ERROR_CANCELLED;
             }
             mWriteOffset += kAlignmentBytes;
@@ -145,10 +150,18 @@ CHIP_ERROR OTAFirmwareProcessor::ApplyAction()
         return SL_GENERIC_OTA_ERROR;
     }
 #endif // SL_BTLCTRL_MUX
+
+#ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+    sli_watchdog_manager_hal_disable(); // Disable the watchdog to avoid it from triggering during the verifyImage call.
+#endif                                  // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
     CORE_CRITICAL_SECTION(err = bootloader_verifyImage(mSlotId, NULL);)
+#ifdef SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+    sli_watchdog_manager_hal_enable(); // Re-enable the watchdog.
+#endif                                 // SL_CATALOG_WATCHDOG_MANAGER_PRESENT
+
     if (err != SL_BOOTLOADER_OK)
     {
-        ChipLogError(SoftwareUpdate, "bootloader_verifyImage() error: %ld", err);
+        LogBootloaderApiError("bootloader_verifyImage", static_cast<int32_t>(err));
         // Call the OTARequestor API to reset the state
         GetRequestorInstance()->CancelImageUpdate();
 #if SL_BTLCTRL_MUX
@@ -165,7 +178,7 @@ CHIP_ERROR OTAFirmwareProcessor::ApplyAction()
     CORE_CRITICAL_SECTION(err = bootloader_setImageToBootload(mSlotId);)
     if (err != SL_BOOTLOADER_OK)
     {
-        ChipLogError(SoftwareUpdate, "bootloader_setImageToBootload() error: %ld", err);
+        LogBootloaderApiError("bootloader_setImageToBootload", static_cast<int32_t>(err));
         // Call the OTARequestor API to reset the state
         GetRequestorInstance()->CancelImageUpdate();
 #if SL_BTLCTRL_MUX

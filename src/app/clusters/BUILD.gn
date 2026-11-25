@@ -61,6 +61,7 @@ source_set("clusters") {
     "localization-configuration-server",
     "microwave-oven-control-server",
     "mode-base-server",
+    "mode-select-server",
     "network-commissioning",
     "network-identity-management-server",
     "occupancy-sensor-server",

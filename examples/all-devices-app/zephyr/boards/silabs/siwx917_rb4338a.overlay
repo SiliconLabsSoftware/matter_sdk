@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-&flash0 {
-        partitions {
-                factory_partition: partition@3e0000 {
-                        reg = <0x003e0000 DT_SIZE_K(4)>;
-                };
+/delete-node/ &storage_partition;
 
-                settings_partition: partition@3e1000 {
-                        reg = <0x003e1000 DT_SIZE_K(32)>;
-                };
-        };
+/ {
+	chosen {
+		zephyr,settings-partition = &storage_partition;
+	};
 };
 
 &code_partition {
-       reg = <0x00202000 DT_SIZE_K(1912)>;
+	reg = <0x00202000 DT_SIZE_K(1992)>;
 };
 
-
-&storage_partition {
-       reg = <0x003e9000 DT_SIZE_K(92)>;
+&flash0 {
+	partitions {
+		storage_partition: partition@3f4000 {
+			compatible = "zephyr,mapped-partition";
+			label = "storage";
+			reg = <0x003f4000 DT_SIZE_K(48)>;
+		};
+	};
 };

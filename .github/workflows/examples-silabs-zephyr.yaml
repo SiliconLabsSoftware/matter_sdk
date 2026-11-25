@@ -58,6 +58,28 @@ jobs:
              "cd /opt/silabs/zephyr-silabs \
               && west build -b xg24_rb4187c -p always ${GITHUB_WORKSPACE}/examples/lighting-app/silabs/zephyr"
 
+      # The Generator Firmware patches modify the Zephyr workspace, so they are applied after the other builds.
+      - name: Apply Generator Firmware Zephyr patches
+        run: |
+          cd ${GITHUB_WORKSPACE} && ./scripts/run_in_build_env.sh \
+             "cd /opt/silabs/zephyr-silabs \
+              && west patch \
+                 -b ${GITHUB_WORKSPACE}/examples/generator-firmware/silabs/zephyr/patches \
+                 -l ${GITHUB_WORKSPACE}/examples/generator-firmware/silabs/zephyr/patches/patches.yml \
+                 apply"
+
+      - name: Build EFR32xG24 Zephyr Generator Firmware
+        run: |
+          cd ${GITHUB_WORKSPACE} && ./scripts/run_in_build_env.sh \
+             "cd /opt/silabs/zephyr-silabs \
+              && west build -d build/gfw-xg24 -b xg24_gfw -p always ${GITHUB_WORKSPACE}/examples/generator-firmware/silabs/zephyr"
+
+      - name: Build SiWx917 Zephyr Generator Firmware
+        run: |
+          cd ${GITHUB_WORKSPACE} && ./scripts/run_in_build_env.sh \
+             "cd /opt/silabs/zephyr-silabs \
+              && west build -d build/gfw-siwx917 -b siwx917_gfw -p always ${GITHUB_WORKSPACE}/examples/generator-firmware/silabs/zephyr"
+
       - name: Notify Slack on Failure
         if: failure()
         uses: ./.github/actions/notify-slack-failure

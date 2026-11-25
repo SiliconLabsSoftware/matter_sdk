@@ -497,9 +497,12 @@ CHIP_ERROR BLEManagerImpl::CloseConnection(BLE_CONNECTION_OBJECT conId)
 
     ChipLogProgress(DeviceLayer, "Closing BLE GATT connection (con %u)", conId);
 
+    int32_t status = rsi_ble_disconnect(reinterpret_cast<const int8_t *>(dev_address));
+    err            = MapBLEError(static_cast<int>(status));
+
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "sl_bt_connection_close() failed: %" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(DeviceLayer, "rsi_ble_disconnect() failed: %" CHIP_ERROR_FORMAT, err.Format());
     }
 
     return err;
@@ -507,7 +510,7 @@ CHIP_ERROR BLEManagerImpl::CloseConnection(BLE_CONNECTION_OBJECT conId)
 
 uint16_t BLEManagerImpl::GetMTU(BLE_CONNECTION_OBJECT conId) const
 {
-    CHIPoBLEConState * conState = const_cast<BLEManagerImpl *>(this)->GetConnectionState(conId);
+    BLEConState * conState = const_cast<BLEManagerImpl *>(this)->GetConnectionState(conId);
     return (conState != NULL) ? conState->mtu : 0;
 }
 
@@ -537,7 +540,7 @@ CHIP_ERROR BLEManagerImpl::SendWriteRequest(BLE_CONNECTION_OBJECT conId, const C
 
 void BLEManagerImpl::NotifyChipConnectionClosed(BLE_CONNECTION_OBJECT conId)
 {
-    // Nothing to do
+    VerifyOrReturn(CloseConnection(conId) == CHIP_NO_ERROR, ChipLogError(DeviceLayer, "BLEManagerImpl::NotifyChipConnectionClosed: CloseConnection failed"));
 }
 
 // TODO: Need to add RSI BLE STATUS codes
@@ -791,7 +794,7 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
         {
             mFlags.Clear(Flags::kAdvertising).Clear(Flags::kRestartAdvertising);
             mFlags.Set(Flags::kFastAdvertisingEnabled, true);
-            advertising_set_handle = 0xff;
+            mAdvertisingSetHandle = 0xff;
             CancelBleAdvTimeoutTimer();
 
             // Post CHIPoBLEAdvertisingChange event.
@@ -808,7 +811,7 @@ CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
 
 void BLEManagerImpl::UpdateMtu(const SilabsBleWrapper::sl_wfx_msg_t & evt)
 {
-    CHIPoBLEConState * bleConnState = GetConnectionState(evt.connectionHandle);
+    BLEConState * bleConnState = GetConnectionState(evt.connectionHandle);
     if (bleConnState != NULL)
     {
         // bleConnState->MTU is a 10-bit field inside a uint16_t.  We're
@@ -892,7 +895,7 @@ void BLEManagerImpl::HandleTXCharCCCDWrite(const SilabsBleWrapper::sl_wfx_msg_t 
     CHIP_ERROR err           = CHIP_NO_ERROR;
     bool isIndicationEnabled = false;
     ChipDeviceEvent event;
-    CHIPoBLEConState * bleConnState;
+    BLEConState * bleConnState;
 
     bleConnState = GetConnectionState(evt.connectionHandle);
     VerifyOrExit(bleConnState != NULL, err = CHIP_ERROR_NO_MEMORY);
@@ -976,12 +979,12 @@ void BLEManagerImpl::HandleTxConfirmationEvent(BLE_CONNECTION_OBJECT conId)
 
 bool BLEManagerImpl::RemoveConnection(uint8_t connectionHandle)
 {
-    CHIPoBLEConState * bleConnState = GetConnectionState(connectionHandle, true);
-    bool status                     = false;
+    BLEConState * bleConnState = GetConnectionState(connectionHandle, true);
+    bool status                = false;
 
     if (bleConnState != NULL)
     {
-        memset(bleConnState, 0, sizeof(CHIPoBLEConState));
+        memset(bleConnState, 0, sizeof(BLEConState));
         status = true;
     }
 
@@ -990,18 +993,18 @@ bool BLEManagerImpl::RemoveConnection(uint8_t connectionHandle)
 
 void BLEManagerImpl::AddConnection(uint8_t connectionHandle, uint8_t bondingHandle)
 {
-    CHIPoBLEConState * bleConnState = GetConnectionState(connectionHandle, true);
+    BLEConState * bleConnState = GetConnectionState(connectionHandle, true);
 
     if (bleConnState != NULL)
     {
-        memset(bleConnState, 0, sizeof(CHIPoBLEConState));
+        memset(bleConnState, 0, sizeof(BLEConState));
         bleConnState->allocated        = 1;
         bleConnState->connectionHandle = connectionHandle;
         bleConnState->bondingHandle    = bondingHandle;
     }
 }
 
-BLEManagerImpl::CHIPoBLEConState * BLEManagerImpl::GetConnectionState(uint8_t connectionHandle, bool allocate)
+BLEManagerImpl::BLEConState * BLEManagerImpl::GetConnectionState(uint8_t connectionHandle, bool allocate)
 {
     uint8_t freeIndex = kMaxConnections;
 
@@ -1028,7 +1031,7 @@ BLEManagerImpl::CHIPoBLEConState * BLEManagerImpl::GetConnectionState(uint8_t co
             return &mBleConnections[freeIndex];
         }
 
-        ChipLogError(DeviceLayer, "Failed to allocate CHIPoBLEConState");
+        ChipLogError(DeviceLayer, "Failed to allocate BLEConState");
     }
 
     return NULL;

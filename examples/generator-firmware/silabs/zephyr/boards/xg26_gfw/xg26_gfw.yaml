@@ -1,0 +1,13 @@
+identifier: xg26_gfw
+name: Matter xG26/MGM26 Provisioning GFW
+type: mcu
+arch: arm
+ram: 512
+flash: 3200
+toolchain:
+    - zephyr
+    - gnuarmemb
+supported:
+    - flash
+    - gpio
+vendor: silabs

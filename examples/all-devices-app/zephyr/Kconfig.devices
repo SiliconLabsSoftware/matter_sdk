@@ -32,9 +32,6 @@ config ALL_DEVICES_DEVICE_AIR_PURIFIER
 config ALL_DEVICES_DEVICE_AIR_QUALITY_SENSOR
 	bool "Air quality sensor"
 
-config ALL_DEVICES_DEVICE_AMBIENT_CONTEXT_SENSOR
-	bool "Ambient context sensor"
-
 config ALL_DEVICES_DEVICE_BRIDGED_NODE
 	bool "Bridged node"
 
@@ -61,9 +58,6 @@ config ALL_DEVICES_DEVICE_DIMMABLE_PLUG_IN_UNIT
 
 config ALL_DEVICES_DEVICE_DISHWASHER
 	bool "Dishwasher"
-
-config ALL_DEVICES_DEVICE_ELECTRICAL_SENSOR
-	bool "Electrical sensor"
 
 config ALL_DEVICES_DEVICE_EXTENDED_COLOR_LIGHT
 	bool "Extended color light"
@@ -137,9 +131,6 @@ config ALL_DEVICES_DEVICE_RAIN_SENSOR
 
 config ALL_DEVICES_DEVICE_REFRIGERATOR
 	bool "Refrigerator"
-
-config ALL_DEVICES_DEVICE_ROBOTIC_VACUUM_CLEANER
-	bool "Robotic vacuum cleaner"
 
 config ALL_DEVICES_DEVICE_ROOM_AIR_CONDITIONER
 	bool "Room air conditioner"

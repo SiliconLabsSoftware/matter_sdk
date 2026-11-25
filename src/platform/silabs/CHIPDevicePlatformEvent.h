@@ -40,7 +40,10 @@ namespace DeviceEventType {
  */
 enum PublicPlatformSpecificEventTypes
 {
-    /* None currently defined */
+    kSLSystemEvent = kRange_PublicPlatformSpecific,
+    // Commissioning events
+    kSLSystemEventCommissioningStarted,
+    kSLSystemEventCommissioningFailed,
 };
 
 /**
@@ -48,7 +51,7 @@ enum PublicPlatformSpecificEventTypes
  */
 enum InternalPlatformSpecificEventTypes
 {
-    kWFXSystemEvent = kRange_InternalPlatformSpecific,
+    kPlatformSLEvent = kRange_InternalPlatformSpecific,
 };
 
 } // namespace DeviceEventType

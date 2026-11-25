@@ -1,0 +1,13 @@
+identifier: xg24_gfw
+name: Matter xG24/MGM24 Provisioning GFW
+type: mcu
+arch: arm
+ram: 256
+flash: 1536
+toolchain:
+    - zephyr
+    - gnuarmemb
+supported:
+    - flash
+    - gpio
+vendor: silabs

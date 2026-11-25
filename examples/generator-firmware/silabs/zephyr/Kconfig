@@ -1,0 +1,8 @@
+config MATTER_PROVISIONING_DEFER_SETTINGS_INIT
+	bool "Defer secure-storage Settings initialization"
+	default y
+	help
+	  Defer the secure-storage Settings mount. Used for the provisioning
+	  protocol to supply the NVS geometry at runtime.
+
+source "Kconfig.zephyr"

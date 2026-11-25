@@ -19,6 +19,7 @@
 #include "sl_component_catalog.h"
 #include <ChipShellCollection.h>
 #include <cmsis_os2.h>
+#include <cstring>
 #include <lib/core/CHIPCore.h>
 #include <lib/shell/Engine.h>
 #include <lib/shell/commands/Help.h>
@@ -28,15 +29,35 @@
 #include "sl_cli_config.h"
 #include "sli_cli_io.h"
 #include <lib/support/StringBuilder.h>
-#endif
+#endif // SL_CATALOG_CLI_PRESENT
+#ifdef SL_WIFI
+#include <lib/shell/commands/WiFi.h>
+#include <platform/CHIPDeviceLayer.h>
+#include <platform/silabs/NetworkCommissioningWiFiDriver.h>
+#endif // SL_WIFI
+
+#if (defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES)
+#include "AppEvent.h"
+#include "BaseApplication.h"
+#include <lib/shell/Command.h>
+#include <lib/support/CodeUtils.h>
+
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
+#include "https_offload_example.h"
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
+
+#endif // SL_MATTER_ENABLE_SERVICES
 
 using namespace ::chip;
-using chip::Shell::Engine;
+using Shell::Engine;
+using Shell::shell_command_t;
+using Shell::streamer_get;
+using Shell::streamer_printf;
 
 namespace {
 
 constexpr uint32_t kShellProcessFlag   = 1;
-constexpr uint32_t kShellTaskStackSize = 2048;
+constexpr uint32_t kShellTaskStackSize = 1024;
 uint8_t shellTaskStack[kShellTaskStackSize];
 osThread_t shellTaskControlBlock;
 constexpr osThreadAttr_t kShellTaskAttr = { .name       = "shell",
@@ -117,8 +138,8 @@ CHIP_ERROR MemoryCommandHandler(int argc, char ** argv)
 
 CHIP_ERROR DisplayHeapUsage([[maybe_unused]] int argc, [[maybe_unused]] char ** argv)
 {
-    streamer_printf(chip::Shell::streamer_get(), "%lu / %lu\r\n", sl_memory_get_used_heap_size(), sl_memory_get_total_heap_size());
-    streamer_printf(chip::Shell::streamer_get(), "High Watermark: %lu\r\n", sl_memory_get_heap_high_watermark());
+    streamer_printf(streamer_get(), "%lu / %lu\r\n", sl_memory_get_used_heap_size(), sl_memory_get_total_heap_size());
+    streamer_printf(streamer_get(), "High Watermark: %lu\r\n", sl_memory_get_heap_high_watermark());
     return CHIP_NO_ERROR;
 }
 
@@ -136,6 +157,99 @@ void RegisterCommands()
 
 } // namespace MemoryShellCommands
 
+#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
+
+namespace DemoShellCommands {
+
+CHIP_ERROR DemoHelpHandler(int /* argc */, char ** /* argv */)
+{
+    streamer_printf(streamer_get(), "Usage: demo <service>\r\n");
+
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
+    streamer_printf(streamer_get(), "  http  Run HTTPS PUT/GET/POST on the AppTask thread\r\n");
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR DemoCommandHandler(int argc, char ** argv)
+{
+    if (argc == 0)
+    {
+        return DemoHelpHandler(argc, argv);
+    }
+
+    VerifyOrReturnError(argc == 1, CHIP_ERROR_INVALID_ARGUMENT);
+
+    AppEvent event = {};
+    event.Type     = AppEvent::kEventType_Timer;
+
+#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
+    if (strcmp(argv[0], "http") == 0)
+    {
+        streamer_printf(streamer_get(), "Posting HTTPS PUT/GET/POST to AppTask\r\n");
+        event.Handler = HttpsRunAppEvent;
+        BaseApplication::PostEvent(&event);
+        return CHIP_NO_ERROR;
+    }
+#endif // SL_MATTER_ENABLE_HTTP_SERVICE
+
+    streamer_printf(streamer_get(), "Unknown service: %s\r\n", argv[0]);
+    return DemoHelpHandler(0, nullptr);
+}
+
+void RegisterCommands()
+{
+    static const Shell::Command sDemoCmd = { &DemoCommandHandler, "demo", "Run a Matter service demo: demo <http>" };
+    Engine::Root().RegisterCommands(&sDemoCmd, 1);
+}
+
+} // namespace DemoShellCommands
+#endif // SL_MATTER_ENABLE_SERVICES
+
+#if defined(SL_CATALOG_WATCHDOG_MANAGER_PRESENT) && defined(SL_MATTER_TEST_WATCHDOG)
+#include "sl_watchdog_manager.h"
+
+namespace WatchdogShellCommands {
+
+Engine sShellWatchdogSubCommands;
+
+CHIP_ERROR WatchdogCommandHandler(int argc, char ** argv)
+{
+    if (argc == 0)
+    {
+        sShellWatchdogSubCommands.ForEachCommand(Shell::PrintCommandHelp, nullptr);
+        return CHIP_NO_ERROR;
+    }
+    return sShellWatchdogSubCommands.ExecCommand(argc, argv);
+}
+
+CHIP_ERROR ForceWatchdogStarvation([[maybe_unused]] int argc, [[maybe_unused]] char ** argv)
+{
+    streamer_printf(streamer_get(), "Watchdog starvation started\r\n");
+    while (1)
+    {
+        __NOP();
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+void RegisterCommands()
+{
+    static const Shell::shell_command_t cmds_watchdog = { &WatchdogCommandHandler, "watchdog",
+                                                          "Dispatch Silabs Watchdog Manager CLI commands" };
+
+    static const Shell::Command sWatchdogSubCommands[] = {
+        { &ForceWatchdogStarvation, "starve", "Force the watchdog to starve" },
+    };
+    sShellWatchdogSubCommands.RegisterCommands(sWatchdogSubCommands, MATTER_ARRAY_SIZE(sWatchdogSubCommands));
+    Engine::Root().RegisterCommands(&cmds_watchdog, 1);
+}
+
+} // namespace WatchdogShellCommands
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT && SL_MATTER_TEST_WATCHDOG
+
 void startShellTask()
 {
     int status = chip::Shell::Engine::Root().Init();
@@ -148,11 +262,24 @@ void startShellTask()
     cmd_otcli_init();
 #endif
 
+#ifdef SL_WIFI
+    Shell::SetWiFiDriver(DeviceLayer::NetworkCommissioning::SlWiFiDriver::GetInstance());
+#endif // SL_WIFI
+
 #ifdef SL_CATALOG_CLI_PRESENT
     cmdSilabsInit();
 #endif
 
+#if defined(SL_CATALOG_WATCHDOG_MANAGER_PRESENT) && defined(SL_MATTER_TEST_WATCHDOG)
+    WatchdogShellCommands::RegisterCommands();
+#endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT && SL_MATTER_TEST_WATCHDOG
+
     MemoryShellCommands::RegisterCommands();
+
+#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
+    DemoShellCommands::RegisterCommands();
+#endif // SL_MATTER_ENABLE_SERVICES
+
     shellTaskHandle = osThreadNew(MatterShellTask, nullptr, &kShellTaskAttr);
     VerifyOrDie(shellTaskHandle);
 }

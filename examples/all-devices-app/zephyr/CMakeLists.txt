@@ -115,6 +115,9 @@ project(matter-all-devices-zephyr)
 
 include(${CHIP_ROOT}/src/app/chip_data_model.cmake)
 
+# Silabs extension point
+include(${CMAKE_CURRENT_SOURCE_DIR}/silabs/CMakeLists.txt)
+
 target_compile_options(app PRIVATE -Werror -Wno-error=format)
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     target_compile_options(app PRIVATE -Werror -Wno-error=maybe-uninitialized)

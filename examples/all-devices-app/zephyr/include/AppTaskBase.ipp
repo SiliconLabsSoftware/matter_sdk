@@ -73,12 +73,10 @@ CHIP_ERROR AppTaskBase<Derived>::Run()
     ReturnErrorOnFailure(Self().InitPersistence());
     ReturnErrorOnFailure(Self().InitRootNode());
     ReturnErrorOnFailure(Self().RegisterDeviceCreators());
-    ReturnErrorOnFailure(Self().RegisterOTACluster());
     ReturnErrorOnFailure(Self().RegisterAppDevices());
     ReturnErrorOnFailure(Self().InitServer());
     ReturnErrorOnFailure(Self().InitBoardControls());
     ReturnErrorOnFailure(Self().PostServerInit());
-    ReturnErrorOnFailure(Self().InitOTARequestor());
 
     return DeviceLayer::PlatformMgr().StartEventLoopTask();
 }
@@ -95,7 +93,6 @@ CHIP_ERROR AppTaskBase<Derived>::InitCredentials()
 {
 #if CONFIG_CHIP_FACTORY_DATA
     // Reaching this means no derived AppTask overrode InitCredentials. Fail rather than
-    // silently falling back to test credentials in a build that asked for factory data.
     ChipLogError(AppServer, "CONFIG_CHIP_FACTORY_DATA is set but no AppTask provides it");
     return CHIP_ERROR_NOT_IMPLEMENTED;
 #else
@@ -149,6 +146,7 @@ CHIP_ERROR AppTaskBase<Derived>::InitPersistence()
     SetSafeAttributePersistenceProvider(&mSafeAttributePersistenceProvider);
 
     mInitParams.groupDataProvider = &mGroupDataProvider;
+    mGroupDataProvider.SetGroupcastEnabled(CHIP_CONFIG_ENABLE_GROUPCAST);
     mGroupDataProvider.SetStorageDelegate(mInitParams.persistentStorageDelegate);
     mGroupDataProvider.SetSessionKeystore(mInitParams.sessionKeystore);
     ReturnErrorOnFailure(mGroupDataProvider.Init());
@@ -230,6 +228,7 @@ CHIP_ERROR AppTaskBase<Derived>::InitRootNode()
     OtaFeature::Context otaContext{
         .otaCommands = mOTARequestorCore,
         .attributes  = mOTARequestorAttributes,
+        .cluster     = mOTARequestorCluster,
     };
 
     using RootNodeType = RootNodeWith<NetworkFeature, OtaFeature>;
@@ -281,21 +280,14 @@ CHIP_ERROR AppTaskBase<Derived>::RegisterDeviceCreators()
 }
 
 template <class Derived>
-CHIP_ERROR AppTaskBase<Derived>::RegisterOTACluster()
-{
-#if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
-    // Must be registered before Server::Init() starts the provider.
-    mOTARequestorCluster.Create(kRootEndpointId, mOTARequestorCore, mOTARequestorAttributes,
-                                Server::GetInstance().GetFabricTable());
-    ReturnErrorOnFailure(mDataModelProvider->AddCluster(mOTARequestorCluster.Registration()));
-#endif
-    return CHIP_NO_ERROR;
-}
-
-template <class Derived>
 CHIP_ERROR AppTaskBase<Derived>::InitServer()
 {
-    return Server::GetInstance().Init(mInitParams);
+    ReturnErrorOnFailure(Server::GetInstance().Init(mInitParams));
+    return Clusters::Binding::Manager::GetInstance().Init({
+        .mFabricTable        = &Server::GetInstance().GetFabricTable(),
+        .mCASESessionManager = Server::GetInstance().GetCASESessionManager(),
+        .mStorage            = mInitParams.persistentStorageDelegate,
+    });
 }
 
 template <class Derived>
@@ -332,13 +324,32 @@ CHIP_ERROR AppTaskBase<Derived>::PostServerInit()
 {
     DeviceLayer::ConfigurationMgr().LogDeviceConfig();
     PrintOnboardingCodes(RendezvousInformationFlags(RendezvousInformationFlag::kBLE));
+    ReturnErrorOnFailure(DeviceLayer::PlatformMgr().AddEventHandler(OnPlatformEvent, reinterpret_cast<intptr_t>(this)));
     return CHIP_NO_ERROR;
+}
+
+template <class Derived>
+void AppTaskBase<Derived>::OnPlatformEvent(const DeviceLayer::ChipDeviceEvent * event, intptr_t context)
+{
+    switch (event->Type)
+    {
+    case DeviceLayer::DeviceEventType::kServerReady: {
+        // If OTA isn't enabled, InitOTARequestor just returns CHIP_NO_ERROR
+        // InitOTARequestor needs to be here, after the server is ready, otherwise, after an OTA, a NotifyUpdateApplied would be fired and lost
+        auto & task = *reinterpret_cast<AppTaskBase<Derived> *>(context);
+        SuccessOrLog(task.Self().InitOTARequestor(), SoftwareUpdate, "Failed to initialize OTA requestor");
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 template <class Derived>
 CHIP_ERROR AppTaskBase<Derived>::InitOTARequestor()
 {
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
+    VerifyOrReturnError(mOTARequestorCluster.IsConstructed(), CHIP_ERROR_INCORRECT_STATE);
     SetRequestorInstance(&mOTARequestorCore);
     mOTARequestorStorage.Init(Server::GetInstance().GetPersistentStorage());
     ReturnErrorOnFailure(mOTARequestorCore.Init(Server::GetInstance(), mOTARequestorStorage, mOTARequestorDriver, mOTADownloader,

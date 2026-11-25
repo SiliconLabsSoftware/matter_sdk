@@ -16,7 +16,6 @@
  */
 
 #include <platform/silabs/platformAbstraction/SilabsPlatform.h>
-#include <sl_si91x_common_flash_intf.h>
 
 #include <cmsis_os2.h>
 #include <sl_cmsis_os2_common.h>
@@ -24,30 +23,18 @@
 #include <app/icd/server/ICDServerConfig.h>
 
 #include <lib/support/CodeUtils.h>
+#include <platform/PlatformError.h>
 #if SILABS_LOG_ENABLED
 #include "silabs_utils.h"
 #endif // SILABS_LOG_ENABLED
 
-#define SOC_PLL_REF_FREQUENCY 40000000 // /* PLL input REFERENCE clock 40MHZ */
-// Note: Change this macro to required PLL frequency in hertz
-#define PS4_SOC_FREQ 180000000 /* PLL out clock 180MHz */
-#define SWITCH_QSPI_TO_SOC_PLL
 #define ICACHE_DISABLE
 #define DEBUG_DISABLE
 
-/* QSPI clock config params */
-#define INTF_PLL_500_CTRL_VALUE 0xD900
-#define INTF_PLL_CLK 80000000 /* PLL out clock 80 MHz */
-
 // TODO add includes ?
 extern "C" {
-#if defined(SL_SI91X_BOARD_INIT)
-#include "rsi_board.h"
-#endif // SL_SI91X_BOARD_INIT
-
-#include "rsi_rom_clks.h"
 #include "sl_si91x_hal_soc_soft_reset.h"
-
+#include "sl_si91x_common_flash.h"
 #ifdef SL_CATALOG_SIMPLE_BUTTON_PRESENT
 #include "sl_si91x_button.h"
 #include "sl_si91x_button_pin_config.h"
@@ -104,50 +91,12 @@ static bool sSiWxKeepAwakePs4Active      = false;
 
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER && (SL_MATTER_GN_BUILD == 0)
 
-#if CHIP_CONFIG_ENABLE_ICD_SERVER == 0
-int soc_pll_config(void)
-{
-    int32_t status = RSI_OK;
-
-    RSI_CLK_M4SocClkConfig(M4CLK, M4_ULPREFCLK, 0);
-    // Configures the required registers for 180 Mhz clock in PS4
-    RSI_PS_PS4SetRegisters();
-    // Configure the PLL frequency
-    // Configure the SOC PLL to 180MHz
-    RSI_CLK_SetSocPllFreq(M4CLK, PS4_SOC_FREQ, SOC_PLL_REF_FREQUENCY);
-    // Switch M4 clock to PLL clock for speed operations
-    RSI_CLK_M4SocClkConfig(M4CLK, M4_SOCPLLCLK, 0);
-
-    SysTick_Config(SystemCoreClock / configTICK_RATE_HZ);
-
-#ifdef SWITCH_QSPI_TO_SOC_PLL
-    /* program intf pll to 160Mhz */
-    SPI_MEM_MAP_PLL(INTF_PLL_500_CTRL_REG9) = INTF_PLL_500_CTRL_VALUE;
-    status                                  = RSI_CLK_SetIntfPllFreq(M4CLK, INTF_PLL_CLK, SOC_PLL_REF_FREQUENCY);
-    if (status != RSI_OK)
-    {
-        ChipLogError(DeviceLayer, "Failed to Config Interface PLL Clock, status: 0x%" PRIx32, status);
-    }
-    else
-    {
-        ChipLogProgress(DeviceLayer, "Configured Interface PLL Clock to %d", INTF_PLL_CLK);
-    }
-
-    RSI_CLK_QspiClkConfig(M4CLK, QSPI_INTFPLLCLK, 0, 0, 1);
-#endif /* SWITCH_QSPI_TO_SOC_PLL */
-    return status;
-}
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 } // namespace
 
 SilabsPlatform SilabsPlatform::sSilabsPlatformAbstractionManager;
 
 CHIP_ERROR SilabsPlatform::Init(void)
 {
-#if CHIP_CONFIG_ENABLE_ICD_SERVER == 0
-    // Configuration the clock rate
-    soc_pll_config();
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
 
 #if SILABS_LOG_ENABLED
     silabsInitLog();
@@ -167,10 +116,6 @@ CHIP_ERROR SilabsPlatform::Init(void)
 #ifdef ENABLE_WSTK_LEDS
 void SilabsPlatform::InitLed(void)
 {
-    // TODO
-#if defined(SL_SI91X_BOARD_INIT)
-    RSI_Board_Init();
-#endif // SL_SI91X_BOARD_INIT
     SilabsPlatformAbstractionBase::InitLed();
 }
 
@@ -347,13 +292,44 @@ CHIP_ERROR SilabsPlatform::FlashInit()
 
 CHIP_ERROR SilabsPlatform::FlashErasePage(uint32_t addr)
 {
-    rsi_flash_erase_sector((uint32_t *) addr);
+    // SiWx917 common-flash sector size; erase length must be a multiple of 4 KB.
+    // Erase path sends only a command header; write_data is unused (nullptr).
+    constexpr uint16_t kSiWxFlashSectorSize = 4096;
+    constexpr uint8_t kFlashSectorErase     = 1;
+
+#if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
+    // Keep PS4 while the blocking NWP flash command can yield to tickless idle.
+    sl_si91x_power_manager_add_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    sl_status_t status =
+        sl_si91x_command_to_write_common_flash(addr, nullptr, kSiWxFlashSectorSize, kFlashSectorErase);
+
+#if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
+    sl_si91x_power_manager_remove_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status));
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR SilabsPlatform::FlashWritePage(uint32_t addr, const uint8_t * data, size_t size)
 {
-    rsi_flash_write((uint32_t *) addr, (unsigned char *) data, size);
+    constexpr uint8_t kFlashWrite = 0;
+
+    VerifyOrReturnError(size <= UINT16_MAX, CHIP_ERROR_INVALID_ARGUMENT);
+
+#if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
+    sl_si91x_power_manager_add_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    sl_status_t status = sl_si91x_command_to_write_common_flash(addr, data, static_cast<uint16_t>(size), kFlashWrite);
+
+#if defined(SL_SI91X_TICKLESS_MODE) && (SL_SI91X_TICKLESS_MODE == 1)
+    sl_si91x_power_manager_remove_ps_requirement(SL_SI91X_POWER_MANAGER_PS4);
+#endif
+
+    VerifyOrReturnError(status == SL_STATUS_OK, MATTER_PLATFORM_ERROR(status));
     return CHIP_NO_ERROR;
 }
 
