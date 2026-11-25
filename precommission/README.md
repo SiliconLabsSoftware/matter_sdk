@@ -28,6 +28,9 @@ python precommission/precommission.py --filePath precommission/provisioning-conf
 python precommission/precommission.py --filePath precommission/provisioning-config-switch.yaml --serialno <target-device>
 ```
 
+To flash freshly generated data instead of the sample YAMLs, see
+[Generating precommissioning data](#generating-precommissioning-data).
+
 ## Description
 
 `precommission.py` reads a provisioning YAML and writes the corresponding
@@ -61,6 +64,99 @@ python3 precommission/precommission.py --filePath precommission/provisioning-con
 default attached device. Sample YAMLs (`provisioning-config-closure.yaml` /
 `provisioning-config-switch.yaml`) show a paired closure + generic switch setup.
 
+## Generating precommissioning data
+
+`generate_precommission.py` generates a fresh Thread Direct initiator/listener
+pair. For the sample applications, the switch is the initiator and the closure
+is the listener. The generated YAML can then be flashed with `precommission.py`.
+
+It needs the `chip-cert` tool, passed with `--chip-cert`.
+
+```bash
+scripts/run_in_build_env.sh "gn gen out/chip-cert --args='chip_crypto=\"boringssl\"' && ninja -C out/chip-cert chip-cert"
+```
+
+The script does not create a CA. It issues each device's NOC from an existing
+one:
+
+- **Production:** Provide the root certificate (`--rcac`) and the private key
+  used to sign each device's Node Operational Certificate (`--ca-key`). If an
+  intermediate certificate signs the NOCs, also provide it with `--icac`; if the
+  root signs them directly, omit `--icac` and use the root's private key.
+- **Development:** the SDK test root
+  `credentials/test/operational-certificates/Chip-Test-Root01-Cert.pem` and its
+  key, with no ICAC. Its private key is public, so use it for development only.
+
+```bash
+# Generate both YAML files for a new pair (development CA).
+CERTS=credentials/test/operational-certificates
+python3 precommission/generate_precommission.py --chip-cert out/chip-cert/chip-cert \
+    --rcac $CERTS/Chip-Test-Root01-Cert.pem --ca-key $CERTS/Chip-Test-Root01-Key.pem \
+    --out precommission/out/pair1
+
+# Erase, flash the bootloader and app (see Quick Start), then precommission.
+python3 precommission/precommission.py --filePath precommission/out/pair1/provisioning-config-listener.yaml --serialno <closure-device>
+python3 precommission/precommission.py --filePath precommission/out/pair1/provisioning-config-initiator.yaml --serialno <switch-device>
+```
+
+#### Host-side key handling
+
+This generator is host-based: `chip-cert` reads the CA signing key from the
+host, generates each operational key pair there, and the YAML contains the
+operational private key at `0x708`. The firmware imports that key into PSA and
+clears the NVM3 copy at boot, but the YAML remains a plaintext private-key
+container. The current workflow does not use an HSM or generate the operational
+key inside the device.
+
+### JSON input profiles
+
+Options can also be stored in a JSON file passed with `--inputs`. Command-line
+options override the file, path values are relative to the JSON file, `null`
+means "use the default", and unknown keys are errors.
+
+[development.json](development.json) is a sample profile that lists every
+option. It uses the SDK test root CA and writes to `precommission/out/pair1`.
+
+```bash
+python3 precommission/generate_precommission.py --inputs precommission/development.json \
+    --out precommission/out/pair2
+```
+
+Erase the devices (`commander device masserase`) before flashing a new pair.
+`precommission.py` only writes records.
+
+| Flag                                        | Default                      | Description                                     |
+| ------------------------------------------- | ---------------------------- | ----------------------------------------------- |
+| `--inputs`                                  | none                         | JSON file of option values                      |
+| `--chip-cert`                               | required                     | Path to the `chip-cert` binary                  |
+| `--rcac`                                    | required                     | Root certificate                                |
+| `--icac`                                    | none                         | Intermediate certificate                        |
+| `--ca-key`                                  | required                     | Private key of the ICAC if given, else the RCAC |
+| `--fabric-id`                               | from CA certificates, else 1 | Must match the CA certificates if they set one  |
+| `--vendor-id`                               | `0xFFF1`                     | Vendor ID stored in fabric metadata             |
+| `--ipk-epoch-key`                           | `temporary ipk 01`           | 16-byte hex development/sample IPK epoch key    |
+| `--out`                                     | required                     | Output directory for the two YAML files         |
+| `--admin-node-id`                           | `112233`                     | Commissioner node granted Administer in ACL     |
+| `--initiator-node-id`, `--listener-node-id` | random                       | Operational node IDs                            |
+| `--channel`                                 | `25`                         | Active Thread network channel (11–26)           |
+| `--local-endpoint`, `--remote-endpoint`     | `1`, `1`                     | Initiator and listener binding endpoints        |
+| `--cluster-id`                              | none                         | Optional cluster restriction on the binding     |
+| `--port`                                    | `5540`                       | Peer Matter UDP port                            |
+| `--mrp-idle`, `--mrp-active`                | `2000`, `2000`               | Peer MRP intervals (ms)                         |
+| `--mrp-active-threshold`                    | `4000`                       | Peer MRP active threshold (ms)                  |
+| `--seed`                                    | system randomness            | Deterministic RNG, for testing only             |
+
+Each pair gets fresh node IDs, operational keys and NOCs, extended addresses,
+ML-EID IIDs and Thread network secrets. The Thread network name is
+`ThreadDirect` followed by the PAN ID in hex (16 bytes, the Thread maximum). The
+active Thread network channel defaults to 25 and can be changed. Thread Direct's
+wake/listen channel is fixed at 20 by the protocol; it is written as the
+dataset's `wakeup_channel` and is independent of the active network channel.
+Generated data uses RLOC16 `0xfffe` (an invalid locator, so OpenThread does not
+restore a fake parent) and frame counters at 0. Both generated YAML files
+include `0x70A` with the one-byte payload `01` (boolean true); the original
+closure sample used a four-byte value instead.
+
 ## Yaml layout
 
 The documents `provisioning-config-closure.yaml` and
@@ -81,7 +177,7 @@ Values land in NVM3 via:
 ### MatterFabric
 
 The `MatterFabric` section contains the fabric information for the device, it
-can be read directly form the nvm3 via a conversion of the KVS keys to hash, and
+can be read directly from the nvm3 via a conversion of the KVS keys to hash, and
 using the 0x087500 to get a keymap of where each hash point in the NVM3.
 
 The only missing piece is the Operational Key, which is stored in the
@@ -91,10 +187,10 @@ PreCommissioning section, and needs to be copied to the MatterFabric section.
 
 The `ThreadNetworkInfo` section contains the Thread network information for the
 device, it can be also be read from NVM3, directly from key 0x20300, which will
-yield a hex blod of data.
+yield a hex blob of data.
 
 Each value can be populated individually in the yaml format and the python
-script will convert those values into the blod to write in the nvm3.
+script will convert those values into the blob to write in the nvm3.
 
 ### ThreadActiveDataset
 
@@ -115,28 +211,31 @@ ot-ctl dataset active -x
 To get the value in a hex blob.
 
 Each value can be populated individually in the yaml format and the python
-script will convert those values into the blod to write in the nvm3.
+script will convert those values into the blob to write in the nvm3.
 
 ### PreCommissioning
 
-This cannot be read from the device as it is an Opake Key, and therefore its
+This cannot be read from the device as it is an opaque key, and therefore its
 storage location is unknown. The workaround is to pre-generate it and pre-sign
 the device NOC and Root certificates using its public key, and then copy it to
 the yaml file.
 
 It will be written in the NVM3 temporarily at 0x708, then moved to psa storage
-during the bootup, and the nvm3 entry will be erased form that point for
+during the bootup, and the nvm3 entry will be erased from that point for
 security.
 
 ### TargetConnectionParameters
 
 The `TargetConnectionParameters` section contains the parameters to connect to
-the target device, the only necessary ones are the IPv6 address, the compressed
-fabric id and the target node id. The rest of the parameters are set to default
-and do not need to be changed, however they can be changed if needed.
+the target device, the only necessary ones are the target extended address, the
+IPv6 address, the compressed fabric id and the target node id. The rest of the
+parameters are set to default and do not need to be changed, however they can be
+changed if needed.
 
 To write those parameters to the NVM3, they first need to be converted to a
-binary format, and then written to the NVM3 at 0x701 to 0x708.
+binary format, and then written to the NVM3 at 0x700 to 0x707. The IPv6 address
+at 0x701 is the exception: the firmware reads it as a string, so the script
+writes it ASCII-encoded.
 
 ## Data in the switch/closure prototype pair
 
@@ -149,7 +248,7 @@ the records.
 
 | Name                                   | Key (NVM3 or KVS)                   | Scope  |
 | -------------------------------------- | ----------------------------------- | ------ |
-| Fabric index                           | KVS `fabric_index`; `g/fidx`        | Shared |
+| Fabric index                           | KVS `g/fidx`; `f/<fabric-index>/…`  | Shared |
 | Root certificate                       | KVS `f/1/r`                         | Shared |
 | Intermediate certificate               | KVS `f/1/i`                         | Shared |
 | Node Operational Certificate (NOC)     | KVS `f/1/n`                         | Unique |
@@ -179,8 +278,8 @@ the records.
 - **Range and constraints:** Nonzero fabric index supported by the device; this
   pair uses slot 1.
 - **Generation guidance:** Allocate the same unused slot on both clean prototype
-  devices. No reason to use something else than 1 here. Changing thi from one
-  must be reflected in the KVS keys "f/<Fidx>/..."
+  devices. No reason to use something else than 1 here. Changing this from 1
+  must be reflected in the KVS keys "f/<Fidx>/..." and in `g/fidx`.
 
 #### Root certificate
 
@@ -241,7 +340,7 @@ the records.
 
 #### Binding metadata
 
-- **Purpose:** Stores local binding-table state; present only in the closure
+- **Purpose:** Stores local binding-table state; present only in the switch
   YAML.
 - **Range and constraints:** Matter TLV structure and implementation limits
   apply.
@@ -316,8 +415,9 @@ the records.
   bytes. The sample uses a link-local address derived from the peer’s extended
   address.
 - **Generation guidance:** Set reciprocally: each device stores the other
-  device’s actual address. Derive the link-local address using the correct IID
-  procedure.
+  device's `ext_address`. The link-local address is `fe80::` followed by the
+  peer extended address with bit `0x02` of its first byte flipped. The firmware
+  reads `0x701` as a string, so it is stored ASCII-encoded.
 
 #### Matter UDP port
 
@@ -338,9 +438,11 @@ the records.
 #### Compressed fabric ID
 
 - **Purpose:** Identifies the Matter fabric in peer connection parameters.
-- **Range and constraints:** 8-byte fabric-derived identifier.
+- **Range and constraints:** 8-byte fabric-derived identifier, stored
+  little-endian.
 - **Generation guidance:** Derive from the same fabric identity used by the
-  certificates and provision it on both.
+  certificates and provision it on both:
+  `HKDF-SHA256(root public key without the 0x04 prefix, salt = fabric ID as 8 big-endian bytes, info = "CompressedFabric", 8 bytes)`.
 
 #### Peer node ID
 
@@ -352,6 +454,9 @@ the records.
   affect other stored data, like the ACL, Bindings and NOC. Keep in sync !
 
 ### Generating a fresh prototype pair
+
+`generate_precommission.py` implements these steps (see
+[Generating precommissioning data](#generating-precommissioning-data)).
 
 - Generate one fabric identity and one Thread network dataset for each pair;
   provision the same fabric chain, fabric metadata, and Thread dataset to both
