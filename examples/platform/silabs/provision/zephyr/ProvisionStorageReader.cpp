@@ -237,6 +237,77 @@ CHIP_ERROR ProvisionStorageReader::GetTestEventTriggerKey(MutableByteSpan & keyS
     VerifyOrReturnError(keyLength == sizeof(key), CHIP_ERROR_INVALID_ARGUMENT);
     return CopySpanToMutableSpan(ByteSpan(key), keySpan);
 }
+// MQTT / HTTPS OTA configuration
+CHIP_ERROR ProvisionStorageReader::GetMqttRootCa(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyMqttRootCa, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttServerAddress(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyMqttServerAddress, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttServerPort(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyMqttServerPort, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientId(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyMqttClientId, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttUsername(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyMqttUsername, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttPassword(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyMqttPassword, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientKey(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyMqttClientKey, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientCert(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyMqttClientCert, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetHttpsRootCa(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyHttpsRootCa, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetHttpsOtaUrl(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(ZephyrConfig::ReadConfigValueBin(ZephyrStorage::kConfigKeyHttpsOtaUrl, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
 } // namespace Provision
 } // namespace Silabs
 } // namespace DeviceLayer

@@ -45,6 +45,16 @@ DEFINE_CONFIG_KEY(kConfigKeyProvisionRequest, "provision-req");
 DEFINE_CONFIG_KEY(kConfigKeyProvisionVersion, "provision-ver");
 DEFINE_CONFIG_KEY(kConfigKeyDacKeyId, "dac-key-id");
 DEFINE_CONFIG_KEY(kConfigKeyTestEventTriggerKey, "test-event-trigger");
+DEFINE_CONFIG_KEY(kConfigKeyMqttRootCa, "mqtt-root-ca");
+DEFINE_CONFIG_KEY(kConfigKeyMqttServerAddress, "mqtt-server-addr");
+DEFINE_CONFIG_KEY(kConfigKeyMqttServerPort, "mqtt-server-port");
+DEFINE_CONFIG_KEY(kConfigKeyMqttClientId, "mqtt-client-id");
+DEFINE_CONFIG_KEY(kConfigKeyMqttUsername, "mqtt-username");
+DEFINE_CONFIG_KEY(kConfigKeyMqttPassword, "mqtt-password");
+DEFINE_CONFIG_KEY(kConfigKeyMqttClientKey, "mqtt-client-key");
+DEFINE_CONFIG_KEY(kConfigKeyMqttClientCert, "mqtt-client-cert");
+DEFINE_CONFIG_KEY(kConfigKeyHttpsRootCa, "https-root-ca");
+DEFINE_CONFIG_KEY(kConfigKeyHttpsOtaUrl, "https-ota-url");
 
 #undef DEFINE_CONFIG_KEY
 

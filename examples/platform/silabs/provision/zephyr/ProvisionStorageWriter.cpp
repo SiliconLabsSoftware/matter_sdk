@@ -231,6 +231,47 @@ CHIP_ERROR ProvisionStorageWriter::SetTestEventTriggerKey(const ByteSpan & value
     VerifyOrReturnError(value.size() == TestEventTriggerDelegate::kEnableKeyLength, CHIP_ERROR_INVALID_ARGUMENT);
     return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyTestEventTriggerKey, value.data(), value.size());
 }
+// MQTT / HTTPS OTA configuration
+CHIP_ERROR ProvisionStorageWriter::SetMqttRootCa(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyMqttRootCa, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttServerAddress(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyMqttServerAddress, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttServerPort(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyMqttServerPort, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientId(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyMqttClientId, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttUsername(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyMqttUsername, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttPassword(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyMqttPassword, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientKey(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyMqttClientKey, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientCert(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyMqttClientCert, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetHttpsRootCa(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyHttpsRootCa, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetHttpsOtaUrl(const ByteSpan & value)
+{
+    return ZephyrConfig::WriteConfigValueBin(ZephyrStorage::kConfigKeyHttpsOtaUrl, value.data(), value.size());
+}
 } // namespace Provision
 } // namespace Silabs
 } // namespace DeviceLayer
