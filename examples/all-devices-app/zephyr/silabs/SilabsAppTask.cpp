@@ -50,7 +50,7 @@ CHIP_ERROR InitSilabsCredentials()
                            DeviceLayer::Internal::ZephyrConfig::kConfigKey_MfrDeviceCert)
                            ? CHIP_NO_ERROR : CHIP_ERROR_PERSISTED_STORAGE_FAILED,
                            ChipLogError(DeviceLayer, "No DAC found. Fully provision the device before startup."));
-    
+
 #else // CONFIG_CHIP_FACTORY_DATA
     Credentials::SetDeviceAttestationCredentialsProvider(Credentials::Examples::GetExampleDACProvider());
     DeviceLayer::SetDeviceInstanceInfoProvider(&DeviceLayer::DeviceInstanceInfoProviderMgrImpl());
