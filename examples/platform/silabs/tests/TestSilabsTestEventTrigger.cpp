@@ -64,6 +64,17 @@ public:
         return CHIP_ERROR_NOT_IMPLEMENTED;
     }
 
+    CHIP_ERROR GetMqttRootCa(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetMqttServerAddress(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetMqttServerPort(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetMqttClientId(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetMqttUsername(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetMqttPassword(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetMqttClientKey(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetMqttClientCert(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetHttpsRootCa(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+    CHIP_ERROR GetHttpsOtaUrl(MutableByteSpan &) override { return CHIP_ERROR_NOT_IMPLEMENTED; }
+
     CHIP_ERROR GetTestEventTriggerKey(MutableByteSpan & keySpan) override
     {
         VerifyOrReturnError(!forceError, CHIP_ERROR_INTERNAL);
