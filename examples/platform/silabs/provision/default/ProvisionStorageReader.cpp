@@ -399,6 +399,77 @@ CHIP_ERROR ProvisionStorageReader::DecryptUsingOtaTlvEncryptionKey(MutableByteSp
 #endif
 }
 
+// MQTT / HTTPS OTA configuration
+CHIP_ERROR ProvisionStorageReader::GetMqttRootCa(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_CACerts, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttServerAddress(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_hostname, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttServerPort(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_Mqtt_ServerPort, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientId(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_clientid, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttUsername(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_Mqtt_Username, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttPassword(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_Mqtt_Password, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientKey(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_Mqtt_ClientKey, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientCert(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_DeviceCerts, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetHttpsRootCa(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_Https_RootCa, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetHttpsOtaUrl(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(SilabsConfig::ReadConfigValueBin(SilabsConfig::kConfigKey_Https_OtaUrl, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
 } // namespace Provision
 } // namespace Silabs
 } // namespace DeviceLayer

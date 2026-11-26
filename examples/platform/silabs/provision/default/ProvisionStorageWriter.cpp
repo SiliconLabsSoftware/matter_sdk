@@ -309,6 +309,47 @@ CHIP_ERROR ProvisionStorageWriter::GetProvisionRequest(bool & value)
     return SilabsConfig::ReadConfigValue(SilabsConfig::kConfigKey_Provision_Request, value);
 }
 
+// MQTT / HTTPS OTA configuration
+CHIP_ERROR ProvisionStorageWriter::SetMqttRootCa(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_CACerts, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttServerAddress(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_hostname, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttServerPort(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Mqtt_ServerPort, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientId(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_clientid, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttUsername(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Mqtt_Username, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttPassword(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Mqtt_Password, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientKey(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Mqtt_ClientKey, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientCert(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_DeviceCerts, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetHttpsRootCa(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Https_RootCa, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetHttpsOtaUrl(const ByteSpan & value)
+{
+    return SilabsConfig::WriteConfigValueBin(SilabsConfig::kConfigKey_Https_OtaUrl, value.data(), value.size());
+}
 } // namespace Provision
 } // namespace Silabs
 } // namespace DeviceLayer

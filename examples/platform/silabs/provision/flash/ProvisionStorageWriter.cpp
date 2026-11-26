@@ -202,6 +202,46 @@ CHIP_ERROR ProvisionStorageWriter::SetTestEventTriggerKey(const ByteSpan & value
     return CHIP_ERROR_NOT_IMPLEMENTED;
 #endif // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
 }
+CHIP_ERROR ProvisionStorageWriter::SetMqttRootCa(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kMqttRootCa, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttServerAddress(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kMqttServerAddress, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttServerPort(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kMqttServerPort, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientId(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kMqttClientId, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttUsername(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kMqttUsername, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttPassword(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kMqttPassword, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientKey(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kMqttClientKey, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetMqttClientCert(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kMqttClientCert, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetHttpsRootCa(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kHttpsRootCa, value.data(), value.size());
+}
+CHIP_ERROR ProvisionStorageWriter::SetHttpsOtaUrl(const ByteSpan & value)
+{
+    return Flash::Set(Parameters::ID::kHttpsOtaUrl, value.data(), value.size());
+}
 } // namespace Provision
 } // namespace Silabs
 } // namespace DeviceLayer

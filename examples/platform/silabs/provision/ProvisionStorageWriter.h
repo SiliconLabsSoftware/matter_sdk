@@ -71,6 +71,18 @@ public:
     CHIP_ERROR SetTestEventTriggerKey(const ByteSpan & value) override;
     CHIP_ERROR SetOtaTlvEncryptionKey(const ByteSpan & value) override;
 
+    // MQTT / HTTPS OTA configuration.
+    CHIP_ERROR SetMqttRootCa(const ByteSpan & value) override;
+    CHIP_ERROR SetMqttServerAddress(const ByteSpan & value) override;
+    CHIP_ERROR SetMqttServerPort(const ByteSpan & value) override;
+    CHIP_ERROR SetMqttClientId(const ByteSpan & value) override;
+    CHIP_ERROR SetMqttUsername(const ByteSpan & value) override;
+    CHIP_ERROR SetMqttPassword(const ByteSpan & value) override;
+    CHIP_ERROR SetMqttClientKey(const ByteSpan & value) override;
+    CHIP_ERROR SetMqttClientCert(const ByteSpan & value) override;
+    CHIP_ERROR SetHttpsRootCa(const ByteSpan & value) override;
+    CHIP_ERROR SetHttpsOtaUrl(const ByteSpan & value) override;
+
     // Provisioning/platform lifecycle controls.
     CHIP_ERROR SetCredentialsBaseAddress(uint32_t addr) override;
     CHIP_ERROR SetProvisionRequest(bool value) override;
