@@ -63,11 +63,11 @@ void LogBootloaderApiError([[maybe_unused]] const char * apiName, [[maybe_unused
     const char * errorName = BootloaderErrorCodeName(errorCode);
     if (errorName != nullptr)
     {
-        ChipLogError(SoftwareUpdate, "%s() error: %ld (%s)", apiName, errorCode, errorName);
+        ChipLogError(SoftwareUpdate, "%s() error: %" PRId32 " (%s)", apiName, errorCode, errorName);
     }
     else
     {
-        ChipLogError(SoftwareUpdate, "%s() error: %ld", apiName, errorCode);
+        ChipLogError(SoftwareUpdate, "%s() error: %" PRId32, apiName, errorCode);
     }
 #endif // CHIP_ERROR_LOGGING
 }
