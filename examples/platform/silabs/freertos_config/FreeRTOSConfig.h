@@ -218,7 +218,7 @@ extern void vTaskMovedToReadyState(void * xTask);
 // Keep the timerTask at the highest prio as some of our stacks tasks leverage eventing with timers.
 #define configTIMER_TASK_PRIORITY (55) /* Highest priority */
 #define configTIMER_QUEUE_LENGTH (10)
-#define configTIMER_TASK_STACK_DEPTH (512 / sizeof(StackType_t))
+#define configTIMER_TASK_STACK_DEPTH (1280 / sizeof(StackType_t))
 
 #ifdef SLI_SI91X_MCU_INTERFACE
 #ifdef __NVIC_PRIO_BITS
