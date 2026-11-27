@@ -207,6 +207,14 @@ public:
     static constexpr Key kConfigKey_Provision_Request  = SilabsConfigKey(kMatterFactory_KeyBase, 0x28);
     static constexpr Key kConfigKey_Provision_Version  = SilabsConfigKey(kMatterFactory_KeyBase, 0x29);
     static constexpr Key kOtaTlvEncryption_KeyId       = SilabsConfigKey(kMatterFactory_KeyBase, 0x30);
+    // MQTT / HTTPS OTA configuration. MQTT root CA, server address, client id and client cert reuse
+    // kConfigKey_CACerts, kConfigKey_hostname, kConfigKey_clientid and kConfigKey_DeviceCerts.
+    static constexpr Key kConfigKey_Mqtt_ServerPort = SilabsConfigKey(kMatterFactory_KeyBase, 0x31);
+    static constexpr Key kConfigKey_Mqtt_Username   = SilabsConfigKey(kMatterFactory_KeyBase, 0x32);
+    static constexpr Key kConfigKey_Mqtt_Password   = SilabsConfigKey(kMatterFactory_KeyBase, 0x33);
+    static constexpr Key kConfigKey_Mqtt_ClientKey  = SilabsConfigKey(kMatterFactory_KeyBase, 0x34);
+    static constexpr Key kConfigKey_Https_RootCa    = SilabsConfigKey(kMatterFactory_KeyBase, 0x35);
+    static constexpr Key kConfigKey_Https_OtaUrl    = SilabsConfigKey(kMatterFactory_KeyBase, 0x36);
 
 #ifdef SL_COMMON_TOKEN_MANAGER_ENABLE_STATIC_TOKENS
     // Static secure tokens (not NVM3). Accessed through the sl_token_manager_* APIs.

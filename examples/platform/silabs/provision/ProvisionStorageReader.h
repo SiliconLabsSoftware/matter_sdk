@@ -94,6 +94,18 @@ public:
     CHIP_ERROR GetOtaTlvEncryptionKeyId(uint32_t & value) override;
     CHIP_ERROR DecryptUsingOtaTlvEncryptionKey(MutableByteSpan & block, uint32_t & ivOffset) override;
 
+    // MQTT / HTTPS OTA configuration. Silicon Labs provisioned-data access used by optional platform features.
+    CHIP_ERROR GetMqttRootCa(MutableByteSpan & value) override;
+    CHIP_ERROR GetMqttServerAddress(MutableByteSpan & value) override;
+    CHIP_ERROR GetMqttServerPort(MutableByteSpan & value) override;
+    CHIP_ERROR GetMqttClientId(MutableByteSpan & value) override;
+    CHIP_ERROR GetMqttUsername(MutableByteSpan & value) override;
+    CHIP_ERROR GetMqttPassword(MutableByteSpan & value) override;
+    CHIP_ERROR GetMqttClientKey(MutableByteSpan & value) override;
+    CHIP_ERROR GetMqttClientCert(MutableByteSpan & value) override;
+    CHIP_ERROR GetHttpsRootCa(MutableByteSpan & value) override;
+    CHIP_ERROR GetHttpsOtaUrl(MutableByteSpan & value) override;
+
 private:
     ProvisionStorageReader() = default;
 

@@ -354,6 +354,76 @@ CHIP_ERROR ProvisionStorageReader::GetTestEventTriggerKey(MutableByteSpan & keyS
     return CHIP_ERROR_NOT_IMPLEMENTED;
 #endif // SL_MATTER_TEST_EVENT_TRIGGER_ENABLED
 }
+CHIP_ERROR ProvisionStorageReader::GetMqttRootCa(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kMqttRootCa, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttServerAddress(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kMqttServerAddress, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttServerPort(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kMqttServerPort, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientId(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kMqttClientId, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttUsername(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kMqttUsername, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttPassword(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kMqttPassword, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientKey(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kMqttClientKey, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetMqttClientCert(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kMqttClientCert, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetHttpsRootCa(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kHttpsRootCa, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
+CHIP_ERROR ProvisionStorageReader::GetHttpsOtaUrl(MutableByteSpan & value)
+{
+    size_t size = 0;
+    ReturnErrorOnFailure(Flash::Get(Parameters::ID::kHttpsOtaUrl, value.data(), value.size(), size));
+    value.reduce_size(size);
+    return CHIP_NO_ERROR;
+}
 } // namespace Provision
 } // namespace Silabs
 } // namespace DeviceLayer
