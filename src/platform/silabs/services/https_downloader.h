@@ -37,10 +37,11 @@
 namespace chip {
 
 /**
- * @brief OTADownloader that fetches a Matter OTA image over HTTPS using HTTP Range GETs.
+ * @brief OTADownloader that fetches a Matter OTA image over one HTTPS GET.
  *
- * Transport only (BDXDownloader analog). Uses the shared HttpClient on the http_client thread.
- * Receives a URL via SetImageURI; does not know the URL source or where it is stored.
+ * Transport only (BDXDownloader analog). Uses the shared HttpClient on the http_client thread
+ * with @ref DeviceLayer::Silabs::HttpGetDataCallback to stream body chunks into the image
+ * processor. Receives a URL via SetImageURI; does not know the URL source or where it is stored.
  */
 class HttpsDownloader : public OTADownloader
 {
@@ -84,7 +85,7 @@ public:
     /** URI composer (parse + connect override). Pointer is not owned. */
     void SetUriComposer(UriComposer * composer) { mUriComposer = composer; }
 
-    /** Compose uri into the session target, then use it for Range GETs. */
+    /** Compose uri into the session target, then use it for the HTTPS GET. */
     CHIP_ERROR SetImageURI(CharSpan uri);
 
     CHIP_ERROR BeginPrepareDownload() override;
@@ -102,7 +103,9 @@ public:
     CHIP_ERROR NoteConnectivityRestored();
 
 private:
-    CHIP_ERROR QueueRangeGet();
+    CHIP_ERROR QueueGet();
+    CHIP_ERROR EnsureChunkSlotSem();
+    void ReleaseChunkSlot();
     void ClearSessionTarget();
 
     void ArmStallTimer();
@@ -114,16 +117,13 @@ private:
     void CancelBusyRetryTimer();
     static void BusyRetryTimerHandler(System::Layer * layer, void * appState);
 
-    static void OnRangeComplete(CHIP_ERROR result, void * context);
-    CHIP_ERROR HandleRangeBodyChunk(ByteSpan data, uint16_t httpCode);
+    static CHIP_ERROR OnGetData(ByteSpan chunk, void * context);
+    static void OnGetComplete(CHIP_ERROR result, void * context);
+    CHIP_ERROR HandleBodyChunk(ByteSpan data);
     CHIP_ERROR ValidateHeaderIncremental(ByteSpan & block);
     void NotifyProgress();
     void SetState(State state, app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
     void CleanupOnError(app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
-
-    static constexpr uint16_t kHttpRangeNotSatisfiable = 416;
-    // Size of mRangeHeaderValue: "bytes=<10 digits>-<10 digits>\0" is 28 bytes at uint32_t max.
-    static constexpr size_t kRangeHeaderValueSize = 28;
 
     StateDelegate * mStateDelegate                = nullptr;
     DeviceLayer::Silabs::HttpClient * mHttpClient = nullptr;
@@ -139,6 +139,7 @@ private:
     uint32_t mNextOffset            = 0;
     uint32_t mPrevOffset            = 0;
     uint32_t mTargetVersion         = 0;
+    uint32_t mBytesToSkip           = 0;
 
     bool mHeaderValidated     = false;
     bool mWaitingHttp         = false;
@@ -146,15 +147,14 @@ private:
     bool mLastFailureNotNewer = false;
 
     OTAImageHeaderParser mHeaderParser;
-    uint8_t mBlockBuf[kDefaultBlockSize]{};
-    uint32_t mBlockFilled = 0;
 
+    /** Staging for one NWP GET chunk; HttpGetDataCallback reuses the HttpClient buffer after copy. */
     uint8_t mRxStaging[kDefaultBlockSize]{};
     uint32_t mRxStagingLen = 0;
     MutableByteSpan mRxSpan{ mRxStaging };
 
-    char mRangeHeaderValue[kRangeHeaderValueSize]{};
-    DeviceLayer::Silabs::HttpHeader mRangeHeader{ "Range", mRangeHeaderValue };
+    /** Binary semaphore: HttpClient data path Acquires; CHIP releases after ProcessBlock is queued. */
+    void * mChunkSlotSem = nullptr; // osSemaphoreId_t
 };
 
 } // namespace chip
