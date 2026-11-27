@@ -166,6 +166,7 @@ void HttpClient::ResetRequestState()
     mPendingHeaders       = nullptr;
     mPendingHeaderCount   = 0;
     mLastHttpResponseCode = 0;
+    mGetDataCallback      = nullptr;
 }
 
 CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback callback, void * context)
@@ -543,8 +544,25 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
             const size_t copyLen = (getResponse->data_length < avail) ? getResponse->data_length : avail;
             if (copyLen > 0)
             {
-                memcpy(self->mActiveResponseBuffer->data() + self->mResponseBytesWritten, getResponse->data_buffer, copyLen);
+                uint8_t * const dest = self->mActiveResponseBuffer->data() + self->mResponseBytesWritten;
+                memcpy(dest, getResponse->data_buffer, copyLen);
                 self->mResponseBytesWritten += static_cast<uint32_t>(copyLen);
+
+                // Optional streaming flush: deliver this chunk, then reuse the buffer.
+                if (self->mGetDataCallback != nullptr)
+                {
+                    const CHIP_ERROR dataErr =
+                        self->mGetDataCallback(ByteSpan(dest, copyLen), self->mUserCallbackContext);
+                    if (dataErr != CHIP_NO_ERROR)
+                    {
+                        ChipLogError(DeviceLayer, "[HTTPS] GET data callback failed: %" CHIP_ERROR_FORMAT, dataErr.Format());
+                        self->mHttpRspReceived = kHttpFailureResponse;
+                        self->mCallbackStatus  = SL_STATUS_FAIL;
+                        self->SignalResponse();
+                        return SL_STATUS_FAIL;
+                    }
+                    self->mResponseBytesWritten = 0;
+                }
             }
             if (copyLen < getResponse->data_length)
             {
@@ -558,6 +576,7 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
     {
         if (self->mActiveResponseBuffer != nullptr)
         {
+            // Streaming Get already flushed each chunk; completion sees an empty span.
             self->mActiveResponseBuffer->reduce_size(self->mResponseBytesWritten);
         }
         self->mHttpRspReceived      = kHttpSuccessResponse;
@@ -686,11 +705,18 @@ CHIP_ERROR HttpClient::ResolveServerEndpoint()
 CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
                            HttpOperationCallback callback, void * context)
 {
-    return Get(host, resource, responseBuffer, nullptr, 0, callback, context);
+    return Get(host, resource, responseBuffer, nullptr, 0, nullptr, callback, context);
 }
 
 CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
                            const HttpHeader * headers, size_t headerCount, HttpOperationCallback callback, void * context)
+{
+    return Get(host, resource, responseBuffer, headers, headerCount, nullptr, callback, context);
+}
+
+CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, MutableByteSpan & responseBuffer,
+                           const HttpHeader * headers, size_t headerCount, HttpGetDataCallback dataCallback,
+                           HttpOperationCallback callback, void * context)
 {
     VerifyOrReturnError(mInitialized, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(!mBusy && !mChunkedActive, CHIP_ERROR_BUSY);
@@ -703,6 +729,7 @@ CHIP_ERROR HttpClient::Get(const HttpHost & host, const char * resource, Mutable
     mPendingResource      = resource;
     mPendingHeaders       = headers;
     mPendingHeaderCount   = headerCount;
+    mGetDataCallback      = dataCallback;
     return QueueOperation(Operation::Get, callback, context);
 }
 
