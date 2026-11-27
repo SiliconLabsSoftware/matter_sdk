@@ -36,18 +36,6 @@
 #include <platform/silabs/NetworkCommissioningWiFiDriver.h>
 #endif // SL_WIFI
 
-#if (defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES)
-#include "AppEvent.h"
-#include "BaseApplication.h"
-#include <lib/shell/Command.h>
-#include <lib/support/CodeUtils.h>
-
-#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-#include "https_offload_example.h"
-#endif // SL_MATTER_ENABLE_HTTP_SERVICE
-
-#endif // SL_MATTER_ENABLE_SERVICES
-
 using namespace ::chip;
 using Shell::Engine;
 using Shell::shell_command_t;
@@ -157,56 +145,6 @@ void RegisterCommands()
 
 } // namespace MemoryShellCommands
 
-#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
-
-namespace DemoShellCommands {
-
-CHIP_ERROR DemoHelpHandler(int /* argc */, char ** /* argv */)
-{
-    streamer_printf(streamer_get(), "Usage: demo <service>\r\n");
-
-#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-    streamer_printf(streamer_get(), "  http  Run HTTPS PUT/GET/POST on the AppTask thread\r\n");
-#endif // SL_MATTER_ENABLE_HTTP_SERVICE
-
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR DemoCommandHandler(int argc, char ** argv)
-{
-    if (argc == 0)
-    {
-        return DemoHelpHandler(argc, argv);
-    }
-
-    VerifyOrReturnError(argc == 1, CHIP_ERROR_INVALID_ARGUMENT);
-
-    AppEvent event = {};
-    event.Type     = AppEvent::kEventType_Timer;
-
-#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-    if (strcmp(argv[0], "http") == 0)
-    {
-        streamer_printf(streamer_get(), "Posting HTTPS PUT/GET/POST to AppTask\r\n");
-        event.Handler = HttpsRunAppEvent;
-        BaseApplication::PostEvent(&event);
-        return CHIP_NO_ERROR;
-    }
-#endif // SL_MATTER_ENABLE_HTTP_SERVICE
-
-    streamer_printf(streamer_get(), "Unknown service: %s\r\n", argv[0]);
-    return DemoHelpHandler(0, nullptr);
-}
-
-void RegisterCommands()
-{
-    static const Shell::Command sDemoCmd = { &DemoCommandHandler, "demo", "Run a Matter service demo: demo <http>" };
-    Engine::Root().RegisterCommands(&sDemoCmd, 1);
-}
-
-} // namespace DemoShellCommands
-#endif // SL_MATTER_ENABLE_SERVICES
-
 #if defined(SL_CATALOG_WATCHDOG_MANAGER_PRESENT) && defined(SL_MATTER_TEST_WATCHDOG)
 #include "sl_watchdog_manager.h"
 
@@ -275,10 +213,6 @@ void startShellTask()
 #endif // SL_CATALOG_WATCHDOG_MANAGER_PRESENT && SL_MATTER_TEST_WATCHDOG
 
     MemoryShellCommands::RegisterCommands();
-
-#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
-    DemoShellCommands::RegisterCommands();
-#endif // SL_MATTER_ENABLE_SERVICES
 
     shellTaskHandle = osThreadNew(MatterShellTask, nullptr, &kShellTaskAttr);
     VerifyOrDie(shellTaskHandle);

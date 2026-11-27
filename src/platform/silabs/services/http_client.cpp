@@ -62,7 +62,8 @@ CHIP_ERROR HttpClient::MapStatus(sl_status_t status)
     }
     // MQTT holding SNI: same retry path as CHIP_ERROR_BUSY.
     VerifyOrReturnError(status != SL_STATUS_SI91X_FEATURE_NOT_AVAILABLE, CHIP_ERROR_BUSY);
-
+    // added since MATTER_ERROR_PLATFORM is not available in the SDK
+    ChipLogDetail(DeviceLayer, "[HTTPS] unknown status: %ld", status);
     return CHIP_ERROR_INTERNAL;
 }
 
@@ -88,7 +89,7 @@ void HttpClient::ServiceThread(void * arg)
             osEventFlagsWait(eventFlags, kEventOperation | kEventResponse | kEventStop, osFlagsWaitAny, osWaitForever);
         if (events & osFlagsError)
         {
-            ChipLogError(DeviceLayer, "HTTPS service event wait failed: 0x%lx", static_cast<unsigned long>(events));
+            ChipLogError(DeviceLayer, "[HTTPS] service event wait failed: 0x%lx", static_cast<unsigned long>(events));
             break;
         }
         if (events & kEventStop)
@@ -162,9 +163,9 @@ void HttpClient::ResetRequestState()
     mBusy                 = false;
     mChunkedActive        = false;
 
-    mPendingHeaders        = nullptr;
-    mPendingHeaderCount    = 0;
-    mLastHttpResponseCode  = 0;
+    mPendingHeaders       = nullptr;
+    mPendingHeaderCount   = 0;
+    mLastHttpResponseCode = 0;
 }
 
 CHIP_ERROR HttpClient::QueueOperation(Operation operation, HttpOperationCallback callback, void * context)
@@ -267,17 +268,23 @@ CHIP_ERROR HttpClient::ProcessInit()
                                   SL_NET_SIGNING_CERTIFICATE, mConfig.tlsCaCert, mConfig.tlsCaCertLen);
         if (status != SL_STATUS_OK)
         {
-            ChipLogError(DeviceLayer, "HTTPS TLS CA load failed: 0x%lx", static_cast<unsigned long>(status));
+            ChipLogError(DeviceLayer, "[HTTPS] TLS CA load failed: 0x%lx", static_cast<unsigned long>(status));
             return MapStatus(status);
         }
         sNwpCaLoaded = true;
-        ChipLogProgress(DeviceLayer, "HTTPS loaded TLS CA at index %u", mConfig.certificateIndex);
+        ChipLogProgress(DeviceLayer, "[HTTPS] TLS CA loaded at index: %u", mConfig.certificateIndex);
     }
 
-    if ((mConfig.username != nullptr) && (mConfig.password != nullptr))
+    // NWP sl_http_client_init always sl_net_get_credential(HTTP_CLIENT_ID(0)).
+    // Empty user/pass still must be registered or init returns SL_STATUS_NOT_FOUND.
     {
-        const uint16_t usernameLength = static_cast<uint16_t>(strlen(mConfig.username));
-        const uint16_t passwordLength = static_cast<uint16_t>(strlen(mConfig.password));
+        // Max credential length is 139 bytes, as per sl_http_client_credentials_t.
+        const size_t kMaxCredentialLength = 139;
+
+        const char * username         = (mConfig.username != nullptr) ? mConfig.username : "";
+        const char * password         = (mConfig.password != nullptr) ? mConfig.password : "";
+        const uint16_t usernameLength = static_cast<uint16_t>(strnlen(username, kMaxCredentialLength));
+        const uint16_t passwordLength = static_cast<uint16_t>(strnlen(password, kMaxCredentialLength));
         const uint32_t credentialSize = sizeof(sl_http_client_credentials_t) + usernameLength + passwordLength;
 
         auto * credentials = static_cast<sl_http_client_credentials_t *>(malloc(credentialSize));
@@ -285,8 +292,8 @@ CHIP_ERROR HttpClient::ProcessInit()
         memset(credentials, 0, credentialSize);
         credentials->username_length = usernameLength;
         credentials->password_length = passwordLength;
-        memcpy(&credentials->data[0], mConfig.username, usernameLength);
-        memcpy(&credentials->data[usernameLength], mConfig.password, passwordLength);
+        memcpy(&credentials->data[0], username, usernameLength);
+        memcpy(&credentials->data[usernameLength], password, passwordLength);
 
         sl_status_t status = sl_net_set_credential(static_cast<sl_net_credential_id_t>(SL_NET_HTTP_CLIENT_CREDENTIAL_ID(0)),
                                                    SL_NET_HTTP_CLIENT_CREDENTIAL, credentials, credentialSize);
@@ -338,7 +345,7 @@ CHIP_ERROR HttpClient::ProcessInit()
     }
 
     mInitialized = true;
-    ChipLogProgress(DeviceLayer, "HTTPS client init success");
+    ChipLogProgress(DeviceLayer, "[HTTPS] client init success");
     return CHIP_NO_ERROR;
 }
 
@@ -402,7 +409,7 @@ CHIP_ERROR HttpClient::ProcessDeinit()
         mClientHandle      = 0;
         if (status != SL_STATUS_OK)
         {
-            ChipLogError(DeviceLayer, "HTTPS client deinit failed: 0x%lx", static_cast<unsigned long>(status));
+            ChipLogError(DeviceLayer, "[HTTPS] client deinit failed: 0x%lx", static_cast<unsigned long>(status));
             return MapStatus(status);
         }
     }
@@ -420,7 +427,7 @@ CHIP_ERROR HttpClient::ProcessDeinit()
     {
         sActiveClient = nullptr;
     }
-    ChipLogProgress(DeviceLayer, "HTTPS client deinit success");
+    ChipLogProgress(DeviceLayer, "[HTTPS] client deinit success");
     return CHIP_NO_ERROR;
 }
 
@@ -503,7 +510,7 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
     self->mCallbackStatus                   = getResponse->status;
     self->mLastHttpResponseCode             = static_cast<uint16_t>(getResponse->http_response_code);
 
-    ChipLogProgress(DeviceLayer, "HTTPS GET response: status=0x%lX http_code=%u data_len=%u end_of_data=%lu",
+    ChipLogProgress(DeviceLayer, "[HTTPS] GET response: status=0x%lX http_code=%u data_len=%u end_of_data=%lu",
                     static_cast<unsigned long>(getResponse->status), getResponse->http_response_code, getResponse->data_length,
                     static_cast<unsigned long>(getResponse->end_of_data));
 
@@ -541,7 +548,7 @@ sl_status_t HttpClient::GetResponseCallback(const sl_http_client_t * client, sl_
             }
             if (copyLen < getResponse->data_length)
             {
-                ChipLogError(DeviceLayer, "HTTPS GET response truncated, dropped %u bytes",
+                ChipLogError(DeviceLayer, "[HTTPS] GET response truncated, dropped %u bytes",
                              static_cast<unsigned>(getResponse->data_length - copyLen));
             }
         }
@@ -573,7 +580,7 @@ sl_status_t HttpClient::PostResponseCallback(const sl_http_client_t * client, sl
     sl_http_client_response_t * postResponse = static_cast<sl_http_client_response_t *>(data);
     self->mCallbackStatus                    = postResponse->status;
 
-    ChipLogProgress(DeviceLayer, "HTTPS POST response: status=0x%lX http_code=%u data_len=%u",
+    ChipLogProgress(DeviceLayer, "[HTTPS] POST response: status=0x%lX http_code=%u data_len=%u",
                     static_cast<unsigned long>(postResponse->status), postResponse->http_response_code, postResponse->data_length);
 
     if ((postResponse->status != SL_STATUS_OK) && (postResponse->status != SL_STATUS_IN_PROGRESS))
@@ -614,7 +621,7 @@ sl_status_t HttpClient::PutResponseCallback(const sl_http_client_t * client, sl_
     sl_http_client_response_t * putResponse = static_cast<sl_http_client_response_t *>(data);
     self->mCallbackStatus                   = putResponse->status;
 
-    ChipLogProgress(DeviceLayer, "HTTPS PUT response: status=0x%lX end_of_data=%lu data_len=%u",
+    ChipLogProgress(DeviceLayer, "[HTTPS] PUT response: status=0x%lX end_of_data=%lu data_len=%u",
                     static_cast<unsigned long>(putResponse->status), static_cast<unsigned long>(putResponse->end_of_data),
                     putResponse->data_length);
 

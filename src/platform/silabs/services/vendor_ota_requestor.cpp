@@ -28,17 +28,72 @@
 #include <protocols/interaction_model/StatusCode.h>
 
 #include <cinttypes>
+#include <cstring>
+
+#if (SL_MATTER_GN_BUILD == 0)
+#include "sl_matter_https_ota_config.h"
+#endif // SL_MATTER_GN_BUILD
+
+#ifndef SL_MATTER_HTTPS_OTA_DEFAULT_URL
+#define SL_MATTER_HTTPS_OTA_DEFAULT_URL ""
+#endif
+#ifndef SL_MATTER_HTTP_TLS_HOSTNAME
+#define SL_MATTER_HTTP_TLS_HOSTNAME ""
+#endif
+#ifndef SL_MATTER_HTTP_TLS_CA_CERTIFICATE
+#define SL_MATTER_HTTP_TLS_CA_CERTIFICATE ""
+#endif
+#ifndef SL_MATTER_HTTP_CLIENT_USERNAME
+#define SL_MATTER_HTTP_CLIENT_USERNAME ""
+#endif
+#ifndef SL_MATTER_HTTP_CLIENT_PASSWORD
+#define SL_MATTER_HTTP_CLIENT_PASSWORD ""
+#endif
 
 using namespace chip::app::Clusters::OtaSoftwareUpdateRequestor;
 using chip::app::DataModel::Nullable;
 using chip::app::DataModel::NullNullable;
 using chip::DeviceLayer::Internal::SilabsConfig;
+using chip::DeviceLayer::Silabs::HttpClientConfig;
 using chip::Protocols::InteractionModel::Status;
+using chip::operator""_span;
 
 namespace chip {
 namespace {
 
 VendorOTARequestor gVendorOTARequestor;
+
+constexpr CharSpan kHttpsScheme      = "https://"_span;
+constexpr uint16_t kDefaultHttpsPort = 443;
+
+constexpr char kHttpTlsCaCertificate[] = SL_MATTER_HTTP_TLS_CA_CERTIFICATE;
+
+bool FindFirst(CharSpan span, char ch, size_t & outIndex)
+{
+    for (size_t i = 0; i < span.size(); ++i)
+    {
+        if (span[i] == ch)
+        {
+            outIndex = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+CHIP_ERROR ParsePort(CharSpan digits, uint16_t & port)
+{
+    VerifyOrReturnError(digits.size() > 0, CHIP_ERROR_INVALID_ARGUMENT);
+    uint32_t value = 0;
+    for (char c : digits)
+    {
+        VerifyOrReturnError((c >= '0') && (c <= '9'), CHIP_ERROR_INVALID_ARGUMENT);
+        value = (value * 10u) + static_cast<uint32_t>(c - '0');
+        VerifyOrReturnError(value <= 65535u, CHIP_ERROR_INVALID_ARGUMENT);
+    }
+    port = static_cast<uint16_t>(value);
+    return CHIP_NO_ERROR;
+}
 
 } // namespace
 
@@ -101,50 +156,149 @@ void VendorOTARequestor::Init(HttpsDownloader & httpsDownloader,
     mHttpsDownloader->SetStateDelegate(this);
     mHttpsDownloader->SetTimeout(HttpsDownloader::kDefaultTimeout);
     mHttpsDownloader->SetBlockSize(HttpsDownloader::kDefaultBlockSize);
-    // Services may register HttpClient/AppDelegate before OTAConfig::Init; apply when both cached.
-    if ((mHttpClient != nullptr) && (mAppDelegate != nullptr))
-    {
-        LogErrorOnFailure(ApplyBindings());
-    }
-}
+    mHttpsDownloader->SetHttpClient(&mHttpClient);
+    mHttpsDownloader->SetUriComposer(this);
 
-CHIP_ERROR VendorOTARequestor::ApplyBindings()
-{
-    VerifyOrReturnError(mHttpsDownloader != nullptr, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mHttpClient != nullptr, CHIP_ERROR_INCORRECT_STATE);
-    VerifyOrReturnError(mAppDelegate != nullptr, CHIP_ERROR_INCORRECT_STATE);
-    mHttpsDownloader->SetHttpClient(mHttpClient);
-    mHttpsDownloader->SetUriComposer(mAppDelegate);
-    return CHIP_NO_ERROR;
-}
-
-CHIP_ERROR VendorOTARequestor::SetAppDelegate(AppDelegate * delegate)
-{
-    VerifyOrReturnError(delegate != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    mAppDelegate = delegate;
-    // Defer until Init and SetHttpClient have also run; ApplyBindings errors if any binding is null.
-    if ((mHttpsDownloader == nullptr) || (mHttpClient == nullptr))
+    if (SL_MATTER_HTTPS_OTA_DEFAULT_URL[0] != '\0')
     {
-        return CHIP_NO_ERROR;
+        LogErrorOnFailure(SetPeriodicUrl(CharSpan::fromCharString(SL_MATTER_HTTPS_OTA_DEFAULT_URL)));
     }
-    return ApplyBindings();
-}
 
-CHIP_ERROR VendorOTARequestor::SetHttpClient(DeviceLayer::Silabs::HttpClient * client)
-{
-    VerifyOrReturnError(client != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-    mHttpClient = client;
-    if ((mHttpsDownloader == nullptr) || (mAppDelegate == nullptr))
+    if (DeviceLayer::ConnectivityMgr().IsWiFiStationConnected())
     {
-        return CHIP_NO_ERROR;
+        LogErrorOnFailure(EnsureHttpClientStarted());
     }
-    return ApplyBindings();
 }
 
 CHIP_ERROR VendorOTARequestor::GetPeriodicUrl(MutableCharSpan & outUrl)
 {
-    VerifyOrReturnError(mAppDelegate != nullptr, CHIP_ERROR_NOT_FOUND);
-    return mAppDelegate->GetPeriodicUrl(outUrl);
+    VerifyOrReturnError(mPeriodicUrlLen > 0, CHIP_ERROR_NOT_FOUND);
+    return CopyCharSpanToMutableCharSpan(CharSpan(mPeriodicUrl, mPeriodicUrlLen), outUrl);
+}
+
+CHIP_ERROR VendorOTARequestor::SetPeriodicUrl(CharSpan url)
+{
+    VerifyOrReturnError(url.size() > 0 && url.size() < HttpsDownloader::kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
+    MutableCharSpan out(mPeriodicUrl, sizeof(mPeriodicUrl));
+    ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(url, out));
+    mPeriodicUrlLen = out.size();
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR VendorOTARequestor::ComposeImageUri(CharSpan uri, MutableCharSpan & serverEndpoint, MutableCharSpan & tlsHostname,
+                                               uint16_t & port, MutableCharSpan & path)
+{
+    VerifyOrReturnError(uri.size() > 0 && uri.size() < HttpsDownloader::kMaxUrlLen, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(uri.size() >= kHttpsScheme.size(), CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(uri.SubSpan(0, kHttpsScheme.size()).data_equal(kHttpsScheme), CHIP_ERROR_INVALID_ARGUMENT);
+
+    port                = kDefaultHttpsPort;
+    CharSpan rest       = uri.SubSpan(kHttpsScheme.size());
+    size_t slashPos     = 0;
+    const bool hasSlash = FindFirst(rest, '/', slashPos);
+
+    CharSpan authority = hasSlash ? rest.SubSpan(0, slashPos) : rest;
+    CharSpan pathSpan  = hasSlash ? rest.SubSpan(slashPos) : CharSpan();
+
+    size_t colonPos = 0;
+    CharSpan host;
+    if (FindFirst(authority, ':', colonPos))
+    {
+        host = authority.SubSpan(0, colonPos);
+        ReturnErrorOnFailure(ParsePort(authority.SubSpan(colonPos + 1), port));
+    }
+    else
+    {
+        host = authority;
+    }
+
+    VerifyOrReturnError(host.size() > 0 && host.size() < HttpsDownloader::kMaxHostLen, CHIP_ERROR_INVALID_ARGUMENT);
+    ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(host, serverEndpoint));
+
+    // Optional compile-time SNI / Host override (e.g. URL uses IPv4, cert uses DNS name).
+    if (SL_MATTER_HTTP_TLS_HOSTNAME[0] != '\0')
+    {
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(CharSpan::fromCharString(SL_MATTER_HTTP_TLS_HOSTNAME), tlsHostname));
+    }
+    else
+    {
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(host, tlsHostname));
+    }
+
+    if (pathSpan.size() > 0)
+    {
+        VerifyOrReturnError(pathSpan.size() < HttpsDownloader::kMaxPathLen, CHIP_ERROR_INVALID_ARGUMENT);
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan(pathSpan, path));
+    }
+    else
+    {
+        ReturnErrorOnFailure(CopyCharSpanToMutableCharSpan("/"_span, path));
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR VendorOTARequestor::EnsureHttpClientStarted()
+{
+    if (mClientReady)
+    {
+        return CHIP_NO_ERROR;
+    }
+    if (mClientInitPending)
+    {
+        return CHIP_NO_ERROR;
+    }
+    if (mHttpClient.IsRunning())
+    {
+        // Start succeeded earlier but Init never completed; fall through to Init.
+    }
+    else
+    {
+        CHIP_ERROR err = mHttpClient.Start();
+        if (err != CHIP_NO_ERROR)
+        {
+            ChipLogError(SoftwareUpdate, "[HTTPS-OTA] client start: failed %" CHIP_ERROR_FORMAT, err.Format());
+            return err;
+        }
+    }
+
+    const char * user  = SL_MATTER_HTTP_CLIENT_USERNAME;
+    const char * pass  = SL_MATTER_HTTP_CLIENT_PASSWORD;
+    const size_t caLen = sizeof(kHttpTlsCaCertificate) - 1; // Exclude trailing NUL.
+
+    const HttpClientConfig config = {
+        .httpsEnable  = true,
+        .username     = (user[0] != '\0') ? user : nullptr,
+        .password     = (pass[0] != '\0') ? pass : nullptr,
+        .tlsCaCert    = (caLen > 0) ? reinterpret_cast<const uint8_t *>(kHttpTlsCaCertificate) : nullptr,
+        .tlsCaCertLen = caLen,
+    };
+
+    mClientInitPending = true;
+    CHIP_ERROR err     = mHttpClient.Init(config, OnHttpClientInitDone, this);
+    if (err != CHIP_NO_ERROR)
+    {
+        mClientInitPending = false;
+        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] client init: queue failed %" CHIP_ERROR_FORMAT, err.Format());
+        LogErrorOnFailure(mHttpClient.Stop());
+        return err;
+    }
+    return CHIP_NO_ERROR;
+}
+
+void VendorOTARequestor::OnHttpClientInitDone(CHIP_ERROR result, void * context)
+{
+    auto * self              = static_cast<VendorOTARequestor *>(context);
+    self->mClientInitPending = false;
+    if (result == CHIP_NO_ERROR)
+    {
+        self->mClientReady = true;
+        ChipLogDetail(SoftwareUpdate, "[HTTPS-OTA] client start: started");
+        return;
+    }
+
+    ChipLogError(SoftwareUpdate, "[HTTPS-OTA] client init: failed %" CHIP_ERROR_FORMAT, result.Format());
+    LogErrorOnFailure(self->mHttpClient.Stop());
 }
 
 bool VendorOTARequestor::IsMatterIdle() const
@@ -244,13 +398,6 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
                      CHIP_ERROR_NOT_CONNECTED.Format());
         return CHIP_ERROR_NOT_CONNECTED;
     }
-    if ((mHttpClient == nullptr) || (mAppDelegate == nullptr))
-    {
-        SetLastResult(CHIP_ERROR_INCORRECT_STATE, LastResultReason::kClientStart);
-        ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL bindings-unset %" CHIP_ERROR_FORMAT,
-                     CHIP_ERROR_INCORRECT_STATE.Format());
-        return CHIP_ERROR_INCORRECT_STATE;
-    }
     if (!IsMatterIdle())
     {
         SetLastResult(CHIP_ERROR_BUSY, LastResultReason::kBusy);
@@ -258,9 +405,8 @@ CHIP_ERROR VendorOTARequestor::StartUpdate(CharSpan httpsUrl)
         return CHIP_ERROR_BUSY;
     }
 
-    // 2. Require a running HttpClient bound to the downloader.
-    auto * client = mHttpsDownloader->GetHttpClient();
-    if ((client == nullptr) || !client->IsRunning())
+    // 2. Require owned HttpClient Start+Init to have completed.
+    if (!mClientReady || !mHttpClient.IsRunning())
     {
         SetLastResult(CHIP_ERROR_INCORRECT_STATE, LastResultReason::kClientStart);
         ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL client-start %" CHIP_ERROR_FORMAT,
@@ -334,8 +480,7 @@ void VendorOTARequestor::CancelImageUpdate()
     RecordState(OTAUpdateStateEnum::kIdle, OTAChangeReasonEnum::kFailure);
     RestoreMatterOwnership();
     SetLastResult(CHIP_ERROR_CONNECTION_ABORTED, LastResultReason::kAborted);
-    ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL aborted %" CHIP_ERROR_FORMAT,
-                 CHIP_ERROR_CONNECTION_ABORTED.Format());
+    ChipLogError(SoftwareUpdate, "[HTTPS-OTA] RESULT: FAIL aborted %" CHIP_ERROR_FORMAT, CHIP_ERROR_CONNECTION_ABORTED.Format());
 
     if (mVendorDriver != nullptr)
     {
@@ -353,7 +498,7 @@ void VendorOTARequestor::OnDownloadStateChanged(OTADownloader::State state, OTAC
     // 1. Download complete: persist apply markers and hand off to the image processor.
     if (state == OTADownloader::State::kComplete)
     {
-        mTargetVersion            = mHttpsDownloader->GetTargetVersion();
+        mTargetVersion        = mHttpsDownloader->GetTargetVersion();
         CHIP_ERROR persistErr = PersistApplyingForConfirm(mTargetVersion);
         if (persistErr != CHIP_NO_ERROR)
         {
@@ -419,6 +564,11 @@ void VendorOTARequestor::OnUpdateProgressChanged(Nullable<uint8_t> percent)
 
 void VendorOTARequestor::OnWiFiConnectivityChanged(bool established)
 {
+    if (established)
+    {
+        LogErrorOnFailure(EnsureHttpClientStarted());
+    }
+
     VerifyOrReturn(mActive && (mHttpsDownloader != nullptr));
     if (!established)
     {

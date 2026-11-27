@@ -54,12 +54,6 @@
 #include "MatterAwsControl.h"
 #endif // SL_MATTER_ENABLE_AWS
 
-#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
-#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-#include "https_offload_example.h"
-#endif // SL_MATTER_ENABLE_HTTP_SERVICE
-#endif // SL_MATTER_ENABLE_SERVICES
-
 #define APP_FUNCTION_BUTTON 0
 
 using namespace chip;
@@ -117,15 +111,6 @@ CHIP_ERROR AppTask::AppInit()
         ChipLogError(AppServer, "InitThermostat() failed: %" CHIP_ERROR_FORMAT, err.Format());
         appError(err);
     }
-
-#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
-    err = PlatformMgr().AddEventHandler(MatterServicesEventHandler, 0);
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(AppServer, "MatterServicesEventHandler register failed: %" CHIP_ERROR_FORMAT, err.Format());
-        appError(err);
-    }
-#endif // SL_MATTER_ENABLE_SERVICES
 
     return err;
 }
@@ -375,52 +360,6 @@ void AppTask::DMThermostatClusterInit(chip::EndpointId endpoint)
     auto & delegate = ThermostatDelegate::GetInstance();
     SetDefaultDelegate(endpoint, &delegate);
 }
-
-#if defined(SL_MATTER_ENABLE_SERVICES) && SL_MATTER_ENABLE_SERVICES
-#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-namespace {
-
-// Runs on AppTask thread so blocking HTTPS work does not starve the CHIP stack.
-void StartMatterServicesAppEvent(AppEvent * /* aEvent */)
-{
-    if (SL_STATUS_OK != https_client_demo_start())
-    {
-        ChipLogError(AppServer, "https_client_demo_start failed");
-    }
-}
-
-} // namespace
-#endif // SL_MATTER_ENABLE_HTTP_SERVICE
-
-void AppTask::MatterServicesEventHandler(const ChipDeviceEvent * event, intptr_t)
-{
-    VerifyOrReturn(event != nullptr);
-
-    switch (event->Type)
-    {
-#if defined(SL_MATTER_ENABLE_HTTP_SERVICE) && SL_MATTER_ENABLE_HTTP_SERVICE
-    case DeviceEventType::kInternetConnectivityChange:
-        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established
-#if defined(SL_MATTER_ENABLE_DUAL_STACK) && SL_MATTER_ENABLE_DUAL_STACK
-            || event->InternetConnectivityChange.IPv6 == kConnectivity_Established
-#endif // SL_MATTER_ENABLE_DUAL_STACK
-        )
-        {
-            // Post directly to AppTask; avoid SystemLayer timer re-entering the Matter stack just to PostEvent.
-            ChipLogProgress(AppServer, "Scheduling Matter HTTPS service initialization");
-            AppEvent appEvent = {};
-            appEvent.Type     = AppEvent::kEventType_Timer;
-            appEvent.Handler  = StartMatterServicesAppEvent;
-            CustomerAppTask::GetAppTask().PostEvent(&appEvent);
-        }
-        break;
-#endif // SL_MATTER_ENABLE_HTTP_SERVICE
-
-    default:
-        break;
-    }
-}
-#endif // SL_MATTER_ENABLE_SERVICES
 
 // emberAfThermostatClusterInitCallback — weak ZAP entry point. CRTP forwarder into AppTask.
 void emberAfThermostatClusterInitCallback(chip::EndpointId endpoint)

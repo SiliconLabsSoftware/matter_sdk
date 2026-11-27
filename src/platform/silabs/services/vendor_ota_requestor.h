@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "http_client.h"
 #include "https_downloader.h"
 #include "vendor_ota_matter_gate.h"
 #include "vendor_ota_requestor_driver.h"
@@ -31,9 +32,12 @@ namespace chip {
 /**
  * Vendor HTTPS OTA controller. Installed as the global OTARequestorInterface while a
  * download/apply session is active so ImageProcessor CancelImageUpdate/Reset hit this object.
+ * Owns the NWP HttpClient and parses https:// URLs for the downloader.
  * Requires multi-image OTA (OTAMultiImageProcessorImpl).
  */
-class VendorOTARequestor : public OTARequestorInterface, public HttpsDownloader::StateDelegate
+class VendorOTARequestor : public OTARequestorInterface,
+                           public HttpsDownloader::StateDelegate,
+                           public HttpsDownloader::UriComposer
 {
 public:
     enum class LastResultReason : uint8_t
@@ -48,30 +52,19 @@ public:
         kClientStart,
     };
 
-    /**
-     * App/example owns URI composition and the periodic URL store.
-     * Register via SetAppDelegate; pointer is not owned.
-     */
-    class AppDelegate : public HttpsDownloader::UriComposer
-    {
-    public:
-        // CHIP_ERROR_NOT_FOUND when no periodic URL is configured.
-        virtual CHIP_ERROR GetPeriodicUrl(MutableCharSpan & outUrl) = 0;
-    };
-
     static VendorOTARequestor & GetInstance();
 
     void Init(HttpsDownloader & httpsDownloader, DeviceLayer::Silabs::MultiOTA::OTAMultiImageProcessorImpl & imageProcessor,
               OTARequestorInterface & matterRequestor, OTADownloader & bdxDownloader, DefaultOTARequestorStorage & matterStorage,
               VendorOtaMatterGate & gate, VendorOTARequestorDriver & vendorDriver);
 
-    /** Cache app UriComposer; applies to downloader when Init + HttpClient are ready. Fails if @p delegate is null. */
-    CHIP_ERROR SetAppDelegate(AppDelegate * delegate);
-    /** Cache HttpClient; applies to downloader when Init + AppDelegate are ready. Fails if @p client is null. */
-    CHIP_ERROR SetHttpClient(DeviceLayer::Silabs::HttpClient * client);
-
-    /** Forwards to AppDelegate; CHIP_ERROR_NOT_FOUND if none / no URL. */
+    /** RAM-only periodic check URL. CHIP_ERROR_NOT_FOUND when empty. */
     CHIP_ERROR GetPeriodicUrl(MutableCharSpan & outUrl);
+    CHIP_ERROR SetPeriodicUrl(CharSpan url);
+
+    /** Parse https://<host>[:port]/path (DNS or IPv4 host; no IPv6). */
+    CHIP_ERROR ComposeImageUri(CharSpan uri, MutableCharSpan & serverEndpoint, MutableCharSpan & tlsHostname, uint16_t & port,
+                               MutableCharSpan & path) override;
 
     /** Start a one-shot HTTPS OTA session. Does not write NVM. */
     CHIP_ERROR StartUpdate(CharSpan httpsUrl);
@@ -114,17 +107,16 @@ public:
     ProviderLocationList::Iterator GetDefaultOTAProviderListIterator() override;
 
 private:
-    /**
-     * Forward cached HttpClient / AppDelegate to the downloader.
-     * Returns CHIP_ERROR_INCORRECT_STATE if downloader, client, or delegate is null.
-     */
-    CHIP_ERROR ApplyBindings();
     CHIP_ERROR TakeOwnership();
     void RestoreMatterOwnership();
     bool IsMatterIdle() const;
     void RecordState(OTAUpdateStateEnum state, app::Clusters::OtaSoftwareUpdateRequestor::OTAChangeReasonEnum reason);
     CHIP_ERROR PersistApplyingForConfirm(uint32_t targetVersion);
     void SetLastResult(CHIP_ERROR err, LastResultReason reason);
+
+    /** Start + Init owned HttpClient once; no-op when ready or Init already queued. */
+    CHIP_ERROR EnsureHttpClientStarted();
+    static void OnHttpClientInitDone(CHIP_ERROR result, void * context);
 
     HttpsDownloader * mHttpsDownloader                                          = nullptr;
     DeviceLayer::Silabs::MultiOTA::OTAMultiImageProcessorImpl * mImageProcessor = nullptr;
@@ -133,8 +125,13 @@ private:
     DefaultOTARequestorStorage * mMatterStorage                                 = nullptr;
     VendorOtaMatterGate * mGate                                                 = nullptr;
     VendorOTARequestorDriver * mVendorDriver                                    = nullptr;
-    AppDelegate * mAppDelegate                                                  = nullptr;
-    DeviceLayer::Silabs::HttpClient * mHttpClient                               = nullptr;
+
+    DeviceLayer::Silabs::HttpClient mHttpClient;
+    bool mClientReady       = false;
+    bool mClientInitPending = false;
+
+    char mPeriodicUrl[HttpsDownloader::kMaxUrlLen]{};
+    size_t mPeriodicUrlLen = 0;
 
     bool mActive                    = false;
     OTAUpdateStateEnum mUpdateState = OTAUpdateStateEnum::kIdle;

@@ -62,14 +62,13 @@ public:
     };
 
     /**
-     * App/example parses the image URI and applies any connect-endpoint override.
-     * Pointer is not owned.
+     * Parses the image URI into connect endpoint, TLS hostname, port, and path.
+     * Pointer is not owned (typically VendorOTARequestor).
      */
     class UriComposer
     {
     public:
         virtual ~UriComposer() = default;
-        // Parse uri and fill connect endpoint, TLS hostname, port, and path.
         virtual CHIP_ERROR ComposeImageUri(CharSpan uri, MutableCharSpan & serverEndpoint, MutableCharSpan & tlsHostname,
                                            uint16_t & port, MutableCharSpan & path) = 0;
     };
