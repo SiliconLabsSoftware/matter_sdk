@@ -177,17 +177,19 @@ protected:
     static void TriggerSensorAction(chip::System::Layer * aLayer, void * aAppState);
 
 private:
+    // Values stay contiguous so UpdateDisplay can advance with modulo kCount.
+    // kCount is the number of screens, so it must remain last.
     enum class kSensorUIEnum : uint8_t
     {
-        kOccupancySensor = 0,
-        kSensor          = 1,
-        kStatusScreen    = 2,
-#if SL_MATTER_QR_CODE_ENABLED
-        kQrCode = 3,
-        kCount  = 4,
-#else
-        kCount = 3,
+#ifdef MATTER_DM_PLUGIN_OCCUPANCY_SENSING_SERVER
+        kOccupancySensor,
 #endif
+        kSensor,
+        kStatusScreen,
+#if SL_MATTER_QR_CODE_ENABLED
+        kQrCode,
+#endif
+        kCount,
     };
 
     kSensorUIEnum mCurrentSensorUI;
