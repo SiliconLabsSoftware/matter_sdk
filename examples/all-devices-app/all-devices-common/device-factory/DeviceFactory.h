@@ -52,6 +52,7 @@
 #include <device/types/flow-sensor/FlowSensor.h>
 #include <device/types/flow-sensor/impl/IncreasingFlowSensor.h>
 #include <device/types/generic-switch/GenericSwitch.h>
+#include <device/types/heat-pump/impl/SimulatedHeatPump.h>
 #include <device/types/humidity-conditioner/impl/LoggingHumidityConditioner.h>
 #include <device/types/humidity-sensor/HumiditySensor.h>
 #include <device/types/humidity-sensor/impl/IncreasingHumiditySensor.h>
@@ -70,6 +71,7 @@
 #include <device/types/on-off-light/impl/LoggingOnOffLight.h>
 #include <device/types/on-off-plug-in-unit/impl/LoggingOnOffPlugInUnit.h>
 #include <device/types/on-off-plug-in-unit/impl/OnOffPlugWithSensors.h>
+#include <device/types/on-off-sensor/OnOffSensor.h>
 #include <device/types/oven/impl/LoggingOven.h>
 #include <device/types/power-source/BatteryPowerSource.h>
 #include <device/types/power-source/impl/DecreasingBatteryPowerSource.h>
@@ -610,7 +612,10 @@ private:
         {
             RegisterCreator("device-energy-management", [this]() {
                 VerifyOrDie(mContext.has_value());
-                return MakeDevice<EnergyManagement>(mContext->timerDelegate);
+                return MakeDevice<EnergyManagement>(EnergyManagement::Context{
+                    .timerDelegate            = mContext->timerDelegate,
+                    .testEventTriggerDelegate = mContext->testEventTriggerDelegate,
+                });
             });
         }
         if constexpr (ALL_DEVICES_ENABLE_DIMMABLE_LIGHT)
@@ -782,6 +787,21 @@ private:
                     .identifyDelegate  = mContext->identifyDelegate,
                     .tagList           = Span(&kPlugWithSensorsTag, 1),
                 });
+            });
+        }
+        if constexpr (ALL_DEVICES_ENABLE_ON_OFF_SENSOR)
+        {
+            RegisterCreator("on-off-sensor", [this]() {
+                VerifyOrDie(mContext.has_value());
+                return MakeDevice<OnOffSensor>(
+                    OnOffSensor::Context{
+                        .timerDelegate   = mContext->timerDelegate,
+                        .platformManager = mContext->platformManager,
+                        .bindingTable    = mContext->bindingTable,
+                        .bindingManager  = mContext->bindingManager,
+                        .bindingHandler  = mContext->bindingHandler,
+                    },
+                    mContext->identifyDelegate);
             });
         }
         if constexpr (ALL_DEVICES_ENABLE_ROOM_AIR_CONDITIONER)
@@ -1095,6 +1115,8 @@ private:
         }
         if constexpr (ALL_DEVICES_ENABLE_POWER_SOURCE)
         {
+            // Note: PositionTag::kMiddle is reserved below for smoke-co-alarm's sibling BatteryPowerSource
+            // so all top-level Power Source endpoints remain distinct under wildcard allocation (*).
             static const Clusters::Globals::Structs::SemanticTagStruct::Type kPowerSourceTag = {
                 .mfgCode     = DataModel::NullNullable,
                 .namespaceID = to_underlying(Clusters::Globals::SemanticTagNamespaceId::kPosition),
@@ -1118,6 +1140,14 @@ private:
         }
         if constexpr (ALL_DEVICES_ENABLE_SMOKE_CO_ALARM)
         {
+            // Disambiguates the sibling BatteryPowerSource endpoint from power-source (kTop) and
+            // power-source-simulated (kBottom) above under wildcard allocation (*).
+            static const Clusters::Globals::Structs::SemanticTagStruct::Type kSmokeCoPowerSourceTag = {
+                .mfgCode     = DataModel::NullNullable,
+                .namespaceID = to_underlying(Clusters::Globals::SemanticTagNamespaceId::kPosition),
+                .tag         = static_cast<uint8_t>(Clusters::Globals::PositionTag::kMiddle),
+            };
+
             RegisterCreator("smoke-co-alarm", [this]() {
                 VerifyOrDie(mContext.has_value());
                 // Combined smoke + CO alarm exposing every optional attribute and both concentration measurement clusters,
@@ -1151,7 +1181,7 @@ private:
                         .medium = Clusters::ConcentrationMeasurement::MeasurementMediumEnum::kAir,
                         .unit   = Clusters::ConcentrationMeasurement::MeasurementUnitEnum::kPcft,
                     });
-                return MakeDevice<LoggingOnlySmokeCoAlarm>(mContext->timerDelegate, config);
+                return MakeDevice<LoggingOnlySmokeCoAlarm>(mContext->timerDelegate, config, Span(&kSmokeCoPowerSourceTag, 1));
             });
         }
 
@@ -1184,6 +1214,44 @@ private:
             RegisterCreator("water-valve", [this]() {
                 VerifyOrDie(mContext.has_value());
                 return MakeDevice<LoggingWaterValve>(mContext->timerDelegate);
+            });
+        }
+        if constexpr (ALL_DEVICES_ENABLE_HEAT_PUMP)
+        {
+            // Tagged with distinct Position tags to disambiguate the two variants under wildcard allocation (*).
+            static const EndpointComposition::SemanticTag kHeatPumpTag = {
+                .mfgCode     = DataModel::NullNullable,
+                .namespaceID = to_underlying(Clusters::Globals::SemanticTagNamespaceId::kPosition),
+                .tag         = static_cast<uint8_t>(Clusters::Globals::PositionTag::kTop),
+            };
+            static const EndpointComposition::SemanticTag kHeatPumpThermostatClientTag = {
+                .mfgCode     = DataModel::NullNullable,
+                .namespaceID = to_underlying(Clusters::Globals::SemanticTagNamespaceId::kPosition),
+                .tag         = static_cast<uint8_t>(Clusters::Globals::PositionTag::kBottom),
+            };
+            auto makeHeatPump = [this](SimulatedHeatPump::ThermostatControl thermostatControl,
+                                       const EndpointComposition::SemanticTag & tag) {
+                VerifyOrDie(mContext.has_value());
+                return MakeDeviceWithTags<SimulatedHeatPump>(Span(&tag, 1),
+                                                             SimulatedHeatPump::Context{
+                                                                 .timerDelegate            = mContext->timerDelegate,
+                                                                 .testEventTriggerDelegate = mContext->testEventTriggerDelegate,
+                                                                 .identifyDelegate         = mContext->identifyDelegate,
+                                                                 .fabricTable              = mContext->fabricTable,
+                                                                 .deviceInfoProvider       = mContext->deviceInfoProvider,
+                                                                 .groupDataProvider        = mContext->groupDataProvider,
+                                                                 .platformManager          = mContext->platformManager,
+                                                                 .bindingTable             = mContext->bindingTable,
+                                                                 .bindingManager           = mContext->bindingManager,
+                                                                 .bindingHandler           = mContext->bindingHandler,
+                                                             },
+                                                             thermostatControl);
+            };
+            RegisterCreator("heat-pump", [makeHeatPump]() {
+                return makeHeatPump(SimulatedHeatPump::ThermostatControl::kThermostatEndpoint, kHeatPumpTag);
+            });
+            RegisterCreator("heat-pump-thermostat-client", [makeHeatPump]() {
+                return makeHeatPump(SimulatedHeatPump::ThermostatControl::kThermostatClient, kHeatPumpThermostatClientTag);
             });
         }
         if constexpr (ALL_DEVICES_ENABLE_HUMIDITY_CONDITIONER)

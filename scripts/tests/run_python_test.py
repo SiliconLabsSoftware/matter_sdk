@@ -40,6 +40,7 @@ import click
 import coloredlogs
 from colorama import Fore, Style
 
+from matter.testing.commissioning_types import CommissioningMethod
 from matter.testing.defaults import TestingDefaults
 from matter.testing.metadata import TAG_OPTION_HELP, Metadata, MetadataReader, RunArgumentsError, TagFilter, extract_runs_args
 from matter.testing.runner import matter_test_args_parser
@@ -50,6 +51,8 @@ log = logging.getLogger(__name__)
 DEFAULT_CHIP_ROOT = next(filter(lambda p: (p / 'SPECIFICATION_VERSION').is_file(), Path(__file__).parents))
 
 MATTER_DEVELOPMENT_PAA_ROOT_CERTS = "credentials/development/paa-root-certs"
+LINUX_WIFI_SSID = "MatterAP"
+LINUX_WIFI_PASSPHRASE = "MatterAPPassword"
 
 TAG_PROCESS_MON = f"[{Fore.GREEN}MON {Style.RESET_ALL}]".encode()
 TAG_PROCESS_APP = f"[{Fore.GREEN}APP {Style.RESET_ALL}]".encode()
@@ -106,13 +109,18 @@ def forward_fifo(path: str, f_out: typing.BinaryIO, stop_event: threading.Event)
 
 @dataclasses.dataclass
 class TestRunConfig:
-    """Configuration for the app under test."""
+    """Configuration for the app under test.
+
+    app_command_prefix runs the app in its isolated network namespace for
+    BLE-WiFi tests. linux_ble_wifi_environment supplies it; other runs leave it empty.
+    """
     app: str
     app_args: str
     script_args: str
     app_ready_pattern: str | None
     stream_output: typing.BinaryIO
     app_stdin_pipe: str | None = None
+    app_command_prefix: tuple[str, ...] = ()
 
 
 class AppProcessManager:
@@ -128,7 +136,8 @@ class AppProcessManager:
             ready_pattern = re.compile(self.config.app_ready_pattern.encode())
         else:
             ready_pattern = self.config.app_ready_pattern
-        self.app_process = Subprocess(self.config.app, *shlex.split(self.config.app_args),
+        app_command = [*self.config.app_command_prefix, self.config.app, *shlex.split(self.config.app_args)]
+        self.app_process = Subprocess(app_command[0], *app_command[1:],
                                       output_cb=process_chip_app_output,
                                       f_stdout=self.config.stream_output,
                                       f_stderr=self.config.stream_output)
@@ -207,6 +216,44 @@ def run_timeout(run: Metadata) -> float:
     return TestingDefaults.DEFAULT_TIMEOUT_S
 
 
+def run_commissioning_args(run: Metadata) -> tuple[str | None, str | None, str | None]:
+    """Return (commissioning_method, wifi_ssid, wifi_passphrase) from a test run's script arguments."""
+    if run.script_args is None:
+        return None, None, None
+
+    parser = matter_test_args_parser()
+    args, _ = parser.parse_known_args(shlex.split(run.script_args))
+    return args.commissioning_method or args.in_test_commissioning_method, args.wifi_ssid, args.wifi_passphrase
+
+
+@contextlib.contextmanager
+def linux_ble_wifi_environment(
+    wifi_ssid: str | None = None,
+    wifi_passphrase: str | None = None,
+) -> typing.Generator[tuple[tuple[str, ...], tuple[str, ...]], None, None]:
+    """Provide isolated Linux app/tool networks with Bluetooth and WPA mocks."""
+    from matter.testing.linux import BluetoothMock, DBusTestSystemBus, IsolatedNetworkNamespace, WpaSupplicantMock
+
+    ssid = wifi_ssid if wifi_ssid is not None else LINUX_WIFI_SSID
+    passphrase = wifi_passphrase if wifi_passphrase is not None else LINUX_WIFI_PASSPHRASE
+
+    with contextlib.ExitStack() as stack:
+        network = stack.enter_context(IsolatedNetworkNamespace(
+            app_link_up=False,
+            app_link_name=CommissioningMethod.BLE_WIFI.app_link_name,
+            tool_link_name=CommissioningMethod.BLE_WIFI.tool_link_name,
+        ))
+        stack.enter_context(DBusTestSystemBus())
+        stack.enter_context(BluetoothMock())
+        stack.enter_context(WpaSupplicantMock(
+            [CommissioningMethod.BLE_WIFI.app_link_name],
+            ssid,
+            passphrase,
+            network,
+        ))
+        yield tuple(network.app_ns.netns_cmd_wrapper), tuple(network.tool_ns.netns_cmd_wrapper)
+
+
 @click.command()
 @click.option("--app", type=click.Path(exists=True), default=None,
               help='Path to local application to use, omit to use external apps.')
@@ -243,10 +290,16 @@ def run_timeout(run: Metadata) -> float:
 @click.option("--app-filter", type=str, default=None, help="Run only for the specified app(s). Comma separated.")
 @click.option("--pre-existing-fabric", is_flag=True, default=False,
               help="Commission app to a chip-tool fabric and open a commissioning window before running test script.")
+@click.option("--internal-inside-unshare", hidden=True, is_flag=True, default=False,
+              help="Internal re-exec marker. ensure_namespace_availability passes it after entering a private "
+                   "mount namespace, so the re-executed runner does not create another. Local and CI runs use "
+                   "the same path.")
 def main(app: str, factory_reset: bool, factory_reset_app_only: bool, app_args: str,
          app_ready_pattern: str, app_stdin_pipe: str, script: str, script_args: str,
-         script_gdb: bool, quiet: bool, load_from_env, run, tags: tuple[str, ...], ip_packet_capture: bool,
-         ip_packet_capture_dir: pathlib.Path, app_filter, pre_existing_fabric: bool):
+         script_gdb: bool, quiet: bool, load_from_env: str | None, run: tuple[str, ...], tags: tuple[str, ...],
+         ip_packet_capture: bool, ip_packet_capture_dir: pathlib.Path, app_filter: str | None, pre_existing_fabric: bool,
+         internal_inside_unshare: bool) -> None:
+    """Run the configured Matter Python test."""
     if run and tags:
         raise click.BadOptionUsage("tags", "--run and --tag can't be combined: --run names the runs whatever their tags.")
     try:
@@ -315,19 +368,40 @@ def main(app: str, factory_reset: bool, factory_reset_app_only: bool, app_args: 
         if pre_existing_fabric:
             run.pre_existing_fabric = pre_existing_fabric
 
-    for run in runs:
+    runs_with_commissioning_args = [(run, *run_commissioning_args(run)) for run in runs]
+    uses_linux_ble_wifi = any(
+        bool(run.app) and method == CommissioningMethod.BLE_WIFI
+        for run, method, _, _ in runs_with_commissioning_args
+    )
+    if uses_linux_ble_wifi:
+        if sys.platform != "linux":
+            raise click.ClickException("BLE-WiFi commissioning is only supported on Linux")
+        from matter.testing.linux import ensure_namespace_availability, ensure_private_state
+
+        if not internal_inside_unshare:
+            ensure_namespace_availability(isolate_root=True)
+        ensure_private_state()
+
+    for run, commissioning_method, wifi_ssid, wifi_passphrase in runs_with_commissioning_args:
         log.info("Executing '%s' '%s'", run.py_script_path.split('/')[-1], run.run)
-        main_impl(run.app, run.factory_reset, run.factory_reset_app_only, run.app_args or "", run.app_ready_pattern,
-                  run.app_stdin_pipe, run.py_script_path, run.script_args or "", run.script_gdb, ip_packet_capture,
-                  ip_packet_capture_dir, run_timeout(run), run.quiet, run.run, run.pre_existing_fabric)
+        if bool(run.app) and commissioning_method == CommissioningMethod.BLE_WIFI:
+            environment = linux_ble_wifi_environment(wifi_ssid, wifi_passphrase)
+        else:
+            environment = contextlib.nullcontext(((), ()))
+        with environment as (app_command_prefix, test_command_prefix):
+            main_impl(run.app, run.factory_reset, run.factory_reset_app_only, run.app_args or "", run.app_ready_pattern,
+                      run.app_stdin_pipe, run.py_script_path, run.script_args or "", run.script_gdb, ip_packet_capture,
+                      ip_packet_capture_dir, run_timeout(run), run.quiet, run.run, run.pre_existing_fabric,
+                      app_command_prefix, test_command_prefix)
 
 
 class AppRestartMonitor:
     """Monitors a temporary flag file to handle factory reset and restart requests from the test script.
 
     Runs a background daemon thread that periodically checks for the existence of the restart_flag_file.
-    If the file exists, it triggers a factory reset of the app (and optionally controller config/storage)
-    and restarts the app process, then removes the flag file.
+    If the file holds a known request, it triggers a factory reset of the app (and optionally controller
+    config/storage) and restarts the app process, then removes the flag file. Unknown content is rewritten
+    as "rejected: <content>", which wait_for_restart_flag_file_removal() reports as a test failure.
     """
 
     def __init__(self, restart_flag_file: str):
@@ -352,15 +426,115 @@ class AppRestartMonitor:
             self.stop_event.set()
             self.thread.join(timeout_sec)
 
+    def _claim_flag_file(self, expected_content: str) -> str | None:
+        """Atomically take the current flag file, but only if it still holds expected_content.
+
+        Returns the path of the claimed file, or None if the flag file is gone or holds something else. A different
+        (newer) request is put back at the flag path, unless an even newer one has already replaced it.
+        Between the claim and a put back the flag path is briefly absent, which a waiting test reads as completion.
+        The match is on content only: a second, identical request (e.g. "restart" again) published while the first
+        is acted on matches the claim and is removed as if it had been acted on.
+        """
+        claim = f"{self.restart_flag_file}.claim"
+        try:
+            os.replace(self.restart_flag_file, claim)
+        except FileNotFoundError:
+            return None
+        try:
+            with open(claim, encoding="utf-8", errors="replace") as f:
+                if f.read().strip() == expected_content:
+                    return claim
+        except BaseException:
+            self._restore_claim(claim)
+            raise
+        self._restore_claim(claim)
+        return None
+
+    def _restore_claim(self, claim: str) -> None:
+        try:
+            os.link(claim, self.restart_flag_file)
+        except FileExistsError:
+            # An even newer request was published; keep it and drop the claimed one.
+            os.unlink(claim)
+            return
+        except OSError:
+            # The link failed for another reason. Recreate the request at the flag path only while that path is
+            # still free (O_EXCL), so a request published meanwhile is never overwritten by this older one.
+            self._recreate_claim(claim)
+            return
+        os.unlink(claim)
+
+    def _recreate_claim(self, claim: str) -> None:
+        """Puts a claimed request back at the flag path without ever writing to, or removing, the flag path itself.
+
+        The content is copied into a unique sibling, which is then linked to the flag path. A link never overwrites, so a
+        newer request already at the flag path wins, and a failed write only ever touches the sibling.
+        """
+        copy = f"{claim}.recreate-{uuid.uuid4().hex}"
+        try:
+            with open(claim, "rb") as f:
+                content = f.read()
+            fd = os.open(copy, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+            with os.fdopen(fd, "wb") as f:
+                f.write(content)
+            os.link(copy, self.restart_flag_file)
+        except FileExistsError:
+            # A newer request is already at the flag path; it supersedes the claimed one.
+            os.unlink(claim)
+        except OSError as e:
+            # Keep the claim rather than lose or overwrite a request; the wait reports a stranded claim.
+            log.error("Could not restore restart request from '%s': %s", claim, e)
+        else:
+            os.unlink(claim)
+        finally:
+            with contextlib.suppress(OSError):
+                os.unlink(copy)
+
+    def _publish_rejection(self, content: str) -> None:
+        rejected_path = f"{self.restart_flag_file}.rejected"
+        try:
+            # O_EXCL never follows a symlink planted at this path; unlinking first removes such a link, not its target.
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(rejected_path)
+            fd = os.open(rejected_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+            with os.fdopen(fd, "w", encoding="utf-8", errors="replace") as f:
+                f.write(f"rejected: {content}")
+            # Only replace the flag file if it still holds the unknown content, not a request published since the read.
+            claim = self._claim_flag_file(content)
+            if claim is not None:
+                try:
+                    # A link never overwrites, so a request published after the claim keeps the flag path.
+                    os.link(rejected_path, self.restart_flag_file)
+                except FileExistsError:
+                    # A newer request was published since the claim; it wins, and the unknown content is dropped.
+                    os.unlink(claim)
+                    return
+                except BaseException:
+                    self._restore_claim(claim)
+                    raise
+                os.unlink(claim)
+        except OSError:
+            pass  # Retried on the next poll.
+        finally:
+            # After a successful link the flag path holds its own link to the marker, so the sibling always goes.
+            with contextlib.suppress(OSError):
+                os.unlink(rejected_path)
+
     def _run(self) -> None:
+        unknown_polls, unknown_content = 0, None
         while not self.stop_event.is_set():
             # Try to read the restart flag file
             if not os.path.exists(self.restart_flag_file):
+                unknown_polls = 0
                 self.stop_event.wait(0.5)
                 continue
 
-            with open(self.restart_flag_file) as f:
-                flag_file_content = f.read().strip()
+            try:
+                with open(self.restart_flag_file, encoding="utf-8", errors="replace") as f:
+                    flag_file_content = f.read().strip()
+            except FileNotFoundError:
+                unknown_polls = 0
+                continue
 
             # Determine reset type and remove app/ctrl config and storage
             reset_type = None
@@ -368,7 +542,22 @@ class AppRestartMonitor:
                 reset_type = FactoryResetType.AppAndController
             elif flag_file_content == "factory reset app only":
                 reset_type = FactoryResetType.AppOnly
+            elif flag_file_content != "restart":
+                pending = flag_file_content.startswith("rejected: ") or any(
+                    request.startswith(flag_file_content) for request in ("restart", "factory reset", "factory reset app only"))
+                if pending:
+                    unknown_polls = 0
+                else:
+                    unknown_polls = unknown_polls + 1 if flag_file_content == unknown_content else 1
+                    unknown_content = flag_file_content
+                if unknown_polls == 3:
+                    log.error("Rejecting unknown restart request '%s'", flag_file_content)
+                if unknown_polls >= 3:
+                    self._publish_rejection(flag_file_content)
+                self.stop_event.wait(0.1)
+                continue
 
+            unknown_polls = 0
             if reset_type:
                 factory_reset_config_removal(self.config.app_args, self.config.script_args, reset_type)
 
@@ -380,8 +569,14 @@ class AppRestartMonitor:
                 new_app_manager.start()
                 self.app_manager_ref[0] = new_app_manager
 
-            # Successfully read the flag file, remove to prevent multiple restarts
-            os.unlink(self.restart_flag_file)
+            # Successfully acted on the flag file, remove to prevent multiple restarts. A request published
+            # while the app restarted is put back instead, to be handled by the next iteration.
+            try:
+                claim = self._claim_flag_file(flag_file_content)
+                if claim is not None:
+                    os.unlink(claim)
+            except OSError as e:
+                log.error("Could not remove restart flag file '%s': %s", self.restart_flag_file, e)
             log.info("%s requested by test script", flag_file_content.capitalize())
 
             # Action complete, continue monitoring for additional restart requests
@@ -391,7 +586,8 @@ class AppRestartMonitor:
 def main_impl(app: str, factory_reset: bool, factory_reset_app_only: bool, app_args: str,
               app_ready_pattern: str, app_stdin_pipe: str, script: str, script_args: str,
               script_gdb: bool, ip_packet_capture: bool, ip_packet_capture_dir: pathlib.Path,
-              run_timeout: float, quiet: bool, run_name: str, pre_existing_fabric: bool = False):
+              run_timeout: float, quiet: bool, run_name: str, pre_existing_fabric: bool = False,
+              app_command_prefix: tuple[str, ...] = (), test_command_prefix: tuple[str, ...] = ()):
 
     app_args = app_args.replace('{SCRIPT_BASE_NAME}', os.path.splitext(os.path.basename(script))[0])
     script_args = script_args.replace('{SCRIPT_BASE_NAME}', os.path.splitext(os.path.basename(script))[0])
@@ -425,7 +621,8 @@ def main_impl(app: str, factory_reset: bool, factory_reset_app_only: bool, app_a
         if not os.path.exists(app):
             if app is None:
                 raise FileNotFoundError(f"{app} not found")
-        app_config = TestRunConfig(app, app_args, script_args, app_ready_pattern, stream_output, app_stdin_pipe)
+        app_config = TestRunConfig(app, app_args, script_args, app_ready_pattern, stream_output, app_stdin_pipe,
+                                   app_command_prefix)
         app_manager = AppProcessManager(app_config)
         app_manager.start()
         app_manager_ref = [app_manager]
@@ -480,6 +677,7 @@ def main_impl(app: str, factory_reset: bool, factory_reset_app_only: bool, app_a
         log.info(
             "Running python script to commission device on a pre-existing fabric and "
             "open commissioning window...")
+        commission_command = [*test_command_prefix, *commission_command]
         log.info("Command: %s", ' '.join(commission_command))
         commission_proc = Subprocess(commission_command[0], *commission_command[1:],
                                      output_cb=process_mon_output, f_stdout=stream_output, f_stderr=stream_output)
@@ -506,7 +704,7 @@ def main_impl(app: str, factory_reset: bool, factory_reset_app_only: bool, app_a
     else:
         script_command = "/usr/bin/env python3 -X faulthandler".split() + script_command
 
-    final_script_command = [i.replace('|', ' ') for i in script_command]
+    final_script_command = [*test_command_prefix, *(i.replace('|', ' ') for i in script_command)]
 
     test_script_process = Subprocess(final_script_command[0], *final_script_command[1:],
                                      output_cb=process_test_script_output,
@@ -555,7 +753,8 @@ def main_impl(app: str, factory_reset: bool, factory_reset_app_only: bool, app_a
         if exit_code != 0:
             log.error("SUBPROCESS failure: ")
             log.error("  TEST SCRIPT: %d (%r)", test_script_exit_code, final_script_command)
-            log.error("  APP:         %d (%r)", app_exit_code, [app] + shlex.split(app_args))
+            log.error("  APP:         %d (%r)", app_exit_code,
+                      [*app_command_prefix, app, *shlex.split(app_args)])
             sys.exit(exit_code)
 
     finally:
@@ -565,12 +764,14 @@ def main_impl(app: str, factory_reset: bool, factory_reset_app_only: bool, app_a
 
         # Clean up any leftover flag files if they exist - ensure this always executes
         log.info("Cleaning up flag files")
-        if os.path.exists(restart_flag_file):
-            try:
-                os.unlink(restart_flag_file)
-                log.info("Cleaned up flag file: '%s'", restart_flag_file)
-            except Exception as e:
-                log.warning("Failed to clean up flag file '%s': %r", restart_flag_file, e)
+        for path in (restart_flag_file, f"{restart_flag_file}.rejected", f"{restart_flag_file}.claim",
+                     *glob.glob(glob.escape(restart_flag_file) + ".claim.recreate-*")):
+            if os.path.exists(path):
+                try:
+                    os.unlink(path)
+                    log.info("Cleaned up flag file: '%s'", path)
+                except Exception as e:
+                    log.warning("Failed to clean up flag file '%s': %r", path, e)
 
 
 class FactoryResetType(enum.Enum):
@@ -581,8 +782,9 @@ class FactoryResetType(enum.Enum):
     def config_files(self, app_args: str, script_args: str) -> typing.Generator[str, None, None]:
         """Yield paths of config/storage files to remove for this reset type."""
 
-        # App config files and KVS, exclude restart flag file
-        yield from (f for f in glob.glob('/tmp/chip*') if not os.path.basename(f).startswith('chip_test_restart_app'))
+        # App config files and KVS. Preserve runner-owned control files and sockets.
+        runner_files = ('chip_test_restart_app', 'chip-dbus-')
+        yield from (f for f in glob.glob('/tmp/chip*') if not os.path.basename(f).startswith(runner_files))
         yield from glob.glob('/tmp/repl*')
 
         if match := re.search(r"--KVS (?P<path>[^ ]+)", app_args):
