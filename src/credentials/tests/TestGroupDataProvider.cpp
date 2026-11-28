@@ -139,15 +139,19 @@ class TestListener : public GroupDataProvider::GroupListener
 public:
     chip::FabricIndex fabric_index = kUndefinedFabricIndex;
     GroupInfo latest;
-    size_t added_count   = 0;
-    size_t removed_count = 0;
+    KeysetId latest_removed_keyset = kInvalidKeysetId;
+    size_t added_count             = 0;
+    size_t removed_count           = 0;
+    size_t keyset_removed_count    = 0;
 
     void Reset()
     {
-        fabric_index  = kUndefinedFabricIndex;
-        latest        = GroupInfo();
-        added_count   = 0;
-        removed_count = 0;
+        fabric_index          = kUndefinedFabricIndex;
+        latest                = GroupInfo();
+        latest_removed_keyset = kInvalidKeysetId;
+        added_count           = 0;
+        removed_count         = 0;
+        keyset_removed_count  = 0;
     }
 
     void OnGroupAdded(chip::FabricIndex fabric, const GroupInfo & new_group) override
@@ -161,6 +165,12 @@ public:
         fabric_index = fabric;
         latest.Copy(old_group);
         removed_count++;
+    }
+    void OnKeySetRemoved(chip::FabricIndex fabric, KeysetId keyset_id) override
+    {
+        fabric_index          = fabric;
+        latest_removed_keyset = keyset_id;
+        keyset_removed_count++;
     }
 };
 static TestListener sListener;
@@ -1272,6 +1282,7 @@ TEST_F(TestGroupDataProvider, TestGroupDecryption)
     {
         std::pair<FabricIndex, GroupId> found(session.fabric_index, session.group_id);
         EXPECT_GT(expected.count(found), 0u);
+        EXPECT_EQ(session.keyset_id, kKeysetId1);
         ASSERT_NE(session.keyContext, nullptr);
         // Assert aboves doesn't actually exit, we call continue so that we can call it->Release() outside of
         // loop.
@@ -1291,6 +1302,137 @@ TEST_F(TestGroupDataProvider, TestGroupDecryption)
     }
     EXPECT_EQ(count, total);
     it->Release();
+}
+
+TEST_F(TestGroupDataProvider, TestMissingKeySetInGroupKeyMap)
+{
+    GroupDataProvider * provider = GetGroupDataProvider();
+    ASSERT_TRUE(provider);
+
+    ResetProvider(provider);
+
+    // 1. Register kFabric1 first with a valid KeySet (kKeySet1)
+    //    Put a dangling mapping (kGroup1 -> kKeysetId3, which is not installed) before the valid mapping (kGroup1 -> kKeysetId1).
+    EXPECT_EQ(provider->SetKeySet(kFabric1, kCompressedFabricId1, kKeySet1), CHIP_NO_ERROR);
+    EXPECT_EQ(provider->SetGroupKeyAt(kFabric1, 0, kGroup1Keyset3), CHIP_NO_ERROR);
+    EXPECT_EQ(provider->SetGroupKeyAt(kFabric1, 1, kGroup1Keyset1), CHIP_NO_ERROR);
+
+    // 2. Register kFabric2 second (so kFabric2 is prepended to the head of fabric_list ahead of kFabric1).
+    //    On kFabric2, add a dangling mapping (kGroup2 -> kKeysetId3, not installed) at index 0,
+    //    followed by a valid mapping (kGroup2 -> kKeysetId2) at index 1.
+    EXPECT_EQ(provider->SetKeySet(kFabric2, kCompressedFabricId2, kKeySet2), CHIP_NO_ERROR);
+    EXPECT_EQ(provider->SetGroupKeyAt(kFabric2, 0, kGroup2Keyset3), CHIP_NO_ERROR);
+    EXPECT_EQ(provider->SetGroupKeyAt(kFabric2, 1, kGroup2Keyset2), CHIP_NO_ERROR);
+
+    // 3. Verify GetKeyContext on kFabric1 skips the missing keyset mapping (kGroup1Keyset3)
+    //    and returns the valid key context for (kFabric1, kGroup1) from kGroup1Keyset1.
+    Crypto::SymmetricKeyContext * key_context_f1 = provider->GetKeyContext(kFabric1, kGroup1);
+    ASSERT_NE(nullptr, key_context_f1);
+    uint16_t session_id_f1 = key_context_f1->GetKeyHash();
+    key_context_f1->Release();
+
+    // 4. Verify IterateGroupSessions for kFabric1's session_id skips the missing keyset mappings
+    //    on both the newer fabric (kFabric2) and kFabric1, and finds (kFabric1, kGroup1).
+    {
+        GroupSession session;
+        auto it = provider->IterateGroupSessions(session_id_f1);
+        ASSERT_NE(nullptr, it);
+        EXPECT_EQ(it->Count(), 1u);
+        ASSERT_TRUE(it->Next(session));
+        EXPECT_EQ(session.fabric_index, kFabric1);
+        EXPECT_EQ(session.group_id, kGroup1);
+        EXPECT_NE(session.keyContext, nullptr);
+        EXPECT_FALSE(it->Next(session));
+        it->Release();
+    }
+
+    // 5. Verify IterateGroupSessions for kFabric2's session_id skips the missing keyset mapping
+    //    at index 0 on kFabric2 and finds the valid mapping at index 1 (kFabric2, kGroup2).
+    Crypto::SymmetricKeyContext * key_context_f2 = provider->GetKeyContext(kFabric2, kGroup2);
+    ASSERT_NE(nullptr, key_context_f2);
+    uint16_t session_id_f2 = key_context_f2->GetKeyHash();
+    key_context_f2->Release();
+
+    {
+        GroupSession session;
+        auto it = provider->IterateGroupSessions(session_id_f2);
+        ASSERT_NE(nullptr, it);
+        EXPECT_EQ(it->Count(), 1u);
+        ASSERT_TRUE(it->Next(session));
+        EXPECT_EQ(session.fabric_index, kFabric2);
+        EXPECT_EQ(session.group_id, kGroup2);
+        EXPECT_NE(session.keyContext, nullptr);
+        EXPECT_FALSE(it->Next(session));
+        it->Release();
+    }
+}
+
+TEST_F(TestGroupDataProvider, TestKeySetRemovalAndReplacementNotifications)
+{
+    GroupDataProvider * provider = GetGroupDataProvider();
+    ASSERT_NE(provider, nullptr);
+
+    ResetProvider(provider);
+    sListener.Reset();
+
+    TestListener extraListeners[3];
+    struct ListenerCleanup
+    {
+        GroupDataProvider * provider;
+        TestListener (&listeners)[3];
+        ~ListenerCleanup()
+        {
+            for (auto & listener : listeners)
+            {
+                provider->RemoveListener(&listener);
+            }
+        }
+    } cleanup{ provider, extraListeners };
+
+    // Duplicate registration must be idempotent even when an earlier slot is free.
+    provider->SetListener(&sListener);
+    for (auto & listener : extraListeners)
+    {
+        provider->SetListener(&listener);
+    }
+    provider->RemoveListener(&sListener);
+    provider->SetListener(&extraListeners[2]);
+    provider->SetListener(&sListener);
+
+    // Initial install does not fire OnKeySetRemoved.
+    KeySet initialKeySet(kKeysetId1, SecurityPolicy::kTrustFirst, 1);
+    initialKeySet.epoch_keys[0] = kEpochKeys1[0];
+    EXPECT_SUCCESS(provider->SetKeySet(kFabric1, kCompressedFabricId1, initialKeySet));
+    EXPECT_EQ(sListener.keyset_removed_count, 0u);
+
+    // Overlapping epoch-key rotation ([E0] -> [E0, E1]) preserves continuity.
+    KeySet overlappingRotation(kKeysetId1, SecurityPolicy::kTrustFirst, 2);
+    overlappingRotation.epoch_keys[0] = kEpochKeys1[0];
+    overlappingRotation.epoch_keys[1] = kEpochKeys1[1];
+    EXPECT_SUCCESS(provider->SetKeySet(kFabric1, kCompressedFabricId1, overlappingRotation));
+    EXPECT_EQ(sListener.keyset_removed_count, 0u);
+
+    // Disjoint key replacement ([E0, E1] -> [E2]) fires OnKeySetRemoved across all 4 listener slots.
+    KeySet disjointReplacement(kKeysetId1, SecurityPolicy::kTrustFirst, 1);
+    disjointReplacement.epoch_keys[0] = kEpochKeys2[0];
+    EXPECT_SUCCESS(provider->SetKeySet(kFabric1, kCompressedFabricId1, disjointReplacement));
+    EXPECT_EQ(sListener.keyset_removed_count, 1u);
+    EXPECT_EQ(sListener.fabric_index, kFabric1);
+    EXPECT_EQ(sListener.latest_removed_keyset, kKeysetId1);
+    for (const auto & listener : extraListeners)
+    {
+        EXPECT_EQ(listener.keyset_removed_count, 1u);
+        EXPECT_EQ(listener.fabric_index, kFabric1);
+        EXPECT_EQ(listener.latest_removed_keyset, kKeysetId1);
+    }
+
+    // Explicit RemoveKeySet also fires OnKeySetRemoved.
+    EXPECT_SUCCESS(provider->RemoveKeySet(kFabric1, kKeysetId1));
+    EXPECT_EQ(sListener.keyset_removed_count, 2u);
+    for (const auto & listener : extraListeners)
+    {
+        EXPECT_EQ(listener.keyset_removed_count, 2u);
+    }
 }
 
 } // namespace TestGroups
